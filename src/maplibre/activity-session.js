@@ -1,21 +1,33 @@
+export const studyModes = {
+  cumulative: "cumulative",
+  sectionOnly: "sectionOnly"
+};
+
 export class ActivitySession {
-  constructor(activity) {
-    this.activity = activity;
+  constructor(activity, options = {}) {
+    this.activityCatalog = options.activityCatalog || [activity];
+    this.currentActivity = activity;
+    this.studyMode = options.studyMode || studyModes.cumulative;
     this.completed = new Set();
     this.selectedAnswerId = null;
     this.visibleAnswerIds = [];
-    this.refillVisibleAnswers();
+    this.rebuildAvailableTargets();
+  }
+
+  get activity() {
+    return {
+      ...this.currentActivity,
+      targets: this.allAvailableTargets,
+      answerBankItems: this.allAvailableTargets.map((target) => ({
+        id: target.id,
+        name: target.name
+      }))
+    };
   }
 
   get answerItems() {
-    const answerItems = this.activity.answerBankItems || this.activity.targets;
-
-    if (!this.hasRollingAnswerBank()) {
-      return answerItems;
-    }
-
     return this.visibleAnswerIds
-      .map((id) => answerItems.find((item) => item.id === id))
+      .map((id) => this.allAvailableTargets.find((item) => item.id === id))
       .filter(Boolean);
   }
 
@@ -24,25 +36,40 @@ export class ActivitySession {
   }
 
   get progressText() {
-    return `${this.completed.size} of ${this.activity.targets.length} completed`;
+    return `${this.completed.size} / ${this.allAvailableTargets.length} complete`;
   }
 
   get selectedId() {
     return this.selectedAnswerId;
   }
 
+  get visibleAnswerLimit() {
+    return this.currentActivity.visibleAnswerLimit ?? 10;
+  }
+
+  setActivity(activity) {
+    this.currentActivity = activity;
+    return this.reset();
+  }
+
+  setStudyMode(studyMode) {
+    if (this.studyMode === studyMode) {
+      return {
+        completedIds: this.completedIds,
+        progressText: this.progressText
+      };
+    }
+
+    this.studyMode = studyMode;
+    return this.reset();
+  }
+
   getFeature(id) {
-    return this.activity.targets.find((target) => target.id === id);
+    return this.allAvailableTargets.find((target) => target.id === id);
   }
 
   isCompleted(id) {
     return this.completed.has(id);
-  }
-
-  hasRollingAnswerBank() {
-    return Number.isFinite(this.activity.visibleAnswerLimit)
-      && this.activity.visibleAnswerLimit > 0
-      && this.activity.visibleAnswerLimit < this.activity.targets.length;
   }
 
   toggleAnswer(id) {
@@ -105,8 +132,7 @@ export class ActivitySession {
   reset() {
     this.completed.clear();
     this.selectedAnswerId = null;
-    this.visibleAnswerIds = [];
-    this.refillVisibleAnswers();
+    this.rebuildAvailableTargets();
 
     return {
       completedIds: this.completedIds,
@@ -114,15 +140,43 @@ export class ActivitySession {
     };
   }
 
-  refillVisibleAnswers() {
-    if (!this.hasRollingAnswerBank()) {
-      this.visibleAnswerIds = [];
-      return;
+  rebuildAvailableTargets() {
+    this.allAvailableTargets = this.getTargetsForStudyMode();
+    this.visibleAnswerIds = [];
+    this.refillVisibleAnswers();
+  }
+
+  getTargetsForStudyMode() {
+    if (this.studyMode === studyModes.sectionOnly || !this.currentActivity.cumulativeGroup) {
+      return this.dedupeTargets(this.currentActivity.targets);
     }
 
+    const sequence = this.currentActivity.sequence ?? Number.MAX_SAFE_INTEGER;
+    const cumulativeTargets = this.activityCatalog
+      .filter((activity) => activity.cumulativeGroup === this.currentActivity.cumulativeGroup)
+      .filter((activity) => (activity.sequence ?? Number.MAX_SAFE_INTEGER) <= sequence)
+      .sort((first, second) => (first.sequence ?? 0) - (second.sequence ?? 0))
+      .flatMap((activity) => activity.targets);
+
+    return this.dedupeTargets(cumulativeTargets);
+  }
+
+  dedupeTargets(targets) {
+    const byId = new Map();
+
+    targets.forEach((target) => {
+      if (!byId.has(target.id)) {
+        byId.set(target.id, target);
+      }
+    });
+
+    return Array.from(byId.values());
+  }
+
+  refillVisibleAnswers() {
     this.visibleAnswerIds = this.visibleAnswerIds.filter((id) => !this.completed.has(id));
 
-    while (this.visibleAnswerIds.length < this.activity.visibleAnswerLimit) {
+    while (this.visibleAnswerIds.length < this.visibleAnswerLimit) {
       const nextId = this.getRandomHiddenUnfinishedId();
 
       if (!nextId) {
@@ -134,7 +188,7 @@ export class ActivitySession {
   }
 
   getRandomHiddenUnfinishedId() {
-    const hiddenUnfinishedIds = this.activity.targets
+    const hiddenUnfinishedIds = this.allAvailableTargets
       .map((target) => target.id)
       .filter((id) => !this.completed.has(id) && !this.visibleAnswerIds.includes(id));
 

@@ -165,6 +165,58 @@ export class MapLibreActivityRunner {
     this.refreshStudyPaint();
   }
 
+  updateActivity(activity) {
+    this.activity = activity;
+    this.shapeTargets = activity.targets.filter((target) => target.kind === "shape");
+    this.pointTargets = activity.targets.filter((target) => target.kind === "point");
+    this.completedIds = [];
+
+    const capitalSource = this.map.getSource("study-capitals");
+
+    if (capitalSource) {
+      capitalSource.setData(this.getCapitalGeoJson());
+    }
+
+    this.refreshStudyFilters();
+    this.refreshStudyPaint();
+  }
+
+  getZoom() {
+    return this.map?.getZoom() ?? 0;
+  }
+
+  setZoom(zoom) {
+    this.map?.easeTo({
+      zoom,
+      duration: 180,
+      essential: true
+    });
+  }
+
+  fitStudyView() {
+    const studyView = this.activity.map?.studyView || {};
+    this.map.fitBounds(studyView.bounds || [[-74.35, 40.85], [-66.75, 47.55]], {
+      padding: studyView.padding || { top: 55, right: 46, bottom: 78, left: 46 },
+      duration: 450,
+      essential: true
+    });
+  }
+
+  fitCurrentView() {
+    if (this.currentView === "study") {
+      this.fitStudyView();
+      return;
+    }
+
+    this.enterOverview();
+  }
+
+  onZoomChange(handler) {
+    this.map?.on("zoom", () => {
+      handler(this.getZoom());
+    });
+  }
+
   addAtlasBaseLayers() {
     this.map.addSource("world-countries", {
       type: "geojson",
@@ -292,8 +344,6 @@ export class MapLibreActivityRunner {
   }
 
   addStudyLayers() {
-    const shapeTargetIds = this.shapeTargets.map((target) => target.sourceFeatureId || target.id);
-
     this.map.addSource("study-states", {
       type: "geojson",
       data: this.stateTargets,
@@ -318,7 +368,7 @@ export class MapLibreActivityRunner {
       layout: {
         visibility: "none"
       },
-      filter: ["in", ["get", "id"], ["literal", shapeTargetIds]],
+      filter: this.getShapeTargetFilter(),
       paint: {
         "fill-color": this.getStateFillExpression(),
         "fill-opacity": 0.92
@@ -332,7 +382,7 @@ export class MapLibreActivityRunner {
       layout: {
         visibility: "none"
       },
-      filter: ["in", ["get", "id"], ["literal", shapeTargetIds]],
+      filter: this.getShapeTargetFilter(),
       paint: {
         "line-color": colors.targetStroke,
         "line-width": 2.15
@@ -529,6 +579,24 @@ export class MapLibreActivityRunner {
     if (labelSource) {
       labelSource.setData(this.getCompletedLabelGeoJson());
     }
+  }
+
+  refreshStudyFilters() {
+    const filter = this.getShapeTargetFilter();
+
+    ["state-fill", "state-line"].forEach((layerId) => {
+      if (this.map.getLayer(layerId)) {
+        this.map.setFilter(layerId, filter);
+      }
+    });
+  }
+
+  getShapeTargetFilter() {
+    return [
+      "in",
+      ["get", "id"],
+      ["literal", this.shapeTargets.map((target) => target.sourceFeatureId || target.id)]
+    ];
   }
 
   getStateFillExpression() {

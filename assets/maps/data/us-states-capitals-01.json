@@ -9,7 +9,10 @@
     "translateX": 487.5,
     "translateY": 305
   },
+  "cumulativeGroup": "us-states-capitals",
+  "sequence": 1,
   "targetNoun": "state or capital",
+  "visibleAnswerLimit": 10,
   "features": [
     {
       "id": "maine",

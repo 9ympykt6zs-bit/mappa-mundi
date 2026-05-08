@@ -127,6 +127,40 @@ body.study-mode .map-shell {
   font-size: 0.9rem;
 }
 
+.zoom-panel {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid #d9e1ec;
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(24, 38, 64, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 8px;
+  position: absolute;
+  right: 14px;
+  top: 78px;
+  z-index: 3;
+}
+
+.zoom-panel button {
+  background: #ffffff;
+  border: 1px solid #bdc9d8;
+  border-radius: 8px;
+  color: #172033;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 7px 8px;
+}
+
+.zoom-panel input {
+  accent-color: #2563eb;
+  height: 168px;
+  touch-action: none;
+  writing-mode: vertical-lr;
+}
+
 .region-panel {
   background: #ffffff;
   border-top: 1px solid #d9e1ec;
@@ -153,7 +187,7 @@ body.study-mode .region-panel {
 .region-list {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .region-list button {
@@ -231,6 +265,32 @@ body.study-mode .answer-panel {
   color: #16703b;
 }
 
+.study-mode-toggle {
+  background: #edf3f8;
+  border: 1px solid #d9e1ec;
+  border-radius: 8px;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+}
+
+.study-mode-toggle button {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #536277;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 8px 10px;
+}
+
+.study-mode-toggle button.active {
+  background: #ffffff;
+  border-color: #bdc9d8;
+  box-shadow: 0 4px 10px rgba(24, 38, 64, 0.08);
+  color: #174ea6;
+}
+
 .answer-bank {
   display: flex;
   flex-wrap: wrap;
@@ -299,6 +359,15 @@ body.study-mode .answer-panel {
     grid-template-columns: 1fr;
   }
 
+  .zoom-panel {
+    right: 10px;
+    top: 70px;
+  }
+
+  .zoom-panel input {
+    height: 132px;
+  }
+
   .answer-panel {
     max-height: min(42vh, 190px);
     padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
@@ -326,5 +395,10 @@ body.study-mode .answer-panel {
     align-items: flex-start;
     flex-direction: column;
     gap: 8px;
+  }
+
+  .study-mode-toggle {
+    max-width: 100%;
+    overflow-x: auto;
   }
 }

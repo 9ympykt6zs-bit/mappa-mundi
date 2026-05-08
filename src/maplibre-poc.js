@@ -1,11 +1,15 @@
 import { normalizeActivity } from "./map-engines/activity-normalizer.js";
-import { ActivitySession } from "./maplibre/activity-session.js";
+import { ActivitySession, studyModes } from "./maplibre/activity-session.js";
 import { MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js";
 
-const activityDataPath = "assets/maps/data/us-states-capitals-02.json";
+const activityDataPaths = [
+  "assets/maps/data/us-states-capitals-01.json",
+  "assets/maps/data/us-states-capitals-02.json"
+];
 const worldCountriesPath = "assets/maps/data/maplibre-world-countries.geojson";
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
+const defaultActivityId = "us-states-capitals-02";
 
 const stateLabelAnchors = {
   maine: [-69.2, 45.25],
@@ -43,7 +47,8 @@ const usOverviewRegion = {
   ]
 };
 
-let activityData;
+let activities = [];
+let selectedActivityId = defaultActivityId;
 let session;
 let runner;
 let feedbackTimer;
@@ -55,19 +60,25 @@ const progress = document.querySelector("#progress");
 const feedback = document.querySelector("#feedback");
 const resetButton = document.querySelector("#reset-button");
 const worldViewButton = document.querySelector("#world-view-button");
+const fitMapButton = document.querySelector("#fit-map-button");
+const zoomSlider = document.querySelector("#zoom-slider");
 const studyCard = document.querySelector("#study-card");
 const regionButtons = document.querySelectorAll("[data-region]");
+const studyModeButtons = document.querySelectorAll("[data-study-mode]");
 
 async function init() {
-  const [loadedActivity, worldCountries, usStatesAtlas, stateTargets] = await Promise.all([
-    fetchJson(activityDataPath),
+  const [loadedActivities, worldCountries, usStatesAtlas, stateTargets] = await Promise.all([
+    Promise.all(activityDataPaths.map((path) => fetchJson(path))),
     fetchJson(worldCountriesPath),
     fetchJson(usStatesAtlasPath),
     fetchJson(stateGeoJsonPath)
   ]);
 
-  activityData = normalizeMapLibrePocActivity(loadedActivity);
-  session = new ActivitySession(activityData);
+  activities = loadedActivities.map((activity) => normalizeMapLibrePocActivity(activity));
+  session = new ActivitySession(getSelectedActivity(), {
+    activityCatalog: activities,
+    studyMode: studyModes.cumulative
+  });
   runner = new MapLibreActivityRunner({
     maplibregl: window.maplibregl,
     container: "map"
@@ -81,7 +92,7 @@ async function init() {
   runner.onTargetClick(handleTargetClick);
 
   await runner.load({
-    activity: activityData,
+    activity: session.activity,
     worldCountries,
     usStatesAtlas,
     stateTargets
@@ -89,7 +100,9 @@ async function init() {
 
   renderAnswerBank();
   updateProgress();
+  updateStudyModeButtons();
   bindUiEvents();
+  bindZoomControls();
 }
 
 function normalizeMapLibrePocActivity(rawActivity) {
@@ -160,13 +173,47 @@ function bindUiEvents() {
   regionButtons.forEach((button) => {
     button.addEventListener("click", () => {
       if (button.dataset.region === "united-states") {
+        selectedActivityId = button.dataset.activityId || defaultActivityId;
+        session.setActivity(getSelectedActivity());
+        runner.updateActivity(session.activity);
+        renderAnswerBank();
+        updateProgress();
+        clearFeedback();
         enterUnitedStatesStudy();
       }
     });
   });
 
+  studyModeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      session.setStudyMode(button.dataset.studyMode);
+      runner.updateActivity(session.activity);
+      renderAnswerBank();
+      updateProgress();
+      updateStudyModeButtons();
+      updateStudyCardDetails();
+      clearFeedback();
+    });
+  });
+
   worldViewButton.addEventListener("click", returnToWorldView);
   resetButton.addEventListener("click", resetActivity);
+}
+
+function bindZoomControls() {
+  if (!zoomSlider || !fitMapButton) {
+    return;
+  }
+
+  zoomSlider.addEventListener("input", () => {
+    runner.setZoom(Number(zoomSlider.value));
+  });
+  fitMapButton.addEventListener("click", () => {
+    runner.fitCurrentView();
+  });
+  runner.onZoomChange((zoom) => {
+    zoomSlider.value = String(Math.max(Number(zoomSlider.min), Math.min(Number(zoomSlider.max), zoom)));
+  });
 }
 
 function renderAnswerBank() {
@@ -190,8 +237,9 @@ function renderAnswerBank() {
 function enterUnitedStatesStudy() {
   document.body.classList.remove("overview-mode");
   document.body.classList.add("study-mode");
-  title.textContent = activityData.title;
+  title.textContent = session.currentActivity.title;
   instruction.textContent = "Select a state or capital label, then click its target on the map.";
+  updateStudyCardDetails();
   studyCard.hidden = false;
   runner.enterStudyView();
 }
@@ -230,8 +278,7 @@ function handleTargetClick(targetId) {
 
 function resetActivity() {
   session.reset();
-  feedback.textContent = "";
-  feedback.classList.remove("success");
+  clearFeedback();
   runner.setCompletedTargets(session.completedIds);
   renderAnswerBank();
   updateProgress();
@@ -254,6 +301,25 @@ function updateProgress() {
   progress.textContent = session.progressText;
 }
 
+function updateStudyModeButtons() {
+  studyModeButtons.forEach((button) => {
+    const isActive = button.dataset.studyMode === session.studyMode;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
+function updateStudyCardDetails() {
+  studyCard.querySelector("strong").textContent = session.currentActivity.title;
+  studyCard.querySelector("span").textContent = session.studyMode === studyModes.cumulative
+    ? "Cumulative review"
+    : "Current section only";
+}
+
+function getSelectedActivity() {
+  return activities.find((activity) => activity.id === selectedActivityId) || activities[0];
+}
+
 function showFeedback(message, isSuccess = false) {
   clearTimeout(feedbackTimer);
   feedback.textContent = message;
@@ -263,6 +329,12 @@ function showFeedback(message, isSuccess = false) {
     feedback.textContent = "";
     feedback.classList.remove("success");
   }, 1400);
+}
+
+function clearFeedback() {
+  clearTimeout(feedbackTimer);
+  feedback.textContent = "";
+  feedback.classList.remove("success");
 }
 
 init().catch((error) => {

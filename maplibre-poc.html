@@ -24,6 +24,10 @@
     <main class="poc-main">
       <section class="map-shell" aria-label="Interactive MapLibre map">
         <div id="map"></div>
+        <div class="zoom-panel" aria-label="Map zoom controls">
+          <button id="fit-map-button" type="button" title="Fit map">Fit</button>
+          <input id="zoom-slider" type="range" min="1" max="10" step="0.1" value="1.25" aria-label="Map zoom" />
+        </div>
         <div class="map-overlay-card" id="study-card" hidden>
           <strong>States and Capitals 2</strong>
           <span>Cumulative Northeast proof sheet</span>
@@ -39,6 +43,10 @@
           <button type="button" data-region="united-states">
             <strong>United States</strong>
             <span>States and Capitals 2</span>
+          </button>
+          <button type="button" data-region="united-states" data-activity-id="us-states-capitals-01">
+            <strong>States and Capitals 1</strong>
+            <span>First Northeast section</span>
           </button>
           <button type="button" disabled>
             <strong>Western Europe</strong>
@@ -57,6 +65,10 @@
         <div>
           <h2>Answer Bank</h2>
           <p id="feedback" class="feedback" aria-live="polite"></p>
+        </div>
+        <div class="study-mode-toggle" role="group" aria-label="Study mode">
+          <button class="active" type="button" data-study-mode="cumulative">Cumulative Review</button>
+          <button type="button" data-study-mode="sectionOnly">Section Only</button>
         </div>
         <div class="progress-actions">
           <strong id="progress">0 of 20 completed</strong>
