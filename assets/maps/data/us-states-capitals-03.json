@@ -1,0 +1,29 @@
+{
+  "id": "us-states-capitals-03",
+  "title": "States and Capitals 3",
+  "baseMap": "usa-map",
+  "baseMapPath": "assets/maps/usa/usa-map.svg",
+  "projection": {
+    "type": "albers-usa-d3",
+    "scale": 1300,
+    "translateX": 487.5,
+    "translateY": 305
+  },
+  "cumulativeGroup": "us-states-capitals",
+  "sequence": 3,
+  "targetNoun": "state, capital, or location",
+  "visibleAnswerLimit": 10,
+  "features": [
+    { "id": "maryland", "name": "Maryland", "type": "state", "state": "MD", "shape": "path", "mapShapeId": "maryland", "color": "#ef4444", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "virginia", "name": "Virginia", "type": "state", "state": "VA", "shape": "path", "mapShapeId": "virginia", "color": "#f97316", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "west-virginia", "name": "West Virginia", "type": "state", "state": "WV", "shape": "path", "mapShapeId": "west-virginia", "color": "#eab308", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "north-carolina", "name": "North Carolina", "type": "state", "state": "NC", "shape": "path", "mapShapeId": "north-carolina", "color": "#22c55e", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "south-carolina", "name": "South Carolina", "type": "state", "state": "SC", "shape": "path", "mapShapeId": "south-carolina", "color": "#06b6d4", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "annapolis-md", "name": "Annapolis, MD", "city": "Annapolis", "state": "MD", "type": "capital", "shape": "circle", "lon": -76.4922, "lat": 38.9784, "hitRadius": 14, "color": "#ef4444", "labelOffset": { "x": -34, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "richmond-va", "name": "Richmond, VA", "city": "Richmond", "state": "VA", "type": "capital", "shape": "circle", "lon": -77.436, "lat": 37.5407, "hitRadius": 14, "color": "#f97316", "labelOffset": { "x": -34, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "charleston-wv", "name": "Charleston, WV", "city": "Charleston", "state": "WV", "type": "capital", "shape": "circle", "lon": -81.6326, "lat": 38.3498, "hitRadius": 14, "color": "#eab308", "labelOffset": { "x": -38, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "raleigh-nc", "name": "Raleigh, NC", "city": "Raleigh", "state": "NC", "type": "capital", "shape": "circle", "lon": -78.6382, "lat": 35.7796, "hitRadius": 14, "color": "#22c55e", "labelOffset": { "x": -30, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "columbia-sc", "name": "Columbia, SC", "city": "Columbia", "state": "SC", "type": "capital", "shape": "circle", "lon": -81.0348, "lat": 34.0007, "hitRadius": 14, "color": "#06b6d4", "labelOffset": { "x": -34, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "washington-dc", "name": "Washington, DC", "city": "Washington", "state": "DC", "type": "location", "shape": "circle", "lon": -77.0369, "lat": 38.9072, "hitRadius": 14, "color": "#8b5cf6", "labelOffset": { "x": -42, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 }
+  ]
+}

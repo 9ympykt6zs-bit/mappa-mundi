@@ -1,0 +1,28 @@
+{
+  "id": "us-states-capitals-07",
+  "title": "States and Capitals 7",
+  "baseMap": "usa-map",
+  "baseMapPath": "assets/maps/usa/usa-map.svg",
+  "projection": {
+    "type": "albers-usa-d3",
+    "scale": 1300,
+    "translateX": 487.5,
+    "translateY": 305
+  },
+  "cumulativeGroup": "us-states-capitals",
+  "sequence": 7,
+  "targetNoun": "state or capital",
+  "visibleAnswerLimit": 10,
+  "features": [
+    { "id": "minnesota", "name": "Minnesota", "type": "state", "state": "MN", "shape": "path", "mapShapeId": "minnesota", "color": "#ef4444", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "north-dakota", "name": "North Dakota", "type": "state", "state": "ND", "shape": "path", "mapShapeId": "north-dakota", "color": "#f97316", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "south-dakota", "name": "South Dakota", "type": "state", "state": "SD", "shape": "path", "mapShapeId": "south-dakota", "color": "#eab308", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "wyoming", "name": "Wyoming", "type": "state", "state": "WY", "shape": "path", "mapShapeId": "wyoming", "color": "#22c55e", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "nebraska", "name": "Nebraska", "type": "state", "state": "NE", "shape": "path", "mapShapeId": "nebraska", "color": "#06b6d4", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "st-paul-mn", "name": "St. Paul, MN", "city": "St. Paul", "state": "MN", "type": "capital", "shape": "circle", "lon": -93.0956, "lat": 44.9537, "hitRadius": 14, "color": "#ef4444", "labelOffset": { "x": -34, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "bismarck-nd", "name": "Bismarck, ND", "city": "Bismarck", "state": "ND", "type": "capital", "shape": "circle", "lon": -100.7837, "lat": 46.8083, "hitRadius": 14, "color": "#f97316", "labelOffset": { "x": -36, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "pierre-sd", "name": "Pierre, SD", "city": "Pierre", "state": "SD", "type": "capital", "shape": "circle", "lon": -100.3509, "lat": 44.3683, "hitRadius": 14, "color": "#eab308", "labelOffset": { "x": -26, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "cheyenne-wy", "name": "Cheyenne, WY", "city": "Cheyenne", "state": "WY", "type": "capital", "shape": "circle", "lon": -104.8202, "lat": 41.14, "hitRadius": 14, "color": "#22c55e", "labelOffset": { "x": -36, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "lincoln-ne", "name": "Lincoln, NE", "city": "Lincoln", "state": "NE", "type": "capital", "shape": "circle", "lon": -96.6852, "lat": 40.8136, "hitRadius": 14, "color": "#06b6d4", "labelOffset": { "x": -30, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 }
+  ]
+}

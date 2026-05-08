@@ -4,12 +4,18 @@ import { MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js";
 
 const activityDataPaths = [
   "assets/maps/data/us-states-capitals-01.json",
-  "assets/maps/data/us-states-capitals-02.json"
+  "assets/maps/data/us-states-capitals-02.json",
+  "assets/maps/data/us-states-capitals-03.json",
+  "assets/maps/data/us-states-capitals-04.json",
+  "assets/maps/data/us-states-capitals-05.json",
+  "assets/maps/data/us-states-capitals-06.json",
+  "assets/maps/data/us-states-capitals-07.json",
+  "assets/maps/data/us-states-capitals-08.json"
 ];
 const worldCountriesPath = "assets/maps/data/maplibre-world-countries.geojson";
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
-const defaultActivityId = "us-states-capitals-02";
+const defaultActivityId = "us-states-capitals-08";
 
 const stateLabelAnchors = {
   maine: [-69.2, 45.25],
@@ -21,7 +27,37 @@ const stateLabelAnchors = {
   "new-york": [-75.4, 43],
   "new-jersey": [-74.65, 40.25],
   pennsylvania: [-77.8, 40.8],
-  delaware: [-75.5, 39.1]
+  delaware: [-75.5, 39.1],
+  maryland: [-76.7, 39],
+  virginia: [-78.5, 37.5],
+  "west-virginia": [-80.6, 38.6],
+  "north-carolina": [-79.4, 35.5],
+  "south-carolina": [-80.9, 33.8],
+  georgia: [-83.5, 32.7],
+  florida: [-82.5, 28.4],
+  alabama: [-86.8, 32.8],
+  mississippi: [-89.7, 32.7],
+  louisiana: [-91.9, 31],
+  michigan: [-85.5, 44.3],
+  ohio: [-82.8, 40.3],
+  indiana: [-86.2, 40],
+  kentucky: [-84.8, 37.8],
+  tennessee: [-86.4, 35.8],
+  wisconsin: [-89.8, 44.7],
+  illinois: [-89.3, 40],
+  iowa: [-93.5, 42.1],
+  missouri: [-92.5, 38.5],
+  arkansas: [-92.4, 34.8],
+  minnesota: [-94.3, 46.3],
+  "north-dakota": [-100.5, 47.5],
+  "south-dakota": [-100.2, 44.5],
+  wyoming: [-107.5, 43],
+  nebraska: [-99.8, 41.5],
+  kansas: [-98.3, 38.5],
+  oklahoma: [-97.5, 35.5],
+  texas: [-99.3, 31],
+  colorado: [-105.5, 39],
+  "new-mexico": [-106, 34.5]
 };
 
 const usOverviewRegion = {
@@ -116,7 +152,7 @@ function normalizeMapLibrePocActivity(rawActivity) {
       initialView: { center: [-18, 18], zoom: 1.25 },
       regionView: { center: [-98, 39], zoom: 3.1 },
       studyView: {
-        bounds: [[-80.8, 38.6], [-66.75, 47.55]],
+        bounds: [[-108.5, 25.1], [-66.75, 49.2]],
         padding: { top: 55, right: 46, bottom: 78, left: 46 },
         duration: 1200
       }

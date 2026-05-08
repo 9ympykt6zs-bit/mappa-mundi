@@ -1,0 +1,28 @@
+{
+  "id": "us-states-capitals-05",
+  "title": "States and Capitals 5",
+  "baseMap": "usa-map",
+  "baseMapPath": "assets/maps/usa/usa-map.svg",
+  "projection": {
+    "type": "albers-usa-d3",
+    "scale": 1300,
+    "translateX": 487.5,
+    "translateY": 305
+  },
+  "cumulativeGroup": "us-states-capitals",
+  "sequence": 5,
+  "targetNoun": "state or capital",
+  "visibleAnswerLimit": 10,
+  "features": [
+    { "id": "michigan", "name": "Michigan", "type": "state", "state": "MI", "shape": "path", "mapShapeId": "michigan", "color": "#ef4444", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "ohio", "name": "Ohio", "type": "state", "state": "OH", "shape": "path", "mapShapeId": "ohio", "color": "#f97316", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "indiana", "name": "Indiana", "type": "state", "state": "IN", "shape": "path", "mapShapeId": "indiana", "color": "#eab308", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "kentucky", "name": "Kentucky", "type": "state", "state": "KY", "shape": "path", "mapShapeId": "kentucky", "color": "#22c55e", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "tennessee", "name": "Tennessee", "type": "state", "state": "TN", "shape": "path", "mapShapeId": "tennessee", "color": "#06b6d4", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "lansing-mi", "name": "Lansing, MI", "city": "Lansing", "state": "MI", "type": "capital", "shape": "circle", "lon": -84.5555, "lat": 42.7325, "hitRadius": 14, "color": "#ef4444", "labelOffset": { "x": -30, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "columbus-oh", "name": "Columbus, OH", "city": "Columbus", "state": "OH", "type": "capital", "shape": "circle", "lon": -82.9988, "lat": 39.9612, "hitRadius": 14, "color": "#f97316", "labelOffset": { "x": -36, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "indianapolis-in", "name": "Indianapolis, IN", "city": "Indianapolis", "state": "IN", "type": "capital", "shape": "circle", "lon": -86.1581, "lat": 39.7684, "hitRadius": 14, "color": "#eab308", "labelOffset": { "x": -44, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "frankfort-ky", "name": "Frankfort, KY", "city": "Frankfort", "state": "KY", "type": "capital", "shape": "circle", "lon": -84.8733, "lat": 38.2009, "hitRadius": 14, "color": "#22c55e", "labelOffset": { "x": -34, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "nashville-tn", "name": "Nashville, TN", "city": "Nashville", "state": "TN", "type": "capital", "shape": "circle", "lon": -86.7816, "lat": 36.1627, "hitRadius": 14, "color": "#06b6d4", "labelOffset": { "x": -34, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 }
+  ]
+}

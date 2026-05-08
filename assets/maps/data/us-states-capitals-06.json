@@ -1,0 +1,28 @@
+{
+  "id": "us-states-capitals-06",
+  "title": "States and Capitals 6",
+  "baseMap": "usa-map",
+  "baseMapPath": "assets/maps/usa/usa-map.svg",
+  "projection": {
+    "type": "albers-usa-d3",
+    "scale": 1300,
+    "translateX": 487.5,
+    "translateY": 305
+  },
+  "cumulativeGroup": "us-states-capitals",
+  "sequence": 6,
+  "targetNoun": "state or capital",
+  "visibleAnswerLimit": 10,
+  "features": [
+    { "id": "wisconsin", "name": "Wisconsin", "type": "state", "state": "WI", "shape": "path", "mapShapeId": "wisconsin", "color": "#ef4444", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "illinois", "name": "Illinois", "type": "state", "state": "IL", "shape": "path", "mapShapeId": "illinois", "color": "#f97316", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "iowa", "name": "Iowa", "type": "state", "state": "IA", "shape": "path", "mapShapeId": "iowa", "color": "#eab308", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "missouri", "name": "Missouri", "type": "state", "state": "MO", "shape": "path", "mapShapeId": "missouri", "color": "#22c55e", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "arkansas", "name": "Arkansas", "type": "state", "state": "AR", "shape": "path", "mapShapeId": "arkansas", "color": "#06b6d4", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "madison-wi", "name": "Madison, WI", "city": "Madison", "state": "WI", "type": "capital", "shape": "circle", "lon": -89.4012, "lat": 43.0731, "hitRadius": 14, "color": "#ef4444", "labelOffset": { "x": -30, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "springfield-il", "name": "Springfield, IL", "city": "Springfield", "state": "IL", "type": "capital", "shape": "circle", "lon": -89.6501, "lat": 39.7817, "hitRadius": 14, "color": "#f97316", "labelOffset": { "x": -40, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "des-moines-ia", "name": "Des Moines, IA", "city": "Des Moines", "state": "IA", "type": "capital", "shape": "circle", "lon": -93.6091, "lat": 41.5868, "hitRadius": 14, "color": "#eab308", "labelOffset": { "x": -40, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "jefferson-city-mo", "name": "Jefferson City, MO", "city": "Jefferson City", "state": "MO", "type": "capital", "shape": "circle", "lon": -92.1735, "lat": 38.5767, "hitRadius": 14, "color": "#22c55e", "labelOffset": { "x": -48, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "little-rock-ar", "name": "Little Rock, AR", "city": "Little Rock", "state": "AR", "type": "capital", "shape": "circle", "lon": -92.2896, "lat": 34.7465, "hitRadius": 14, "color": "#06b6d4", "labelOffset": { "x": -40, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 }
+  ]
+}

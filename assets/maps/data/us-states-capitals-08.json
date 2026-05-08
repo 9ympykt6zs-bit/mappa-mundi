@@ -1,0 +1,28 @@
+{
+  "id": "us-states-capitals-08",
+  "title": "States and Capitals 8",
+  "baseMap": "usa-map",
+  "baseMapPath": "assets/maps/usa/usa-map.svg",
+  "projection": {
+    "type": "albers-usa-d3",
+    "scale": 1300,
+    "translateX": 487.5,
+    "translateY": 305
+  },
+  "cumulativeGroup": "us-states-capitals",
+  "sequence": 8,
+  "targetNoun": "state or capital",
+  "visibleAnswerLimit": 10,
+  "features": [
+    { "id": "kansas", "name": "Kansas", "type": "state", "state": "KS", "shape": "path", "mapShapeId": "kansas", "color": "#ef4444", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "oklahoma", "name": "Oklahoma", "type": "state", "state": "OK", "shape": "path", "mapShapeId": "oklahoma", "color": "#f97316", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "texas", "name": "Texas", "type": "state", "state": "TX", "shape": "path", "mapShapeId": "texas", "color": "#eab308", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "colorado", "name": "Colorado", "type": "state", "state": "CO", "shape": "path", "mapShapeId": "colorado", "color": "#22c55e", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "new-mexico", "name": "New Mexico", "type": "state", "state": "NM", "shape": "path", "mapShapeId": "new-mexico", "color": "#06b6d4", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "topeka-ks", "name": "Topeka, KS", "city": "Topeka", "state": "KS", "type": "capital", "shape": "circle", "lon": -95.689, "lat": 39.0473, "hitRadius": 14, "color": "#ef4444", "labelOffset": { "x": -28, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "oklahoma-city-ok", "name": "Oklahoma City, OK", "city": "Oklahoma City", "state": "OK", "type": "capital", "shape": "circle", "lon": -97.5164, "lat": 35.4676, "hitRadius": 14, "color": "#f97316", "labelOffset": { "x": -52, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "austin-tx", "name": "Austin, TX", "city": "Austin", "state": "TX", "type": "capital", "shape": "circle", "lon": -97.7431, "lat": 30.2672, "hitRadius": 14, "color": "#eab308", "labelOffset": { "x": -28, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "denver-co", "name": "Denver, CO", "city": "Denver", "state": "CO", "type": "capital", "shape": "circle", "lon": -104.9903, "lat": 39.7392, "hitRadius": 14, "color": "#22c55e", "labelOffset": { "x": -28, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "santa-fe-nm", "name": "Santa Fe, NM", "city": "Santa Fe", "state": "NM", "type": "capital", "shape": "circle", "lon": -105.9378, "lat": 35.687, "hitRadius": 14, "color": "#06b6d4", "labelOffset": { "x": -34, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 }
+  ]
+}

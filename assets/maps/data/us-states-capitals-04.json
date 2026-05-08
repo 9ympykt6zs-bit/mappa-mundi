@@ -1,0 +1,28 @@
+{
+  "id": "us-states-capitals-04",
+  "title": "States and Capitals 4",
+  "baseMap": "usa-map",
+  "baseMapPath": "assets/maps/usa/usa-map.svg",
+  "projection": {
+    "type": "albers-usa-d3",
+    "scale": 1300,
+    "translateX": 487.5,
+    "translateY": 305
+  },
+  "cumulativeGroup": "us-states-capitals",
+  "sequence": 4,
+  "targetNoun": "state or capital",
+  "visibleAnswerLimit": 10,
+  "features": [
+    { "id": "georgia", "name": "Georgia", "type": "state", "state": "GA", "shape": "path", "mapShapeId": "georgia", "color": "#ef4444", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "florida", "name": "Florida", "type": "state", "state": "FL", "shape": "path", "mapShapeId": "florida", "color": "#f97316", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "alabama", "name": "Alabama", "type": "state", "state": "AL", "shape": "path", "mapShapeId": "alabama", "color": "#eab308", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "mississippi", "name": "Mississippi", "type": "state", "state": "MS", "shape": "path", "mapShapeId": "mississippi", "color": "#22c55e", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "louisiana", "name": "Louisiana", "type": "state", "state": "LA", "shape": "path", "mapShapeId": "louisiana", "color": "#06b6d4", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "atlanta-ga", "name": "Atlanta, GA", "city": "Atlanta", "state": "GA", "type": "capital", "shape": "circle", "lon": -84.388, "lat": 33.749, "hitRadius": 14, "color": "#ef4444", "labelOffset": { "x": -28, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "tallahassee-fl", "name": "Tallahassee, FL", "city": "Tallahassee", "state": "FL", "type": "capital", "shape": "circle", "lon": -84.2807, "lat": 30.4383, "hitRadius": 14, "color": "#f97316", "labelOffset": { "x": -42, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "montgomery-al", "name": "Montgomery, AL", "city": "Montgomery", "state": "AL", "type": "capital", "shape": "circle", "lon": -86.3, "lat": 32.3792, "hitRadius": 14, "color": "#eab308", "labelOffset": { "x": -42, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "jackson-ms", "name": "Jackson, MS", "city": "Jackson", "state": "MS", "type": "capital", "shape": "circle", "lon": -90.1848, "lat": 32.2988, "hitRadius": 14, "color": "#22c55e", "labelOffset": { "x": -32, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "baton-rouge-la", "name": "Baton Rouge, LA", "city": "Baton Rouge", "state": "LA", "type": "capital", "shape": "circle", "lon": -91.1871, "lat": 30.4515, "hitRadius": 14, "color": "#06b6d4", "labelOffset": { "x": -42, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 }
+  ]
+}
