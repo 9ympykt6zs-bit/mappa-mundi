@@ -151,11 +151,17 @@ export class ActivitySession {
       return this.dedupeTargets(this.currentActivity.targets);
     }
 
-    const sequence = this.currentActivity.sequence ?? Number.MAX_SAFE_INTEGER;
+    const sequence = Number(this.currentActivity.sequence);
+
+    if (!Number.isFinite(sequence)) {
+      return this.dedupeTargets(this.currentActivity.targets);
+    }
+
     const cumulativeTargets = this.activityCatalog
       .filter((activity) => activity.cumulativeGroup === this.currentActivity.cumulativeGroup)
-      .filter((activity) => (activity.sequence ?? Number.MAX_SAFE_INTEGER) <= sequence)
-      .sort((first, second) => (first.sequence ?? 0) - (second.sequence ?? 0))
+      .filter((activity) => Number.isFinite(Number(activity.sequence)))
+      .filter((activity) => Number(activity.sequence) <= sequence)
+      .sort((first, second) => Number(first.sequence) - Number(second.sequence))
       .flatMap((activity) => activity.targets);
 
     return this.dedupeTargets(cumulativeTargets);
