@@ -1,0 +1,28 @@
+{
+  "id": "us-states-capitals-10",
+  "title": "States and Capitals 10",
+  "baseMap": "usa-map",
+  "baseMapPath": "assets/maps/usa/usa-map.svg",
+  "projection": {
+    "type": "albers-usa-d3",
+    "scale": 1300,
+    "translateX": 487.5,
+    "translateY": 305
+  },
+  "cumulativeGroup": "us-states-capitals",
+  "sequence": 10,
+  "targetNoun": "state or capital",
+  "visibleAnswerLimit": 10,
+  "features": [
+    { "id": "montana", "name": "Montana", "type": "state", "state": "MT", "shape": "path", "mapShapeId": "montana", "color": "#ef4444", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "idaho", "name": "Idaho", "type": "state", "state": "ID", "shape": "path", "mapShapeId": "idaho", "color": "#f97316", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "washington", "name": "Washington", "type": "state", "state": "WA", "shape": "path", "mapShapeId": "washington", "color": "#eab308", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "oregon", "name": "Oregon", "type": "state", "state": "OR", "shape": "path", "mapShapeId": "oregon", "color": "#22c55e", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "alaska", "name": "Alaska", "type": "state", "state": "AK", "shape": "path", "mapShapeId": "alaska", "color": "#06b6d4", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "helena-mt", "name": "Helena, MT", "city": "Helena", "state": "MT", "type": "capital", "shape": "circle", "lon": -112.0391, "lat": 46.5891, "hitRadius": 14, "color": "#ef4444", "labelOffset": { "x": -30, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "boise-id", "name": "Boise, ID", "city": "Boise", "state": "ID", "type": "capital", "shape": "circle", "lon": -116.2023, "lat": 43.615, "hitRadius": 14, "color": "#f97316", "labelOffset": { "x": -26, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "olympia-wa", "name": "Olympia, WA", "city": "Olympia", "state": "WA", "type": "capital", "shape": "circle", "lon": -122.9007, "lat": 47.0379, "hitRadius": 14, "color": "#eab308", "labelOffset": { "x": -34, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "salem-or", "name": "Salem, OR", "city": "Salem", "state": "OR", "type": "capital", "shape": "circle", "lon": -123.0351, "lat": 44.9429, "hitRadius": 14, "color": "#22c55e", "labelOffset": { "x": -28, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "juneau-ak", "name": "Juneau, AK", "city": "Juneau", "state": "AK", "type": "capital", "shape": "circle", "lon": -134.4197, "lat": 58.3019, "hitRadius": 14, "color": "#06b6d4", "labelOffset": { "x": -30, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 }
+  ]
+}

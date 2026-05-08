@@ -10,12 +10,14 @@ const activityDataPaths = [
   "assets/maps/data/us-states-capitals-05.json",
   "assets/maps/data/us-states-capitals-06.json",
   "assets/maps/data/us-states-capitals-07.json",
-  "assets/maps/data/us-states-capitals-08.json"
+  "assets/maps/data/us-states-capitals-08.json",
+  "assets/maps/data/us-states-capitals-09.json",
+  "assets/maps/data/us-states-capitals-10.json"
 ];
 const worldCountriesPath = "assets/maps/data/maplibre-world-countries.geojson";
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
-const defaultActivityId = "us-states-capitals-08";
+const defaultActivityId = "us-states-capitals-10";
 
 const stateLabelAnchors = {
   maine: [-69.2, 45.25],
@@ -57,7 +59,17 @@ const stateLabelAnchors = {
   oklahoma: [-97.5, 35.5],
   texas: [-99.3, 31],
   colorado: [-105.5, 39],
-  "new-mexico": [-106, 34.5]
+  "new-mexico": [-106, 34.5],
+  utah: [-111.5, 39.3],
+  arizona: [-111.8, 34.2],
+  nevada: [-117, 39],
+  california: [-119.5, 37],
+  hawaii: [-157.5, 20.8],
+  montana: [-110.5, 47],
+  idaho: [-114.3, 44.2],
+  washington: [-120.5, 47.4],
+  oregon: [-120.5, 44],
+  alaska: [-150, 64]
 };
 
 const usOverviewRegion = {
@@ -142,6 +154,8 @@ async function init() {
 }
 
 function normalizeMapLibrePocActivity(rawActivity) {
+  const isFullUsActivity = Number(rawActivity.sequence) >= 9;
+
   return normalizeActivity(rawActivity, {
     schemaVersion: 2,
     engine: "maplibre",
@@ -152,7 +166,9 @@ function normalizeMapLibrePocActivity(rawActivity) {
       initialView: { center: [-18, 18], zoom: 1.25 },
       regionView: { center: [-98, 39], zoom: 3.1 },
       studyView: {
-        bounds: [[-108.5, 25.1], [-66.75, 49.2]],
+        bounds: isFullUsActivity
+          ? [[-170, 18], [-66.75, 72]]
+          : [[-108.5, 25.1], [-66.75, 49.2]],
         padding: { top: 55, right: 46, bottom: 78, left: 46 },
         duration: 1200
       }
