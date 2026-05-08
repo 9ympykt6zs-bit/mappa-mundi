@@ -1,0 +1,36 @@
+{
+  "id": "us-states-capitals-02",
+  "title": "States and Capitals 2",
+  "baseMap": "usa-map",
+  "baseMapPath": "assets/maps/usa/usa-map.svg",
+  "projection": {
+    "type": "albers-usa-d3",
+    "scale": 1300,
+    "translateX": 487.5,
+    "translateY": 305
+  },
+  "targetNoun": "state or capital",
+  "visibleAnswerLimit": 10,
+  "features": [
+    { "id": "maine", "name": "Maine", "type": "state", "state": "ME", "shape": "path", "mapShapeId": "maine", "color": "#4f83cc", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "new-hampshire", "name": "New Hampshire", "type": "state", "state": "NH", "shape": "path", "mapShapeId": "new-hampshire", "color": "#d65a8c", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "massachusetts", "name": "Massachusetts", "type": "state", "state": "MA", "shape": "path", "mapShapeId": "massachusetts", "color": "#d9b48f", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "rhode-island", "name": "Rhode Island", "type": "state", "state": "RI", "shape": "path", "mapShapeId": "rhode-island", "color": "#7aa35a", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "connecticut", "name": "Connecticut", "type": "state", "state": "CT", "shape": "path", "mapShapeId": "connecticut", "color": "#7a5aa6", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "vermont", "name": "Vermont", "type": "state", "state": "VT", "shape": "path", "mapShapeId": "vermont", "color": "#22c55e", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "new-york", "name": "New York", "type": "state", "state": "NY", "shape": "path", "mapShapeId": "new-york", "color": "#3b82f6", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "new-jersey", "name": "New Jersey", "type": "state", "state": "NJ", "shape": "path", "mapShapeId": "new-jersey", "color": "#f97316", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "pennsylvania", "name": "Pennsylvania", "type": "state", "state": "PA", "shape": "path", "mapShapeId": "pennsylvania", "color": "#a855f7", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "delaware", "name": "Delaware", "type": "state", "state": "DE", "shape": "path", "mapShapeId": "delaware", "color": "#06b6d4", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "augusta-me", "name": "Augusta, ME", "city": "Augusta", "state": "ME", "type": "capital", "shape": "circle", "lon": -69.7795, "lat": 44.3106, "hitRadius": 14, "color": "#4f83cc", "labelOffset": { "x": -24, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "concord-nh", "name": "Concord, NH", "city": "Concord", "state": "NH", "type": "capital", "shape": "circle", "lon": -71.5376, "lat": 43.2081, "hitRadius": 14, "color": "#d65a8c", "labelOffset": { "x": -28, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "boston-ma", "name": "Boston, MA", "city": "Boston", "state": "MA", "type": "capital", "shape": "circle", "lon": -71.0589, "lat": 42.3601, "hitRadius": 14, "color": "#d9b48f", "labelOffset": { "x": -24, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "providence-ri", "name": "Providence, RI", "city": "Providence", "state": "RI", "type": "capital", "shape": "circle", "lon": -71.4128, "lat": 41.824, "hitRadius": 14, "color": "#7aa35a", "labelOffset": { "x": -36, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "hartford-ct", "name": "Hartford, CT", "city": "Hartford", "state": "CT", "type": "capital", "shape": "circle", "lon": -72.6851, "lat": 41.7658, "hitRadius": 14, "color": "#7a5aa6", "labelOffset": { "x": -28, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "montpelier-vt", "name": "Montpelier, VT", "city": "Montpelier", "state": "VT", "type": "capital", "shape": "circle", "lon": -72.5754, "lat": 44.2601, "hitRadius": 14, "color": "#22c55e", "labelOffset": { "x": -34, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "albany-ny", "name": "Albany, NY", "city": "Albany", "state": "NY", "type": "capital", "shape": "circle", "lon": -73.7562, "lat": 42.6526, "hitRadius": 14, "color": "#3b82f6", "labelOffset": { "x": -26, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "trenton-nj", "name": "Trenton, NJ", "city": "Trenton", "state": "NJ", "type": "capital", "shape": "circle", "lon": -74.7429, "lat": 40.2171, "hitRadius": 14, "color": "#f97316", "labelOffset": { "x": -28, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "harrisburg-pa", "name": "Harrisburg, PA", "city": "Harrisburg", "state": "PA", "type": "capital", "shape": "circle", "lon": -76.8867, "lat": 40.2732, "hitRadius": 14, "color": "#a855f7", "labelOffset": { "x": -36, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "dover-de", "name": "Dover, DE", "city": "Dover", "state": "DE", "type": "capital", "shape": "circle", "lon": -75.5244, "lat": 39.1582, "hitRadius": 14, "color": "#06b6d4", "labelOffset": { "x": -24, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 }
+  ]
+}

@@ -292,6 +292,8 @@ export class MapLibreActivityRunner {
   }
 
   addStudyLayers() {
+    const shapeTargetIds = this.shapeTargets.map((target) => target.sourceFeatureId || target.id);
+
     this.map.addSource("study-states", {
       type: "geojson",
       data: this.stateTargets,
@@ -316,6 +318,7 @@ export class MapLibreActivityRunner {
       layout: {
         visibility: "none"
       },
+      filter: ["in", ["get", "id"], ["literal", shapeTargetIds]],
       paint: {
         "fill-color": this.getStateFillExpression(),
         "fill-opacity": 0.92
@@ -329,6 +332,7 @@ export class MapLibreActivityRunner {
       layout: {
         visibility: "none"
       },
+      filter: ["in", ["get", "id"], ["literal", shapeTargetIds]],
       paint: {
         "line-color": colors.targetStroke,
         "line-width": 2.15

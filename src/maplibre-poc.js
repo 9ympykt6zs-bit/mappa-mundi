@@ -2,17 +2,22 @@ import { normalizeActivity } from "./map-engines/activity-normalizer.js";
 import { ActivitySession } from "./maplibre/activity-session.js";
 import { MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js";
 
-const activityDataPath = "assets/maps/data/us-states-capitals-01.json";
+const activityDataPath = "assets/maps/data/us-states-capitals-02.json";
 const worldCountriesPath = "assets/maps/data/maplibre-world-countries.geojson";
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
-const stateGeoJsonPath = "assets/maps/data/maplibre-us-new-england-states.geojson";
+const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 
 const stateLabelAnchors = {
   maine: [-69.2, 45.25],
   "new-hampshire": [-71.58, 43.75],
   massachusetts: [-71.85, 42.25],
   "rhode-island": [-71.55, 41.62],
-  connecticut: [-72.72, 41.58]
+  connecticut: [-72.72, 41.58],
+  vermont: [-72.7, 44.05],
+  "new-york": [-75.4, 43],
+  "new-jersey": [-74.65, 40.25],
+  pennsylvania: [-77.8, 40.8],
+  delaware: [-75.5, 39.1]
 };
 
 const usOverviewRegion = {
@@ -98,7 +103,7 @@ function normalizeMapLibrePocActivity(rawActivity) {
       initialView: { center: [-18, 18], zoom: 1.25 },
       regionView: { center: [-98, 39], zoom: 3.1 },
       studyView: {
-        bounds: [[-74.35, 40.85], [-66.75, 47.55]],
+        bounds: [[-80.8, 38.6], [-66.75, 47.55]],
         padding: { top: 55, right: 46, bottom: 78, left: 46 },
         duration: 1200
       }
@@ -217,7 +222,7 @@ function handleTargetClick(targetId) {
 
   if (result.status === "correct") {
     runner.setCompletedTargets(session.completedIds);
-    syncAnswerBank();
+    renderAnswerBank();
     updateProgress();
     showFeedback(`Correct: ${result.feature.name}`, true);
   }
@@ -228,7 +233,7 @@ function resetActivity() {
   feedback.textContent = "";
   feedback.classList.remove("success");
   runner.setCompletedTargets(session.completedIds);
-  syncAnswerBank();
+  renderAnswerBank();
   updateProgress();
 }
 

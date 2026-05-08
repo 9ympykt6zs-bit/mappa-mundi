@@ -3,10 +3,20 @@ export class ActivitySession {
     this.activity = activity;
     this.completed = new Set();
     this.selectedAnswerId = null;
+    this.visibleAnswerIds = [];
+    this.refillVisibleAnswers();
   }
 
   get answerItems() {
-    return this.activity.answerBankItems || this.activity.targets;
+    const answerItems = this.activity.answerBankItems || this.activity.targets;
+
+    if (!this.hasRollingAnswerBank()) {
+      return answerItems;
+    }
+
+    return this.visibleAnswerIds
+      .map((id) => answerItems.find((item) => item.id === id))
+      .filter(Boolean);
   }
 
   get completedIds() {
@@ -27,6 +37,12 @@ export class ActivitySession {
 
   isCompleted(id) {
     return this.completed.has(id);
+  }
+
+  hasRollingAnswerBank() {
+    return Number.isFinite(this.activity.visibleAnswerLimit)
+      && this.activity.visibleAnswerLimit > 0
+      && this.activity.visibleAnswerLimit < this.activity.targets.length;
   }
 
   toggleAnswer(id) {
@@ -75,6 +91,7 @@ export class ActivitySession {
     const feature = this.getFeature(completedId);
     this.completed.add(completedId);
     this.selectedAnswerId = null;
+    this.refillVisibleAnswers();
 
     return {
       status: "correct",
@@ -88,10 +105,43 @@ export class ActivitySession {
   reset() {
     this.completed.clear();
     this.selectedAnswerId = null;
+    this.visibleAnswerIds = [];
+    this.refillVisibleAnswers();
 
     return {
       completedIds: this.completedIds,
       progressText: this.progressText
     };
+  }
+
+  refillVisibleAnswers() {
+    if (!this.hasRollingAnswerBank()) {
+      this.visibleAnswerIds = [];
+      return;
+    }
+
+    this.visibleAnswerIds = this.visibleAnswerIds.filter((id) => !this.completed.has(id));
+
+    while (this.visibleAnswerIds.length < this.activity.visibleAnswerLimit) {
+      const nextId = this.getRandomHiddenUnfinishedId();
+
+      if (!nextId) {
+        break;
+      }
+
+      this.visibleAnswerIds.push(nextId);
+    }
+  }
+
+  getRandomHiddenUnfinishedId() {
+    const hiddenUnfinishedIds = this.activity.targets
+      .map((target) => target.id)
+      .filter((id) => !this.completed.has(id) && !this.visibleAnswerIds.includes(id));
+
+    if (hiddenUnfinishedIds.length === 0) {
+      return null;
+    }
+
+    return hiddenUnfinishedIds[Math.floor(Math.random() * hiddenUnfinishedIds.length)];
   }
 }
