@@ -1,17 +1,24 @@
 const activityDataPath = "assets/maps/data/us-states-capitals-01.json";
+const worldCountriesPath = "assets/maps/data/maplibre-world-countries.geojson";
+const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-new-england-states.geojson";
 
-// State polygons are lon/lat GeoJSON from U.S. Census TIGERweb's generalized
-// ACS2023 state layer. Census cartographic boundary data is public domain/CC0
-// in the data.gov metadata, and MapLibre handles projection and hit testing.
+// Atlas polygons use lon/lat GeoJSON so MapLibre owns projection and hit
+// testing. World countries are Natural Earth public domain data. U.S. state
+// polygons are from U.S. Census TIGERweb's generalized ACS2023 state layer;
+// Census cartographic boundary metadata on data.gov lists the data as CC0.
 const colors = {
   ink: "#172033",
-  ocean: "#dceef8",
-  land: "#f8fafc",
+  ocean: "#dceff8",
+  land: "#f8faf7",
+  countryBorder: "#8896a6",
+  stateContextFill: "#fbfcfd",
+  stateContextLine: "#a7b1bf",
   stateFill: "#ffffff",
   targetStroke: "#111827",
   neutralMarker: "#ffffff",
-  neutralMarkerStroke: "#172033"
+  neutralMarkerStroke: "#172033",
+  markerHalo: "#2563eb"
 };
 
 const usOverviewRegion = {
@@ -47,10 +54,13 @@ const stateLabelPositions = {
 
 let map;
 let activityData;
+let worldCountriesData;
+let usStatesAtlasData;
 let stateData;
 let currentView = "overview";
 let selectedAnswerId = null;
 let feedbackTimer;
+let pendingStudyTransition = false;
 const completed = new Set();
 
 const title = document.querySelector("#poc-title");
@@ -64,8 +74,10 @@ const studyCard = document.querySelector("#study-card");
 const regionButtons = document.querySelectorAll("[data-region]");
 
 async function init() {
-  [activityData, stateData] = await Promise.all([
+  [activityData, worldCountriesData, usStatesAtlasData, stateData] = await Promise.all([
     fetchJson(activityDataPath),
+    fetchJson(worldCountriesPath),
+    fetchJson(usStatesAtlasPath),
     fetchJson(stateGeoJsonPath)
   ]);
 
@@ -80,23 +92,18 @@ async function init() {
       version: 8,
       projection: { type: "globe" },
       glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
-      sources: {
-        osm: {
-          type: "raster",
-          tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-          tileSize: 256,
-          attribution: "&copy; OpenStreetMap contributors"
-        }
-      },
+      sources: {},
       layers: [
         {
-          id: "osm",
-          type: "raster",
-          source: "osm"
+          id: "water-background",
+          type: "background",
+          paint: {
+            "background-color": colors.ocean
+          }
         }
       ],
       sky: {
-        "atmosphere-blend": 0.45
+        "atmosphere-blend": 0.28
       }
     }
   });
@@ -105,6 +112,7 @@ async function init() {
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
 
   map.on("load", () => {
+    addAtlasBaseLayers();
     addOverviewLayers();
     addStudyLayers();
     renderAnswerBank();
@@ -121,6 +129,78 @@ async function init() {
 
   worldViewButton.addEventListener("click", returnToWorldView);
   resetButton.addEventListener("click", resetActivity);
+}
+
+function addAtlasBaseLayers() {
+  map.addSource("world-countries", {
+    type: "geojson",
+    data: worldCountriesData,
+    attribution: "Natural Earth public domain"
+  });
+
+  map.addSource("us-states-atlas", {
+    type: "geojson",
+    data: usStatesAtlasData,
+    attribution: "U.S. Census Bureau"
+  });
+
+  map.addLayer({
+    id: "world-land",
+    type: "fill",
+    source: "world-countries",
+    paint: {
+      "fill-color": colors.land,
+      "fill-opacity": 1
+    }
+  });
+
+  map.addLayer({
+    id: "country-borders",
+    type: "line",
+    source: "world-countries",
+    paint: {
+      "line-color": colors.countryBorder,
+      "line-width": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        0,
+        0.35,
+        4,
+        0.8,
+        7,
+        1.1
+      ],
+      "line-opacity": 0.78
+    }
+  });
+
+  map.addLayer({
+    id: "us-state-context-fill",
+    type: "fill",
+    source: "us-states-atlas",
+    layout: {
+      visibility: "none"
+    },
+    paint: {
+      "fill-color": colors.stateContextFill,
+      "fill-opacity": 0.86
+    }
+  });
+
+  map.addLayer({
+    id: "us-state-context-line",
+    type: "line",
+    source: "us-states-atlas",
+    layout: {
+      visibility: "none"
+    },
+    paint: {
+      "line-color": colors.stateContextLine,
+      "line-width": 1.1,
+      "line-opacity": 0.9
+    }
+  });
 }
 
 async function fetchJson(path) {
@@ -189,6 +269,7 @@ function addStudyLayers() {
   map.addSource("study-states", {
     type: "geojson",
     data: stateData,
+    attribution: "U.S. Census Bureau",
     promoteId: "id"
   });
 
@@ -211,7 +292,7 @@ function addStudyLayers() {
     },
     paint: {
       "fill-color": getStateFillExpression(),
-      "fill-opacity": 0.88
+      "fill-opacity": 0.92
     }
   });
 
@@ -224,7 +305,29 @@ function addStudyLayers() {
     },
     paint: {
       "line-color": colors.targetStroke,
-      "line-width": 1.7
+      "line-width": 2.15
+    }
+  });
+
+  map.addLayer({
+    id: "capital-marker-halo",
+    type: "circle",
+    source: "study-capitals",
+    layout: {
+      visibility: "none"
+    },
+    paint: {
+      "circle-radius": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        4,
+        8,
+        7,
+        10
+      ],
+      "circle-color": colors.markerHalo,
+      "circle-opacity": 0.14
     }
   });
 
@@ -239,8 +342,8 @@ function addStudyLayers() {
       "circle-radius": [
         "case",
         ["in", ["get", "id"], ["literal", Array.from(completed)]],
-        8,
-        7
+        7,
+        6
       ],
       "circle-color": getCapitalFillExpression(),
       "circle-stroke-color": colors.neutralMarkerStroke,
@@ -256,7 +359,11 @@ function addStudyLayers() {
       visibility: "none"
     },
     paint: {
-      "circle-radius": ["get", "hitRadius"],
+      "circle-radius": [
+        "max",
+        ["get", "hitRadius"],
+        16
+      ],
       "circle-color": "#ffffff",
       "circle-opacity": 0.01,
       "circle-stroke-opacity": 0
@@ -282,7 +389,7 @@ function addStudyLayers() {
     }
   });
 
-  ["state-fill", "capital-hit", "capital-marker"].forEach((layerId) => {
+  ["state-fill", "capital-hit", "capital-marker", "capital-marker-halo"].forEach((layerId) => {
     map.on("mouseenter", layerId, () => {
       if (currentView === "study") {
         map.getCanvas().style.cursor = "pointer";
@@ -392,7 +499,15 @@ function renderAnswerBank() {
 }
 
 function enterUnitedStatesStudy() {
-  if (!map.isStyleLoaded()) {
+  if (!map.isStyleLoaded() || !map.getLayer("state-fill")) {
+    if (!pendingStudyTransition) {
+      pendingStudyTransition = true;
+      map.once("idle", () => {
+        pendingStudyTransition = false;
+        enterUnitedStatesStudy();
+      });
+    }
+
     return;
   }
 
@@ -404,6 +519,7 @@ function enterUnitedStatesStudy() {
   studyCard.hidden = false;
 
   setOverviewVisibility("none");
+  setUnitedStatesContextVisibility("visible");
   setStudyVisibility("visible");
 
   map.flyTo({
@@ -437,6 +553,7 @@ function returnToWorldView() {
 
   clearSelectedChip();
   setOverviewVisibility("visible");
+  setUnitedStatesContextVisibility("none");
   setStudyVisibility("none");
 
   map.flyTo({
@@ -449,6 +566,14 @@ function returnToWorldView() {
   });
 }
 
+function setUnitedStatesContextVisibility(visibility) {
+  ["us-state-context-fill", "us-state-context-line"].forEach((layerId) => {
+    if (map.getLayer(layerId)) {
+      map.setLayoutProperty(layerId, "visibility", visibility);
+    }
+  });
+}
+
 function setOverviewVisibility(visibility) {
   ["overview-region-fill", "overview-region-line", "overview-region-label"].forEach((layerId) => {
     if (map.getLayer(layerId)) {
@@ -458,7 +583,7 @@ function setOverviewVisibility(visibility) {
 }
 
 function setStudyVisibility(visibility) {
-  ["state-fill", "state-line", "capital-marker", "capital-hit", "completed-label"].forEach((layerId) => {
+  ["state-fill", "state-line", "capital-marker-halo", "capital-marker", "capital-hit", "completed-label"].forEach((layerId) => {
     if (map.getLayer(layerId)) {
       map.setLayoutProperty(layerId, "visibility", visibility);
     }
@@ -567,8 +692,8 @@ function refreshStudyPaint() {
     map.setPaintProperty("capital-marker", "circle-radius", [
       "case",
       ["in", ["get", "id"], ["literal", Array.from(completed)]],
-      8,
-      7
+      7,
+      6
     ]);
   }
 
