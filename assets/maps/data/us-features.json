@@ -1,0 +1,14 @@
+{
+  "id": "us-features",
+  "title": "United States Features",
+  "baseMap": "usa-map",
+  "baseMapPath": "assets/maps/usa/usa-map.svg",
+  "projection": {
+    "type": "albers-usa-d3",
+    "scale": 1300,
+    "translateX": 487.5,
+    "translateY": 305
+  },
+  "hideAnswerBank": true,
+  "features": []
+}

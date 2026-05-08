@@ -1,0 +1,19 @@
+{
+  "id": "continents-oceans",
+  "title": "Continents and Oceans",
+  "features": [
+    { "id": "north-america", "name": "North America", "type": "region", "color": "#3b82f6" },
+    { "id": "south-america", "name": "South America", "type": "region", "color": "#ef4444" },
+    { "id": "europe", "name": "Europe", "type": "region", "color": "#a855f7" },
+    { "id": "africa", "name": "Africa", "type": "region", "color": "#f97316" },
+    { "id": "asia", "name": "Asia", "type": "region", "color": "#22c55e" },
+    { "id": "australia", "name": "Australia", "type": "region", "color": "#06b6d4" },
+    { "id": "antarctica", "name": "Antarctica", "type": "region", "color": "#64748b" },
+
+    { "id": "indian-ocean", "name": "Indian Ocean", "type": "zone", "color": "#bfdbfe" },
+    { "id": "arctic-ocean", "name": "Arctic Ocean", "type": "zone", "color": "#dbeafe" },
+    { "id": "atlantic-ocean", "name": "Atlantic Ocean", "type": "zone", "color": "#93c5fd" },
+    { "id": "pacific-ocean", "name": "Pacific Ocean", "type": "zone", "color": "#60a5fa" },
+    { "id": "southern-ocean", "name": "Southern Ocean", "type": "zone", "color": "#c7d2fe" }
+  ]
+}

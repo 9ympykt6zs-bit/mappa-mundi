@@ -1,0 +1,1188 @@
+{
+  "id": "us-capitals",
+  "title": "U.S. Capitals",
+  "baseMap": "usa-map",
+  "baseMapPath": "assets/maps/usa/usa-map.svg",
+  "projection": {
+    "type": "albers-usa-d3",
+    "scale": 1300,
+    "translateX": 487.5,
+    "translateY": 305
+  },
+  "targetNoun": "capital",
+  "hideAnswerBank": true,
+  "features": [
+    {
+      "id": "capital-montgomery",
+      "name": "Montgomery",
+      "state": "Alabama",
+      "type": "city",
+      "shape": "circle",
+      "lon": -86.3005639,
+      "lat": 32.3777298,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-juneau",
+      "name": "Juneau",
+      "state": "Alaska",
+      "type": "city",
+      "shape": "circle",
+      "lon": -134.4104388,
+      "lat": 58.3020694,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-phoenix",
+      "name": "Phoenix",
+      "state": "Arizona",
+      "type": "city",
+      "shape": "circle",
+      "lon": -112.097065,
+      "lat": 33.4482497,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-little-rock",
+      "name": "Little Rock",
+      "state": "Arkansas",
+      "type": "city",
+      "shape": "circle",
+      "lon": -92.2892284,
+      "lat": 34.746745,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-sacramento",
+      "name": "Sacramento",
+      "state": "California",
+      "type": "city",
+      "shape": "circle",
+      "lon": -121.4935591,
+      "lat": 38.5765854,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-denver",
+      "name": "Denver",
+      "state": "Colorado",
+      "type": "city",
+      "shape": "circle",
+      "lon": -104.9849779,
+      "lat": 39.7392198,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-hartford",
+      "name": "Hartford",
+      "state": "Connecticut",
+      "type": "city",
+      "shape": "circle",
+      "lon": -72.6823164,
+      "lat": 41.7642752,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-dover",
+      "name": "Dover",
+      "state": "Delaware",
+      "type": "city",
+      "shape": "circle",
+      "lon": -75.5195811,
+      "lat": 39.1572815,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-tallahassee",
+      "name": "Tallahassee",
+      "state": "Florida",
+      "type": "city",
+      "shape": "circle",
+      "lon": -84.2821265,
+      "lat": 30.4381047,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-atlanta",
+      "name": "Atlanta",
+      "state": "Georgia",
+      "type": "city",
+      "shape": "circle",
+      "lon": -84.3879614,
+      "lat": 33.7490287,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-honolulu",
+      "name": "Honolulu",
+      "state": "Hawaii",
+      "type": "city",
+      "shape": "circle",
+      "lon": -157.8573111,
+      "lat": 21.3073439,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-boise",
+      "name": "Boise",
+      "state": "Idaho",
+      "type": "city",
+      "shape": "circle",
+      "lon": -116.1998483,
+      "lat": 43.6177948,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-springfield",
+      "name": "Springfield",
+      "state": "Illinois",
+      "type": "city",
+      "shape": "circle",
+      "lon": -89.6547203,
+      "lat": 39.7983912,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-indianapolis",
+      "name": "Indianapolis",
+      "state": "Indiana",
+      "type": "city",
+      "shape": "circle",
+      "lon": -86.1627697,
+      "lat": 39.7683841,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-des-moines",
+      "name": "Des Moines",
+      "state": "Iowa",
+      "type": "city",
+      "shape": "circle",
+      "lon": -93.6038358,
+      "lat": 41.5911079,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-topeka",
+      "name": "Topeka",
+      "state": "Kansas",
+      "type": "city",
+      "shape": "circle",
+      "lon": -95.6780057,
+      "lat": 39.0482389,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-frankfort",
+      "name": "Frankfort",
+      "state": "Kentucky",
+      "type": "city",
+      "shape": "circle",
+      "lon": -84.8753598,
+      "lat": 38.1866989,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-baton-rouge",
+      "name": "Baton Rouge",
+      "state": "Louisiana",
+      "type": "city",
+      "shape": "circle",
+      "lon": -91.1873935,
+      "lat": 30.457024,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-augusta",
+      "name": "Augusta",
+      "state": "Maine",
+      "type": "city",
+      "shape": "circle",
+      "lon": -69.7816228,
+      "lat": 44.307213,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-annapolis",
+      "name": "Annapolis",
+      "state": "Maryland",
+      "type": "city",
+      "shape": "circle",
+      "lon": -76.491037,
+      "lat": 38.9788927,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-boston",
+      "name": "Boston",
+      "state": "Massachusetts",
+      "type": "city",
+      "shape": "circle",
+      "lon": -71.0640129,
+      "lat": 42.3587532,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-lansing",
+      "name": "Lansing",
+      "state": "Michigan",
+      "type": "city",
+      "shape": "circle",
+      "lon": -84.5555605,
+      "lat": 42.7336193,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-saint-paul",
+      "name": "Saint Paul",
+      "state": "Minnesota",
+      "type": "city",
+      "shape": "circle",
+      "lon": -93.1021034,
+      "lat": 44.9551063,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-jackson",
+      "name": "Jackson",
+      "state": "Mississippi",
+      "type": "city",
+      "shape": "circle",
+      "lon": -90.1820382,
+      "lat": 32.303763,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-jefferson-city",
+      "name": "Jefferson City",
+      "state": "Missouri",
+      "type": "city",
+      "shape": "circle",
+      "lon": -92.1728432,
+      "lat": 38.5791852,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-helena",
+      "name": "Helena",
+      "state": "Montana",
+      "type": "city",
+      "shape": "circle",
+      "lon": -112.0183427,
+      "lat": 46.5857742,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-lincoln",
+      "name": "Lincoln",
+      "state": "Nebraska",
+      "type": "city",
+      "shape": "circle",
+      "lon": -96.6997467,
+      "lat": 40.8080641,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-carson-city",
+      "name": "Carson City",
+      "state": "Nevada",
+      "type": "city",
+      "shape": "circle",
+      "lon": -119.7663053,
+      "lat": 39.1640815,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-concord",
+      "name": "Concord",
+      "state": "New Hampshire",
+      "type": "city",
+      "shape": "circle",
+      "lon": -71.5382718,
+      "lat": 43.2069054,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-trenton",
+      "name": "Trenton",
+      "state": "New Jersey",
+      "type": "city",
+      "shape": "circle",
+      "lon": -74.7699552,
+      "lat": 40.2203572,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-santa-fe",
+      "name": "Santa Fe",
+      "state": "New Mexico",
+      "type": "city",
+      "shape": "circle",
+      "lon": -105.9396043,
+      "lat": 35.6823747,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-albany",
+      "name": "Albany",
+      "state": "New York",
+      "type": "city",
+      "shape": "circle",
+      "lon": -73.7575015,
+      "lat": 42.6525086,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-raleigh",
+      "name": "Raleigh",
+      "state": "North Carolina",
+      "type": "city",
+      "shape": "circle",
+      "lon": -78.6391225,
+      "lat": 35.7803724,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-bismarck",
+      "name": "Bismarck",
+      "state": "North Dakota",
+      "type": "city",
+      "shape": "circle",
+      "lon": -100.7827194,
+      "lat": 46.8207637,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-columbus",
+      "name": "Columbus",
+      "state": "Ohio",
+      "type": "city",
+      "shape": "circle",
+      "lon": -82.9987984,
+      "lat": 39.961461,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-oklahoma-city",
+      "name": "Oklahoma City",
+      "state": "Oklahoma",
+      "type": "city",
+      "shape": "circle",
+      "lon": -97.5033801,
+      "lat": 35.4922882,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-salem",
+      "name": "Salem",
+      "state": "Oregon",
+      "type": "city",
+      "shape": "circle",
+      "lon": -123.0301147,
+      "lat": 44.938743,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-harrisburg",
+      "name": "Harrisburg",
+      "state": "Pennsylvania",
+      "type": "city",
+      "shape": "circle",
+      "lon": -76.8837835,
+      "lat": 40.2644747,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-providence",
+      "name": "Providence",
+      "state": "Rhode Island",
+      "type": "city",
+      "shape": "circle",
+      "lon": -71.414855,
+      "lat": 41.8308218,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-columbia",
+      "name": "Columbia",
+      "state": "South Carolina",
+      "type": "city",
+      "shape": "circle",
+      "lon": -81.0331509,
+      "lat": 34.0004393,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-pierre",
+      "name": "Pierre",
+      "state": "South Dakota",
+      "type": "city",
+      "shape": "circle",
+      "lon": -100.3462286,
+      "lat": 44.3671094,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-nashville",
+      "name": "Nashville",
+      "state": "Tennessee",
+      "type": "city",
+      "shape": "circle",
+      "lon": -86.7841708,
+      "lat": 36.1658985,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-austin",
+      "name": "Austin",
+      "state": "Texas",
+      "type": "city",
+      "shape": "circle",
+      "lon": -97.7403271,
+      "lat": 30.2746658,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-salt-lake-city",
+      "name": "Salt Lake City",
+      "state": "Utah",
+      "type": "city",
+      "shape": "circle",
+      "lon": -111.888132,
+      "lat": 40.7773586,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-montpelier",
+      "name": "Montpelier",
+      "state": "Vermont",
+      "type": "city",
+      "shape": "circle",
+      "lon": -72.5804725,
+      "lat": 44.2624522,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-richmond",
+      "name": "Richmond",
+      "state": "Virginia",
+      "type": "city",
+      "shape": "circle",
+      "lon": -77.4335963,
+      "lat": 37.5387651,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-olympia",
+      "name": "Olympia",
+      "state": "Washington",
+      "type": "city",
+      "shape": "circle",
+      "lon": -122.9049162,
+      "lat": 47.0357595,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-charleston",
+      "name": "Charleston",
+      "state": "West Virginia",
+      "type": "city",
+      "shape": "circle",
+      "lon": -81.6120072,
+      "lat": 38.3364019,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-madison",
+      "name": "Madison",
+      "state": "Wisconsin",
+      "type": "city",
+      "shape": "circle",
+      "lon": -89.3841797,
+      "lat": 43.0746533,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "capital-cheyenne",
+      "name": "Cheyenne",
+      "state": "Wyoming",
+      "type": "city",
+      "shape": "circle",
+      "lon": -104.8203092,
+      "lat": 41.140301,
+      "hitRadius": 10,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": 10,
+        "y": 12
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "washington-dc",
+      "name": "Washington, DC",
+      "type": "city",
+      "shape": "circle",
+      "lon": -77.0369,
+      "lat": 38.9072,
+      "hitRadius": 12,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.18,
+      "labelOffset": {
+        "x": 12,
+        "y": 13
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    }
+  ]
+}

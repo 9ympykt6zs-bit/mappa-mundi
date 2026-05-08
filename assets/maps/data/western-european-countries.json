@@ -1,0 +1,101 @@
+{
+  "id": "western-european-countries",
+  "title": "Western European Countries",
+  "features": [
+    {
+      "id": "ireland",
+      "name": "Ireland",
+      "type": "country",
+      "color": "#22c55e",
+      "flag": "🇮🇪",
+      "flagType": "ireland",
+      "labelPosition": {
+        "x": 496,
+        "y": 501
+      },
+      "flagOffset": {
+        "x": -23,
+        "y": -7
+      },
+      "labelFontSize": 13,
+      "flagSize": 0.56,
+      "labelRotation": 0
+    },
+    {
+      "id": "united-kingdom",
+      "name": "United Kingdom",
+      "type": "country",
+      "color": "#ef4444",
+      "flag": "🇬🇧",
+      "labelPosition": {
+        "x": 566,
+        "y": 481
+      },
+      "flagType": "uk-svg",
+      "flagOffset": {
+        "x": -23,
+        "y": -7
+      },
+      "labelFontSize": 13,
+      "flagSize": 0.56,
+      "labelRotation": 0
+    },
+    {
+      "id": "portugal",
+      "name": "Portugal",
+      "type": "country",
+      "color": "#f97316",
+      "flag": "🇵🇹",
+      "flagType": "portugal",
+      "labelPosition": {
+        "x": 416,
+        "y": 674
+      },
+      "flagOffset": {
+        "x": -23,
+        "y": -7
+      },
+      "labelFontSize": 13,
+      "flagSize": 0.56,
+      "labelRotation": 0
+    },
+    {
+      "id": "spain",
+      "name": "Spain",
+      "type": "country",
+      "color": "#eab308",
+      "flag": "🇪🇸",
+      "flagType": "spain",
+      "labelPosition": {
+        "x": 500,
+        "y": 657
+      },
+      "flagOffset": {
+        "x": -23,
+        "y": -7
+      },
+      "labelFontSize": 13,
+      "flagSize": 0.56,
+      "labelRotation": 0
+    },
+    {
+      "id": "france",
+      "name": "France",
+      "type": "country",
+      "color": "#3b82f6",
+      "flag": "🇫🇷",
+      "flagType": "france",
+      "labelPosition": {
+        "x": 572,
+        "y": 598
+      },
+      "flagOffset": {
+        "x": -23,
+        "y": -7
+      },
+      "labelFontSize": 13,
+      "flagSize": 0.56,
+      "labelRotation": 0
+    }
+  ]
+}

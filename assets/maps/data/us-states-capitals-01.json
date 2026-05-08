@@ -1,0 +1,210 @@
+{
+  "id": "us-states-capitals-01",
+  "title": "States and Capitals 1",
+  "baseMap": "usa-map",
+  "baseMapPath": "assets/maps/usa/usa-map.svg",
+  "projection": {
+    "type": "albers-usa-d3",
+    "scale": 1300,
+    "translateX": 487.5,
+    "translateY": 305
+  },
+  "targetNoun": "state or capital",
+  "features": [
+    {
+      "id": "maine",
+      "name": "Maine",
+      "type": "state",
+      "state": "ME",
+      "shape": "path",
+      "mapShapeId": "maine",
+      "color": "#4f83cc",
+      "labelPosition": {
+        "x": 924,
+        "y": 98
+      },
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "new-hampshire",
+      "name": "New Hampshire",
+      "type": "state",
+      "state": "NH",
+      "shape": "path",
+      "mapShapeId": "new-hampshire",
+      "color": "#d65a8c",
+      "labelPosition": {
+        "x": 895,
+        "y": 134
+      },
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "massachusetts",
+      "name": "Massachusetts",
+      "type": "state",
+      "state": "MA",
+      "shape": "path",
+      "mapShapeId": "massachusetts",
+      "color": "#d9b48f",
+      "labelPosition": {
+        "x": 902,
+        "y": 172
+      },
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "rhode-island",
+      "name": "Rhode Island",
+      "type": "state",
+      "state": "RI",
+      "shape": "path",
+      "mapShapeId": "rhode-island",
+      "color": "#7aa35a",
+      "labelPosition": {
+        "x": 906,
+        "y": 186
+      },
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "connecticut",
+      "name": "Connecticut",
+      "type": "state",
+      "state": "CT",
+      "shape": "path",
+      "mapShapeId": "connecticut",
+      "color": "#7a5aa6",
+      "labelPosition": {
+        "x": 887,
+        "y": 193
+      },
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "augusta-me",
+      "name": "Augusta, ME",
+      "city": "Augusta",
+      "state": "ME",
+      "type": "capital",
+      "shape": "circle",
+      "lon": -69.7795,
+      "lat": 44.3106,
+      "hitRadius": 14,
+      "color": "#4f83cc",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": -24,
+        "y": 14
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "concord-nh",
+      "name": "Concord, NH",
+      "city": "Concord",
+      "state": "NH",
+      "type": "capital",
+      "shape": "circle",
+      "lon": -71.5376,
+      "lat": 43.2081,
+      "hitRadius": 14,
+      "color": "#d65a8c",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": -28,
+        "y": 14
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "boston-ma",
+      "name": "Boston, MA",
+      "city": "Boston",
+      "state": "MA",
+      "type": "capital",
+      "shape": "circle",
+      "lon": -71.0589,
+      "lat": 42.3601,
+      "hitRadius": 14,
+      "color": "#d9b48f",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": -24,
+        "y": 14
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "providence-ri",
+      "name": "Providence, RI",
+      "city": "Providence",
+      "state": "RI",
+      "type": "capital",
+      "shape": "circle",
+      "lon": -71.4128,
+      "lat": 41.824,
+      "hitRadius": 14,
+      "color": "#7aa35a",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": -36,
+        "y": 14
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "hartford-ct",
+      "name": "Hartford, CT",
+      "city": "Hartford",
+      "state": "CT",
+      "type": "capital",
+      "shape": "circle",
+      "lon": -72.6851,
+      "lat": 41.7658,
+      "hitRadius": 14,
+      "color": "#7a5aa6",
+      "icon": "capitol",
+      "iconScale": 1.1,
+      "labelOffset": {
+        "x": -28,
+        "y": 14
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 11,
+      "labelRotation": 0
+    }
+  ]
+}

@@ -1,0 +1,702 @@
+{
+  "id": "us-states",
+  "title": "United States",
+  "baseMap": "usa-map",
+  "baseMapPath": "assets/maps/usa/usa-map.svg",
+  "projection": {
+    "type": "albers-usa-d3",
+    "scale": 1300,
+    "translateX": 487.5,
+    "translateY": 305
+  },
+  "targetNoun": "state",
+  "defaultMode": "click-reveal",
+  "hideAnswerBank": true,
+  "features": [
+    {
+      "id": "alabama",
+      "name": "Alabama",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 676,
+        "y": 436
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "AL"
+    },
+    {
+      "id": "alaska",
+      "name": "Alaska",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 73,
+        "y": 535
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "AK"
+    },
+    {
+      "id": "arizona",
+      "name": "Arizona",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 203,
+        "y": 385
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "AZ"
+    },
+    {
+      "id": "arkansas",
+      "name": "Arkansas",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 568,
+        "y": 393
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "AR"
+    },
+    {
+      "id": "california",
+      "name": "California",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 91,
+        "y": 284
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "CA"
+    },
+    {
+      "id": "colorado",
+      "name": "Colorado",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 330,
+        "y": 289
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "CO"
+    },
+    {
+      "id": "connecticut",
+      "name": "Connecticut",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 887,
+        "y": 193
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "CT"
+    },
+    {
+      "id": "delaware",
+      "name": "Delaware",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 854,
+        "y": 257
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "DE"
+    },
+    {
+      "id": "district-of-columbia",
+      "name": "District of Columbia",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 828,
+        "y": 268
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "DC"
+    },
+    {
+      "id": "florida",
+      "name": "Florida",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 742,
+        "y": 536
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "FL"
+    },
+    {
+      "id": "georgia",
+      "name": "Georgia",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 738,
+        "y": 425
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "GA"
+    },
+    {
+      "id": "hawaii",
+      "name": "Hawaii",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 274,
+        "y": 566
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "HI"
+    },
+    {
+      "id": "idaho",
+      "name": "Idaho",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 202,
+        "y": 123
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "ID"
+    },
+    {
+      "id": "illinois",
+      "name": "Illinois",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 611,
+        "y": 276
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "IL"
+    },
+    {
+      "id": "indiana",
+      "name": "Indiana",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 666,
+        "y": 272
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "IN"
+    },
+    {
+      "id": "iowa",
+      "name": "Iowa",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 542,
+        "y": 229
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "IA"
+    },
+    {
+      "id": "kansas",
+      "name": "Kansas",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 456,
+        "y": 308
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "KS"
+    },
+    {
+      "id": "kentucky",
+      "name": "Kentucky",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 681,
+        "y": 317
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "KY"
+    },
+    {
+      "id": "louisiana",
+      "name": "Louisiana",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 587,
+        "y": 478
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "LA"
+    },
+    {
+      "id": "maine",
+      "name": "Maine",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 924,
+        "y": 98
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "ME"
+    },
+    {
+      "id": "maryland",
+      "name": "Maryland",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 823,
+        "y": 265
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "MD"
+    },
+    {
+      "id": "massachusetts",
+      "name": "Massachusetts",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 902,
+        "y": 172
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "MA"
+    },
+    {
+      "id": "michigan",
+      "name": "Michigan",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 653,
+        "y": 156
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "MI"
+    },
+    {
+      "id": "minnesota",
+      "name": "Minnesota",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 538,
+        "y": 129
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "MN"
+    },
+    {
+      "id": "mississippi",
+      "name": "Mississippi",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 614,
+        "y": 440
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "MS"
+    },
+    {
+      "id": "missouri",
+      "name": "Missouri",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 562,
+        "y": 312
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "MO"
+    },
+    {
+      "id": "montana",
+      "name": "Montana",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 285,
+        "y": 97
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "MT"
+    },
+    {
+      "id": "nebraska",
+      "name": "Nebraska",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 436,
+        "y": 238
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "NE"
+    },
+    {
+      "id": "nevada",
+      "name": "Nevada",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 141,
+        "y": 268
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "NV"
+    },
+    {
+      "id": "new-hampshire",
+      "name": "New Hampshire",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 895,
+        "y": 134
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "NH"
+    },
+    {
+      "id": "new-jersey",
+      "name": "New Jersey",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 861,
+        "y": 232
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "NJ"
+    },
+    {
+      "id": "new-mexico",
+      "name": "New Mexico",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 310,
+        "y": 393
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "NM"
+    },
+    {
+      "id": "new-york",
+      "name": "New York",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 835,
+        "y": 170
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "NY"
+    },
+    {
+      "id": "north-carolina",
+      "name": "North Carolina",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 792,
+        "y": 351
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "NC"
+    },
+    {
+      "id": "north-dakota",
+      "name": "North Dakota",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 430,
+        "y": 103
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "ND"
+    },
+    {
+      "id": "ohio",
+      "name": "Ohio",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 723,
+        "y": 252
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "OH"
+    },
+    {
+      "id": "oklahoma",
+      "name": "Oklahoma",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 449,
+        "y": 380
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "OK"
+    },
+    {
+      "id": "oregon",
+      "name": "Oregon",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 103,
+        "y": 130
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "OR"
+    },
+    {
+      "id": "pennsylvania",
+      "name": "Pennsylvania",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 808,
+        "y": 226
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "PA"
+    },
+    {
+      "id": "rhode-island",
+      "name": "Rhode Island",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 906,
+        "y": 186
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "RI"
+    },
+    {
+      "id": "south-carolina",
+      "name": "South Carolina",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 777,
+        "y": 400
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "SC"
+    },
+    {
+      "id": "south-dakota",
+      "name": "South Dakota",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 428,
+        "y": 176
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "SD"
+    },
+    {
+      "id": "tennessee",
+      "name": "Tennessee",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 679,
+        "y": 360
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "TN"
+    },
+    {
+      "id": "texas",
+      "name": "Texas",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 420,
+        "y": 474
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "TX"
+    },
+    {
+      "id": "utah",
+      "name": "Utah",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 227,
+        "y": 265
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "UT"
+    },
+    {
+      "id": "vermont",
+      "name": "Vermont",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 873,
+        "y": 139
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "VT"
+    },
+    {
+      "id": "virginia",
+      "name": "Virginia",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 791,
+        "y": 299
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "VA"
+    },
+    {
+      "id": "washington",
+      "name": "Washington",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 123,
+        "y": 58
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "WA"
+    },
+    {
+      "id": "west-virginia",
+      "name": "West Virginia",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 774,
+        "y": 280
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "WV"
+    },
+    {
+      "id": "wisconsin",
+      "name": "Wisconsin",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 596,
+        "y": 163
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "WI"
+    },
+    {
+      "id": "wyoming",
+      "name": "Wyoming",
+      "type": "state",
+      "color": "#dbeafe",
+      "labelPosition": {
+        "x": 306,
+        "y": 194
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0,
+      "sourcePostal": "WY"
+    },
+    {
+      "id": "washington-dc",
+      "name": "Washington, DC",
+      "type": "city",
+      "shape": "circle",
+      "lon": -77.0369,
+      "lat": 38.9072,
+      "hitRadius": 12,
+      "color": "#7aa5d6",
+      "icon": "capitol",
+      "iconScale": 1.18,
+      "labelOffset": {
+        "x": 12,
+        "y": 13
+      },
+      "iconOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "labelFontSize": 10,
+      "labelRotation": 0
+    }
+  ]
+}

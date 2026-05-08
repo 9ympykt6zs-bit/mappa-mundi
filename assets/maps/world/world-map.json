@@ -1,0 +1,18 @@
+{
+  "id": "world-map",
+  "title": "World Map",
+  "baseMap": "world-map",
+  "baseMapPath": "assets/maps/world/world-map.svg",
+  "projection": {
+    "type": "equirectangular",
+    "lon0": 0,
+    "lat0": 0,
+    "scaleX": 4,
+    "scaleY": -4,
+    "translateX": 720,
+    "translateY": 360
+  },
+  "targetNoun": "location",
+  "hideAnswerBank": true,
+  "features": []
+}
