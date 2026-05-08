@@ -1,3 +1,4 @@
+import { normalizeActivity } from "./map-engines/activity-normalizer.js";
 import { ActivitySession } from "./maplibre/activity-session.js";
 import { MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js";
 
@@ -5,6 +6,37 @@ const activityDataPath = "assets/maps/data/us-states-capitals-01.json";
 const worldCountriesPath = "assets/maps/data/maplibre-world-countries.geojson";
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-new-england-states.geojson";
+
+const stateLabelAnchors = {
+  maine: [-69.2, 45.25],
+  "new-hampshire": [-71.58, 43.75],
+  massachusetts: [-71.85, 42.25],
+  "rhode-island": [-71.55, 41.62],
+  connecticut: [-72.72, 41.58]
+};
+
+const usOverviewRegion = {
+  type: "FeatureCollection",
+  features: [
+    {
+      type: "Feature",
+      properties: {
+        id: "united-states",
+        name: "United States"
+      },
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [-125, 24],
+          [-66, 24],
+          [-66, 50],
+          [-125, 50],
+          [-125, 24]
+        ]]
+      }
+    }
+  ]
+};
 
 let activityData;
 let session;
@@ -29,7 +61,7 @@ async function init() {
     fetchJson(stateGeoJsonPath)
   ]);
 
-  activityData = loadedActivity;
+  activityData = normalizeMapLibrePocActivity(loadedActivity);
   session = new ActivitySession(activityData);
   runner = new MapLibreActivityRunner({
     maplibregl: window.maplibregl,
@@ -53,6 +85,60 @@ async function init() {
   renderAnswerBank();
   updateProgress();
   bindUiEvents();
+}
+
+function normalizeMapLibrePocActivity(rawActivity) {
+  return normalizeActivity(rawActivity, {
+    schemaVersion: 2,
+    engine: "maplibre",
+    map: {
+      kind: "globe-region",
+      region: "united-states",
+      overviewRegions: usOverviewRegion,
+      initialView: { center: [-18, 18], zoom: 1.25 },
+      regionView: { center: [-98, 39], zoom: 3.1 },
+      studyView: {
+        bounds: [[-74.35, 40.85], [-66.75, 47.55]],
+        padding: { top: 55, right: 46, bottom: 78, left: 46 },
+        duration: 1200
+      }
+    },
+    sources: [
+      {
+        id: "world-countries",
+        type: "geojson",
+        url: worldCountriesPath,
+        attribution: "Natural Earth public domain"
+      },
+      {
+        id: "us-states-atlas",
+        type: "geojson",
+        url: usStatesAtlasPath,
+        attribution: "U.S. Census Bureau"
+      },
+      {
+        id: "study-states",
+        type: "geojson",
+        url: stateGeoJsonPath,
+        promoteId: "id",
+        attribution: "U.S. Census Bureau"
+      }
+    ],
+    targetLayers: [
+      {
+        id: "state-fill",
+        kind: "shape",
+        sourceId: "study-states",
+        matchProperty: "id"
+      },
+      {
+        id: "capital-hit",
+        kind: "point",
+        source: "targets"
+      }
+    ],
+    labelAnchors: stateLabelAnchors
+  });
 }
 
 async function fetchJson(path) {

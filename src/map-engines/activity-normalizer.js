@@ -3,29 +3,43 @@ export const targetKinds = {
   shape: "shape"
 };
 
-export function normalizeActivity(rawActivity) {
+export function normalizeActivity(rawActivity, overrides = {}) {
+  const rawTargets = overrides.targets || rawActivity.targets || rawActivity.features || [];
+  const map = {
+    ...getLegacyMapDescriptor(rawActivity),
+    ...(rawActivity.map || {}),
+    ...(overrides.map || {})
+  };
+
   return {
-    schemaVersion: rawActivity.schemaVersion || 1,
-    id: rawActivity.id,
-    title: rawActivity.title,
-    engine: rawActivity.engine || inferEngine(rawActivity),
-    targetNoun: rawActivity.targetNoun || inferTargetNoun(rawActivity.features || rawActivity.targets || []),
-    defaultMode: rawActivity.defaultMode || "word-bank",
-    map: rawActivity.map || getLegacyMapDescriptor(rawActivity),
-    sources: rawActivity.sources || [],
-    targetLayers: rawActivity.targetLayers || [],
-    targets: (rawActivity.targets || rawActivity.features || []).map(normalizeTarget)
+    schemaVersion: overrides.schemaVersion || rawActivity.schemaVersion || 1,
+    id: overrides.id || rawActivity.id,
+    title: overrides.title || rawActivity.title,
+    engine: overrides.engine || rawActivity.engine || inferEngine(rawActivity),
+    targetNoun: overrides.targetNoun || rawActivity.targetNoun || inferTargetNoun(rawTargets),
+    defaultMode: overrides.defaultMode || rawActivity.defaultMode || "word-bank",
+    map,
+    sources: overrides.sources || rawActivity.sources || [],
+    targetLayers: overrides.targetLayers || rawActivity.targetLayers || [],
+    targets: rawTargets.map((target) => normalizeTarget(target, overrides)),
+    answerBankItems: (overrides.answerBankItems || rawTargets).map((target) => ({
+      id: target.id,
+      name: target.name
+    }))
   };
 }
 
-export function normalizeTarget(feature) {
+export function normalizeTarget(feature, options = {}) {
   const kind = inferTargetKind(feature);
+  const layer = getTargetLayer(kind, feature, options.targetLayers || []);
 
   return {
     ...feature,
     kind,
+    targetType: kind,
+    layerId: feature.layerId || layer?.id || null,
     sourceFeatureId: feature.sourceFeatureId || feature.mapShapeId || (kind === targetKinds.shape ? feature.id : undefined),
-    label: normalizeLabel(feature),
+    label: normalizeLabel(feature, kind, options),
     hitRadius: feature.hitRadius || (kind === targetKinds.point ? 16 : undefined)
   };
 }
@@ -50,13 +64,31 @@ function inferTargetKind(feature) {
   return targetKinds.shape;
 }
 
-function normalizeLabel(feature) {
+function normalizeLabel(feature, kind, options) {
+  const anchorOverrides = options.labelAnchors || {};
+
   return {
-    anchor: feature.labelAnchor || feature.labelPosition || null,
+    anchor: feature.labelAnchor || feature.label?.anchor || anchorOverrides[feature.id] || getDefaultLabelAnchor(feature, kind),
     offset: feature.labelOffset || null,
     fontSize: feature.labelFontSize || null,
     rotation: feature.labelRotation || 0
   };
+}
+
+function getTargetLayer(kind, feature, targetLayers) {
+  if (feature.layerId) {
+    return targetLayers.find((layer) => layer.id === feature.layerId) || null;
+  }
+
+  return targetLayers.find((layer) => layer.kind === kind || layer.targetType === kind) || null;
+}
+
+function getDefaultLabelAnchor(feature, kind) {
+  if (kind === targetKinds.point && Number.isFinite(feature.lon) && Number.isFinite(feature.lat)) {
+    return [feature.lon, feature.lat];
+  }
+
+  return feature.labelPosition || null;
 }
 
 function inferTargetNoun(features) {

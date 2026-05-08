@@ -12,7 +12,7 @@ const colors = {
   markerHalo: "#2563eb"
 };
 
-const usOverviewRegion = {
+const defaultOverviewRegion = {
   type: "FeatureCollection",
   features: [
     {
@@ -35,14 +35,6 @@ const usOverviewRegion = {
   ]
 };
 
-const stateLabelPositions = {
-  maine: [-69.2, 45.25],
-  "new-hampshire": [-71.58, 43.75],
-  massachusetts: [-71.85, 42.25],
-  "rhode-island": [-71.55, 41.62],
-  connecticut: [-72.72, 41.58]
-};
-
 export class MapLibreActivityRunner {
   constructor({ maplibregl, container }) {
     this.maplibregl = maplibregl;
@@ -54,6 +46,8 @@ export class MapLibreActivityRunner {
     this.targetClickHandler = null;
     this.regionSelectHandler = null;
     this.completedIds = [];
+    this.shapeTargets = [];
+    this.pointTargets = [];
   }
 
   onTargetClick(handler) {
@@ -69,11 +63,13 @@ export class MapLibreActivityRunner {
     this.worldCountries = worldCountries;
     this.usStatesAtlas = usStatesAtlas;
     this.stateTargets = stateTargets;
+    this.shapeTargets = activity.targets.filter((target) => target.kind === "shape");
+    this.pointTargets = activity.targets.filter((target) => target.kind === "point");
 
     this.map = new this.maplibregl.Map({
       container: this.container,
-      center: [-18, 18],
-      zoom: 1.25,
+      center: activity.map?.initialView?.center || [-18, 18],
+      zoom: activity.map?.initialView?.zoom || 1.25,
       minZoom: 0.8,
       maxZoom: 12,
       projection: { type: "globe" },
@@ -128,8 +124,8 @@ export class MapLibreActivityRunner {
     this.setStudyVisibility("visible");
 
     this.map.flyTo({
-      center: [-98, 39],
-      zoom: 3.1,
+      center: this.activity.map?.regionView?.center || [-98, 39],
+      zoom: this.activity.map?.regionView?.zoom || 3.1,
       pitch: 0,
       bearing: 0,
       duration: 1100,
@@ -138,9 +134,10 @@ export class MapLibreActivityRunner {
 
     window.setTimeout(() => {
       if (this.currentView === "study") {
-        this.map.fitBounds([[-74.35, 40.85], [-66.75, 47.55]], {
-          padding: { top: 55, right: 46, bottom: 78, left: 46 },
-          duration: 1200,
+        const studyView = this.activity.map?.studyView || {};
+        this.map.fitBounds(studyView.bounds || [[-74.35, 40.85], [-66.75, 47.55]], {
+          padding: studyView.padding || { top: 55, right: 46, bottom: 78, left: 46 },
+          duration: studyView.duration || 1200,
           essential: true
         });
       }
@@ -154,8 +151,8 @@ export class MapLibreActivityRunner {
     this.setStudyVisibility("none");
 
     this.map.flyTo({
-      center: [-18, 18],
-      zoom: 1.25,
+      center: this.activity.map?.initialView?.center || [-18, 18],
+      zoom: this.activity.map?.initialView?.zoom || 1.25,
       pitch: 0,
       bearing: 0,
       duration: 1000,
@@ -243,7 +240,7 @@ export class MapLibreActivityRunner {
   addOverviewLayers() {
     this.map.addSource("overview-regions", {
       type: "geojson",
-      data: usOverviewRegion
+      data: this.activity.map?.overviewRegions || defaultOverviewRegion
     });
 
     this.map.addLayer({
@@ -459,8 +456,7 @@ export class MapLibreActivityRunner {
   getCapitalGeoJson() {
     return {
       type: "FeatureCollection",
-      features: this.activity.features
-        .filter((feature) => feature.type === "capital")
+      features: this.pointTargets
         .map((feature) => ({
           type: "Feature",
           properties: {
@@ -468,7 +464,7 @@ export class MapLibreActivityRunner {
             name: feature.name,
             color: feature.color,
             hitRadius: feature.hitRadius || 14,
-            labelFontSize: feature.labelFontSize || 11
+            labelFontSize: feature.label?.fontSize || feature.labelFontSize || 11
           },
           geometry: {
             type: "Point",
@@ -481,14 +477,14 @@ export class MapLibreActivityRunner {
   getCompletedLabelGeoJson() {
     return {
       type: "FeatureCollection",
-      features: this.activity.features
+      features: this.activity.targets
         .filter((feature) => this.completedIds.includes(feature.id))
         .map((feature) => ({
           type: "Feature",
           properties: {
             id: feature.id,
             name: feature.name,
-            labelFontSize: feature.labelFontSize || 11
+            labelFontSize: feature.label?.fontSize || feature.labelFontSize || 11
           },
           geometry: {
             type: "Point",
@@ -499,11 +495,15 @@ export class MapLibreActivityRunner {
   }
 
   getLabelCoordinates(feature) {
-    if (feature.type === "state") {
-      return stateLabelPositions[feature.id] || [-71.8, 42.8];
+    if (feature.label?.anchor) {
+      return feature.label.anchor;
     }
 
-    return [feature.lon, feature.lat];
+    if (Number.isFinite(feature.lon) && Number.isFinite(feature.lat)) {
+      return [feature.lon, feature.lat];
+    }
+
+    return [-71.8, 42.8];
   }
 
   refreshStudyPaint() {
@@ -555,7 +555,7 @@ export class MapLibreActivityRunner {
   }
 
   getColorMatchStops() {
-    return this.activity.features.flatMap((feature) => [feature.id, feature.color]);
+    return this.activity.targets.flatMap((feature) => [feature.id, feature.color]);
   }
 
   setUnitedStatesContextVisibility(visibility) {

@@ -6,7 +6,7 @@ export class ActivitySession {
   }
 
   get answerItems() {
-    return this.activity.features;
+    return this.activity.answerBankItems || this.activity.targets;
   }
 
   get completedIds() {
@@ -14,7 +14,7 @@ export class ActivitySession {
   }
 
   get progressText() {
-    return `${this.completed.size} of ${this.activity.features.length} completed`;
+    return `${this.completed.size} of ${this.activity.targets.length} completed`;
   }
 
   get selectedId() {
@@ -22,7 +22,7 @@ export class ActivitySession {
   }
 
   getFeature(id) {
-    return this.activity.features.find((feature) => feature.id === id);
+    return this.activity.targets.find((target) => target.id === id);
   }
 
   isCompleted(id) {
