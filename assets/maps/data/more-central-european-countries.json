@@ -1,6 +1,7 @@
 {
   "id": "more-central-european-countries",
-  "title": "More Central Europe",
+  "title": "More Central European Countries",
+  "sequence": 18,
   "targetNoun": "country",
   "visibleAnswerLimit": 10,
   "map": {
@@ -14,6 +15,7 @@
       "shape": "path",
       "isoA3": "ITA",
       "color": "#22c55e",
+      "flag": "🇮🇹",
       "labelAnchor": [11.08, 44.73],
       "labelFontSize": 13,
       "labelRotation": 0
@@ -25,6 +27,7 @@
       "shape": "path",
       "isoA3": "AUT",
       "color": "#ef4444",
+      "flag": "🇦🇹",
       "labelAnchor": [14.13, 47.52],
       "labelFontSize": 11,
       "labelRotation": 0
@@ -36,6 +39,7 @@
       "shape": "path",
       "isoA3": "HUN",
       "color": "#38bdf8",
+      "flag": "🇭🇺",
       "labelAnchor": [19.45, 47.09],
       "labelFontSize": 12,
       "labelRotation": 0
@@ -47,6 +51,7 @@
       "shape": "path",
       "isoA3": "CZE",
       "color": "#f97316",
+      "flag": "🇨🇿",
       "labelAnchor": [15.38, 49.88],
       "labelFontSize": 11,
       "labelRotation": 0
@@ -58,6 +63,7 @@
       "shape": "path",
       "isoA3": "SVK",
       "color": "#a855f7",
+      "flag": "🇸🇰",
       "labelAnchor": [19.05, 48.73],
       "labelFontSize": 10,
       "labelRotation": 0

@@ -70,31 +70,36 @@ const activityCatalogMetadata = {
     mapSet: "world-europe",
     category: "Countries",
     description: "Scandinavia proof sheet with the four northern countries.",
-    sortOrder: 20
+    sortOrder: 13,
+    sectionNumber: 13
   },
-  "baltic-europe-countries": {
+  "baltic-europe": {
     mapSet: "world-europe",
     category: "Countries",
     description: "Baltic and eastern-edge practice with five adjacent countries.",
-    sortOrder: 30
+    sortOrder: 14,
+    sectionNumber: 14
   },
-  "balkans-countries": {
+  "balkans": {
     mapSet: "world-europe",
     category: "Countries",
     description: "Southeastern Europe country review.",
-    sortOrder: 40
+    sortOrder: 16,
+    sectionNumber: 16
   },
   "central-european-countries": {
     mapSet: "world-europe",
     category: "Countries",
     description: "Core Western and Central Europe country sheet.",
-    sortOrder: 50
+    sortOrder: 17,
+    sectionNumber: 17
   },
   "more-central-european-countries": {
     mapSet: "world-europe",
     category: "Countries",
     description: "Alpine and east-central Europe follow-up sheet.",
-    sortOrder: 60
+    sortOrder: 18,
+    sectionNumber: 18
   },
   "southern-africa-countries": {
     mapSet: "world-europe",
@@ -336,8 +341,8 @@ function inferActivityRegion(activityId = "") {
     "western-european-countries": "western-europe",
     "european-cities": "western-europe",
     "northern-european-countries": "northern-europe",
-    "baltic-europe-countries": "baltic-europe",
-    "balkans-countries": "balkans",
+    "baltic-europe": "baltic-europe",
+    "balkans": "balkans",
     "central-european-countries": "central-europe",
     "more-central-european-countries": "more-central-europe",
     "southern-africa-countries": "southern-africa"
@@ -465,13 +470,13 @@ function getActivityMetadata(rawActivity, region, mapDefaults) {
   return {
     mapSet: configured.mapSet || "world-europe",
     category: configured.category || "Countries",
-    sectionNumber: configured.sectionNumber || null,
+    sectionNumber: configured.sectionNumber ?? rawActivity.sequence ?? null,
     itemCount: configured.itemCount || featureCount,
     baseMap: configured.baseMap || "world-countries",
     previewBounds: configured.previewBounds || mapDefaults.studyView.bounds,
     previewRegionId: configured.previewRegionId || rawActivity.id,
     description: configured.description || "Regional geography proof sheet.",
-    sortOrder: configured.sortOrder ?? 999
+    sortOrder: configured.sortOrder ?? rawActivity.sequence ?? 999
   };
 }
 
