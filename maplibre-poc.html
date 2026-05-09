@@ -35,87 +35,13 @@
       </section>
 
       <section id="region-panel" class="region-panel" aria-label="Study regions">
-        <div>
+        <div class="region-panel-intro">
           <h2>Study Regions</h2>
-          <p>Start with the globe, then zoom into a focused practice map.</p>
+          <p>Choose a map set, then preview a single activity region before jumping in.</p>
         </div>
-        <div class="region-list">
-          <button type="button" data-region="united-states">
-            <strong>United States</strong>
-            <span>States and Capitals 10</span>
-          </button>
-          <button type="button" data-region="united-states" data-activity-id="us-states-capitals-01">
-            <strong>States and Capitals 1</strong>
-            <span>First Northeast section</span>
-          </button>
-          <button type="button" data-region="united-states" data-activity-id="us-states-capitals-02">
-            <strong>States and Capitals 2</strong>
-            <span>Second Northeast section</span>
-          </button>
-          <button type="button" data-region="united-states" data-activity-id="us-states-capitals-03">
-            <strong>States and Capitals 3</strong>
-            <span>Mid-Atlantic section</span>
-          </button>
-          <button type="button" data-region="united-states" data-activity-id="us-states-capitals-04">
-            <strong>States and Capitals 4</strong>
-            <span>Southeast section</span>
-          </button>
-          <button type="button" data-region="united-states" data-activity-id="us-states-capitals-05">
-            <strong>States and Capitals 5</strong>
-            <span>Great Lakes section</span>
-          </button>
-          <button type="button" data-region="united-states" data-activity-id="us-states-capitals-06">
-            <strong>States and Capitals 6</strong>
-            <span>Midwest section</span>
-          </button>
-          <button type="button" data-region="united-states" data-activity-id="us-states-capitals-07">
-            <strong>States and Capitals 7</strong>
-            <span>Northern Plains section</span>
-          </button>
-          <button type="button" data-region="united-states" data-activity-id="us-states-capitals-08">
-            <strong>States and Capitals 8</strong>
-            <span>Southwest section</span>
-          </button>
-          <button type="button" data-region="united-states" data-activity-id="us-states-capitals-09">
-            <strong>States and Capitals 9</strong>
-            <span>Pacific and Hawaii section</span>
-          </button>
-          <button type="button" data-region="united-states" data-activity-id="us-states-capitals-10">
-            <strong>States and Capitals 10</strong>
-            <span>Northwest and Alaska section</span>
-          </button>
-          <button type="button" data-region="western-europe" data-activity-id="western-european-countries">
-            <strong>Western Europe</strong>
-            <span>Ireland, United Kingdom, Portugal, Spain, France</span>
-          </button>
-          <button type="button" data-region="northern-europe" data-activity-id="northern-european-countries">
-            <strong>Scandinavia / Northern Europe</strong>
-            <span>Norway, Sweden, Finland, Denmark</span>
-          </button>
-          <button type="button" data-region="baltic-europe" data-activity-id="baltic-europe-countries">
-            <strong>Baltic Europe</strong>
-            <span>Estonia, Latvia, Lithuania, Poland, Belarus</span>
-          </button>
-          <button type="button" data-region="balkans" data-activity-id="balkans-countries">
-            <strong>Balkans</strong>
-            <span>Greece, Albania, Bulgaria, Slovenia, Romania</span>
-          </button>
-          <button type="button" data-region="central-europe" data-activity-id="central-european-countries">
-            <strong>Central Europe</strong>
-            <span>Netherlands, Belgium, Luxembourg, Germany, Switzerland</span>
-          </button>
-          <button type="button" data-region="more-central-europe" data-activity-id="more-central-european-countries">
-            <strong>More Central Europe</strong>
-            <span>Italy, Austria, Hungary, Czechia, Slovakia</span>
-          </button>
-          <button type="button" data-region="southern-africa" data-activity-id="southern-africa-countries">
-            <strong>Southern Africa</strong>
-            <span>Five-country proof sheet</span>
-          </button>
-          <button type="button" disabled>
-            <strong>Continents / Oceans</strong>
-            <span>Coming later</span>
-          </button>
+        <div class="library-panel">
+          <div id="map-set-tabs" class="map-set-tabs" role="tablist" aria-label="Map sets"></div>
+          <div id="activity-groups" class="activity-groups" aria-live="polite"></div>
         </div>
       </section>
     </main>

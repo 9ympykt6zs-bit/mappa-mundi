@@ -12,27 +12,9 @@ const colors = {
   markerHalo: "#2563eb"
 };
 
-const defaultOverviewRegion = {
+const emptyFeatureCollection = {
   type: "FeatureCollection",
-  features: [
-    {
-      type: "Feature",
-      properties: {
-        id: "united-states",
-        name: "United States"
-      },
-      geometry: {
-        type: "Polygon",
-        coordinates: [[
-          [-125, 24],
-          [-66, 24],
-          [-66, 50],
-          [-125, 50],
-          [-125, 24]
-        ]]
-      }
-    }
-  ]
+  features: []
 };
 
 export class MapLibreActivityRunner {
@@ -48,6 +30,7 @@ export class MapLibreActivityRunner {
     this.completedIds = [];
     this.shapeTargets = [];
     this.pointTargets = [];
+    this.overviewPreviewActivity = null;
   }
 
   onTargetClick(handler) {
@@ -103,6 +86,7 @@ export class MapLibreActivityRunner {
     this.addAtlasBaseLayers();
     this.addOverviewLayers();
     this.addStudyLayers();
+    this.setOverviewPreview(null);
   }
 
   enterStudyView() {
@@ -163,6 +147,16 @@ export class MapLibreActivityRunner {
   setCompletedTargets(completedIds) {
     this.completedIds = Array.from(completedIds);
     this.refreshStudyPaint();
+  }
+
+  setOverviewPreview(activity) {
+    this.overviewPreviewActivity = activity || null;
+
+    const previewSource = this.map?.getSource("overview-preview");
+
+    if (previewSource) {
+      previewSource.setData(this.getOverviewPreviewGeoJson());
+    }
   }
 
   getTargetIdAtClientPoint(clientX, clientY) {
@@ -323,45 +317,29 @@ export class MapLibreActivityRunner {
   }
 
   addOverviewLayers() {
-    this.map.addSource("overview-regions", {
+    this.map.addSource("overview-preview", {
       type: "geojson",
-      data: this.activity.map?.overviewRegions || defaultOverviewRegion
+      data: emptyFeatureCollection
     });
 
     this.map.addLayer({
       id: "overview-region-fill",
       type: "fill",
-      source: "overview-regions",
+      source: "overview-preview",
       paint: {
         "fill-color": "#2563eb",
-        "fill-opacity": 0.08
+        "fill-opacity": 0.12
       }
     });
 
     this.map.addLayer({
       id: "overview-region-line",
       type: "line",
-      source: "overview-regions",
+      source: "overview-preview",
       paint: {
         "line-color": "#2563eb",
-        "line-dasharray": [3, 2],
+        "line-dasharray": [3, 3],
         "line-width": 2
-      }
-    });
-
-    this.map.addLayer({
-      id: "overview-region-label",
-      type: "symbol",
-      source: "overview-regions",
-      layout: {
-        "text-field": ["get", "name"],
-        "text-size": 16,
-        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"]
-      },
-      paint: {
-        "text-color": "#174ea6",
-        "text-halo-color": "#ffffff",
-        "text-halo-width": 1.8
       }
     });
 
@@ -533,6 +511,43 @@ export class MapLibreActivityRunner {
     }
 
     this.targetClickHandler?.(null);
+  }
+
+  getOverviewPreviewGeoJson() {
+    const activity = this.overviewPreviewActivity;
+
+    if (!activity?.previewBounds) {
+      return emptyFeatureCollection;
+    }
+
+    return {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: {
+            id: activity.id,
+            name: activity.title
+          },
+          geometry: {
+            type: "Polygon",
+            coordinates: [this.boundsToPolygon(activity.previewBounds)]
+          }
+        }
+      ]
+    };
+  }
+
+  boundsToPolygon(bounds) {
+    const [[west, south], [east, north]] = bounds;
+
+    return [
+      [west, south],
+      [east, south],
+      [east, north],
+      [west, north],
+      [west, south]
+    ];
   }
 
   getTargetIdAtMapPoint(point) {
@@ -745,7 +760,7 @@ export class MapLibreActivityRunner {
   }
 
   setOverviewVisibility(visibility) {
-    ["overview-region-fill", "overview-region-line", "overview-region-label"].forEach((layerId) => {
+    ["overview-region-fill", "overview-region-line"].forEach((layerId) => {
       if (this.map.getLayer(layerId)) {
         this.map.setLayoutProperty(layerId, "visibility", visibility);
       }

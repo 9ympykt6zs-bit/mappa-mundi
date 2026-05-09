@@ -25,16 +25,77 @@ const worldCountriesPath = "assets/maps/data/maplibre-world-countries.geojson";
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const defaultActivityId = "us-states-capitals-10";
-
-const regionDefaultActivityIds = {
-  "united-states": defaultActivityId,
-  "western-europe": "western-european-countries",
-  "northern-europe": "northern-european-countries",
-  "baltic-europe": "baltic-europe-countries",
-  "balkans": "balkans-countries",
-  "central-europe": "central-european-countries",
-  "more-central-europe": "more-central-european-countries",
-  "southern-africa": "southern-africa-countries"
+const defaultMapSet = "world-europe";
+const mapSetOrder = ["us", "world-europe"];
+const categoryOrder = [
+  "States & Capitals",
+  "Countries",
+  "Cities",
+  "Rivers",
+  "Mountains",
+  "Waters",
+  "Physical Features",
+  "Review"
+];
+const mapSetLabels = {
+  us: "United States",
+  "world-europe": "World / Europe"
+};
+const activityCatalogMetadata = {
+  "western-european-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Atlantic-edge worksheet covering five Western Europe countries.",
+    sortOrder: 10
+  },
+  "northern-european-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Scandinavia proof sheet with the four northern countries.",
+    sortOrder: 20
+  },
+  "baltic-europe-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Baltic and eastern-edge practice with five adjacent countries.",
+    sortOrder: 30
+  },
+  "balkans-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Southeastern Europe country review.",
+    sortOrder: 40
+  },
+  "central-european-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Core Western and Central Europe country sheet.",
+    sortOrder: 50
+  },
+  "more-central-european-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Alpine and east-central Europe follow-up sheet.",
+    sortOrder: 60
+  },
+  "southern-africa-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Southern Africa proof sheet with five target countries.",
+    sortOrder: 70
+  }
+};
+const usSectionDescriptions = {
+  1: "First New England section.",
+  2: "Second New England review section.",
+  3: "Mid-Atlantic states and capitals.",
+  4: "Southeast Atlantic states and capitals.",
+  5: "Great Lakes states and capitals.",
+  6: "Midwest states and capitals.",
+  7: "Northern Plains states and capitals.",
+  8: "Southwest states and capitals.",
+  9: "Pacific coast plus Hawaii.",
+  10: "Northwest plus Alaska cumulative capstone."
 };
 
 const stateLabelAnchors = {
@@ -90,153 +151,14 @@ const stateLabelAnchors = {
   alaska: [-150, 64]
 };
 
-const overviewRegions = {
-  type: "FeatureCollection",
-  features: [
-    {
-      type: "Feature",
-      properties: {
-        id: "united-states",
-        name: "United States"
-      },
-      geometry: {
-        type: "Polygon",
-        coordinates: [[
-          [-125, 24],
-          [-66, 24],
-          [-66, 50],
-          [-125, 50],
-          [-125, 24]
-        ]]
-      }
-    },
-    {
-      type: "Feature",
-      properties: {
-        id: "western-europe",
-        name: "Western Europe"
-      },
-      geometry: {
-        type: "Polygon",
-        coordinates: [[
-          [-12, 35],
-          [8, 35],
-          [8, 59],
-          [-12, 59],
-          [-12, 35]
-        ]]
-      }
-    },
-    {
-      type: "Feature",
-      properties: {
-        id: "northern-europe",
-        name: "Scandinavia / Northern Europe"
-      },
-      geometry: {
-        type: "Polygon",
-        coordinates: [[
-          [3, 54],
-          [33, 54],
-          [33, 72],
-          [3, 72],
-          [3, 54]
-        ]]
-      }
-    },
-    {
-      type: "Feature",
-      properties: {
-        id: "southern-africa",
-        name: "Southern Africa"
-      },
-      geometry: {
-        type: "Polygon",
-        coordinates: [[
-          [10, -36],
-          [42, -36],
-          [42, -10],
-          [10, -10],
-          [10, -36]
-        ]]
-      }
-    },
-    {
-      type: "Feature",
-      properties: {
-        id: "baltic-europe",
-        name: "Baltic Europe"
-      },
-      geometry: {
-        type: "Polygon",
-        coordinates: [[
-          [13, 48.5],
-          [33.5, 48.5],
-          [33.5, 60.5],
-          [13, 60.5],
-          [13, 48.5]
-        ]]
-      }
-    },
-    {
-      type: "Feature",
-      properties: {
-        id: "balkans",
-        name: "Balkans"
-      },
-      geometry: {
-        type: "Polygon",
-        coordinates: [[
-          [12.5, 34],
-          [30.5, 34],
-          [30.5, 49],
-          [12.5, 49],
-          [12.5, 34]
-        ]]
-      }
-    },
-    {
-      type: "Feature",
-      properties: {
-        id: "central-europe",
-        name: "Central Europe"
-      },
-      geometry: {
-        type: "Polygon",
-        coordinates: [[
-          [1.8, 45.2],
-          [16, 45.2],
-          [16, 55.4],
-          [1.8, 55.4],
-          [1.8, 45.2]
-        ]]
-      }
-    },
-    {
-      type: "Feature",
-      properties: {
-        id: "more-central-europe",
-        name: "More Central Europe"
-      },
-      geometry: {
-        type: "Polygon",
-        coordinates: [[
-          [6, 35.8],
-          [23.5, 35.8],
-          [23.5, 52],
-          [6, 52],
-          [6, 35.8]
-        ]]
-      }
-    }
-  ]
-};
-
 let activities = [];
 let selectedActivityId = defaultActivityId;
 let session;
 let runner;
 let feedbackTimer;
+let activeMapSet = defaultMapSet;
+let activePreviewActivityId = null;
+let selectedOverviewActivityId = null;
 let grabbedAnswerId = null;
 let grabbedPointerId = null;
 let grabbedStartPoint = null;
@@ -253,7 +175,8 @@ const worldViewButton = document.querySelector("#world-view-button");
 const fitMapButton = document.querySelector("#fit-map-button");
 const zoomSlider = document.querySelector("#zoom-slider");
 const studyCard = document.querySelector("#study-card");
-const regionButtons = document.querySelectorAll("[data-region]");
+const mapSetTabs = document.querySelector("#map-set-tabs");
+const activityGroups = document.querySelector("#activity-groups");
 const studyModeButtons = document.querySelectorAll("[data-study-mode]");
 
 async function init() {
@@ -274,8 +197,10 @@ async function init() {
     container: "map"
   });
 
-  runner.onRegionSelect((regionId) => {
-    selectActivity(regionDefaultActivityIds[regionId] || defaultActivityId);
+  runner.onRegionSelect((activityId) => {
+    if (activityId) {
+      selectActivity(activityId);
+    }
   });
   runner.onTargetClick(handleTargetClick);
 
@@ -289,6 +214,9 @@ async function init() {
   renderAnswerBank();
   updateProgress();
   updateStudyModeButtons();
+  studyCard.hidden = true;
+  renderOverviewLibrary();
+  updateOverviewPreview();
   bindUiEvents();
   bindZoomControls();
 }
@@ -296,8 +224,8 @@ async function init() {
 function normalizeMapLibrePocActivity(rawActivity) {
   const region = rawActivity.map?.region || (rawActivity.id?.startsWith("us-") ? "united-states" : "world");
   const mapDefaults = getMapDefaults(rawActivity, region);
-
-  return normalizeActivity(rawActivity, {
+  const metadata = getActivityMetadata(rawActivity, region, mapDefaults);
+  const normalized = normalizeActivity(rawActivity, {
     schemaVersion: 2,
     engine: "maplibre",
     map: {
@@ -340,13 +268,25 @@ function normalizeMapLibrePocActivity(rawActivity) {
     ],
     labelAnchors: stateLabelAnchors
   });
+
+  return {
+    ...normalized,
+    mapSet: metadata.mapSet,
+    category: metadata.category,
+    sectionNumber: metadata.sectionNumber,
+    itemCount: metadata.itemCount,
+    baseMap: metadata.baseMap,
+    previewBounds: metadata.previewBounds,
+    previewRegionId: metadata.previewRegionId,
+    description: metadata.description,
+    sortOrder: metadata.sortOrder
+  };
 }
 
 function getMapDefaults(rawActivity, region) {
   const commonDefaults = {
     kind: "globe-region",
     region,
-    overviewRegions,
     initialView: { center: [-18, 18], zoom: 1.25 }
   };
 
@@ -438,6 +378,40 @@ function getMapDefaults(rawActivity, region) {
   };
 }
 
+function getActivityMetadata(rawActivity, region, mapDefaults) {
+  const featureCount = (rawActivity.targets || rawActivity.features || []).length;
+
+  if (rawActivity.id.startsWith("us-states-capitals-")) {
+    const sectionNumber = Number(rawActivity.sequence);
+
+    return {
+      mapSet: "us",
+      category: "States & Capitals",
+      sectionNumber,
+      itemCount: featureCount,
+      baseMap: "usa-map",
+      previewBounds: mapDefaults.studyView.bounds,
+      previewRegionId: rawActivity.id,
+      description: usSectionDescriptions[sectionNumber] || "United States section review.",
+      sortOrder: sectionNumber
+    };
+  }
+
+  const configured = activityCatalogMetadata[rawActivity.id] || {};
+
+  return {
+    mapSet: configured.mapSet || "world-europe",
+    category: configured.category || "Countries",
+    sectionNumber: configured.sectionNumber || null,
+    itemCount: configured.itemCount || featureCount,
+    baseMap: configured.baseMap || "world-countries",
+    previewBounds: configured.previewBounds || mapDefaults.studyView.bounds,
+    previewRegionId: configured.previewRegionId || rawActivity.id,
+    description: configured.description || "Regional geography proof sheet.",
+    sortOrder: configured.sortOrder ?? 999
+  };
+}
+
 async function fetchJson(path) {
   const response = await fetch(path);
 
@@ -449,10 +423,66 @@ async function fetchJson(path) {
 }
 
 function bindUiEvents() {
-  regionButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      selectActivity(button.dataset.activityId || regionDefaultActivityIds[button.dataset.region] || defaultActivityId);
-    });
+  mapSetTabs.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-map-set]");
+
+    if (!button) {
+      return;
+    }
+
+    activeMapSet = button.dataset.mapSet;
+    selectedOverviewActivityId = null;
+    activePreviewActivityId = null;
+    renderOverviewLibrary();
+    updateOverviewPreview();
+  });
+
+  activityGroups.addEventListener("click", (event) => {
+    const card = event.target.closest("[data-activity-id]");
+
+    if (!card) {
+      return;
+    }
+
+    selectActivity(card.dataset.activityId);
+  });
+
+  activityGroups.addEventListener("pointerover", (event) => {
+    const card = event.target.closest("[data-activity-id]");
+
+    if (!card) {
+      return;
+    }
+
+    setOverviewPreviewActivity(card.dataset.activityId);
+  });
+
+  activityGroups.addEventListener("pointerout", (event) => {
+    const card = event.target.closest("[data-activity-id]");
+
+    if (!card || card.contains(event.relatedTarget)) {
+      return;
+    }
+
+    restoreOverviewPreview();
+  });
+
+  activityGroups.addEventListener("focusin", (event) => {
+    const card = event.target.closest("[data-activity-id]");
+
+    if (card) {
+      setOverviewPreviewActivity(card.dataset.activityId);
+    }
+  });
+
+  activityGroups.addEventListener("focusout", (event) => {
+    const card = event.target.closest("[data-activity-id]");
+
+    if (!card || card.contains(event.relatedTarget)) {
+      return;
+    }
+
+    restoreOverviewPreview();
   });
 
   studyModeButtons.forEach((button) => {
@@ -478,6 +508,118 @@ function bindUiEvents() {
       cancelGrabbedAnswer();
     }
   });
+}
+
+function renderOverviewLibrary() {
+  renderMapSetTabs();
+  renderActivityGroups();
+}
+
+function renderMapSetTabs() {
+  mapSetTabs.innerHTML = "";
+
+  mapSetOrder.forEach((mapSet) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.mapSet = mapSet;
+    button.className = "map-set-tab";
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-selected", String(activeMapSet === mapSet));
+    button.classList.toggle("active", activeMapSet === mapSet);
+    button.textContent = mapSetLabels[mapSet];
+    mapSetTabs.appendChild(button);
+  });
+}
+
+function renderActivityGroups() {
+  activityGroups.innerHTML = "";
+
+  const activitiesForSet = getActivitiesForMapSet(activeMapSet);
+
+  categoryOrder.forEach((category) => {
+    const groupedActivities = activitiesForSet
+      .filter((activity) => activity.category === category)
+      .sort((first, second) => {
+        if (first.sortOrder !== second.sortOrder) {
+          return first.sortOrder - second.sortOrder;
+        }
+
+        return first.title.localeCompare(second.title);
+      });
+
+    if (groupedActivities.length === 0) {
+      return;
+    }
+
+    const section = document.createElement("section");
+    section.className = "activity-group";
+
+    const heading = document.createElement("div");
+    heading.className = "activity-group-heading";
+    heading.innerHTML = `<h3>${category}</h3><span>${groupedActivities.length} activit${groupedActivities.length === 1 ? "y" : "ies"}</span>`;
+    section.appendChild(heading);
+
+    const grid = document.createElement("div");
+    grid.className = "activity-card-grid";
+
+    groupedActivities.forEach((activity) => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "activity-card";
+      card.dataset.activityId = activity.id;
+      card.classList.toggle("active", getCurrentOverviewPreviewId() === activity.id);
+      card.innerHTML = `
+        <div class="activity-card-topline">
+          <span class="activity-card-category">${activity.category}</span>
+          <span class="activity-card-count">${activity.itemCount} items</span>
+        </div>
+        <strong>${activity.title}</strong>
+        <div class="activity-card-meta">
+          <span>${activity.sectionNumber ? `Section ${activity.sectionNumber}` : "Proof sheet"}</span>
+          <span>${mapSetLabels[activity.mapSet]}</span>
+        </div>
+        <p>${activity.description || "Regional geography activity."}</p>
+      `;
+      card.setAttribute("aria-pressed", String(getCurrentOverviewPreviewId() === activity.id));
+      grid.appendChild(card);
+    });
+
+    section.appendChild(grid);
+    activityGroups.appendChild(section);
+  });
+}
+
+function getActivitiesForMapSet(mapSet) {
+  return activities.filter((activity) => activity.mapSet === mapSet);
+}
+
+function getCurrentOverviewPreviewId() {
+  return activePreviewActivityId || selectedOverviewActivityId;
+}
+
+function setOverviewPreviewActivity(activityId) {
+  activePreviewActivityId = activityId;
+  highlightOverviewCard(activityId);
+  updateOverviewPreview();
+}
+
+function restoreOverviewPreview() {
+  activePreviewActivityId = null;
+  highlightOverviewCard(selectedOverviewActivityId);
+  updateOverviewPreview();
+}
+
+function highlightOverviewCard(activityId) {
+  activityGroups.querySelectorAll("[data-activity-id]").forEach((card) => {
+    const isActive = card.dataset.activityId === activityId;
+    card.classList.toggle("active", isActive);
+    card.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
+function updateOverviewPreview() {
+  const previewActivity = activities.find((activity) => activity.id === getCurrentOverviewPreviewId()) || null;
+  runner?.setOverviewPreview(previewActivity);
 }
 
 function bindZoomControls() {
@@ -520,10 +662,14 @@ function selectActivity(activityId) {
   cancelGrabbedAnswer();
   selectedActivityId = activityId;
   session.setActivity(getSelectedActivity());
+  activeMapSet = session.currentActivity.mapSet || activeMapSet;
+  selectedOverviewActivityId = selectedActivityId;
+  activePreviewActivityId = null;
   runner.updateActivity(session.activity);
   renderAnswerBank();
   updateProgress();
   clearFeedback();
+  renderOverviewLibrary();
   enterStudy();
 }
 
@@ -541,12 +687,17 @@ function returnToWorldView() {
   cancelGrabbedAnswer();
   session.clearSelection();
   syncAnswerBank();
+  activeMapSet = session.currentActivity.mapSet || activeMapSet;
+  selectedOverviewActivityId = selectedActivityId;
+  activePreviewActivityId = null;
+  renderOverviewLibrary();
   document.body.classList.add("overview-mode");
   document.body.classList.remove("study-mode");
   title.textContent = "World View";
   instruction.textContent = "Choose a study region from the globe or the list below.";
   studyCard.hidden = true;
   runner.enterOverview();
+  updateOverviewPreview();
 }
 
 function handleTargetClick(targetIds) {
