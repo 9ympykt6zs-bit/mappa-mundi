@@ -69,6 +69,17 @@ a {
   gap: 10px;
 }
 
+.activity-nav-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.activity-nav-controls[hidden] {
+  display: none;
+}
+
 .poc-nav a,
 .poc-nav button,
 .header-map-set-tabs button,
@@ -92,6 +103,11 @@ a {
 .label-chip:focus-visible {
   border-color: #2563eb;
   outline: none;
+}
+
+.poc-nav button:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
 }
 
 .poc-main {
@@ -473,6 +489,10 @@ body.study-mode .answer-panel {
 
   .poc-nav {
     overflow-x: auto;
+  }
+
+  .activity-nav-controls {
+    flex-wrap: nowrap;
   }
 
   .map-shell,

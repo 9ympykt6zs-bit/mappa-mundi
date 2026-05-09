@@ -125,6 +125,42 @@ body.overview-mode .main-content {
   color: #ffffff;
 }
 
+.header-actions {
+  align-items: flex-end;
+  display: grid;
+  gap: 12px;
+  justify-items: end;
+}
+
+.activity-nav-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.activity-nav-controls button {
+  background: #ffffff;
+  border: 1px solid #bdc9d8;
+  border-radius: 8px;
+  color: #172033;
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 38px;
+  padding: 8px 12px;
+}
+
+.activity-nav-controls button:hover,
+.activity-nav-controls button:focus-visible {
+  border-color: #64748b;
+  outline: none;
+}
+
+.activity-nav-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
 .dev-toggles {
   align-items: flex-end;
   display: grid;
@@ -891,7 +927,12 @@ body.study-mode .region-panel {
     flex-direction: column;
   }
 
+  .header-actions,
   .dev-toggles {
     justify-items: start;
+  }
+
+  .activity-nav-controls {
+    justify-content: flex-start;
   }
 }

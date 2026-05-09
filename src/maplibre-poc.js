@@ -27,6 +27,7 @@ const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const defaultActivityId = "us-states-capitals-10";
 const defaultMapSet = "world-europe";
+const completedActivitiesStorageKey = "geography-memory-completed-activities";
 const mapSetOrder = ["us", "world-europe"];
 const categoryOrder = [
   "States & Capitals",
@@ -200,6 +201,7 @@ let grabbedPointerId = null;
 let grabbedStartPoint = null;
 let grabbedHasMoved = false;
 let floatingChip = null;
+let completedActivityIds = loadCompletedActivityIds();
 
 const title = document.querySelector("#poc-title");
 const instruction = document.querySelector("#poc-instruction");
@@ -207,7 +209,10 @@ const answerBank = document.querySelector("#answer-bank");
 const progress = document.querySelector("#progress");
 const feedback = document.querySelector("#feedback");
 const resetButton = document.querySelector("#reset-button");
-const worldViewButton = document.querySelector("#world-view-button");
+const homeButton = document.querySelector("#home-button");
+const previousActivityButton = document.querySelector("#previous-activity-button");
+const nextIncompleteButton = document.querySelector("#next-incomplete-button");
+const activityNavControls = document.querySelector("#activity-nav-controls");
 const fitMapButton = document.querySelector("#fit-map-button");
 const zoomSlider = document.querySelector("#zoom-slider");
 const studyCard = document.querySelector("#study-card");
@@ -257,6 +262,7 @@ async function init() {
   updateOverviewPreview();
   bindUiEvents();
   bindZoomControls();
+  updateActivityNavigationControls();
 }
 
 function normalizeMapLibrePocActivity(rawActivity) {
@@ -556,7 +562,9 @@ function bindUiEvents() {
     });
   });
 
-  worldViewButton.addEventListener("click", returnToWorldView);
+  homeButton?.addEventListener("click", showLaunchScreen);
+  previousActivityButton?.addEventListener("click", openPreviousActivity);
+  nextIncompleteButton?.addEventListener("click", openNextIncompleteActivity);
   resetButton.addEventListener("click", resetActivity);
   document.addEventListener("pointermove", handleDocumentPointerMove);
   document.addEventListener("pointerup", handleDocumentPointerUp);
@@ -571,6 +579,7 @@ function bindUiEvents() {
 function renderOverviewLibrary() {
   renderMapSetTabs();
   renderActivityGroups();
+  updateActivityNavigationControls();
 }
 
 function renderMapSetTabs() {
@@ -671,6 +680,26 @@ function getOverviewEntriesForMapSet(mapSet) {
   return [...getActivitiesForMapSet(mapSet), ...supplementalOverviewEntries.filter((entry) => entry.mapSet === mapSet)];
 }
 
+function getSortedOverviewEntries(mapSet, options = {}) {
+  const { includeSupplemental = true } = options;
+  const entries = includeSupplemental ? getOverviewEntriesForMapSet(mapSet) : getActivitiesForMapSet(mapSet);
+
+  return [...entries].sort((first, second) => {
+    const firstCategoryIndex = categoryOrder.indexOf(first.category);
+    const secondCategoryIndex = categoryOrder.indexOf(second.category);
+
+    if (firstCategoryIndex !== secondCategoryIndex) {
+      return firstCategoryIndex - secondCategoryIndex;
+    }
+
+    if (first.sortOrder !== second.sortOrder) {
+      return first.sortOrder - second.sortOrder;
+    }
+
+    return first.title.localeCompare(second.title);
+  });
+}
+
 function getCurrentOverviewPreviewId() {
   return activePreviewActivityId || selectedOverviewActivityId;
 }
@@ -758,7 +787,7 @@ function renderAnswerBank() {
   });
 }
 
-function selectActivity(activityId) {
+function openActivity(activityId) {
   cancelGrabbedAnswer();
   selectedActivityId = activityId;
   session.setActivity(getSelectedActivity());
@@ -773,6 +802,10 @@ function selectActivity(activityId) {
   enterStudy();
 }
 
+function selectActivity(activityId) {
+  openActivity(activityId);
+}
+
 function enterStudy() {
   document.body.classList.remove("overview-mode");
   document.body.classList.add("study-mode");
@@ -781,9 +814,10 @@ function enterStudy() {
   updateStudyCardDetails();
   studyCard.hidden = false;
   runner.enterStudyView();
+  updateActivityNavigationControls();
 }
 
-function returnToWorldView() {
+function showLaunchScreen() {
   cancelGrabbedAnswer();
   session.clearSelection();
   syncAnswerBank();
@@ -799,6 +833,7 @@ function returnToWorldView() {
   runner.setOverviewMapSet(activeMapSet, mapSetOverviewViews[activeMapSet]);
   runner.enterOverview();
   updateOverviewPreview();
+  updateActivityNavigationControls();
 }
 
 function openLegacyActivity(activityId) {
@@ -839,6 +874,7 @@ function placeGrabbedAnswer(targetIds, options = {}) {
     cancelGrabbedAnswer({ clearSelection: false });
     renderAnswerBank();
     updateProgress();
+    updateCompletedActivityState();
     showFeedback(`Correct: ${result.feature.name}`, true);
   }
 }
@@ -862,6 +898,7 @@ function resetActivity() {
   runner.setCompletedTargets(session.completedIds);
   renderAnswerBank();
   updateProgress();
+  updateActivityNavigationControls();
 }
 
 function syncAnswerBank() {
@@ -981,6 +1018,111 @@ function cancelGrabbedAnswer(options = {}) {
 
 function updateProgress() {
   progress.textContent = session.progressText;
+}
+
+function loadCompletedActivityIds() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(completedActivitiesStorageKey) || "[]");
+    return new Set(Array.isArray(saved) ? saved : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveCompletedActivityIds() {
+  try {
+    localStorage.setItem(completedActivitiesStorageKey, JSON.stringify([...completedActivityIds]));
+  } catch {
+    // Ignore localStorage write failures and keep the session going.
+  }
+}
+
+function setActivityCompletedState(activityId, isComplete) {
+  if (!activityId) {
+    return;
+  }
+
+  if (isComplete) {
+    completedActivityIds.add(activityId);
+  } else {
+    completedActivityIds.delete(activityId);
+  }
+
+  saveCompletedActivityIds();
+  renderOverviewLibrary();
+}
+
+function updateCompletedActivityState() {
+  const targetCount = session?.currentActivity?.targets?.length || 0;
+
+  if (targetCount <= 0) {
+    return;
+  }
+
+  const isComplete = session.completedIds.size >= targetCount;
+  setActivityCompletedState(session.currentActivity.id, isComplete);
+}
+
+function getCurrentActivitySequence(mapSet = activeMapSet) {
+  return getSortedOverviewEntries(mapSet, { includeSupplemental: false });
+}
+
+function openPreviousActivity() {
+  const activitySequence = getCurrentActivitySequence(session.currentActivity.mapSet || activeMapSet);
+  const currentIndex = activitySequence.findIndex((activity) => activity.id === selectedActivityId);
+
+  if (currentIndex <= 0) {
+    showFeedback("No previous region.");
+    updateActivityNavigationControls();
+    return;
+  }
+
+  openActivity(activitySequence[currentIndex - 1].id);
+}
+
+function openNextIncompleteActivity() {
+  const activitySequence = getCurrentActivitySequence(session.currentActivity.mapSet || activeMapSet);
+  const currentIndex = activitySequence.findIndex((activity) => activity.id === selectedActivityId);
+
+  if (activitySequence.length === 0) {
+    showFeedback("All regions complete.");
+    return;
+  }
+
+  for (let offset = 1; offset < activitySequence.length; offset += 1) {
+    const nextIndex = (currentIndex + offset + activitySequence.length) % activitySequence.length;
+    const nextActivity = activitySequence[nextIndex];
+
+    if (!completedActivityIds.has(nextActivity.id)) {
+      openActivity(nextActivity.id);
+      return;
+    }
+  }
+
+  showFeedback("All regions complete.");
+}
+
+function updateActivityNavigationControls() {
+  const isStudyMode = document.body.classList.contains("study-mode");
+
+  if (activityNavControls) {
+    activityNavControls.hidden = !isStudyMode;
+  }
+
+  if (!isStudyMode || !session?.currentActivity) {
+    return;
+  }
+
+  const activitySequence = getCurrentActivitySequence(session.currentActivity.mapSet || activeMapSet);
+  const currentIndex = activitySequence.findIndex((activity) => activity.id === selectedActivityId);
+
+  if (previousActivityButton) {
+    previousActivityButton.disabled = currentIndex <= 0;
+  }
+
+  if (nextIncompleteButton) {
+    nextIncompleteButton.disabled = false;
+  }
 }
 
 function updateStudyModeButtons() {

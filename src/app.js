@@ -262,6 +262,7 @@ const defaultCityIconScale = 1.4;
 const landmarkIconWidth = 28;
 const landmarkIconHeight = 30;
 const defaultLabelRotation = 0;
+const completedActivitiesStorageKey = "geography-memory-completed-activities";
 const mapSettingsStoragePrefix = "geography-memory-map-settings:";
 const baseMapCalibrationStoragePrefix = "geography-memory-base-map-calibration:";
 const europeBaseMapId = "europe-base";
@@ -322,6 +323,9 @@ const answerPanelTitle = document.querySelector("#answer-panel-title");
 const progressText = document.querySelector("#progress");
 const feedback = document.querySelector("#feedback");
 const resetButton = document.querySelector("#reset-button");
+const homeButton = document.querySelector("#home-button");
+const previousActivityButton = document.querySelector("#previous-activity-button");
+const nextIncompleteButton = document.querySelector("#next-incomplete-button");
 const zoomInButton = document.querySelector("#zoom-in");
 const zoomOutButton = document.querySelector("#zoom-out");
 const fitMapButton = document.querySelector("#fit-map");
@@ -348,6 +352,7 @@ const clickedPointsList = document.querySelector("#clicked-points");
 const copyPointsButton = document.querySelector("#copy-points");
 
 const completed = new Set();
+const completedActivityIds = loadCompletedActivityIds();
 const clickedPoints = [];
 const modes = {
   wordBank: "word-bank",
@@ -432,6 +437,69 @@ function setMapViewBox(viewBox) {
 
 function getActivity(activityId) {
   return activities.find((activity) => activity.id === activityId) || activities[0];
+}
+
+function getPreviousActivityId(activityId) {
+  const currentIndex = activities.findIndex((activity) => activity.id === activityId);
+  return currentIndex > 0 ? activities[currentIndex - 1].id : null;
+}
+
+function getNextIncompleteActivityId(activityId) {
+  const currentIndex = activities.findIndex((activity) => activity.id === activityId);
+  const availableActivities = activities.filter((activity) => {
+    const activityData = fallbackActivityData[activity.id];
+    const featureCount = activityData?.features?.length ?? 1;
+    return featureCount > 0;
+  });
+  const availableIds = availableActivities.map((activity) => activity.id);
+  const availableCurrentIndex = availableIds.indexOf(activityId);
+
+  if (availableCurrentIndex === -1) {
+    return null;
+  }
+
+  for (let offset = 1; offset < availableIds.length; offset += 1) {
+    const nextIndex = (availableCurrentIndex + offset) % availableIds.length;
+    const nextId = availableIds[nextIndex];
+
+    if (!completedActivityIds.has(nextId)) {
+      return nextId;
+    }
+  }
+
+  return null;
+}
+
+function loadCompletedActivityIds() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(completedActivitiesStorageKey) || "[]");
+    return new Set(Array.isArray(saved) ? saved : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveCompletedActivityIds() {
+  try {
+    localStorage.setItem(completedActivitiesStorageKey, JSON.stringify([...completedActivityIds]));
+  } catch {
+    // Ignore storage failures to keep the app usable offline or in private browsing.
+  }
+}
+
+function setActivityCompletedState(activityId, isComplete) {
+  if (!activityId) {
+    return;
+  }
+
+  if (isComplete) {
+    completedActivityIds.add(activityId);
+  } else {
+    completedActivityIds.delete(activityId);
+  }
+
+  saveCompletedActivityIds();
+  updateActivityNavigationControls();
 }
 
 function getInitialActivityFromUrl() {
@@ -1171,6 +1239,8 @@ function renderActivity() {
     renderTuningControls();
     renderTuningMap();
   }
+
+  updateActivityNavigationControls();
 }
 
 async function renderWorldOverview() {
@@ -1202,6 +1272,7 @@ async function renderWorldOverview() {
   updateModeControls();
   updateProgress();
   resetMapView();
+  updateActivityNavigationControls();
 }
 
 function renderOverviewRegions() {
@@ -1620,6 +1691,8 @@ function completeCountry(id, options = {}) {
   }
 
   updateProgress();
+  updateCompletedActivityState();
+  updateActivityNavigationControls();
   showFeedback(`${feedbackPrefix}: ${feature.name}`, true);
 }
 
@@ -2631,6 +2704,8 @@ function handleReset() {
   if (isTuningMode) {
     renderTuningMap();
   }
+
+  updateActivityNavigationControls();
 }
 
 async function setActivity(activityId) {
@@ -2654,6 +2729,46 @@ async function setActivity(activityId) {
   renderActivity();
   resetMapView();
   updateRegionMenu();
+}
+
+async function openActivity(activityId) {
+  if (!activityId) {
+    return;
+  }
+
+  await runMapTransition(() => setActivity(activityId));
+}
+
+function goHome() {
+  window.location.href = "index.html";
+}
+
+function openPreviousActivity() {
+  const previousActivityId = getPreviousActivityId(currentActivityId);
+
+  if (!previousActivityId) {
+    showFeedback("No previous region.");
+    updateActivityNavigationControls();
+    return;
+  }
+
+  openActivity(previousActivityId).catch(() => {
+    showFeedback("Activity could not be loaded.");
+  });
+}
+
+function openNextIncompleteActivity() {
+  const nextActivityId = getNextIncompleteActivityId(currentActivityId);
+
+  if (!nextActivityId) {
+    showFeedback("All regions complete.");
+    updateActivityNavigationControls();
+    return;
+  }
+
+  openActivity(nextActivityId).catch(() => {
+    showFeedback("Activity could not be loaded.");
+  });
 }
 
 async function selectRegion(regionId) {
@@ -2762,6 +2877,28 @@ function updateProgress() {
   }
 
   progressText.textContent = `${completed.size} of ${mapData.features.length} completed`;
+}
+
+function updateCompletedActivityState() {
+  if (!mapData?.features?.length) {
+    return;
+  }
+
+  setActivityCompletedState(currentActivityId, completed.size >= mapData.features.length);
+}
+
+function updateActivityNavigationControls() {
+  if (homeButton) {
+    homeButton.disabled = false;
+  }
+
+  if (previousActivityButton) {
+    previousActivityButton.disabled = !getPreviousActivityId(currentActivityId);
+  }
+
+  if (nextIncompleteButton) {
+    nextIncompleteButton.disabled = false;
+  }
 }
 
 function zoomMap(direction) {
@@ -3043,6 +3180,9 @@ async function init() {
   mapSvg.addEventListener("pointerdown", updateCoordinateReadout);
   mapSvg.addEventListener("pointerdown", startMapPan);
   mapSvg.addEventListener("click", addClickedPoint);
+  homeButton.addEventListener("click", goHome);
+  previousActivityButton.addEventListener("click", openPreviousActivity);
+  nextIncompleteButton.addEventListener("click", openNextIncompleteActivity);
   resetButton.addEventListener("click", handleReset);
   zoomInButton.addEventListener("click", () => zoomMap(1));
   zoomOutButton.addEventListener("click", () => zoomMap(-1));
