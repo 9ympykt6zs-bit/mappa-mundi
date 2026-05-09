@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Geography Memory App</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Map menu">
+        <h1>Maps</h1>
+        <nav class="map-list">
+          <button class="map-item active" type="button" data-world-view aria-current="page">
+            World View
+          </button>
+          <button class="map-item" type="button" data-activity="us-states-capitals-01">
+            States and Capitals 1
+          </button>
+          <button class="map-item" type="button" data-activity="us-states">
+            United States
+          </button>
+          <button class="map-item" type="button" data-activity="western-european-countries">
+            Western European Countries
+          </button>
+          <button class="map-item" type="button" data-activity="european-cities">
+            European Cities
+          </button>
+          <button class="map-item" type="button" data-activity="world-map">
+            World Map
+          </button>
+          <button class="map-item placeholder" type="button" disabled>
+            Continents / Oceans
+          </button>
+        </nav>
+      </aside>
+
+      <main class="main-content">
+        <header class="page-header">
+          <div>
+          <h2 id="activity-title">World View</h2>
+          <p id="instruction-text">Choose a study region from the map or the region list.</p>
+            <div class="mode-toggle" role="group" aria-label="Practice mode">
+              <button class="mode-button active" type="button" data-mode="word-bank" aria-pressed="true">
+                Word Bank
+              </button>
+              <button class="mode-button" type="button" data-mode="click-reveal" aria-pressed="false">
+                Click to Reveal
+              </button>
+            </div>
+          </div>
+          <div class="dev-toggles">
+            <label class="debug-toggle">
+              <input id="debug-toggle" type="checkbox" />
+              Debug hit areas
+            </label>
+            <label class="debug-toggle">
+              <input id="tuning-toggle" type="checkbox" />
+              Tuning Mode
+            </label>
+          </div>
+        </header>
+
+        <section class="map-stage" aria-label="Map view">
+          <div class="map-toolbar" aria-label="Map controls">
+            <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
+            <button id="zoom-out" type="button" aria-label="Zoom out">-</button>
+            <button id="fit-map" type="button">Fit</button>
+            <button id="world-view-button" type="button">World View</button>
+          </div>
+          <svg id="map-svg" viewBox="120 180 1185 670" role="img" aria-label="Europe outline map">
+            <defs>
+              <radialGradient id="water-soft-edge" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#c6e3f2" stop-opacity="0.62" />
+                <stop offset="48%" stop-color="#dceff7" stop-opacity="0.32" />
+                <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+              </radialGradient>
+              <linearGradient id="mediterranean-wash" x1="0%" y1="50%" x2="100%" y2="50%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0" />
+                <stop offset="14%" stop-color="#c6e3f2" stop-opacity="0.34" />
+                <stop offset="50%" stop-color="#c6e3f2" stop-opacity="0.5" />
+                <stop offset="86%" stop-color="#c6e3f2" stop-opacity="0.28" />
+                <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+              </linearGradient>
+            </defs>
+            <g id="map-background-layer"></g>
+            <g id="water-shading-layer" class="water-shading" aria-hidden="true">
+              <ellipse class="water-wash" cx="262" cy="542" rx="260" ry="270" />
+              <ellipse class="water-wash" cx="565" cy="385" rx="230" ry="220" />
+              <ellipse class="water-wash" cx="760" cy="462" rx="160" ry="100" />
+              <ellipse class="water-wash" cx="720" cy="744" rx="520" ry="122" />
+              <path
+                class="mediterranean-wash"
+                d="M 245 730 C 380 685 520 682 680 716 C 840 751 1015 718 1218 728 L 1238 806 C 1000 826 760 812 575 785 C 430 764 318 775 220 804 Z"
+              />
+            </g>
+            <g id="graticule-layer" class="graticule-layer" aria-hidden="true"></g>
+            <g id="context-layer"></g>
+            <g id="country-layer"></g>
+            <g id="overview-region-layer" class="overview-region-layer"></g>
+            <g id="label-layer"></g>
+            <g id="debug-overlay-layer" class="debug-overlay-layer" aria-hidden="true"></g>
+          </svg>
+          <section id="region-panel" class="region-panel" aria-label="Study regions">
+            <div>
+              <h3>Study Regions</h3>
+              <p>Start broad, then zoom into a practice map.</p>
+            </div>
+            <div class="region-list">
+              <button type="button" data-region="continents-oceans">
+                <strong>Continents / Oceans</strong>
+                <span>World outline</span>
+              </button>
+              <button type="button" data-region="western-europe">
+                <strong>Western Europe</strong>
+                <span>Countries</span>
+              </button>
+              <button type="button" data-region="european-cities">
+                <strong>European Cities</strong>
+                <span>Major cities</span>
+              </button>
+              <button type="button" data-region="united-states">
+                <strong>United States</strong>
+                <span>States and capitals</span>
+              </button>
+            </div>
+          </section>
+          <div id="debug-tools" class="debug-tools" hidden>
+            <div class="debug-readout">
+              <span>Coordinate</span>
+              <strong id="coordinate-readout">-, -</strong>
+            </div>
+            <div class="debug-readout">
+              <span>Hovered path</span>
+              <strong id="hover-readout">-, -</strong>
+            </div>
+            <div class="debug-points-header">
+              <span>Clicked points</span>
+              <button id="copy-points" type="button" disabled>Copy points</button>
+            </div>
+            <ol id="clicked-points" class="clicked-points"></ol>
+          </div>
+          <div id="tuning-tools" class="tuning-tools" hidden>
+            <div class="tuning-header">
+              <strong>Map Tuning</strong>
+              <div class="tuning-actions">
+                <button id="undo-tuning" type="button" disabled>Undo</button>
+                <button id="copy-map-settings" type="button">Copy map settings JSON</button>
+              </div>
+            </div>
+            <label class="tuning-water-control">
+              Water opacity
+              <input id="water-opacity" type="range" min="0" max="1" step="0.05" value="1" />
+            </label>
+            <section class="calibration-panel" aria-label="Europe projection calibration">
+              <div class="calibration-header">
+                <strong>Europe Calibration</strong>
+                <div class="tuning-actions">
+                  <button id="reset-calibration" type="button">Reset calibration</button>
+                  <button id="copy-calibration" type="button">Copy calibration JSON</button>
+                </div>
+              </div>
+              <div class="calibration-controls">
+                <label>Translate X<input id="calibration-translate-x" type="number" step="1" /></label>
+                <label>Translate Y<input id="calibration-translate-y" type="number" step="1" /></label>
+                <label>Scale X<input id="calibration-scale-x" type="number" min="0.8" max="1.2" step="0.001" /></label>
+                <label>Scale Y<input id="calibration-scale-y" type="number" min="0.8" max="1.2" step="0.001" /></label>
+                <label>Rotation<input id="calibration-rotation" type="number" min="-10" max="10" step="0.1" /></label>
+              </div>
+            </section>
+            <div id="tuning-controls" class="tuning-controls"></div>
+          </div>
+        </section>
+
+        <section class="answer-panel" aria-label="Answer bank">
+          <div class="status-row">
+            <h3 id="answer-panel-title">Answer Bank</h3>
+            <div class="progress-actions">
+            <p id="progress">0 of 10 completed</p>
+              <button id="reset-button" class="reset-button" type="button">Reset</button>
+            </div>
+          </div>
+          <div id="feedback" class="feedback" aria-live="polite"></div>
+          <div id="answer-bank" class="answer-bank"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="src/app.js"></script>
+  </body>
+</html>
