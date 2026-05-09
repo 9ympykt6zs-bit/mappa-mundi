@@ -1,0 +1,66 @@
+{
+  "id": "balkans-countries",
+  "title": "Balkans",
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "balkans"
+  },
+  "features": [
+    {
+      "id": "greece",
+      "name": "Greece",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "GRC",
+      "color": "#60a5fa",
+      "labelAnchor": [21.73, 39.49],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "albania",
+      "name": "Albania",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ALB",
+      "color": "#ef4444",
+      "labelAnchor": [20.11, 40.65],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "bulgaria",
+      "name": "Bulgaria",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "BGR",
+      "color": "#22c55e",
+      "labelAnchor": [25.16, 42.51],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "slovenia",
+      "name": "Slovenia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "SVN",
+      "color": "#facc15",
+      "labelAnchor": [14.92, 46.06],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "romania",
+      "name": "Romania",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ROU",
+      "color": "#a855f7",
+      "labelAnchor": [24.97, 45.73],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    }
+  ]
+}

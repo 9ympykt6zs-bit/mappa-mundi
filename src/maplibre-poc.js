@@ -5,6 +5,10 @@ import { MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js";
 const activityDataPaths = [
   "assets/maps/data/western-european-countries.json",
   "assets/maps/data/northern-european-countries.json",
+  "assets/maps/data/baltic-europe-countries.json",
+  "assets/maps/data/balkans-countries.json",
+  "assets/maps/data/central-european-countries.json",
+  "assets/maps/data/more-central-european-countries.json",
   "assets/maps/data/southern-africa-countries.json",
   "assets/maps/data/us-states-capitals-01.json",
   "assets/maps/data/us-states-capitals-02.json",
@@ -26,6 +30,10 @@ const regionDefaultActivityIds = {
   "united-states": defaultActivityId,
   "western-europe": "western-european-countries",
   "northern-europe": "northern-european-countries",
+  "baltic-europe": "baltic-europe-countries",
+  "balkans": "balkans-countries",
+  "central-europe": "central-european-countries",
+  "more-central-europe": "more-central-european-countries",
   "southern-africa": "southern-africa-countries"
 };
 
@@ -150,6 +158,74 @@ const overviewRegions = {
           [42, -10],
           [10, -10],
           [10, -36]
+        ]]
+      }
+    },
+    {
+      type: "Feature",
+      properties: {
+        id: "baltic-europe",
+        name: "Baltic Europe"
+      },
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [13, 48.5],
+          [33.5, 48.5],
+          [33.5, 60.5],
+          [13, 60.5],
+          [13, 48.5]
+        ]]
+      }
+    },
+    {
+      type: "Feature",
+      properties: {
+        id: "balkans",
+        name: "Balkans"
+      },
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [12.5, 34],
+          [30.5, 34],
+          [30.5, 49],
+          [12.5, 49],
+          [12.5, 34]
+        ]]
+      }
+    },
+    {
+      type: "Feature",
+      properties: {
+        id: "central-europe",
+        name: "Central Europe"
+      },
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [1.8, 45.2],
+          [16, 45.2],
+          [16, 55.4],
+          [1.8, 55.4],
+          [1.8, 45.2]
+        ]]
+      }
+    },
+    {
+      type: "Feature",
+      properties: {
+        id: "more-central-europe",
+        name: "More Central Europe"
+      },
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [6, 35.8],
+          [23.5, 35.8],
+          [23.5, 52],
+          [6, 52],
+          [6, 35.8]
         ]]
       }
     }
@@ -303,6 +379,38 @@ function getMapDefaults(rawActivity, region) {
       regionView: { center: [17, 62], zoom: 3.2 },
       studyView: {
         bounds: [[2.5, 54.1], [33.8, 72.2]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "baltic-europe": {
+      regionView: { center: [23.5, 54.6], zoom: 3.9 },
+      studyView: {
+        bounds: [[13, 48.5], [33.5, 60.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "balkans": {
+      regionView: { center: [22, 42], zoom: 3.8 },
+      studyView: {
+        bounds: [[12.5, 34], [30.5, 49]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "central-europe": {
+      regionView: { center: [8.8, 50.5], zoom: 4.2 },
+      studyView: {
+        bounds: [[1.8, 45.2], [16, 55.4]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "more-central-europe": {
+      regionView: { center: [14.8, 44.5], zoom: 3.8 },
+      studyView: {
+        bounds: [[6, 35.8], [23.5, 52]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }

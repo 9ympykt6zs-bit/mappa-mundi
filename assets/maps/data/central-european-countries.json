@@ -1,0 +1,66 @@
+{
+  "id": "central-european-countries",
+  "title": "Central Europe",
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "central-europe"
+  },
+  "features": [
+    {
+      "id": "netherlands",
+      "name": "Netherlands",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "NLD",
+      "color": "#f97316",
+      "labelAnchor": [5.61, 52.42],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "belgium",
+      "name": "Belgium",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "BEL",
+      "color": "#facc15",
+      "labelAnchor": [4.8, 50.79],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "luxembourg",
+      "name": "Luxembourg",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "LUX",
+      "color": "#38bdf8",
+      "labelAnchor": [6.08, 49.73],
+      "labelFontSize": 9,
+      "labelRotation": 0
+    },
+    {
+      "id": "germany",
+      "name": "Germany",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "DEU",
+      "color": "#ef4444",
+      "labelAnchor": [9.68, 50.96],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "switzerland",
+      "name": "Switzerland",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "CHE",
+      "color": "#a855f7",
+      "labelAnchor": [7.46, 46.72],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    }
+  ]
+}

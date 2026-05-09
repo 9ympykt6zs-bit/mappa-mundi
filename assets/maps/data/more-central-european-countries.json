@@ -1,0 +1,66 @@
+{
+  "id": "more-central-european-countries",
+  "title": "More Central Europe",
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "more-central-europe"
+  },
+  "features": [
+    {
+      "id": "italy",
+      "name": "Italy",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ITA",
+      "color": "#22c55e",
+      "labelAnchor": [11.08, 44.73],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "austria",
+      "name": "Austria",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "AUT",
+      "color": "#ef4444",
+      "labelAnchor": [14.13, 47.52],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "hungary",
+      "name": "Hungary",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "HUN",
+      "color": "#38bdf8",
+      "labelAnchor": [19.45, 47.09],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "czechia",
+      "name": "Czechia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "CZE",
+      "color": "#f97316",
+      "labelAnchor": [15.38, 49.88],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "slovakia",
+      "name": "Slovakia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "SVK",
+      "color": "#a855f7",
+      "labelAnchor": [19.05, 48.73],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    }
+  ]
+}

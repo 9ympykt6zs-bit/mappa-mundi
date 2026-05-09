@@ -1,0 +1,66 @@
+{
+  "id": "baltic-europe-countries",
+  "title": "Baltic Europe",
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "baltic-europe"
+  },
+  "features": [
+    {
+      "id": "estonia",
+      "name": "Estonia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "EST",
+      "color": "#38bdf8",
+      "labelAnchor": [25.87, 58.72],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "latvia",
+      "name": "Latvia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "LVA",
+      "color": "#ef4444",
+      "labelAnchor": [25.46, 57.07],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "lithuania",
+      "name": "Lithuania",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "LTU",
+      "color": "#facc15",
+      "labelAnchor": [24.09, 55.1],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "poland",
+      "name": "Poland",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "POL",
+      "color": "#f97316",
+      "labelAnchor": [19.49, 51.99],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "belarus",
+      "name": "Belarus",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "BLR",
+      "color": "#a855f7",
+      "labelAnchor": [28.42, 53.82],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    }
+  ]
+}
