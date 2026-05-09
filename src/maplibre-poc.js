@@ -100,6 +100,11 @@ let selectedActivityId = defaultActivityId;
 let session;
 let runner;
 let feedbackTimer;
+let grabbedAnswerId = null;
+let grabbedPointerId = null;
+let grabbedStartPoint = null;
+let grabbedHasMoved = false;
+let floatingChip = null;
 
 const title = document.querySelector("#poc-title");
 const instruction = document.querySelector("#poc-instruction");
@@ -225,6 +230,7 @@ function bindUiEvents() {
   regionButtons.forEach((button) => {
     button.addEventListener("click", () => {
       if (button.dataset.region === "united-states") {
+        cancelGrabbedAnswer();
         selectedActivityId = button.dataset.activityId || defaultActivityId;
         session.setActivity(getSelectedActivity());
         runner.updateActivity(session.activity);
@@ -238,6 +244,7 @@ function bindUiEvents() {
 
   studyModeButtons.forEach((button) => {
     button.addEventListener("click", () => {
+      cancelGrabbedAnswer();
       session.setStudyMode(button.dataset.studyMode);
       runner.updateActivity(session.activity);
       renderAnswerBank();
@@ -250,6 +257,14 @@ function bindUiEvents() {
 
   worldViewButton.addEventListener("click", returnToWorldView);
   resetButton.addEventListener("click", resetActivity);
+  document.addEventListener("pointermove", handleDocumentPointerMove);
+  document.addEventListener("pointerup", handleDocumentPointerUp);
+  document.addEventListener("pointercancel", cancelGrabbedAnswer);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      cancelGrabbedAnswer();
+    }
+  });
 }
 
 function bindZoomControls() {
@@ -278,9 +293,11 @@ function renderAnswerBank() {
     chip.dataset.id = feature.id;
     chip.textContent = feature.name;
     chip.setAttribute("aria-pressed", "false");
-    chip.addEventListener("click", () => {
-      session.toggleAnswer(feature.id);
-      syncAnswerBank();
+    chip.addEventListener("pointerdown", (event) => {
+      handleChipPointerDown(event, feature);
+    });
+    chip.addEventListener("click", (event) => {
+      event.preventDefault();
     });
     answerBank.appendChild(chip);
   });
@@ -297,6 +314,7 @@ function enterUnitedStatesStudy() {
 }
 
 function returnToWorldView() {
+  cancelGrabbedAnswer();
   session.clearSelection();
   syncAnswerBank();
   document.body.classList.add("overview-mode");
@@ -307,7 +325,14 @@ function returnToWorldView() {
   runner.enterOverview();
 }
 
-function handleTargetClick(targetId) {
+function handleTargetClick(targetIds) {
+  placeGrabbedAnswer(targetIds, {
+    keepGrabbedOnIncorrect: true
+  });
+}
+
+function placeGrabbedAnswer(targetIds, options = {}) {
+  const targetId = choosePlacementTarget(targetIds);
   const result = session.tryAnswer(targetId);
 
   if (result.status === "no-selection") {
@@ -317,18 +342,35 @@ function handleTargetClick(targetId) {
 
   if (result.status === "incorrect") {
     showFeedback("Try again");
+    if (!options.keepGrabbedOnIncorrect) {
+      cancelGrabbedAnswer();
+    }
     return;
   }
 
   if (result.status === "correct") {
     runner.setCompletedTargets(session.completedIds);
+    cancelGrabbedAnswer({ clearSelection: false });
     renderAnswerBank();
     updateProgress();
     showFeedback(`Correct: ${result.feature.name}`, true);
   }
 }
 
+function choosePlacementTarget(targetIds) {
+  const candidateIds = Array.isArray(targetIds)
+    ? targetIds
+    : [targetIds].filter(Boolean);
+
+  if (session.selectedId && candidateIds.includes(session.selectedId)) {
+    return session.selectedId;
+  }
+
+  return candidateIds[0] || null;
+}
+
 function resetActivity() {
+  cancelGrabbedAnswer();
   session.reset();
   clearFeedback();
   runner.setCompletedTargets(session.completedIds);
@@ -347,6 +389,108 @@ function syncAnswerBank() {
     chip.disabled = isCompleted;
     chip.setAttribute("aria-pressed", String(isSelected));
   });
+}
+
+function handleChipPointerDown(event, feature) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (grabbedAnswerId === feature.id) {
+    cancelGrabbedAnswer();
+    return;
+  }
+
+  beginGrabbedAnswer(feature.id, event.clientX, event.clientY, event.pointerId);
+  event.currentTarget.setPointerCapture?.(event.pointerId);
+}
+
+function beginGrabbedAnswer(id, clientX, clientY, pointerId = null) {
+  if (session.selectedId !== id) {
+    session.toggleAnswer(id);
+  }
+
+  grabbedAnswerId = id;
+  grabbedPointerId = pointerId;
+  grabbedStartPoint = { x: clientX, y: clientY };
+  grabbedHasMoved = false;
+  runner.setMapDragEnabled(false);
+  showFloatingChip(id, clientX, clientY);
+  syncAnswerBank();
+}
+
+function handleDocumentPointerMove(event) {
+  if (!grabbedAnswerId) {
+    return;
+  }
+
+  updateFloatingChipPosition(event.clientX, event.clientY);
+
+  if (grabbedPointerId === event.pointerId && grabbedStartPoint) {
+    const distance = Math.hypot(event.clientX - grabbedStartPoint.x, event.clientY - grabbedStartPoint.y);
+    grabbedHasMoved = grabbedHasMoved || distance > 6;
+  }
+}
+
+function handleDocumentPointerUp(event) {
+  if (!grabbedAnswerId || grabbedPointerId !== event.pointerId) {
+    return;
+  }
+
+  const shouldDrop = grabbedHasMoved;
+  grabbedPointerId = null;
+  grabbedStartPoint = null;
+  grabbedHasMoved = false;
+
+  if (!shouldDrop) {
+    return;
+  }
+
+  const targetIds = runner.getTargetIdsAtClientPoint(event.clientX, event.clientY);
+  placeGrabbedAnswer(targetIds, {
+    keepGrabbedOnIncorrect: false
+  });
+}
+
+function showFloatingChip(id, clientX, clientY) {
+  const feature = session.getFeature(id);
+
+  if (!floatingChip) {
+    floatingChip = document.createElement("div");
+    floatingChip.className = "floating-label-chip";
+    document.body.appendChild(floatingChip);
+  }
+
+  floatingChip.textContent = feature?.name || "";
+  floatingChip.hidden = false;
+  updateFloatingChipPosition(clientX, clientY);
+}
+
+function updateFloatingChipPosition(clientX, clientY) {
+  if (!floatingChip) {
+    return;
+  }
+
+  floatingChip.style.transform = `translate(${clientX + 14}px, ${clientY + 14}px)`;
+}
+
+function cancelGrabbedAnswer(options = {}) {
+  const shouldClearSelection = options.clearSelection !== false;
+
+  grabbedAnswerId = null;
+  grabbedPointerId = null;
+  grabbedStartPoint = null;
+  grabbedHasMoved = false;
+  runner?.setMapDragEnabled(true);
+
+  if (floatingChip) {
+    floatingChip.hidden = true;
+  }
+
+  if (shouldClearSelection) {
+    session?.clearSelection();
+  }
+
+  syncAnswerBank();
 }
 
 function updateProgress() {

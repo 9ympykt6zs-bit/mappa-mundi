@@ -165,6 +165,34 @@ export class MapLibreActivityRunner {
     this.refreshStudyPaint();
   }
 
+  getTargetIdAtClientPoint(clientX, clientY) {
+    return this.getTargetIdsAtClientPoint(clientX, clientY)[0] || null;
+  }
+
+  getTargetIdsAtClientPoint(clientX, clientY) {
+    if (!this.map || this.currentView !== "study") {
+      return [];
+    }
+
+    const rect = this.map.getContainer().getBoundingClientRect();
+    const point = {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+
+    return this.getTargetIdsAtMapPoint(point);
+  }
+
+  setMapDragEnabled(isEnabled) {
+    if (!this.map) {
+      return;
+    }
+
+    const method = isEnabled ? "enable" : "disable";
+    this.map.dragPan[method]();
+    this.map.boxZoom[method]();
+  }
+
   updateActivity(activity) {
     this.activity = activity;
     this.shapeTargets = activity.targets.filter((target) => target.kind === "shape");
@@ -489,22 +517,44 @@ export class MapLibreActivityRunner {
       return;
     }
 
-    const pointFeature = this.map.queryRenderedFeatures(event.point, {
-      layers: ["capital-hit", "capital-marker"]
-    })[0];
+    const targetIds = this.getTargetIdsAtMapPoint(event.point);
 
-    if (pointFeature) {
-      this.targetClickHandler?.(pointFeature.properties.id);
+    if (targetIds.length > 0) {
+      this.targetClickHandler?.(targetIds);
       return;
     }
 
-    const stateFeature = this.map.queryRenderedFeatures(event.point, {
-      layers: ["state-fill"]
-    })[0];
+    this.targetClickHandler?.(null);
+  }
 
-    if (stateFeature) {
-      this.targetClickHandler?.(stateFeature.properties.id);
-    }
+  getTargetIdAtMapPoint(point) {
+    return this.getTargetIdsAtMapPoint(point)[0] || null;
+  }
+
+  getTargetIdsAtMapPoint(point) {
+    const queryPoint = Array.isArray(point) ? point : [point.x, point.y];
+    const targetIds = [];
+    const pointFeatures = this.map.queryRenderedFeatures(queryPoint, {
+      layers: ["capital-hit", "capital-marker"]
+    });
+
+    pointFeatures.forEach((feature) => {
+      if (!targetIds.includes(feature.properties.id)) {
+        targetIds.push(feature.properties.id);
+      }
+    });
+
+    const stateFeatures = this.map.queryRenderedFeatures(queryPoint, {
+      layers: ["state-fill"]
+    });
+
+    stateFeatures.forEach((feature) => {
+      if (!targetIds.includes(feature.properties.id)) {
+        targetIds.push(feature.properties.id);
+      }
+    });
+
+    return targetIds;
   }
 
   getCapitalGeoJson() {

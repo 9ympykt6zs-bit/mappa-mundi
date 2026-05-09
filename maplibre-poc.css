@@ -310,6 +310,7 @@ body.study-mode .answer-panel {
   min-height: 42px;
   padding: 10px 14px;
   touch-action: manipulation;
+  user-select: none;
 }
 
 .label-chip.selected {
@@ -317,6 +318,27 @@ body.study-mode .answer-panel {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16), 0 6px 14px rgba(24, 38, 64, 0.08);
   color: #174ea6;
+}
+
+.floating-label-chip {
+  background: #eaf2ff;
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  box-shadow: 0 14px 28px rgba(24, 38, 64, 0.22);
+  color: #174ea6;
+  font-weight: 800;
+  left: 0;
+  max-width: min(260px, calc(100vw - 32px));
+  padding: 10px 14px;
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  white-space: nowrap;
+  z-index: 30;
+}
+
+.floating-label-chip[hidden] {
+  display: none;
 }
 
 .label-chip.used {
