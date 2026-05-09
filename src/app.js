@@ -1240,7 +1240,7 @@ function renderActivity() {
     renderTuningMap();
   }
 
-  updateActivityNavigationControls();
+  renderActivityNavControls(currentActivityId);
 }
 
 async function renderWorldOverview() {
@@ -1272,7 +1272,7 @@ async function renderWorldOverview() {
   updateModeControls();
   updateProgress();
   resetMapView();
-  updateActivityNavigationControls();
+  renderActivityNavControls(currentActivityId);
 }
 
 function renderOverviewRegions() {
@@ -2899,6 +2899,11 @@ function updateActivityNavigationControls() {
   if (nextIncompleteButton) {
     nextIncompleteButton.disabled = false;
   }
+}
+
+function renderActivityNavControls(activityId) {
+  console.log(`Activity nav rendered for: ${activityId}`);
+  updateActivityNavigationControls();
 }
 
 function zoomMap(direction) {

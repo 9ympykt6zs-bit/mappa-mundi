@@ -579,7 +579,7 @@ function bindUiEvents() {
 function renderOverviewLibrary() {
   renderMapSetTabs();
   renderActivityGroups();
-  updateActivityNavigationControls();
+  renderActivityNavControls(null);
 }
 
 function renderMapSetTabs() {
@@ -814,7 +814,7 @@ function enterStudy() {
   updateStudyCardDetails();
   studyCard.hidden = false;
   runner.enterStudyView();
-  updateActivityNavigationControls();
+  renderActivityNavControls(session.currentActivity.id);
 }
 
 function showLaunchScreen() {
@@ -833,7 +833,7 @@ function showLaunchScreen() {
   runner.setOverviewMapSet(activeMapSet, mapSetOverviewViews[activeMapSet]);
   runner.enterOverview();
   updateOverviewPreview();
-  updateActivityNavigationControls();
+  renderActivityNavControls(null);
 }
 
 function openLegacyActivity(activityId) {
@@ -1103,13 +1103,7 @@ function openNextIncompleteActivity() {
 }
 
 function updateActivityNavigationControls() {
-  const isStudyMode = document.body.classList.contains("study-mode");
-
-  if (activityNavControls) {
-    activityNavControls.hidden = !isStudyMode;
-  }
-
-  if (!isStudyMode || !session?.currentActivity) {
+  if (!session?.currentActivity) {
     return;
   }
 
@@ -1123,6 +1117,18 @@ function updateActivityNavigationControls() {
   if (nextIncompleteButton) {
     nextIncompleteButton.disabled = false;
   }
+}
+
+function renderActivityNavControls(activityId) {
+  if (activityNavControls) {
+    activityNavControls.hidden = !activityId;
+  }
+
+  if (activityId) {
+    console.log(`Activity nav rendered for: ${activityId}`);
+  }
+
+  updateActivityNavigationControls();
 }
 
 function updateStudyModeButtons() {
