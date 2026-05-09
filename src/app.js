@@ -434,6 +434,17 @@ function getActivity(activityId) {
   return activities.find((activity) => activity.id === activityId) || activities[0];
 }
 
+function getInitialActivityFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const requestedActivityId = params.get("activity");
+
+  if (!requestedActivityId) {
+    return null;
+  }
+
+  return activities.some((activity) => activity.id === requestedActivityId) ? requestedActivityId : null;
+}
+
 function getTargetNoun() {
   if (mapData.targetNoun) {
     return mapData.targetNoun;
@@ -3060,7 +3071,14 @@ async function init() {
   waterOpacityInput.addEventListener("input", handleWaterOpacityInput);
 
   updateWaterOpacity();
-  await renderWorldOverview();
+  const initialActivityId = getInitialActivityFromUrl();
+
+  if (initialActivityId && initialActivityId !== "world-map") {
+    await setActivity(initialActivityId);
+  } else {
+    await renderWorldOverview();
+  }
+
   renderClickedPoints();
 }
 

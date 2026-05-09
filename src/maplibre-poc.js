@@ -4,6 +4,7 @@ import { MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js";
 
 const activityDataPaths = [
   "assets/maps/data/western-european-countries.json",
+  "assets/maps/data/european-cities.json",
   "assets/maps/data/northern-european-countries.json",
   "assets/maps/data/baltic-europe-countries.json",
   "assets/maps/data/balkans-countries.json",
@@ -58,6 +59,12 @@ const activityCatalogMetadata = {
     description: "Atlantic-edge worksheet covering five Western Europe countries.",
     sortOrder: 10
   },
+  "european-cities": {
+    mapSet: "world-europe",
+    category: "Cities",
+    description: "Major European city placement with landmark-style point targets.",
+    sortOrder: 15
+  },
   "northern-european-countries": {
     mapSet: "world-europe",
     category: "Countries",
@@ -95,6 +102,25 @@ const activityCatalogMetadata = {
     sortOrder: 70
   }
 };
+const supplementalOverviewEntries = [
+  {
+    id: "continents-oceans-legacy",
+    title: "Continents / Oceans",
+    mapSet: "world-europe",
+    category: "Physical Features",
+    sectionNumber: null,
+    itemCount: null,
+    baseMap: "world-map",
+    previewBounds: [[-180, -60], [180, 82]],
+    previewRegionId: "continents-oceans-legacy",
+    description: "Open the legacy world outline activity for continents and oceans.",
+    sortOrder: 90,
+    launch: {
+      type: "legacy",
+      activityId: "world-map"
+    }
+  }
+];
 const usSectionDescriptions = {
   1: "First New England section.",
   2: "Second New England review section.",
@@ -187,6 +213,7 @@ const zoomSlider = document.querySelector("#zoom-slider");
 const studyCard = document.querySelector("#study-card");
 const headerMapSetTabs = document.querySelector("#header-map-set-tabs");
 const activityGroups = document.querySelector("#activity-groups");
+const activityCount = document.querySelector("#activity-count");
 const studyModeButtons = document.querySelectorAll("[data-study-mode]");
 
 async function init() {
@@ -233,7 +260,7 @@ async function init() {
 }
 
 function normalizeMapLibrePocActivity(rawActivity) {
-  const region = rawActivity.map?.region || (rawActivity.id?.startsWith("us-") ? "united-states" : "world");
+  const region = rawActivity.map?.region || inferActivityRegion(rawActivity.id);
   const mapDefaults = getMapDefaults(rawActivity, region);
   const metadata = getActivityMetadata(rawActivity, region, mapDefaults);
   const normalized = normalizeActivity(rawActivity, {
@@ -292,6 +319,25 @@ function normalizeMapLibrePocActivity(rawActivity) {
     description: metadata.description,
     sortOrder: metadata.sortOrder
   };
+}
+
+function inferActivityRegion(activityId = "") {
+  if (activityId.startsWith("us-")) {
+    return "united-states";
+  }
+
+  const regionByActivityId = {
+    "western-european-countries": "western-europe",
+    "european-cities": "western-europe",
+    "northern-european-countries": "northern-europe",
+    "baltic-europe-countries": "baltic-europe",
+    "balkans-countries": "balkans",
+    "central-european-countries": "central-europe",
+    "more-central-european-countries": "more-central-europe",
+    "southern-africa-countries": "southern-africa"
+  };
+
+  return regionByActivityId[activityId] || "world";
 }
 
 function getMapDefaults(rawActivity, region) {
@@ -451,6 +497,11 @@ function bindUiEvents() {
       return;
     }
 
+    if (card.dataset.launchType === "legacy") {
+      openLegacyActivity(card.dataset.legacyActivityId);
+      return;
+    }
+
     selectActivity(card.dataset.activityId);
   });
 
@@ -541,7 +592,13 @@ function renderMapSetTabs() {
 function renderActivityGroups() {
   activityGroups.innerHTML = "";
 
-  const activitiesForSet = getActivitiesForMapSet(activeMapSet);
+  const activitiesForSet = getOverviewEntriesForMapSet(activeMapSet);
+  updateActivityCount(activitiesForSet.length);
+
+  if (activitiesForSet.length === 0) {
+    activityGroups.innerHTML = "<p>No activities are available for this map set yet.</p>";
+    return;
+  }
 
   categoryOrder.forEach((category) => {
     const groupedActivities = activitiesForSet
@@ -574,11 +631,21 @@ function renderActivityGroups() {
       card.type = "button";
       card.className = "activity-card";
       card.dataset.activityId = activity.id;
+      card.dataset.launchType = activity.launch?.type || "activity";
+
+      if (activity.launch?.activityId) {
+        card.dataset.legacyActivityId = activity.launch.activityId;
+      }
+
       card.classList.toggle("active", getCurrentOverviewPreviewId() === activity.id);
+      const cardCountMarkup = Number.isFinite(activity.itemCount)
+        ? `<span class="activity-card-count">${activity.itemCount} items</span>`
+        : "";
+
       card.innerHTML = `
         <div class="activity-card-topline">
           <span class="activity-card-category">${activity.category}</span>
-          <span class="activity-card-count">${activity.itemCount} items</span>
+          ${cardCountMarkup}
         </div>
         <strong>${activity.title}</strong>
         <div class="activity-card-meta">
@@ -598,6 +665,10 @@ function renderActivityGroups() {
 
 function getActivitiesForMapSet(mapSet) {
   return activities.filter((activity) => activity.mapSet === mapSet);
+}
+
+function getOverviewEntriesForMapSet(mapSet) {
+  return [...getActivitiesForMapSet(mapSet), ...supplementalOverviewEntries.filter((entry) => entry.mapSet === mapSet)];
 }
 
 function getCurrentOverviewPreviewId() {
@@ -625,7 +696,8 @@ function highlightOverviewCard(activityId) {
 }
 
 function updateOverviewPreview() {
-  const previewActivity = activities.find((activity) => activity.id === getCurrentOverviewPreviewId()) || null;
+  const previewActivity = [...activities, ...supplementalOverviewEntries]
+    .find((activity) => activity.id === getCurrentOverviewPreviewId()) || null;
   runner?.setOverviewPreview(previewActivity);
 }
 
@@ -656,6 +728,14 @@ function bindZoomControls() {
   runner.onZoomChange((zoom) => {
     zoomSlider.value = String(Math.max(Number(zoomSlider.min), Math.min(Number(zoomSlider.max), zoom)));
   });
+}
+
+function updateActivityCount(count) {
+  if (!activityCount) {
+    return;
+  }
+
+  activityCount.textContent = `Showing ${count} activit${count === 1 ? "y" : "ies"}`;
 }
 
 function renderAnswerBank() {
@@ -719,6 +799,16 @@ function returnToWorldView() {
   runner.setOverviewMapSet(activeMapSet, mapSetOverviewViews[activeMapSet]);
   runner.enterOverview();
   updateOverviewPreview();
+}
+
+function openLegacyActivity(activityId) {
+  const nextUrl = new URL("legacy-svg-app.html", window.location.href);
+
+  if (activityId) {
+    nextUrl.searchParams.set("activity", activityId);
+  }
+
+  window.location.href = nextUrl.toString();
 }
 
 function handleTargetClick(targetIds) {

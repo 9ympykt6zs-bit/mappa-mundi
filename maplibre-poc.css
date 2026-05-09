@@ -12,6 +12,11 @@
 body {
   margin: 0;
   min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body.study-mode {
   overflow: hidden;
 }
 
@@ -100,6 +105,11 @@ a {
   position: relative;
 }
 
+body.overview-mode .map-shell {
+  height: min(54vh, 520px);
+  min-height: 320px;
+}
+
 body.study-mode .map-shell {
   height: calc(100vh - 252px);
   min-height: 360px;
@@ -186,6 +196,13 @@ body.study-mode .map-shell {
 .region-panel-intro p {
   color: #536277;
   margin-top: 4px;
+}
+
+.activity-count {
+  color: #174ea6;
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin-top: 10px;
 }
 
 .library-panel {
@@ -441,7 +458,7 @@ body.study-mode .answer-panel {
 
 @media (max-width: 760px) {
   body {
-    overflow: auto;
+    overflow-y: auto;
   }
 
   .poc-header {
@@ -462,6 +479,11 @@ body.study-mode .answer-panel {
   body.study-mode .map-shell {
     height: calc(100vh - 286px);
     min-height: 340px;
+  }
+
+  body.overview-mode .map-shell {
+    height: min(42vh, 380px);
+    min-height: 280px;
   }
 
   .region-panel {
