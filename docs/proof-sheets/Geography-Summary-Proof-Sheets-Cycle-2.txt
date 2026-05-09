@@ -1,0 +1,173 @@
+1. CONTINENTS/OCEANS
+- North America
+- South America
+- Europe
+- Asia
+- Africa
+- Australia
+- Antarctica
+- Indian Ocean
+- Arctic Ocean
+- Atlantic Ocean
+- Pacific Ocean
+- Southern Ocean
+
+2. EUROPEAN WATERS
+- North Sea
+- Baltic Sea
+- Adriatic Sea
+- English Channel
+- Mediterranean Sea
+
+3. WESTERN EUROPEAN COUNTRIES
+- Ireland
+- England
+- Portugal
+- Spain
+- France
+
+4. EUROPEAN RIVERS
+- Seine River
+- Rhine River
+- Elbe River
+- Po River
+- Danube River
+- Volga River
+
+5. EUROPEAN CITIES
+- London
+- Paris
+- Rome
+- Barcelona
+- Orleans
+
+6. EUROPEAN MOUNTAINS
+- Pyrenees
+- Alps
+- Carpathians
+- Caucasus
+- Ural
+- Matterhorn
+
+7. EUROPEAN PENINSULAS
+- Iberian Peninsula
+- Balkan Peninsula
+- Scandinavian Peninsula
+- Apennine Peninsula
+
+8. MID-ATLANTIC WORLD
+- Cape of Good Hope
+- Strait of Magellan
+- Canary Islands
+- Treaty of Tordesillas
+
+9. CARIBBEAN
+- Cuba
+- Jamaica
+- Haiti
+- Dominican Republic
+- Puerto Rico
+
+10. SOUTHWEST ASIA
+- Afghanistan
+- Pakistan
+- India
+- Kolkata
+- Arabian Sea
+
+11. EUROPE AND ASIA
+- Moscow
+- Kiev
+- Russia
+- Siberia
+- Ukraine
+
+12. EASTERN EUROPEAN SEAS
+- White Sea
+- Barents Sea
+- Black Sea
+- Caspian Sea
+- Aral Sea
+
+13. NORTHERN EUROPEAN COUNTRIES
+- Norway
+- Sweden
+- Finland
+- Denmark
+
+14. BALTIC EUROPE
+- Estonia
+- Latvia
+- Lithuania
+- Poland
+- Belarus
+
+15. THE LEVANT
+- Turkey
+- Cyprus
+- Syria
+- Iraq
+- Iran
+
+16. BALKANS
+- Greece
+- Albania
+- Bulgaria
+- Slovenia
+- Romania
+
+17. CENTRAL EUROPEAN COUNTRIES
+- Netherlands
+- Belgium
+- Luxembourg
+- Germany
+- Switzerland
+
+18. MORE CENTRAL EUROPEAN COUNTRIES
+- Italy
+- Austria
+- Hungary
+- Czechia
+- Slovakia
+
+19. SOUTHEASTERN ASIA
+- North Korea
+- South Korea
+- Taiwan
+- Philippines
+- Guam
+
+20. SOUTH CENTRAL ASIA
+- Laos
+- Thailand
+- Cambodia
+- North Vietnam
+- South Vietnam
+
+21. CENTRAL AMERICA
+- Guatemala
+- Belize
+- El Salvador
+- Honduras
+- Nicaragua
+
+22. OCEANIA
+- Australia
+- Great Barrier Reef
+- New Zealand
+- Papua New Guinea
+- Indonesia
+
+23. CENTRAL ASIA
+- Kazakhstan
+- Uzbekistan
+- Turkmenistan
+- Tajikistan
+- Kyrgyzstan
+
+24. SOUTHERN AFRICA
+- South Africa
+- Lesotho
+- Botswana
+- Mozambique
+- Namibia

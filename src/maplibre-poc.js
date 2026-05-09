@@ -11,6 +11,16 @@ const activityDataPaths = [
   "assets/maps/data/central-european-countries.json",
   "assets/maps/data/more-central-european-countries.json",
   "assets/maps/data/southern-africa-countries.json",
+  "assets/maps/data/african-countries.json",
+  "assets/maps/data/the-levant.json",
+  "assets/maps/data/central-america.json",
+  "assets/maps/data/central-asia.json",
+  "assets/maps/data/south-america-west.json",
+  "assets/maps/data/south-america-east.json",
+  "assets/maps/data/caribbean.json",
+  "assets/maps/data/southwest-asia.json",
+  "assets/maps/data/southeastern-asia.json",
+  "assets/maps/data/oceania.json",
   "assets/maps/data/us-states-capitals-01.json",
   "assets/maps/data/us-states-capitals-02.json",
   "assets/maps/data/us-states-capitals-03.json",
@@ -23,6 +33,12 @@ const activityDataPaths = [
   "assets/maps/data/us-states-capitals-10.json"
 ];
 const worldCountriesPath = "assets/maps/data/maplibre-world-countries.geojson";
+// Natural Earth map-unit supplements fill territory paths that are absent from
+// the app's simplified admin-0 country layer.
+const worldCountrySupplements = [
+  "assets/maps/world/french-guiana-map-unit.geojson",
+  "assets/maps/world/guam-map-unit.geojson"
+];
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const defaultActivityId = "us-states-capitals-10";
@@ -106,6 +122,76 @@ const activityCatalogMetadata = {
     category: "Countries",
     description: "Southern Africa proof sheet with five target countries.",
     sortOrder: 70
+  },
+  "african-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Cycle 1 African countries proof sheet with five modern countries.",
+    sortOrder: 69,
+    sectionNumber: 17
+  },
+  "the-levant": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Eastern Mediterranean country sheet from the proof set.",
+    sortOrder: 71,
+    sectionNumber: 15
+  },
+  "central-america": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Five-country Central America review sheet.",
+    sortOrder: 72,
+    sectionNumber: 21
+  },
+  "central-asia": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Central Asia proof sheet with five inland countries.",
+    sortOrder: 73,
+    sectionNumber: 23
+  },
+  "south-america-west": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Andes-side South America proof sheet.",
+    sortOrder: 74,
+    sectionNumber: 22
+  },
+  "south-america-east": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Eastern South America and Guianas proof sheet.",
+    sortOrder: 75,
+    sectionNumber: 23
+  },
+  "caribbean": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Caribbean islands proof sheet with country and territory targets.",
+    sortOrder: 76,
+    sectionNumber: 9
+  },
+  "southwest-asia": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Southwest Asia country-only subset from the mixed proof sheet.",
+    sortOrder: 77,
+    sectionNumber: 10
+  },
+  "southeastern-asia": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "East and western Pacific country/territory proof sheet.",
+    sortOrder: 78,
+    sectionNumber: 19
+  },
+  "oceania": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Oceania country-only subset from the mixed proof sheet.",
+    sortOrder: 79,
+    sectionNumber: 22
   }
 };
 const supplementalOverviewEntries = [
@@ -227,12 +313,15 @@ const activityCount = document.querySelector("#activity-count");
 const studyModeButtons = document.querySelectorAll("[data-study-mode]");
 
 async function init() {
-  const [loadedActivities, worldCountries, usStatesAtlas, stateTargets] = await Promise.all([
+  const [loadedActivities, worldCountries, supplementalWorldCountries, usStatesAtlas, stateTargets] = await Promise.all([
     Promise.all(activityDataPaths.map((path) => fetchJson(path))),
     fetchJson(worldCountriesPath),
+    Promise.all(worldCountrySupplements.map((path) => fetchJson(path))),
     fetchJson(usStatesAtlasPath),
     fetchJson(stateGeoJsonPath)
   ]);
+
+  const mergedWorldCountries = mergeFeatureCollections(worldCountries, supplementalWorldCountries);
 
   activities = loadedActivities.map((activity) => normalizeMapLibrePocActivity(activity));
   session = new ActivitySession(getSelectedActivity(), {
@@ -253,7 +342,7 @@ async function init() {
 
   await runner.load({
     activity: session.activity,
-    worldCountries,
+    worldCountries: mergedWorldCountries,
     usStatesAtlas,
     stateTargets
   });
@@ -345,7 +434,17 @@ function inferActivityRegion(activityId = "") {
     "balkans": "balkans",
     "central-european-countries": "central-europe",
     "more-central-european-countries": "more-central-europe",
-    "southern-africa-countries": "southern-africa"
+    "southern-africa-countries": "southern-africa",
+    "african-countries": "african-countries",
+    "the-levant": "levant",
+    "central-america": "central-america",
+    "central-asia": "central-asia",
+    "south-america-west": "south-america-west",
+    "south-america-east": "south-america-east",
+    "caribbean": "caribbean",
+    "southwest-asia": "southwest-asia",
+    "southeastern-asia": "southeastern-asia",
+    "oceania": "oceania"
   };
 
   return regionByActivityId[activityId] || "world";
@@ -430,6 +529,86 @@ function getMapDefaults(rawActivity, region) {
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
+    },
+    "african-countries": {
+      regionView: { center: [34, -11], zoom: 2.95 },
+      studyView: {
+        bounds: [[22.0, -31.8], [51.5, 15.2]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "levant": {
+      regionView: { center: [41.5, 35.4], zoom: 3.4 },
+      studyView: {
+        bounds: [[25.5, 28.2], [64.5, 42.8]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "central-america": {
+      regionView: { center: [-88.1, 14.6], zoom: 4.6 },
+      studyView: {
+        bounds: [[-93.7, 7.2], [-82.8, 18.9]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "central-asia": {
+      regionView: { center: [67.5, 42.2], zoom: 3.25 },
+      studyView: {
+        bounds: [[50, 35.3], [86.5, 56.8]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "south-america-west": {
+      regionView: { center: [-72, -10.5], zoom: 3.15 },
+      studyView: {
+        bounds: [[-82.5, -40.5], [-58.8, 13.8]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "south-america-east": {
+      regionView: { center: [-56.5, -15.8], zoom: 3.15 },
+      studyView: {
+        bounds: [[-74.5, -40.8], [-33.5, 9.8]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "caribbean": {
+      regionView: { center: [-74.5, 19.2], zoom: 4.25 },
+      studyView: {
+        bounds: [[-85.5, 16.4], [-63.8, 24.6]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "southwest-asia": {
+      regionView: { center: [73.5, 27], zoom: 3.35 },
+      studyView: {
+        bounds: [[58.5, 5.5], [92.5, 38.9]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "southeastern-asia": {
+      regionView: { center: [131, 24], zoom: 2.75 },
+      studyView: {
+        bounds: [[118.0, 7.0], [147.2, 45.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "oceania": {
+      regionView: { center: [141, -18], zoom: 2.35 },
+      studyView: {
+        bounds: [[94.0, -49.5], [179.0, 8.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
     }
   };
 
@@ -488,6 +667,16 @@ async function fetchJson(path) {
   }
 
   return response.json();
+}
+
+function mergeFeatureCollections(baseCollection, supplementalCollections = []) {
+  return {
+    ...baseCollection,
+    features: [
+      ...(baseCollection?.features || []),
+      ...supplementalCollections.flatMap((collection) => collection?.features || [])
+    ]
+  };
 }
 
 function bindUiEvents() {
@@ -1127,10 +1316,32 @@ function updateActivityNavigationControls() {
 function renderActivityNavControls(activityId) {
   if (activityNavControls) {
     activityNavControls.hidden = !activityId;
+    activityNavControls.style.display = activityId ? "flex" : "none";
+    activityNavControls.style.visibility = activityId ? "visible" : "hidden";
+    activityNavControls.style.opacity = activityId ? "1" : "0";
   }
 
   if (activityId) {
-    console.log(`Activity nav rendered for: ${activityId}`);
+    window.requestAnimationFrame(() => {
+      const styles = activityNavControls ? window.getComputedStyle(activityNavControls) : null;
+      const rect = activityNavControls?.getBoundingClientRect?.();
+      console.log(`Activity nav visible for: ${activityId}`);
+      console.log("Activity nav diagnostics", {
+        activityId,
+        hidden: activityNavControls?.hidden ?? null,
+        display: styles?.display ?? null,
+        visibility: styles?.visibility ?? null,
+        opacity: styles?.opacity ?? null,
+        rect: rect
+          ? {
+              x: rect.x,
+              y: rect.y,
+              width: rect.width,
+              height: rect.height
+            }
+          : null
+      });
+    });
   }
 
   updateActivityNavigationControls();

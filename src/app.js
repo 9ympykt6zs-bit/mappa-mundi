@@ -2902,7 +2902,26 @@ function updateActivityNavigationControls() {
 }
 
 function renderActivityNavControls(activityId) {
-  console.log(`Activity nav rendered for: ${activityId}`);
+  window.requestAnimationFrame(() => {
+    const navControls = document.querySelector(".activity-nav-controls");
+    const styles = navControls ? window.getComputedStyle(navControls) : null;
+    const rect = navControls?.getBoundingClientRect?.();
+    console.log(`Activity nav visible for: ${activityId}`);
+    console.log("Activity nav diagnostics", {
+      activityId,
+      display: styles?.display ?? null,
+      visibility: styles?.visibility ?? null,
+      opacity: styles?.opacity ?? null,
+      rect: rect
+        ? {
+            x: rect.x,
+            y: rect.y,
+            width: rect.width,
+            height: rect.height
+          }
+        : null
+    });
+  });
   updateActivityNavigationControls();
 }
 

@@ -1,0 +1,96 @@
+{
+  "id": "south-america-east",
+  "title": "South America (East)",
+  "sequence": 23,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "south-america-east"
+  },
+  "features": [
+    {
+      "id": "argentina",
+      "name": "Argentina",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ARG",
+      "color": "#38bdf8",
+      "flag": "\ud83c\udde6\ud83c\uddf7",
+      "labelAnchor": [-64.25, -35.0],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "uruguay",
+      "name": "Uruguay",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "URY",
+      "color": "#22c55e",
+      "flag": "\ud83c\uddfa\ud83c\uddfe",
+      "labelAnchor": [-56.05, -32.7],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "paraguay",
+      "name": "Paraguay",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "PRY",
+      "color": "#ef4444",
+      "flag": "\ud83c\uddf5\ud83c\uddfe",
+      "labelAnchor": [-58.2, -23.35],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "brazil",
+      "name": "Brazil",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "BRA",
+      "color": "#f59e0b",
+      "flag": "\ud83c\udde7\ud83c\uddf7",
+      "labelAnchor": [-52.8, -10.8],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "french-guiana",
+      "name": "French Guiana",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "GUF",
+      "color": "#a855f7",
+      "flag": "\ud83c\uddec\ud83c\uddeb",
+      "labelAnchor": [-53.05, 4.2],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "suriname",
+      "name": "Suriname",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "SUR",
+      "color": "#14b8a6",
+      "flag": "\ud83c\uddf8\ud83c\uddf7",
+      "labelAnchor": [-56.1, 4.05],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "guyana",
+      "name": "Guyana",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "GUY",
+      "color": "#eab308",
+      "flag": "\ud83c\uddec\ud83c\uddfe",
+      "labelAnchor": [-58.95, 5.2],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    }
+  ]
+}

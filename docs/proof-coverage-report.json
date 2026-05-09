@@ -1,0 +1,5245 @@
+{
+  "generatedAt": "2026-05-09T15:32:36.997Z",
+  "sourceOfTruth": "docs/proof-sheets/*.txt",
+  "proofSheets": [
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 1,
+      "title": "FERTILE CRESCENT",
+      "items": [
+        "Mediterranean Sea",
+        "Mesopotamia",
+        "Euphrates River",
+        "Tigris River",
+        "Sumer"
+      ],
+      "normalizedItems": [
+        "mediterranean sea",
+        "mesopotamia",
+        "euphrates river",
+        "tigris river",
+        "sumer"
+      ],
+      "normalizedTitle": "fertile crescent"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 2,
+      "title": "ASSYRIAN EMPIRE",
+      "items": [
+        "Red Sea",
+        "Persian Gulf",
+        "Caspian Sea",
+        "Black Sea",
+        "Babylon"
+      ],
+      "normalizedItems": [
+        "red sea",
+        "persian gulf",
+        "caspian sea",
+        "black sea",
+        "babylon"
+      ],
+      "normalizedTitle": "assyrian empire"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 3,
+      "title": "HEBREW EMPIRE",
+      "items": [
+        "Judah",
+        "Israel",
+        "Jordan River",
+        "Dead Sea",
+        "Phoenicia",
+        "Sea of Galilee"
+      ],
+      "normalizedItems": [
+        "judah",
+        "israel",
+        "jordan river",
+        "dead sea",
+        "phoenicia",
+        "sea of galilee"
+      ],
+      "normalizedTitle": "hebrew empire"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 4,
+      "title": "HITTITE EMPIRE",
+      "items": [
+        "Hattusa",
+        "Asia Minor",
+        "Arabian Desert",
+        "Cyprus"
+      ],
+      "normalizedItems": [
+        "hattusa",
+        "asia minor",
+        "arabian desert",
+        "cyprus"
+      ],
+      "normalizedTitle": "hittite empire"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 5,
+      "title": "EGYPTIAN EMPIRE",
+      "items": [
+        "Egypt",
+        "Nile River",
+        "Upper/Lower Egypt",
+        "Nile River Delta"
+      ],
+      "normalizedItems": [
+        "egypt",
+        "nile river",
+        "upper lower egypt",
+        "nile river delta"
+      ],
+      "normalizedTitle": "egyptian empire"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 6,
+      "title": "ANCIENT GREECE",
+      "items": [
+        "Greece",
+        "Aegean Sea",
+        "Macedonia",
+        "Crete",
+        "Rhodes"
+      ],
+      "normalizedItems": [
+        "greece",
+        "aegean sea",
+        "macedonia",
+        "crete",
+        "rhodes"
+      ],
+      "normalizedTitle": "ancient greece"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 7,
+      "title": "ROMAN EMPIRE",
+      "items": [
+        "Hispania",
+        "Gaul",
+        "Germania",
+        "Alexandria",
+        "Carthage"
+      ],
+      "normalizedItems": [
+        "hispania",
+        "gaul",
+        "germania",
+        "alexandria",
+        "carthage"
+      ],
+      "normalizedTitle": "roman empire"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 8,
+      "title": "INDUS RIVER VALLEY",
+      "items": [
+        "Ganges River",
+        "Himalayas",
+        "Arabian Sea",
+        "Bay of Bengal",
+        "Great Indian Desert"
+      ],
+      "normalizedItems": [
+        "ganges river",
+        "himalayas",
+        "arabian sea",
+        "bay of bengal",
+        "great indian desert"
+      ],
+      "normalizedTitle": "indus river valley"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 9,
+      "title": "CHINA",
+      "items": [
+        "Mongolia",
+        "Yellow Sea",
+        "Yellow River",
+        "Yangtze River",
+        "Beijing"
+      ],
+      "normalizedItems": [
+        "mongolia",
+        "yellow sea",
+        "yellow river",
+        "yangtze river",
+        "beijing"
+      ],
+      "normalizedTitle": "china"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 10,
+      "title": "JAPAN",
+      "items": [
+        "Kyoto",
+        "Tokyo",
+        "Mt. Fuji",
+        "Pacific Ocean",
+        "Sea of Japan"
+      ],
+      "normalizedItems": [
+        "kyoto",
+        "tokyo",
+        "mt fuji",
+        "pacific ocean",
+        "sea of japan"
+      ],
+      "normalizedTitle": "japan"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 11,
+      "title": "BYZANTINE EMPIRE",
+      "items": [
+        "Constantinople",
+        "Rome",
+        "Athens",
+        "Ephesus",
+        "Antioch"
+      ],
+      "normalizedItems": [
+        "constantinople",
+        "rome",
+        "athens",
+        "ephesus",
+        "antioch"
+      ],
+      "normalizedTitle": "byzantine empire"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 12,
+      "title": "MUSLIM EMPIRE",
+      "items": [
+        "Mecca",
+        "Medina",
+        "Baghdad",
+        "Damascus",
+        "Tours",
+        "Syria"
+      ],
+      "normalizedItems": [
+        "mecca",
+        "medina",
+        "baghdad",
+        "damascus",
+        "tours",
+        "syria"
+      ],
+      "normalizedTitle": "muslim empire"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 13,
+      "title": "WESTERN AFRICA",
+      "items": [
+        "Atlantic Ocean",
+        "Senegal River",
+        "Niger River",
+        "Sahara Desert",
+        "Ivory Coast"
+      ],
+      "normalizedItems": [
+        "atlantic ocean",
+        "senegal river",
+        "niger river",
+        "sahara desert",
+        "ivory coast"
+      ],
+      "normalizedTitle": "western africa"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 14,
+      "title": "ANCIENT AFRICA",
+      "items": [
+        "Ancient Ghana",
+        "Ancient Mali",
+        "Western Sahara",
+        "Fez",
+        "Tangier"
+      ],
+      "normalizedItems": [
+        "ancient ghana",
+        "ancient mali",
+        "western sahara",
+        "fez",
+        "tangier"
+      ],
+      "normalizedTitle": "ancient africa"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 15,
+      "title": "MIDDLE EAST",
+      "items": [
+        "Israel",
+        "Sinai Peninsula",
+        "Suez Canal",
+        "Cairo",
+        "Gaza Strip"
+      ],
+      "normalizedItems": [
+        "israel",
+        "sinai peninsula",
+        "suez canal",
+        "cairo",
+        "gaza strip"
+      ],
+      "normalizedTitle": "middle east"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 16,
+      "title": "AFRICAN WATERS",
+      "items": [
+        "Congo River",
+        "Lake Victoria",
+        "Zambezi River",
+        "Orange River"
+      ],
+      "normalizedItems": [
+        "congo river",
+        "lake victoria",
+        "zambezi river",
+        "orange river"
+      ],
+      "normalizedTitle": "african waters"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 17,
+      "title": "AFRICAN COUNTRIES",
+      "items": [
+        "Ethiopia",
+        "Mozambique",
+        "Zimbabwe",
+        "South Africa",
+        "Madagascar"
+      ],
+      "normalizedItems": [
+        "ethiopia",
+        "mozambique",
+        "zimbabwe",
+        "south africa",
+        "madagascar"
+      ],
+      "normalizedTitle": "african countries"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 18,
+      "title": "MESOAMERICA REGIONS",
+      "items": [
+        "Gulf of Mexico",
+        "Yucatan Peninsula",
+        "Olmec Civilization",
+        "Maya Civilization",
+        "Aztec Civilization"
+      ],
+      "normalizedItems": [
+        "gulf of mexico",
+        "yucatan peninsula",
+        "olmec civilization",
+        "maya civilization",
+        "aztec civilization"
+      ],
+      "normalizedTitle": "mesoamerica regions"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 19,
+      "title": "MESOAMERICA",
+      "items": [
+        "Mexico City",
+        "Chichen Itza",
+        "Lake Texcoco",
+        "Mayapan",
+        "Oaxaca"
+      ],
+      "normalizedItems": [
+        "mexico city",
+        "chichen itza",
+        "lake texcoco",
+        "mayapan",
+        "oaxaca"
+      ],
+      "normalizedTitle": "mesoamerica"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 20,
+      "title": "DOMINION OF CANADA",
+      "items": [
+        "Ontario",
+        "Quebec",
+        "New Brunswick",
+        "Nova Scotia"
+      ],
+      "normalizedItems": [
+        "ontario",
+        "quebec",
+        "new brunswick",
+        "nova scotia"
+      ],
+      "normalizedTitle": "dominion of canada"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 21,
+      "title": "CANADIAN WATERS",
+      "items": [
+        "Great Bear Lake",
+        "Great Slave Lake",
+        "Hudson Bay",
+        "Baffin Bay",
+        "Labrador Sea"
+      ],
+      "normalizedItems": [
+        "great bear lake",
+        "great slave lake",
+        "hudson bay",
+        "baffin bay",
+        "labrador sea"
+      ],
+      "normalizedTitle": "canadian waters"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 22,
+      "title": "SOUTH AMERICA (WEST)",
+      "items": [
+        "Venezuela",
+        "Colombia",
+        "Ecuador",
+        "Peru",
+        "Bolivia",
+        "Chile"
+      ],
+      "normalizedItems": [
+        "venezuela",
+        "colombia",
+        "ecuador",
+        "peru",
+        "bolivia",
+        "chile"
+      ],
+      "normalizedTitle": "south america west"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 23,
+      "title": "SOUTH AMERICA (EAST)",
+      "items": [
+        "Argentina",
+        "Uruguay",
+        "Paraguay",
+        "Brazil",
+        "French Guiana",
+        "Suriname",
+        "Guyana"
+      ],
+      "normalizedItems": [
+        "argentina",
+        "uruguay",
+        "paraguay",
+        "brazil",
+        "french guiana",
+        "suriname",
+        "guyana"
+      ],
+      "normalizedTitle": "south america east"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 24,
+      "title": "NORTH ATLANTIC",
+      "items": [
+        "Greenland",
+        "Iceland",
+        "Denmark Strait",
+        "Davis Strait"
+      ],
+      "normalizedItems": [
+        "greenland",
+        "iceland",
+        "denmark strait",
+        "davis strait"
+      ],
+      "normalizedTitle": "north atlantic"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 1,
+      "title": "CONTINENTS/OCEANS",
+      "items": [
+        "North America",
+        "South America",
+        "Europe",
+        "Asia",
+        "Africa",
+        "Australia",
+        "Antarctica",
+        "Indian Ocean",
+        "Arctic Ocean",
+        "Atlantic Ocean",
+        "Pacific Ocean",
+        "Southern Ocean"
+      ],
+      "normalizedItems": [
+        "north america",
+        "south america",
+        "europe",
+        "asia",
+        "africa",
+        "australia",
+        "antarctica",
+        "indian ocean",
+        "arctic ocean",
+        "atlantic ocean",
+        "pacific ocean",
+        "southern ocean"
+      ],
+      "normalizedTitle": "continents oceans"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 2,
+      "title": "EUROPEAN WATERS",
+      "items": [
+        "North Sea",
+        "Baltic Sea",
+        "Adriatic Sea",
+        "English Channel",
+        "Mediterranean Sea"
+      ],
+      "normalizedItems": [
+        "north sea",
+        "baltic sea",
+        "adriatic sea",
+        "english channel",
+        "mediterranean sea"
+      ],
+      "normalizedTitle": "european waters"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 3,
+      "title": "WESTERN EUROPEAN COUNTRIES",
+      "items": [
+        "Ireland",
+        "England",
+        "Portugal",
+        "Spain",
+        "France"
+      ],
+      "normalizedItems": [
+        "ireland",
+        "england",
+        "portugal",
+        "spain",
+        "france"
+      ],
+      "normalizedTitle": "western european countries"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 4,
+      "title": "EUROPEAN RIVERS",
+      "items": [
+        "Seine River",
+        "Rhine River",
+        "Elbe River",
+        "Po River",
+        "Danube River",
+        "Volga River"
+      ],
+      "normalizedItems": [
+        "seine river",
+        "rhine river",
+        "elbe river",
+        "po river",
+        "danube river",
+        "volga river"
+      ],
+      "normalizedTitle": "european rivers"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 5,
+      "title": "EUROPEAN CITIES",
+      "items": [
+        "London",
+        "Paris",
+        "Rome",
+        "Barcelona",
+        "Orleans"
+      ],
+      "normalizedItems": [
+        "london",
+        "paris",
+        "rome",
+        "barcelona",
+        "orleans"
+      ],
+      "normalizedTitle": "european cities"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 6,
+      "title": "EUROPEAN MOUNTAINS",
+      "items": [
+        "Pyrenees",
+        "Alps",
+        "Carpathians",
+        "Caucasus",
+        "Ural",
+        "Matterhorn"
+      ],
+      "normalizedItems": [
+        "pyrenees",
+        "alps",
+        "carpathians",
+        "caucasus",
+        "ural",
+        "matterhorn"
+      ],
+      "normalizedTitle": "european mountains"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 7,
+      "title": "EUROPEAN PENINSULAS",
+      "items": [
+        "Iberian Peninsula",
+        "Balkan Peninsula",
+        "Scandinavian Peninsula",
+        "Apennine Peninsula"
+      ],
+      "normalizedItems": [
+        "iberian peninsula",
+        "balkan peninsula",
+        "scandinavian peninsula",
+        "apennine peninsula"
+      ],
+      "normalizedTitle": "european peninsulas"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 8,
+      "title": "MID-ATLANTIC WORLD",
+      "items": [
+        "Cape of Good Hope",
+        "Strait of Magellan",
+        "Canary Islands",
+        "Treaty of Tordesillas"
+      ],
+      "normalizedItems": [
+        "cape of good hope",
+        "strait of magellan",
+        "canary islands",
+        "treaty of tordesillas"
+      ],
+      "normalizedTitle": "mid-atlantic world"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 9,
+      "title": "CARIBBEAN",
+      "items": [
+        "Cuba",
+        "Jamaica",
+        "Haiti",
+        "Dominican Republic",
+        "Puerto Rico"
+      ],
+      "normalizedItems": [
+        "cuba",
+        "jamaica",
+        "haiti",
+        "dominican republic",
+        "puerto rico"
+      ],
+      "normalizedTitle": "caribbean"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 10,
+      "title": "SOUTHWEST ASIA",
+      "items": [
+        "Afghanistan",
+        "Pakistan",
+        "India",
+        "Kolkata",
+        "Arabian Sea"
+      ],
+      "normalizedItems": [
+        "afghanistan",
+        "pakistan",
+        "india",
+        "kolkata",
+        "arabian sea"
+      ],
+      "normalizedTitle": "southwest asia"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 11,
+      "title": "EUROPE AND ASIA",
+      "items": [
+        "Moscow",
+        "Kiev",
+        "Russia",
+        "Siberia",
+        "Ukraine"
+      ],
+      "normalizedItems": [
+        "moscow",
+        "kiev",
+        "russia",
+        "siberia",
+        "ukraine"
+      ],
+      "normalizedTitle": "europe and asia"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 12,
+      "title": "EASTERN EUROPEAN SEAS",
+      "items": [
+        "White Sea",
+        "Barents Sea",
+        "Black Sea",
+        "Caspian Sea",
+        "Aral Sea"
+      ],
+      "normalizedItems": [
+        "white sea",
+        "barents sea",
+        "black sea",
+        "caspian sea",
+        "aral sea"
+      ],
+      "normalizedTitle": "eastern european seas"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 13,
+      "title": "NORTHERN EUROPEAN COUNTRIES",
+      "items": [
+        "Norway",
+        "Sweden",
+        "Finland",
+        "Denmark"
+      ],
+      "normalizedItems": [
+        "norway",
+        "sweden",
+        "finland",
+        "denmark"
+      ],
+      "normalizedTitle": "northern european countries"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 14,
+      "title": "BALTIC EUROPE",
+      "items": [
+        "Estonia",
+        "Latvia",
+        "Lithuania",
+        "Poland",
+        "Belarus"
+      ],
+      "normalizedItems": [
+        "estonia",
+        "latvia",
+        "lithuania",
+        "poland",
+        "belarus"
+      ],
+      "normalizedTitle": "baltic europe"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 15,
+      "title": "THE LEVANT",
+      "items": [
+        "Turkey",
+        "Cyprus",
+        "Syria",
+        "Iraq",
+        "Iran"
+      ],
+      "normalizedItems": [
+        "turkey",
+        "cyprus",
+        "syria",
+        "iraq",
+        "iran"
+      ],
+      "normalizedTitle": "the levant"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 16,
+      "title": "BALKANS",
+      "items": [
+        "Greece",
+        "Albania",
+        "Bulgaria",
+        "Slovenia",
+        "Romania"
+      ],
+      "normalizedItems": [
+        "greece",
+        "albania",
+        "bulgaria",
+        "slovenia",
+        "romania"
+      ],
+      "normalizedTitle": "balkans"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 17,
+      "title": "CENTRAL EUROPEAN COUNTRIES",
+      "items": [
+        "Netherlands",
+        "Belgium",
+        "Luxembourg",
+        "Germany",
+        "Switzerland"
+      ],
+      "normalizedItems": [
+        "netherlands",
+        "belgium",
+        "luxembourg",
+        "germany",
+        "switzerland"
+      ],
+      "normalizedTitle": "central european countries"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 18,
+      "title": "MORE CENTRAL EUROPEAN COUNTRIES",
+      "items": [
+        "Italy",
+        "Austria",
+        "Hungary",
+        "Czechia",
+        "Slovakia"
+      ],
+      "normalizedItems": [
+        "italy",
+        "austria",
+        "hungary",
+        "czechia",
+        "slovakia"
+      ],
+      "normalizedTitle": "more central european countries"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 19,
+      "title": "SOUTHEASTERN ASIA",
+      "items": [
+        "North Korea",
+        "South Korea",
+        "Taiwan",
+        "Philippines",
+        "Guam"
+      ],
+      "normalizedItems": [
+        "north korea",
+        "south korea",
+        "taiwan",
+        "philippines",
+        "guam"
+      ],
+      "normalizedTitle": "southeastern asia"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 20,
+      "title": "SOUTH CENTRAL ASIA",
+      "items": [
+        "Laos",
+        "Thailand",
+        "Cambodia",
+        "North Vietnam",
+        "South Vietnam"
+      ],
+      "normalizedItems": [
+        "laos",
+        "thailand",
+        "cambodia",
+        "north vietnam",
+        "south vietnam"
+      ],
+      "normalizedTitle": "south central asia"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 21,
+      "title": "CENTRAL AMERICA",
+      "items": [
+        "Guatemala",
+        "Belize",
+        "El Salvador",
+        "Honduras",
+        "Nicaragua"
+      ],
+      "normalizedItems": [
+        "guatemala",
+        "belize",
+        "el salvador",
+        "honduras",
+        "nicaragua"
+      ],
+      "normalizedTitle": "central america"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 22,
+      "title": "OCEANIA",
+      "items": [
+        "Australia",
+        "Great Barrier Reef",
+        "New Zealand",
+        "Papua New Guinea",
+        "Indonesia"
+      ],
+      "normalizedItems": [
+        "australia",
+        "great barrier reef",
+        "new zealand",
+        "papua new guinea",
+        "indonesia"
+      ],
+      "normalizedTitle": "oceania"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 23,
+      "title": "CENTRAL ASIA",
+      "items": [
+        "Kazakhstan",
+        "Uzbekistan",
+        "Turkmenistan",
+        "Tajikistan",
+        "Kyrgyzstan"
+      ],
+      "normalizedItems": [
+        "kazakhstan",
+        "uzbekistan",
+        "turkmenistan",
+        "tajikistan",
+        "kyrgyzstan"
+      ],
+      "normalizedTitle": "central asia"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 24,
+      "title": "SOUTHERN AFRICA",
+      "items": [
+        "South Africa",
+        "Lesotho",
+        "Botswana",
+        "Mozambique",
+        "Namibia"
+      ],
+      "normalizedItems": [
+        "south africa",
+        "lesotho",
+        "botswana",
+        "mozambique",
+        "namibia"
+      ],
+      "normalizedTitle": "southern africa"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 1,
+      "title": "States and Capitals",
+      "items": [
+        "Augusta, ME",
+        "Concord, NH",
+        "Boston, MA",
+        "Providence, RI",
+        "Hartford, CT"
+      ],
+      "normalizedItems": [
+        "augusta me",
+        "concord nh",
+        "boston ma",
+        "providence ri",
+        "hartford ct"
+      ],
+      "normalizedTitle": "states and capitals"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 2,
+      "title": "States and Capitals",
+      "items": [
+        "Montpelier, VT",
+        "Albany, NY",
+        "Trenton, NJ",
+        "Harrisburg, PA",
+        "Dover, DE"
+      ],
+      "normalizedItems": [
+        "montpelier vt",
+        "albany ny",
+        "trenton nj",
+        "harrisburg pa",
+        "dover de"
+      ],
+      "normalizedTitle": "states and capitals"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 3,
+      "title": "States and Capitals",
+      "items": [
+        "Annapolis, MD",
+        "Richmond, VA",
+        "Charleston, WV",
+        "Raleigh, NC",
+        "Columbia, SC",
+        "Washington, DC"
+      ],
+      "normalizedItems": [
+        "annapolis md",
+        "richmond va",
+        "charleston wv",
+        "raleigh nc",
+        "columbia sc",
+        "washington dc"
+      ],
+      "normalizedTitle": "states and capitals"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 4,
+      "title": "States and Capitals",
+      "items": [
+        "Atlanta, GA",
+        "Tallahassee, FL",
+        "Montgomery, AL",
+        "Jackson, MS",
+        "Baton Rouge, LA"
+      ],
+      "normalizedItems": [
+        "atlanta ga",
+        "tallahassee fl",
+        "montgomery al",
+        "jackson ms",
+        "baton rouge la"
+      ],
+      "normalizedTitle": "states and capitals"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 5,
+      "title": "States and Capitals",
+      "items": [
+        "Lansing, MI",
+        "Columbus, OH",
+        "Indianapolis, IN",
+        "Frankfort, KY",
+        "Nashville, TN"
+      ],
+      "normalizedItems": [
+        "lansing mi",
+        "columbus oh",
+        "indianapolis in",
+        "frankfort ky",
+        "nashville tn"
+      ],
+      "normalizedTitle": "states and capitals"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 6,
+      "title": "States and Capitals",
+      "items": [
+        "Madison, WI",
+        "Springfield, IL",
+        "Des Moines, IA",
+        "Jefferson City, MO",
+        "Little Rock, AR"
+      ],
+      "normalizedItems": [
+        "madison wi",
+        "springfield il",
+        "des moines ia",
+        "jefferson city mo",
+        "little rock ar"
+      ],
+      "normalizedTitle": "states and capitals"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 7,
+      "title": "States and Capitals",
+      "items": [
+        "St. Paul, MN",
+        "Bismarck, ND",
+        "Pierre, SD",
+        "Cheyenne, WY",
+        "Lincoln, NE"
+      ],
+      "normalizedItems": [
+        "st paul mn",
+        "bismarck nd",
+        "pierre sd",
+        "cheyenne wy",
+        "lincoln ne"
+      ],
+      "normalizedTitle": "states and capitals"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 8,
+      "title": "States and Capitals",
+      "items": [
+        "Topeka, KS",
+        "Oklahoma City, OK",
+        "Austin, TX",
+        "Denver, CO",
+        "Santa Fe, NM"
+      ],
+      "normalizedItems": [
+        "topeka ks",
+        "oklahoma city ok",
+        "austin tx",
+        "denver co",
+        "santa fe nm"
+      ],
+      "normalizedTitle": "states and capitals"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 9,
+      "title": "States and Capitals",
+      "items": [
+        "Salt Lake City, UT",
+        "Phoenix, AZ",
+        "Carson City, NV",
+        "Sacramento, CA",
+        "Honolulu, HI"
+      ],
+      "normalizedItems": [
+        "salt lake city ut",
+        "phoenix az",
+        "carson city nv",
+        "sacramento ca",
+        "honolulu hi"
+      ],
+      "normalizedTitle": "states and capitals"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 10,
+      "title": "States and Capitals",
+      "items": [
+        "Helena, MT",
+        "Boise, ID",
+        "Olympia, WA",
+        "Salem, OR",
+        "Juneau, AK"
+      ],
+      "normalizedItems": [
+        "helena mt",
+        "boise id",
+        "olympia wa",
+        "salem or",
+        "juneau ak"
+      ],
+      "normalizedTitle": "states and capitals"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 11,
+      "title": "Northern Appalachian Mountains",
+      "items": [
+        "White Mountains",
+        "Green Mountains",
+        "Adirondack Mountains",
+        "Allegheny Mountains"
+      ],
+      "normalizedItems": [
+        "white mountains",
+        "green mountains",
+        "adirondack mountains",
+        "allegheny mountains"
+      ],
+      "normalizedTitle": "northern appalachian mountains"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 12,
+      "title": "Southern Appalachian Mountains",
+      "items": [
+        "The Great Valley",
+        "Blue Ridge Mountains",
+        "Great Smoky Mountains",
+        "Cumberland Mountains",
+        "Mt. Mitchell"
+      ],
+      "normalizedItems": [
+        "the great valley",
+        "blue ridge mountains",
+        "great smoky mountains",
+        "cumberland mountains",
+        "mt mitchell"
+      ],
+      "normalizedTitle": "southern appalachian mountains"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 13,
+      "title": "Western Mountains",
+      "items": [
+        "Rocky Mountains",
+        "Pikes Peak",
+        "Mt. Elbert",
+        "Sierra Nevadas",
+        "Mt. Whitney"
+      ],
+      "normalizedItems": [
+        "rocky mountains",
+        "pikes peak",
+        "mt elbert",
+        "sierra nevadas",
+        "mt whitney"
+      ],
+      "normalizedTitle": "western mountains"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 14,
+      "title": "Northwest Mountains",
+      "items": [
+        "Cascade Mountains",
+        "Mt. Rainier",
+        "Mt. St. Helens",
+        "Denali"
+      ],
+      "normalizedItems": [
+        "cascade mountains",
+        "mt rainier",
+        "mt st helens",
+        "denali"
+      ],
+      "normalizedTitle": "northwest mountains"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 15,
+      "title": "Great Lakes",
+      "items": [
+        "Huron",
+        "Ontario",
+        "Michigan",
+        "Erie",
+        "Superior"
+      ],
+      "normalizedItems": [
+        "huron",
+        "ontario",
+        "michigan",
+        "erie",
+        "superior"
+      ],
+      "normalizedTitle": "great lakes"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 16,
+      "title": "Bays",
+      "items": [
+        "Chesapeake Bay",
+        "Hudson Bay",
+        "San Francisco Bay",
+        "Puget Sound",
+        "Pamlico Sound"
+      ],
+      "normalizedItems": [
+        "chesapeake bay",
+        "hudson bay",
+        "san francisco bay",
+        "puget sound",
+        "pamlico sound"
+      ],
+      "normalizedTitle": "bays"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 17,
+      "title": "Rivers East",
+      "items": [
+        "St. Lawrence River",
+        "Ohio River",
+        "Mississippi River",
+        "Missouri River",
+        "Arkansas River"
+      ],
+      "normalizedItems": [
+        "st lawrence river",
+        "ohio river",
+        "mississippi river",
+        "missouri river",
+        "arkansas river"
+      ],
+      "normalizedTitle": "rivers east"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 18,
+      "title": "Rivers West",
+      "items": [
+        "Colorado River",
+        "Red River",
+        "Rio Grande River",
+        "Columbia River",
+        "Great Salt Lake"
+      ],
+      "normalizedItems": [
+        "colorado river",
+        "red river",
+        "rio grande river",
+        "columbia river",
+        "great salt lake"
+      ],
+      "normalizedTitle": "rivers west"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 19,
+      "title": "Trails",
+      "items": [
+        "Cumberland Road",
+        "Santa Fe Trail",
+        "Mormon Trail",
+        "Gila Trail",
+        "Old Spanish Trail",
+        "California Trail",
+        "Oregon Trail"
+      ],
+      "normalizedItems": [
+        "cumberland road",
+        "santa fe trail",
+        "mormon trail",
+        "gila trail",
+        "old spanish trail",
+        "california trail",
+        "oregon trail"
+      ],
+      "normalizedTitle": "trails"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 20,
+      "title": "Canals",
+      "items": [
+        "Erie Canal",
+        "Pennsylvania Canal",
+        "Chesapeake and Ohio Canal",
+        "Ohio and Erie Canal",
+        "Miami and Erie Canal"
+      ],
+      "normalizedItems": [
+        "erie canal",
+        "pennsylvania canal",
+        "chesapeake and ohio canal",
+        "ohio and erie canal",
+        "miami and erie canal"
+      ],
+      "normalizedTitle": "canals"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 21,
+      "title": "Native American Regions",
+      "items": [
+        "Eastern Woodlands",
+        "Plains",
+        "Plateau",
+        "Northwest Coast",
+        "California",
+        "Great Basin",
+        "Southwest"
+      ],
+      "normalizedItems": [
+        "eastern woodlands",
+        "plains",
+        "plateau",
+        "northwest coast",
+        "california",
+        "great basin",
+        "southwest"
+      ],
+      "normalizedTitle": "native american regions"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 22,
+      "title": "Deserts",
+      "items": [
+        "Mojave Desert",
+        "Sonoran Desert",
+        "Colorado Desert",
+        "Painted Desert",
+        "Great Salt Lake Desert"
+      ],
+      "normalizedItems": [
+        "mojave desert",
+        "sonoran desert",
+        "colorado desert",
+        "painted desert",
+        "great salt lake desert"
+      ],
+      "normalizedTitle": "deserts"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 23,
+      "title": "Prominent Features",
+      "items": [
+        "Grand Canyon",
+        "Black Hills",
+        "Ozark Highlands",
+        "Okefenokee Swamp",
+        "Olympic rainforests",
+        "Niagara Falls"
+      ],
+      "normalizedItems": [
+        "grand canyon",
+        "black hills",
+        "ozark highlands",
+        "okefenokee swamp",
+        "olympic rainforests",
+        "niagara falls"
+      ],
+      "normalizedTitle": "prominent features"
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 24,
+      "title": "More Prominent Features",
+      "items": [
+        "Mississippi River Delta",
+        "Mammoth Cave",
+        "San Andreas Fault",
+        "Gulf of Mexico",
+        "Death Valley"
+      ],
+      "normalizedItems": [
+        "mississippi river delta",
+        "mammoth cave",
+        "san andreas fault",
+        "gulf of mexico",
+        "death valley"
+      ],
+      "normalizedTitle": "more prominent features"
+    }
+  ],
+  "implementedActivities": [
+    {
+      "id": "african-countries",
+      "title": "African Countries",
+      "sequence": 17,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 5,
+      "items": [
+        "Ethiopia",
+        "Mozambique",
+        "Zimbabwe",
+        "South Africa",
+        "Madagascar"
+      ],
+      "normalizedItems": [
+        "ethiopia",
+        "mozambique",
+        "zimbabwe",
+        "south africa",
+        "madagascar"
+      ],
+      "normalizedTitle": "african countries",
+      "relativePath": "assets/maps/data/african-countries.json"
+    },
+    {
+      "id": "balkans",
+      "title": "Balkans",
+      "sequence": 16,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 5,
+      "items": [
+        "Greece",
+        "Albania",
+        "Bulgaria",
+        "Slovenia",
+        "Romania"
+      ],
+      "normalizedItems": [
+        "greece",
+        "albania",
+        "bulgaria",
+        "slovenia",
+        "romania"
+      ],
+      "normalizedTitle": "balkans",
+      "relativePath": "assets/maps/data/balkans-countries.json"
+    },
+    {
+      "id": "baltic-europe",
+      "title": "Baltic Europe",
+      "sequence": 14,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 5,
+      "items": [
+        "Estonia",
+        "Latvia",
+        "Lithuania",
+        "Poland",
+        "Belarus"
+      ],
+      "normalizedItems": [
+        "estonia",
+        "latvia",
+        "lithuania",
+        "poland",
+        "belarus"
+      ],
+      "normalizedTitle": "baltic europe",
+      "relativePath": "assets/maps/data/baltic-europe-countries.json"
+    },
+    {
+      "id": "caribbean",
+      "title": "Caribbean",
+      "sequence": 9,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 5,
+      "items": [
+        "Cuba",
+        "Jamaica",
+        "Haiti",
+        "Dominican Republic",
+        "Puerto Rico"
+      ],
+      "normalizedItems": [
+        "cuba",
+        "jamaica",
+        "haiti",
+        "dominican republic",
+        "puerto rico"
+      ],
+      "normalizedTitle": "caribbean",
+      "relativePath": "assets/maps/data/caribbean.json"
+    },
+    {
+      "id": "central-america",
+      "title": "Central America",
+      "sequence": 21,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 5,
+      "items": [
+        "Guatemala",
+        "Belize",
+        "El Salvador",
+        "Honduras",
+        "Nicaragua"
+      ],
+      "normalizedItems": [
+        "guatemala",
+        "belize",
+        "el salvador",
+        "honduras",
+        "nicaragua"
+      ],
+      "normalizedTitle": "central america",
+      "relativePath": "assets/maps/data/central-america.json"
+    },
+    {
+      "id": "central-asia",
+      "title": "Central Asia",
+      "sequence": 23,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 5,
+      "items": [
+        "Kazakhstan",
+        "Uzbekistan",
+        "Turkmenistan",
+        "Tajikistan",
+        "Kyrgyzstan"
+      ],
+      "normalizedItems": [
+        "kazakhstan",
+        "uzbekistan",
+        "turkmenistan",
+        "tajikistan",
+        "kyrgyzstan"
+      ],
+      "normalizedTitle": "central asia",
+      "relativePath": "assets/maps/data/central-asia.json"
+    },
+    {
+      "id": "central-european-countries",
+      "title": "Central European Countries",
+      "sequence": 17,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 5,
+      "items": [
+        "Netherlands",
+        "Belgium",
+        "Luxembourg",
+        "Germany",
+        "Switzerland"
+      ],
+      "normalizedItems": [
+        "netherlands",
+        "belgium",
+        "luxembourg",
+        "germany",
+        "switzerland"
+      ],
+      "normalizedTitle": "central european countries",
+      "relativePath": "assets/maps/data/central-european-countries.json"
+    },
+    {
+      "id": "continents-oceans",
+      "title": "Continents and Oceans",
+      "sequence": null,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 12,
+      "items": [
+        "North America",
+        "South America",
+        "Europe",
+        "Africa",
+        "Asia",
+        "Australia",
+        "Antarctica",
+        "Indian Ocean",
+        "Arctic Ocean",
+        "Atlantic Ocean",
+        "Pacific Ocean",
+        "Southern Ocean"
+      ],
+      "normalizedItems": [
+        "north america",
+        "south america",
+        "europe",
+        "africa",
+        "asia",
+        "australia",
+        "antarctica",
+        "indian ocean",
+        "arctic ocean",
+        "atlantic ocean",
+        "pacific ocean",
+        "southern ocean"
+      ],
+      "normalizedTitle": "continents and oceans",
+      "relativePath": "assets/maps/data/continents-oceans.json"
+    },
+    {
+      "id": "european-cities",
+      "title": "European Cities",
+      "sequence": null,
+      "cumulativeGroup": null,
+      "baseMap": "europe-base",
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 5,
+      "items": [
+        "London",
+        "Paris",
+        "Rome",
+        "Barcelona",
+        "Orleans"
+      ],
+      "normalizedItems": [
+        "london",
+        "paris",
+        "rome",
+        "barcelona",
+        "orleans"
+      ],
+      "normalizedTitle": "european cities",
+      "relativePath": "assets/maps/data/european-cities.json"
+    },
+    {
+      "id": "more-central-european-countries",
+      "title": "More Central European Countries",
+      "sequence": 18,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 5,
+      "items": [
+        "Italy",
+        "Austria",
+        "Hungary",
+        "Czechia",
+        "Slovakia"
+      ],
+      "normalizedItems": [
+        "italy",
+        "austria",
+        "hungary",
+        "czechia",
+        "slovakia"
+      ],
+      "normalizedTitle": "more central european countries",
+      "relativePath": "assets/maps/data/more-central-european-countries.json"
+    },
+    {
+      "id": "northern-european-countries",
+      "title": "Northern European Countries",
+      "sequence": 13,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 4,
+      "items": [
+        "Norway",
+        "Sweden",
+        "Finland",
+        "Denmark"
+      ],
+      "normalizedItems": [
+        "norway",
+        "sweden",
+        "finland",
+        "denmark"
+      ],
+      "normalizedTitle": "northern european countries",
+      "relativePath": "assets/maps/data/northern-european-countries.json"
+    },
+    {
+      "id": "oceania",
+      "title": "Oceania",
+      "sequence": 22,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 4,
+      "items": [
+        "Australia",
+        "New Zealand",
+        "Papua New Guinea",
+        "Indonesia"
+      ],
+      "normalizedItems": [
+        "australia",
+        "new zealand",
+        "papua new guinea",
+        "indonesia"
+      ],
+      "normalizedTitle": "oceania",
+      "relativePath": "assets/maps/data/oceania.json"
+    },
+    {
+      "id": "south-america-east",
+      "title": "South America (East)",
+      "sequence": 23,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 7,
+      "items": [
+        "Argentina",
+        "Uruguay",
+        "Paraguay",
+        "Brazil",
+        "French Guiana",
+        "Suriname",
+        "Guyana"
+      ],
+      "normalizedItems": [
+        "argentina",
+        "uruguay",
+        "paraguay",
+        "brazil",
+        "french guiana",
+        "suriname",
+        "guyana"
+      ],
+      "normalizedTitle": "south america east",
+      "relativePath": "assets/maps/data/south-america-east.json"
+    },
+    {
+      "id": "south-america-west",
+      "title": "South America (West)",
+      "sequence": 22,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 6,
+      "items": [
+        "Venezuela",
+        "Colombia",
+        "Ecuador",
+        "Peru",
+        "Bolivia",
+        "Chile"
+      ],
+      "normalizedItems": [
+        "venezuela",
+        "colombia",
+        "ecuador",
+        "peru",
+        "bolivia",
+        "chile"
+      ],
+      "normalizedTitle": "south america west",
+      "relativePath": "assets/maps/data/south-america-west.json"
+    },
+    {
+      "id": "southeastern-asia",
+      "title": "Southeastern Asia",
+      "sequence": 19,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 5,
+      "items": [
+        "North Korea",
+        "South Korea",
+        "Taiwan",
+        "Philippines",
+        "Guam"
+      ],
+      "normalizedItems": [
+        "north korea",
+        "south korea",
+        "taiwan",
+        "philippines",
+        "guam"
+      ],
+      "normalizedTitle": "southeastern asia",
+      "relativePath": "assets/maps/data/southeastern-asia.json"
+    },
+    {
+      "id": "southern-africa-countries",
+      "title": "Southern Africa",
+      "sequence": null,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 5,
+      "items": [
+        "South Africa",
+        "Lesotho",
+        "Botswana",
+        "Mozambique",
+        "Namibia"
+      ],
+      "normalizedItems": [
+        "south africa",
+        "lesotho",
+        "botswana",
+        "mozambique",
+        "namibia"
+      ],
+      "normalizedTitle": "southern africa",
+      "relativePath": "assets/maps/data/southern-africa-countries.json"
+    },
+    {
+      "id": "southwest-asia",
+      "title": "Southwest Asia",
+      "sequence": 10,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 3,
+      "items": [
+        "Afghanistan",
+        "Pakistan",
+        "India"
+      ],
+      "normalizedItems": [
+        "afghanistan",
+        "pakistan",
+        "india"
+      ],
+      "normalizedTitle": "southwest asia",
+      "relativePath": "assets/maps/data/southwest-asia.json"
+    },
+    {
+      "id": "the-levant",
+      "title": "The Levant",
+      "sequence": 15,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 5,
+      "items": [
+        "Turkey",
+        "Cyprus",
+        "Syria",
+        "Iraq",
+        "Iran"
+      ],
+      "normalizedItems": [
+        "turkey",
+        "cyprus",
+        "syria",
+        "iraq",
+        "iran"
+      ],
+      "normalizedTitle": "the levant",
+      "relativePath": "assets/maps/data/the-levant.json"
+    },
+    {
+      "id": "us-capitals",
+      "title": "U.S. Capitals",
+      "sequence": null,
+      "cumulativeGroup": null,
+      "baseMap": "usa-map",
+      "baseMapPath": "assets/maps/usa/usa-map.svg",
+      "hideAnswerBank": true,
+      "itemCount": 51,
+      "items": [
+        "Montgomery",
+        "Juneau",
+        "Phoenix",
+        "Little Rock",
+        "Sacramento",
+        "Denver",
+        "Hartford",
+        "Dover",
+        "Tallahassee",
+        "Atlanta",
+        "Honolulu",
+        "Boise",
+        "Springfield",
+        "Indianapolis",
+        "Des Moines",
+        "Topeka",
+        "Frankfort",
+        "Baton Rouge",
+        "Augusta",
+        "Annapolis",
+        "Boston",
+        "Lansing",
+        "Saint Paul",
+        "Jackson",
+        "Jefferson City",
+        "Helena",
+        "Lincoln",
+        "Carson City",
+        "Concord",
+        "Trenton",
+        "Santa Fe",
+        "Albany",
+        "Raleigh",
+        "Bismarck",
+        "Columbus",
+        "Oklahoma City",
+        "Salem",
+        "Harrisburg",
+        "Providence",
+        "Columbia",
+        "Pierre",
+        "Nashville",
+        "Austin",
+        "Salt Lake City",
+        "Montpelier",
+        "Richmond",
+        "Olympia",
+        "Charleston",
+        "Madison",
+        "Cheyenne",
+        "Washington, DC"
+      ],
+      "normalizedItems": [
+        "montgomery",
+        "juneau",
+        "phoenix",
+        "little rock",
+        "sacramento",
+        "denver",
+        "hartford",
+        "dover",
+        "tallahassee",
+        "atlanta",
+        "honolulu",
+        "boise",
+        "springfield",
+        "indianapolis",
+        "des moines",
+        "topeka",
+        "frankfort",
+        "baton rouge",
+        "augusta",
+        "annapolis",
+        "boston",
+        "lansing",
+        "saint paul",
+        "jackson",
+        "jefferson city",
+        "helena",
+        "lincoln",
+        "carson city",
+        "concord",
+        "trenton",
+        "santa fe",
+        "albany",
+        "raleigh",
+        "bismarck",
+        "columbus",
+        "oklahoma city",
+        "salem",
+        "harrisburg",
+        "providence",
+        "columbia",
+        "pierre",
+        "nashville",
+        "austin",
+        "salt lake city",
+        "montpelier",
+        "richmond",
+        "olympia",
+        "charleston",
+        "madison",
+        "cheyenne",
+        "washington dc"
+      ],
+      "normalizedTitle": "u s capitals",
+      "relativePath": "assets/maps/data/us-capitals.json"
+    },
+    {
+      "id": "us-features",
+      "title": "United States Features",
+      "sequence": null,
+      "cumulativeGroup": null,
+      "baseMap": "usa-map",
+      "baseMapPath": "assets/maps/usa/usa-map.svg",
+      "hideAnswerBank": true,
+      "itemCount": 0,
+      "items": [],
+      "normalizedItems": [],
+      "normalizedTitle": "united states features",
+      "relativePath": "assets/maps/data/us-features.json"
+    },
+    {
+      "id": "us-states-capitals-01",
+      "title": "States and Capitals 1",
+      "sequence": 1,
+      "cumulativeGroup": "us-states-capitals",
+      "baseMap": "usa-map",
+      "baseMapPath": "assets/maps/usa/usa-map.svg",
+      "hideAnswerBank": false,
+      "itemCount": 10,
+      "items": [
+        "Maine",
+        "New Hampshire",
+        "Massachusetts",
+        "Rhode Island",
+        "Connecticut",
+        "Augusta, ME",
+        "Concord, NH",
+        "Boston, MA",
+        "Providence, RI",
+        "Hartford, CT"
+      ],
+      "normalizedItems": [
+        "maine",
+        "new hampshire",
+        "massachusetts",
+        "rhode island",
+        "connecticut",
+        "augusta me",
+        "concord nh",
+        "boston ma",
+        "providence ri",
+        "hartford ct"
+      ],
+      "normalizedTitle": "states and capitals 1",
+      "relativePath": "assets/maps/data/us-states-capitals-01.json"
+    },
+    {
+      "id": "us-states-capitals-02",
+      "title": "States and Capitals 2",
+      "sequence": 2,
+      "cumulativeGroup": "us-states-capitals",
+      "baseMap": "usa-map",
+      "baseMapPath": "assets/maps/usa/usa-map.svg",
+      "hideAnswerBank": false,
+      "itemCount": 10,
+      "items": [
+        "Vermont",
+        "New York",
+        "New Jersey",
+        "Pennsylvania",
+        "Delaware",
+        "Montpelier, VT",
+        "Albany, NY",
+        "Trenton, NJ",
+        "Harrisburg, PA",
+        "Dover, DE"
+      ],
+      "normalizedItems": [
+        "vermont",
+        "new york",
+        "new jersey",
+        "pennsylvania",
+        "delaware",
+        "montpelier vt",
+        "albany ny",
+        "trenton nj",
+        "harrisburg pa",
+        "dover de"
+      ],
+      "normalizedTitle": "states and capitals 2",
+      "relativePath": "assets/maps/data/us-states-capitals-02.json"
+    },
+    {
+      "id": "us-states-capitals-03",
+      "title": "States and Capitals 3",
+      "sequence": 3,
+      "cumulativeGroup": "us-states-capitals",
+      "baseMap": "usa-map",
+      "baseMapPath": "assets/maps/usa/usa-map.svg",
+      "hideAnswerBank": false,
+      "itemCount": 11,
+      "items": [
+        "Maryland",
+        "Virginia",
+        "West Virginia",
+        "North Carolina",
+        "South Carolina",
+        "Annapolis, MD",
+        "Richmond, VA",
+        "Charleston, WV",
+        "Raleigh, NC",
+        "Columbia, SC",
+        "Washington, DC"
+      ],
+      "normalizedItems": [
+        "maryland",
+        "virginia",
+        "west virginia",
+        "north carolina",
+        "south carolina",
+        "annapolis md",
+        "richmond va",
+        "charleston wv",
+        "raleigh nc",
+        "columbia sc",
+        "washington dc"
+      ],
+      "normalizedTitle": "states and capitals 3",
+      "relativePath": "assets/maps/data/us-states-capitals-03.json"
+    },
+    {
+      "id": "us-states-capitals-04",
+      "title": "States and Capitals 4",
+      "sequence": 4,
+      "cumulativeGroup": "us-states-capitals",
+      "baseMap": "usa-map",
+      "baseMapPath": "assets/maps/usa/usa-map.svg",
+      "hideAnswerBank": false,
+      "itemCount": 10,
+      "items": [
+        "Georgia",
+        "Florida",
+        "Alabama",
+        "Mississippi",
+        "Louisiana",
+        "Atlanta, GA",
+        "Tallahassee, FL",
+        "Montgomery, AL",
+        "Jackson, MS",
+        "Baton Rouge, LA"
+      ],
+      "normalizedItems": [
+        "georgia",
+        "florida",
+        "alabama",
+        "mississippi",
+        "louisiana",
+        "atlanta ga",
+        "tallahassee fl",
+        "montgomery al",
+        "jackson ms",
+        "baton rouge la"
+      ],
+      "normalizedTitle": "states and capitals 4",
+      "relativePath": "assets/maps/data/us-states-capitals-04.json"
+    },
+    {
+      "id": "us-states-capitals-05",
+      "title": "States and Capitals 5",
+      "sequence": 5,
+      "cumulativeGroup": "us-states-capitals",
+      "baseMap": "usa-map",
+      "baseMapPath": "assets/maps/usa/usa-map.svg",
+      "hideAnswerBank": false,
+      "itemCount": 10,
+      "items": [
+        "Michigan",
+        "Ohio",
+        "Indiana",
+        "Kentucky",
+        "Tennessee",
+        "Lansing, MI",
+        "Columbus, OH",
+        "Indianapolis, IN",
+        "Frankfort, KY",
+        "Nashville, TN"
+      ],
+      "normalizedItems": [
+        "michigan",
+        "ohio",
+        "indiana",
+        "kentucky",
+        "tennessee",
+        "lansing mi",
+        "columbus oh",
+        "indianapolis in",
+        "frankfort ky",
+        "nashville tn"
+      ],
+      "normalizedTitle": "states and capitals 5",
+      "relativePath": "assets/maps/data/us-states-capitals-05.json"
+    },
+    {
+      "id": "us-states-capitals-06",
+      "title": "States and Capitals 6",
+      "sequence": 6,
+      "cumulativeGroup": "us-states-capitals",
+      "baseMap": "usa-map",
+      "baseMapPath": "assets/maps/usa/usa-map.svg",
+      "hideAnswerBank": false,
+      "itemCount": 10,
+      "items": [
+        "Wisconsin",
+        "Illinois",
+        "Iowa",
+        "Missouri",
+        "Arkansas",
+        "Madison, WI",
+        "Springfield, IL",
+        "Des Moines, IA",
+        "Jefferson City, MO",
+        "Little Rock, AR"
+      ],
+      "normalizedItems": [
+        "wisconsin",
+        "illinois",
+        "iowa",
+        "missouri",
+        "arkansas",
+        "madison wi",
+        "springfield il",
+        "des moines ia",
+        "jefferson city mo",
+        "little rock ar"
+      ],
+      "normalizedTitle": "states and capitals 6",
+      "relativePath": "assets/maps/data/us-states-capitals-06.json"
+    },
+    {
+      "id": "us-states-capitals-07",
+      "title": "States and Capitals 7",
+      "sequence": 7,
+      "cumulativeGroup": "us-states-capitals",
+      "baseMap": "usa-map",
+      "baseMapPath": "assets/maps/usa/usa-map.svg",
+      "hideAnswerBank": false,
+      "itemCount": 10,
+      "items": [
+        "Minnesota",
+        "North Dakota",
+        "South Dakota",
+        "Wyoming",
+        "Nebraska",
+        "St. Paul, MN",
+        "Bismarck, ND",
+        "Pierre, SD",
+        "Cheyenne, WY",
+        "Lincoln, NE"
+      ],
+      "normalizedItems": [
+        "minnesota",
+        "north dakota",
+        "south dakota",
+        "wyoming",
+        "nebraska",
+        "st paul mn",
+        "bismarck nd",
+        "pierre sd",
+        "cheyenne wy",
+        "lincoln ne"
+      ],
+      "normalizedTitle": "states and capitals 7",
+      "relativePath": "assets/maps/data/us-states-capitals-07.json"
+    },
+    {
+      "id": "us-states-capitals-08",
+      "title": "States and Capitals 8",
+      "sequence": 8,
+      "cumulativeGroup": "us-states-capitals",
+      "baseMap": "usa-map",
+      "baseMapPath": "assets/maps/usa/usa-map.svg",
+      "hideAnswerBank": false,
+      "itemCount": 10,
+      "items": [
+        "Kansas",
+        "Oklahoma",
+        "Texas",
+        "Colorado",
+        "New Mexico",
+        "Topeka, KS",
+        "Oklahoma City, OK",
+        "Austin, TX",
+        "Denver, CO",
+        "Santa Fe, NM"
+      ],
+      "normalizedItems": [
+        "kansas",
+        "oklahoma",
+        "texas",
+        "colorado",
+        "new mexico",
+        "topeka ks",
+        "oklahoma city ok",
+        "austin tx",
+        "denver co",
+        "santa fe nm"
+      ],
+      "normalizedTitle": "states and capitals 8",
+      "relativePath": "assets/maps/data/us-states-capitals-08.json"
+    },
+    {
+      "id": "us-states-capitals-09",
+      "title": "States and Capitals 9",
+      "sequence": 9,
+      "cumulativeGroup": "us-states-capitals",
+      "baseMap": "usa-map",
+      "baseMapPath": "assets/maps/usa/usa-map.svg",
+      "hideAnswerBank": false,
+      "itemCount": 10,
+      "items": [
+        "Utah",
+        "Arizona",
+        "Nevada",
+        "California",
+        "Hawaii",
+        "Salt Lake City, UT",
+        "Phoenix, AZ",
+        "Carson City, NV",
+        "Sacramento, CA",
+        "Honolulu, HI"
+      ],
+      "normalizedItems": [
+        "utah",
+        "arizona",
+        "nevada",
+        "california",
+        "hawaii",
+        "salt lake city ut",
+        "phoenix az",
+        "carson city nv",
+        "sacramento ca",
+        "honolulu hi"
+      ],
+      "normalizedTitle": "states and capitals 9",
+      "relativePath": "assets/maps/data/us-states-capitals-09.json"
+    },
+    {
+      "id": "us-states-capitals-10",
+      "title": "States and Capitals 10",
+      "sequence": 10,
+      "cumulativeGroup": "us-states-capitals",
+      "baseMap": "usa-map",
+      "baseMapPath": "assets/maps/usa/usa-map.svg",
+      "hideAnswerBank": false,
+      "itemCount": 10,
+      "items": [
+        "Montana",
+        "Idaho",
+        "Washington",
+        "Oregon",
+        "Alaska",
+        "Helena, MT",
+        "Boise, ID",
+        "Olympia, WA",
+        "Salem, OR",
+        "Juneau, AK"
+      ],
+      "normalizedItems": [
+        "montana",
+        "idaho",
+        "washington",
+        "oregon",
+        "alaska",
+        "helena mt",
+        "boise id",
+        "olympia wa",
+        "salem or",
+        "juneau ak"
+      ],
+      "normalizedTitle": "states and capitals 10",
+      "relativePath": "assets/maps/data/us-states-capitals-10.json"
+    },
+    {
+      "id": "us-states",
+      "title": "United States",
+      "sequence": null,
+      "cumulativeGroup": null,
+      "baseMap": "usa-map",
+      "baseMapPath": "assets/maps/usa/usa-map.svg",
+      "hideAnswerBank": true,
+      "itemCount": 52,
+      "items": [
+        "Alabama",
+        "Alaska",
+        "Arizona",
+        "Arkansas",
+        "California",
+        "Colorado",
+        "Connecticut",
+        "Delaware",
+        "District of Columbia",
+        "Florida",
+        "Georgia",
+        "Hawaii",
+        "Idaho",
+        "Illinois",
+        "Indiana",
+        "Iowa",
+        "Kansas",
+        "Kentucky",
+        "Louisiana",
+        "Maine",
+        "Maryland",
+        "Massachusetts",
+        "Michigan",
+        "Minnesota",
+        "Mississippi",
+        "Missouri",
+        "Montana",
+        "Nebraska",
+        "Nevada",
+        "New Hampshire",
+        "New Jersey",
+        "New Mexico",
+        "New York",
+        "North Carolina",
+        "North Dakota",
+        "Ohio",
+        "Oklahoma",
+        "Oregon",
+        "Pennsylvania",
+        "Rhode Island",
+        "South Carolina",
+        "South Dakota",
+        "Tennessee",
+        "Texas",
+        "Utah",
+        "Vermont",
+        "Virginia",
+        "Washington",
+        "West Virginia",
+        "Wisconsin",
+        "Wyoming",
+        "Washington, DC"
+      ],
+      "normalizedItems": [
+        "alabama",
+        "alaska",
+        "arizona",
+        "arkansas",
+        "california",
+        "colorado",
+        "connecticut",
+        "delaware",
+        "district of columbia",
+        "florida",
+        "georgia",
+        "hawaii",
+        "idaho",
+        "illinois",
+        "indiana",
+        "iowa",
+        "kansas",
+        "kentucky",
+        "louisiana",
+        "maine",
+        "maryland",
+        "massachusetts",
+        "michigan",
+        "minnesota",
+        "mississippi",
+        "missouri",
+        "montana",
+        "nebraska",
+        "nevada",
+        "new hampshire",
+        "new jersey",
+        "new mexico",
+        "new york",
+        "north carolina",
+        "north dakota",
+        "ohio",
+        "oklahoma",
+        "oregon",
+        "pennsylvania",
+        "rhode island",
+        "south carolina",
+        "south dakota",
+        "tennessee",
+        "texas",
+        "utah",
+        "vermont",
+        "virginia",
+        "washington",
+        "west virginia",
+        "wisconsin",
+        "wyoming",
+        "washington dc"
+      ],
+      "normalizedTitle": "united states",
+      "relativePath": "assets/maps/data/us-states.json"
+    },
+    {
+      "id": "western-european-countries",
+      "title": "Western Europe",
+      "sequence": null,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 5,
+      "items": [
+        "Ireland",
+        "United Kingdom",
+        "Portugal",
+        "Spain",
+        "France"
+      ],
+      "normalizedItems": [
+        "ireland",
+        "united kingdom",
+        "portugal",
+        "spain",
+        "france"
+      ],
+      "normalizedTitle": "western europe",
+      "relativePath": "assets/maps/data/western-european-countries.json"
+    },
+    {
+      "id": "world-map",
+      "title": "World Map",
+      "sequence": null,
+      "cumulativeGroup": null,
+      "baseMap": "world-map",
+      "baseMapPath": "assets/maps/world/world-map.svg",
+      "hideAnswerBank": true,
+      "itemCount": 0,
+      "items": [],
+      "normalizedItems": [],
+      "normalizedTitle": "world map",
+      "relativePath": "assets/maps/world/world-map.json"
+    }
+  ],
+  "analyzedActivities": [
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 1,
+      "proofTitle": "FERTILE CRESCENT",
+      "proofItems": [
+        "Mediterranean Sea",
+        "Mesopotamia",
+        "Euphrates River",
+        "Tigris River",
+        "Sumer"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Mediterranean Sea",
+        "Mesopotamia",
+        "Euphrates River",
+        "Tigris River",
+        "Sumer"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 2,
+      "proofTitle": "ASSYRIAN EMPIRE",
+      "proofItems": [
+        "Red Sea",
+        "Persian Gulf",
+        "Caspian Sea",
+        "Black Sea",
+        "Babylon"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Red Sea",
+        "Persian Gulf",
+        "Caspian Sea",
+        "Black Sea",
+        "Babylon"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 3,
+      "proofTitle": "HEBREW EMPIRE",
+      "proofItems": [
+        "Judah",
+        "Israel",
+        "Jordan River",
+        "Dead Sea",
+        "Phoenicia",
+        "Sea of Galilee"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Judah",
+        "Israel",
+        "Jordan River",
+        "Dead Sea",
+        "Phoenicia",
+        "Sea of Galilee"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 4,
+      "proofTitle": "HITTITE EMPIRE",
+      "proofItems": [
+        "Hattusa",
+        "Asia Minor",
+        "Arabian Desert",
+        "Cyprus"
+      ],
+      "status": "partial",
+      "matchScore": 11.75,
+      "matchedActivityId": "the-levant",
+      "matchedActivityTitle": "The Levant",
+      "matchedActivityFile": "assets/maps/data/the-levant.json",
+      "matchedItemCount": 1,
+      "missingItems": [
+        "Hattusa",
+        "Asia Minor",
+        "Arabian Desert"
+      ],
+      "extraItems": [
+        "Turkey",
+        "Syria",
+        "Iraq",
+        "Iran"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Missing proof-sheet items: Hattusa, Asia Minor, Arabian Desert.",
+        "Implemented activity has extra items: Turkey, Syria, Iraq, Iran.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"HITTITE EMPIRE\", implementation uses \"The Levant\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 5,
+      "proofTitle": "EGYPTIAN EMPIRE",
+      "proofItems": [
+        "Egypt",
+        "Nile River",
+        "Upper/Lower Egypt",
+        "Nile River Delta"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Egypt",
+        "Nile River",
+        "Upper/Lower Egypt",
+        "Nile River Delta"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 6,
+      "proofTitle": "ANCIENT GREECE",
+      "proofItems": [
+        "Greece",
+        "Aegean Sea",
+        "Macedonia",
+        "Crete",
+        "Rhodes"
+      ],
+      "status": "partial",
+      "matchScore": 11.5,
+      "matchedActivityId": "balkans",
+      "matchedActivityTitle": "Balkans",
+      "matchedActivityFile": "assets/maps/data/balkans-countries.json",
+      "matchedItemCount": 1,
+      "missingItems": [
+        "Aegean Sea",
+        "Macedonia",
+        "Crete",
+        "Rhodes"
+      ],
+      "extraItems": [
+        "Albania",
+        "Bulgaria",
+        "Slovenia",
+        "Romania"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Missing proof-sheet items: Aegean Sea, Macedonia, Crete, Rhodes.",
+        "Implemented activity has extra items: Albania, Bulgaria, Slovenia, Romania.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"ANCIENT GREECE\", implementation uses \"Balkans\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 7,
+      "proofTitle": "ROMAN EMPIRE",
+      "proofItems": [
+        "Hispania",
+        "Gaul",
+        "Germania",
+        "Alexandria",
+        "Carthage"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Hispania",
+        "Gaul",
+        "Germania",
+        "Alexandria",
+        "Carthage"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 8,
+      "proofTitle": "INDUS RIVER VALLEY",
+      "proofItems": [
+        "Ganges River",
+        "Himalayas",
+        "Arabian Sea",
+        "Bay of Bengal",
+        "Great Indian Desert"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Ganges River",
+        "Himalayas",
+        "Arabian Sea",
+        "Bay of Bengal",
+        "Great Indian Desert"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 9,
+      "proofTitle": "CHINA",
+      "proofItems": [
+        "Mongolia",
+        "Yellow Sea",
+        "Yellow River",
+        "Yangtze River",
+        "Beijing"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Mongolia",
+        "Yellow Sea",
+        "Yellow River",
+        "Yangtze River",
+        "Beijing"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 10,
+      "proofTitle": "JAPAN",
+      "proofItems": [
+        "Kyoto",
+        "Tokyo",
+        "Mt. Fuji",
+        "Pacific Ocean",
+        "Sea of Japan"
+      ],
+      "status": "partial",
+      "matchScore": 11.5,
+      "matchedActivityId": "continents-oceans",
+      "matchedActivityTitle": "Continents and Oceans",
+      "matchedActivityFile": "assets/maps/data/continents-oceans.json",
+      "matchedItemCount": 1,
+      "missingItems": [
+        "Kyoto",
+        "Tokyo",
+        "Mt. Fuji",
+        "Sea of Japan"
+      ],
+      "extraItems": [
+        "North America",
+        "South America",
+        "Europe",
+        "Africa",
+        "Asia",
+        "Australia",
+        "Antarctica",
+        "Indian Ocean",
+        "Arctic Ocean",
+        "Atlantic Ocean",
+        "Southern Ocean"
+      ],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": true,
+        "isRegistered": true
+      },
+      "notes": [
+        "Missing proof-sheet items: Kyoto, Tokyo, Mt. Fuji, Sea of Japan.",
+        "Implemented activity has extra items: North America, South America, Europe, Africa, Asia, Australia, Antarctica, Indian Ocean, Arctic Ocean, Atlantic Ocean, Southern Ocean.",
+        "Not referenced by the MapLibre registry.",
+        "Title differs: proof sheet uses \"JAPAN\", implementation uses \"Continents and Oceans\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 11,
+      "proofTitle": "BYZANTINE EMPIRE",
+      "proofItems": [
+        "Constantinople",
+        "Rome",
+        "Athens",
+        "Ephesus",
+        "Antioch"
+      ],
+      "status": "partial",
+      "matchScore": 11.5,
+      "matchedActivityId": "european-cities",
+      "matchedActivityTitle": "European Cities",
+      "matchedActivityFile": "assets/maps/data/european-cities.json",
+      "matchedItemCount": 1,
+      "missingItems": [
+        "Constantinople",
+        "Athens",
+        "Ephesus",
+        "Antioch"
+      ],
+      "extraItems": [
+        "London",
+        "Paris",
+        "Barcelona",
+        "Orleans"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": true,
+        "isRegistered": true
+      },
+      "notes": [
+        "Missing proof-sheet items: Constantinople, Athens, Ephesus, Antioch.",
+        "Implemented activity has extra items: London, Paris, Barcelona, Orleans.",
+        "Title differs: proof sheet uses \"BYZANTINE EMPIRE\", implementation uses \"European Cities\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 12,
+      "proofTitle": "MUSLIM EMPIRE",
+      "proofItems": [
+        "Mecca",
+        "Medina",
+        "Baghdad",
+        "Damascus",
+        "Tours",
+        "Syria"
+      ],
+      "status": "partial",
+      "matchScore": 11.333333333333334,
+      "matchedActivityId": "the-levant",
+      "matchedActivityTitle": "The Levant",
+      "matchedActivityFile": "assets/maps/data/the-levant.json",
+      "matchedItemCount": 1,
+      "missingItems": [
+        "Mecca",
+        "Medina",
+        "Baghdad",
+        "Damascus",
+        "Tours"
+      ],
+      "extraItems": [
+        "Turkey",
+        "Cyprus",
+        "Iraq",
+        "Iran"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Missing proof-sheet items: Mecca, Medina, Baghdad, Damascus, Tours.",
+        "Implemented activity has extra items: Turkey, Cyprus, Iraq, Iran.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"MUSLIM EMPIRE\", implementation uses \"The Levant\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 13,
+      "proofTitle": "WESTERN AFRICA",
+      "proofItems": [
+        "Atlantic Ocean",
+        "Senegal River",
+        "Niger River",
+        "Sahara Desert",
+        "Ivory Coast"
+      ],
+      "status": "partial",
+      "matchScore": 11.5,
+      "matchedActivityId": "continents-oceans",
+      "matchedActivityTitle": "Continents and Oceans",
+      "matchedActivityFile": "assets/maps/data/continents-oceans.json",
+      "matchedItemCount": 1,
+      "missingItems": [
+        "Senegal River",
+        "Niger River",
+        "Sahara Desert",
+        "Ivory Coast"
+      ],
+      "extraItems": [
+        "North America",
+        "South America",
+        "Europe",
+        "Africa",
+        "Asia",
+        "Australia",
+        "Antarctica",
+        "Indian Ocean",
+        "Arctic Ocean",
+        "Pacific Ocean",
+        "Southern Ocean"
+      ],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": true,
+        "isRegistered": true
+      },
+      "notes": [
+        "Missing proof-sheet items: Senegal River, Niger River, Sahara Desert, Ivory Coast.",
+        "Implemented activity has extra items: North America, South America, Europe, Africa, Asia, Australia, Antarctica, Indian Ocean, Arctic Ocean, Pacific Ocean, Southern Ocean.",
+        "Not referenced by the MapLibre registry.",
+        "Title differs: proof sheet uses \"WESTERN AFRICA\", implementation uses \"Continents and Oceans\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 14,
+      "proofTitle": "ANCIENT AFRICA",
+      "proofItems": [
+        "Ancient Ghana",
+        "Ancient Mali",
+        "Western Sahara",
+        "Fez",
+        "Tangier"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Ancient Ghana",
+        "Ancient Mali",
+        "Western Sahara",
+        "Fez",
+        "Tangier"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 15,
+      "proofTitle": "MIDDLE EAST",
+      "proofItems": [
+        "Israel",
+        "Sinai Peninsula",
+        "Suez Canal",
+        "Cairo",
+        "Gaza Strip"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Israel",
+        "Sinai Peninsula",
+        "Suez Canal",
+        "Cairo",
+        "Gaza Strip"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 16,
+      "proofTitle": "AFRICAN WATERS",
+      "proofItems": [
+        "Congo River",
+        "Lake Victoria",
+        "Zambezi River",
+        "Orange River"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Congo River",
+        "Lake Victoria",
+        "Zambezi River",
+        "Orange River"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 17,
+      "proofTitle": "AFRICAN COUNTRIES",
+      "proofItems": [
+        "Ethiopia",
+        "Mozambique",
+        "Zimbabwe",
+        "South Africa",
+        "Madagascar"
+      ],
+      "status": "covered",
+      "matchScore": 61.5,
+      "matchedActivityId": "african-countries",
+      "matchedActivityTitle": "African Countries",
+      "matchedActivityFile": "assets/maps/data/african-countries.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Not referenced by the legacy registry."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 18,
+      "proofTitle": "MESOAMERICA REGIONS",
+      "proofItems": [
+        "Gulf of Mexico",
+        "Yucatan Peninsula",
+        "Olmec Civilization",
+        "Maya Civilization",
+        "Aztec Civilization"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Gulf of Mexico",
+        "Yucatan Peninsula",
+        "Olmec Civilization",
+        "Maya Civilization",
+        "Aztec Civilization"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 19,
+      "proofTitle": "MESOAMERICA",
+      "proofItems": [
+        "Mexico City",
+        "Chichen Itza",
+        "Lake Texcoco",
+        "Mayapan",
+        "Oaxaca"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Mexico City",
+        "Chichen Itza",
+        "Lake Texcoco",
+        "Mayapan",
+        "Oaxaca"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 20,
+      "proofTitle": "DOMINION OF CANADA",
+      "proofItems": [
+        "Ontario",
+        "Quebec",
+        "New Brunswick",
+        "Nova Scotia"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Ontario",
+        "Quebec",
+        "New Brunswick",
+        "Nova Scotia"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 21,
+      "proofTitle": "CANADIAN WATERS",
+      "proofItems": [
+        "Great Bear Lake",
+        "Great Slave Lake",
+        "Hudson Bay",
+        "Baffin Bay",
+        "Labrador Sea"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Great Bear Lake",
+        "Great Slave Lake",
+        "Hudson Bay",
+        "Baffin Bay",
+        "Labrador Sea"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 22,
+      "proofTitle": "SOUTH AMERICA (WEST)",
+      "proofItems": [
+        "Venezuela",
+        "Colombia",
+        "Ecuador",
+        "Peru",
+        "Bolivia",
+        "Chile"
+      ],
+      "status": "covered",
+      "matchScore": 71.5,
+      "matchedActivityId": "south-america-west",
+      "matchedActivityTitle": "South America (West)",
+      "matchedActivityFile": "assets/maps/data/south-america-west.json",
+      "matchedItemCount": 6,
+      "missingItems": [],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Not referenced by the legacy registry."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 23,
+      "proofTitle": "SOUTH AMERICA (EAST)",
+      "proofItems": [
+        "Argentina",
+        "Uruguay",
+        "Paraguay",
+        "Brazil",
+        "French Guiana",
+        "Suriname",
+        "Guyana"
+      ],
+      "status": "covered",
+      "matchScore": 81.5,
+      "matchedActivityId": "south-america-east",
+      "matchedActivityTitle": "South America (East)",
+      "matchedActivityFile": "assets/maps/data/south-america-east.json",
+      "matchedItemCount": 7,
+      "missingItems": [],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Not referenced by the legacy registry."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-1.txt",
+      "cycle": 1,
+      "sectionNumber": 24,
+      "proofTitle": "NORTH ATLANTIC",
+      "proofItems": [
+        "Greenland",
+        "Iceland",
+        "Denmark Strait",
+        "Davis Strait"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Greenland",
+        "Iceland",
+        "Denmark Strait",
+        "Davis Strait"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 1,
+      "proofTitle": "CONTINENTS/OCEANS",
+      "proofItems": [
+        "North America",
+        "South America",
+        "Europe",
+        "Asia",
+        "Africa",
+        "Australia",
+        "Antarctica",
+        "Indian Ocean",
+        "Arctic Ocean",
+        "Atlantic Ocean",
+        "Pacific Ocean",
+        "Southern Ocean"
+      ],
+      "status": "covered",
+      "matchScore": 128.16666666666669,
+      "matchedActivityId": "continents-oceans",
+      "matchedActivityTitle": "Continents and Oceans",
+      "matchedActivityFile": "assets/maps/data/continents-oceans.json",
+      "matchedItemCount": 12,
+      "missingItems": [],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": true,
+        "isRegistered": true
+      },
+      "notes": [
+        "Not referenced by the MapLibre registry.",
+        "Title differs: proof sheet uses \"CONTINENTS/OCEANS\", implementation uses \"Continents and Oceans\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 2,
+      "proofTitle": "EUROPEAN WATERS",
+      "proofItems": [
+        "North Sea",
+        "Baltic Sea",
+        "Adriatic Sea",
+        "English Channel",
+        "Mediterranean Sea"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "North Sea",
+        "Baltic Sea",
+        "Adriatic Sea",
+        "English Channel",
+        "Mediterranean Sea"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 3,
+      "proofTitle": "WESTERN EUROPEAN COUNTRIES",
+      "proofItems": [
+        "Ireland",
+        "England",
+        "Portugal",
+        "Spain",
+        "France"
+      ],
+      "status": "partial",
+      "matchScore": 45.5,
+      "matchedActivityId": "western-european-countries",
+      "matchedActivityTitle": "Western Europe",
+      "matchedActivityFile": "assets/maps/data/western-european-countries.json",
+      "matchedItemCount": 4,
+      "missingItems": [
+        "England"
+      ],
+      "extraItems": [
+        "United Kingdom"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": true,
+        "isRegistered": true
+      },
+      "notes": [
+        "Missing proof-sheet items: England.",
+        "Implemented activity has extra items: United Kingdom.",
+        "Title differs: proof sheet uses \"WESTERN EUROPEAN COUNTRIES\", implementation uses \"Western Europe\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 4,
+      "proofTitle": "EUROPEAN RIVERS",
+      "proofItems": [
+        "Seine River",
+        "Rhine River",
+        "Elbe River",
+        "Po River",
+        "Danube River",
+        "Volga River"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Seine River",
+        "Rhine River",
+        "Elbe River",
+        "Po River",
+        "Danube River",
+        "Volga River"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 5,
+      "proofTitle": "EUROPEAN CITIES",
+      "proofItems": [
+        "London",
+        "Paris",
+        "Rome",
+        "Barcelona",
+        "Orleans"
+      ],
+      "status": "covered",
+      "matchScore": 59.5,
+      "matchedActivityId": "european-cities",
+      "matchedActivityTitle": "European Cities",
+      "matchedActivityFile": "assets/maps/data/european-cities.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": true,
+        "isRegistered": true
+      },
+      "notes": []
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 6,
+      "proofTitle": "EUROPEAN MOUNTAINS",
+      "proofItems": [
+        "Pyrenees",
+        "Alps",
+        "Carpathians",
+        "Caucasus",
+        "Ural",
+        "Matterhorn"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Pyrenees",
+        "Alps",
+        "Carpathians",
+        "Caucasus",
+        "Ural",
+        "Matterhorn"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 7,
+      "proofTitle": "EUROPEAN PENINSULAS",
+      "proofItems": [
+        "Iberian Peninsula",
+        "Balkan Peninsula",
+        "Scandinavian Peninsula",
+        "Apennine Peninsula"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Iberian Peninsula",
+        "Balkan Peninsula",
+        "Scandinavian Peninsula",
+        "Apennine Peninsula"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 8,
+      "proofTitle": "MID-ATLANTIC WORLD",
+      "proofItems": [
+        "Cape of Good Hope",
+        "Strait of Magellan",
+        "Canary Islands",
+        "Treaty of Tordesillas"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Cape of Good Hope",
+        "Strait of Magellan",
+        "Canary Islands",
+        "Treaty of Tordesillas"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 9,
+      "proofTitle": "CARIBBEAN",
+      "proofItems": [
+        "Cuba",
+        "Jamaica",
+        "Haiti",
+        "Dominican Republic",
+        "Puerto Rico"
+      ],
+      "status": "covered",
+      "matchScore": 61.5,
+      "matchedActivityId": "caribbean",
+      "matchedActivityTitle": "Caribbean",
+      "matchedActivityFile": "assets/maps/data/caribbean.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Not referenced by the legacy registry."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 10,
+      "proofTitle": "SOUTHWEST ASIA",
+      "proofItems": [
+        "Afghanistan",
+        "Pakistan",
+        "India",
+        "Kolkata",
+        "Arabian Sea"
+      ],
+      "status": "partial",
+      "matchScore": 39.5,
+      "matchedActivityId": "southwest-asia",
+      "matchedActivityTitle": "Southwest Asia",
+      "matchedActivityFile": "assets/maps/data/southwest-asia.json",
+      "matchedItemCount": 3,
+      "missingItems": [
+        "Kolkata",
+        "Arabian Sea"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Missing proof-sheet items: Kolkata, Arabian Sea.",
+        "Not referenced by the legacy registry."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 11,
+      "proofTitle": "EUROPE AND ASIA",
+      "proofItems": [
+        "Moscow",
+        "Kiev",
+        "Russia",
+        "Siberia",
+        "Ukraine"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Moscow",
+        "Kiev",
+        "Russia",
+        "Siberia",
+        "Ukraine"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 12,
+      "proofTitle": "EASTERN EUROPEAN SEAS",
+      "proofItems": [
+        "White Sea",
+        "Barents Sea",
+        "Black Sea",
+        "Caspian Sea",
+        "Aral Sea"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "White Sea",
+        "Barents Sea",
+        "Black Sea",
+        "Caspian Sea",
+        "Aral Sea"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 13,
+      "proofTitle": "NORTHERN EUROPEAN COUNTRIES",
+      "proofItems": [
+        "Norway",
+        "Sweden",
+        "Finland",
+        "Denmark"
+      ],
+      "status": "covered",
+      "matchScore": 51.5,
+      "matchedActivityId": "northern-european-countries",
+      "matchedActivityTitle": "Northern European Countries",
+      "matchedActivityFile": "assets/maps/data/northern-european-countries.json",
+      "matchedItemCount": 4,
+      "missingItems": [],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Not referenced by the legacy registry."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 14,
+      "proofTitle": "BALTIC EUROPE",
+      "proofItems": [
+        "Estonia",
+        "Latvia",
+        "Lithuania",
+        "Poland",
+        "Belarus"
+      ],
+      "status": "covered",
+      "matchScore": 61.5,
+      "matchedActivityId": "baltic-europe",
+      "matchedActivityTitle": "Baltic Europe",
+      "matchedActivityFile": "assets/maps/data/baltic-europe-countries.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Not referenced by the legacy registry."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 15,
+      "proofTitle": "THE LEVANT",
+      "proofItems": [
+        "Turkey",
+        "Cyprus",
+        "Syria",
+        "Iraq",
+        "Iran"
+      ],
+      "status": "covered",
+      "matchScore": 61.5,
+      "matchedActivityId": "the-levant",
+      "matchedActivityTitle": "The Levant",
+      "matchedActivityFile": "assets/maps/data/the-levant.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Not referenced by the legacy registry."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 16,
+      "proofTitle": "BALKANS",
+      "proofItems": [
+        "Greece",
+        "Albania",
+        "Bulgaria",
+        "Slovenia",
+        "Romania"
+      ],
+      "status": "covered",
+      "matchScore": 61.5,
+      "matchedActivityId": "balkans",
+      "matchedActivityTitle": "Balkans",
+      "matchedActivityFile": "assets/maps/data/balkans-countries.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Not referenced by the legacy registry."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 17,
+      "proofTitle": "CENTRAL EUROPEAN COUNTRIES",
+      "proofItems": [
+        "Netherlands",
+        "Belgium",
+        "Luxembourg",
+        "Germany",
+        "Switzerland"
+      ],
+      "status": "covered",
+      "matchScore": 61.5,
+      "matchedActivityId": "central-european-countries",
+      "matchedActivityTitle": "Central European Countries",
+      "matchedActivityFile": "assets/maps/data/central-european-countries.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Not referenced by the legacy registry."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 18,
+      "proofTitle": "MORE CENTRAL EUROPEAN COUNTRIES",
+      "proofItems": [
+        "Italy",
+        "Austria",
+        "Hungary",
+        "Czechia",
+        "Slovakia"
+      ],
+      "status": "covered",
+      "matchScore": 61.5,
+      "matchedActivityId": "more-central-european-countries",
+      "matchedActivityTitle": "More Central European Countries",
+      "matchedActivityFile": "assets/maps/data/more-central-european-countries.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Not referenced by the legacy registry."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 19,
+      "proofTitle": "SOUTHEASTERN ASIA",
+      "proofItems": [
+        "North Korea",
+        "South Korea",
+        "Taiwan",
+        "Philippines",
+        "Guam"
+      ],
+      "status": "covered",
+      "matchScore": 61.5,
+      "matchedActivityId": "southeastern-asia",
+      "matchedActivityTitle": "Southeastern Asia",
+      "matchedActivityFile": "assets/maps/data/southeastern-asia.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Not referenced by the legacy registry."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 20,
+      "proofTitle": "SOUTH CENTRAL ASIA",
+      "proofItems": [
+        "Laos",
+        "Thailand",
+        "Cambodia",
+        "North Vietnam",
+        "South Vietnam"
+      ],
+      "status": "missing",
+      "matchScore": 3.1666666666666665,
+      "matchedActivityId": "central-asia",
+      "matchedActivityTitle": "Central Asia",
+      "matchedActivityFile": "assets/maps/data/central-asia.json",
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Laos",
+        "Thailand",
+        "Cambodia",
+        "North Vietnam",
+        "South Vietnam"
+      ],
+      "extraItems": [
+        "Kazakhstan",
+        "Uzbekistan",
+        "Turkmenistan",
+        "Tajikistan",
+        "Kyrgyzstan"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Missing proof-sheet items: Laos, Thailand, Cambodia, North Vietnam, South Vietnam.",
+        "Implemented activity has extra items: Kazakhstan, Uzbekistan, Turkmenistan, Tajikistan, Kyrgyzstan.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"SOUTH CENTRAL ASIA\", implementation uses \"Central Asia\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 21,
+      "proofTitle": "CENTRAL AMERICA",
+      "proofItems": [
+        "Guatemala",
+        "Belize",
+        "El Salvador",
+        "Honduras",
+        "Nicaragua"
+      ],
+      "status": "covered",
+      "matchScore": 61.5,
+      "matchedActivityId": "central-america",
+      "matchedActivityTitle": "Central America",
+      "matchedActivityFile": "assets/maps/data/central-america.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Not referenced by the legacy registry."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 22,
+      "proofTitle": "OCEANIA",
+      "proofItems": [
+        "Australia",
+        "Great Barrier Reef",
+        "New Zealand",
+        "Papua New Guinea",
+        "Indonesia"
+      ],
+      "status": "partial",
+      "matchScore": 50.5,
+      "matchedActivityId": "oceania",
+      "matchedActivityTitle": "Oceania",
+      "matchedActivityFile": "assets/maps/data/oceania.json",
+      "matchedItemCount": 4,
+      "missingItems": [
+        "Great Barrier Reef"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Missing proof-sheet items: Great Barrier Reef.",
+        "Not referenced by the legacy registry."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 23,
+      "proofTitle": "CENTRAL ASIA",
+      "proofItems": [
+        "Kazakhstan",
+        "Uzbekistan",
+        "Turkmenistan",
+        "Tajikistan",
+        "Kyrgyzstan"
+      ],
+      "status": "covered",
+      "matchScore": 61.5,
+      "matchedActivityId": "central-asia",
+      "matchedActivityTitle": "Central Asia",
+      "matchedActivityFile": "assets/maps/data/central-asia.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Not referenced by the legacy registry."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-2.txt",
+      "cycle": 2,
+      "sectionNumber": 24,
+      "proofTitle": "SOUTHERN AFRICA",
+      "proofItems": [
+        "South Africa",
+        "Lesotho",
+        "Botswana",
+        "Mozambique",
+        "Namibia"
+      ],
+      "status": "covered",
+      "matchScore": 59.5,
+      "matchedActivityId": "southern-africa-countries",
+      "matchedActivityTitle": "Southern Africa",
+      "matchedActivityFile": "assets/maps/data/southern-africa-countries.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Not referenced by the legacy registry."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 1,
+      "proofTitle": "States and Capitals",
+      "proofItems": [
+        "Augusta, ME",
+        "Concord, NH",
+        "Boston, MA",
+        "Providence, RI",
+        "Hartford, CT"
+      ],
+      "status": "covered",
+      "matchScore": 60.5,
+      "matchedActivityId": "us-states-capitals-01",
+      "matchedActivityTitle": "States and Capitals 1",
+      "matchedActivityFile": "assets/maps/data/us-states-capitals-01.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [
+        "Maine",
+        "New Hampshire",
+        "Massachusetts",
+        "Rhode Island",
+        "Connecticut"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": true,
+        "isRegistered": true
+      },
+      "notes": [
+        "Implemented activity has extra items: Maine, New Hampshire, Massachusetts, Rhode Island, Connecticut.",
+        "Title differs: proof sheet uses \"States and Capitals\", implementation uses \"States and Capitals 1\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 2,
+      "proofTitle": "States and Capitals",
+      "proofItems": [
+        "Montpelier, VT",
+        "Albany, NY",
+        "Trenton, NJ",
+        "Harrisburg, PA",
+        "Dover, DE"
+      ],
+      "status": "covered",
+      "matchScore": 60.5,
+      "matchedActivityId": "us-states-capitals-02",
+      "matchedActivityTitle": "States and Capitals 2",
+      "matchedActivityFile": "assets/maps/data/us-states-capitals-02.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [
+        "Vermont",
+        "New York",
+        "New Jersey",
+        "Pennsylvania",
+        "Delaware"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Implemented activity has extra items: Vermont, New York, New Jersey, Pennsylvania, Delaware.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"States and Capitals\", implementation uses \"States and Capitals 2\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 3,
+      "proofTitle": "States and Capitals",
+      "proofItems": [
+        "Annapolis, MD",
+        "Richmond, VA",
+        "Charleston, WV",
+        "Raleigh, NC",
+        "Columbia, SC",
+        "Washington, DC"
+      ],
+      "status": "covered",
+      "matchScore": 70.5,
+      "matchedActivityId": "us-states-capitals-03",
+      "matchedActivityTitle": "States and Capitals 3",
+      "matchedActivityFile": "assets/maps/data/us-states-capitals-03.json",
+      "matchedItemCount": 6,
+      "missingItems": [],
+      "extraItems": [
+        "Maryland",
+        "Virginia",
+        "West Virginia",
+        "North Carolina",
+        "South Carolina"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Implemented activity has extra items: Maryland, Virginia, West Virginia, North Carolina, South Carolina.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"States and Capitals\", implementation uses \"States and Capitals 3\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 4,
+      "proofTitle": "States and Capitals",
+      "proofItems": [
+        "Atlanta, GA",
+        "Tallahassee, FL",
+        "Montgomery, AL",
+        "Jackson, MS",
+        "Baton Rouge, LA"
+      ],
+      "status": "covered",
+      "matchScore": 60.5,
+      "matchedActivityId": "us-states-capitals-04",
+      "matchedActivityTitle": "States and Capitals 4",
+      "matchedActivityFile": "assets/maps/data/us-states-capitals-04.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [
+        "Georgia",
+        "Florida",
+        "Alabama",
+        "Mississippi",
+        "Louisiana"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Implemented activity has extra items: Georgia, Florida, Alabama, Mississippi, Louisiana.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"States and Capitals\", implementation uses \"States and Capitals 4\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 5,
+      "proofTitle": "States and Capitals",
+      "proofItems": [
+        "Lansing, MI",
+        "Columbus, OH",
+        "Indianapolis, IN",
+        "Frankfort, KY",
+        "Nashville, TN"
+      ],
+      "status": "covered",
+      "matchScore": 60.5,
+      "matchedActivityId": "us-states-capitals-05",
+      "matchedActivityTitle": "States and Capitals 5",
+      "matchedActivityFile": "assets/maps/data/us-states-capitals-05.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [
+        "Michigan",
+        "Ohio",
+        "Indiana",
+        "Kentucky",
+        "Tennessee"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Implemented activity has extra items: Michigan, Ohio, Indiana, Kentucky, Tennessee.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"States and Capitals\", implementation uses \"States and Capitals 5\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 6,
+      "proofTitle": "States and Capitals",
+      "proofItems": [
+        "Madison, WI",
+        "Springfield, IL",
+        "Des Moines, IA",
+        "Jefferson City, MO",
+        "Little Rock, AR"
+      ],
+      "status": "covered",
+      "matchScore": 60.5,
+      "matchedActivityId": "us-states-capitals-06",
+      "matchedActivityTitle": "States and Capitals 6",
+      "matchedActivityFile": "assets/maps/data/us-states-capitals-06.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [
+        "Wisconsin",
+        "Illinois",
+        "Iowa",
+        "Missouri",
+        "Arkansas"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Implemented activity has extra items: Wisconsin, Illinois, Iowa, Missouri, Arkansas.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"States and Capitals\", implementation uses \"States and Capitals 6\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 7,
+      "proofTitle": "States and Capitals",
+      "proofItems": [
+        "St. Paul, MN",
+        "Bismarck, ND",
+        "Pierre, SD",
+        "Cheyenne, WY",
+        "Lincoln, NE"
+      ],
+      "status": "covered",
+      "matchScore": 60.5,
+      "matchedActivityId": "us-states-capitals-07",
+      "matchedActivityTitle": "States and Capitals 7",
+      "matchedActivityFile": "assets/maps/data/us-states-capitals-07.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [
+        "Minnesota",
+        "North Dakota",
+        "South Dakota",
+        "Wyoming",
+        "Nebraska"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Implemented activity has extra items: Minnesota, North Dakota, South Dakota, Wyoming, Nebraska.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"States and Capitals\", implementation uses \"States and Capitals 7\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 8,
+      "proofTitle": "States and Capitals",
+      "proofItems": [
+        "Topeka, KS",
+        "Oklahoma City, OK",
+        "Austin, TX",
+        "Denver, CO",
+        "Santa Fe, NM"
+      ],
+      "status": "covered",
+      "matchScore": 60.5,
+      "matchedActivityId": "us-states-capitals-08",
+      "matchedActivityTitle": "States and Capitals 8",
+      "matchedActivityFile": "assets/maps/data/us-states-capitals-08.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [
+        "Kansas",
+        "Oklahoma",
+        "Texas",
+        "Colorado",
+        "New Mexico"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Implemented activity has extra items: Kansas, Oklahoma, Texas, Colorado, New Mexico.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"States and Capitals\", implementation uses \"States and Capitals 8\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 9,
+      "proofTitle": "States and Capitals",
+      "proofItems": [
+        "Salt Lake City, UT",
+        "Phoenix, AZ",
+        "Carson City, NV",
+        "Sacramento, CA",
+        "Honolulu, HI"
+      ],
+      "status": "covered",
+      "matchScore": 60.5,
+      "matchedActivityId": "us-states-capitals-09",
+      "matchedActivityTitle": "States and Capitals 9",
+      "matchedActivityFile": "assets/maps/data/us-states-capitals-09.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [
+        "Utah",
+        "Arizona",
+        "Nevada",
+        "California",
+        "Hawaii"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Implemented activity has extra items: Utah, Arizona, Nevada, California, Hawaii.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"States and Capitals\", implementation uses \"States and Capitals 9\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 10,
+      "proofTitle": "States and Capitals",
+      "proofItems": [
+        "Helena, MT",
+        "Boise, ID",
+        "Olympia, WA",
+        "Salem, OR",
+        "Juneau, AK"
+      ],
+      "status": "covered",
+      "matchScore": 60.5,
+      "matchedActivityId": "us-states-capitals-10",
+      "matchedActivityTitle": "States and Capitals 10",
+      "matchedActivityFile": "assets/maps/data/us-states-capitals-10.json",
+      "matchedItemCount": 5,
+      "missingItems": [],
+      "extraItems": [
+        "Montana",
+        "Idaho",
+        "Washington",
+        "Oregon",
+        "Alaska"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Implemented activity has extra items: Montana, Idaho, Washington, Oregon, Alaska.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"States and Capitals\", implementation uses \"States and Capitals 10\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 11,
+      "proofTitle": "Northern Appalachian Mountains",
+      "proofItems": [
+        "White Mountains",
+        "Green Mountains",
+        "Adirondack Mountains",
+        "Allegheny Mountains"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "White Mountains",
+        "Green Mountains",
+        "Adirondack Mountains",
+        "Allegheny Mountains"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 12,
+      "proofTitle": "Southern Appalachian Mountains",
+      "proofItems": [
+        "The Great Valley",
+        "Blue Ridge Mountains",
+        "Great Smoky Mountains",
+        "Cumberland Mountains",
+        "Mt. Mitchell"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "The Great Valley",
+        "Blue Ridge Mountains",
+        "Great Smoky Mountains",
+        "Cumberland Mountains",
+        "Mt. Mitchell"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 13,
+      "proofTitle": "Western Mountains",
+      "proofItems": [
+        "Rocky Mountains",
+        "Pikes Peak",
+        "Mt. Elbert",
+        "Sierra Nevadas",
+        "Mt. Whitney"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Rocky Mountains",
+        "Pikes Peak",
+        "Mt. Elbert",
+        "Sierra Nevadas",
+        "Mt. Whitney"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 14,
+      "proofTitle": "Northwest Mountains",
+      "proofItems": [
+        "Cascade Mountains",
+        "Mt. Rainier",
+        "Mt. St. Helens",
+        "Denali"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Cascade Mountains",
+        "Mt. Rainier",
+        "Mt. St. Helens",
+        "Denali"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 15,
+      "proofTitle": "Great Lakes",
+      "proofItems": [
+        "Huron",
+        "Ontario",
+        "Michigan",
+        "Erie",
+        "Superior"
+      ],
+      "status": "partial",
+      "matchScore": 11.5,
+      "matchedActivityId": "us-states-capitals-05",
+      "matchedActivityTitle": "States and Capitals 5",
+      "matchedActivityFile": "assets/maps/data/us-states-capitals-05.json",
+      "matchedItemCount": 1,
+      "missingItems": [
+        "Huron",
+        "Ontario",
+        "Erie",
+        "Superior"
+      ],
+      "extraItems": [
+        "Ohio",
+        "Indiana",
+        "Kentucky",
+        "Tennessee",
+        "Lansing, MI",
+        "Columbus, OH",
+        "Indianapolis, IN",
+        "Frankfort, KY",
+        "Nashville, TN"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Missing proof-sheet items: Huron, Ontario, Erie, Superior.",
+        "Implemented activity has extra items: Ohio, Indiana, Kentucky, Tennessee, Lansing, MI, Columbus, OH, Indianapolis, IN, Frankfort, KY, Nashville, TN.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"Great Lakes\", implementation uses \"States and Capitals 5\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 16,
+      "proofTitle": "Bays",
+      "proofItems": [
+        "Chesapeake Bay",
+        "Hudson Bay",
+        "San Francisco Bay",
+        "Puget Sound",
+        "Pamlico Sound"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Chesapeake Bay",
+        "Hudson Bay",
+        "San Francisco Bay",
+        "Puget Sound",
+        "Pamlico Sound"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 17,
+      "proofTitle": "Rivers East",
+      "proofItems": [
+        "St. Lawrence River",
+        "Ohio River",
+        "Mississippi River",
+        "Missouri River",
+        "Arkansas River"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "St. Lawrence River",
+        "Ohio River",
+        "Mississippi River",
+        "Missouri River",
+        "Arkansas River"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 18,
+      "proofTitle": "Rivers West",
+      "proofItems": [
+        "Colorado River",
+        "Red River",
+        "Rio Grande River",
+        "Columbia River",
+        "Great Salt Lake"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Colorado River",
+        "Red River",
+        "Rio Grande River",
+        "Columbia River",
+        "Great Salt Lake"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 19,
+      "proofTitle": "Trails",
+      "proofItems": [
+        "Cumberland Road",
+        "Santa Fe Trail",
+        "Mormon Trail",
+        "Gila Trail",
+        "Old Spanish Trail",
+        "California Trail",
+        "Oregon Trail"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Cumberland Road",
+        "Santa Fe Trail",
+        "Mormon Trail",
+        "Gila Trail",
+        "Old Spanish Trail",
+        "California Trail",
+        "Oregon Trail"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 20,
+      "proofTitle": "Canals",
+      "proofItems": [
+        "Erie Canal",
+        "Pennsylvania Canal",
+        "Chesapeake and Ohio Canal",
+        "Ohio and Erie Canal",
+        "Miami and Erie Canal"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Erie Canal",
+        "Pennsylvania Canal",
+        "Chesapeake and Ohio Canal",
+        "Ohio and Erie Canal",
+        "Miami and Erie Canal"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 21,
+      "proofTitle": "Native American Regions",
+      "proofItems": [
+        "Eastern Woodlands",
+        "Plains",
+        "Plateau",
+        "Northwest Coast",
+        "California",
+        "Great Basin",
+        "Southwest"
+      ],
+      "status": "partial",
+      "matchScore": 11.214285714285714,
+      "matchedActivityId": "us-states-capitals-09",
+      "matchedActivityTitle": "States and Capitals 9",
+      "matchedActivityFile": "assets/maps/data/us-states-capitals-09.json",
+      "matchedItemCount": 1,
+      "missingItems": [
+        "Eastern Woodlands",
+        "Plains",
+        "Plateau",
+        "Northwest Coast",
+        "Great Basin",
+        "Southwest"
+      ],
+      "extraItems": [
+        "Utah",
+        "Arizona",
+        "Nevada",
+        "Hawaii",
+        "Salt Lake City, UT",
+        "Phoenix, AZ",
+        "Carson City, NV",
+        "Sacramento, CA",
+        "Honolulu, HI"
+      ],
+      "registration": {
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
+        "isRegistered": true
+      },
+      "notes": [
+        "Missing proof-sheet items: Eastern Woodlands, Plains, Plateau, Northwest Coast, Great Basin, Southwest.",
+        "Implemented activity has extra items: Utah, Arizona, Nevada, Hawaii, Salt Lake City, UT, Phoenix, AZ, Carson City, NV, Sacramento, CA, Honolulu, HI.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"Native American Regions\", implementation uses \"States and Capitals 9\"."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 22,
+      "proofTitle": "Deserts",
+      "proofItems": [
+        "Mojave Desert",
+        "Sonoran Desert",
+        "Colorado Desert",
+        "Painted Desert",
+        "Great Salt Lake Desert"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Mojave Desert",
+        "Sonoran Desert",
+        "Colorado Desert",
+        "Painted Desert",
+        "Great Salt Lake Desert"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 23,
+      "proofTitle": "Prominent Features",
+      "proofItems": [
+        "Grand Canyon",
+        "Black Hills",
+        "Ozark Highlands",
+        "Okefenokee Swamp",
+        "Olympic rainforests",
+        "Niagara Falls"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Grand Canyon",
+        "Black Hills",
+        "Ozark Highlands",
+        "Okefenokee Swamp",
+        "Olympic rainforests",
+        "Niagara Falls"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    },
+    {
+      "proofSheetFile": "Geography-Summary-Proof-Sheets-Cycle-3.txt",
+      "cycle": 3,
+      "sectionNumber": 24,
+      "proofTitle": "More Prominent Features",
+      "proofItems": [
+        "Mississippi River Delta",
+        "Mammoth Cave",
+        "San Andreas Fault",
+        "Gulf of Mexico",
+        "Death Valley"
+      ],
+      "status": "missing",
+      "matchScore": 0,
+      "matchedActivityId": null,
+      "matchedActivityTitle": null,
+      "matchedActivityFile": null,
+      "matchedItemCount": 0,
+      "missingItems": [
+        "Mississippi River Delta",
+        "Mammoth Cave",
+        "San Andreas Fault",
+        "Gulf of Mexico",
+        "Death Valley"
+      ],
+      "extraItems": [],
+      "registration": {
+        "maplibreReferenced": false,
+        "legacyReferenced": false,
+        "isRegistered": false
+      },
+      "notes": [
+        "No matching data activity found."
+      ]
+    }
+  ],
+  "orphanedActivities": [
+    {
+      "id": "us-capitals",
+      "title": "U.S. Capitals",
+      "relativePath": "assets/maps/data/us-capitals.json",
+      "itemCount": 51
+    },
+    {
+      "id": "us-features",
+      "title": "United States Features",
+      "relativePath": "assets/maps/data/us-features.json",
+      "itemCount": 0
+    },
+    {
+      "id": "us-states",
+      "title": "United States",
+      "relativePath": "assets/maps/data/us-states.json",
+      "itemCount": 52
+    },
+    {
+      "id": "world-map",
+      "title": "World Map",
+      "relativePath": "assets/maps/world/world-map.json",
+      "itemCount": 0
+    }
+  ],
+  "summary": {
+    "totalProofActivities": 72,
+    "covered": 26,
+    "partial": 11,
+    "data-only": 0,
+    "missing": 35,
+    "orphanedImplementedActivities": 4
+  }
+}

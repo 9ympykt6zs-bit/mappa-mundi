@@ -1,0 +1,84 @@
+{
+  "id": "south-america-west",
+  "title": "South America (West)",
+  "sequence": 22,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "south-america-west"
+  },
+  "features": [
+    {
+      "id": "venezuela",
+      "name": "Venezuela",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "VEN",
+      "color": "#f59e0b",
+      "flag": "\ud83c\uddfb\ud83c\uddea",
+      "labelAnchor": [-66.5, 7.25],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "colombia",
+      "name": "Colombia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "COL",
+      "color": "#3b82f6",
+      "flag": "\ud83c\udde8\ud83c\uddf4",
+      "labelAnchor": [-73.3, 4.55],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "ecuador",
+      "name": "Ecuador",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ECU",
+      "color": "#22c55e",
+      "flag": "\ud83c\uddea\ud83c\udde8",
+      "labelAnchor": [-78.6, -1.3],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "peru",
+      "name": "Peru",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "PER",
+      "color": "#ef4444",
+      "flag": "\ud83c\uddf5\ud83c\uddea",
+      "labelAnchor": [-74.5, -9.2],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "bolivia",
+      "name": "Bolivia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "BOL",
+      "color": "#a855f7",
+      "flag": "\ud83c\udde7\ud83c\uddf4",
+      "labelAnchor": [-64.7, -16.6],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "chile",
+      "name": "Chile",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "CHL",
+      "color": "#14b8a6",
+      "flag": "\ud83c\udde8\ud83c\uddf1",
+      "labelAnchor": [-71.1, -33.4],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    }
+  ]
+}

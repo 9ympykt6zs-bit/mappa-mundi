@@ -1,0 +1,72 @@
+{
+  "id": "central-america",
+  "title": "Central America",
+  "sequence": 21,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "central-america"
+  },
+  "features": [
+    {
+      "id": "guatemala",
+      "name": "Guatemala",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "GTM",
+      "color": "#3b82f6",
+      "flag": "\ud83c\uddec\ud83c\uddf9",
+      "labelAnchor": [-90.35, 15.45],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "belize",
+      "name": "Belize",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "BLZ",
+      "color": "#ef4444",
+      "flag": "\ud83c\udde7\ud83c\uddff",
+      "labelAnchor": [-88.72, 17.45],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "el-salvador",
+      "name": "El Salvador",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "SLV",
+      "color": "#f59e0b",
+      "flag": "\ud83c\uddf8\ud83c\uddfb",
+      "labelAnchor": [-89.18, 13.9],
+      "labelFontSize": 9,
+      "labelRotation": 0
+    },
+    {
+      "id": "honduras",
+      "name": "Honduras",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "HND",
+      "color": "#22c55e",
+      "flag": "\ud83c\udded\ud83c\uddf3",
+      "labelAnchor": [-86.6, 14.85],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "nicaragua",
+      "name": "Nicaragua",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "NIC",
+      "color": "#a855f7",
+      "flag": "\ud83c\uddf3\ud83c\uddee",
+      "labelAnchor": [-85.2, 12.95],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    }
+  ]
+}

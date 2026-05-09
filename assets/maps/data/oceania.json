@@ -1,0 +1,60 @@
+{
+  "id": "oceania",
+  "title": "Oceania",
+  "sequence": 22,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "oceania"
+  },
+  "features": [
+    {
+      "id": "australia",
+      "name": "Australia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "AUS",
+      "color": "#22c55e",
+      "flag": "\ud83c\udde6\ud83c\uddfa",
+      "labelAnchor": [134.5, -25.8],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "new-zealand",
+      "name": "New Zealand",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "NZL",
+      "color": "#3b82f6",
+      "flag": "\ud83c\uddf3\ud83c\uddff",
+      "labelAnchor": [172.2, -41.1],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "papua-new-guinea",
+      "name": "Papua New Guinea",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "PNG",
+      "flag": "\ud83c\uddf5\ud83c\uddec",
+      "color": "#ef4444",
+      "labelAnchor": [144.0, -6.3],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "indonesia",
+      "name": "Indonesia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "IDN",
+      "color": "#a855f7",
+      "flag": "\ud83c\uddee\ud83c\udde9",
+      "labelAnchor": [117.3, -2.7],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    }
+  ]
+}

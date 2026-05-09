@@ -1,0 +1,48 @@
+{
+  "id": "southwest-asia",
+  "title": "Southwest Asia",
+  "sequence": 10,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "southwest-asia"
+  },
+  "features": [
+    {
+      "id": "afghanistan",
+      "name": "Afghanistan",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "AFG",
+      "color": "#22c55e",
+      "flag": "\ud83c\udde6\ud83c\uddeb",
+      "labelAnchor": [66.0, 33.9],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "pakistan",
+      "name": "Pakistan",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "PAK",
+      "color": "#3b82f6",
+      "flag": "\ud83c\uddf5\ud83c\uddf0",
+      "labelAnchor": [69.35, 29.9],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "india",
+      "name": "India",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "IND",
+      "color": "#f59e0b",
+      "flag": "\ud83c\uddee\ud83c\uddf3",
+      "labelAnchor": [78.9, 22.8],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

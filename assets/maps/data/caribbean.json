@@ -1,0 +1,74 @@
+{
+  "id": "caribbean",
+  "title": "Caribbean",
+  "sequence": 9,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "caribbean"
+  },
+  "features": [
+    {
+      "id": "cuba",
+      "name": "Cuba",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "CUB",
+      "color": "#3b82f6",
+      "flag": "\ud83c\udde8\ud83c\uddfa",
+      "labelAnchor": [-79.45, 21.7],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "jamaica",
+      "name": "Jamaica",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "JAM",
+      "color": "#22c55e",
+      "flag": "\ud83c\uddef\ud83c\uddf2",
+      "labelAnchor": [-77.32, 18.12],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "haiti",
+      "name": "Haiti",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "HTI",
+      "color": "#ef4444",
+      "flag": "\ud83c\udded\ud83c\uddf9",
+      "labelAnchor": [-72.65, 19.0],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "dominican-republic",
+      "name": "Dominican Republic",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "DOM",
+      "color": "#f59e0b",
+      "flag": "\ud83c\udde9\ud83c\uddf4",
+      "labelAnchor": [-70.4, 18.85],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "puerto-rico",
+      "name": "Puerto Rico",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "PRI",
+      "color": "#a855f7",
+      "flag": "\ud83c\uddf5\ud83c\uddf7",
+      "politicalStatus": "country-like/territory",
+      "statusNote": "Country-like territory included by proof-sheet approval.",
+      "labelAnchor": [-66.45, 18.18],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    }
+  ]
+}

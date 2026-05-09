@@ -1,0 +1,72 @@
+{
+  "id": "the-levant",
+  "title": "The Levant",
+  "sequence": 15,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "levant"
+  },
+  "features": [
+    {
+      "id": "turkey",
+      "name": "Turkey",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "TUR",
+      "color": "#ef4444",
+      "flag": "\ud83c\uddf9\ud83c\uddf7",
+      "labelAnchor": [35.2, 39.1],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "cyprus",
+      "name": "Cyprus",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "CYP",
+      "color": "#f59e0b",
+      "flag": "\ud83c\udde8\ud83c\uddfe",
+      "labelAnchor": [32.9, 35.24],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "syria",
+      "name": "Syria",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "SYR",
+      "color": "#22c55e",
+      "flag": "\ud83c\uddf8\ud83c\uddfe",
+      "labelAnchor": [38.7, 35.1],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "iraq",
+      "name": "Iraq",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "IRQ",
+      "color": "#3b82f6",
+      "flag": "\ud83c\uddee\ud83c\uddf6",
+      "labelAnchor": [43.75, 33.4],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "iran",
+      "name": "Iran",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "IRN",
+      "color": "#a855f7",
+      "flag": "\ud83c\uddee\ud83c\uddf7",
+      "labelAnchor": [53.4, 32.4],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    }
+  ]
+}

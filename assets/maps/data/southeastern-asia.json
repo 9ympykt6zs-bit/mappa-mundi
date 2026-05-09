@@ -1,0 +1,76 @@
+{
+  "id": "southeastern-asia",
+  "title": "Southeastern Asia",
+  "sequence": 19,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "southeastern-asia"
+  },
+  "features": [
+    {
+      "id": "north-korea",
+      "name": "North Korea",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "PRK",
+      "color": "#ef4444",
+      "flag": "\ud83c\uddf0\ud83c\uddf5",
+      "labelAnchor": [127.1, 40.1],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "south-korea",
+      "name": "South Korea",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "KOR",
+      "color": "#3b82f6",
+      "flag": "\ud83c\uddf0\ud83c\uddf7",
+      "labelAnchor": [127.85, 36.2],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "taiwan",
+      "name": "Taiwan",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "TWN",
+      "color": "#22c55e",
+      "flag": "\ud83c\uddf9\ud83c\uddfc",
+      "politicalStatus": "country-like/disputed",
+      "statusNote": "Included as a country-like disputed political unit by proof-sheet approval.",
+      "labelAnchor": [121.0, 23.75],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "philippines",
+      "name": "Philippines",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "PHL",
+      "color": "#f59e0b",
+      "flag": "\ud83c\uddf5\ud83c\udded",
+      "labelAnchor": [122.9, 12.6],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "guam",
+      "name": "Guam",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "GUM",
+      "flag": "\ud83c\uddec\ud83c\uddfa",
+      "politicalStatus": "country-like/territory",
+      "statusNote": "Country-like territory included by proof-sheet approval.",
+      "color": "#a855f7",
+      "labelAnchor": [144.78, 13.45],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    }
+  ]
+}
