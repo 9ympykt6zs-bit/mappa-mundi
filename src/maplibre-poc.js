@@ -3,6 +3,9 @@ import { ActivitySession, studyModes } from "./maplibre/activity-session.js";
 import { MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js";
 
 const activityDataPaths = [
+  "assets/maps/data/western-european-countries.json",
+  "assets/maps/data/northern-european-countries.json",
+  "assets/maps/data/southern-africa-countries.json",
   "assets/maps/data/us-states-capitals-01.json",
   "assets/maps/data/us-states-capitals-02.json",
   "assets/maps/data/us-states-capitals-03.json",
@@ -18,6 +21,13 @@ const worldCountriesPath = "assets/maps/data/maplibre-world-countries.geojson";
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const defaultActivityId = "us-states-capitals-10";
+
+const regionDefaultActivityIds = {
+  "united-states": defaultActivityId,
+  "western-europe": "western-european-countries",
+  "northern-europe": "northern-european-countries",
+  "southern-africa": "southern-africa-countries"
+};
 
 const stateLabelAnchors = {
   maine: [-69.2, 45.25],
@@ -72,7 +82,7 @@ const stateLabelAnchors = {
   alaska: [-150, 64]
 };
 
-const usOverviewRegion = {
+const overviewRegions = {
   type: "FeatureCollection",
   features: [
     {
@@ -89,6 +99,57 @@ const usOverviewRegion = {
           [-66, 50],
           [-125, 50],
           [-125, 24]
+        ]]
+      }
+    },
+    {
+      type: "Feature",
+      properties: {
+        id: "western-europe",
+        name: "Western Europe"
+      },
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [-12, 35],
+          [8, 35],
+          [8, 59],
+          [-12, 59],
+          [-12, 35]
+        ]]
+      }
+    },
+    {
+      type: "Feature",
+      properties: {
+        id: "northern-europe",
+        name: "Scandinavia / Northern Europe"
+      },
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [3, 54],
+          [33, 54],
+          [33, 72],
+          [3, 72],
+          [3, 54]
+        ]]
+      }
+    },
+    {
+      type: "Feature",
+      properties: {
+        id: "southern-africa",
+        name: "Southern Africa"
+      },
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [10, -36],
+          [42, -36],
+          [42, -10],
+          [10, -10],
+          [10, -36]
         ]]
       }
     }
@@ -138,9 +199,7 @@ async function init() {
   });
 
   runner.onRegionSelect((regionId) => {
-    if (regionId === "united-states") {
-      enterUnitedStatesStudy();
-    }
+    selectActivity(regionDefaultActivityIds[regionId] || defaultActivityId);
   });
   runner.onTargetClick(handleTargetClick);
 
@@ -159,24 +218,15 @@ async function init() {
 }
 
 function normalizeMapLibrePocActivity(rawActivity) {
-  const isFullUsActivity = Number(rawActivity.sequence) >= 9;
+  const region = rawActivity.map?.region || (rawActivity.id?.startsWith("us-") ? "united-states" : "world");
+  const mapDefaults = getMapDefaults(rawActivity, region);
 
   return normalizeActivity(rawActivity, {
     schemaVersion: 2,
     engine: "maplibre",
     map: {
-      kind: "globe-region",
-      region: "united-states",
-      overviewRegions: usOverviewRegion,
-      initialView: { center: [-18, 18], zoom: 1.25 },
-      regionView: { center: [-98, 39], zoom: 3.1 },
-      studyView: {
-        bounds: isFullUsActivity
-          ? [[-170, 18], [-66.75, 72]]
-          : [[-108.5, 25.1], [-66.75, 49.2]],
-        padding: { top: 55, right: 46, bottom: 78, left: 46 },
-        duration: 1200
-      }
+      ...mapDefaults,
+      ...(rawActivity.map || {})
     },
     sources: [
       {
@@ -216,6 +266,70 @@ function normalizeMapLibrePocActivity(rawActivity) {
   });
 }
 
+function getMapDefaults(rawActivity, region) {
+  const commonDefaults = {
+    kind: "globe-region",
+    region,
+    overviewRegions,
+    initialView: { center: [-18, 18], zoom: 1.25 }
+  };
+
+  if (region === "united-states") {
+    const isFullUsActivity = Number(rawActivity.sequence) >= 9;
+
+    return {
+      ...commonDefaults,
+      regionView: { center: [-98, 39], zoom: 3.1 },
+      studyView: {
+        bounds: isFullUsActivity
+          ? [[-170, 18], [-66.75, 72]]
+          : [[-108.5, 25.1], [-66.75, 49.2]],
+        padding: { top: 55, right: 46, bottom: 78, left: 46 },
+        duration: 1200
+      }
+    };
+  }
+
+  const regionViews = {
+    "western-europe": {
+      regionView: { center: [-2, 48], zoom: 3.4 },
+      studyView: {
+        bounds: [[-12.8, 35.1], [8.8, 59.4]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "northern-europe": {
+      regionView: { center: [17, 62], zoom: 3.2 },
+      studyView: {
+        bounds: [[2.5, 54.1], [33.8, 72.2]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "southern-africa": {
+      regionView: { center: [25, -23], zoom: 3.1 },
+      studyView: {
+        bounds: [[10, -36.5], [42, -9.7]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    }
+  };
+
+  return {
+    ...commonDefaults,
+    ...(regionViews[region] || {
+      regionView: { center: [0, 20], zoom: 2 },
+      studyView: {
+        bounds: [[-20, -40], [50, 75]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    })
+  };
+}
+
 async function fetchJson(path) {
   const response = await fetch(path);
 
@@ -229,16 +343,7 @@ async function fetchJson(path) {
 function bindUiEvents() {
   regionButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      if (button.dataset.region === "united-states") {
-        cancelGrabbedAnswer();
-        selectedActivityId = button.dataset.activityId || defaultActivityId;
-        session.setActivity(getSelectedActivity());
-        runner.updateActivity(session.activity);
-        renderAnswerBank();
-        updateProgress();
-        clearFeedback();
-        enterUnitedStatesStudy();
-      }
+      selectActivity(button.dataset.activityId || regionDefaultActivityIds[button.dataset.region] || defaultActivityId);
     });
   });
 
@@ -303,11 +408,22 @@ function renderAnswerBank() {
   });
 }
 
-function enterUnitedStatesStudy() {
+function selectActivity(activityId) {
+  cancelGrabbedAnswer();
+  selectedActivityId = activityId;
+  session.setActivity(getSelectedActivity());
+  runner.updateActivity(session.activity);
+  renderAnswerBank();
+  updateProgress();
+  clearFeedback();
+  enterStudy();
+}
+
+function enterStudy() {
   document.body.classList.remove("overview-mode");
   document.body.classList.add("study-mode");
   title.textContent = session.currentActivity.title;
-  instruction.textContent = "Select a state or capital label, then click its target on the map.";
+  instruction.textContent = `Select a ${session.currentActivity.targetNoun} label, then click its target on the map.`;
   updateStudyCardDetails();
   studyCard.hidden = false;
   runner.enterStudyView();

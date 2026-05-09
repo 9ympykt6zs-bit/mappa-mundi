@@ -1,0 +1,66 @@
+{
+  "id": "southern-africa-countries",
+  "title": "Southern Africa",
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "southern-africa"
+  },
+  "features": [
+    {
+      "id": "south-africa",
+      "name": "South Africa",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ZAF",
+      "color": "#22c55e",
+      "labelAnchor": [23.67, -29.71],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "lesotho",
+      "name": "Lesotho",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "LSO",
+      "color": "#a855f7",
+      "labelAnchor": [28.25, -29.48],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "botswana",
+      "name": "Botswana",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "BWA",
+      "color": "#38bdf8",
+      "labelAnchor": [24.18, -22.1],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "mozambique",
+      "name": "Mozambique",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "MOZ",
+      "color": "#f97316",
+      "labelAnchor": [35.3, -18.2],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "namibia",
+      "name": "Namibia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "NAM",
+      "color": "#eab308",
+      "labelAnchor": [17.1, -20.58],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    }
+  ]
+}

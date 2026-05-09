@@ -120,7 +120,7 @@ export class MapLibreActivityRunner {
 
     this.currentView = "study";
     this.setOverviewVisibility("none");
-    this.setUnitedStatesContextVisibility("visible");
+    this.setUnitedStatesContextVisibility(this.activity.map?.region === "united-states" ? "visible" : "none");
     this.setStudyVisibility("visible");
 
     this.map.flyTo({
@@ -200,6 +200,11 @@ export class MapLibreActivityRunner {
     this.completedIds = [];
 
     const capitalSource = this.map.getSource("study-capitals");
+    const shapeSource = this.map.getSource("target-shapes");
+
+    if (shapeSource) {
+      shapeSource.setData(this.getTargetShapeGeoJson());
+    }
 
     if (capitalSource) {
       capitalSource.setData(this.getCapitalGeoJson());
@@ -379,6 +384,11 @@ export class MapLibreActivityRunner {
       promoteId: "id"
     });
 
+    this.map.addSource("target-shapes", {
+      type: "geojson",
+      data: this.getTargetShapeGeoJson()
+    });
+
     this.map.addSource("study-capitals", {
       type: "geojson",
       data: this.getCapitalGeoJson()
@@ -392,11 +402,10 @@ export class MapLibreActivityRunner {
     this.map.addLayer({
       id: "state-fill",
       type: "fill",
-      source: "study-states",
+      source: "target-shapes",
       layout: {
         visibility: "none"
       },
-      filter: this.getShapeTargetFilter(),
       paint: {
         "fill-color": this.getStateFillExpression(),
         "fill-opacity": 0.92
@@ -406,11 +415,10 @@ export class MapLibreActivityRunner {
     this.map.addLayer({
       id: "state-line",
       type: "line",
-      source: "study-states",
+      source: "target-shapes",
       layout: {
         visibility: "none"
       },
-      filter: this.getShapeTargetFilter(),
       paint: {
         "line-color": colors.targetStroke,
         "line-width": 2.15
@@ -510,8 +518,8 @@ export class MapLibreActivityRunner {
         layers: ["overview-region-fill"]
       })[0];
 
-      if (regionFeature?.properties?.id === "united-states") {
-        this.regionSelectHandler?.("united-states");
+      if (regionFeature?.properties?.id) {
+        this.regionSelectHandler?.(regionFeature.properties.id);
       }
 
       return;
@@ -578,6 +586,56 @@ export class MapLibreActivityRunner {
     };
   }
 
+  getTargetShapeGeoJson() {
+    return {
+      type: "FeatureCollection",
+      features: this.shapeTargets
+        .map((target) => this.getTargetShapeFeature(target))
+        .filter(Boolean)
+    };
+  }
+
+  getTargetShapeFeature(target) {
+    const sourceFeature = this.findSourceShapeFeature(target);
+
+    if (!sourceFeature) {
+      return null;
+    }
+
+    return {
+      type: "Feature",
+      properties: {
+        ...sourceFeature.properties,
+        id: target.id,
+        name: target.name,
+        color: target.color
+      },
+      geometry: sourceFeature.geometry
+    };
+  }
+
+  findSourceShapeFeature(target) {
+    const sourceFeatureId = target.sourceFeatureId || target.id;
+    const isoA3 = target.isoA3 || target.iso || target.countryCode;
+    const adminName = target.adminName || target.name;
+
+    if (this.activity.map?.region === "united-states") {
+      return this.stateTargets.features.find((feature) => feature.properties.id === sourceFeatureId) || null;
+    }
+
+    return this.worldCountries.features.find((feature) => {
+      const properties = feature.properties || {};
+
+      return properties.id === sourceFeatureId
+        || properties.ADM0_A3 === isoA3
+        || properties.ISO_A3 === isoA3
+        || properties.SOV_A3 === isoA3
+        || properties.ADMIN === adminName
+        || properties.NAME === adminName
+        || properties.NAME_LONG === adminName;
+    }) || null;
+  }
+
   getCompletedLabelGeoJson() {
     return {
       type: "FeatureCollection",
@@ -632,13 +690,11 @@ export class MapLibreActivityRunner {
   }
 
   refreshStudyFilters() {
-    const filter = this.getShapeTargetFilter();
+    const shapeSource = this.map.getSource("target-shapes");
 
-    ["state-fill", "state-line"].forEach((layerId) => {
-      if (this.map.getLayer(layerId)) {
-        this.map.setFilter(layerId, filter);
-      }
-    });
+    if (shapeSource) {
+      shapeSource.setData(this.getTargetShapeGeoJson());
+    }
   }
 
   getShapeTargetFilter() {

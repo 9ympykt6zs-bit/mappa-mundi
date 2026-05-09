@@ -1,0 +1,55 @@
+{
+  "id": "northern-european-countries",
+  "title": "Scandinavia / Northern Europe",
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "northern-europe"
+  },
+  "features": [
+    {
+      "id": "norway",
+      "name": "Norway",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "NOR",
+      "color": "#38bdf8",
+      "labelAnchor": [9.68, 61.36],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "sweden",
+      "name": "Sweden",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "SWE",
+      "color": "#facc15",
+      "labelAnchor": [17.5, 62.6],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "finland",
+      "name": "Finland",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "FIN",
+      "color": "#60a5fa",
+      "labelAnchor": [26.5, 63.2],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "denmark",
+      "name": "Denmark",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "DNK",
+      "color": "#ef4444",
+      "labelAnchor": [9.7, 56.05],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

@@ -1,22 +1,24 @@
 {
   "id": "western-european-countries",
-  "title": "Western European Countries",
+  "title": "Western Europe",
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "western-europe"
+  },
   "features": [
     {
       "id": "ireland",
       "name": "Ireland",
       "type": "country",
+      "shape": "path",
+      "isoA3": "IRL",
       "color": "#22c55e",
-      "flag": "🇮🇪",
+      "flag": "\ud83c\uddee\ud83c\uddea",
       "flagType": "ireland",
-      "labelPosition": {
-        "x": 496,
-        "y": 501
-      },
-      "flagOffset": {
-        "x": -23,
-        "y": -7
-      },
+      "labelPosition": { "x": 496, "y": 501 },
+      "flagOffset": { "x": -23, "y": -7 },
+      "labelAnchor": [-7.8, 53.08],
       "labelFontSize": 13,
       "flagSize": 0.56,
       "labelRotation": 0
@@ -25,17 +27,14 @@
       "id": "united-kingdom",
       "name": "United Kingdom",
       "type": "country",
+      "shape": "path",
+      "isoA3": "GBR",
       "color": "#ef4444",
-      "flag": "🇬🇧",
-      "labelPosition": {
-        "x": 566,
-        "y": 481
-      },
+      "flag": "\ud83c\uddec\ud83c\udde7",
       "flagType": "uk-svg",
-      "flagOffset": {
-        "x": -23,
-        "y": -7
-      },
+      "labelPosition": { "x": 566, "y": 481 },
+      "flagOffset": { "x": -23, "y": -7 },
+      "labelAnchor": [-2.12, 54.4],
       "labelFontSize": 13,
       "flagSize": 0.56,
       "labelRotation": 0
@@ -44,17 +43,14 @@
       "id": "portugal",
       "name": "Portugal",
       "type": "country",
+      "shape": "path",
+      "isoA3": "PRT",
       "color": "#f97316",
-      "flag": "🇵🇹",
+      "flag": "\ud83c\uddf5\ud83c\uddf9",
       "flagType": "portugal",
-      "labelPosition": {
-        "x": 416,
-        "y": 674
-      },
-      "flagOffset": {
-        "x": -23,
-        "y": -7
-      },
+      "labelPosition": { "x": 416, "y": 674 },
+      "flagOffset": { "x": -23, "y": -7 },
+      "labelAnchor": [-8.27, 39.61],
       "labelFontSize": 13,
       "flagSize": 0.56,
       "labelRotation": 0
@@ -63,17 +59,14 @@
       "id": "spain",
       "name": "Spain",
       "type": "country",
+      "shape": "path",
+      "isoA3": "ESP",
       "color": "#eab308",
-      "flag": "🇪🇸",
+      "flag": "\ud83c\uddea\ud83c\uddf8",
       "flagType": "spain",
-      "labelPosition": {
-        "x": 500,
-        "y": 657
-      },
-      "flagOffset": {
-        "x": -23,
-        "y": -7
-      },
+      "labelPosition": { "x": 500, "y": 657 },
+      "flagOffset": { "x": -23, "y": -7 },
+      "labelAnchor": [-3.46, 40.09],
       "labelFontSize": 13,
       "flagSize": 0.56,
       "labelRotation": 0
@@ -82,17 +75,14 @@
       "id": "france",
       "name": "France",
       "type": "country",
+      "shape": "path",
+      "isoA3": "FRA",
       "color": "#3b82f6",
-      "flag": "🇫🇷",
+      "flag": "\ud83c\uddeb\ud83c\uddf7",
       "flagType": "france",
-      "labelPosition": {
-        "x": 572,
-        "y": 598
-      },
-      "flagOffset": {
-        "x": -23,
-        "y": -7
-      },
+      "labelPosition": { "x": 572, "y": 598 },
+      "flagOffset": { "x": -23, "y": -7 },
+      "labelAnchor": [2.55, 46.7],
       "labelFontSize": 13,
       "flagSize": 0.56,
       "labelRotation": 0
