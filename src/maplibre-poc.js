@@ -41,6 +41,16 @@ const mapSetLabels = {
   us: "United States",
   "world-europe": "World / Europe"
 };
+const mapSetOverviewViews = {
+  us: {
+    center: [-101, 37],
+    zoom: 2.55
+  },
+  "world-europe": {
+    center: [-18, 18],
+    zoom: 1.25
+  }
+};
 const activityCatalogMetadata = {
   "western-european-countries": {
     mapSet: "world-europe",
@@ -175,7 +185,7 @@ const worldViewButton = document.querySelector("#world-view-button");
 const fitMapButton = document.querySelector("#fit-map-button");
 const zoomSlider = document.querySelector("#zoom-slider");
 const studyCard = document.querySelector("#study-card");
-const mapSetTabs = document.querySelector("#map-set-tabs");
+const headerMapSetTabs = document.querySelector("#header-map-set-tabs");
 const activityGroups = document.querySelector("#activity-groups");
 const studyModeButtons = document.querySelectorAll("[data-study-mode]");
 
@@ -215,6 +225,7 @@ async function init() {
   updateProgress();
   updateStudyModeButtons();
   studyCard.hidden = true;
+  runner.setOverviewMapSet(activeMapSet, mapSetOverviewViews[activeMapSet]);
   renderOverviewLibrary();
   updateOverviewPreview();
   bindUiEvents();
@@ -423,18 +434,14 @@ async function fetchJson(path) {
 }
 
 function bindUiEvents() {
-  mapSetTabs.addEventListener("click", (event) => {
+  headerMapSetTabs.addEventListener("click", (event) => {
     const button = event.target.closest("[data-map-set]");
 
     if (!button) {
       return;
     }
 
-    activeMapSet = button.dataset.mapSet;
-    selectedOverviewActivityId = null;
-    activePreviewActivityId = null;
-    renderOverviewLibrary();
-    updateOverviewPreview();
+    setActiveMapSet(button.dataset.mapSet);
   });
 
   activityGroups.addEventListener("click", (event) => {
@@ -516,18 +523,18 @@ function renderOverviewLibrary() {
 }
 
 function renderMapSetTabs() {
-  mapSetTabs.innerHTML = "";
+  headerMapSetTabs.innerHTML = "";
 
   mapSetOrder.forEach((mapSet) => {
     const button = document.createElement("button");
     button.type = "button";
     button.dataset.mapSet = mapSet;
-    button.className = "map-set-tab";
+    button.className = "header-map-set-tab";
     button.setAttribute("role", "tab");
     button.setAttribute("aria-selected", String(activeMapSet === mapSet));
     button.classList.toggle("active", activeMapSet === mapSet);
     button.textContent = mapSetLabels[mapSet];
-    mapSetTabs.appendChild(button);
+    headerMapSetTabs.appendChild(button);
   });
 }
 
@@ -622,6 +629,19 @@ function updateOverviewPreview() {
   runner?.setOverviewPreview(previewActivity);
 }
 
+function setActiveMapSet(mapSet) {
+  if (!mapSetLabels[mapSet]) {
+    return;
+  }
+
+  activeMapSet = mapSet;
+  selectedOverviewActivityId = null;
+  activePreviewActivityId = null;
+  renderOverviewLibrary();
+  updateOverviewPreview();
+  runner?.setOverviewMapSet(mapSet, mapSetOverviewViews[mapSet]);
+}
+
 function bindZoomControls() {
   if (!zoomSlider || !fitMapButton) {
     return;
@@ -696,6 +716,7 @@ function returnToWorldView() {
   title.textContent = "World View";
   instruction.textContent = "Choose a study region from the globe or the list below.";
   studyCard.hidden = true;
+  runner.setOverviewMapSet(activeMapSet, mapSetOverviewViews[activeMapSet]);
   runner.enterOverview();
   updateOverviewPreview();
 }

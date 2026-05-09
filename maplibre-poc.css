@@ -33,6 +33,11 @@ a {
   z-index: 5;
 }
 
+.header-copy {
+  display: grid;
+  gap: 10px;
+}
+
 .eyebrow {
   color: #2563eb;
   font-size: 0.82rem;
@@ -61,7 +66,7 @@ a {
 
 .poc-nav a,
 .poc-nav button,
-.map-set-tabs button,
+.header-map-set-tabs button,
 .activity-card,
 .progress-actions button {
   background: #ffffff;
@@ -186,20 +191,20 @@ body.study-mode .map-shell {
 .library-panel {
   display: grid;
   gap: 16px;
-  margin-top: 16px;
+  margin-top: 8px;
 }
 
-.map-set-tabs {
+.header-map-set-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 
-.map-set-tab {
+.header-map-set-tab {
   background: #f7f9fc;
 }
 
-.map-set-tab.active {
+.header-map-set-tab.active {
   background: #eaf2ff;
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
@@ -443,6 +448,10 @@ body.study-mode .answer-panel {
     display: grid;
     min-height: auto;
     padding: 16px;
+  }
+
+  .header-copy {
+    gap: 12px;
   }
 
   .poc-nav {

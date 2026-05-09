@@ -10,10 +10,11 @@
   </head>
   <body class="overview-mode">
     <header class="poc-header">
-      <div>
+      <div class="header-copy">
         <p class="eyebrow">MapLibre GL JS proof of concept</p>
         <h1 id="poc-title">World View</h1>
         <p id="poc-instruction">Choose a study region from the globe or the list below.</p>
+        <div id="header-map-set-tabs" class="header-map-set-tabs" role="tablist" aria-label="Map sets"></div>
       </div>
       <nav class="poc-nav" aria-label="Prototype navigation">
         <a href="index.html">Current SVG app</a>
@@ -37,10 +38,9 @@
       <section id="region-panel" class="region-panel" aria-label="Study regions">
         <div class="region-panel-intro">
           <h2>Study Regions</h2>
-          <p>Choose a map set, then preview a single activity region before jumping in.</p>
+          <p>Pick an activity card to preview its region, then open it.</p>
         </div>
         <div class="library-panel">
-          <div id="map-set-tabs" class="map-set-tabs" role="tablist" aria-label="Map sets"></div>
           <div id="activity-groups" class="activity-groups" aria-live="polite"></div>
         </div>
       </section>

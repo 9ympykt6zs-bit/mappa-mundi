@@ -31,6 +31,8 @@ export class MapLibreActivityRunner {
     this.shapeTargets = [];
     this.pointTargets = [];
     this.overviewPreviewActivity = null;
+    this.overviewMapSet = "world-europe";
+    this.overviewMapView = null;
   }
 
   onTargetClick(handler) {
@@ -133,10 +135,14 @@ export class MapLibreActivityRunner {
     this.setOverviewVisibility("visible");
     this.setUnitedStatesContextVisibility("none");
     this.setStudyVisibility("none");
+    const overviewView = this.overviewMapView || {
+      center: this.activity.map?.initialView?.center || [-18, 18],
+      zoom: this.activity.map?.initialView?.zoom || 1.25
+    };
 
     this.map.flyTo({
-      center: this.activity.map?.initialView?.center || [-18, 18],
-      zoom: this.activity.map?.initialView?.zoom || 1.25,
+      center: overviewView.center,
+      zoom: overviewView.zoom,
       pitch: 0,
       bearing: 0,
       duration: 1000,
@@ -157,6 +163,24 @@ export class MapLibreActivityRunner {
     if (previewSource) {
       previewSource.setData(this.getOverviewPreviewGeoJson());
     }
+  }
+
+  setOverviewMapSet(mapSet, view = null) {
+    this.overviewMapSet = mapSet;
+    this.overviewMapView = view || this.overviewMapView;
+
+    if (!this.map || this.currentView !== "overview" || !view) {
+      return;
+    }
+
+    this.map.flyTo({
+      center: view.center,
+      zoom: view.zoom,
+      pitch: 0,
+      bearing: 0,
+      duration: 700,
+      essential: true
+    });
   }
 
   getTargetIdAtClientPoint(clientX, clientY) {
