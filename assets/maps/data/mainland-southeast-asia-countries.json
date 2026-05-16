@@ -1,13 +1,24 @@
 {
-  "id": "south-central-asia",
-  "title": "South Central Asia",
+  "id": "mainland-southeast-asia-countries",
+  "title": "Mainland Southeast Asia Countries",
   "sequence": 20,
   "targetNoun": "country",
   "visibleAnswerLimit": 10,
   "map": {
-    "region": "south-central-asia"
+    "region": "mainland-southeast-asia"
   },
   "features": [
+    {
+      "id": "myanmar",
+      "name": "Myanmar",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "MMR",
+      "color": "#f59e0b",
+      "labelAnchor": [96.5, 20.8],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
     {
       "id": "laos",
       "name": "Laos",
@@ -42,6 +53,17 @@
       "flag": "\ud83c\uddf0\ud83c\udded",
       "labelAnchor": [104.8, 12.7],
       "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "vietnam",
+      "name": "Vietnam",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "VNM",
+      "color": "#a855f7",
+      "labelAnchor": [106.3, 16.2],
+      "labelFontSize": 11,
       "labelRotation": 0
     }
   ]

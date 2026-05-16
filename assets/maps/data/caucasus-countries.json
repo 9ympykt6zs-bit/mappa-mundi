@@ -1,0 +1,45 @@
+{
+  "id": "caucasus-countries",
+  "title": "Caucasus Countries",
+  "sequence": 24,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "caucasus"
+  },
+  "features": [
+    {
+      "id": "georgia",
+      "name": "Georgia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "GEO",
+      "color": "#f97316",
+      "labelAnchor": [43.5, 42.05],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "armenia",
+      "name": "Armenia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ARM",
+      "color": "#60a5fa",
+      "labelAnchor": [44.95, 40.29],
+      "labelFontSize": 9,
+      "labelRotation": 0
+    },
+    {
+      "id": "azerbaijan",
+      "name": "Azerbaijan",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "AZE",
+      "color": "#ec4899",
+      "labelAnchor": [47.7, 40.35],
+      "labelFontSize": 9,
+      "labelRotation": 0
+    }
+  ]
+}

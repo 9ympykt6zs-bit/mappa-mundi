@@ -1,0 +1,102 @@
+{
+  "id": "mexico-northwest",
+  "title": "Mexico: Northwest",
+  "targetNoun": "state",
+  "visibleAnswerLimit": 6,
+  "map": {
+    "region": "mexico-northwest",
+    "admin1Source": "north-america-admin1"
+  },
+  "features": [
+    {
+      "id": "baja-california",
+      "name": "Baja California",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "baja-california",
+      "iso_3166_2": "MX-BCN",
+      "color": "#d65a8c",
+      "labelAnchor": [
+        -115.209,
+        30.3399
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "baja-california-sur",
+      "name": "Baja California Sur",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "baja-california-sur",
+      "iso_3166_2": "MX-BCS",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        -111.452,
+        25.0656
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "sonora",
+      "name": "Sonora",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "sonora",
+      "iso_3166_2": "MX-SON",
+      "color": "#d65a8c",
+      "labelAnchor": [
+        -110.485,
+        29.5293
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "sinaloa",
+      "name": "Sinaloa",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "sinaloa",
+      "iso_3166_2": "MX-SIN",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        -108.001,
+        25.6041
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "chihuahua",
+      "name": "Chihuahua",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "chihuahua",
+      "iso_3166_2": "MX-CHH",
+      "color": "#d88052",
+      "labelAnchor": [
+        -106.232,
+        28.973
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "durango",
+      "name": "Durango",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "durango",
+      "iso_3166_2": "MX-DUR",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        -104.808,
+        24.566
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

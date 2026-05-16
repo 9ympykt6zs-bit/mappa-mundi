@@ -17,7 +17,7 @@ const colors = {
   previewFill: "#3b82f6",
   completedFill: "#1d4ed8",
   selectedLine: "#0f4fa8",
-  hardContinentChallengeFill: "#c57b46",
+  hardContinentChallengeFill: "#4f7f5f",
   neutralMarker: "#ffffff",
   neutralMarkerStroke: "#172033",
   markerHalo: "#2563eb",
@@ -65,6 +65,21 @@ const fallbackLabelAnchors = {
   "pacific-ocean": [-150, 0],
   "southern-ocean": [20, -58]
 };
+const europeGeographicExtent = {
+  west: -31,
+  south: 30,
+  east: 70,
+  north: 73.5
+};
+const europeanRegionalActivityRegions = new Set([
+  "western-europe",
+  "nordic-countries",
+  "baltic-countries",
+  "eastern-europe",
+  "balkans",
+  "central-europe",
+  "more-central-europe"
+]);
 
 // Difficulty rules are intentionally renderer-level: Easy shows all visual
 // aids, Medium hides point hints until placement, and Hard keeps accepted
@@ -1195,7 +1210,7 @@ export class MapLibreActivityRunner {
       }) || null;
     }
 
-    return this.worldCountries.features.find((feature) => {
+    const worldFeature = this.worldCountries.features.find((feature) => {
       const properties = feature.properties || {};
 
       return properties.id === sourceFeatureId
@@ -1206,6 +1221,8 @@ export class MapLibreActivityRunner {
         || properties.NAME === adminName
         || properties.NAME_LONG === adminName;
     }) || null;
+
+    return this.getRegionalWorldSourceFeature(worldFeature, activity);
   }
 
   getContinentsOceanSourceFeature(target) {
@@ -1215,8 +1232,9 @@ export class MapLibreActivityRunner {
 
     const continentName = target.id === "australia" ? "Oceania" : target.name;
     const features = this.worldCountries.features.filter((feature) => feature.properties?.CONTINENT === continentName);
+    const coordinates = features.flatMap((feature) => this.getContinentFeaturePolygons(feature, target));
 
-    if (features.length === 0) {
+    if (coordinates.length === 0) {
       return null;
     }
 
@@ -1228,11 +1246,90 @@ export class MapLibreActivityRunner {
       },
       geometry: {
         type: "MultiPolygon",
-        coordinates: features.flatMap((feature) => feature.geometry.type === "Polygon"
-          ? [feature.geometry.coordinates]
-          : feature.geometry.coordinates)
+        coordinates
       }
     };
+  }
+
+  getContinentFeaturePolygons(feature, target) {
+    const polygons = feature.geometry.type === "Polygon"
+      ? [feature.geometry.coordinates]
+      : feature.geometry.coordinates;
+
+    if (target.id !== "europe") {
+      return polygons;
+    }
+
+    return this.filterPolygonsToExtent(polygons, europeGeographicExtent);
+  }
+
+  getRegionalWorldSourceFeature(feature, activity) {
+    if (!feature || !this.shouldFilterWorldFeatureToEurope(activity)) {
+      return feature;
+    }
+
+    const polygons = this.getGeometryPolygons(feature.geometry);
+    const filteredPolygons = this.filterPolygonsToExtent(polygons, europeGeographicExtent);
+
+    if (filteredPolygons.length === polygons.length) {
+      return feature;
+    }
+
+    if (filteredPolygons.length === 0) {
+      return null;
+    }
+
+    return {
+      ...feature,
+      geometry: {
+        type: "MultiPolygon",
+        coordinates: filteredPolygons
+      }
+    };
+  }
+
+  shouldFilterWorldFeatureToEurope(activity) {
+    return europeanRegionalActivityRegions.has(activity?.map?.region);
+  }
+
+  getGeometryPolygons(geometry) {
+    if (!geometry) {
+      return [];
+    }
+
+    return geometry.type === "Polygon"
+      ? [geometry.coordinates]
+      : geometry.coordinates || [];
+  }
+
+  filterPolygonsToExtent(polygons, extent) {
+    return polygons.filter((polygon) => this.isPolygonInExtent(polygon, extent));
+  }
+
+  isPolygonInExtent(polygon, extent) {
+    const [west, south, east, north] = this.getCoordinateBounds(polygon);
+
+    return east >= extent.west
+      && west <= extent.east
+      && north >= extent.south
+      && south <= extent.north;
+  }
+
+  getCoordinateBounds(coordinates, bounds = [Infinity, Infinity, -Infinity, -Infinity]) {
+    if (typeof coordinates?.[0] === "number") {
+      const [longitude, latitude] = coordinates;
+      bounds[0] = Math.min(bounds[0], longitude);
+      bounds[1] = Math.min(bounds[1], latitude);
+      bounds[2] = Math.max(bounds[2], longitude);
+      bounds[3] = Math.max(bounds[3], latitude);
+      return bounds;
+    }
+
+    coordinates.forEach((coordinate) => {
+      this.getCoordinateBounds(coordinate, bounds);
+    });
+
+    return bounds;
   }
 
   getCompletedLabelGeoJson() {

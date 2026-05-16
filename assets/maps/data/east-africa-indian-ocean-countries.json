@@ -1,11 +1,11 @@
 {
-  "id": "african-countries",
-  "title": "African Countries",
-  "sequence": 17,
+  "id": "east-africa-indian-ocean-countries",
+  "title": "East Africa and Indian Ocean Countries",
+  "sequence": 72,
   "targetNoun": "country",
   "visibleAnswerLimit": 10,
   "map": {
-    "region": "african-countries"
+    "region": "east-africa-indian-ocean"
   },
   "features": [
     {
@@ -21,39 +21,36 @@
       "labelRotation": 0
     },
     {
-      "id": "mozambique",
-      "name": "Mozambique",
+      "id": "kenya",
+      "name": "Kenya",
       "type": "country",
       "shape": "path",
-      "isoA3": "MOZ",
-      "color": "#f97316",
-      "flag": "\ud83c\uddf2\ud83c\uddff",
-      "labelAnchor": [35.3, -18.2],
-      "labelFontSize": 12,
-      "labelRotation": 0
-    },
-    {
-      "id": "zimbabwe",
-      "name": "Zimbabwe",
-      "type": "country",
-      "shape": "path",
-      "isoA3": "ZWE",
-      "color": "#a855f7",
-      "flag": "\ud83c\uddff\ud83c\uddfc",
-      "labelAnchor": [29.8, -19.1],
-      "labelFontSize": 12,
-      "labelRotation": 0
-    },
-    {
-      "id": "south-africa",
-      "name": "South Africa",
-      "type": "country",
-      "shape": "path",
-      "isoA3": "ZAF",
+      "isoA3": "KEN",
       "color": "#3b82f6",
-      "flag": "\ud83c\uddff\ud83c\udde6",
-      "labelAnchor": [23.67, -29.71],
-      "labelFontSize": 13,
+      "labelAnchor": [37.9, 0.2],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "uganda",
+      "name": "Uganda",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "UGA",
+      "color": "#f97316",
+      "labelAnchor": [32.4, 1.4],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "tanzania",
+      "name": "Tanzania",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "TZA",
+      "color": "#a855f7",
+      "labelAnchor": [34.9, -6.3],
+      "labelFontSize": 12,
       "labelRotation": 0
     },
     {

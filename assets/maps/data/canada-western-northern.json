@@ -1,0 +1,72 @@
+{
+  "id": "canada-western-northern",
+  "title": "Canada: Western and Northern Canada",
+  "targetNoun": "province or territory",
+  "visibleAnswerLimit": 4,
+  "map": {
+    "region": "canada-western-northern",
+    "admin1Source": "north-america-admin1"
+  },
+  "features": [
+    {
+      "id": "british-columbia",
+      "name": "British Columbia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "british-columbia",
+      "iso_3166_2": "CA-BC",
+      "color": "#d65a8c",
+      "labelAnchor": [
+        -124.662,
+        54.6943
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "yukon",
+      "name": "Yukon",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "yukon",
+      "iso_3166_2": "CA-YT",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        -135.7,
+        63.6088
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "northwest-territories",
+      "name": "Northwest Territories",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "northwest-territories",
+      "iso_3166_2": "CA-NT",
+      "color": "#7eb36a",
+      "labelAnchor": [
+        -119.942,
+        64.0831
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "nunavut",
+      "name": "Nunavut",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "nunavut",
+      "iso_3166_2": "CA-NU",
+      "color": "#c9935a",
+      "labelAnchor": [
+        -97.1443,
+        64.3853
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "id": "west-africa-countries",
+  "title": "West Africa Countries",
+  "sequence": 71,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "west-africa"
+  },
+  "features": [
+    {
+      "id": "guinea",
+      "name": "Guinea",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "GIN",
+      "color": "#ef4444",
+      "labelAnchor": [-10.9, 10.4],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "liberia",
+      "name": "Liberia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "LBR",
+      "color": "#3b82f6",
+      "labelAnchor": [-9.3, 6.5],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "ivory-coast",
+      "name": "Ivory Coast",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "CIV",
+      "color": "#22c55e",
+      "labelAnchor": [-5.55, 7.55],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "ghana",
+      "name": "Ghana",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "GHA",
+      "color": "#f59e0b",
+      "labelAnchor": [-1.1, 7.9],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "burkina-faso",
+      "name": "Burkina Faso",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "BFA",
+      "color": "#a855f7",
+      "labelAnchor": [-1.7, 12.3],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    }
+  ]
+}

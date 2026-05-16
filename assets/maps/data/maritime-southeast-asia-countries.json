@@ -1,0 +1,67 @@
+{
+  "id": "maritime-southeast-asia-countries",
+  "title": "Maritime Southeast Asia Countries",
+  "sequence": 21,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "maritime-southeast-asia"
+  },
+  "features": [
+    {
+      "id": "indonesia",
+      "name": "Indonesia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "IDN",
+      "color": "#a855f7",
+      "labelAnchor": [117.3, -2.7],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "philippines",
+      "name": "Philippines",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "PHL",
+      "color": "#f59e0b",
+      "labelAnchor": [122.9, 12.6],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "malaysia",
+      "name": "Malaysia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "MYS",
+      "color": "#22c55e",
+      "labelAnchor": [102.3, 4.2],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "brunei",
+      "name": "Brunei",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "BRN",
+      "color": "#38bdf8",
+      "labelAnchor": [114.7, 4.55],
+      "labelFontSize": 9,
+      "labelRotation": 0
+    },
+    {
+      "id": "timor-leste",
+      "name": "Timor-Leste",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "TLS",
+      "color": "#ef4444",
+      "labelAnchor": [125.8, -8.9],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    }
+  ]
+}

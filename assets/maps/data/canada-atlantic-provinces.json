@@ -1,0 +1,72 @@
+{
+  "id": "canada-atlantic-provinces",
+  "title": "Canada: Atlantic Provinces",
+  "targetNoun": "province",
+  "visibleAnswerLimit": 4,
+  "map": {
+    "region": "canada-atlantic-provinces",
+    "admin1Source": "north-america-admin1"
+  },
+  "features": [
+    {
+      "id": "newfoundland-and-labrador",
+      "name": "Newfoundland and Labrador",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "newfoundland-and-labrador",
+      "iso_3166_2": "CA-NL",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        -56.2169,
+        48.6598
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "prince-edward-island",
+      "name": "Prince Edward Island",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "prince-edward-island",
+      "iso_3166_2": "CA-PE",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        -63.3862,
+        46.3417
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "nova-scotia",
+      "name": "Nova Scotia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "nova-scotia",
+      "iso_3166_2": "CA-NS",
+      "color": "#d88052",
+      "labelAnchor": [
+        -62.8113,
+        45.2293
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "new-brunswick",
+      "name": "New Brunswick",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "new-brunswick",
+      "iso_3166_2": "CA-NB",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        -66.4558,
+        46.5822
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

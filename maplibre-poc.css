@@ -705,19 +705,63 @@ body.browse-mode .answer-panel-title {
 }
 
 .label-chip {
+  align-items: center;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid var(--control-border);
   border-radius: 13px;
   box-shadow: 0 4px 12px rgba(24, 38, 64, 0.06);
   color: var(--ink);
   cursor: pointer;
+  display: inline-flex;
+  gap: 8px;
   font-weight: 700;
+  justify-content: center;
   line-height: 1.1;
+  max-width: min(280px, 100%);
   min-height: 44px;
   min-width: 92px;
   padding: 11px 18px;
+  text-align: center;
   touch-action: manipulation;
   user-select: none;
+}
+
+.chip-label-text {
+  overflow-wrap: anywhere;
+}
+
+.chip-speaker-button {
+  align-items: center;
+  border-radius: 999px;
+  color: rgba(37, 51, 78, 0.68);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 30px;
+  justify-content: center;
+  margin: -6px -9px -6px 0;
+  touch-action: manipulation;
+  width: 30px;
+}
+
+.chip-speaker-button:hover,
+.chip-speaker-button:focus-visible {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--brand-strong);
+  outline: none;
+}
+
+.chip-speaker-button svg {
+  height: 17px;
+  width: 17px;
+}
+
+.chip-speaker-button path {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
 }
 
 .label-chip.selected {
@@ -866,7 +910,6 @@ body.browse-mode .answer-panel-title {
     min-width: 118px;
     padding: 11px 13px;
     scroll-snap-align: start;
-    text-align: center;
   }
 
   .status-row {

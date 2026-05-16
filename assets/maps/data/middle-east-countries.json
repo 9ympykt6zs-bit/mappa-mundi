@@ -1,11 +1,11 @@
 {
-  "id": "the-levant",
-  "title": "The Levant",
+  "id": "middle-east-countries",
+  "title": "Middle East Countries",
   "sequence": 15,
   "targetNoun": "country",
   "visibleAnswerLimit": 10,
   "map": {
-    "region": "levant"
+    "region": "middle-east"
   },
   "features": [
     {
@@ -45,6 +45,39 @@
       "labelRotation": 0
     },
     {
+      "id": "lebanon",
+      "name": "Lebanon",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "LBN",
+      "color": "#eab308",
+      "labelAnchor": [35.85, 33.9],
+      "labelFontSize": 9,
+      "labelRotation": 0
+    },
+    {
+      "id": "israel",
+      "name": "Israel",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ISR",
+      "color": "#38bdf8",
+      "labelAnchor": [35.0, 31.4],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "jordan",
+      "name": "Jordan",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "JOR",
+      "color": "#f97316",
+      "labelAnchor": [36.6, 31.2],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
       "id": "iraq",
       "name": "Iraq",
       "type": "country",
@@ -66,6 +99,17 @@
       "flag": "\ud83c\uddee\ud83c\uddf7",
       "labelAnchor": [53.4, 32.4],
       "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "saudi-arabia",
+      "name": "Saudi Arabia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "SAU",
+      "color": "#ec4899",
+      "labelAnchor": [45.1, 23.9],
+      "labelFontSize": 12,
       "labelRotation": 0
     }
   ]

@@ -1,0 +1,132 @@
+{
+  "id": "mexico-south-gulf-yucatan",
+  "title": "Mexico: South / Gulf / Yucatán",
+  "targetNoun": "state",
+  "visibleAnswerLimit": 8,
+  "map": {
+    "region": "mexico-south-gulf-yucatan",
+    "admin1Source": "north-america-admin1"
+  },
+  "features": [
+    {
+      "id": "veracruz",
+      "name": "Veracruz",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "veracruz",
+      "iso_3166_2": "MX-VER",
+      "color": "#d88052",
+      "labelAnchor": [
+        -96.5953,
+        19.0926
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "guerrero",
+      "name": "Guerrero",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "guerrero",
+      "iso_3166_2": "MX-GRO",
+      "color": "#7eb36a",
+      "labelAnchor": [
+        -100.091,
+        17.7608
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "oaxaca",
+      "name": "Oaxaca",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "oaxaca",
+      "iso_3166_2": "MX-OAX",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        -96.2087,
+        16.94
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "chiapas",
+      "name": "Chiapas",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "chiapas",
+      "iso_3166_2": "MX-CHP",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        -92.581,
+        16.527
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tabasco",
+      "name": "Tabasco",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tabasco",
+      "iso_3166_2": "MX-TAB",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        -92.8274,
+        18.1252
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "campeche",
+      "name": "Campeche",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "campeche",
+      "iso_3166_2": "MX-CAM",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        -90.2807,
+        18.6624
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "yucatan",
+      "name": "Yucatán",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "yucatan",
+      "iso_3166_2": "MX-YUC",
+      "color": "#54a6a6",
+      "labelAnchor": [
+        -88.9836,
+        20.663
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "quintana-roo",
+      "name": "Quintana Roo",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "quintana-roo",
+      "iso_3166_2": "MX-ROO",
+      "color": "#7eb36a",
+      "labelAnchor": [
+        -88.344,
+        19.3861
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

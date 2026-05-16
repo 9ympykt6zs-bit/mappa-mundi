@@ -1,6 +1,6 @@
 {
   "id": "southern-africa-countries",
-  "title": "Southern Africa",
+  "title": "Southern Africa Countries",
   "targetNoun": "country",
   "visibleAnswerLimit": 10,
   "map": {
@@ -60,6 +60,17 @@
       "color": "#eab308",
       "labelAnchor": [17.1, -20.58],
       "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "zimbabwe",
+      "name": "Zimbabwe",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ZWE",
+      "color": "#a855f7",
+      "labelAnchor": [29.8, -19.1],
+      "labelFontSize": 12,
       "labelRotation": 0
     }
   ]

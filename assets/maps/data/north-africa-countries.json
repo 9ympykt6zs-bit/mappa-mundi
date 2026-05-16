@@ -1,0 +1,67 @@
+{
+  "id": "north-africa-countries",
+  "title": "North Africa Countries",
+  "sequence": 70,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "north-africa"
+  },
+  "features": [
+    {
+      "id": "morocco",
+      "name": "Morocco",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "MAR",
+      "color": "#ef4444",
+      "labelAnchor": [-6.3, 31.8],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "algeria",
+      "name": "Algeria",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "DZA",
+      "color": "#f59e0b",
+      "labelAnchor": [2.8, 28.2],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "tunisia",
+      "name": "Tunisia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "TUN",
+      "color": "#22c55e",
+      "labelAnchor": [9.5, 34.0],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "libya",
+      "name": "Libya",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "LBY",
+      "color": "#3b82f6",
+      "labelAnchor": [18.0, 27.0],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "egypt",
+      "name": "Egypt",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "EGY",
+      "color": "#a855f7",
+      "labelAnchor": [29.8, 26.7],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

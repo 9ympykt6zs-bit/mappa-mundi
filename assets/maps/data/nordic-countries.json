@@ -1,11 +1,11 @@
 {
-  "id": "northern-european-countries",
-  "title": "Northern European Countries",
+  "id": "nordic-countries",
+  "title": "Nordic Countries",
   "sequence": 13,
   "targetNoun": "country",
   "visibleAnswerLimit": 10,
   "map": {
-    "region": "northern-europe"
+    "region": "nordic-countries"
   },
   "features": [
     {
@@ -15,7 +15,6 @@
       "shape": "path",
       "isoA3": "NOR",
       "color": "#38bdf8",
-      "flag": "🇳🇴",
       "labelAnchor": [9.68, 61.36],
       "labelFontSize": 13,
       "labelRotation": 0
@@ -27,7 +26,6 @@
       "shape": "path",
       "isoA3": "SWE",
       "color": "#facc15",
-      "flag": "🇸🇪",
       "labelAnchor": [17.5, 62.6],
       "labelFontSize": 13,
       "labelRotation": 0
@@ -39,7 +37,6 @@
       "shape": "path",
       "isoA3": "FIN",
       "color": "#60a5fa",
-      "flag": "🇫🇮",
       "labelAnchor": [26.5, 63.2],
       "labelFontSize": 13,
       "labelRotation": 0
@@ -51,9 +48,19 @@
       "shape": "path",
       "isoA3": "DNK",
       "color": "#ef4444",
-      "flag": "🇩🇰",
       "labelAnchor": [9.7, 56.05],
       "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "iceland",
+      "name": "Iceland",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ISL",
+      "color": "#a855f7",
+      "labelAnchor": [-18.8, 64.9],
+      "labelFontSize": 11,
       "labelRotation": 0
     }
   ]

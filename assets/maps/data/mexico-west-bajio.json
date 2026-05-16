@@ -1,0 +1,117 @@
+{
+  "id": "mexico-west-bajio",
+  "title": "Mexico: West / Bajío",
+  "targetNoun": "state",
+  "visibleAnswerLimit": 7,
+  "map": {
+    "region": "mexico-west-bajio",
+    "admin1Source": "north-america-admin1"
+  },
+  "features": [
+    {
+      "id": "nayarit",
+      "name": "Nayarit",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "nayarit",
+      "iso_3166_2": "MX-NAY",
+      "color": "#d88052",
+      "labelAnchor": [
+        -104.824,
+        21.7934
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "jalisco",
+      "name": "Jalisco",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "jalisco",
+      "iso_3166_2": "MX-JAL",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        -103.602,
+        20.3026
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "colima",
+      "name": "Colima",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "colima",
+      "iso_3166_2": "MX-COL",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        -103.915,
+        19.1325
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "michoacan",
+      "name": "Michoacán",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "michoacan",
+      "iso_3166_2": "MX-MIC",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        -101.936,
+        19.2458
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "guanajuato",
+      "name": "Guanajuato",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "guanajuato",
+      "iso_3166_2": "MX-GUA",
+      "color": "#cc6f9f",
+      "labelAnchor": [
+        -100.904,
+        20.8141
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "aguascalientes",
+      "name": "Aguascalientes",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "aguascalientes",
+      "iso_3166_2": "MX-AGU",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        -102.351,
+        22.0375
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "queretaro",
+      "name": "Querétaro",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "queretaro",
+      "iso_3166_2": "MX-QUE",
+      "color": "#cc6f9f",
+      "labelAnchor": [
+        -99.9663,
+        20.7392
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

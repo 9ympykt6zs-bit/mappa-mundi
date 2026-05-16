@@ -843,14 +843,59 @@ body.study-mode .region-panel {
 }
 
 .label-chip {
+  align-items: center;
   border: 1px solid #bdc9d8;
   border-radius: 8px;
   background: #ffffff;
   color: #172033;
+  display: inline-flex;
+  gap: 8px;
+  justify-content: center;
+  line-height: 1.1;
+  max-width: min(280px, 100%);
   padding: 10px 14px;
   box-shadow: 0 6px 14px rgba(24, 38, 64, 0.08);
   cursor: grab;
+  text-align: center;
   user-select: none;
+}
+
+.chip-label-text {
+  overflow-wrap: anywhere;
+}
+
+.chip-speaker-button {
+  align-items: center;
+  border-radius: 999px;
+  color: rgba(37, 51, 78, 0.68);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 30px;
+  justify-content: center;
+  margin: -6px -8px -6px 0;
+  touch-action: manipulation;
+  width: 30px;
+}
+
+.chip-speaker-button:hover,
+.chip-speaker-button:focus-visible {
+  background: rgba(37, 99, 235, 0.1);
+  color: #174ea6;
+  outline: none;
+}
+
+.chip-speaker-button svg {
+  height: 17px;
+  width: 17px;
+}
+
+.chip-speaker-button path {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
 }
 
 .label-chip:active {

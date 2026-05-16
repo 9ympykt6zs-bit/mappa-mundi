@@ -1,0 +1,87 @@
+{
+  "id": "mexico-northeast",
+  "title": "Mexico: Northeast",
+  "targetNoun": "state",
+  "visibleAnswerLimit": 5,
+  "map": {
+    "region": "mexico-northeast",
+    "admin1Source": "north-america-admin1"
+  },
+  "features": [
+    {
+      "id": "coahuila",
+      "name": "Coahuila",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "coahuila",
+      "iso_3166_2": "MX-COA",
+      "color": "#54a6a6",
+      "labelAnchor": [
+        -101.885,
+        27.4473
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "nuevo-leon",
+      "name": "Nuevo León",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "nuevo-leon",
+      "iso_3166_2": "MX-NLE",
+      "color": "#54a6a6",
+      "labelAnchor": [
+        -99.8307,
+        25.6178
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tamaulipas",
+      "name": "Tamaulipas",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tamaulipas",
+      "iso_3166_2": "MX-TAM",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        -98.5197,
+        24.0808
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "zacatecas",
+      "name": "Zacatecas",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "zacatecas",
+      "iso_3166_2": "MX-ZAC",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        -102.579,
+        23.3785
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "san-luis-potosi",
+      "name": "San Luis Potosí",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "san-luis-potosi",
+      "iso_3166_2": "MX-SLP",
+      "color": "#c9935a",
+      "labelAnchor": [
+        -100.324,
+        22.4465
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

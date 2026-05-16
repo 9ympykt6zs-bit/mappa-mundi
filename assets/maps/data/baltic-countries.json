@@ -1,11 +1,11 @@
 {
-  "id": "baltic-europe",
-  "title": "Baltic Europe",
+  "id": "baltic-countries",
+  "title": "Baltic Countries",
   "sequence": 14,
   "targetNoun": "country",
   "visibleAnswerLimit": 10,
   "map": {
-    "region": "baltic-europe"
+    "region": "baltic-countries"
   },
   "features": [
     {
@@ -15,7 +15,6 @@
       "shape": "path",
       "isoA3": "EST",
       "color": "#38bdf8",
-      "flag": "🇪🇪",
       "labelAnchor": [25.87, 58.72],
       "labelFontSize": 12,
       "labelRotation": 0
@@ -27,7 +26,6 @@
       "shape": "path",
       "isoA3": "LVA",
       "color": "#ef4444",
-      "flag": "🇱🇻",
       "labelAnchor": [25.46, 57.07],
       "labelFontSize": 12,
       "labelRotation": 0
@@ -39,33 +37,8 @@
       "shape": "path",
       "isoA3": "LTU",
       "color": "#facc15",
-      "flag": "🇱🇹",
       "labelAnchor": [24.09, 55.1],
       "labelFontSize": 12,
-      "labelRotation": 0
-    },
-    {
-      "id": "poland",
-      "name": "Poland",
-      "type": "country",
-      "shape": "path",
-      "isoA3": "POL",
-      "color": "#f97316",
-      "flag": "🇵🇱",
-      "labelAnchor": [19.49, 51.99],
-      "labelFontSize": 13,
-      "labelRotation": 0
-    },
-    {
-      "id": "belarus",
-      "name": "Belarus",
-      "type": "country",
-      "shape": "path",
-      "isoA3": "BLR",
-      "color": "#a855f7",
-      "flag": "🇧🇾",
-      "labelAnchor": [28.42, 53.82],
-      "labelFontSize": 13,
       "labelRotation": 0
     }
   ]

@@ -1,0 +1,102 @@
+{
+  "id": "mexico-central",
+  "title": "Mexico: Central",
+  "targetNoun": "state or federal entity",
+  "visibleAnswerLimit": 6,
+  "map": {
+    "region": "mexico-central",
+    "admin1Source": "north-america-admin1"
+  },
+  "features": [
+    {
+      "id": "mexico-city",
+      "name": "Mexico City",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "mexico-city",
+      "iso_3166_2": "MX-DIF",
+      "color": "#d65a8c",
+      "labelAnchor": [
+        -99.1369,
+        19.3266
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "mexico-state",
+      "name": "Mexico State",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "mexico-state",
+      "iso_3166_2": "MX-MEX",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        -99.7416,
+        19.3275
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "hidalgo",
+      "name": "Hidalgo",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "hidalgo",
+      "iso_3166_2": "MX-HID",
+      "color": "#c9935a",
+      "labelAnchor": [
+        -98.9221,
+        20.5354
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "morelos",
+      "name": "Morelos",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "morelos",
+      "iso_3166_2": "MX-MOR",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        -99.0785,
+        18.742
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tlaxcala",
+      "name": "Tlaxcala",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tlaxcala",
+      "iso_3166_2": "MX-TLA",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        -98.161,
+        19.3956
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "puebla",
+      "name": "Puebla",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "puebla",
+      "iso_3166_2": "MX-PUE",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        -97.8889,
+        18.549
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

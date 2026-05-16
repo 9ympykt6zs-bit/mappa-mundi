@@ -1,0 +1,57 @@
+{
+  "id": "canada-prairie-provinces",
+  "title": "Canada: Prairie Provinces",
+  "targetNoun": "province",
+  "visibleAnswerLimit": 3,
+  "map": {
+    "region": "canada-prairie-provinces",
+    "admin1Source": "north-america-admin1"
+  },
+  "features": [
+    {
+      "id": "manitoba",
+      "name": "Manitoba",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "manitoba",
+      "iso_3166_2": "CA-MB",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        -97.3828,
+        54.85
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "saskatchewan",
+      "name": "Saskatchewan",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "saskatchewan",
+      "iso_3166_2": "CA-SK",
+      "color": "#cc6f9f",
+      "labelAnchor": [
+        -105.682,
+        54.4965
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "alberta",
+      "name": "Alberta",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "alberta",
+      "iso_3166_2": "CA-AB",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        -115,
+        55.2816
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

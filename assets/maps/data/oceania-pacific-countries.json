@@ -1,0 +1,94 @@
+{
+  "id": "oceania-pacific-countries",
+  "title": "Oceania and Pacific Countries",
+  "sequence": 22,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "oceania-pacific"
+  },
+  "features": [
+    {
+      "id": "australia",
+      "name": "Australia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "AUS",
+      "color": "#22c55e",
+      "flag": "\ud83c\udde6\ud83c\uddfa",
+      "labelAnchor": [134.5, -25.8],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "new-zealand",
+      "name": "New Zealand",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "NZL",
+      "color": "#3b82f6",
+      "flag": "\ud83c\uddf3\ud83c\uddff",
+      "labelAnchor": [172.2, -41.1],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "papua-new-guinea",
+      "name": "Papua New Guinea",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "PNG",
+      "flag": "\ud83c\uddf5\ud83c\uddec",
+      "color": "#ef4444",
+      "labelAnchor": [144.0, -6.3],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "fiji",
+      "name": "Fiji",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "FJI",
+      "color": "#a855f7",
+      "labelAnchor": [178.0, -17.8],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "solomon-islands",
+      "name": "Solomon Islands",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "SLB",
+      "color": "#f59e0b",
+      "labelAnchor": [160.2, -9.6],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "vanuatu",
+      "name": "Vanuatu",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "VUT",
+      "color": "#38bdf8",
+      "labelAnchor": [167.7, -16.2],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "guam",
+      "name": "Guam",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "GUM",
+      "politicalStatus": "country-like/territory",
+      "statusNote": "Country-like territory included by proof-sheet approval.",
+      "color": "#eab308",
+      "labelAnchor": [144.78, 13.45],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    }
+  ]
+}

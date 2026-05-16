@@ -1,10 +1,10 @@
 {
-  "id": "former-soviet-republics",
-  "title": "Former Soviet Republics",
+  "id": "former-soviet-republics-review",
+  "title": "Former Soviet Republics Review",
   "targetNoun": "country",
   "visibleAnswerLimit": 15,
   "map": {
-    "region": "former-soviet-republics"
+    "region": "former-soviet-republics-review"
   },
   "features": [
     {
@@ -14,7 +14,6 @@
       "shape": "path",
       "isoA3": "RUS",
       "color": "#3b82f6",
-      "flag": "\ud83c\uddf7\ud83c\uddfa",
       "labelAnchor": [88.0, 61.0],
       "labelFontSize": 13,
       "labelRotation": 0
@@ -26,7 +25,6 @@
       "shape": "path",
       "isoA3": "UKR",
       "color": "#f59e0b",
-      "flag": "\ud83c\uddfa\ud83c\udde6",
       "labelAnchor": [31.2, 49.0],
       "labelFontSize": 11,
       "labelRotation": 0
@@ -38,7 +36,6 @@
       "shape": "path",
       "isoA3": "BLR",
       "color": "#a855f7",
-      "flag": "\ud83c\udde7\ud83c\uddfe",
       "labelAnchor": [28.42, 53.82],
       "labelFontSize": 13,
       "labelRotation": 0
@@ -50,7 +47,6 @@
       "shape": "path",
       "isoA3": "MDA",
       "color": "#22c55e",
-      "flag": "\ud83c\uddf2\ud83c\udde9",
       "labelAnchor": [28.45, 47.2],
       "labelFontSize": 10,
       "labelRotation": 0
@@ -62,7 +58,6 @@
       "shape": "path",
       "isoA3": "EST",
       "color": "#38bdf8",
-      "flag": "\ud83c\uddea\ud83c\uddea",
       "labelAnchor": [25.87, 58.72],
       "labelFontSize": 12,
       "labelRotation": 0
@@ -74,7 +69,6 @@
       "shape": "path",
       "isoA3": "LVA",
       "color": "#ef4444",
-      "flag": "\ud83c\uddf1\ud83c\uddfb",
       "labelAnchor": [25.46, 57.07],
       "labelFontSize": 12,
       "labelRotation": 0
@@ -86,7 +80,6 @@
       "shape": "path",
       "isoA3": "LTU",
       "color": "#facc15",
-      "flag": "\ud83c\uddf1\ud83c\uddf9",
       "labelAnchor": [24.09, 55.1],
       "labelFontSize": 12,
       "labelRotation": 0
@@ -98,7 +91,6 @@
       "shape": "path",
       "isoA3": "GEO",
       "color": "#f97316",
-      "flag": "\ud83c\uddec\ud83c\uddea",
       "labelAnchor": [43.5, 42.05],
       "labelFontSize": 10,
       "labelRotation": 0
@@ -110,7 +102,6 @@
       "shape": "path",
       "isoA3": "ARM",
       "color": "#60a5fa",
-      "flag": "\ud83c\udde6\ud83c\uddf2",
       "labelAnchor": [44.95, 40.29],
       "labelFontSize": 9,
       "labelRotation": 0
@@ -122,7 +113,6 @@
       "shape": "path",
       "isoA3": "AZE",
       "color": "#ec4899",
-      "flag": "\ud83c\udde6\ud83c\uddff",
       "labelAnchor": [47.7, 40.35],
       "labelFontSize": 9,
       "labelRotation": 0
@@ -134,7 +124,6 @@
       "shape": "path",
       "isoA3": "KAZ",
       "color": "#38bdf8",
-      "flag": "\ud83c\uddf0\ud83c\uddff",
       "labelAnchor": [67.5, 48.1],
       "labelFontSize": 13,
       "labelRotation": 0
@@ -146,7 +135,6 @@
       "shape": "path",
       "isoA3": "UZB",
       "color": "#22c55e",
-      "flag": "\ud83c\uddfa\ud83c\uddff",
       "labelAnchor": [64.2, 41.45],
       "labelFontSize": 11,
       "labelRotation": 0
@@ -158,7 +146,6 @@
       "shape": "path",
       "isoA3": "TKM",
       "color": "#f59e0b",
-      "flag": "\ud83c\uddf9\ud83c\uddf2",
       "labelAnchor": [59.25, 39.15],
       "labelFontSize": 10,
       "labelRotation": 0
@@ -170,7 +157,6 @@
       "shape": "path",
       "isoA3": "KGZ",
       "color": "#a855f7",
-      "flag": "\ud83c\uddf0\ud83c\uddec",
       "labelAnchor": [74.55, 41.3],
       "labelFontSize": 10,
       "labelRotation": 0
@@ -182,7 +168,6 @@
       "shape": "path",
       "isoA3": "TJK",
       "color": "#ef4444",
-      "flag": "\ud83c\uddf9\ud83c\uddef",
       "labelAnchor": [71.15, 38.85],
       "labelFontSize": 10,
       "labelRotation": 0

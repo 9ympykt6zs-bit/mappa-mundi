@@ -1,0 +1,67 @@
+{
+  "id": "eastern-europe-countries",
+  "title": "Eastern Europe and Russia",
+  "sequence": 11,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "eastern-europe"
+  },
+  "features": [
+    {
+      "id": "poland",
+      "name": "Poland",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "POL",
+      "color": "#f97316",
+      "labelAnchor": [19.49, 51.99],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "belarus",
+      "name": "Belarus",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "BLR",
+      "color": "#a855f7",
+      "labelAnchor": [28.42, 53.82],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "ukraine",
+      "name": "Ukraine",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "UKR",
+      "color": "#f59e0b",
+      "labelAnchor": [31.2, 49.0],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "moldova",
+      "name": "Moldova",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "MDA",
+      "color": "#22c55e",
+      "labelAnchor": [28.45, 47.2],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "russia",
+      "name": "Russia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "RUS",
+      "color": "#3b82f6",
+      "labelAnchor": [88.0, 61.0],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    }
+  ]
+}

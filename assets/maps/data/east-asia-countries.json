@@ -1,13 +1,35 @@
 {
-  "id": "southeastern-asia",
-  "title": "Southeastern Asia",
+  "id": "east-asia-countries",
+  "title": "East Asia Countries",
   "sequence": 19,
   "targetNoun": "country",
   "visibleAnswerLimit": 10,
   "map": {
-    "region": "southeastern-asia"
+    "region": "east-asia"
   },
   "features": [
+    {
+      "id": "china",
+      "name": "China",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "CHN",
+      "color": "#f97316",
+      "labelAnchor": [103.8, 35.4],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "mongolia",
+      "name": "Mongolia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "MNG",
+      "color": "#eab308",
+      "labelAnchor": [103.0, 46.9],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
     {
       "id": "north-korea",
       "name": "North Korea",
@@ -33,6 +55,17 @@
       "labelRotation": 0
     },
     {
+      "id": "japan",
+      "name": "Japan",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "JPN",
+      "color": "#38bdf8",
+      "labelAnchor": [138.2, 37.6],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
       "id": "taiwan",
       "name": "Taiwan",
       "type": "country",
@@ -43,32 +76,6 @@
       "politicalStatus": "country-like/disputed",
       "statusNote": "Included as a country-like disputed political unit by proof-sheet approval.",
       "labelAnchor": [121.0, 23.75],
-      "labelFontSize": 10,
-      "labelRotation": 0
-    },
-    {
-      "id": "philippines",
-      "name": "Philippines",
-      "type": "country",
-      "shape": "path",
-      "isoA3": "PHL",
-      "color": "#f59e0b",
-      "flag": "\ud83c\uddf5\ud83c\udded",
-      "labelAnchor": [122.9, 12.6],
-      "labelFontSize": 11,
-      "labelRotation": 0
-    },
-    {
-      "id": "guam",
-      "name": "Guam",
-      "type": "country",
-      "shape": "path",
-      "isoA3": "GUM",
-      "flag": "\ud83c\uddec\ud83c\uddfa",
-      "politicalStatus": "country-like/territory",
-      "statusNote": "Country-like territory included by proof-sheet approval.",
-      "color": "#a855f7",
-      "labelAnchor": [144.78, 13.45],
       "labelFontSize": 10,
       "labelRotation": 0
     }

@@ -1,0 +1,42 @@
+{
+  "id": "canada-central-canada",
+  "title": "Canada: Central Canada",
+  "targetNoun": "province",
+  "visibleAnswerLimit": 2,
+  "map": {
+    "region": "canada-central-canada",
+    "admin1Source": "north-america-admin1"
+  },
+  "features": [
+    {
+      "id": "quebec",
+      "name": "Quebec",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "quebec",
+      "iso_3166_2": "CA-QC",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        -73.7168,
+        52.2593
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "ontario",
+      "name": "Ontario",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "ontario",
+      "iso_3166_2": "CA-ON",
+      "color": "#54a6a6",
+      "labelAnchor": [
+        -84.7943,
+        50.5244
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

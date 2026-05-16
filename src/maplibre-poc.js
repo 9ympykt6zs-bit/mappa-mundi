@@ -1,35 +1,48 @@
 import { normalizeActivity } from "./map-engines/activity-normalizer.js";
 import { ActivitySession, studyModes } from "./maplibre/activity-session.js?v=progress-state";
-import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=north-america-admin1";
+import "./chip-speech.js?v=tts-answer-chips";
+import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=canada-mexico-regions";
 
 const activityDataPaths = [
   "assets/maps/data/continents-oceans.json",
   "assets/maps/data/western-european-countries.json",
   "assets/maps/data/european-cities.json",
-  "assets/maps/data/former-soviet-republics.json",
+  "assets/maps/data/former-soviet-republics-review.json",
   "assets/maps/data/world-cities-east-south-asia.json",
   "assets/maps/data/world-cities-europe-eastern-mediterranean.json",
   "assets/maps/data/world-cities-middle-east-north-africa.json",
   "assets/maps/data/world-cities-mesoamerica.json",
-  "assets/maps/data/northern-european-countries.json",
-  "assets/maps/data/baltic-europe-countries.json",
+  "assets/maps/data/nordic-countries.json",
+  "assets/maps/data/baltic-countries.json",
   "assets/maps/data/balkans-countries.json",
   "assets/maps/data/central-european-countries.json",
   "assets/maps/data/more-central-european-countries.json",
+  "assets/maps/data/eastern-europe-countries.json",
   "assets/maps/data/southern-africa-countries.json",
-  "assets/maps/data/african-countries.json",
-  "assets/maps/data/the-levant.json",
+  "assets/maps/data/north-africa-countries.json",
+  "assets/maps/data/west-africa-countries.json",
+  "assets/maps/data/east-africa-indian-ocean-countries.json",
+  "assets/maps/data/middle-east-countries.json",
   "assets/maps/data/central-america.json",
   "assets/maps/data/central-asia.json",
+  "assets/maps/data/caucasus-countries.json",
   "assets/maps/data/south-america-west.json",
   "assets/maps/data/south-america-east.json",
   "assets/maps/data/caribbean.json",
-  "assets/maps/data/southwest-asia.json",
-  "assets/maps/data/europe-and-asia-countries.json",
-  "assets/maps/data/remaining-modern-countries.json",
-  "assets/maps/data/southeastern-asia.json",
-  "assets/maps/data/south-central-asia.json",
-  "assets/maps/data/oceania.json",
+  "assets/maps/data/south-asia-countries.json",
+  "assets/maps/data/east-asia-countries.json",
+  "assets/maps/data/mainland-southeast-asia-countries.json",
+  "assets/maps/data/maritime-southeast-asia-countries.json",
+  "assets/maps/data/oceania-pacific-countries.json",
+  "assets/maps/data/canada-atlantic-provinces.json",
+  "assets/maps/data/canada-central-canada.json",
+  "assets/maps/data/canada-prairie-provinces.json",
+  "assets/maps/data/canada-western-northern.json",
+  "assets/maps/data/mexico-northwest.json",
+  "assets/maps/data/mexico-northeast.json",
+  "assets/maps/data/mexico-west-bajio.json",
+  "assets/maps/data/mexico-central.json",
+  "assets/maps/data/mexico-south-gulf-yucatan.json",
   "assets/maps/data/mexico-states.json",
   "assets/maps/data/canada-provinces-territories.json",
   "assets/maps/data/us-states-capitals-01.json",
@@ -102,12 +115,6 @@ const ACTIVITY_MENU = [
         children: [
           { label: "Continents & Oceans", activityId: "continents-oceans" }
         ]
-      },
-      {
-        label: "Political / Cultural Regions",
-        children: [
-          { label: "Former Soviet Republics", activityId: "former-soviet-republics" }
-        ]
       }
     ]
   },
@@ -119,7 +126,9 @@ const ACTIVITY_MENU = [
       {
         label: "Africa",
         children: [
-          { label: "Countries", title: "Selected African Countries", activityId: "african-countries" },
+          { label: "North Africa Countries", activityId: "north-africa-countries" },
+          { label: "West Africa Countries", activityId: "west-africa-countries" },
+          { label: "East Africa and Indian Ocean Countries", activityId: "east-africa-indian-ocean-countries" },
           { label: "Southern Africa Countries", activityId: "southern-africa-countries" },
           { label: "Cities", activityId: "world-cities-middle-east-north-africa" }
         ]
@@ -132,9 +141,9 @@ const ACTIVITY_MENU = [
     overviewView: { center: [14, 52], zoom: 2.35 },
     children: [
       {
-        label: "Scandinavia",
+        label: "Nordic Countries",
         children: [
-          { label: "Countries", title: "Northern Europe", activityId: "northern-european-countries" }
+          { label: "Countries", activityId: "nordic-countries" }
         ]
       },
       {
@@ -146,9 +155,15 @@ const ACTIVITY_MENU = [
         ]
       },
       {
-        label: "Baltic Europe",
+        label: "Baltic Countries",
         children: [
-          { label: "Countries", activityId: "baltic-europe" }
+          { label: "Countries", activityId: "baltic-countries" }
+        ]
+      },
+      {
+        label: "Eastern Europe",
+        children: [
+          { label: "Eastern Europe and Russia", activityId: "eastern-europe-countries" }
         ]
       },
       {
@@ -174,11 +189,13 @@ const ACTIVITY_MENU = [
       {
         label: "Asia",
         children: [
-          { label: "Countries", title: "Selected Asian Countries", activityId: "southwest-asia" },
-          { label: "The Levant Countries", activityId: "the-levant" },
+          { label: "Middle East Countries", activityId: "middle-east-countries" },
+          { label: "South Asia Countries", activityId: "south-asia-countries" },
           { label: "Central Asia Countries", activityId: "central-asia" },
-          { label: "Southeastern Asia Countries", activityId: "southeastern-asia" },
-          { label: "South Central Asia Countries", activityId: "south-central-asia" },
+          { label: "Caucasus Countries", activityId: "caucasus-countries" },
+          { label: "East Asia Countries", activityId: "east-asia-countries" },
+          { label: "Mainland Southeast Asia Countries", activityId: "mainland-southeast-asia-countries" },
+          { label: "Maritime Southeast Asia Countries", activityId: "maritime-southeast-asia-countries" },
           { label: "Cities", activityId: "world-cities-east-south-asia" }
         ]
       }
@@ -205,12 +222,21 @@ const ACTIVITY_MENU = [
       {
         label: "Mexico",
         children: [
+          { label: "Northwest", activityId: "mexico-northwest" },
+          { label: "Northeast", activityId: "mexico-northeast" },
+          { label: "West / Bajío", activityId: "mexico-west-bajio" },
+          { label: "Central", activityId: "mexico-central" },
+          { label: "South / Gulf / Yucatán", activityId: "mexico-south-gulf-yucatan" },
           { label: "States", activityId: "mexico-states" }
         ]
       },
       {
         label: "Canada",
         children: [
+          { label: "Atlantic Provinces", activityId: "canada-atlantic-provinces" },
+          { label: "Central Canada", activityId: "canada-central-canada" },
+          { label: "Prairie Provinces", activityId: "canada-prairie-provinces" },
+          { label: "Western and Northern Canada", activityId: "canada-western-northern" },
           { label: "Provinces and Territories", activityId: "canada-provinces-territories" }
         ]
       },
@@ -247,8 +273,21 @@ const ACTIVITY_MENU = [
       {
         label: "Australia / Oceania",
         children: [
-          { label: "Countries", activityId: "oceania" },
+          { label: "Oceania and Pacific Countries", activityId: "oceania-pacific-countries" },
           { label: "Cities", disabled: true, badge: "Coming soon" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "review",
+    label: "Review",
+    overviewView: { center: [48, 49], zoom: 1.75 },
+    children: [
+      {
+        label: "Review / Themed Activities",
+        children: [
+          { label: "Former Soviet Republics Review", activityId: "former-soviet-republics-review" }
         ]
       }
     ]
@@ -301,13 +340,27 @@ const GEOGRAPHY_NAV_NODES = {
     parent: "world",
     menuRoot: "africa",
     view: { center: [20, 0], zoom: 2.1 },
-    children: ["africa-countries", "southern-africa", "africa-cities"]
+    children: ["africa-north", "africa-west", "africa-east-indian-ocean", "southern-africa", "africa-cities"]
   },
-  "africa-countries": {
-    id: "africa-countries",
-    label: "Selected African Countries",
+  "africa-north": {
+    id: "africa-north",
+    label: "North Africa",
     parent: "africa",
-    activityId: "african-countries",
+    activityId: "north-africa-countries",
+    activityLabel: "Countries"
+  },
+  "africa-west": {
+    id: "africa-west",
+    label: "West Africa",
+    parent: "africa",
+    activityId: "west-africa-countries",
+    activityLabel: "Countries"
+  },
+  "africa-east-indian-ocean": {
+    id: "africa-east-indian-ocean",
+    label: "East Africa and Indian Ocean",
+    parent: "africa",
+    activityId: "east-africa-indian-ocean-countries",
     activityLabel: "Countries"
   },
   "southern-africa": {
@@ -330,13 +383,13 @@ const GEOGRAPHY_NAV_NODES = {
     parent: "world",
     menuRoot: "europe",
     view: { center: [14, 52], zoom: 2.35 },
-    children: ["europe-scandinavia", "europe-western", "europe-baltic", "europe-balkans", "europe-wide"]
+    children: ["europe-nordic", "europe-western", "europe-baltic", "europe-eastern", "europe-balkans", "europe-wide"]
   },
-  "europe-scandinavia": {
-    id: "europe-scandinavia",
-    label: "Scandinavia",
+  "europe-nordic": {
+    id: "europe-nordic",
+    label: "Nordic Countries",
     parent: "europe",
-    activityId: "northern-european-countries",
+    activityId: "nordic-countries",
     activityLabel: "Countries"
   },
   "europe-western": {
@@ -348,9 +401,16 @@ const GEOGRAPHY_NAV_NODES = {
   },
   "europe-baltic": {
     id: "europe-baltic",
-    label: "Baltic Europe",
+    label: "Baltic Countries",
     parent: "europe",
-    activityId: "baltic-europe",
+    activityId: "baltic-countries",
+    activityLabel: "Countries"
+  },
+  "europe-eastern": {
+    id: "europe-eastern",
+    label: "Eastern Europe",
+    parent: "europe",
+    activityId: "eastern-europe-countries",
     activityLabel: "Countries"
   },
   "europe-balkans": {
@@ -373,20 +433,20 @@ const GEOGRAPHY_NAV_NODES = {
     parent: "world",
     menuRoot: "asia",
     view: { center: [88, 31], zoom: 1.55 },
-    children: ["asia-southwest", "asia-levant", "asia-central", "asia-southeastern", "asia-south-central", "asia-cities"]
+    children: ["asia-middle-east", "asia-south", "asia-central", "asia-caucasus", "asia-east", "asia-mainland-southeast", "asia-maritime-southeast", "asia-cities"]
   },
-  "asia-southwest": {
-    id: "asia-southwest",
-    label: "Selected Asian Countries",
+  "asia-middle-east": {
+    id: "asia-middle-east",
+    label: "Middle East",
     parent: "asia",
-    activityId: "southwest-asia",
+    activityId: "middle-east-countries",
     activityLabel: "Countries"
   },
-  "asia-levant": {
-    id: "asia-levant",
-    label: "The Levant",
+  "asia-south": {
+    id: "asia-south",
+    label: "South Asia",
     parent: "asia",
-    activityId: "the-levant",
+    activityId: "south-asia-countries",
     activityLabel: "Countries"
   },
   "asia-central": {
@@ -396,18 +456,32 @@ const GEOGRAPHY_NAV_NODES = {
     activityId: "central-asia",
     activityLabel: "Countries"
   },
-  "asia-southeastern": {
-    id: "asia-southeastern",
-    label: "Southeastern Asia",
+  "asia-caucasus": {
+    id: "asia-caucasus",
+    label: "Caucasus",
     parent: "asia",
-    activityId: "southeastern-asia",
+    activityId: "caucasus-countries",
     activityLabel: "Countries"
   },
-  "asia-south-central": {
-    id: "asia-south-central",
-    label: "South Central Asia",
+  "asia-east": {
+    id: "asia-east",
+    label: "East Asia",
     parent: "asia",
-    activityId: "south-central-asia",
+    activityId: "east-asia-countries",
+    activityLabel: "Countries"
+  },
+  "asia-mainland-southeast": {
+    id: "asia-mainland-southeast",
+    label: "Mainland Southeast Asia",
+    parent: "asia",
+    activityId: "mainland-southeast-asia-countries",
+    activityLabel: "Countries"
+  },
+  "asia-maritime-southeast": {
+    id: "asia-maritime-southeast",
+    label: "Maritime Southeast Asia",
+    parent: "asia",
+    activityId: "maritime-southeast-asia-countries",
     activityLabel: "Countries"
   },
   "asia-cities": {
@@ -449,7 +523,37 @@ const GEOGRAPHY_NAV_NODES = {
       isoA3: ["MEX"],
       names: ["Mexico"]
     },
-    children: ["mexico-states"]
+    children: ["mexico-northwest", "mexico-northeast", "mexico-west-bajio", "mexico-central", "mexico-south-gulf-yucatan", "mexico-states"]
+  },
+  "mexico-northwest": {
+    id: "mexico-northwest",
+    label: "Northwest",
+    parent: "north-america-mexico",
+    activityId: "mexico-northwest"
+  },
+  "mexico-northeast": {
+    id: "mexico-northeast",
+    label: "Northeast",
+    parent: "north-america-mexico",
+    activityId: "mexico-northeast"
+  },
+  "mexico-west-bajio": {
+    id: "mexico-west-bajio",
+    label: "West / Bajío",
+    parent: "north-america-mexico",
+    activityId: "mexico-west-bajio"
+  },
+  "mexico-central": {
+    id: "mexico-central",
+    label: "Central",
+    parent: "north-america-mexico",
+    activityId: "mexico-central"
+  },
+  "mexico-south-gulf-yucatan": {
+    id: "mexico-south-gulf-yucatan",
+    label: "South / Gulf / Yucatán",
+    parent: "north-america-mexico",
+    activityId: "mexico-south-gulf-yucatan"
   },
   "mexico-states": {
     id: "mexico-states",
@@ -468,7 +572,31 @@ const GEOGRAPHY_NAV_NODES = {
       isoA3: ["CAN"],
       names: ["Canada"]
     },
-    children: ["canada-provinces-territories"]
+    children: ["canada-atlantic-provinces", "canada-central-canada", "canada-prairie-provinces", "canada-western-northern", "canada-provinces-territories"]
+  },
+  "canada-atlantic-provinces": {
+    id: "canada-atlantic-provinces",
+    label: "Atlantic Provinces",
+    parent: "north-america-canada",
+    activityId: "canada-atlantic-provinces"
+  },
+  "canada-central-canada": {
+    id: "canada-central-canada",
+    label: "Central Canada",
+    parent: "north-america-canada",
+    activityId: "canada-central-canada"
+  },
+  "canada-prairie-provinces": {
+    id: "canada-prairie-provinces",
+    label: "Prairie Provinces",
+    parent: "north-america-canada",
+    activityId: "canada-prairie-provinces"
+  },
+  "canada-western-northern": {
+    id: "canada-western-northern",
+    label: "Western and Northern Canada",
+    parent: "north-america-canada",
+    activityId: "canada-western-northern"
   },
   "canada-provinces-territories": {
     id: "canada-provinces-territories",
@@ -482,6 +610,7 @@ const GEOGRAPHY_NAV_NODES = {
     parent: "north-america-united-states",
     view: { center: [-98, 39], zoom: 3.1 },
     overviewCountryIsoA3: "USA",
+    mapClickDisabled: true,
     children: US_STATE_CAPITAL_MENU_ITEMS.map((item) => `nav-${item.activityId}`)
   },
   "us-physical-features": {
@@ -489,6 +618,7 @@ const GEOGRAPHY_NAV_NODES = {
     label: "US Physical Features",
     parent: "north-america-united-states",
     view: { center: [-98, 39], zoom: 3.1 },
+    mapClickDisabled: true,
     children: US_PHYSICAL_FEATURE_MENU_ITEMS.map((item, index) => `us-physical-${index + 1}`)
   },
   "north-america-regional": {
@@ -552,34 +682,25 @@ const GEOGRAPHY_NAV_NODES = {
     id: "oceania-countries",
     label: "Countries",
     parent: "oceania",
-    activityId: "oceania",
+    activityId: "oceania-pacific-countries",
     activityLabel: "Countries"
+  },
+  review: {
+    id: "review",
+    label: "Review / Themed Activities",
+    menuRoot: "review",
+    view: { center: [48, 49], zoom: 1.75 },
+    children: ["review-former-soviet-republics"]
+  },
+  "review-former-soviet-republics": {
+    id: "review-former-soviet-republics",
+    label: "Former Soviet Republics Review",
+    parent: "review",
+    activityId: "former-soviet-republics-review",
+    activityLabel: "Review"
   },
   ...US_STATE_CAPITAL_NAV_NODES,
   ...US_PHYSICAL_FEATURE_NAV_NODES
-};
-const ACTIVITY_BACKLOG_BUCKETS = {
-  africa: [
-    {
-      label: "Selected African Countries",
-      sourceActivityId: "remaining-modern-countries",
-      countryIds: ["egypt", "ivory-coast"]
-    }
-  ],
-  asia: [
-    {
-      label: "Selected Asian Countries",
-      sourceActivityId: "remaining-modern-countries",
-      countryIds: ["israel", "mongolia"]
-    }
-  ],
-  europe: [
-    {
-      label: "Northern Europe",
-      sourceActivityId: "remaining-modern-countries",
-      countryIds: ["iceland"]
-    }
-  ]
 };
 const activityCatalogMetadata = {
   "continents-oceans": {
@@ -600,11 +721,11 @@ const activityCatalogMetadata = {
     description: "Major European city placement with landmark-style point targets.",
     sortOrder: 15
   },
-  "former-soviet-republics": {
+  "former-soviet-republics-review": {
     mapSet: "world-europe",
-    category: "Countries",
-    description: "Modern countries grouped by a shared recent political and cultural history.",
-    sortOrder: 12
+    category: "Review",
+    description: "Review activity for modern countries that share former Soviet history.",
+    sortOrder: 200
   },
   "world-cities-east-south-asia": {
     mapSet: "world-europe",
@@ -630,19 +751,26 @@ const activityCatalogMetadata = {
     description: "Mesoamerica city-only proof-sheet batch.",
     sortOrder: 19
   },
-  "northern-european-countries": {
+  "nordic-countries": {
     mapSet: "world-europe",
     category: "Countries",
-    description: "Scandinavia proof sheet with the four northern countries.",
+    description: "Nordic countries practice with Iceland included.",
     sortOrder: 13,
     sectionNumber: 13
   },
-  "baltic-europe": {
+  "baltic-countries": {
     mapSet: "world-europe",
     category: "Countries",
-    description: "Baltic and eastern-edge practice with five adjacent countries.",
+    description: "Baltic countries practice.",
     sortOrder: 14,
     sectionNumber: 14
+  },
+  "eastern-europe-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Eastern Europe and Russia regional country practice.",
+    sortOrder: 15,
+    sectionNumber: 15
   },
   "balkans": {
     mapSet: "world-europe",
@@ -668,22 +796,37 @@ const activityCatalogMetadata = {
   "southern-africa-countries": {
     mapSet: "world-europe",
     category: "Countries",
-    description: "Southern Africa proof sheet with five target countries.",
-    sortOrder: 70
+    description: "Southern Africa country practice.",
+    sortOrder: 70,
+    sectionNumber: 70
   },
-  "african-countries": {
+  "north-africa-countries": {
     mapSet: "world-europe",
     category: "Countries",
-    description: "Cycle 1 African countries proof sheet with five modern countries.",
+    description: "North Africa country practice.",
     sortOrder: 69,
-    sectionNumber: 17
+    sectionNumber: 69
   },
-  "the-levant": {
+  "west-africa-countries": {
     mapSet: "world-europe",
     category: "Countries",
-    description: "Eastern Mediterranean country sheet from the proof set.",
+    description: "West Africa country practice.",
+    sortOrder: 70.5,
+    sectionNumber: 71
+  },
+  "east-africa-indian-ocean-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "East Africa and Indian Ocean country practice.",
     sortOrder: 71,
-    sectionNumber: 15
+    sectionNumber: 72
+  },
+  "middle-east-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Middle East country practice.",
+    sortOrder: 60,
+    sectionNumber: 60
   },
   "central-america": {
     mapSet: "world-europe",
@@ -698,6 +841,13 @@ const activityCatalogMetadata = {
     description: "Central Asia proof sheet with five inland countries.",
     sortOrder: 73,
     sectionNumber: 23
+  },
+  "caucasus-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Caucasus country practice.",
+    sortOrder: 73.5,
+    sectionNumber: 24
   },
   "south-america-west": {
     mapSet: "world-europe",
@@ -720,52 +870,100 @@ const activityCatalogMetadata = {
     sortOrder: 76,
     sectionNumber: 9
   },
-  "southwest-asia": {
+  "south-asia-countries": {
     mapSet: "world-europe",
     category: "Countries",
-    description: "Southwest Asia country-only subset from the mixed proof sheet.",
+    description: "South Asia country practice.",
     sortOrder: 77,
     sectionNumber: 10
   },
-  "europe-and-asia-countries": {
+  "east-asia-countries": {
     mapSet: "world-europe",
     category: "Countries",
-    description: "Europe and Asia country-only subset: Russia and Ukraine.",
-    sortOrder: 77.25,
-    sectionNumber: 11
-  },
-  "remaining-modern-countries": {
-    mapSet: "world-europe",
-    category: "Countries",
-    description: "Remaining modern sovereign countries from mixed proof sheets.",
-    sortOrder: 77.5
-  },
-  "southeastern-asia": {
-    mapSet: "world-europe",
-    category: "Countries",
-    description: "East and western Pacific country/territory proof sheet.",
+    description: "East Asia country practice.",
     sortOrder: 78,
     sectionNumber: 19
   },
-  "south-central-asia": {
+  "mainland-southeast-asia-countries": {
     mapSet: "world-europe",
     category: "Countries",
-    description: "Modern-country subset from the mixed South Central Asia proof sheet.",
+    description: "Mainland Southeast Asia country practice.",
     sortOrder: 78.5,
     sectionNumber: 20
   },
-  "oceania": {
+  "maritime-southeast-asia-countries": {
     mapSet: "world-europe",
     category: "Countries",
-    description: "Oceania country-only subset from the mixed proof sheet.",
+    description: "Maritime Southeast Asia country practice.",
+    sortOrder: 78.75,
+    sectionNumber: 21
+  },
+  "oceania-pacific-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Oceania and Pacific country practice.",
     sortOrder: 79,
     sectionNumber: 22
+  },
+  "canada-atlantic-provinces": {
+    mapSet: "world-europe",
+    category: "Provinces & Territories",
+    description: "Atlantic Canada province practice.",
+    sortOrder: 80.1
+  },
+  "canada-central-canada": {
+    mapSet: "world-europe",
+    category: "Provinces & Territories",
+    description: "Quebec and Ontario province practice.",
+    sortOrder: 80.2
+  },
+  "canada-prairie-provinces": {
+    mapSet: "world-europe",
+    category: "Provinces & Territories",
+    description: "Prairie Provinces practice.",
+    sortOrder: 80.3
+  },
+  "canada-western-northern": {
+    mapSet: "world-europe",
+    category: "Provinces & Territories",
+    description: "Western and northern Canada province and territory practice.",
+    sortOrder: 80.4
   },
   "mexico-states": {
     mapSet: "world-europe",
     category: "States",
     description: "Mexico federal entities practice with state and capital-district polygons.",
     sortOrder: 82
+  },
+  "mexico-northwest": {
+    mapSet: "world-europe",
+    category: "States",
+    description: "Northwest Mexico state practice.",
+    sortOrder: 81.1
+  },
+  "mexico-northeast": {
+    mapSet: "world-europe",
+    category: "States",
+    description: "Northeast Mexico state practice.",
+    sortOrder: 81.2
+  },
+  "mexico-west-bajio": {
+    mapSet: "world-europe",
+    category: "States",
+    description: "West and Bajío Mexico state practice.",
+    sortOrder: 81.3
+  },
+  "mexico-central": {
+    mapSet: "world-europe",
+    category: "States",
+    description: "Central Mexico state and federal entity practice.",
+    sortOrder: 81.4
+  },
+  "mexico-south-gulf-yucatan": {
+    mapSet: "world-europe",
+    category: "States",
+    description: "South, Gulf, and Yucatán Mexico state practice.",
+    sortOrder: 81.5
   },
   "canada-provinces-territories": {
     mapSet: "world-europe",
@@ -1063,31 +1261,43 @@ function inferActivityRegion(activityId = "") {
   const regionByActivityId = {
     "western-european-countries": "western-europe",
     "european-cities": "western-europe",
-    "former-soviet-republics": "former-soviet-republics",
+    "former-soviet-republics-review": "former-soviet-republics-review",
     "continents-oceans": "continents-oceans",
     "world-cities-east-south-asia": "world-cities-east-south-asia",
     "world-cities-europe-eastern-mediterranean": "world-cities-europe-eastern-mediterranean",
     "world-cities-middle-east-north-africa": "world-cities-middle-east-north-africa",
     "world-cities-mesoamerica": "world-cities-mesoamerica",
-    "northern-european-countries": "northern-europe",
-    "baltic-europe": "baltic-europe",
+    "nordic-countries": "nordic-countries",
+    "baltic-countries": "baltic-countries",
     "balkans": "balkans",
     "central-european-countries": "central-europe",
     "more-central-european-countries": "more-central-europe",
+    "eastern-europe-countries": "eastern-europe",
     "southern-africa-countries": "southern-africa",
-    "african-countries": "african-countries",
-    "the-levant": "levant",
+    "north-africa-countries": "north-africa",
+    "west-africa-countries": "west-africa",
+    "east-africa-indian-ocean-countries": "east-africa-indian-ocean",
+    "middle-east-countries": "middle-east",
     "central-america": "central-america",
     "central-asia": "central-asia",
+    "caucasus-countries": "caucasus",
     "south-america-west": "south-america-west",
     "south-america-east": "south-america-east",
     "caribbean": "caribbean",
-    "southwest-asia": "southwest-asia",
-    "europe-and-asia-countries": "europe-and-asia",
-    "remaining-modern-countries": "remaining-modern-countries",
-    "southeastern-asia": "southeastern-asia",
-    "south-central-asia": "south-central-asia",
-    "oceania": "oceania",
+    "south-asia-countries": "south-asia",
+    "east-asia-countries": "east-asia",
+    "mainland-southeast-asia-countries": "mainland-southeast-asia",
+    "maritime-southeast-asia-countries": "maritime-southeast-asia",
+    "oceania-pacific-countries": "oceania-pacific",
+    "canada-atlantic-provinces": "canada-atlantic-provinces",
+    "canada-central-canada": "canada-central-canada",
+    "canada-prairie-provinces": "canada-prairie-provinces",
+    "canada-western-northern": "canada-western-northern",
+    "mexico-northwest": "mexico-northwest",
+    "mexico-northeast": "mexico-northeast",
+    "mexico-west-bajio": "mexico-west-bajio",
+    "mexico-central": "mexico-central",
+    "mexico-south-gulf-yucatan": "mexico-south-gulf-yucatan",
     "mexico-states": "mexico-states",
     "canada-provinces-territories": "canada-provinces-territories"
   };
@@ -1136,7 +1346,7 @@ function getMapDefaults(rawActivity, region) {
         duration: 1050
       }
     },
-    "former-soviet-republics": {
+    "former-soviet-republics-review": {
       regionView: { center: [59, 49], zoom: 2.0 },
       studyView: {
         bounds: [[18.0, 34.0], [180.0, 73.0]],
@@ -1176,18 +1386,18 @@ function getMapDefaults(rawActivity, region) {
         duration: 1050
       }
     },
-    "northern-europe": {
-      regionView: { center: [17, 62], zoom: 3.2 },
+    "nordic-countries": {
+      regionView: { center: [7, 62.5], zoom: 2.9 },
       studyView: {
-        bounds: [[2.5, 54.1], [33.8, 72.2]],
+        bounds: [[-25.5, 54.1], [33.8, 72.2]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
     },
-    "baltic-europe": {
-      regionView: { center: [23.5, 54.6], zoom: 3.9 },
+    "baltic-countries": {
+      regionView: { center: [24.8, 56.8], zoom: 4.4 },
       studyView: {
-        bounds: [[13, 48.5], [33.5, 60.5]],
+        bounds: [[20.5, 53.6], [28.5, 59.8]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
@@ -1216,6 +1426,14 @@ function getMapDefaults(rawActivity, region) {
         duration: 1050
       }
     },
+    "eastern-europe": {
+      regionView: { center: [44, 55], zoom: 2.25 },
+      studyView: {
+        bounds: [[13.5, 43.0], [180.0, 82.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
     "southern-africa": {
       regionView: { center: [25, -23], zoom: 3.1 },
       studyView: {
@@ -1224,18 +1442,34 @@ function getMapDefaults(rawActivity, region) {
         duration: 1050
       }
     },
-    "african-countries": {
-      regionView: { center: [34, -11], zoom: 2.95 },
+    "north-africa": {
+      regionView: { center: [12, 28], zoom: 3.0 },
       studyView: {
-        bounds: [[22.0, -31.8], [51.5, 15.2]],
+        bounds: [[-18.5, 18.0], [36.5, 37.8]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
     },
-    "levant": {
-      regionView: { center: [41.5, 35.4], zoom: 3.4 },
+    "west-africa": {
+      regionView: { center: [-5.5, 9.5], zoom: 4.3 },
       studyView: {
-        bounds: [[25.5, 28.2], [64.5, 42.8]],
+        bounds: [[-16.0, 4.0], [3.5, 15.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "east-africa-indian-ocean": {
+      regionView: { center: [38, -4], zoom: 3.0 },
+      studyView: {
+        bounds: [[27.0, -26.5], [51.5, 15.2]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "middle-east": {
+      regionView: { center: [43.5, 32.5], zoom: 3.0 },
+      studyView: {
+        bounds: [[25.5, 12.0], [64.5, 42.8]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
@@ -1252,6 +1486,14 @@ function getMapDefaults(rawActivity, region) {
       regionView: { center: [67.5, 42.2], zoom: 3.25 },
       studyView: {
         bounds: [[50, 35.3], [86.5, 56.8]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "caucasus": {
+      regionView: { center: [45, 41], zoom: 4.4 },
+      studyView: {
+        bounds: [[39.5, 38.0], [50.8, 43.8]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
@@ -1280,50 +1522,114 @@ function getMapDefaults(rawActivity, region) {
         duration: 1050
       }
     },
-    "southwest-asia": {
-      regionView: { center: [73.5, 27], zoom: 3.35 },
+    "south-asia": {
+      regionView: { center: [78, 24], zoom: 3.15 },
       studyView: {
-        bounds: [[58.5, 5.5], [92.5, 38.9]],
+        bounds: [[58.5, 5.5], [92.8, 38.9]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
     },
-    "europe-and-asia": {
-      regionView: { center: [59, 56], zoom: 2.0 },
+    "east-asia": {
+      regionView: { center: [113, 38], zoom: 2.25 },
       studyView: {
-        bounds: [[20.0, 43.0], [180.0, 82.5]],
+        bounds: [[73.0, 17.0], [146.5, 54.5]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
     },
-    "remaining-modern-countries": {
-      regionView: { center: [36, 35], zoom: 1.45 },
+    "mainland-southeast-asia": {
+      regionView: { center: [101.8, 15.5], zoom: 3.7 },
       studyView: {
-        bounds: [[-28.0, -1.0], [121.0, 72.5]],
+        bounds: [[92.0, 5.0], [110.8, 28.7]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
     },
-    "southeastern-asia": {
-      regionView: { center: [131, 24], zoom: 2.75 },
+    "maritime-southeast-asia": {
+      regionView: { center: [115.5, 0.5], zoom: 3.1 },
       studyView: {
-        bounds: [[118.0, 7.0], [147.2, 45.5]],
+        bounds: [[94.0, -12.5], [127.8, 21.5]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
     },
-    "south-central-asia": {
-      regionView: { center: [102.8, 15.5], zoom: 4.0 },
+    "oceania-pacific": {
+      regionView: { center: [151, -18], zoom: 2.2 },
       studyView: {
-        bounds: [[96.8, 5.0], [108.8, 22.8]],
+        bounds: [[112.0, -49.5], [180.0, 15.5]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
     },
-    "oceania": {
-      regionView: { center: [141, -18], zoom: 2.35 },
+    "canada-atlantic-provinces": {
+      regionView: { center: [-60, 51], zoom: 3.05 },
       studyView: {
-        bounds: [[94.0, -49.5], [179.0, 8.5]],
+        bounds: [[-69.8, 43.0], [-51.5, 61.0]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "canada-central-canada": {
+      regionView: { center: [-77, 52], zoom: 2.65 },
+      studyView: {
+        bounds: [[-96.0, 41.0], [-56.5, 63.2]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "canada-prairie-provinces": {
+      regionView: { center: [-105, 54.5], zoom: 3.15 },
+      studyView: {
+        bounds: [[-121.0, 48.0], [-88.0, 61.0]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "canada-western-northern": {
+      regionView: { center: [-108, 66], zoom: 2.05 },
+      studyView: {
+        bounds: [[-142.0, 47.5], [-60.0, 83.8]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "mexico-northwest": {
+      regionView: { center: [-109.5, 27.5], zoom: 3.95 },
+      studyView: {
+        bounds: [[-119.0, 21.8], [-102.0, 33.2]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "mexico-northeast": {
+      regionView: { center: [-101, 25], zoom: 4.15 },
+      studyView: {
+        bounds: [[-104.8, 20.5], [-96.8, 30.2]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "mexico-west-bajio": {
+      regionView: { center: [-102.8, 20.5], zoom: 4.55 },
+      studyView: {
+        bounds: [[-107.2, 17.7], [-98.8, 23.4]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "mexico-central": {
+      regionView: { center: [-98.7, 19.4], zoom: 5.25 },
+      studyView: {
+        bounds: [[-100.9, 17.6], [-96.4, 21.1]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "mexico-south-gulf-yucatan": {
+      regionView: { center: [-94, 18.3], zoom: 4.05 },
+      studyView: {
+        bounds: [[-102.6, 14.2], [-86.3, 22.9]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
@@ -2202,7 +2508,12 @@ function renderAnswerBank() {
     chip.className = "label-chip";
     chip.type = "button";
     chip.dataset.id = feature.id;
-    chip.textContent = feature.name;
+    chip.setAttribute("aria-label", feature.name);
+    chip.appendChild(createChipLabelText(feature.name));
+    const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(feature.name);
+    if (speaker) {
+      chip.appendChild(speaker);
+    }
     chip.setAttribute("aria-pressed", "false");
     chip.addEventListener("pointerdown", (event) => {
       handleChipPointerDown(event, feature);
@@ -2212,6 +2523,13 @@ function renderAnswerBank() {
     });
     answerBank.appendChild(chip);
   });
+}
+
+function createChipLabelText(labelText) {
+  const label = document.createElement("span");
+  label.className = "chip-label-text";
+  label.textContent = labelText;
+  return label;
 }
 
 function renderNavigationAnswerBank(nodeId = activeHierarchyNodeId) {
@@ -2367,10 +2685,7 @@ function tryDrillFromMapTargets(targetIds) {
   const candidates = Array.isArray(targetIds)
     ? targetIds
     : getNavigationCandidatesFromTargetIds(targetIds);
-  const navigationScopeNode = getNavigationScopeNode();
-  const nextNodeId = candidates
-    .map((candidate) => getNavigationNodeIdForCandidate(candidate, navigationScopeNode))
-    .find((targetNodeId) => targetNodeId && targetNodeId !== activeHierarchyNodeId && getHierarchyNode(targetNodeId));
+  const nextNodeId = resolveMapClickNavigationTarget(candidates, activeHierarchyNodeId);
 
   if (!nextNodeId) {
     return false;
@@ -2392,56 +2707,6 @@ function getNavigationScopeNode() {
   return getHierarchyNode(currentNode?.parent) || currentNode;
 }
 
-function getNavigationNodeIdForCandidate(candidate, scopeNode = getNavigationScopeNode()) {
-  const targetId = typeof candidate === "string" ? candidate : candidate?.targetId;
-  const directChildNodeId = getDirectNavigationChildNodeId(scopeNode, targetId);
-
-  if (directChildNodeId) {
-    return directChildNodeId;
-  }
-
-  const aliasedNodeId = getHierarchyNodeIdForNavigationAliasCandidate(candidate, scopeNode);
-
-  if (aliasedNodeId) {
-    return aliasedNodeId;
-  }
-
-  const activityNodeId = getHierarchyNodeIdForActivityTargetCandidate(candidate, scopeNode);
-
-  if (activityNodeId) {
-    return activityNodeId;
-  }
-
-  const clickedBranchNodeId = getContinentNodeIdForCandidate(candidate);
-  const currentBranchNodeId = getTopLevelHierarchyNodeId(activeHierarchyNodeId);
-
-  if (clickedBranchNodeId && clickedBranchNodeId !== currentBranchNodeId) {
-    return clickedBranchNodeId;
-  }
-
-  return null;
-}
-
-function getDirectNavigationChildNodeId(scopeNode, targetId) {
-  if (!scopeNode || !targetId) {
-    return null;
-  }
-
-  const directChildNodeId = scopeNode.childTargetIds?.[targetId] || null;
-
-  if (getHierarchyNode(directChildNodeId)) {
-    return directChildNodeId;
-  }
-
-  const targetNode = getHierarchyNode(targetId);
-
-  if (!targetNode) {
-    return null;
-  }
-
-  return getImmediateChildForDescendant(scopeNode.id, targetNode.id);
-}
-
 function getImmediateChildForDescendant(ancestorNodeId, descendantNodeId) {
   const path = getHierarchyPath(descendantNodeId);
   const ancestorIndex = path.findIndex((node) => node.id === ancestorNodeId);
@@ -2453,25 +2718,6 @@ function getImmediateChildForDescendant(ancestorNodeId, descendantNodeId) {
   const childNodeId = path[ancestorIndex + 1]?.id || null;
 
   return getHierarchyNode(childNodeId)?.disabled ? null : childNodeId;
-}
-
-function getHierarchyNodeIdForNavigationAliasCandidate(candidate, scopeNode) {
-  if (!candidate) {
-    return null;
-  }
-
-  const candidateIds = [
-    candidate.targetId,
-    candidate.sourceTargetId,
-    candidate.stateId
-  ].filter(Boolean).map(normalizeNavigationText);
-  const candidateIsoCodes = [
-    candidate.isoA3
-  ].filter(Boolean).map((value) => String(value).toUpperCase());
-  const candidateNames = (candidate.names || []).map(normalizeNavigationText);
-  const searchNodes = getHierarchyChildren(scopeNode).filter((child) => !child.disabled);
-
-  return searchNodes.find((node) => isNavigationAliasMatch(node, candidateIds, candidateIsoCodes, candidateNames))?.id || null;
 }
 
 function getHierarchyDescendants(node) {
@@ -2501,9 +2747,117 @@ function isNavigationAliasMatch(node, candidateIds, candidateIsoCodes, candidate
     || aliasNames.some((alias) => candidateNames.includes(alias));
 }
 
-function getHierarchyNodeIdForActivityTargetCandidate(candidate, scopeNode) {
-  if (!candidate) {
+function resolveMapClickNavigationTarget(clickedFeatures, currentNodeId = activeHierarchyNodeId) {
+  const currentNode = getHierarchyNode(currentNodeId);
+  const candidates = Array.isArray(clickedFeatures)
+    ? clickedFeatures
+    : getNavigationCandidatesFromTargetIds(clickedFeatures);
+
+  if (!currentNode || candidates.length === 0) {
+    debugMapClickResolution({
+      currentNodeId,
+      clickedFeatures: candidates,
+      evaluations: [],
+      finalNodeId: null
+    });
     return null;
+  }
+
+  const evaluations = candidates.flatMap((candidate) => (
+    getHierarchyMatchesForNavigationCandidate(candidate)
+      .map((match) => evaluateNavigationMatch(match, currentNode.id))
+  ));
+  const chosen = evaluations
+    .filter((evaluation) => evaluation.nodeId && !evaluation.rejected)
+    .sort(compareNavigationEvaluations)[0] || null;
+
+  debugMapClickResolution({
+    currentNodeId: currentNode.id,
+    clickedFeatures: candidates,
+    evaluations,
+    finalNodeId: chosen?.nodeId || null
+  });
+
+  return chosen?.nodeId || null;
+}
+
+function getHierarchyMatchesForNavigationCandidate(candidate) {
+  if (!candidate) {
+    return [];
+  }
+
+  const targetId = typeof candidate === "string" ? candidate : candidate.targetId;
+  const matches = [];
+  const seen = new Set();
+  const addMatch = (nodeId, source) => {
+    const node = getHierarchyNode(nodeId);
+    const key = `${source}:${nodeId}`;
+
+    if (!node || node.disabled || seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+    matches.push({
+      candidate,
+      nodeId: node.id,
+      source
+    });
+  };
+
+  if (targetId) {
+    addMatch(targetId, "direct-node");
+    getHierarchyNodeIdsForChildTargetAlias(targetId).forEach((nodeId) => {
+      addMatch(nodeId, "child-target-alias");
+    });
+  }
+
+  getHierarchyNodeIdsForNavigationAliasCandidate(candidate).forEach((nodeId) => {
+    addMatch(nodeId, "navigation-alias");
+  });
+
+  getHierarchyNodeIdsForActivityTargetCandidate(candidate).forEach((nodeId) => {
+    addMatch(nodeId, "activity-target");
+  });
+
+  addMatch(getContinentNodeIdForCandidate(candidate), "continent");
+
+  return matches;
+}
+
+function getHierarchyNodeIdsForChildTargetAlias(targetId) {
+  if (!targetId) {
+    return [];
+  }
+
+  return Object.values(GEOGRAPHY_NAV_NODES)
+    .map((node) => node.childTargetIds?.[targetId])
+    .filter((nodeId, index, nodeIds) => nodeId && nodeIds.indexOf(nodeId) === index);
+}
+
+function getHierarchyNodeIdsForNavigationAliasCandidate(candidate) {
+  if (!candidate || typeof candidate === "string") {
+    return [];
+  }
+
+  const candidateIds = [
+    candidate.targetId,
+    candidate.sourceTargetId,
+    candidate.stateId
+  ].filter(Boolean).map(normalizeNavigationText);
+  const candidateIsoCodes = [
+    candidate.isoA3
+  ].filter(Boolean).map((value) => String(value).toUpperCase());
+  const candidateNames = (candidate.names || []).map(normalizeNavigationText);
+
+  return Object.values(GEOGRAPHY_NAV_NODES)
+    .filter((node) => !node.disabled && isNavigationAliasMatch(node, candidateIds, candidateIsoCodes, candidateNames))
+    .map((node) => node.id);
+}
+
+function getHierarchyNodeIdsForActivityTargetCandidate(candidate) {
+  if (!candidate || typeof candidate === "string") {
+    return [];
   }
 
   const candidateIds = [
@@ -2517,8 +2871,141 @@ function getHierarchyNodeIdForActivityTargetCandidate(candidate, scopeNode) {
   return activities
     .filter((activity) => activity.targets?.some((target) => isTargetNavigationMatch(target, candidateIds, candidateNames)))
     .map((activity) => findHierarchyNodeForActivity(activity.id))
-    .map((nodeId) => getImmediateChildForDescendant(scopeNode?.id, nodeId))
-    .find((nodeId) => getHierarchyNode(nodeId)) || null;
+    .filter((nodeId, index, nodeIds) => nodeId && nodeIds.indexOf(nodeId) === index);
+}
+
+function evaluateNavigationMatch(match, currentNodeId) {
+  const targetNode = getHierarchyNode(match.nodeId);
+  const currentNode = getHierarchyNode(currentNodeId);
+
+  if (!targetNode || targetNode.disabled || !currentNode) {
+    return rejectNavigationMatch(match, "invalid-node");
+  }
+
+  if (targetNode.id === currentNode.id) {
+    return rejectNavigationMatch(match, "current-node");
+  }
+
+  const childNodeId = getImmediateChildForDescendant(currentNode.id, targetNode.id);
+
+  if (childNodeId) {
+    if (targetNode.id === childNodeId) {
+      return acceptNavigationMatch(match, childNodeId, "child", 1);
+    }
+
+    if (match.source === "activity-target") {
+      return rejectNavigationMatch(match, "activity-target-deeper-descendant");
+    }
+
+    return acceptNavigationMatch(match, childNodeId, "child-branch", 2);
+  }
+
+  const parentNode = getParentNode(currentNode.id);
+
+  if (parentNode) {
+    const siblingNodeId = getImmediateChildForDescendant(parentNode.id, targetNode.id);
+
+    if (siblingNodeId && siblingNodeId !== currentNode.id) {
+      return acceptNavigationMatch(match, siblingNodeId, targetNode.id === siblingNodeId ? "sibling" : "sibling-branch", targetNode.id === siblingNodeId ? 3 : 4);
+    }
+  }
+
+  const commonAncestor = getNearestCommonAncestor(currentNode.id, targetNode.id);
+  const branchNodeId = commonAncestor
+    ? getImmediateChildForDescendant(commonAncestor.id, targetNode.id)
+    : null;
+  const currentBranchNodeId = commonAncestor
+    ? getImmediateChildForDescendant(commonAncestor.id, currentNode.id)
+    : null;
+
+  if (branchNodeId && branchNodeId !== currentBranchNodeId && branchNodeId !== currentNode.id) {
+    return acceptNavigationMatch(match, branchNodeId, "ancestor-branch", 5);
+  }
+
+  return rejectNavigationMatch(match, "outside-navigation-scope");
+}
+
+function acceptNavigationMatch(match, nodeId, relation, relationRank) {
+  const node = getHierarchyNode(nodeId);
+
+  if (!node || node.disabled || node.mapClickDisabled) {
+    return rejectNavigationMatch(match, "disabled-target");
+  }
+
+  return {
+    ...match,
+    matchNodeId: match.nodeId,
+    nodeId,
+    relation,
+    relationRank,
+    sourceRank: getNavigationMatchSourceRank(match.source)
+  };
+}
+
+function rejectNavigationMatch(match, reason) {
+  return {
+    ...match,
+    matchNodeId: match.nodeId,
+    nodeId: null,
+    relation: null,
+    relationRank: Number.POSITIVE_INFINITY,
+    sourceRank: getNavigationMatchSourceRank(match.source),
+    rejected: true,
+    reason
+  };
+}
+
+function compareNavigationEvaluations(left, right) {
+  return left.relationRank - right.relationRank
+    || left.sourceRank - right.sourceRank;
+}
+
+function debugMapClickResolution(details) {
+  if (!isMapClickResolutionDebugEnabled()) {
+    return;
+  }
+
+  const rows = details.evaluations.map((evaluation) => ({
+    source: evaluation.source,
+    relation: evaluation.relation || "rejected",
+    nodeId: evaluation.nodeId || evaluation.matchNodeId || evaluation.reason || "",
+    matchNodeId: evaluation.nodeId ? evaluation.nodeId : evaluation.matchNodeId,
+    reason: evaluation.reason || ""
+  }));
+
+  console.groupCollapsed("[map-click-resolution]", details.currentNodeId, "->", details.finalNodeId || "none");
+  console.log("clicked features", details.clickedFeatures);
+  console.table(rows);
+  console.groupEnd();
+}
+
+function isMapClickResolutionDebugEnabled() {
+  try {
+    return new URLSearchParams(window.location.search).has("debugMapNavigation")
+      || localStorage.getItem("geography-memory-debug-map-navigation") === "true";
+  } catch {
+    return false;
+  }
+}
+
+function getNavigationMatchSourceRank(source) {
+  const ranks = {
+    "direct-node": 1,
+    "child-target-alias": 2,
+    "navigation-alias": 3,
+    continent: 4,
+    "activity-target": 5
+  };
+
+  return ranks[source] || 99;
+}
+
+function getParentNode(nodeId) {
+  return getHierarchyNode(getHierarchyNode(nodeId)?.parent);
+}
+
+function getSiblingNodes(nodeId) {
+  return getHierarchyChildren(getParentNode(nodeId)).filter((node) => node.id !== nodeId && !node.disabled);
 }
 
 function isTargetNavigationMatch(target, candidateIds, candidateNames) {
