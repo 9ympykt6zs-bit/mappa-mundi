@@ -1,15 +1,15 @@
 # Proof Coverage Report
 
-Generated: 2026-05-09T15:32:36.997Z
+Generated: 2026-05-09T18:21:38.557Z
 
 ## Summary
 
 - Total proof-sheet activities: 72
 - Covered: 26
-- Partial: 11
+- Partial: 21
 - Data-only: 0
-- Missing: 35
-- Orphaned implemented activities: 4
+- Missing: 25
+- Orphaned implemented activities: 5
 
 ## Activity Coverage
 
@@ -17,28 +17,28 @@ Generated: 2026-05-09T15:32:36.997Z
 | --- | ---: | --- | --- | --- | --- | --- | --- |
 | Geography-Summary-Proof-Sheets-Cycle-1.txt | 1 | FERTILE CRESCENT | missing | — | None | Mediterranean Sea; Mesopotamia; Euphrates River; Tigris River; Sumer | — |
 | Geography-Summary-Proof-Sheets-Cycle-1.txt | 2 | ASSYRIAN EMPIRE | missing | — | None | Red Sea; Persian Gulf; Caspian Sea; Black Sea; Babylon | — |
-| Geography-Summary-Proof-Sheets-Cycle-1.txt | 3 | HEBREW EMPIRE | missing | — | None | Judah; Israel; Jordan River; Dead Sea; Phoenicia; Sea of Galilee | — |
+| Geography-Summary-Proof-Sheets-Cycle-1.txt | 3 | HEBREW EMPIRE | partial | Remaining Modern Countries `remaining-modern-countries` | MapLibre | Judah; Jordan River; Dead Sea; Phoenicia; Sea of Galilee | Egypt; Mongolia; Ivory Coast; Iceland |
 | Geography-Summary-Proof-Sheets-Cycle-1.txt | 4 | HITTITE EMPIRE | partial | The Levant `the-levant` | MapLibre | Hattusa; Asia Minor; Arabian Desert | Turkey; Syria; Iraq; Iran |
-| Geography-Summary-Proof-Sheets-Cycle-1.txt | 5 | EGYPTIAN EMPIRE | missing | — | None | Egypt; Nile River; Upper/Lower Egypt; Nile River Delta | — |
+| Geography-Summary-Proof-Sheets-Cycle-1.txt | 5 | EGYPTIAN EMPIRE | partial | Remaining Modern Countries `remaining-modern-countries` | MapLibre | Nile River; Upper/Lower Egypt; Nile River Delta | Israel; Mongolia; Ivory Coast; Iceland |
 | Geography-Summary-Proof-Sheets-Cycle-1.txt | 6 | ANCIENT GREECE | partial | Balkans `balkans` | MapLibre | Aegean Sea; Macedonia; Crete; Rhodes | Albania; Bulgaria; Slovenia; Romania |
-| Geography-Summary-Proof-Sheets-Cycle-1.txt | 7 | ROMAN EMPIRE | missing | — | None | Hispania; Gaul; Germania; Alexandria; Carthage | — |
+| Geography-Summary-Proof-Sheets-Cycle-1.txt | 7 | ROMAN EMPIRE | partial | World Cities: Middle East & North Africa `world-cities-middle-east-north-africa` | MapLibre | Hispania; Gaul; Germania; Carthage | Cairo; Mecca; Medina; Baghdad; Damascus; Fez; Tangier |
 | Geography-Summary-Proof-Sheets-Cycle-1.txt | 8 | INDUS RIVER VALLEY | missing | — | None | Ganges River; Himalayas; Arabian Sea; Bay of Bengal; Great Indian Desert | — |
-| Geography-Summary-Proof-Sheets-Cycle-1.txt | 9 | CHINA | missing | — | None | Mongolia; Yellow Sea; Yellow River; Yangtze River; Beijing | — |
-| Geography-Summary-Proof-Sheets-Cycle-1.txt | 10 | JAPAN | partial | Continents and Oceans `continents-oceans` | Legacy | Kyoto; Tokyo; Mt. Fuji; Sea of Japan | North America; South America; Europe; Africa; Asia; Australia; Antarctica; Indian Ocean; Arctic Ocean; Atlantic Ocean; Southern Ocean |
+| Geography-Summary-Proof-Sheets-Cycle-1.txt | 9 | CHINA | partial | Remaining Modern Countries `remaining-modern-countries` | MapLibre | Yellow Sea; Yellow River; Yangtze River; Beijing | Egypt; Israel; Ivory Coast; Iceland |
+| Geography-Summary-Proof-Sheets-Cycle-1.txt | 10 | JAPAN | partial | World Cities: East & South Asia `world-cities-east-south-asia` | MapLibre | Mt. Fuji; Pacific Ocean; Sea of Japan | Beijing; Kolkata |
 | Geography-Summary-Proof-Sheets-Cycle-1.txt | 11 | BYZANTINE EMPIRE | partial | European Cities `european-cities` | MapLibre, Legacy | Constantinople; Athens; Ephesus; Antioch | London; Paris; Barcelona; Orleans |
-| Geography-Summary-Proof-Sheets-Cycle-1.txt | 12 | MUSLIM EMPIRE | partial | The Levant `the-levant` | MapLibre | Mecca; Medina; Baghdad; Damascus; Tours | Turkey; Cyprus; Iraq; Iran |
-| Geography-Summary-Proof-Sheets-Cycle-1.txt | 13 | WESTERN AFRICA | partial | Continents and Oceans `continents-oceans` | Legacy | Senegal River; Niger River; Sahara Desert; Ivory Coast | North America; South America; Europe; Africa; Asia; Australia; Antarctica; Indian Ocean; Arctic Ocean; Pacific Ocean; Southern Ocean |
-| Geography-Summary-Proof-Sheets-Cycle-1.txt | 14 | ANCIENT AFRICA | missing | — | None | Ancient Ghana; Ancient Mali; Western Sahara; Fez; Tangier | — |
-| Geography-Summary-Proof-Sheets-Cycle-1.txt | 15 | MIDDLE EAST | missing | — | None | Israel; Sinai Peninsula; Suez Canal; Cairo; Gaza Strip | — |
+| Geography-Summary-Proof-Sheets-Cycle-1.txt | 12 | MUSLIM EMPIRE | partial | World Cities: Middle East & North Africa `world-cities-middle-east-north-africa` | MapLibre | Tours; Syria | Cairo; Alexandria; Fez; Tangier |
+| Geography-Summary-Proof-Sheets-Cycle-1.txt | 13 | WESTERN AFRICA | partial | Remaining Modern Countries `remaining-modern-countries` | MapLibre | Atlantic Ocean; Senegal River; Niger River; Sahara Desert | Egypt; Israel; Mongolia; Iceland |
+| Geography-Summary-Proof-Sheets-Cycle-1.txt | 14 | ANCIENT AFRICA | partial | World Cities: Middle East & North Africa `world-cities-middle-east-north-africa` | MapLibre | Ancient Ghana; Ancient Mali; Western Sahara | Cairo; Alexandria; Mecca; Medina; Baghdad; Damascus |
+| Geography-Summary-Proof-Sheets-Cycle-1.txt | 15 | MIDDLE EAST | partial | World Cities: Middle East & North Africa `world-cities-middle-east-north-africa` | MapLibre | Israel; Sinai Peninsula; Suez Canal; Gaza Strip | Alexandria; Mecca; Medina; Baghdad; Damascus; Fez; Tangier |
 | Geography-Summary-Proof-Sheets-Cycle-1.txt | 16 | AFRICAN WATERS | missing | — | None | Congo River; Lake Victoria; Zambezi River; Orange River | — |
 | Geography-Summary-Proof-Sheets-Cycle-1.txt | 17 | AFRICAN COUNTRIES | covered | African Countries `african-countries` | MapLibre | — | — |
 | Geography-Summary-Proof-Sheets-Cycle-1.txt | 18 | MESOAMERICA REGIONS | missing | — | None | Gulf of Mexico; Yucatan Peninsula; Olmec Civilization; Maya Civilization; Aztec Civilization | — |
-| Geography-Summary-Proof-Sheets-Cycle-1.txt | 19 | MESOAMERICA | missing | — | None | Mexico City; Chichen Itza; Lake Texcoco; Mayapan; Oaxaca | — |
+| Geography-Summary-Proof-Sheets-Cycle-1.txt | 19 | MESOAMERICA | partial | World Cities: Mesoamerica `world-cities-mesoamerica` | MapLibre | Chichen Itza; Lake Texcoco; Mayapan | — |
 | Geography-Summary-Proof-Sheets-Cycle-1.txt | 20 | DOMINION OF CANADA | missing | — | None | Ontario; Quebec; New Brunswick; Nova Scotia | — |
 | Geography-Summary-Proof-Sheets-Cycle-1.txt | 21 | CANADIAN WATERS | missing | — | None | Great Bear Lake; Great Slave Lake; Hudson Bay; Baffin Bay; Labrador Sea | — |
 | Geography-Summary-Proof-Sheets-Cycle-1.txt | 22 | SOUTH AMERICA (WEST) | covered | South America (West) `south-america-west` | MapLibre | — | — |
 | Geography-Summary-Proof-Sheets-Cycle-1.txt | 23 | SOUTH AMERICA (EAST) | covered | South America (East) `south-america-east` | MapLibre | — | — |
-| Geography-Summary-Proof-Sheets-Cycle-1.txt | 24 | NORTH ATLANTIC | missing | — | None | Greenland; Iceland; Denmark Strait; Davis Strait | — |
+| Geography-Summary-Proof-Sheets-Cycle-1.txt | 24 | NORTH ATLANTIC | partial | Remaining Modern Countries `remaining-modern-countries` | MapLibre | Greenland; Denmark Strait; Davis Strait | Egypt; Israel; Mongolia; Ivory Coast |
 | Geography-Summary-Proof-Sheets-Cycle-2.txt | 1 | CONTINENTS/OCEANS | covered | Continents and Oceans `continents-oceans` | Legacy | — | — |
 | Geography-Summary-Proof-Sheets-Cycle-2.txt | 2 | EUROPEAN WATERS | missing | — | None | North Sea; Baltic Sea; Adriatic Sea; English Channel; Mediterranean Sea | — |
 | Geography-Summary-Proof-Sheets-Cycle-2.txt | 3 | WESTERN EUROPEAN COUNTRIES | partial | Western Europe `western-european-countries` | MapLibre, Legacy | England | United Kingdom |
@@ -49,7 +49,7 @@ Generated: 2026-05-09T15:32:36.997Z
 | Geography-Summary-Proof-Sheets-Cycle-2.txt | 8 | MID-ATLANTIC WORLD | missing | — | None | Cape of Good Hope; Strait of Magellan; Canary Islands; Treaty of Tordesillas | — |
 | Geography-Summary-Proof-Sheets-Cycle-2.txt | 9 | CARIBBEAN | covered | Caribbean `caribbean` | MapLibre | — | — |
 | Geography-Summary-Proof-Sheets-Cycle-2.txt | 10 | SOUTHWEST ASIA | partial | Southwest Asia `southwest-asia` | MapLibre | Kolkata; Arabian Sea | — |
-| Geography-Summary-Proof-Sheets-Cycle-2.txt | 11 | EUROPE AND ASIA | missing | — | None | Moscow; Kiev; Russia; Siberia; Ukraine | — |
+| Geography-Summary-Proof-Sheets-Cycle-2.txt | 11 | EUROPE AND ASIA | partial | Europe and Asia `europe-and-asia-countries` | MapLibre | Moscow; Kiev; Siberia | — |
 | Geography-Summary-Proof-Sheets-Cycle-2.txt | 12 | EASTERN EUROPEAN SEAS | missing | — | None | White Sea; Barents Sea; Black Sea; Caspian Sea; Aral Sea | — |
 | Geography-Summary-Proof-Sheets-Cycle-2.txt | 13 | NORTHERN EUROPEAN COUNTRIES | covered | Northern European Countries `northern-european-countries` | MapLibre | — | — |
 | Geography-Summary-Proof-Sheets-Cycle-2.txt | 14 | BALTIC EUROPE | covered | Baltic Europe `baltic-europe` | MapLibre | — | — |
@@ -58,7 +58,7 @@ Generated: 2026-05-09T15:32:36.997Z
 | Geography-Summary-Proof-Sheets-Cycle-2.txt | 17 | CENTRAL EUROPEAN COUNTRIES | covered | Central European Countries `central-european-countries` | MapLibre | — | — |
 | Geography-Summary-Proof-Sheets-Cycle-2.txt | 18 | MORE CENTRAL EUROPEAN COUNTRIES | covered | More Central European Countries `more-central-european-countries` | MapLibre | — | — |
 | Geography-Summary-Proof-Sheets-Cycle-2.txt | 19 | SOUTHEASTERN ASIA | covered | Southeastern Asia `southeastern-asia` | MapLibre | — | — |
-| Geography-Summary-Proof-Sheets-Cycle-2.txt | 20 | SOUTH CENTRAL ASIA | missing | Central Asia `central-asia` | MapLibre | Laos; Thailand; Cambodia; North Vietnam; South Vietnam | Kazakhstan; Uzbekistan; Turkmenistan; Tajikistan; Kyrgyzstan |
+| Geography-Summary-Proof-Sheets-Cycle-2.txt | 20 | SOUTH CENTRAL ASIA | partial | South Central Asia `south-central-asia` | MapLibre | North Vietnam; South Vietnam | — |
 | Geography-Summary-Proof-Sheets-Cycle-2.txt | 21 | CENTRAL AMERICA | covered | Central America `central-america` | MapLibre | — | — |
 | Geography-Summary-Proof-Sheets-Cycle-2.txt | 22 | OCEANIA | partial | Oceania `oceania` | MapLibre | Great Barrier Reef | — |
 | Geography-Summary-Proof-Sheets-Cycle-2.txt | 23 | CENTRAL ASIA | covered | Central Asia `central-asia` | MapLibre | — | — |
@@ -97,7 +97,10 @@ Generated: 2026-05-09T15:32:36.997Z
 - No matching data activity found.
 
 ### Geography-Summary-Proof-Sheets-Cycle-1.txt / 3. HEBREW EMPIRE
-- No matching data activity found.
+- Missing proof-sheet items: Judah, Jordan River, Dead Sea, Phoenicia, Sea of Galilee.
+- Implemented activity has extra items: Egypt, Mongolia, Ivory Coast, Iceland.
+- Not referenced by the legacy registry.
+- Title differs: proof sheet uses "HEBREW EMPIRE", implementation uses "Remaining Modern Countries".
 
 ### Geography-Summary-Proof-Sheets-Cycle-1.txt / 4. HITTITE EMPIRE
 - Missing proof-sheet items: Hattusa, Asia Minor, Arabian Desert.
@@ -106,7 +109,10 @@ Generated: 2026-05-09T15:32:36.997Z
 - Title differs: proof sheet uses "HITTITE EMPIRE", implementation uses "The Levant".
 
 ### Geography-Summary-Proof-Sheets-Cycle-1.txt / 5. EGYPTIAN EMPIRE
-- No matching data activity found.
+- Missing proof-sheet items: Nile River, Upper/Lower Egypt, Nile River Delta.
+- Implemented activity has extra items: Israel, Mongolia, Ivory Coast, Iceland.
+- Not referenced by the legacy registry.
+- Title differs: proof sheet uses "EGYPTIAN EMPIRE", implementation uses "Remaining Modern Countries".
 
 ### Geography-Summary-Proof-Sheets-Cycle-1.txt / 6. ANCIENT GREECE
 - Missing proof-sheet items: Aegean Sea, Macedonia, Crete, Rhodes.
@@ -115,19 +121,25 @@ Generated: 2026-05-09T15:32:36.997Z
 - Title differs: proof sheet uses "ANCIENT GREECE", implementation uses "Balkans".
 
 ### Geography-Summary-Proof-Sheets-Cycle-1.txt / 7. ROMAN EMPIRE
-- No matching data activity found.
+- Missing proof-sheet items: Hispania, Gaul, Germania, Carthage.
+- Implemented activity has extra items: Cairo, Mecca, Medina, Baghdad, Damascus, Fez, Tangier.
+- Not referenced by the legacy registry.
+- Title differs: proof sheet uses "ROMAN EMPIRE", implementation uses "World Cities: Middle East & North Africa".
 
 ### Geography-Summary-Proof-Sheets-Cycle-1.txt / 8. INDUS RIVER VALLEY
 - No matching data activity found.
 
 ### Geography-Summary-Proof-Sheets-Cycle-1.txt / 9. CHINA
-- No matching data activity found.
+- Missing proof-sheet items: Yellow Sea, Yellow River, Yangtze River, Beijing.
+- Implemented activity has extra items: Egypt, Israel, Ivory Coast, Iceland.
+- Not referenced by the legacy registry.
+- Title differs: proof sheet uses "CHINA", implementation uses "Remaining Modern Countries".
 
 ### Geography-Summary-Proof-Sheets-Cycle-1.txt / 10. JAPAN
-- Missing proof-sheet items: Kyoto, Tokyo, Mt. Fuji, Sea of Japan.
-- Implemented activity has extra items: North America, South America, Europe, Africa, Asia, Australia, Antarctica, Indian Ocean, Arctic Ocean, Atlantic Ocean, Southern Ocean.
-- Not referenced by the MapLibre registry.
-- Title differs: proof sheet uses "JAPAN", implementation uses "Continents and Oceans".
+- Missing proof-sheet items: Mt. Fuji, Pacific Ocean, Sea of Japan.
+- Implemented activity has extra items: Beijing, Kolkata.
+- Not referenced by the legacy registry.
+- Title differs: proof sheet uses "JAPAN", implementation uses "World Cities: East & South Asia".
 
 ### Geography-Summary-Proof-Sheets-Cycle-1.txt / 11. BYZANTINE EMPIRE
 - Missing proof-sheet items: Constantinople, Athens, Ephesus, Antioch.
@@ -135,22 +147,28 @@ Generated: 2026-05-09T15:32:36.997Z
 - Title differs: proof sheet uses "BYZANTINE EMPIRE", implementation uses "European Cities".
 
 ### Geography-Summary-Proof-Sheets-Cycle-1.txt / 12. MUSLIM EMPIRE
-- Missing proof-sheet items: Mecca, Medina, Baghdad, Damascus, Tours.
-- Implemented activity has extra items: Turkey, Cyprus, Iraq, Iran.
+- Missing proof-sheet items: Tours, Syria.
+- Implemented activity has extra items: Cairo, Alexandria, Fez, Tangier.
 - Not referenced by the legacy registry.
-- Title differs: proof sheet uses "MUSLIM EMPIRE", implementation uses "The Levant".
+- Title differs: proof sheet uses "MUSLIM EMPIRE", implementation uses "World Cities: Middle East & North Africa".
 
 ### Geography-Summary-Proof-Sheets-Cycle-1.txt / 13. WESTERN AFRICA
-- Missing proof-sheet items: Senegal River, Niger River, Sahara Desert, Ivory Coast.
-- Implemented activity has extra items: North America, South America, Europe, Africa, Asia, Australia, Antarctica, Indian Ocean, Arctic Ocean, Pacific Ocean, Southern Ocean.
-- Not referenced by the MapLibre registry.
-- Title differs: proof sheet uses "WESTERN AFRICA", implementation uses "Continents and Oceans".
+- Missing proof-sheet items: Atlantic Ocean, Senegal River, Niger River, Sahara Desert.
+- Implemented activity has extra items: Egypt, Israel, Mongolia, Iceland.
+- Not referenced by the legacy registry.
+- Title differs: proof sheet uses "WESTERN AFRICA", implementation uses "Remaining Modern Countries".
 
 ### Geography-Summary-Proof-Sheets-Cycle-1.txt / 14. ANCIENT AFRICA
-- No matching data activity found.
+- Missing proof-sheet items: Ancient Ghana, Ancient Mali, Western Sahara.
+- Implemented activity has extra items: Cairo, Alexandria, Mecca, Medina, Baghdad, Damascus.
+- Not referenced by the legacy registry.
+- Title differs: proof sheet uses "ANCIENT AFRICA", implementation uses "World Cities: Middle East & North Africa".
 
 ### Geography-Summary-Proof-Sheets-Cycle-1.txt / 15. MIDDLE EAST
-- No matching data activity found.
+- Missing proof-sheet items: Israel, Sinai Peninsula, Suez Canal, Gaza Strip.
+- Implemented activity has extra items: Alexandria, Mecca, Medina, Baghdad, Damascus, Fez, Tangier.
+- Not referenced by the legacy registry.
+- Title differs: proof sheet uses "MIDDLE EAST", implementation uses "World Cities: Middle East & North Africa".
 
 ### Geography-Summary-Proof-Sheets-Cycle-1.txt / 16. AFRICAN WATERS
 - No matching data activity found.
@@ -162,7 +180,9 @@ Generated: 2026-05-09T15:32:36.997Z
 - No matching data activity found.
 
 ### Geography-Summary-Proof-Sheets-Cycle-1.txt / 19. MESOAMERICA
-- No matching data activity found.
+- Missing proof-sheet items: Chichen Itza, Lake Texcoco, Mayapan.
+- Not referenced by the legacy registry.
+- Title differs: proof sheet uses "MESOAMERICA", implementation uses "World Cities: Mesoamerica".
 
 ### Geography-Summary-Proof-Sheets-Cycle-1.txt / 20. DOMINION OF CANADA
 - No matching data activity found.
@@ -177,7 +197,10 @@ Generated: 2026-05-09T15:32:36.997Z
 - Not referenced by the legacy registry.
 
 ### Geography-Summary-Proof-Sheets-Cycle-1.txt / 24. NORTH ATLANTIC
-- No matching data activity found.
+- Missing proof-sheet items: Greenland, Denmark Strait, Davis Strait.
+- Implemented activity has extra items: Egypt, Israel, Mongolia, Ivory Coast.
+- Not referenced by the legacy registry.
+- Title differs: proof sheet uses "NORTH ATLANTIC", implementation uses "Remaining Modern Countries".
 
 ### Geography-Summary-Proof-Sheets-Cycle-2.txt / 1. CONTINENTS/OCEANS
 - Not referenced by the MapLibre registry.
@@ -211,7 +234,8 @@ Generated: 2026-05-09T15:32:36.997Z
 - Not referenced by the legacy registry.
 
 ### Geography-Summary-Proof-Sheets-Cycle-2.txt / 11. EUROPE AND ASIA
-- No matching data activity found.
+- Missing proof-sheet items: Moscow, Kiev, Siberia.
+- Not referenced by the legacy registry.
 
 ### Geography-Summary-Proof-Sheets-Cycle-2.txt / 12. EASTERN EUROPEAN SEAS
 - No matching data activity found.
@@ -238,10 +262,8 @@ Generated: 2026-05-09T15:32:36.997Z
 - Not referenced by the legacy registry.
 
 ### Geography-Summary-Proof-Sheets-Cycle-2.txt / 20. SOUTH CENTRAL ASIA
-- Missing proof-sheet items: Laos, Thailand, Cambodia, North Vietnam, South Vietnam.
-- Implemented activity has extra items: Kazakhstan, Uzbekistan, Turkmenistan, Tajikistan, Kyrgyzstan.
+- Missing proof-sheet items: North Vietnam, South Vietnam.
 - Not referenced by the legacy registry.
-- Title differs: proof sheet uses "SOUTH CENTRAL ASIA", implementation uses "Central Asia".
 
 ### Geography-Summary-Proof-Sheets-Cycle-2.txt / 21. CENTRAL AMERICA
 - Not referenced by the legacy registry.
@@ -358,5 +380,6 @@ Generated: 2026-05-09T15:32:36.997Z
 - `us-capitals` — U.S. Capitals (assets/maps/data/us-capitals.json)
 - `us-features` — United States Features (assets/maps/data/us-features.json)
 - `us-states` — United States (assets/maps/data/us-states.json)
+- `world-cities-europe-eastern-mediterranean` — World Cities: Europe & Eastern Mediterranean (assets/maps/data/world-cities-europe-eastern-mediterranean.json)
 - `world-map` — World Map (assets/maps/world/world-map.json)
 

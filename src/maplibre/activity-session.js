@@ -52,6 +52,18 @@ export class ActivitySession {
     return this.reset();
   }
 
+  setCompletedIds(completedIds = []) {
+    const availableIds = new Set(this.allAvailableTargets.map((target) => target.id));
+    this.completed = new Set(completedIds.filter((id) => availableIds.has(id)));
+    this.selectedAnswerId = null;
+    this.refillVisibleAnswers();
+
+    return {
+      completedIds: this.completedIds,
+      progressText: this.progressText
+    };
+  }
+
   setStudyMode(studyMode) {
     if (this.studyMode === studyMode) {
       return {

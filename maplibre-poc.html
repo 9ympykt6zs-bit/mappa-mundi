@@ -3,35 +3,43 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Geography Memory App - MapLibre Globe POC</title>
+    <title>Geography Memory App</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css" />
-    <link rel="stylesheet" href="maplibre-poc.css" />
+    <link rel="stylesheet" href="maplibre-poc.css?v=polished-globe-ui" />
   </head>
   <body class="overview-mode">
     <header class="poc-header">
-      <div class="header-copy">
-        <p class="eyebrow">MapLibre GL JS proof of concept</p>
-        <h1 id="poc-title">World View</h1>
-        <p id="poc-instruction">Choose a study region from the globe or the list below.</p>
-        <div id="header-map-set-tabs" class="header-map-set-tabs" role="tablist" aria-label="Map sets"></div>
-        <div id="activity-nav-controls" class="activity-nav-controls" hidden>
-          <button id="home-button" type="button">Home</button>
-          <button id="previous-activity-button" type="button">Previous</button>
-          <button id="next-incomplete-button" type="button">Next Incomplete</button>
+      <div class="top-bar">
+        <div class="top-bar-side top-bar-left">
+          <button id="back-button" class="top-bar-button" type="button" hidden aria-label="Back">Back</button>
+          <button id="home-button" class="top-bar-button" type="button" aria-label="Home">Home</button>
+        </div>
+        <div class="header-copy">
+          <h1 id="poc-title">World</h1>
+          <p id="poc-instruction">Choose a place on the globe or pick a label below.</p>
+        </div>
+        <div class="top-bar-side top-bar-right">
+          <button id="browse-button" class="top-bar-button" type="button" aria-expanded="false" aria-controls="region-panel">Browse</button>
+          <button id="settings-button" class="top-bar-button settings-button" type="button" aria-label="Settings" title="Settings"></button>
         </div>
       </div>
-      <nav class="poc-nav" aria-label="Prototype navigation">
-        <a href="legacy-svg-app.html">Legacy SVG app</a>
+      <div id="activity-nav-controls" class="activity-nav-controls" hidden>
+        <button id="previous-activity-button" type="button">Previous</button>
+        <button id="next-incomplete-button" type="button">Next Incomplete</button>
+      </div>
+      <nav class="poc-nav poc-nav-dev" aria-label="Developer navigation">
+        <a href="legacy-svg-app.html">SVG app</a>
       </nav>
     </header>
 
     <main class="poc-main">
       <section class="map-shell" aria-label="Interactive MapLibre map">
         <div id="map"></div>
-        <div class="zoom-panel" aria-label="Map zoom controls">
-          <button id="fit-map-button" type="button" title="Fit map">Fit</button>
-          <input id="zoom-slider" type="range" min="1" max="10" step="0.1" value="1.25" aria-label="Map zoom" />
+        <div class="zoom-panel" aria-label="Map controls">
+          <button id="zoom-in-button" type="button" title="Zoom in" aria-label="Zoom in">+</button>
+          <button id="zoom-out-button" type="button" title="Zoom out" aria-label="Zoom out">-</button>
+          <button id="fit-map-button" type="button" title="Recenter map" aria-label="Recenter map">Fit</button>
         </div>
         <div class="map-overlay-card" id="study-card" hidden>
           <strong>States and Capitals 2</strong>
@@ -39,10 +47,16 @@
         </div>
       </section>
 
-      <section id="region-panel" class="region-panel" aria-label="Study regions">
+      <section id="region-panel" class="region-panel" aria-label="Browse geography" aria-hidden="true">
         <div class="region-panel-intro">
-          <h2>Study Regions</h2>
-          <p>Pick an activity card to preview its region, then open it.</p>
+          <div class="drawer-heading">
+            <div>
+              <h2>Browse</h2>
+              <p>Jump to a continent, region, or activity.</p>
+            </div>
+            <button id="browse-close-button" class="top-bar-button" type="button">Close</button>
+          </div>
+          <div id="header-map-set-tabs" class="header-map-set-tabs" role="tablist" aria-label="Browse continents"></div>
           <p id="activity-count" class="activity-count">Showing 0 activities</p>
         </div>
         <div class="library-panel">
@@ -53,23 +67,37 @@
 
     <section id="answer-panel" class="answer-panel" aria-label="Answer bank">
       <div class="status-row">
-        <div>
-          <h2>Answer Bank</h2>
+        <div class="answer-panel-title">
+          <h2>Word Bank</h2>
           <p id="feedback" class="feedback" aria-live="polite"></p>
         </div>
-        <div class="study-mode-toggle" role="group" aria-label="Study mode">
-          <button class="active" type="button" data-study-mode="cumulative">Cumulative Review</button>
-          <button type="button" data-study-mode="sectionOnly">Section Only</button>
+        <div id="study-mode-control-group" class="control-group">
+          <span class="control-label">Study Mode</span>
+          <div class="study-mode-toggle" role="group" aria-label="Study mode">
+            <button class="active" type="button" data-study-mode="cumulative">Cumulative Review</button>
+            <button type="button" data-study-mode="sectionOnly">Section Only</button>
+          </div>
         </div>
-        <div class="progress-actions">
-          <strong id="progress">0 of 20 completed</strong>
-          <button id="reset-button" type="button">Reset</button>
+        <div id="difficulty-control-group" class="control-group" hidden>
+          <span class="control-label">Difficulty</span>
+          <div id="difficulty-toggle" class="difficulty-toggle" role="group" aria-label="Difficulty">
+            <button class="active" type="button" data-difficulty="easy">Easy</button>
+            <button type="button" data-difficulty="medium">Medium</button>
+            <button type="button" data-difficulty="hard">Hard</button>
+          </div>
+        </div>
+        <div id="progress-control-group" class="control-group progress-control-group">
+          <span class="control-label">Progress</span>
+          <div class="progress-actions">
+            <strong id="progress">0 of 20 completed</strong>
+            <button id="reset-button" type="button">Reset</button>
+          </div>
         </div>
       </div>
       <div id="answer-bank" class="answer-bank"></div>
     </section>
 
     <script src="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js"></script>
-    <script type="module" src="src/maplibre-poc.js"></script>
+    <script type="module" src="src/maplibre-poc.js?v=north-america-admin1"></script>
   </body>
 </html>

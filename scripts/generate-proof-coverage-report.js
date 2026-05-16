@@ -113,6 +113,9 @@ function parseImplementedActivity(absolutePath) {
   const itemNames = features
     .map((feature) => feature?.name)
     .filter(Boolean);
+  const searchableItemNames = features
+    .flatMap((feature) => [feature?.name, ...(Array.isArray(feature?.aliases) ? feature.aliases : [])])
+    .filter(Boolean);
 
   return {
     id: parsed.id || null,
@@ -124,7 +127,7 @@ function parseImplementedActivity(absolutePath) {
     hideAnswerBank: Boolean(parsed.hideAnswerBank),
     itemCount: itemNames.length,
     items: itemNames,
-    normalizedItems: itemNames.map(normalizeText),
+    normalizedItems: searchableItemNames.map(normalizeText),
     normalizedTitle: normalizeText(parsed.title || path.basename(absolutePath, ".json")),
     relativePath: toRepoRelativePath(absolutePath)
   };

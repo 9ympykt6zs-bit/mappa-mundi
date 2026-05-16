@@ -1,0 +1,72 @@
+{
+  "id": "remaining-modern-countries",
+  "title": "Remaining Modern Countries",
+  "sequence": 13,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "remaining-modern-countries"
+  },
+  "features": [
+    {
+      "id": "egypt",
+      "name": "Egypt",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "EGY",
+      "color": "#f59e0b",
+      "flag": "\ud83c\uddea\ud83c\uddec",
+      "labelAnchor": [29.8, 26.7],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "israel",
+      "name": "Israel",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ISR",
+      "color": "#3b82f6",
+      "flag": "\ud83c\uddee\ud83c\uddf1",
+      "labelAnchor": [35.0, 31.4],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "mongolia",
+      "name": "Mongolia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "MNG",
+      "color": "#ef4444",
+      "flag": "\ud83c\uddf2\ud83c\uddf3",
+      "labelAnchor": [103.0, 46.9],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "ivory-coast",
+      "name": "Ivory Coast",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "CIV",
+      "color": "#22c55e",
+      "flag": "\ud83c\udde8\ud83c\uddee",
+      "labelAnchor": [-5.55, 7.55],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "iceland",
+      "name": "Iceland",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ISL",
+      "color": "#a855f7",
+      "flag": "\ud83c\uddee\ud83c\uddf8",
+      "labelAnchor": [-18.8, 64.9],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    }
+  ]
+}

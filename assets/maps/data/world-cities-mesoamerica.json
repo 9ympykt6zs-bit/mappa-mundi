@@ -1,0 +1,43 @@
+{
+  "id": "world-cities-mesoamerica",
+  "title": "World Cities: Mesoamerica",
+  "targetNoun": "city",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "world-cities-mesoamerica"
+  },
+  "features": [
+    {
+      "id": "mexico-city",
+      "name": "Mexico City",
+      "type": "city",
+      "shape": "circle",
+      "lon": -99.1332,
+      "lat": 19.4326,
+      "hitRadius": 14,
+      "color": "#ef4444",
+      "icon": "city",
+      "iconScale": 1.2,
+      "labelOffset": { "x": -36, "y": 14 },
+      "iconOffset": { "x": 0, "y": 0 },
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "oaxaca",
+      "name": "Oaxaca",
+      "type": "city",
+      "shape": "circle",
+      "lon": -96.7216,
+      "lat": 17.0732,
+      "hitRadius": 14,
+      "color": "#3b82f6",
+      "icon": "city",
+      "iconScale": 1.2,
+      "labelOffset": { "x": -22, "y": 14 },
+      "iconOffset": { "x": 0, "y": 0 },
+      "labelFontSize": 11,
+      "labelRotation": 0
+    }
+  ]
+}

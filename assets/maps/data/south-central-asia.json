@@ -1,0 +1,48 @@
+{
+  "id": "south-central-asia",
+  "title": "South Central Asia",
+  "sequence": 20,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "south-central-asia"
+  },
+  "features": [
+    {
+      "id": "laos",
+      "name": "Laos",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "LAO",
+      "color": "#ef4444",
+      "flag": "\ud83c\uddf1\ud83c\udde6",
+      "labelAnchor": [103.85, 18.2],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "thailand",
+      "name": "Thailand",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "THA",
+      "color": "#3b82f6",
+      "flag": "\ud83c\uddf9\ud83c\udded",
+      "labelAnchor": [101.0, 15.3],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "cambodia",
+      "name": "Cambodia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "KHM",
+      "color": "#22c55e",
+      "flag": "\ud83c\uddf0\ud83c\udded",
+      "labelAnchor": [104.8, 12.7],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    }
+  ]
+}

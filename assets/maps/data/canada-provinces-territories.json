@@ -1,0 +1,207 @@
+{
+  "id": "canada-provinces-territories",
+  "title": "Canada Provinces and Territories",
+  "targetNoun": "province or territory",
+  "visibleAnswerLimit": 13,
+  "map": {
+    "region": "canada-provinces-territories",
+    "admin1Source": "north-america-admin1"
+  },
+  "features": [
+    {
+      "id": "alberta",
+      "name": "Alberta",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "alberta",
+      "iso_3166_2": "CA-AB",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        -115,
+        55.2816
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "british-columbia",
+      "name": "British Columbia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "british-columbia",
+      "iso_3166_2": "CA-BC",
+      "color": "#d65a8c",
+      "labelAnchor": [
+        -124.662,
+        54.6943
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "manitoba",
+      "name": "Manitoba",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "manitoba",
+      "iso_3166_2": "CA-MB",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        -97.3828,
+        54.85
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "new-brunswick",
+      "name": "New Brunswick",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "new-brunswick",
+      "iso_3166_2": "CA-NB",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        -66.4558,
+        46.5822
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "newfoundland-and-labrador",
+      "name": "Newfoundland and Labrador",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "newfoundland-and-labrador",
+      "iso_3166_2": "CA-NL",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        -56.2169,
+        48.6598
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "nova-scotia",
+      "name": "Nova Scotia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "nova-scotia",
+      "iso_3166_2": "CA-NS",
+      "color": "#d88052",
+      "labelAnchor": [
+        -62.8113,
+        45.2293
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "ontario",
+      "name": "Ontario",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "ontario",
+      "iso_3166_2": "CA-ON",
+      "color": "#54a6a6",
+      "labelAnchor": [
+        -84.7943,
+        50.5244
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "prince-edward-island",
+      "name": "Prince Edward Island",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "prince-edward-island",
+      "iso_3166_2": "CA-PE",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        -63.3862,
+        46.3417
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "quebec",
+      "name": "Quebec",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "quebec",
+      "iso_3166_2": "CA-QC",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        -73.7168,
+        52.2593
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "saskatchewan",
+      "name": "Saskatchewan",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "saskatchewan",
+      "iso_3166_2": "CA-SK",
+      "color": "#cc6f9f",
+      "labelAnchor": [
+        -105.682,
+        54.4965
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "northwest-territories",
+      "name": "Northwest Territories",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "northwest-territories",
+      "iso_3166_2": "CA-NT",
+      "color": "#7eb36a",
+      "labelAnchor": [
+        -119.942,
+        64.0831
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "nunavut",
+      "name": "Nunavut",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "nunavut",
+      "iso_3166_2": "CA-NU",
+      "color": "#c9935a",
+      "labelAnchor": [
+        -97.1443,
+        64.3853
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "yukon",
+      "name": "Yukon",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "yukon",
+      "iso_3166_2": "CA-YT",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        -135.7,
+        63.6088
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

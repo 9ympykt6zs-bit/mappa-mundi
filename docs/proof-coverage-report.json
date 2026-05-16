@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-09T15:32:36.997Z",
+  "generatedAt": "2026-05-09T18:21:38.557Z",
   "sourceOfTruth": "docs/proof-sheets/*.txt",
   "proofSheets": [
     {
@@ -1759,6 +1759,26 @@
       "relativePath": "assets/maps/data/continents-oceans.json"
     },
     {
+      "id": "europe-and-asia-countries",
+      "title": "Europe and Asia",
+      "sequence": 11,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 2,
+      "items": [
+        "Russia",
+        "Ukraine"
+      ],
+      "normalizedItems": [
+        "russia",
+        "ukraine"
+      ],
+      "normalizedTitle": "europe and asia",
+      "relativePath": "assets/maps/data/europe-and-asia-countries.json"
+    },
+    {
       "id": "european-cities",
       "title": "European Cities",
       "sequence": null,
@@ -1859,6 +1879,32 @@
       "relativePath": "assets/maps/data/oceania.json"
     },
     {
+      "id": "remaining-modern-countries",
+      "title": "Remaining Modern Countries",
+      "sequence": 13,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 5,
+      "items": [
+        "Egypt",
+        "Israel",
+        "Mongolia",
+        "Ivory Coast",
+        "Iceland"
+      ],
+      "normalizedItems": [
+        "egypt",
+        "israel",
+        "mongolia",
+        "ivory coast",
+        "iceland"
+      ],
+      "normalizedTitle": "remaining modern countries",
+      "relativePath": "assets/maps/data/remaining-modern-countries.json"
+    },
+    {
       "id": "south-america-east",
       "title": "South America (East)",
       "sequence": 23,
@@ -1915,6 +1961,28 @@
       ],
       "normalizedTitle": "south america west",
       "relativePath": "assets/maps/data/south-america-west.json"
+    },
+    {
+      "id": "south-central-asia",
+      "title": "South Central Asia",
+      "sequence": 20,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 3,
+      "items": [
+        "Laos",
+        "Thailand",
+        "Cambodia"
+      ],
+      "normalizedItems": [
+        "laos",
+        "thailand",
+        "cambodia"
+      ],
+      "normalizedTitle": "south central asia",
+      "relativePath": "assets/maps/data/south-central-asia.json"
     },
     {
       "id": "southeastern-asia",
@@ -2657,6 +2725,109 @@
       "relativePath": "assets/maps/data/western-european-countries.json"
     },
     {
+      "id": "world-cities-east-south-asia",
+      "title": "World Cities: East & South Asia",
+      "sequence": null,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 4,
+      "items": [
+        "Beijing",
+        "Tokyo",
+        "Kyoto",
+        "Kolkata"
+      ],
+      "normalizedItems": [
+        "beijing",
+        "tokyo",
+        "kyoto",
+        "kolkata"
+      ],
+      "normalizedTitle": "world cities east and south asia",
+      "relativePath": "assets/maps/data/world-cities-east-south-asia.json"
+    },
+    {
+      "id": "world-cities-europe-eastern-mediterranean",
+      "title": "World Cities: Europe & Eastern Mediterranean",
+      "sequence": null,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 4,
+      "items": [
+        "Moscow",
+        "Kyiv",
+        "Athens",
+        "Tours"
+      ],
+      "normalizedItems": [
+        "moscow",
+        "kyiv",
+        "kiev",
+        "athens",
+        "tours"
+      ],
+      "normalizedTitle": "world cities europe and eastern mediterranean",
+      "relativePath": "assets/maps/data/world-cities-europe-eastern-mediterranean.json"
+    },
+    {
+      "id": "world-cities-mesoamerica",
+      "title": "World Cities: Mesoamerica",
+      "sequence": null,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 2,
+      "items": [
+        "Mexico City",
+        "Oaxaca"
+      ],
+      "normalizedItems": [
+        "mexico city",
+        "oaxaca"
+      ],
+      "normalizedTitle": "world cities mesoamerica",
+      "relativePath": "assets/maps/data/world-cities-mesoamerica.json"
+    },
+    {
+      "id": "world-cities-middle-east-north-africa",
+      "title": "World Cities: Middle East & North Africa",
+      "sequence": null,
+      "cumulativeGroup": null,
+      "baseMap": null,
+      "baseMapPath": null,
+      "hideAnswerBank": false,
+      "itemCount": 8,
+      "items": [
+        "Cairo",
+        "Alexandria",
+        "Mecca",
+        "Medina",
+        "Baghdad",
+        "Damascus",
+        "Fez",
+        "Tangier"
+      ],
+      "normalizedItems": [
+        "cairo",
+        "alexandria",
+        "mecca",
+        "makkah",
+        "medina",
+        "baghdad",
+        "damascus",
+        "fez",
+        "fes",
+        "tangier"
+      ],
+      "normalizedTitle": "world cities middle east and north africa",
+      "relativePath": "assets/maps/data/world-cities-middle-east-north-africa.json"
+    },
+    {
       "id": "world-map",
       "title": "World Map",
       "sequence": null,
@@ -2755,28 +2926,35 @@
         "Phoenicia",
         "Sea of Galilee"
       ],
-      "status": "missing",
-      "matchScore": 0,
-      "matchedActivityId": null,
-      "matchedActivityTitle": null,
-      "matchedActivityFile": null,
-      "matchedItemCount": 0,
+      "status": "partial",
+      "matchScore": 11.333333333333334,
+      "matchedActivityId": "remaining-modern-countries",
+      "matchedActivityTitle": "Remaining Modern Countries",
+      "matchedActivityFile": "assets/maps/data/remaining-modern-countries.json",
+      "matchedItemCount": 1,
       "missingItems": [
         "Judah",
-        "Israel",
         "Jordan River",
         "Dead Sea",
         "Phoenicia",
         "Sea of Galilee"
       ],
-      "extraItems": [],
+      "extraItems": [
+        "Egypt",
+        "Mongolia",
+        "Ivory Coast",
+        "Iceland"
+      ],
       "registration": {
-        "maplibreReferenced": false,
+        "maplibreReferenced": true,
         "legacyReferenced": false,
-        "isRegistered": false
+        "isRegistered": true
       },
       "notes": [
-        "No matching data activity found."
+        "Missing proof-sheet items: Judah, Jordan River, Dead Sea, Phoenicia, Sea of Galilee.",
+        "Implemented activity has extra items: Egypt, Mongolia, Ivory Coast, Iceland.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"HEBREW EMPIRE\", implementation uses \"Remaining Modern Countries\"."
       ]
     },
     {
@@ -2830,26 +3008,33 @@
         "Upper/Lower Egypt",
         "Nile River Delta"
       ],
-      "status": "missing",
-      "matchScore": 0,
-      "matchedActivityId": null,
-      "matchedActivityTitle": null,
-      "matchedActivityFile": null,
-      "matchedItemCount": 0,
+      "status": "partial",
+      "matchScore": 11.75,
+      "matchedActivityId": "remaining-modern-countries",
+      "matchedActivityTitle": "Remaining Modern Countries",
+      "matchedActivityFile": "assets/maps/data/remaining-modern-countries.json",
+      "matchedItemCount": 1,
       "missingItems": [
-        "Egypt",
         "Nile River",
         "Upper/Lower Egypt",
         "Nile River Delta"
       ],
-      "extraItems": [],
+      "extraItems": [
+        "Israel",
+        "Mongolia",
+        "Ivory Coast",
+        "Iceland"
+      ],
       "registration": {
-        "maplibreReferenced": false,
+        "maplibreReferenced": true,
         "legacyReferenced": false,
-        "isRegistered": false
+        "isRegistered": true
       },
       "notes": [
-        "No matching data activity found."
+        "Missing proof-sheet items: Nile River, Upper/Lower Egypt, Nile River Delta.",
+        "Implemented activity has extra items: Israel, Mongolia, Ivory Coast, Iceland.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"EGYPTIAN EMPIRE\", implementation uses \"Remaining Modern Countries\"."
       ]
     },
     {
@@ -2906,27 +3091,37 @@
         "Alexandria",
         "Carthage"
       ],
-      "status": "missing",
-      "matchScore": 0,
-      "matchedActivityId": null,
-      "matchedActivityTitle": null,
-      "matchedActivityFile": null,
-      "matchedItemCount": 0,
+      "status": "partial",
+      "matchScore": 11.5,
+      "matchedActivityId": "world-cities-middle-east-north-africa",
+      "matchedActivityTitle": "World Cities: Middle East & North Africa",
+      "matchedActivityFile": "assets/maps/data/world-cities-middle-east-north-africa.json",
+      "matchedItemCount": 1,
       "missingItems": [
         "Hispania",
         "Gaul",
         "Germania",
-        "Alexandria",
         "Carthage"
       ],
-      "extraItems": [],
+      "extraItems": [
+        "Cairo",
+        "Mecca",
+        "Medina",
+        "Baghdad",
+        "Damascus",
+        "Fez",
+        "Tangier"
+      ],
       "registration": {
-        "maplibreReferenced": false,
+        "maplibreReferenced": true,
         "legacyReferenced": false,
-        "isRegistered": false
+        "isRegistered": true
       },
       "notes": [
-        "No matching data activity found."
+        "Missing proof-sheet items: Hispania, Gaul, Germania, Carthage.",
+        "Implemented activity has extra items: Cairo, Mecca, Medina, Baghdad, Damascus, Fez, Tangier.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"ROMAN EMPIRE\", implementation uses \"World Cities: Middle East & North Africa\"."
       ]
     },
     {
@@ -2976,27 +3171,34 @@
         "Yangtze River",
         "Beijing"
       ],
-      "status": "missing",
-      "matchScore": 0,
-      "matchedActivityId": null,
-      "matchedActivityTitle": null,
-      "matchedActivityFile": null,
-      "matchedItemCount": 0,
+      "status": "partial",
+      "matchScore": 11.5,
+      "matchedActivityId": "remaining-modern-countries",
+      "matchedActivityTitle": "Remaining Modern Countries",
+      "matchedActivityFile": "assets/maps/data/remaining-modern-countries.json",
+      "matchedItemCount": 1,
       "missingItems": [
-        "Mongolia",
         "Yellow Sea",
         "Yellow River",
         "Yangtze River",
         "Beijing"
       ],
-      "extraItems": [],
+      "extraItems": [
+        "Egypt",
+        "Israel",
+        "Ivory Coast",
+        "Iceland"
+      ],
       "registration": {
-        "maplibreReferenced": false,
+        "maplibreReferenced": true,
         "legacyReferenced": false,
-        "isRegistered": false
+        "isRegistered": true
       },
       "notes": [
-        "No matching data activity found."
+        "Missing proof-sheet items: Yellow Sea, Yellow River, Yangtze River, Beijing.",
+        "Implemented activity has extra items: Egypt, Israel, Ivory Coast, Iceland.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"CHINA\", implementation uses \"Remaining Modern Countries\"."
       ]
     },
     {
@@ -3012,40 +3214,30 @@
         "Sea of Japan"
       ],
       "status": "partial",
-      "matchScore": 11.5,
-      "matchedActivityId": "continents-oceans",
-      "matchedActivityTitle": "Continents and Oceans",
-      "matchedActivityFile": "assets/maps/data/continents-oceans.json",
-      "matchedItemCount": 1,
+      "matchScore": 22.5,
+      "matchedActivityId": "world-cities-east-south-asia",
+      "matchedActivityTitle": "World Cities: East & South Asia",
+      "matchedActivityFile": "assets/maps/data/world-cities-east-south-asia.json",
+      "matchedItemCount": 2,
       "missingItems": [
-        "Kyoto",
-        "Tokyo",
         "Mt. Fuji",
+        "Pacific Ocean",
         "Sea of Japan"
       ],
       "extraItems": [
-        "North America",
-        "South America",
-        "Europe",
-        "Africa",
-        "Asia",
-        "Australia",
-        "Antarctica",
-        "Indian Ocean",
-        "Arctic Ocean",
-        "Atlantic Ocean",
-        "Southern Ocean"
+        "Beijing",
+        "Kolkata"
       ],
       "registration": {
-        "maplibreReferenced": false,
-        "legacyReferenced": true,
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
         "isRegistered": true
       },
       "notes": [
-        "Missing proof-sheet items: Kyoto, Tokyo, Mt. Fuji, Sea of Japan.",
-        "Implemented activity has extra items: North America, South America, Europe, Africa, Asia, Australia, Antarctica, Indian Ocean, Arctic Ocean, Atlantic Ocean, Southern Ocean.",
-        "Not referenced by the MapLibre registry.",
-        "Title differs: proof sheet uses \"JAPAN\", implementation uses \"Continents and Oceans\"."
+        "Missing proof-sheet items: Mt. Fuji, Pacific Ocean, Sea of Japan.",
+        "Implemented activity has extra items: Beijing, Kolkata.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"JAPAN\", implementation uses \"World Cities: East & South Asia\"."
       ]
     },
     {
@@ -3103,23 +3295,20 @@
         "Syria"
       ],
       "status": "partial",
-      "matchScore": 11.333333333333334,
-      "matchedActivityId": "the-levant",
-      "matchedActivityTitle": "The Levant",
-      "matchedActivityFile": "assets/maps/data/the-levant.json",
-      "matchedItemCount": 1,
+      "matchScore": 43.833333333333336,
+      "matchedActivityId": "world-cities-middle-east-north-africa",
+      "matchedActivityTitle": "World Cities: Middle East & North Africa",
+      "matchedActivityFile": "assets/maps/data/world-cities-middle-east-north-africa.json",
+      "matchedItemCount": 4,
       "missingItems": [
-        "Mecca",
-        "Medina",
-        "Baghdad",
-        "Damascus",
-        "Tours"
+        "Tours",
+        "Syria"
       ],
       "extraItems": [
-        "Turkey",
-        "Cyprus",
-        "Iraq",
-        "Iran"
+        "Cairo",
+        "Alexandria",
+        "Fez",
+        "Tangier"
       ],
       "registration": {
         "maplibreReferenced": true,
@@ -3127,10 +3316,10 @@
         "isRegistered": true
       },
       "notes": [
-        "Missing proof-sheet items: Mecca, Medina, Baghdad, Damascus, Tours.",
-        "Implemented activity has extra items: Turkey, Cyprus, Iraq, Iran.",
+        "Missing proof-sheet items: Tours, Syria.",
+        "Implemented activity has extra items: Cairo, Alexandria, Fez, Tangier.",
         "Not referenced by the legacy registry.",
-        "Title differs: proof sheet uses \"MUSLIM EMPIRE\", implementation uses \"The Levant\"."
+        "Title differs: proof sheet uses \"MUSLIM EMPIRE\", implementation uses \"World Cities: Middle East & North Africa\"."
       ]
     },
     {
@@ -3146,40 +3335,33 @@
         "Ivory Coast"
       ],
       "status": "partial",
-      "matchScore": 11.5,
-      "matchedActivityId": "continents-oceans",
-      "matchedActivityTitle": "Continents and Oceans",
-      "matchedActivityFile": "assets/maps/data/continents-oceans.json",
+      "matchScore": 13.5,
+      "matchedActivityId": "remaining-modern-countries",
+      "matchedActivityTitle": "Remaining Modern Countries",
+      "matchedActivityFile": "assets/maps/data/remaining-modern-countries.json",
       "matchedItemCount": 1,
       "missingItems": [
+        "Atlantic Ocean",
         "Senegal River",
         "Niger River",
-        "Sahara Desert",
-        "Ivory Coast"
+        "Sahara Desert"
       ],
       "extraItems": [
-        "North America",
-        "South America",
-        "Europe",
-        "Africa",
-        "Asia",
-        "Australia",
-        "Antarctica",
-        "Indian Ocean",
-        "Arctic Ocean",
-        "Pacific Ocean",
-        "Southern Ocean"
+        "Egypt",
+        "Israel",
+        "Mongolia",
+        "Iceland"
       ],
       "registration": {
-        "maplibreReferenced": false,
-        "legacyReferenced": true,
+        "maplibreReferenced": true,
+        "legacyReferenced": false,
         "isRegistered": true
       },
       "notes": [
-        "Missing proof-sheet items: Senegal River, Niger River, Sahara Desert, Ivory Coast.",
-        "Implemented activity has extra items: North America, South America, Europe, Africa, Asia, Australia, Antarctica, Indian Ocean, Arctic Ocean, Pacific Ocean, Southern Ocean.",
-        "Not referenced by the MapLibre registry.",
-        "Title differs: proof sheet uses \"WESTERN AFRICA\", implementation uses \"Continents and Oceans\"."
+        "Missing proof-sheet items: Atlantic Ocean, Senegal River, Niger River, Sahara Desert.",
+        "Implemented activity has extra items: Egypt, Israel, Mongolia, Iceland.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"WESTERN AFRICA\", implementation uses \"Remaining Modern Countries\"."
       ]
     },
     {
@@ -3194,27 +3376,35 @@
         "Fez",
         "Tangier"
       ],
-      "status": "missing",
-      "matchScore": 0,
-      "matchedActivityId": null,
-      "matchedActivityTitle": null,
-      "matchedActivityFile": null,
-      "matchedItemCount": 0,
+      "status": "partial",
+      "matchScore": 23,
+      "matchedActivityId": "world-cities-middle-east-north-africa",
+      "matchedActivityTitle": "World Cities: Middle East & North Africa",
+      "matchedActivityFile": "assets/maps/data/world-cities-middle-east-north-africa.json",
+      "matchedItemCount": 2,
       "missingItems": [
         "Ancient Ghana",
         "Ancient Mali",
-        "Western Sahara",
-        "Fez",
-        "Tangier"
+        "Western Sahara"
       ],
-      "extraItems": [],
+      "extraItems": [
+        "Cairo",
+        "Alexandria",
+        "Mecca",
+        "Medina",
+        "Baghdad",
+        "Damascus"
+      ],
       "registration": {
-        "maplibreReferenced": false,
+        "maplibreReferenced": true,
         "legacyReferenced": false,
-        "isRegistered": false
+        "isRegistered": true
       },
       "notes": [
-        "No matching data activity found."
+        "Missing proof-sheet items: Ancient Ghana, Ancient Mali, Western Sahara.",
+        "Implemented activity has extra items: Cairo, Alexandria, Mecca, Medina, Baghdad, Damascus.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"ANCIENT AFRICA\", implementation uses \"World Cities: Middle East & North Africa\"."
       ]
     },
     {
@@ -3229,27 +3419,37 @@
         "Cairo",
         "Gaza Strip"
       ],
-      "status": "missing",
-      "matchScore": 0,
-      "matchedActivityId": null,
-      "matchedActivityTitle": null,
-      "matchedActivityFile": null,
-      "matchedItemCount": 0,
+      "status": "partial",
+      "matchScore": 12.642857142857142,
+      "matchedActivityId": "world-cities-middle-east-north-africa",
+      "matchedActivityTitle": "World Cities: Middle East & North Africa",
+      "matchedActivityFile": "assets/maps/data/world-cities-middle-east-north-africa.json",
+      "matchedItemCount": 1,
       "missingItems": [
         "Israel",
         "Sinai Peninsula",
         "Suez Canal",
-        "Cairo",
         "Gaza Strip"
       ],
-      "extraItems": [],
+      "extraItems": [
+        "Alexandria",
+        "Mecca",
+        "Medina",
+        "Baghdad",
+        "Damascus",
+        "Fez",
+        "Tangier"
+      ],
       "registration": {
-        "maplibreReferenced": false,
+        "maplibreReferenced": true,
         "legacyReferenced": false,
-        "isRegistered": false
+        "isRegistered": true
       },
       "notes": [
-        "No matching data activity found."
+        "Missing proof-sheet items: Israel, Sinai Peninsula, Suez Canal, Gaza Strip.",
+        "Implemented activity has extra items: Alexandria, Mecca, Medina, Baghdad, Damascus, Fez, Tangier.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"MIDDLE EAST\", implementation uses \"World Cities: Middle East & North Africa\"."
       ]
     },
     {
@@ -3361,27 +3561,27 @@
         "Mayapan",
         "Oaxaca"
       ],
-      "status": "missing",
-      "matchScore": 0,
-      "matchedActivityId": null,
-      "matchedActivityTitle": null,
-      "matchedActivityFile": null,
-      "matchedItemCount": 0,
+      "status": "partial",
+      "matchScore": 23.833333333333332,
+      "matchedActivityId": "world-cities-mesoamerica",
+      "matchedActivityTitle": "World Cities: Mesoamerica",
+      "matchedActivityFile": "assets/maps/data/world-cities-mesoamerica.json",
+      "matchedItemCount": 2,
       "missingItems": [
-        "Mexico City",
         "Chichen Itza",
         "Lake Texcoco",
-        "Mayapan",
-        "Oaxaca"
+        "Mayapan"
       ],
       "extraItems": [],
       "registration": {
-        "maplibreReferenced": false,
+        "maplibreReferenced": true,
         "legacyReferenced": false,
-        "isRegistered": false
+        "isRegistered": true
       },
       "notes": [
-        "No matching data activity found."
+        "Missing proof-sheet items: Chichen Itza, Lake Texcoco, Mayapan.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"MESOAMERICA\", implementation uses \"World Cities: Mesoamerica\"."
       ]
     },
     {
@@ -3524,26 +3724,33 @@
         "Denmark Strait",
         "Davis Strait"
       ],
-      "status": "missing",
-      "matchScore": 0,
-      "matchedActivityId": null,
-      "matchedActivityTitle": null,
-      "matchedActivityFile": null,
-      "matchedItemCount": 0,
+      "status": "partial",
+      "matchScore": 11.75,
+      "matchedActivityId": "remaining-modern-countries",
+      "matchedActivityTitle": "Remaining Modern Countries",
+      "matchedActivityFile": "assets/maps/data/remaining-modern-countries.json",
+      "matchedItemCount": 1,
       "missingItems": [
         "Greenland",
-        "Iceland",
         "Denmark Strait",
         "Davis Strait"
       ],
-      "extraItems": [],
+      "extraItems": [
+        "Egypt",
+        "Israel",
+        "Mongolia",
+        "Ivory Coast"
+      ],
       "registration": {
-        "maplibreReferenced": false,
+        "maplibreReferenced": true,
         "legacyReferenced": false,
-        "isRegistered": false
+        "isRegistered": true
       },
       "notes": [
-        "No matching data activity found."
+        "Missing proof-sheet items: Greenland, Denmark Strait, Davis Strait.",
+        "Implemented activity has extra items: Egypt, Israel, Mongolia, Ivory Coast.",
+        "Not referenced by the legacy registry.",
+        "Title differs: proof sheet uses \"NORTH ATLANTIC\", implementation uses \"Remaining Modern Countries\"."
       ]
     },
     {
@@ -3894,27 +4101,26 @@
         "Siberia",
         "Ukraine"
       ],
-      "status": "missing",
-      "matchScore": 0,
-      "matchedActivityId": null,
-      "matchedActivityTitle": null,
-      "matchedActivityFile": null,
-      "matchedItemCount": 0,
+      "status": "partial",
+      "matchScore": 28.5,
+      "matchedActivityId": "europe-and-asia-countries",
+      "matchedActivityTitle": "Europe and Asia",
+      "matchedActivityFile": "assets/maps/data/europe-and-asia-countries.json",
+      "matchedItemCount": 2,
       "missingItems": [
         "Moscow",
         "Kiev",
-        "Russia",
-        "Siberia",
-        "Ukraine"
+        "Siberia"
       ],
       "extraItems": [],
       "registration": {
-        "maplibreReferenced": false,
+        "maplibreReferenced": true,
         "legacyReferenced": false,
-        "isRegistered": false
+        "isRegistered": true
       },
       "notes": [
-        "No matching data activity found."
+        "Missing proof-sheet items: Moscow, Kiev, Siberia.",
+        "Not referenced by the legacy registry."
       ]
     },
     {
@@ -4166,36 +4372,25 @@
         "North Vietnam",
         "South Vietnam"
       ],
-      "status": "missing",
-      "matchScore": 3.1666666666666665,
-      "matchedActivityId": "central-asia",
-      "matchedActivityTitle": "Central Asia",
-      "matchedActivityFile": "assets/maps/data/central-asia.json",
-      "matchedItemCount": 0,
+      "status": "partial",
+      "matchScore": 39.5,
+      "matchedActivityId": "south-central-asia",
+      "matchedActivityTitle": "South Central Asia",
+      "matchedActivityFile": "assets/maps/data/south-central-asia.json",
+      "matchedItemCount": 3,
       "missingItems": [
-        "Laos",
-        "Thailand",
-        "Cambodia",
         "North Vietnam",
         "South Vietnam"
       ],
-      "extraItems": [
-        "Kazakhstan",
-        "Uzbekistan",
-        "Turkmenistan",
-        "Tajikistan",
-        "Kyrgyzstan"
-      ],
+      "extraItems": [],
       "registration": {
         "maplibreReferenced": true,
         "legacyReferenced": false,
         "isRegistered": true
       },
       "notes": [
-        "Missing proof-sheet items: Laos, Thailand, Cambodia, North Vietnam, South Vietnam.",
-        "Implemented activity has extra items: Kazakhstan, Uzbekistan, Turkmenistan, Tajikistan, Kyrgyzstan.",
-        "Not referenced by the legacy registry.",
-        "Title differs: proof sheet uses \"SOUTH CENTRAL ASIA\", implementation uses \"Central Asia\"."
+        "Missing proof-sheet items: North Vietnam, South Vietnam.",
+        "Not referenced by the legacy registry."
       ]
     },
     {
@@ -5228,6 +5423,12 @@
       "itemCount": 52
     },
     {
+      "id": "world-cities-europe-eastern-mediterranean",
+      "title": "World Cities: Europe & Eastern Mediterranean",
+      "relativePath": "assets/maps/data/world-cities-europe-eastern-mediterranean.json",
+      "itemCount": 4
+    },
+    {
       "id": "world-map",
       "title": "World Map",
       "relativePath": "assets/maps/world/world-map.json",
@@ -5237,9 +5438,9 @@
   "summary": {
     "totalProofActivities": 72,
     "covered": 26,
-    "partial": 11,
+    "partial": 21,
     "data-only": 0,
-    "missing": 35,
-    "orphanedImplementedActivities": 4
+    "missing": 25,
+    "orphanedImplementedActivities": 5
   }
 }

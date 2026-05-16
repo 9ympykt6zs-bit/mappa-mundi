@@ -1,0 +1,492 @@
+{
+  "id": "mexico-states",
+  "title": "Mexico States",
+  "targetNoun": "state or federal entity",
+  "visibleAnswerLimit": 32,
+  "map": {
+    "region": "mexico-states",
+    "admin1Source": "north-america-admin1"
+  },
+  "features": [
+    {
+      "id": "aguascalientes",
+      "name": "Aguascalientes",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "aguascalientes",
+      "iso_3166_2": "MX-AGU",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        -102.351,
+        22.0375
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "baja-california",
+      "name": "Baja California",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "baja-california",
+      "iso_3166_2": "MX-BCN",
+      "color": "#d65a8c",
+      "labelAnchor": [
+        -115.209,
+        30.3399
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "baja-california-sur",
+      "name": "Baja California Sur",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "baja-california-sur",
+      "iso_3166_2": "MX-BCS",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        -111.452,
+        25.0656
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "campeche",
+      "name": "Campeche",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "campeche",
+      "iso_3166_2": "MX-CAM",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        -90.2807,
+        18.6624
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "chiapas",
+      "name": "Chiapas",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "chiapas",
+      "iso_3166_2": "MX-CHP",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        -92.581,
+        16.527
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "chihuahua",
+      "name": "Chihuahua",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "chihuahua",
+      "iso_3166_2": "MX-CHH",
+      "color": "#d88052",
+      "labelAnchor": [
+        -106.232,
+        28.973
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "coahuila",
+      "name": "Coahuila",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "coahuila",
+      "iso_3166_2": "MX-COA",
+      "color": "#54a6a6",
+      "labelAnchor": [
+        -101.885,
+        27.4473
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "colima",
+      "name": "Colima",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "colima",
+      "iso_3166_2": "MX-COL",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        -103.915,
+        19.1325
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "durango",
+      "name": "Durango",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "durango",
+      "iso_3166_2": "MX-DUR",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        -104.808,
+        24.566
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "guanajuato",
+      "name": "Guanajuato",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "guanajuato",
+      "iso_3166_2": "MX-GUA",
+      "color": "#cc6f9f",
+      "labelAnchor": [
+        -100.904,
+        20.8141
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "guerrero",
+      "name": "Guerrero",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "guerrero",
+      "iso_3166_2": "MX-GRO",
+      "color": "#7eb36a",
+      "labelAnchor": [
+        -100.091,
+        17.7608
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "hidalgo",
+      "name": "Hidalgo",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "hidalgo",
+      "iso_3166_2": "MX-HID",
+      "color": "#c9935a",
+      "labelAnchor": [
+        -98.9221,
+        20.5354
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "jalisco",
+      "name": "Jalisco",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "jalisco",
+      "iso_3166_2": "MX-JAL",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        -103.602,
+        20.3026
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "mexico-city",
+      "name": "Mexico City",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "mexico-city",
+      "iso_3166_2": "MX-DIF",
+      "color": "#d65a8c",
+      "labelAnchor": [
+        -99.1369,
+        19.3266
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "mexico-state",
+      "name": "Mexico State",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "mexico-state",
+      "iso_3166_2": "MX-MEX",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        -99.7416,
+        19.3275
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "michoacan",
+      "name": "Michoacán",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "michoacan",
+      "iso_3166_2": "MX-MIC",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        -101.936,
+        19.2458
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "morelos",
+      "name": "Morelos",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "morelos",
+      "iso_3166_2": "MX-MOR",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        -99.0785,
+        18.742
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "nayarit",
+      "name": "Nayarit",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "nayarit",
+      "iso_3166_2": "MX-NAY",
+      "color": "#d88052",
+      "labelAnchor": [
+        -104.824,
+        21.7934
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "nuevo-leon",
+      "name": "Nuevo León",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "nuevo-leon",
+      "iso_3166_2": "MX-NLE",
+      "color": "#54a6a6",
+      "labelAnchor": [
+        -99.8307,
+        25.6178
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "oaxaca",
+      "name": "Oaxaca",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "oaxaca",
+      "iso_3166_2": "MX-OAX",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        -96.2087,
+        16.94
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "puebla",
+      "name": "Puebla",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "puebla",
+      "iso_3166_2": "MX-PUE",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        -97.8889,
+        18.549
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "queretaro",
+      "name": "Querétaro",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "queretaro",
+      "iso_3166_2": "MX-QUE",
+      "color": "#cc6f9f",
+      "labelAnchor": [
+        -99.9663,
+        20.7392
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "quintana-roo",
+      "name": "Quintana Roo",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "quintana-roo",
+      "iso_3166_2": "MX-ROO",
+      "color": "#7eb36a",
+      "labelAnchor": [
+        -88.344,
+        19.3861
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "san-luis-potosi",
+      "name": "San Luis Potosí",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "san-luis-potosi",
+      "iso_3166_2": "MX-SLP",
+      "color": "#c9935a",
+      "labelAnchor": [
+        -100.324,
+        22.4465
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "sinaloa",
+      "name": "Sinaloa",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "sinaloa",
+      "iso_3166_2": "MX-SIN",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        -108.001,
+        25.6041
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "sonora",
+      "name": "Sonora",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "sonora",
+      "iso_3166_2": "MX-SON",
+      "color": "#d65a8c",
+      "labelAnchor": [
+        -110.485,
+        29.5293
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tabasco",
+      "name": "Tabasco",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tabasco",
+      "iso_3166_2": "MX-TAB",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        -92.8274,
+        18.1252
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tamaulipas",
+      "name": "Tamaulipas",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tamaulipas",
+      "iso_3166_2": "MX-TAM",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        -98.5197,
+        24.0808
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tlaxcala",
+      "name": "Tlaxcala",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tlaxcala",
+      "iso_3166_2": "MX-TLA",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        -98.161,
+        19.3956
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "veracruz",
+      "name": "Veracruz",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "veracruz",
+      "iso_3166_2": "MX-VER",
+      "color": "#d88052",
+      "labelAnchor": [
+        -96.5953,
+        19.0926
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "yucatan",
+      "name": "Yucatán",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "yucatan",
+      "iso_3166_2": "MX-YUC",
+      "color": "#54a6a6",
+      "labelAnchor": [
+        -88.9836,
+        20.663
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "zacatecas",
+      "name": "Zacatecas",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "zacatecas",
+      "iso_3166_2": "MX-ZAC",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        -102.579,
+        23.3785
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}
