@@ -3,12 +3,61 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Geography Memory App</title>
+    <title>Atlas Quest</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css" />
-    <link rel="stylesheet" href="maplibre-poc.css?v=polished-globe-ui" />
+    <link rel="stylesheet" href="maplibre-poc.css?v=entry-auth-screen" />
   </head>
-  <body class="overview-mode">
+  <body class="overview-mode launch-mode">
+    <section id="launch-screen" class="launch-screen" aria-labelledby="launch-title">
+      <div class="launch-content">
+        <div class="launch-title-lockup">
+          <h1 id="launch-title">Atlas Quest</h1>
+          <p class="launch-subtitle">Learn the world, one place at a time.</p>
+        </div>
+        <div class="launch-actions" aria-label="App entry actions">
+          <button id="launch-start-button" class="launch-button launch-button-primary" type="button">
+            <span>Continue as Guest</span>
+          </button>
+          <div class="launch-auth-actions">
+            <button id="launch-continue-button" class="launch-button launch-button-secondary" type="button">
+              <span>Sign In</span>
+            </button>
+            <button id="launch-choose-button" class="launch-button launch-button-secondary" type="button">
+              <span>Create Account</span>
+            </button>
+          </div>
+        </div>
+        <div id="launch-placeholder-card" class="launch-placeholder-card" role="status" aria-live="polite" hidden>
+          <strong id="launch-placeholder-title">Coming Soon</strong>
+          <p id="launch-placeholder-message">This feature is coming soon.</p>
+        </div>
+      </div>
+    </section>
+    <section id="app-shell-screen" class="app-shell-screen" aria-labelledby="app-shell-title" hidden>
+      <div class="launch-stars" aria-hidden="true"></div>
+      <button id="app-shell-back-button" class="app-shell-corner-button app-shell-back-button" type="button">Back</button>
+      <button id="app-shell-settings-gear" class="launch-gear-button" type="button" aria-label="Settings" title="Settings"></button>
+      <div class="app-shell-panel">
+        <p class="launch-kicker">Atlas Quest</p>
+        <h1 id="app-shell-title">Main Menu</h1>
+        <p id="app-shell-subtitle">Choose how you want to explore today.</p>
+        <div id="main-menu-actions" class="main-menu-actions">
+          <button id="main-menu-continue-button" class="main-menu-button main-menu-button-blue" type="button">Continue Journey</button>
+          <button id="main-menu-choose-button" class="main-menu-button main-menu-button-purple" type="button">Choose Journey</button>
+          <button id="main-menu-study-button" class="main-menu-button main-menu-button-green" type="button">Study</button>
+          <button id="main-menu-free-play-button" class="main-menu-button main-menu-button-orange" type="button">Free Play</button>
+          <button id="main-menu-settings-button" class="main-menu-button main-menu-button-teal" type="button">Settings</button>
+          <button id="main-menu-launch-button" class="main-menu-button main-menu-button-quiet" type="button">Back to Title</button>
+        </div>
+        <div id="app-shell-placeholder-card" class="app-shell-placeholder-card" role="status" aria-live="polite" hidden>
+          <strong id="app-shell-placeholder-title">Coming Soon</strong>
+          <p id="app-shell-placeholder-message">This feature is coming soon.</p>
+        </div>
+        <div id="journey-preset-list" class="journey-preset-list" hidden></div>
+        <div id="journey-shell-content" class="journey-shell-content" hidden></div>
+      </div>
+    </section>
     <header class="poc-header">
       <div class="top-bar">
         <div class="top-bar-side top-bar-left">
@@ -97,7 +146,28 @@
       <div id="answer-bank" class="answer-bank"></div>
     </section>
 
+    <div id="journey-completion-overlay" class="journey-completion-overlay" hidden>
+      <section class="journey-completion-card" role="dialog" aria-modal="true" aria-labelledby="journey-completion-title">
+        <p id="journey-completion-kicker" class="journey-completion-kicker">Journey Step Complete</p>
+        <h2 id="journey-completion-title">Great job!</h2>
+        <p id="journey-completion-message">You completed this step.</p>
+        <p id="journey-completion-next" class="journey-completion-next"></p>
+        <div class="journey-completion-actions">
+          <button id="journey-completion-primary" type="button">Continue</button>
+          <button id="journey-completion-secondary" type="button">Exit Journey</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="activity-retry-overlay" class="activity-retry-overlay" hidden>
+      <section class="activity-retry-card" role="status" aria-live="polite">
+        <p class="activity-retry-kicker">Quick Review</p>
+        <h2 id="activity-retry-message">Let’s review this one again.</h2>
+        <p>Watch the answers, then try this activity once more.</p>
+      </section>
+    </div>
+
     <script src="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js"></script>
-    <script type="module" src="src/maplibre-poc.js?v=tts-answer-chips"></script>
+    <script type="module" src="src/maplibre-poc.js?v=entry-auth-screen"></script>
   </body>
 </html>

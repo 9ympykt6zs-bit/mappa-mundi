@@ -196,6 +196,7 @@ export class MapLibreActivityRunner {
     this.overviewMapView = null;
     this.difficulty = difficultyModes.easy;
     this.pendingDifficultyVisualRefresh = false;
+    this.presentationSettings = {};
   }
 
   onTargetClick(handler) {
@@ -336,6 +337,11 @@ export class MapLibreActivityRunner {
 
   setDifficulty(difficulty) {
     this.difficulty = normalizeDifficulty(difficulty);
+    this.refreshDifficultyVisuals();
+  }
+
+  setPresentationSettings(settings = {}) {
+    this.presentationSettings = { ...settings };
     this.refreshDifficultyVisuals();
   }
 
@@ -483,6 +489,27 @@ export class MapLibreActivityRunner {
       zoom,
       duration: 180,
       essential: true
+    });
+  }
+
+  flyToCameraTarget(target = {}) {
+    if (!this.map || !Array.isArray(target.center) || typeof target.zoom !== "number") {
+      return Promise.resolve(false);
+    }
+
+    return new Promise((resolve) => {
+      const duration = typeof target.duration === "number" ? target.duration : 900;
+      const finish = () => resolve(true);
+      window.setTimeout(finish, duration + 80);
+      this.map.stop();
+      this.map.flyTo({
+        center: target.center,
+        zoom: target.zoom,
+        pitch: 0,
+        bearing: 0,
+        duration,
+        essential: true
+      });
     });
   }
 
@@ -1857,12 +1884,16 @@ export class MapLibreActivityRunner {
       this.map.setLayoutProperty("target-hit-fill", "visibility", "visible");
     }
 
+    // Cities and capitals share this point-marker layer until they are split.
+    const shouldShowPointMarkers = this.presentationSettings.showCities !== false
+      || this.presentationSettings.showCapitals !== false;
+
     if (this.map.getLayer("capital-marker-halo")) {
-      this.map.setLayoutProperty("capital-marker-halo", "visibility", visualState.isHard ? "none" : "visible");
+      this.map.setLayoutProperty("capital-marker-halo", "visibility", !visualState.isHard && shouldShowPointMarkers ? "visible" : "none");
     }
 
     if (this.map.getLayer("capital-marker")) {
-      this.map.setLayoutProperty("capital-marker", "visibility", visualState.isHard ? "none" : "visible");
+      this.map.setLayoutProperty("capital-marker", "visibility", !visualState.isHard && shouldShowPointMarkers ? "visible" : "none");
     }
 
     if (this.map.getLayer("capital-hit")) {

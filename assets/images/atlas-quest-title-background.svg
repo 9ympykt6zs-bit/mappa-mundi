@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1792 1024" role="img" aria-label="Earth floating in space">
+  <defs>
+    <radialGradient id="spaceGlow" cx="50%" cy="20%" r="74%">
+      <stop offset="0" stop-color="#0b5cc6"/>
+      <stop offset="0.36" stop-color="#062969"/>
+      <stop offset="0.72" stop-color="#03123a"/>
+      <stop offset="1" stop-color="#010716"/>
+    </radialGradient>
+    <radialGradient id="earth" cx="42%" cy="30%" r="65%">
+      <stop offset="0" stop-color="#f6fbff"/>
+      <stop offset="0.12" stop-color="#8ed8ff"/>
+      <stop offset="0.42" stop-color="#0c78c6"/>
+      <stop offset="0.72" stop-color="#08447f"/>
+      <stop offset="1" stop-color="#02142e"/>
+    </radialGradient>
+    <radialGradient id="earthShade" cx="36%" cy="24%" r="72%">
+      <stop offset="0.5" stop-color="rgba(255,255,255,0)"/>
+      <stop offset="0.78" stop-color="rgba(0,10,34,0.2)"/>
+      <stop offset="1" stop-color="rgba(0,5,18,0.78)"/>
+    </radialGradient>
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="24" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="starGlow" x="-120%" y="-120%" width="340%" height="340%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1792" height="1024" fill="url(#spaceGlow)"/>
+  <path d="M0 735 C190 690 312 740 475 710 C642 679 790 579 1009 610 C1239 642 1356 760 1792 656 L1792 1024 L0 1024 Z" fill="#02091f" opacity="0.46"/>
+  <path d="M0 168 C188 202 327 196 485 140 C705 62 879 95 1037 174 C1238 274 1465 262 1792 118" fill="none" stroke="#2ca7ff" stroke-width="24" opacity="0.12"/>
+  <path d="M70 938 C171 872 273 856 383 913 C284 951 194 985 62 1010 Z" fill="#0d66b8" opacity="0.28" filter="url(#softGlow)"/>
+  <path d="M1450 955 C1564 873 1697 870 1792 925 L1792 1024 L1412 1024 Z" fill="#6444d2" opacity="0.22" filter="url(#softGlow)"/>
+
+  <g opacity="0.95" filter="url(#starGlow)">
+    <circle cx="55" cy="70" r="1.7" fill="#fff"/>
+    <circle cx="185" cy="134" r="2.3" fill="#fff"/>
+    <circle cx="302" cy="52" r="1.5" fill="#b8dcff"/>
+    <circle cx="430" cy="178" r="2" fill="#fff"/>
+    <circle cx="707" cy="58" r="1.7" fill="#fff"/>
+    <circle cx="845" cy="124" r="2.5" fill="#9cd6ff"/>
+    <circle cx="1035" cy="82" r="1.5" fill="#fff"/>
+    <circle cx="1250" cy="198" r="2.1" fill="#fff"/>
+    <circle cx="1427" cy="64" r="1.8" fill="#d9ecff"/>
+    <circle cx="1665" cy="140" r="2.7" fill="#fff"/>
+    <circle cx="1738" cy="246" r="1.5" fill="#fff"/>
+    <circle cx="236" cy="356" r="2.1" fill="#fff"/>
+    <circle cx="1510" cy="472" r="1.5" fill="#fff"/>
+    <circle cx="1186" cy="548" r="1.8" fill="#fff"/>
+    <circle cx="88" cy="602" r="1.3" fill="#fff"/>
+    <circle cx="308" cy="878" r="2.5" fill="#5bc3ff"/>
+    <circle cx="1488" cy="830" r="1.7" fill="#fff"/>
+    <path d="M156 247 h34 M173 230 v34" stroke="#9dd8ff" stroke-width="3" opacity="0.9"/>
+    <path d="M1452 244 h46 M1475 221 v46" stroke="#ffffff" stroke-width="3" opacity="0.72"/>
+    <path d="M646 178 h28 M660 164 v28" stroke="#48c9ff" stroke-width="3" opacity="0.82"/>
+  </g>
+
+  <g transform="translate(896 282)">
+    <circle r="298" fill="#35a8ff" opacity="0.16" filter="url(#softGlow)"/>
+    <circle r="262" fill="url(#earth)"/>
+    <circle r="262" fill="url(#earthShade)"/>
+    <path d="M-204 -120 C-168 -180 -94 -218 -26 -202 C-61 -161 -59 -126 -104 -94 C-142 -68 -176 -84 -204 -120 Z" fill="#9ccc72" opacity="0.92"/>
+    <path d="M-118 -40 C-55 -82 2 -44 31 8 C-14 28 -39 77 -90 67 C-135 58 -159 8 -118 -40 Z" fill="#56a45a" opacity="0.88"/>
+    <path d="M54 -124 C127 -161 214 -122 235 -52 C178 -40 134 -50 102 -13 C68 27 37 0 54 -124 Z" fill="#d7b26e" opacity="0.88"/>
+    <path d="M138 24 C203 12 243 58 232 119 C185 105 134 105 105 72 C83 48 98 31 138 24 Z" fill="#4d9854" opacity="0.8"/>
+    <path d="M-212 42 C-162 76 -134 130 -151 207 C-202 176 -230 116 -212 42 Z" fill="#4fa35a" opacity="0.82"/>
+    <path d="M-25 -225 C45 -245 139 -212 198 -158" fill="none" stroke="#f5fbff" stroke-width="42" stroke-linecap="round" opacity="0.58"/>
+    <circle r="262" fill="none" stroke="#9ee0ff" stroke-width="5" opacity="0.76"/>
+  </g>
+
+  <rect width="1792" height="1024" fill="url(#spaceGlow)" opacity="0.1"/>
+</svg>

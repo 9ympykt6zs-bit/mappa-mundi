@@ -1,8 +1,18 @@
 import { normalizeActivity } from "./map-engines/activity-normalizer.js";
 import { ActivitySession, studyModes } from "./maplibre/activity-session.js?v=progress-state";
 import "./chip-speech.js?v=tts-answer-chips";
-import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=canada-mexico-regions";
+import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=curriculum-layer-settings";
+import { journeyPresets } from "./journey-presets.js?v=journey-presets";
+import {
+  clearActiveJourney,
+  getJourneyProgress,
+  loadProgress,
+  markStepComplete,
+  resetJourneyDifficulty,
+  setActiveJourney
+} from "./progress-store.js";
 
+const APP_NAME = "Atlas Quest";
 const activityDataPaths = [
   "assets/maps/data/continents-oceans.json",
   "assets/maps/data/western-european-countries.json",
@@ -72,9 +82,410 @@ const defaultMapSet = "world-europe";
 const completedActivitiesStorageKey = "geography-memory-completed-activities";
 const activityProgressStorageKey = "geography-memory-activity-progress";
 const difficultyStorageKey = "geography-memory-difficulty-mode";
+const appSettingsStorageKey = "atlasQuestSettings";
+const legacyLayerSettingsStorageKey = "atlas-quest-layer-settings";
+const defaultMapLayerSettings = Object.freeze({
+  showContinents: true,
+  showOceans: true,
+  showCountries: true,
+  showStates: true,
+  showProvinces: true,
+  showTerritories: true,
+  // Cities and capitals currently share the same point-marker rendering path.
+  // Future layers can follow this shape: showRivers, showMountains, showLakes,
+  // showBays, showTrails, showDeserts, showPhysicalFeatures.
+  showCities: true,
+  showCapitals: true
+});
+const mapLayerPresets = [
+  {
+    id: "default",
+    label: "Default",
+    description: "Balanced Atlas Quest defaults.",
+    settings: {
+      ...defaultMapLayerSettings
+    }
+  },
+  {
+    id: "classical-memory",
+    label: "Classical Memory Geography",
+    description: "Supported targets for a proof-sheet-style geography sequence.",
+    settings: {
+      showContinents: true,
+      showOceans: true,
+      showCountries: true,
+      showStates: true,
+      showProvinces: true,
+      showTerritories: true,
+      showCities: false,
+      showCapitals: true
+    }
+  }
+];
+const defaultAppSettings = Object.freeze({
+  version: 1,
+  mapLayers: defaultMapLayerSettings,
+  targetSettings: {}
+});
+const canadianTerritoryNames = new Set(["Northwest Territories", "Nunavut", "Yukon"]);
+const classicalMemoryProofSheetTargetNames = new Set(`
+Adirondack Mountains
+Adriatic Sea
+Aegean Sea
+Afghanistan
+Africa
+Albania
+Albany, NY
+Alexandria
+Allegheny Mountains
+Alps
+Ancient Ghana
+Ancient Mali
+Annapolis, MD
+Antarctica
+Antioch
+Apennine Peninsula
+Arabian Desert
+Arabian Sea
+Aral Sea
+Arctic Ocean
+Argentina
+Arkansas River
+Asia
+Asia Minor
+Athens
+Atlanta, GA
+Atlantic Ocean
+Augusta, ME
+Austin, TX
+Australia
+Austria
+Aztec Civilization
+Babylon
+Baffin Bay
+Baghdad
+Balkan Peninsula
+Baltic Sea
+Barcelona
+Barents Sea
+Baton Rouge, LA
+Bay of Bengal
+Beijing
+Belarus
+Belgium
+Belize
+Bismarck, ND
+Black Hills
+Black Sea
+Blue Ridge Mountains
+Boise, ID
+Bolivia
+Boston, MA
+Botswana
+Brazil
+Bulgaria
+Cairo
+California
+California Trail
+Cambodia
+Canary Islands
+Cape of Good Hope
+Carpathians
+Carson City, NV
+Carthage
+Cascade Mountains
+Caspian Sea
+Caucasus
+Charleston, WV
+Chesapeake and Ohio Canal
+Chesapeake Bay
+Cheyenne, WY
+Chichen Itza
+Chile
+Colombia
+Colorado Desert
+Colorado River
+Columbia River
+Columbia, SC
+Columbus, OH
+Concord, NH
+Congo River
+Constantinople
+Crete
+Cuba
+Cumberland Mountains
+Cumberland Road
+Cyprus
+Czechia
+Damascus
+Danube River
+Davis Strait
+Dead Sea
+Death Valley
+Denali
+Denmark
+Denmark Strait
+Denver, CO
+Des Moines, IA
+Dominican Republic
+Dover, DE
+Eastern Woodlands
+Ecuador
+Egypt
+El Salvador
+Elbe River
+England
+English Channel
+Ephesus
+Erie
+Erie Canal
+Estonia
+Ethiopia
+Euphrates River
+Europe
+Fez
+Finland
+France
+Frankfort, KY
+French Guiana
+Ganges River
+Gaul
+Gaza Strip
+Germania
+Germany
+Gila Trail
+Grand Canyon
+Great Barrier Reef
+Great Basin
+Great Bear Lake
+Great Indian Desert
+Great Salt Lake
+Great Salt Lake Desert
+Great Slave Lake
+Great Smoky Mountains
+Greece
+Green Mountains
+Greenland
+Guam
+Guatemala
+Gulf of Mexico
+Guyana
+Haiti
+Harrisburg, PA
+Hartford, CT
+Hattusa
+Helena, MT
+Himalayas
+Hispania
+Honduras
+Honolulu, HI
+Hudson Bay
+Hungary
+Huron
+Iberian Peninsula
+Iceland
+India
+Indian Ocean
+Indianapolis, IN
+Indonesia
+Iran
+Iraq
+Ireland
+Israel
+Italy
+Ivory Coast
+Jackson, MS
+Jamaica
+Jefferson City, MO
+Jordan River
+Judah
+Juneau, AK
+Kazakhstan
+Kiev
+Kolkata
+Kyoto
+Kyrgyzstan
+Labrador Sea
+Lake Texcoco
+Lake Victoria
+Lansing, MI
+Laos
+Latvia
+Lesotho
+Lincoln, NE
+Lithuania
+Little Rock, AR
+London
+Luxembourg
+Macedonia
+Madagascar
+Madison, WI
+Mammoth Cave
+Matterhorn
+Maya Civilization
+Mayapan
+Mecca
+Medina
+Mediterranean Sea
+Mesopotamia
+Mexico City
+Miami and Erie Canal
+Michigan
+Mississippi River
+Mississippi River Delta
+Missouri River
+Mojave Desert
+Mongolia
+Montgomery, AL
+Montpelier, VT
+Mormon Trail
+Moscow
+Mozambique
+Mt. Elbert
+Mt. Fuji
+Mt. Mitchell
+Mt. Rainier
+Mt. St. Helens
+Mt. Whitney
+Namibia
+Nashville, TN
+Netherlands
+New Brunswick
+New Zealand
+Niagara Falls
+Nicaragua
+Niger River
+Nile River
+Nile River Delta
+North America
+North Korea
+North Sea
+North Vietnam
+Northwest Coast
+Norway
+Nova Scotia
+Oaxaca
+Ohio and Erie Canal
+Ohio River
+Okefenokee Swamp
+Oklahoma City, OK
+Old Spanish Trail
+Olmec Civilization
+Olympia, WA
+Olympic rainforests
+Ontario
+Orange River
+Oregon Trail
+Orleans
+Ozark Highlands
+Pacific Ocean
+Painted Desert
+Pakistan
+Pamlico Sound
+Papua New Guinea
+Paraguay
+Paris
+Pennsylvania Canal
+Persian Gulf
+Peru
+Philippines
+Phoenicia
+Phoenix, AZ
+Pierre, SD
+Pikes Peak
+Plains
+Plateau
+Po River
+Poland
+Portugal
+Providence, RI
+Puerto Rico
+Puget Sound
+Pyrenees
+Quebec
+Raleigh, NC
+Red River
+Red Sea
+Rhine River
+Rhodes
+Richmond, VA
+Rio Grande River
+Rocky Mountains
+Romania
+Rome
+Russia
+Sacramento, CA
+Sahara Desert
+Salem, OR
+Salt Lake City, UT
+San Andreas Fault
+San Francisco Bay
+Santa Fe Trail
+Santa Fe, NM
+Scandinavian Peninsula
+Sea of Galilee
+Sea of Japan
+Seine River
+Senegal River
+Siberia
+Sierra Nevadas
+Sinai Peninsula
+Slovakia
+Slovenia
+Sonoran Desert
+South Africa
+South America
+South Korea
+South Vietnam
+Southern Ocean
+Southwest
+Spain
+Springfield, IL
+St. Lawrence River
+St. Paul, MN
+Strait of Magellan
+Suez Canal
+Sumer
+Superior
+Suriname
+Sweden
+Switzerland
+Syria
+Taiwan
+Tajikistan
+Tallahassee, FL
+Tangier
+Thailand
+The Great Valley
+Tigris River
+Tokyo
+Topeka, KS
+Tours
+Treaty of Tordesillas
+Trenton, NJ
+Turkey
+Turkmenistan
+Ukraine
+Upper/Lower Egypt
+Ural
+Uruguay
+Uzbekistan
+Venezuela
+Volga River
+Washington, DC
+Western Sahara
+White Mountains
+White Sea
+Yangtze River
+Yellow River
+Yellow Sea
+Yucatan Peninsula
+Zambezi River
+Zimbabwe
+`.trim().split("\n").map(normalizeProofSheetTargetName));
 const mapSetLabels = {
   us: "United States",
-  "world-europe": "World / Europe"
+  "world-europe": "World"
 };
 const US_STATE_CAPITAL_MENU_ITEMS = [
   { label: "New England States & Capitals", activityId: "us-states-capitals-01" },
@@ -88,6 +499,32 @@ const US_STATE_CAPITAL_MENU_ITEMS = [
   { label: "Far West / Pacific States & Capitals", activityId: "us-states-capitals-09" },
   { label: "Northwest / Alaska States & Capitals", activityId: "us-states-capitals-10" }
 ];
+const US_STATE_CAPITAL_SECTION_VIEWS = {
+  1: {
+    regionView: { center: [-70.7, 43.6], zoom: 5.25 },
+    studyView: {
+      bounds: [[-74.2, 40.7], [-66.6, 47.7]],
+      padding: { top: 58, right: 58, bottom: 96, left: 58 },
+      duration: 1050
+    }
+  },
+  2: {
+    regionView: { center: [-75.2, 42.0], zoom: 4.55 },
+    studyView: {
+      bounds: [[-80.8, 38.5], [-71.5, 45.3]],
+      padding: { top: 58, right: 58, bottom: 96, left: 58 },
+      duration: 1050
+    }
+  },
+  3: {
+    regionView: { center: [-80.2, 36.4], zoom: 4.35 },
+    studyView: {
+      bounds: [[-86.0, 31.8], [-74.0, 39.8]],
+      padding: { top: 58, right: 58, bottom: 96, left: 58 },
+      duration: 1050
+    }
+  }
+};
 const US_PHYSICAL_FEATURE_MENU_ITEMS = [
   "Northern Appalachian Mountains",
   "Southern Appalachian Mountains",
@@ -163,13 +600,13 @@ const ACTIVITY_MENU = [
       {
         label: "Eastern Europe",
         children: [
-          { label: "Eastern Europe and Russia", activityId: "eastern-europe-countries" }
+          { label: "Eastern Europe Countries", activityId: "eastern-europe-countries" }
         ]
       },
       {
         label: "Balkans",
         children: [
-          { label: "Countries", activityId: "balkans" }
+          { label: "Western Balkans Countries", activityId: "balkans" }
         ]
       },
       {
@@ -227,7 +664,7 @@ const ACTIVITY_MENU = [
           { label: "West / Bajío", activityId: "mexico-west-bajio" },
           { label: "Central", activityId: "mexico-central" },
           { label: "South / Gulf / Yucatán", activityId: "mexico-south-gulf-yucatan" },
-          { label: "States", activityId: "mexico-states" }
+          { label: "All Mexico States Review", activityId: "mexico-states" }
         ]
       },
       {
@@ -237,7 +674,7 @@ const ACTIVITY_MENU = [
           { label: "Central Canada", activityId: "canada-central-canada" },
           { label: "Prairie Provinces", activityId: "canada-prairie-provinces" },
           { label: "Western and Northern Canada", activityId: "canada-western-northern" },
-          { label: "Provinces and Territories", activityId: "canada-provinces-territories" }
+          { label: "All Canada Provinces & Territories Review", activityId: "canada-provinces-territories" }
         ]
       },
       {
@@ -418,7 +855,7 @@ const GEOGRAPHY_NAV_NODES = {
     label: "Balkans",
     parent: "europe",
     activityId: "balkans",
-    activityLabel: "Countries"
+    activityLabel: "Western Balkans Countries"
   },
   "europe-wide": {
     id: "europe-wide",
@@ -557,7 +994,7 @@ const GEOGRAPHY_NAV_NODES = {
   },
   "mexico-states": {
     id: "mexico-states",
-    label: "States",
+    label: "All Mexico States Review",
     parent: "north-america-mexico",
     activityId: "mexico-states"
   },
@@ -600,7 +1037,7 @@ const GEOGRAPHY_NAV_NODES = {
   },
   "canada-provinces-territories": {
     id: "canada-provinces-territories",
-    label: "Provinces and Territories",
+    label: "All Canada Provinces & Territories Review",
     parent: "north-america-canada",
     activityId: "canada-provinces-territories"
   },
@@ -768,14 +1205,14 @@ const activityCatalogMetadata = {
   "eastern-europe-countries": {
     mapSet: "world-europe",
     category: "Countries",
-    description: "Eastern Europe and Russia regional country practice.",
+    description: "Eastern Europe regional country practice without Russia.",
     sortOrder: 15,
     sectionNumber: 15
   },
   "balkans": {
     mapSet: "world-europe",
     category: "Countries",
-    description: "Southeastern Europe country review.",
+    description: "Western Balkans country practice.",
     sortOrder: 16,
     sectionNumber: 16
   },
@@ -932,7 +1369,7 @@ const activityCatalogMetadata = {
   "mexico-states": {
     mapSet: "world-europe",
     category: "States",
-    description: "Mexico federal entities practice with state and capital-district polygons.",
+    description: "Full Mexico states review with state and capital-district polygons.",
     sortOrder: 82
   },
   "mexico-northwest": {
@@ -968,7 +1405,7 @@ const activityCatalogMetadata = {
   "canada-provinces-territories": {
     mapSet: "world-europe",
     category: "Provinces & Territories",
-    description: "Canada provinces and territories polygon practice.",
+    description: "Full Canada provinces and territories review.",
     sortOrder: 83
   }
 };
@@ -1077,6 +1514,31 @@ let floatingChip = null;
 let completedActivityIds = loadCompletedActivityIds();
 let activityProgress = loadActivityProgress();
 let currentDifficulty = loadDifficultyMode();
+let currentAppScreen = "launch";
+let appScreenHistory = [];
+let selectedJourneyId = null;
+let selectedJourneyPlayState = {
+  journeyId: null,
+  difficultyId: "medium"
+};
+let pendingFreePlayActivityId = null;
+let pendingFreePlayHierarchyNodeId = null;
+let selectedFreePlayDifficultyId = difficultyModes.easy;
+let activeJourneySession = null;
+let activeStudySession = null;
+let journeyCompletionState = null;
+let isJourneyTransitioning = false;
+let journeyAutoAdvanceTimer = null;
+let activityAttemptState = createActivityAttemptState();
+let atlasProgress = loadProgress();
+let mapLayerSettings = loadMapLayerSettings();
+let studyTargetSettings = loadStudyTargetSettings();
+let currentPresentationSettings = {};
+
+const incorrectRevealThreshold = 3;
+const activityRetryThreshold = 5;
+const incorrectRevealDurationMs = 1700;
+const activityRetryReviewDurationMs = 2600;
 
 const title = document.querySelector("#poc-title");
 const instruction = document.querySelector("#poc-instruction");
@@ -1106,8 +1568,84 @@ const difficultyToggle = document.querySelector("#difficulty-toggle");
 const difficultyControlGroup = document.querySelector("#difficulty-control-group");
 const progressControlGroup = document.querySelector("#progress-control-group");
 const difficultyButtons = document.querySelectorAll("[data-difficulty]");
+const launchScreen = document.querySelector("#launch-screen");
+const launchTitle = document.querySelector("#launch-title");
+const launchStartButton = document.querySelector("#launch-start-button");
+const launchFreePlayButton = document.querySelector("#launch-free-play-button");
+const launchContinueButton = document.querySelector("#launch-continue-button");
+const launchChooseButton = document.querySelector("#launch-choose-button");
+const launchSettingsButton = document.querySelector("#launch-settings-button");
+const launchSettingsGear = document.querySelector("#launch-settings-gear");
+const launchPlaceholderCard = document.querySelector("#launch-placeholder-card");
+const launchPlaceholderTitle = document.querySelector("#launch-placeholder-title");
+const launchPlaceholderMessage = document.querySelector("#launch-placeholder-message");
+const appShellScreen = document.querySelector("#app-shell-screen");
+const appShellTitle = document.querySelector("#app-shell-title");
+const appShellSubtitle = document.querySelector("#app-shell-subtitle");
+const appShellBackButton = document.querySelector("#app-shell-back-button");
+const appShellSettingsGear = document.querySelector("#app-shell-settings-gear");
+const mainMenuActions = document.querySelector("#main-menu-actions");
+const mainMenuContinueButton = document.querySelector("#main-menu-continue-button");
+const mainMenuChooseButton = document.querySelector("#main-menu-choose-button");
+const mainMenuStudyButton = document.querySelector("#main-menu-study-button");
+const mainMenuFreePlayButton = document.querySelector("#main-menu-free-play-button");
+const mainMenuSettingsButton = document.querySelector("#main-menu-settings-button");
+const mainMenuLaunchButton = document.querySelector("#main-menu-launch-button");
+const appShellPlaceholderCard = document.querySelector("#app-shell-placeholder-card");
+const appShellPlaceholderTitle = document.querySelector("#app-shell-placeholder-title");
+const appShellPlaceholderMessage = document.querySelector("#app-shell-placeholder-message");
+const journeyPresetList = document.querySelector("#journey-preset-list");
+const journeyShellContent = document.querySelector("#journey-shell-content");
+const journeyCompletionOverlay = document.querySelector("#journey-completion-overlay");
+const journeyCompletionCard = document.querySelector(".journey-completion-card");
+const journeyCompletionKicker = document.querySelector("#journey-completion-kicker");
+const journeyCompletionTitle = document.querySelector("#journey-completion-title");
+const journeyCompletionMessage = document.querySelector("#journey-completion-message");
+const journeyCompletionNext = document.querySelector("#journey-completion-next");
+const journeyCompletionPrimary = document.querySelector("#journey-completion-primary");
+const journeyCompletionSecondary = document.querySelector("#journey-completion-secondary");
+const activityRetryOverlay = document.querySelector("#activity-retry-overlay");
+const activityRetryMessage = document.querySelector("#activity-retry-message");
+
+const journeyDifficultyOptions = [
+  {
+    id: "easy",
+    title: "Easy",
+    mode: "Learn",
+    bullets: [
+      "Most visual help",
+      "Best for first exposure",
+      "Hints and supportive feedback"
+    ]
+  },
+  {
+    id: "medium",
+    title: "Medium",
+    mode: "Practice",
+    bullets: [
+      "Less help",
+      "Good default challenge",
+      "Still supportive"
+    ]
+  },
+  {
+    id: "hard",
+    title: "Hard",
+    mode: "Challenge",
+    bullets: [
+      "Minimal help",
+      "Best for confident review",
+      "Later this will be the main trophy-run mode"
+    ]
+  }
+];
 
 async function init() {
+  document.title = APP_NAME;
+  if (launchTitle) {
+    launchTitle.textContent = APP_NAME;
+  }
+
   const [loadedActivities, worldCountries, supplementalWorldCountries, usStatesAtlas, stateTargets, northAmericaAdmin1] = await Promise.all([
     Promise.all(activityDataPaths.map((path) => fetchJson(path))),
     fetchJson(worldCountriesPath),
@@ -1170,6 +1708,7 @@ async function init() {
   runner.setOverviewMapSet(activeMenuRoot, getMenuOverviewView(activeMenuRoot));
   renderOverviewLibrary();
   updateOverviewPreview();
+  bindLaunchScreenEvents();
   bindUiEvents();
   bindZoomControls();
   setBrowseDrawerOpen(false);
@@ -1178,7 +1717,7 @@ async function init() {
   const initialActivityId = getInitialActivityFromUrl();
 
   if (initialActivityId) {
-    openActivity(initialActivityId);
+    openActivity(initialActivityId, { forceGameplayVisible: true });
   } else {
     openHome();
   }
@@ -1314,11 +1853,12 @@ function getMapDefaults(rawActivity, region) {
 
   if (region === "united-states") {
     const isFullUsActivity = Number(rawActivity.sequence) >= 9;
+    const sectionView = US_STATE_CAPITAL_SECTION_VIEWS[Number(rawActivity.sequence)];
 
     return {
       ...commonDefaults,
-      regionView: { center: [-98, 39], zoom: 3.1 },
-      studyView: {
+      regionView: sectionView?.regionView || { center: [-98, 39], zoom: 3.1 },
+      studyView: sectionView?.studyView || {
         bounds: isFullUsActivity
           ? [[-170, 18], [-66.75, 72]]
           : [[-108.5, 25.1], [-66.75, 49.2]],
@@ -1403,9 +1943,9 @@ function getMapDefaults(rawActivity, region) {
       }
     },
     "balkans": {
-      regionView: { center: [22, 42], zoom: 3.8 },
+      regionView: { center: [19.2, 43.5], zoom: 4.5 },
       studyView: {
-        bounds: [[12.5, 34], [30.5, 49]],
+        bounds: [[13.0, 39.2], [23.5, 47.1]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
@@ -1427,9 +1967,9 @@ function getMapDefaults(rawActivity, region) {
       }
     },
     "eastern-europe": {
-      regionView: { center: [44, 55], zoom: 2.25 },
+      regionView: { center: [26.5, 50.5], zoom: 3.35 },
       studyView: {
-        bounds: [[13.5, 43.0], [180.0, 82.5]],
+        bounds: [[13.5, 43.0], [41.5, 57.0]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
@@ -1759,7 +2299,7 @@ function bindUiEvents() {
     if (hierarchyNodeId) {
       drillToHierarchyNode(hierarchyNodeId);
     } else {
-      selectActivity(card.dataset.activityId);
+      selectActivity(card.dataset.activityId, { requireDifficulty: true });
     }
 
     closeBrowseDrawer();
@@ -1828,16 +2368,42 @@ function bindUiEvents() {
     });
   });
 
-  homeButton?.addEventListener("click", openHome);
-  backButton?.addEventListener("click", goBack);
+  homeButton?.addEventListener("click", () => {
+    if (currentAppScreen === "study-explore") {
+      exitStudyExplore();
+      return;
+    }
+
+    showAppScreen("main-menu");
+  });
+  backButton?.addEventListener("click", () => {
+    if (currentAppScreen === "study-explore") {
+      exitStudyExplore();
+      return;
+    }
+
+    if (activeJourneySession?.mode === "journey") {
+      exitJourney();
+      return;
+    }
+
+    if (currentAppScreen === "free-play" && activeHierarchyNodeId === "world") {
+      goBackAppScreen();
+      return;
+    }
+
+    goBack();
+  });
   browseButton?.addEventListener("click", toggleBrowseDrawer);
   browseCloseButton?.addEventListener("click", closeBrowseDrawer);
   settingsButton?.addEventListener("click", () => {
-    showFeedback("Settings will be added here.");
+    showAppScreen("settings");
   });
   previousActivityButton?.addEventListener("click", openPreviousActivity);
   nextIncompleteButton?.addEventListener("click", openNextIncompleteActivity);
   resetButton.addEventListener("click", resetActivity);
+  journeyCompletionPrimary?.addEventListener("click", handleJourneyCompletionPrimary);
+  journeyCompletionSecondary?.addEventListener("click", handleJourneyCompletionSecondary);
   document.addEventListener("pointermove", handleDocumentPointerMove);
   document.addEventListener("pointerup", handleDocumentPointerUp);
   document.addEventListener("pointercancel", cancelGrabbedAnswer);
@@ -1847,6 +2413,1482 @@ function bindUiEvents() {
       cancelGrabbedAnswer();
     }
   });
+}
+
+function bindLaunchScreenEvents() {
+  launchStartButton?.addEventListener("click", () => {
+    showAppScreen("main-menu");
+  });
+
+  launchContinueButton?.addEventListener("click", () => {
+    showLaunchPlaceholder("Sign in is coming soon.", "Soon you’ll be able to save Atlas Quest progress to an account.");
+  });
+
+  launchChooseButton?.addEventListener("click", () => {
+    showLaunchPlaceholder("Account creation is coming soon.", "Guest mode is ready now, and accounts will arrive later.");
+  });
+
+  launchFreePlayButton?.addEventListener("click", openFreePlay);
+  launchSettingsButton?.addEventListener("click", () => showAppScreen("settings"));
+  launchSettingsGear?.addEventListener("click", () => showAppScreen("settings"));
+  appShellBackButton?.addEventListener("click", goBackAppScreen);
+  appShellSettingsGear?.addEventListener("click", () => {
+    showAppScreen("settings");
+  });
+  mainMenuContinueButton?.addEventListener("click", () => {
+    continueSavedJourney();
+  });
+  mainMenuChooseButton?.addEventListener("click", () => {
+    showAppScreen("choose-journey");
+  });
+  mainMenuStudyButton?.addEventListener("click", () => {
+    showAppScreen("choose-journey");
+  });
+  mainMenuFreePlayButton?.addEventListener("click", openFreePlay);
+  mainMenuSettingsButton?.addEventListener("click", () => {
+    showAppScreen("settings");
+  });
+  mainMenuLaunchButton?.addEventListener("click", () => {
+    showAppScreen("launch", { pushHistory: false });
+  });
+}
+
+function showLaunchPlaceholder(titleText, messageText) {
+  if (launchPlaceholderTitle) {
+    launchPlaceholderTitle.textContent = titleText;
+  }
+
+  if (launchPlaceholderMessage) {
+    launchPlaceholderMessage.textContent = messageText;
+  }
+
+  if (launchPlaceholderCard) {
+    launchPlaceholderCard.hidden = false;
+  }
+}
+
+function showAppScreen(screenId, options = {}) {
+  const pushHistory = options.pushHistory !== false && currentAppScreen !== screenId;
+
+  if (pushHistory) {
+    appScreenHistory.push(currentAppScreen);
+  }
+
+  saveCurrentActivityProgress();
+  currentAppScreen = screenId;
+  closeBrowseDrawer();
+  cancelGrabbedAnswer();
+  document.body.classList.toggle("launch-mode", screenId === "launch");
+  document.body.classList.toggle("app-shell-mode", screenId !== "launch" && screenId !== "free-play");
+
+  if (launchScreen) {
+    launchScreen.hidden = screenId !== "launch";
+  }
+
+  if (appShellScreen) {
+    appShellScreen.hidden = screenId === "launch" || screenId === "free-play";
+  }
+
+  renderAppShellScreen(screenId);
+}
+
+function goBackAppScreen() {
+  const previousScreen = appScreenHistory.pop() || "launch";
+  if (previousScreen === "free-play") {
+    openFreePlay({
+      pushHistory: false,
+      hierarchyNodeId: pendingFreePlayHierarchyNodeId || activeHierarchyNodeId
+    });
+    return;
+  }
+
+  showAppScreen(previousScreen, { pushHistory: false });
+}
+
+function openFreePlay(options = {}) {
+  const pushHistory = options.pushHistory !== false;
+  if (pushHistory && currentAppScreen !== "free-play") {
+    appScreenHistory.push(currentAppScreen);
+  }
+
+  saveCurrentActivityProgress();
+  currentAppScreen = "free-play";
+  document.body.classList.remove("launch-mode", "app-shell-mode");
+
+  if (launchScreen) {
+    launchScreen.hidden = true;
+  }
+
+  if (appShellScreen) {
+    appShellScreen.hidden = true;
+  }
+
+  showHierarchyBrowseNode(options.hierarchyNodeId || "world");
+  setBrowseDrawerOpen(true);
+}
+
+function renderAppShellScreen(screenId) {
+  const isMainMenu = screenId === "main-menu";
+  const isChooseJourney = screenId === "choose-journey";
+  const hasJourneyShellContent = isJourneyShellScreen(screenId);
+  const content = getAppShellScreenContent(screenId);
+
+  if (!content) {
+    return;
+  }
+
+  if (appShellTitle) {
+    appShellTitle.textContent = content.title;
+  }
+
+  if (appShellSubtitle) {
+    appShellSubtitle.textContent = content.subtitle;
+  }
+
+  if (mainMenuActions) {
+    mainMenuActions.hidden = !isMainMenu;
+  }
+
+  if (appShellPlaceholderCard) {
+    appShellPlaceholderCard.hidden = isMainMenu || isChooseJourney || hasJourneyShellContent;
+  }
+
+  if (appShellPlaceholderTitle) {
+    appShellPlaceholderTitle.textContent = content.placeholderTitle || content.title;
+  }
+
+  if (appShellPlaceholderMessage) {
+    appShellPlaceholderMessage.textContent = content.placeholderMessage || content.subtitle;
+  }
+
+  renderJourneyPresetList(isChooseJourney);
+  renderJourneyShellContent(screenId);
+}
+
+function getAppShellScreenContent(screenId) {
+  const selectedJourney = getSelectedJourney();
+  const selectedJourneyTitle = selectedJourney?.title || "Journey";
+  const contentByScreen = {
+    "main-menu": {
+      title: "Main Menu",
+      subtitle: "Choose how you want to explore today."
+    },
+    "continue-placeholder": {
+      title: "Continue Journey",
+      subtitle: "Journey progress is coming soon.",
+      placeholderTitle: "Journey progress is coming soon.",
+      placeholderMessage: "Soon this will bring you back to your next recommended quest."
+    },
+    "choose-journey": {
+      title: "Choose Journey",
+      subtitle: "Pick an adventure. Study and journey play unlock in a later phase."
+    },
+    "journey-detail": {
+      title: selectedJourneyTitle,
+      subtitle: "Choose how you want to begin this journey."
+    },
+    "study-placeholder": {
+      title: `Study: ${selectedJourneyTitle}`,
+      subtitle: "Choose a section to explore calmly before playing."
+    },
+    "choose-difficulty": {
+      title: "Choose Difficulty",
+      subtitle: "Choose how much help you want during this journey."
+    },
+    "begin-journey-placeholder": {
+      title: `Play: ${selectedJourneyTitle}`,
+      subtitle: "Journey gameplay is coming next.",
+      placeholderTitle: "Journey gameplay is coming next.",
+      placeholderMessage: "Journey gameplay is coming next."
+    },
+    "free-play-difficulty": {
+      title: "Choose Difficulty",
+      subtitle: "Choose how much help you want for this activity."
+    },
+    settings: {
+      title: "Settings",
+      subtitle: "Adjust how Atlas Quest presents the map."
+    }
+  };
+
+  return contentByScreen[screenId] || contentByScreen["main-menu"];
+}
+
+function isJourneyAvailable(journey) {
+  return journey.status === "available";
+}
+
+function isJourneyShellScreen(screenId) {
+  return [
+    "journey-detail",
+    "study-placeholder",
+    "choose-difficulty",
+    "begin-journey-placeholder",
+    "free-play-difficulty",
+    "settings"
+  ].includes(screenId);
+}
+
+function getJourneyStatusLabel(journey) {
+  return isJourneyAvailable(journey) ? "Available" : "Coming Soon";
+}
+
+function getJourneyProgressSummary(journey) {
+  const validSteps = getValidJourneySteps(journey);
+  const progress = getJourneyProgress(journey.id, atlasProgress);
+  const counts = Object.fromEntries(
+    journeyDifficultyOptions.map((difficulty) => [
+      difficulty.id,
+      validSteps.filter((step) => progress.completedSteps?.[step.id]?.[difficulty.id]).length
+    ])
+  );
+  const bestCompletedCount = Math.max(0, ...Object.values(counts));
+
+  return {
+    total: validSteps.length,
+    bestCompletedCount,
+    counts,
+    completedDifficulties: progress.completedDifficulties || {}
+  };
+}
+
+function formatJourneyProgressText(journey) {
+  const summary = getJourneyProgressSummary(journey);
+
+  if (summary.total <= 0 || summary.bestCompletedCount <= 0) {
+    return "";
+  }
+
+  return `${summary.bestCompletedCount} / ${summary.total} complete`;
+}
+
+function getSelectedJourney() {
+  return journeyPresets.find((journey) => journey.id === selectedJourneyId) || null;
+}
+
+function selectJourney(journeyId) {
+  selectedJourneyId = journeyId;
+  selectedJourneyPlayState = {
+    journeyId,
+    difficultyId: selectedJourneyPlayState.journeyId === journeyId
+      ? selectedJourneyPlayState.difficultyId
+      : "medium"
+  };
+  showAppScreen("journey-detail");
+}
+
+function continueSavedJourney() {
+  atlasProgress = loadProgress();
+  const journey = journeyPresets.find((preset) => preset.id === atlasProgress.activeJourneyId);
+  const validSteps = getValidJourneySteps(journey);
+  const stepIndex = Math.min(atlasProgress.activeStepIndex || 0, Math.max(validSteps.length - 1, 0));
+
+  if (!journey || validSteps.length === 0) {
+    showAppScreen("continue-placeholder");
+    return;
+  }
+
+  selectedJourneyId = journey.id;
+  selectedJourneyPlayState = {
+    journeyId: journey.id,
+    difficultyId: atlasProgress.activeDifficulty || "easy"
+  };
+  activeJourneySession = {
+    journeyId: journey.id,
+    currentStepIndex: stepIndex,
+    difficulty: selectedJourneyPlayState.difficultyId,
+    mode: "journey",
+    incorrectPlacements: 0
+  };
+  openJourneyStep(stepIndex, { preserveProgress: true });
+}
+
+function getSelectedJourneyDifficultyId() {
+  if (selectedJourneyPlayState.journeyId !== selectedJourneyId) {
+    return "medium";
+  }
+
+  return selectedJourneyPlayState.difficultyId || "medium";
+}
+
+function setSelectedJourneyDifficulty(difficultyId) {
+  selectedJourneyPlayState = {
+    journeyId: selectedJourneyId,
+    difficultyId
+  };
+  renderJourneyShellContent("choose-difficulty");
+}
+
+function restartSelectedJourneyDifficulty() {
+  const journey = getSelectedJourney();
+
+  if (!journey) {
+    return;
+  }
+
+  const difficulty = getSelectedJourneyDifficultyId();
+  const difficultyLabel = journeyDifficultyOptions.find((option) => option.id === difficulty)?.title || "Easy";
+  const shouldRestart = window.confirm(`Restart ${journey.title} progress on ${difficultyLabel}?`);
+
+  if (!shouldRestart) {
+    return;
+  }
+
+  atlasProgress = resetJourneyDifficulty(journey.id, difficulty, atlasProgress);
+  renderJourneyShellContent("journey-detail");
+  renderJourneyPresetList(false);
+}
+
+function getSelectedFreePlayDifficultyId() {
+  const activity = getActivityById(pendingFreePlayActivityId);
+  return normalizeDifficultyForActivity(selectedFreePlayDifficultyId, activity);
+}
+
+function setSelectedFreePlayDifficulty(difficultyId) {
+  const activity = getActivityById(pendingFreePlayActivityId);
+  selectedFreePlayDifficultyId = normalizeDifficultyForActivity(difficultyId, activity);
+  renderJourneyShellContent("free-play-difficulty");
+}
+
+function setPreGameDifficulty(difficultyId, activity) {
+  currentDifficulty = normalizeDifficultyForActivity(difficultyId, activity);
+  saveDifficultyMode();
+  updateDifficultyControls();
+}
+
+function showFreePlayDifficultyScreen(activityId) {
+  pendingFreePlayActivityId = activityId;
+  pendingFreePlayHierarchyNodeId = findHierarchyNodeForActivity(activityId) || activeHierarchyNodeId;
+  selectedFreePlayDifficultyId = normalizeDifficultyForActivity(difficultyModes.easy, getActivityById(activityId));
+  showAppScreen("free-play-difficulty");
+}
+
+function startPendingFreePlayActivity() {
+  if (!pendingFreePlayActivityId) {
+    goBackAppScreen();
+    return;
+  }
+
+  const activityId = pendingFreePlayActivityId;
+  const hierarchyNodeId = pendingFreePlayHierarchyNodeId;
+  const difficultyId = getSelectedFreePlayDifficultyId();
+  pendingFreePlayActivityId = null;
+  pendingFreePlayHierarchyNodeId = null;
+  openActivity(activityId, { hierarchyNodeId, difficultyId });
+}
+
+function getValidJourneySteps(journey) {
+  return (journey?.steps || []).filter((step) => getActivityById(step.activityId));
+}
+
+function getJourneyStepCameraTarget(step) {
+  const activity = getActivityById(step?.activityId);
+  const regionView = activity?.map?.regionView;
+
+  if (Array.isArray(regionView?.center) && typeof regionView.zoom === "number") {
+    return {
+      center: regionView.center,
+      zoom: regionView.zoom,
+      duration: 1150
+    };
+  }
+
+  return null;
+}
+
+async function transitionToJourneyStep(step) {
+  const target = getJourneyStepCameraTarget(step);
+
+  if (!target || typeof runner?.flyToCameraTarget !== "function") {
+    return false;
+  }
+
+  if (prefersReducedMotion()) {
+    return false;
+  }
+
+  try {
+    return await runner.flyToCameraTarget(target);
+  } catch {
+    return false;
+  }
+}
+
+function prefersReducedMotion() {
+  try {
+    return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches || false;
+  } catch {
+    // TODO: fold reduced-motion handling into a broader accessibility settings service.
+    return false;
+  }
+}
+
+function startSelectedJourney() {
+  const journey = getSelectedJourney();
+  const validSteps = getValidJourneySteps(journey);
+
+  if (!journey || validSteps.length === 0) {
+    showAppScreen("begin-journey-placeholder");
+    return;
+  }
+
+  activeJourneySession = {
+    journeyId: journey.id,
+    currentStepIndex: 0,
+    difficulty: getSelectedJourneyDifficultyId(),
+    mode: "journey",
+    incorrectPlacements: 0
+  };
+  atlasProgress = setActiveJourney(journey.id, 0, activeJourneySession.difficulty, atlasProgress);
+  openJourneyStep(0);
+}
+
+function openJourneyStep(stepIndex, options = {}) {
+  const journey = journeyPresets.find((preset) => preset.id === activeJourneySession?.journeyId);
+  const validSteps = getValidJourneySteps(journey);
+  const step = validSteps[stepIndex];
+
+  if (!journey || !step) {
+    showAppScreen("begin-journey-placeholder");
+    return;
+  }
+
+  activeJourneySession.currentStepIndex = stepIndex;
+  activeJourneySession.incorrectPlacements = 0;
+  const stepActivity = getActivityById(step.activityId);
+  const stepDifficulty = normalizeDifficultyForActivity(activeJourneySession.difficulty, stepActivity);
+  activeJourneySession.difficulty = stepDifficulty;
+  atlasProgress = setActiveJourney(activeJourneySession.journeyId, stepIndex, stepDifficulty, atlasProgress);
+  if (!options.preserveProgress) {
+    setActivityProgress(step.activityId, [], stepDifficulty);
+    setActivityCompletedState(step.activityId, false);
+  }
+  openActivity(step.activityId, {
+    appScreen: "journey-gameplay",
+    difficultyId: stepDifficulty,
+    forceGameplayVisible: true,
+    presentationSettings: getJourneyActivityPresentationSettings(step)
+  });
+}
+
+function getJourneyActivityPresentationSettings() {
+  return {
+    reviewMode: studyModes.sectionOnly,
+    showCities: false,
+    showCapitals: false
+  };
+}
+
+function startStudyActivity(journeyId, stepId) {
+  const journey = journeyPresets.find((preset) => preset.id === journeyId);
+  const step = getValidJourneySteps(journey).find((candidate) => candidate.id === stepId);
+  const activity = getActivityById(step?.activityId);
+
+  if (!journey || !step || !activity) {
+    showFeedback("This study section is not ready yet.");
+    return;
+  }
+
+  selectedJourneyId = journey.id;
+  openStudyExploreActivity(journey, step, activity);
+}
+
+function openStudyExploreActivity(journey, step, activity) {
+  saveCurrentActivityProgress();
+  cancelGrabbedAnswer();
+  clearJourneyAutoAdvanceTimer();
+  activeStudySession = {
+    journeyId: journey.id,
+    stepId: step.id,
+    activityId: activity.id,
+    revealedTargetIds: [],
+    selectedTargetId: null
+  };
+  currentAppScreen = "study-explore";
+  document.body.classList.remove("launch-mode", "app-shell-mode", "browse-mode", "overview-mode");
+  document.body.classList.add("study-mode", "study-explore-mode");
+
+  if (launchScreen) {
+    launchScreen.hidden = true;
+  }
+
+  if (appShellScreen) {
+    appShellScreen.hidden = true;
+  }
+
+  selectedActivityId = activity.id;
+  const hierarchyNode = getHierarchyNode(findHierarchyNodeForActivity(activity.id));
+  activeHierarchyNodeId = hierarchyNode?.id || activeHierarchyNodeId;
+  activeMenuRoot = getHierarchyMenuRoot(activeHierarchyNodeId) || activeMenuRoot;
+  currentPresentationSettings = getEffectivePresentationSettings(activity, {
+    presentationSettings: {
+      reviewMode: studyModes.sectionOnly
+    }
+  });
+  // TODO: Apply granular studyTargetSettings here once target filtering is
+  // safe for every activity family. For v1, required activity targets stay
+  // intact so Study Mode cannot open an empty or broken map.
+  const presentedActivity = getPresentedActivity(activity, currentPresentationSettings);
+
+  session.setStudyMode(studyModes.sectionOnly);
+  session.setActivity(presentedActivity);
+  session.setCompletedIds([]);
+  runner.updateActivity(session.activity);
+  runner.setPresentationSettings(currentPresentationSettings);
+  runner.setDifficulty(difficultyModes.easy);
+  runner.setCompletedTargets([]);
+  title.textContent = `Study: ${step.title}`;
+  instruction.textContent = "Tap a target or choose a name below to reveal it.";
+  studyCard.hidden = false;
+  studyCard.querySelector("strong").textContent = step.title;
+  studyCard.querySelector("span").textContent = "Study Mode";
+  runner.enterStudyView();
+  renderStudyExplorePanel();
+  updateTopBarNavigation();
+}
+
+function revealStudyTarget(targetId) {
+  if (currentAppScreen !== "study-explore" || !activeStudySession || !session.getFeature(targetId)) {
+    return;
+  }
+
+  activeStudySession.selectedTargetId = targetId;
+  if (!activeStudySession.revealedTargetIds.includes(targetId)) {
+    activeStudySession.revealedTargetIds.push(targetId);
+  }
+
+  runner.setCompletedTargets(activeStudySession.revealedTargetIds);
+  renderStudyExplorePanel();
+}
+
+function revealAllStudyTargets() {
+  if (!activeStudySession) {
+    return;
+  }
+
+  activeStudySession.revealedTargetIds = session.currentActivity.targets.map((target) => target.id);
+  activeStudySession.selectedTargetId = activeStudySession.selectedTargetId || activeStudySession.revealedTargetIds[0] || null;
+  runner.setCompletedTargets(activeStudySession.revealedTargetIds);
+  renderStudyExplorePanel();
+}
+
+function hideStudyLabels() {
+  if (!activeStudySession) {
+    return;
+  }
+
+  activeStudySession.revealedTargetIds = [];
+  activeStudySession.selectedTargetId = null;
+  runner.setCompletedTargets([]);
+  renderStudyExplorePanel();
+}
+
+function launchPracticeForStudySet() {
+  if (!activeStudySession) {
+    return;
+  }
+
+  const activityId = activeStudySession.activityId;
+  const hierarchyNodeId = findHierarchyNodeForActivity(activityId);
+  activeStudySession = null;
+  document.body.classList.remove("study-explore-mode");
+  openActivity(activityId, {
+    appScreen: "free-play",
+    difficultyId: difficultyModes.easy,
+    forceGameplayVisible: true,
+    hierarchyNodeId
+  });
+}
+
+function exitStudyExplore() {
+  activeStudySession = null;
+  document.body.classList.remove("study-explore-mode");
+  runner.setCompletedTargets([]);
+  showAppScreen(selectedJourneyId ? "journey-detail" : "main-menu");
+}
+
+function renderStudyExplorePanel() {
+  setAnswerPanelMode("study-explore");
+  answerBank.innerHTML = "";
+
+  const controls = document.createElement("div");
+  controls.className = "study-explore-controls";
+  [
+    ["Reveal All", revealAllStudyTargets],
+    ["Hide Labels", hideStudyLabels],
+    ["Practice This Set", launchPracticeForStudySet],
+    ["Exit Study", exitStudyExplore]
+  ].forEach(([label, handler]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+    button.addEventListener("click", handler);
+    controls.appendChild(button);
+  });
+
+  const list = document.createElement("div");
+  list.className = "study-target-list";
+  session.currentActivity.targets.forEach((target) => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "study-target-list-item";
+    item.classList.toggle("revealed", activeStudySession?.revealedTargetIds.includes(target.id));
+    item.classList.toggle("selected", activeStudySession?.selectedTargetId === target.id);
+    item.addEventListener("click", () => revealStudyTarget(target.id));
+
+    const name = document.createElement("span");
+    name.textContent = target.name;
+    item.appendChild(name);
+
+    const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(target.name);
+    if (speaker) {
+      item.appendChild(speaker);
+    }
+
+    list.appendChild(item);
+  });
+
+  answerBank.append(controls, list);
+}
+
+function getEffectivePresentationSettings(activity, options = {}) {
+  const requestedPresentationSettings = options.presentationSettings || {};
+
+  return {
+    reviewMode: requestedPresentationSettings.reviewMode || studyModes.cumulative,
+    ...requestedPresentationSettings,
+    ...getEffectiveLayerSettings(activity, options)
+  };
+}
+
+function getEffectiveLayerSettings(activity, options = {}) {
+  const requestedShowCities = options.presentationSettings?.showCities;
+  const requestedShowCapitals = options.presentationSettings?.showCapitals;
+
+  if (typeof requestedShowCities === "boolean" || typeof requestedShowCapitals === "boolean") {
+    const requestedSettings = {
+      ...mapLayerSettings,
+      ...(typeof requestedShowCities === "boolean" ? { showCities: requestedShowCities } : {}),
+      ...(typeof requestedShowCapitals === "boolean" ? { showCapitals: requestedShowCapitals } : {})
+    };
+
+    return {
+      ...requestedSettings,
+      ...getRequiredTargetLayerOverrides(activity, requestedSettings)
+    };
+  }
+
+  return {
+    ...mapLayerSettings,
+    ...getRequiredTargetLayerOverrides(activity, mapLayerSettings)
+  };
+}
+
+function getRequiredTargetLayerOverrides(activity, settings = mapLayerSettings) {
+  const overrides = {};
+
+  if (isPointOnlyActivity(activity)) {
+    overrides.showCities = true;
+    overrides.showCapitals = true;
+  } else if (isCityCapitalPrimaryActivity(activity) && (settings.showCities || settings.showCapitals)) {
+    overrides.showCities = settings.showCities;
+    overrides.showCapitals = settings.showCapitals;
+  }
+
+  return overrides;
+}
+
+function shouldShowCityCapitalLayer(settings = mapLayerSettings) {
+  return settings.showCities !== false || settings.showCapitals !== false;
+}
+
+function isCityCapitalPrimaryActivity(activity) {
+  if (!activity?.targets?.some((target) => target.kind === "point")) {
+    return false;
+  }
+
+  if (isPointOnlyActivity(activity)) {
+    return true;
+  }
+
+  const searchableText = [
+    activity.title,
+    activity.category,
+    activity.targetNoun,
+    activity.description
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  return /\bcities\b|\bcity\b|\bcapitals\b|\bcapital\b/.test(searchableText);
+}
+
+function isPointOnlyActivity(activity) {
+  return Boolean(activity?.targets?.length)
+    && activity.targets.every((target) => target.kind === "point");
+}
+
+function formatJourneyStepCount(count) {
+  if (count === 1) {
+    return "1 activity";
+  }
+
+  if (count > 1) {
+    return `${count} activities`;
+  }
+
+  return "No activities yet";
+}
+
+function renderJourneyPresetList(isVisible) {
+  if (!journeyPresetList) {
+    return;
+  }
+
+  journeyPresetList.hidden = !isVisible;
+
+  if (!isVisible) {
+    journeyPresetList.innerHTML = "";
+    return;
+  }
+
+  journeyPresetList.innerHTML = "";
+
+  journeyPresets.forEach((journey) => {
+    const isAvailable = isJourneyAvailable(journey);
+    const card = document.createElement("article");
+    card.className = `journey-preset-card${isAvailable ? "" : " journey-preset-card-coming-soon"}`;
+    card.dataset.journeyId = journey.id;
+
+    const header = document.createElement("div");
+    header.className = "journey-preset-card-header";
+
+    const heading = document.createElement("h3");
+    heading.textContent = journey.title;
+
+    const status = document.createElement("span");
+    status.className = `journey-status journey-status-${journey.status}`;
+    status.textContent = getJourneyStatusLabel(journey);
+
+    header.append(heading, status);
+
+    const description = document.createElement("p");
+    description.textContent = journey.description;
+
+    const meta = document.createElement("p");
+    meta.className = "journey-preset-meta";
+    const progressText = isAvailable ? formatJourneyProgressText(journey) : "";
+    meta.textContent = progressText
+      ? `${formatJourneyStepCount(journey.steps.length)} | ${progressText}`
+      : formatJourneyStepCount(journey.steps.length);
+
+    const actions = document.createElement("div");
+    actions.className = "journey-card-actions";
+
+    const selectButton = document.createElement("button");
+    selectButton.type = "button";
+    selectButton.textContent = isAvailable ? "Select Journey" : "Coming soon";
+    selectButton.disabled = !isAvailable;
+    selectButton.addEventListener("click", () => {
+      selectJourney(journey.id);
+    });
+
+    actions.append(selectButton);
+
+    card.append(header, description, meta, actions);
+    journeyPresetList.appendChild(card);
+  });
+}
+
+function renderJourneyShellContent(screenId) {
+  if (!journeyShellContent) {
+    return;
+  }
+
+  const selectedJourney = getSelectedJourney();
+  const isJourneyScreen = isJourneyShellScreen(screenId);
+  journeyShellContent.hidden = !isJourneyScreen;
+  journeyShellContent.innerHTML = "";
+
+  if (!isJourneyScreen) {
+    return;
+  }
+
+  if (screenId === "free-play-difficulty") {
+    renderFreePlayDifficultyScreen();
+    return;
+  }
+
+  if (screenId === "settings") {
+    renderSettingsScreen();
+    return;
+  }
+
+  if (!selectedJourney || !isJourneyAvailable(selectedJourney)) {
+    const missingCard = document.createElement("div");
+    missingCard.className = "app-shell-placeholder-card";
+    missingCard.setAttribute("role", "status");
+    missingCard.textContent = "Choose an available journey first.";
+    journeyShellContent.appendChild(missingCard);
+    return;
+  }
+
+  if (screenId === "journey-detail") {
+    renderJourneyDetail(selectedJourney);
+    return;
+  }
+
+  if (screenId === "study-placeholder") {
+    renderStudySelectionScreen(selectedJourney);
+    return;
+  }
+
+  if (screenId === "choose-difficulty") {
+    renderJourneyDifficultyScreen(selectedJourney);
+    return;
+  }
+
+  renderBeginJourneyPlaceholder(selectedJourney);
+}
+
+function renderJourneyDetail(journey) {
+  const summary = document.createElement("section");
+  summary.className = "journey-detail-summary";
+
+  const heading = document.createElement("h2");
+  heading.textContent = journey.title;
+
+  const description = document.createElement("p");
+  description.textContent = journey.description;
+
+  const meta = document.createElement("p");
+  meta.className = "journey-preset-meta";
+  meta.textContent = formatJourneyStepCount(journey.steps.length);
+
+  summary.append(heading, description, meta);
+
+  const progressSummary = getJourneyProgressSummary(journey);
+  if (progressSummary.total > 0 && progressSummary.bestCompletedCount > 0) {
+    const progress = document.createElement("p");
+    progress.className = "journey-detail-progress";
+    progress.textContent = `Progress: ${progressSummary.bestCompletedCount} of ${progressSummary.total} activities completed`;
+    summary.appendChild(progress);
+
+    const difficultyProgress = document.createElement("p");
+    difficultyProgress.className = "journey-preset-meta";
+    difficultyProgress.textContent = journeyDifficultyOptions
+      .map((difficulty) => `${difficulty.title}: ${progressSummary.counts[difficulty.id]} / ${progressSummary.total}`)
+      .join(" | ");
+    summary.appendChild(difficultyProgress);
+  }
+
+  if (journey.steps.length > 0) {
+    const stepList = document.createElement("ol");
+    stepList.className = "journey-step-list";
+
+    journey.steps.forEach((step) => {
+      const item = document.createElement("li");
+      item.textContent = step.title;
+      stepList.appendChild(item);
+    });
+
+    summary.appendChild(stepList);
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "journey-path-actions";
+
+  actions.append(
+    createJourneyPathCard({
+      title: "Study",
+      description: "Practice freely before playing the journey.",
+      buttonLabel: "Open Study",
+      variant: "study",
+      onClick: () => showAppScreen("study-placeholder")
+    }),
+    createJourneyPathCard({
+      title: "Play Journey",
+      description: "Complete the journey in order.",
+      buttonLabel: "Play",
+      variant: "play",
+      onClick: () => showAppScreen("choose-difficulty")
+    })
+  );
+
+  journeyShellContent.append(summary, actions);
+
+  const restartButton = document.createElement("button");
+  restartButton.type = "button";
+  restartButton.className = "journey-restart-button";
+  restartButton.textContent = "Restart Journey";
+  restartButton.addEventListener("click", restartSelectedJourneyDifficulty);
+  journeyShellContent.appendChild(restartButton);
+}
+
+function createJourneyPathCard({ title, description, buttonLabel, variant, onClick }) {
+  const card = document.createElement("article");
+  card.className = `journey-path-card journey-path-card-${variant}`;
+
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+
+  const copy = document.createElement("p");
+  copy.textContent = description;
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = buttonLabel;
+  button.addEventListener("click", onClick);
+
+  card.append(heading, copy, button);
+  return card;
+}
+
+function renderJourneyStudyPlaceholder(journey) {
+  const panel = document.createElement("section");
+  panel.className = "journey-mode-panel";
+
+  const message = document.createElement("p");
+  message.className = "journey-mode-message";
+  message.textContent = "Study Mode setup is coming soon.";
+
+  const options = document.createElement("div");
+  options.className = "journey-placeholder-options";
+
+  ["Preview Map", "Practice One Section", "Review Missed Answers", "Practice Target Types"].forEach((label) => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.disabled = true;
+    option.textContent = label;
+    options.appendChild(option);
+  });
+
+  const context = document.createElement("p");
+  context.className = "journey-preset-meta";
+  context.textContent = `${journey.title} | ${formatJourneyStepCount(journey.steps.length)}`;
+
+  panel.append(message, options, context);
+  journeyShellContent.appendChild(panel);
+}
+
+function renderStudySelectionScreen(journey) {
+  const panel = document.createElement("section");
+  panel.className = "journey-mode-panel study-selection-panel";
+
+  const message = document.createElement("p");
+  message.className = "journey-mode-message";
+  message.textContent = "Pick one section to explore. Labels stay hidden until you reveal them.";
+
+  const stepList = document.createElement("div");
+  stepList.className = "study-step-list";
+
+  const validSteps = getValidJourneySteps(journey);
+  validSteps.forEach((step, index) => {
+    const activity = getActivityById(step.activityId);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "study-step-card";
+    button.addEventListener("click", () => {
+      startStudyActivity(journey.id, step.id);
+    });
+
+    const titleNode = document.createElement("strong");
+    titleNode.textContent = step.title;
+
+    const meta = document.createElement("span");
+    const targetCount = activity?.targets?.length || 0;
+    meta.textContent = `Section ${index + 1} | ${targetCount} target${targetCount === 1 ? "" : "s"}`;
+
+    button.append(titleNode, meta);
+    stepList.appendChild(button);
+  });
+
+  panel.append(message, stepList);
+  journeyShellContent.appendChild(panel);
+}
+
+function renderJourneyDifficultyScreen(journey) {
+  const panel = document.createElement("section");
+  panel.className = "journey-difficulty-panel";
+
+  const journeyName = document.createElement("h2");
+  journeyName.textContent = journey.title;
+
+  const message = document.createElement("p");
+  message.className = "journey-mode-message";
+  message.textContent = "Choose how much help you want during this journey.";
+
+  const context = document.createElement("p");
+  context.className = "journey-preset-meta";
+  context.textContent = `${journey.title} | ${formatJourneyStepCount(journey.steps.length)}`;
+
+  const options = document.createElement("div");
+  options.className = "journey-difficulty-options";
+
+  const selectedDifficultyId = getSelectedJourneyDifficultyId();
+  journeyDifficultyOptions.forEach((difficulty) => {
+    options.appendChild(createDifficultyCard(difficulty, {
+      isSelected: difficulty.id === selectedDifficultyId,
+      onSelect: () => setSelectedJourneyDifficulty(difficulty.id)
+    }));
+  });
+
+  const beginButton = document.createElement("button");
+  beginButton.type = "button";
+  beginButton.className = "journey-begin-button";
+  beginButton.textContent = "Begin Journey";
+  beginButton.addEventListener("click", startSelectedJourney);
+
+  panel.append(journeyName, message, context, options, beginButton);
+  journeyShellContent.appendChild(panel);
+}
+
+function renderFreePlayDifficultyScreen() {
+  const activity = getActivityById(pendingFreePlayActivityId);
+  const panel = document.createElement("section");
+  panel.className = "journey-difficulty-panel";
+
+  const activityName = document.createElement("h2");
+  activityName.textContent = activity?.title || "Free Play Activity";
+
+  const message = document.createElement("p");
+  message.className = "journey-mode-message";
+  message.textContent = "Choose how much help you want for this activity.";
+
+  const context = document.createElement("p");
+  context.className = "journey-preset-meta";
+  const targetCount = activity?.targets?.length || activity?.itemCount || 0;
+  context.textContent = activity
+    ? `${activity.title} | ${targetCount} target${targetCount === 1 ? "" : "s"}`
+    : "Choose an activity";
+
+  const options = document.createElement("div");
+  options.className = "journey-difficulty-options";
+
+  const selectedDifficultyId = getSelectedFreePlayDifficultyId();
+  const availableDifficulties = getAvailableDifficulties(activity);
+  journeyDifficultyOptions.forEach((difficulty) => {
+    options.appendChild(createDifficultyCard(difficulty, {
+      isAvailable: availableDifficulties.includes(difficulty.id),
+      isSelected: difficulty.id === selectedDifficultyId,
+      onSelect: () => setSelectedFreePlayDifficulty(difficulty.id)
+    }));
+  });
+
+  const startButton = document.createElement("button");
+  startButton.type = "button";
+  startButton.className = "journey-begin-button";
+  startButton.textContent = "Start Activity";
+  startButton.disabled = !activity;
+  startButton.addEventListener("click", startPendingFreePlayActivity);
+
+  panel.append(activityName, message, context, options, startButton);
+  journeyShellContent.appendChild(panel);
+}
+
+function renderSettingsScreen() {
+  const panel = document.createElement("section");
+  panel.className = "settings-panel";
+
+  const heading = document.createElement("h2");
+  heading.textContent = "Study Targets";
+
+  const description = document.createElement("p");
+  description.className = "settings-panel-copy";
+  description.textContent = "Choose the individual targets Atlas Quest should include in study plans. Gameplay filtering will be wired in a later phase.";
+
+  panel.append(heading, description, renderStudyPresetControl());
+
+  getStudyTargetGroups().forEach((group) => {
+    panel.appendChild(renderStudyTargetGroup(group));
+  });
+
+  journeyShellContent.appendChild(panel);
+}
+
+function renderStudyPresetControl() {
+  const wrapper = document.createElement("div");
+  wrapper.className = "settings-preset-control";
+
+  const label = document.createElement("label");
+  label.className = "settings-preset-label";
+  label.textContent = "Preset";
+
+  const select = document.createElement("select");
+
+  const customOption = document.createElement("option");
+  customOption.value = "custom";
+  customOption.textContent = "Custom";
+  select.appendChild(customOption);
+
+  mapLayerPresets.forEach((preset) => {
+    const option = document.createElement("option");
+    option.value = preset.id;
+    option.textContent = preset.label;
+    select.appendChild(option);
+  });
+
+  select.value = getCurrentStudyPresetId();
+  select.addEventListener("change", () => {
+    if (select.value !== "custom") {
+      applyStudyPreset(select.value);
+    }
+  });
+
+  const helper = document.createElement("p");
+  helper.className = "settings-panel-copy";
+  const activePreset = mapLayerPresets.find((preset) => preset.id === select.value);
+  helper.textContent = activePreset?.description || "Manual target choices.";
+
+  const resetButton = document.createElement("button");
+  resetButton.type = "button";
+  resetButton.className = "settings-reset-button";
+  resetButton.textContent = "Reset to Default";
+  resetButton.addEventListener("click", () => {
+    applyStudyPreset("default");
+  });
+
+  label.appendChild(select);
+  wrapper.append(label, helper, resetButton);
+  return wrapper;
+}
+
+function renderStudyTargetGroup(group) {
+  const details = document.createElement("details");
+  details.className = "settings-target-group";
+  details.open = group.defaultOpen;
+
+  const summary = document.createElement("summary");
+
+  const title = document.createElement("span");
+  title.className = "settings-target-group-title";
+  title.textContent = group.title;
+
+  const selectedCount = group.targets.filter((target) => isStudyTargetEnabled(group.settingKey, target.id)).length;
+  const count = document.createElement("span");
+  count.className = "settings-target-group-count";
+  count.textContent = `${selectedCount} / ${group.targets.length} selected`;
+
+  summary.append(title, count);
+
+  const controls = document.createElement("div");
+  controls.className = "settings-target-group-actions";
+
+  const selectAllButton = document.createElement("button");
+  selectAllButton.type = "button";
+  selectAllButton.textContent = "Select All";
+  selectAllButton.addEventListener("click", () => {
+    toggleTargetGroup(group.settingKey, group.targets, true);
+  });
+
+  const deselectAllButton = document.createElement("button");
+  deselectAllButton.type = "button";
+  deselectAllButton.textContent = "Deselect All";
+  deselectAllButton.addEventListener("click", () => {
+    toggleTargetGroup(group.settingKey, group.targets, false);
+  });
+
+  controls.append(selectAllButton, deselectAllButton);
+
+  const targetGrid = document.createElement("div");
+  targetGrid.className = "settings-target-grid";
+  group.targets.forEach((target) => {
+    targetGrid.appendChild(createStudyTargetToggle(group.settingKey, target));
+  });
+
+  details.append(summary, controls, targetGrid);
+  return details;
+}
+
+function createStudyTargetToggle(settingKey, target) {
+  const layerOption = document.createElement("label");
+  layerOption.className = "settings-layer-toggle";
+
+  const copy = document.createElement("span");
+  copy.className = "settings-layer-copy";
+
+  const labelText = document.createElement("strong");
+  labelText.textContent = target.label;
+
+  const helper = document.createElement("span");
+  helper.textContent = target.sourceTitle || "Available target";
+
+  copy.append(labelText, helper);
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = isStudyTargetEnabled(settingKey, target.id);
+  checkbox.addEventListener("change", () => {
+    toggleTarget(settingKey, target.id, checkbox.checked);
+  });
+
+  const switchTrack = document.createElement("span");
+  switchTrack.className = "settings-switch";
+  switchTrack.setAttribute("aria-hidden", "true");
+
+  layerOption.append(copy, checkbox, switchTrack);
+  return layerOption;
+}
+
+function getStudyTargetGroups() {
+  const groups = [
+    ...getWorldStudyTargetGroups(),
+    ...getCountryStudyTargetGroups(),
+    ...getStateProvinceTerritoryStudyTargetGroups(),
+    ...getCityCapitalStudyTargetGroups()
+  ];
+
+  return groups.filter((group) => group.targets.length > 0);
+}
+
+function getWorldStudyTargetGroups() {
+  const activity = getActivityById("continents-oceans");
+  const targets = activity?.targets || [];
+
+  return [
+    {
+      id: "world-continents",
+      title: "World / Continents",
+      settingKey: "continents",
+      defaultOpen: true,
+      targets: targets
+        .filter((target) => !/ocean/i.test(target.name))
+        .map((target) => toStudyTargetOption(target, activity))
+    },
+    {
+      id: "world-oceans",
+      title: "World / Oceans",
+      settingKey: "oceans",
+      defaultOpen: true,
+      targets: targets
+        .filter((target) => /ocean/i.test(target.name))
+        .map((target) => toStudyTargetOption(target, activity))
+    }
+  ];
+}
+
+function getCountryStudyTargetGroups() {
+  const groups = new Map();
+
+  activities
+    .filter((activity) => activity.category === "Countries")
+    .forEach((activity) => {
+      const continentLabel = getActivityContinentLabel(activity) || "Other";
+      const groupId = `countries-${normalizeSettingKey(continentLabel)}`;
+      const group = getOrCreateStudyGroup(groups, groupId, {
+        id: groupId,
+        title: `Countries / ${continentLabel}`,
+        settingKey: "countries",
+        defaultOpen: continentLabel === "North America" || continentLabel === "Europe",
+        targets: []
+      });
+
+      addStudyTargets(group.targets, activity.targets, activity, (target) => target.kind === "shape");
+    });
+
+  return [...groups.values()].map(sortStudyGroupTargets);
+}
+
+function getStateProvinceTerritoryStudyTargetGroups() {
+  const groups = new Map();
+
+  activities
+    .filter((activity) => activity.id.startsWith("us-states-capitals-"))
+    .forEach((activity) => {
+      const group = getOrCreateStudyGroup(groups, "us-states", {
+        id: "us-states",
+        title: "States / United States",
+        settingKey: "states",
+        defaultOpen: true,
+        targets: []
+      });
+      addStudyTargets(group.targets, activity.targets, activity, (target) => target.kind === "shape");
+    });
+
+  activities
+    .filter((activity) => activity.id.startsWith("canada-"))
+    .forEach((activity) => {
+      const provinceGroup = getOrCreateStudyGroup(groups, "canada-provinces", {
+        id: "canada-provinces",
+        title: "Provinces / Canada",
+        settingKey: "provinces",
+        defaultOpen: false,
+        targets: []
+      });
+      const territoryGroup = getOrCreateStudyGroup(groups, "canada-territories", {
+        id: "canada-territories",
+        title: "Territories / Canada",
+        settingKey: "territories",
+        defaultOpen: false,
+        targets: []
+      });
+
+      addStudyTargets(provinceGroup.targets, activity.targets, activity, (target) => target.kind === "shape" && !canadianTerritoryNames.has(target.name));
+      addStudyTargets(territoryGroup.targets, activity.targets, activity, (target) => target.kind === "shape" && canadianTerritoryNames.has(target.name));
+    });
+
+  activities
+    .filter((activity) => activity.id.startsWith("mexico-"))
+    .forEach((activity) => {
+      const group = getOrCreateStudyGroup(groups, "mexico-states", {
+        id: "mexico-states",
+        title: "States / Mexico",
+        settingKey: "states",
+        defaultOpen: false,
+        targets: []
+      });
+      addStudyTargets(group.targets, activity.targets, activity, (target) => target.kind === "shape");
+    });
+
+  return [...groups.values()].map(sortStudyGroupTargets);
+}
+
+function getCityCapitalStudyTargetGroups() {
+  const groups = new Map();
+
+  activities
+    .filter((activity) => activity.id.startsWith("us-states-capitals-"))
+    .forEach((activity) => {
+      const group = getOrCreateStudyGroup(groups, "us-capitals", {
+        id: "us-capitals",
+        title: "Cities & Capitals / United States Capitals",
+        settingKey: "capitals",
+        defaultOpen: false,
+        targets: []
+      });
+      addStudyTargets(group.targets, activity.targets, activity, (target) => target.kind === "point");
+    });
+
+  activities
+    .filter((activity) => activity.category === "Cities" && !activity.id.startsWith("us-states-capitals-"))
+    .forEach((activity) => {
+      const continentLabel = getActivityContinentLabel(activity) || "World";
+      const groupId = `cities-${normalizeSettingKey(continentLabel)}-${activity.id}`;
+      const group = getOrCreateStudyGroup(groups, groupId, {
+        id: groupId,
+        title: `Cities & Capitals / ${activity.title}`,
+        settingKey: "cities",
+        defaultOpen: activity.id === "european-cities",
+        targets: []
+      });
+      addStudyTargets(group.targets, activity.targets, activity, (target) => target.kind === "point");
+    });
+
+  return [...groups.values()].map(sortStudyGroupTargets);
+}
+
+function getOrCreateStudyGroup(groups, groupId, factory) {
+  if (!groups.has(groupId)) {
+    groups.set(groupId, factory);
+  }
+
+  return groups.get(groupId);
+}
+
+function addStudyTargets(targetList, targets, activity, predicate) {
+  targets
+    .filter(predicate)
+    .forEach((target) => {
+      const option = toStudyTargetOption(target, activity);
+      const existing = targetList.find((candidate) => candidate.id === option.id);
+
+      if (existing) {
+        existing.sourceTitle = mergeStudyTargetSources(existing.sourceTitle, option.sourceTitle);
+        return;
+      }
+
+      targetList.push(option);
+    });
+}
+
+function toStudyTargetOption(target, activity) {
+  return {
+    id: target.id,
+    label: target.name,
+    sourceTitle: activity?.title || "Available target"
+  };
+}
+
+function mergeStudyTargetSources(existingSource, nextSource) {
+  if (!existingSource || existingSource === nextSource) {
+    return nextSource || existingSource;
+  }
+
+  return "Multiple activities";
+}
+
+function sortStudyGroupTargets(group) {
+  group.targets.sort((left, right) => left.label.localeCompare(right.label));
+  return group;
+}
+
+function getActivityContinentLabel(activity) {
+  const hierarchyNodeId = findHierarchyNodeForActivity(activity.id);
+  const path = getHierarchyPath(hierarchyNodeId);
+  const continentNode = path.find((node) => getHierarchyNode(node.parent)?.id === "world");
+
+  return continentNode?.label || null;
+}
+
+function normalizeSettingKey(value = "") {
+  return String(value)
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function createDifficultyCard(difficulty, options = {}) {
+  const isSelected = Boolean(options.isSelected);
+  const isAvailable = options.isAvailable !== false;
+  const card = document.createElement("button");
+  card.type = "button";
+  card.className = `journey-difficulty-card${isSelected ? " selected" : ""}`;
+  card.setAttribute("aria-pressed", String(isSelected));
+  card.dataset.difficultyId = difficulty.id;
+  card.disabled = !isAvailable;
+  card.addEventListener("click", () => {
+    if (isAvailable) {
+      options.onSelect?.();
+    }
+  });
+
+  const selectedMarker = document.createElement("span");
+  selectedMarker.className = "journey-difficulty-selected-marker";
+  selectedMarker.textContent = isAvailable
+    ? (isSelected ? "Selected" : "Select")
+    : "Unavailable";
+
+  const heading = document.createElement("strong");
+  heading.textContent = difficulty.title;
+
+  const mode = document.createElement("span");
+  mode.className = "journey-difficulty-mode";
+  mode.textContent = difficulty.mode;
+
+  const list = document.createElement("ul");
+  difficulty.bullets.forEach((bullet) => {
+    const item = document.createElement("li");
+    item.textContent = bullet;
+    list.appendChild(item);
+  });
+
+  card.append(selectedMarker, heading, mode, list);
+  return card;
+}
+
+function renderBeginJourneyPlaceholder(journey) {
+  const panel = document.createElement("section");
+  panel.className = "journey-mode-panel";
+
+  const message = document.createElement("p");
+  message.className = "journey-mode-message";
+  message.textContent = "This journey is coming soon.";
+
+  const context = document.createElement("p");
+  context.className = "journey-preset-meta";
+  context.textContent = `${journey.title} | ${formatJourneyStepCount(journey.steps.length)}`;
+
+  panel.append(message, context);
+  journeyShellContent.appendChild(panel);
 }
 
 function renderOverviewLibrary() {
@@ -2444,6 +4486,11 @@ function drillToHierarchyNode(nodeId) {
   activePreviewActivityId = null;
 
   if (node.activityId) {
+    if (currentAppScreen === "free-play") {
+      showFreePlayDifficultyScreen(node.activityId);
+      return;
+    }
+
     openActivity(node.activityId, { hierarchyNodeId: node.id });
     return;
   }
@@ -2557,14 +4604,19 @@ function renderNavigationAnswerBank(nodeId = activeHierarchyNodeId) {
 function setAnswerPanelMode(mode) {
   const isNavigation = mode === "navigation";
   const isActivity = mode === "activity";
+  const isStudyExplore = mode === "study-explore";
   const titleNode = document.querySelector(".answer-panel-title h2");
 
   if (titleNode) {
-    titleNode.textContent = isNavigation ? "Choose Region" : "Word Bank";
+    titleNode.textContent = isNavigation
+      ? "Choose Region"
+      : isStudyExplore
+        ? "Study Targets"
+        : "Word Bank";
   }
 
   if (studyModeControlGroup) {
-    studyModeControlGroup.hidden = !isActivity;
+    studyModeControlGroup.hidden = true;
   }
 
   if (progressControlGroup) {
@@ -2572,24 +4624,47 @@ function setAnswerPanelMode(mode) {
   }
 
   if (difficultyControlGroup) {
-    difficultyControlGroup.hidden = !isActivity || !isDifficultyApplicable(session?.currentActivity);
+    difficultyControlGroup.hidden = true;
   }
 }
 
 function openActivity(activityId, options = {}) {
   saveCurrentActivityProgress();
   cancelGrabbedAnswer();
+  clearJourneyAutoAdvanceTimer();
+  resetActivityAttemptState();
+  activeStudySession = null;
+  document.body.classList.remove("study-explore-mode");
+  const baseActivity = getActivityById(activityId);
+  currentPresentationSettings = getEffectivePresentationSettings(baseActivity, options);
+  session.setStudyMode(currentPresentationSettings.reviewMode);
+  const shouldRevealGameplay = options.forceGameplayVisible || currentAppScreen !== "launch";
+  if (shouldRevealGameplay) {
+    currentAppScreen = options.appScreen || "free-play";
+    document.body.classList.remove("launch-mode", "app-shell-mode");
+    if (launchScreen) {
+      launchScreen.hidden = true;
+    }
+    if (appShellScreen) {
+      appShellScreen.hidden = true;
+    }
+  }
+  if (options.difficultyId) {
+    setPreGameDifficulty(options.difficultyId, getActivityById(activityId));
+  }
   selectedActivityId = activityId;
   const hierarchyNode = getHierarchyNode(options.hierarchyNodeId) || getHierarchyNode(findHierarchyNodeForActivity(activityId));
   activeHierarchyNodeId = hierarchyNode?.id || activeHierarchyNodeId;
   activeMenuRoot = getHierarchyMenuRoot(activeHierarchyNodeId) || findMenuRootForActivity(activityId) || activeMenuRoot;
   isNavigationBrowseMode = false;
-  ensureCurrentDifficultyForActivity(getSelectedActivity());
-  session.setActivity(getSelectedActivity());
+  const presentedActivity = getPresentedActivity(baseActivity, currentPresentationSettings);
+  ensureCurrentDifficultyForActivity(presentedActivity);
+  session.setActivity(presentedActivity);
   session.setCompletedIds(getActivityProgress(selectedActivityId, getEffectiveDifficulty(session.currentActivity)));
   selectedOverviewActivityId = selectedActivityId;
   activePreviewActivityId = null;
   runner.updateActivity(session.activity);
+  runner.setPresentationSettings(currentPresentationSettings);
   runner.setDifficulty(getEffectiveDifficulty(session.currentActivity));
   runner.setCompletedTargets(session.completedIds);
   renderAnswerBank();
@@ -2600,8 +4675,34 @@ function openActivity(activityId, options = {}) {
   enterStudy();
 }
 
-function selectActivity(activityId) {
-  openActivity(activityId);
+function getPresentedActivity(activity, presentationSettings = {}) {
+  if (!activity || shouldShowCityCapitalLayer(presentationSettings)) {
+    return activity;
+  }
+
+  const shapeTargets = activity.targets.filter((target) => target.kind !== "point");
+  if (shapeTargets.length === 0) {
+    return activity;
+  }
+
+  return {
+    ...activity,
+    targetNoun: activity.targetNoun?.replace(/\s+or\s+capital/i, "") || activity.targetNoun,
+    targets: shapeTargets,
+    answerBankItems: shapeTargets.map((target) => ({
+      id: target.id,
+      name: target.name
+    }))
+  };
+}
+
+function selectActivity(activityId, options = {}) {
+  if (options.requireDifficulty) {
+    showFreePlayDifficultyScreen(activityId);
+    return;
+  }
+
+  openActivity(activityId, options);
 }
 
 function enterStudy() {
@@ -2636,6 +4737,24 @@ function openLegacyActivity(activityId) {
 }
 
 function handleTargetClick(targetIds) {
+  if (isActivityInputLocked()) {
+    return;
+  }
+
+  if (currentAppScreen === "study-explore") {
+    const resolvedStudyTargetIds = targetIds && !Array.isArray(targetIds) && typeof targetIds.x === "number"
+      ? runner.getTargetIdsAtMapPoint(targetIds)
+      : targetIds;
+    const targetId = Array.isArray(resolvedStudyTargetIds)
+      ? resolvedStudyTargetIds[0]
+      : resolvedStudyTargetIds;
+
+    if (targetId) {
+      revealStudyTarget(targetId);
+    }
+    return;
+  }
+
   const selectedFeature = session.getFeature(session.selectedId);
   const resolvedTargetIds = targetIds && !Array.isArray(targetIds) && typeof targetIds.x === "number"
     ? runner.getTargetIdsAtMapPoint(targetIds, selectedFeature)
@@ -3083,6 +5202,10 @@ function normalizeNavigationText(value = "") {
 }
 
 function placeGrabbedAnswer(targetIds, options = {}) {
+  if (isActivityInputLocked()) {
+    return;
+  }
+
   const targetId = choosePlacementTarget(targetIds);
   const result = session.tryAnswer(targetId);
 
@@ -3092,7 +5215,7 @@ function placeGrabbedAnswer(targetIds, options = {}) {
   }
 
   if (result.status === "incorrect") {
-    showFeedback("Try again");
+    handleIncorrectPlacement(result);
     if (!options.keepGrabbedOnIncorrect) {
       cancelGrabbedAnswer();
     }
@@ -3107,9 +5230,190 @@ function placeGrabbedAnswer(targetIds, options = {}) {
     renderAnswerBank();
     updateProgress();
     updateCompletedActivityState();
+    handleJourneyActivityCompletion();
     ensureActivityNavControls();
     showFeedback(`Correct: ${result.feature.name}`, true);
   }
+}
+
+function recordJourneyIncorrectPlacement() {
+  if (activeJourneySession?.mode !== "journey" || currentAppScreen !== "journey-gameplay") {
+    return;
+  }
+
+  if (journeyCompletionState?.isVisible || isJourneyTransitioning) {
+    return;
+  }
+
+  activeJourneySession.incorrectPlacements = (activeJourneySession.incorrectPlacements || 0) + 1;
+}
+
+function getCurrentJourneyStepIncorrectPlacements() {
+  return activityAttemptState?.incorrectPlacements ?? activeJourneySession?.incorrectPlacements ?? 0;
+}
+
+function createActivityAttemptState() {
+  return {
+    incorrectPlacements: 0,
+    missesByTargetId: {},
+    isRevealing: false,
+    isReviewingRetry: false,
+    revealTimer: null,
+    retryTimer: null
+  };
+}
+
+function resetActivityAttemptState() {
+  clearActivityAttemptTimers();
+  hideActivityRetryOverlay();
+  activityAttemptState = createActivityAttemptState();
+  if (activeJourneySession?.mode === "journey") {
+    activeJourneySession.incorrectPlacements = 0;
+  }
+}
+
+function clearActivityAttemptTimers() {
+  if (activityAttemptState?.revealTimer) {
+    window.clearTimeout(activityAttemptState.revealTimer);
+  }
+
+  if (activityAttemptState?.retryTimer) {
+    window.clearTimeout(activityAttemptState.retryTimer);
+  }
+}
+
+function isActivityInputLocked() {
+  return isJourneyAdvanceInputLocked()
+    || activityAttemptState?.isRevealing
+    || activityAttemptState?.isReviewingRetry;
+}
+
+function handleIncorrectPlacement(result) {
+  const missedTargetId = result?.selectedId;
+  const missCountForTarget = recordIncorrectPlacementAttempt(missedTargetId);
+
+  if (activityAttemptState.incorrectPlacements >= activityRetryThreshold) {
+    beginActivityRetryReview();
+    return;
+  }
+
+  if (missedTargetId && missCountForTarget >= incorrectRevealThreshold) {
+    revealCorrectPlacementForRetry(missedTargetId);
+    return;
+  }
+
+  showFeedback("Not quite — try again.");
+}
+
+function recordIncorrectPlacementAttempt(targetId) {
+  activityAttemptState.incorrectPlacements += 1;
+
+  if (activeJourneySession?.mode === "journey") {
+    recordJourneyIncorrectPlacement();
+  }
+
+  if (!targetId) {
+    return 0;
+  }
+
+  const missesByTargetId = activityAttemptState.missesByTargetId;
+  missesByTargetId[targetId] = (missesByTargetId[targetId] || 0) + 1;
+
+  return missesByTargetId[targetId];
+}
+
+function revealCorrectPlacementForRetry(targetId) {
+  if (!targetId || activityAttemptState.isRevealing || activityAttemptState.isReviewingRetry) {
+    return;
+  }
+
+  activityAttemptState.isRevealing = true;
+  cancelGrabbedAnswer();
+  showFeedback("Here it is. Try again.");
+  revealTemporaryTargets([targetId]);
+  syncAnswerBank();
+
+  activityAttemptState.revealTimer = window.setTimeout(() => {
+    activityAttemptState.revealTimer = null;
+    activityAttemptState.isRevealing = false;
+    restoreTemporaryReveals();
+    syncAnswerBank();
+    showFeedback("Not quite — try this one again.");
+  }, incorrectRevealDurationMs);
+}
+
+function revealTemporaryTargets(targetIds = []) {
+  const revealIds = targetIds.filter(Boolean);
+  const completedIds = new Set(session.completedIds);
+  revealIds.forEach((targetId) => completedIds.add(targetId));
+  runner.setCompletedTargets(Array.from(completedIds));
+}
+
+function restoreTemporaryReveals() {
+  runner.setCompletedTargets(session.completedIds);
+}
+
+function beginActivityRetryReview() {
+  if (activityAttemptState.isReviewingRetry) {
+    return;
+  }
+
+  activityAttemptState.isReviewingRetry = true;
+  activityAttemptState.isRevealing = false;
+  if (activityAttemptState.revealTimer) {
+    window.clearTimeout(activityAttemptState.revealTimer);
+    activityAttemptState.revealTimer = null;
+  }
+
+  cancelGrabbedAnswer();
+  showFeedback("Let’s review this one again.");
+  showActivityRetryOverlay();
+  revealTemporaryTargets(session.activity.targets.map((target) => target.id));
+  syncAnswerBank();
+
+  // TODO: tune these thresholds by difficulty later:
+  // Easy can reveal sooner, Medium can keep this default, and Hard can be stricter.
+  activityAttemptState.retryTimer = window.setTimeout(() => {
+    activityAttemptState.retryTimer = null;
+    restartActivityAfterRetryReview();
+  }, activityRetryReviewDurationMs);
+}
+
+function showActivityRetryOverlay() {
+  if (activityRetryMessage) {
+    activityRetryMessage.textContent = "Let’s review this one again.";
+  }
+
+  if (activityRetryOverlay) {
+    activityRetryOverlay.hidden = false;
+  }
+}
+
+function hideActivityRetryOverlay() {
+  if (activityRetryOverlay) {
+    activityRetryOverlay.hidden = true;
+  }
+}
+
+function restartActivityAfterRetryReview() {
+  hideActivityRetryOverlay();
+  restoreTemporaryReveals();
+  resetActivityAttemptState();
+  resetCurrentActivityProgress();
+  showFeedback("Fresh start. You’ve got this.");
+}
+
+function resetCurrentActivityProgress() {
+  cancelGrabbedAnswer();
+  session.reset();
+  setActivityProgress(session.currentActivity.id, [], getEffectiveDifficulty(session.currentActivity));
+  setActivityCompletedState(session.currentActivity.id, false);
+  runner.setCompletedTargets(session.completedIds);
+  runner.setDifficulty(getEffectiveDifficulty(session.currentActivity));
+  renderAnswerBank();
+  updateProgress();
+  updateCompletedActivityState();
+  ensureActivityNavControls();
 }
 
 function choosePlacementTarget(targetIds) {
@@ -3125,6 +5429,7 @@ function choosePlacementTarget(targetIds) {
 }
 
 function resetActivity() {
+  resetActivityAttemptState();
   cancelGrabbedAnswer();
   session.reset();
   setActivityProgress(session.currentActivity.id, [], getEffectiveDifficulty(session.currentActivity));
@@ -3138,6 +5443,8 @@ function resetActivity() {
 }
 
 function syncAnswerBank() {
+  const isInputLocked = isActivityInputLocked();
+
   answerBank.querySelectorAll(".label-chip[data-id]").forEach((chip) => {
     const id = chip.dataset.id;
     const isSelected = session.selectedId === id;
@@ -3145,7 +5452,7 @@ function syncAnswerBank() {
 
     chip.classList.toggle("selected", isSelected);
     chip.classList.toggle("used", isCompleted);
-    chip.disabled = isCompleted;
+    chip.disabled = isCompleted || isInputLocked;
     chip.setAttribute("aria-pressed", String(isSelected));
   });
 }
@@ -3153,6 +5460,10 @@ function syncAnswerBank() {
 function handleChipPointerDown(event, feature) {
   event.preventDefault();
   event.stopPropagation();
+
+  if (isActivityInputLocked()) {
+    return;
+  }
 
   if (grabbedAnswerId === feature.id) {
     cancelGrabbedAnswer();
@@ -3300,6 +5611,258 @@ function saveDifficultyMode() {
   }
 }
 
+function getDefaultLayerSettings() {
+  return { ...defaultMapLayerSettings };
+}
+
+function applyLayerPreset(presetId) {
+  const preset = mapLayerPresets.find((candidate) => candidate.id === presetId) || mapLayerPresets[0];
+  setMapLayerSettings(preset.settings);
+}
+
+function applyStudyPreset(presetId) {
+  const preset = mapLayerPresets.find((candidate) => candidate.id === presetId) || mapLayerPresets[0];
+  const groups = getStudyTargetGroups();
+  const nextTargetSettings = {};
+
+  groups.forEach((group) => {
+    nextTargetSettings[group.settingKey] = {
+      ...(nextTargetSettings[group.settingKey] || {})
+    };
+
+    group.targets.forEach((target) => {
+      nextTargetSettings[group.settingKey][target.id] = isPresetTargetEnabled(preset, group, target);
+    });
+  });
+
+  mapLayerSettings = normalizeMapLayerSettings(preset.settings);
+  studyTargetSettings = normalizeStudyTargetSettings(nextTargetSettings);
+  saveAppSettings();
+  refreshCurrentActivityLayerPresentation();
+  renderJourneyShellContent("settings");
+}
+
+function getCurrentLayerPresetId() {
+  const matchingPreset = mapLayerPresets.find((preset) => areLayerSettingsEqual(mapLayerSettings, preset.settings));
+  return matchingPreset?.id || "custom";
+}
+
+function getCurrentStudyPresetId() {
+  const matchingPreset = mapLayerPresets.find((preset) => {
+    if (!areLayerSettingsEqual(mapLayerSettings, preset.settings)) {
+      return false;
+    }
+
+    return getStudyTargetGroups().every((group) => {
+      return group.targets.every((target) => (
+        isStudyTargetEnabled(group.settingKey, target.id) === isPresetTargetEnabled(preset, group, target)
+      ));
+    });
+  });
+
+  return matchingPreset?.id || "custom";
+}
+
+function isPresetTargetEnabled(preset, group, target) {
+  if (preset.id === "classical-memory") {
+    return isClassicalMemoryPresetTarget(group, target);
+  }
+
+  return getPresetCategoryEnabled(preset.settings, group.settingKey);
+}
+
+function isClassicalMemoryPresetTarget(group, target) {
+  if (group.id === "us-states" || group.id === "us-capitals") {
+    return true;
+  }
+
+  return classicalMemoryProofSheetTargetNames.has(normalizeProofSheetTargetName(target.label));
+}
+
+function normalizeProofSheetTargetName(value = "") {
+  return String(value)
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function areLayerSettingsEqual(leftSettings = {}, rightSettings = {}) {
+  return Object.keys(defaultMapLayerSettings).every((settingId) => (
+    leftSettings[settingId] !== false
+  ) === (
+    rightSettings[settingId] !== false
+  ));
+}
+
+function getPresetCategoryEnabled(settings = {}, settingKey) {
+  const settingByTargetKey = {
+    continents: "showContinents",
+    oceans: "showOceans",
+    countries: "showCountries",
+    states: "showStates",
+    provinces: "showProvinces",
+    territories: "showTerritories",
+    cities: "showCities",
+    capitals: "showCapitals"
+  };
+  const settingId = settingByTargetKey[settingKey];
+
+  return settingId ? settings[settingId] !== false : true;
+}
+
+function normalizeMapLayerSettings(settings = {}) {
+  return Object.fromEntries(
+    Object.entries(defaultMapLayerSettings).map(([settingId, defaultValue]) => [
+      settingId,
+      typeof settings[settingId] === "boolean" ? settings[settingId] : defaultValue
+    ])
+  );
+}
+
+function normalizeStudyTargetSettings(settings = {}) {
+  if (!settings || typeof settings !== "object" || Array.isArray(settings)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(settings)
+      .filter(([, targets]) => targets && typeof targets === "object" && !Array.isArray(targets))
+      .map(([settingKey, targets]) => [
+        settingKey,
+        Object.fromEntries(
+          Object.entries(targets)
+            .filter(([targetId, value]) => typeof targetId === "string" && typeof value === "boolean")
+        )
+      ])
+  );
+}
+
+function isStudyTargetEnabled(settingKey, targetId) {
+  return studyTargetSettings?.[settingKey]?.[targetId] !== false;
+}
+
+function toggleTarget(settingKey, targetId, enabled) {
+  studyTargetSettings = normalizeStudyTargetSettings({
+    ...studyTargetSettings,
+    [settingKey]: {
+      ...(studyTargetSettings[settingKey] || {}),
+      [targetId]: enabled
+    }
+  });
+  saveAppSettings();
+  renderJourneyShellContent("settings");
+}
+
+function toggleTargetGroup(settingKey, targets, enabled) {
+  studyTargetSettings = normalizeStudyTargetSettings({
+    ...studyTargetSettings,
+    [settingKey]: {
+      ...(studyTargetSettings[settingKey] || {}),
+      ...Object.fromEntries(targets.map((target) => [target.id, enabled]))
+    }
+  });
+  saveAppSettings();
+  renderJourneyShellContent("settings");
+}
+
+function loadMapLayerSettings() {
+  try {
+    const saved = loadStoredAppSettings();
+
+    if (saved?.version === 1 && saved.mapLayers && typeof saved.mapLayers === "object" && !Array.isArray(saved.mapLayers)) {
+      return normalizeMapLayerSettings(saved.mapLayers);
+    }
+
+    const legacySaved = JSON.parse(localStorage.getItem(legacyLayerSettingsStorageKey) || "{}");
+    return normalizeMapLayerSettings({
+      ...legacySaved,
+      showCapitals: typeof legacySaved.showCities === "boolean"
+        ? legacySaved.showCities
+        : legacySaved.showCapitals
+    });
+  } catch {
+    return getDefaultLayerSettings();
+  }
+}
+
+function loadStudyTargetSettings() {
+  try {
+    const saved = loadStoredAppSettings();
+    return normalizeStudyTargetSettings(saved?.targetSettings);
+  } catch {
+    return {};
+  }
+}
+
+function loadStoredAppSettings() {
+  try {
+    return JSON.parse(localStorage.getItem(appSettingsStorageKey) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function saveAppSettings() {
+  try {
+    localStorage.setItem(appSettingsStorageKey, JSON.stringify({
+      version: defaultAppSettings.version,
+      mapLayers: normalizeMapLayerSettings(mapLayerSettings),
+      targetSettings: normalizeStudyTargetSettings(studyTargetSettings)
+    }));
+  } catch {
+    // Ignore localStorage write failures and keep the session going.
+  }
+}
+
+function saveMapLayerSettings() {
+  saveAppSettings();
+}
+
+function setMapLayerSettings(nextSettings = {}) {
+  mapLayerSettings = normalizeMapLayerSettings({
+    ...mapLayerSettings,
+    ...nextSettings
+  });
+  saveMapLayerSettings();
+  refreshCurrentActivityLayerPresentation();
+  if (currentAppScreen === "settings") {
+    renderJourneyShellContent("settings");
+  }
+}
+
+function refreshCurrentActivityLayerPresentation() {
+  if (!selectedActivityId) {
+    return;
+  }
+
+  const baseActivity = getSelectedActivity();
+
+  if (!baseActivity || activeJourneySession?.mode === "journey") {
+    return;
+  }
+
+  currentPresentationSettings = getEffectivePresentationSettings(baseActivity, {
+    presentationSettings: {
+      reviewMode: currentPresentationSettings.reviewMode
+    }
+  });
+
+  const presentedActivity = getPresentedActivity(baseActivity, currentPresentationSettings);
+  const retainedCompletedIds = session.completedIds.filter((id) => (
+    presentedActivity.targets.some((target) => target.id === id)
+  ));
+  session.setStudyMode(currentPresentationSettings.reviewMode);
+  session.setActivity(presentedActivity);
+  session.setCompletedIds(retainedCompletedIds);
+  runner.updateActivity(session.activity);
+  runner.setPresentationSettings(currentPresentationSettings);
+  runner.setDifficulty(getEffectiveDifficulty(session.currentActivity));
+  runner.setCompletedTargets(session.completedIds);
+  renderAnswerBank();
+  updateProgress();
+}
+
 function loadCompletedActivityIds() {
   try {
     const saved = JSON.parse(localStorage.getItem(completedActivitiesStorageKey) || "[]");
@@ -3333,14 +5896,296 @@ function setActivityCompletedState(activityId, isComplete) {
 }
 
 function updateCompletedActivityState() {
-  const targetCount = session?.currentActivity?.targets?.length || 0;
+  const { completedCount, targetCount } = getSessionCompletionSummary();
 
   if (targetCount <= 0) {
     return;
   }
 
-  const isComplete = session.completedIds.size >= targetCount;
+  const isComplete = completedCount === targetCount;
   setActivityCompletedState(session.currentActivity.id, isComplete);
+}
+
+function handleJourneyActivityCompletion() {
+  if (activeJourneySession?.mode !== "journey" || journeyCompletionState?.isVisible || isJourneyTransitioning) {
+    return;
+  }
+
+  const { completedCount, targetCount } = getSessionCompletionSummary();
+  if (targetCount <= 0 || completedCount !== targetCount) {
+    return;
+  }
+
+  saveCompletedJourneyStep();
+  showJourneyCompletionCard();
+}
+
+function isJourneyAdvanceInputLocked() {
+  return Boolean(activeJourneySession?.mode === "journey" && (
+    isJourneyTransitioning || journeyCompletionState?.isVisible
+  ));
+}
+
+function getSessionCompletionSummary() {
+  const completedCount = session?.completedIds?.length || 0;
+  const targetCount = session?.activity?.targets?.length || 0;
+
+  return {
+    completedCount,
+    targetCount
+  };
+}
+
+function saveCompletedJourneyStep() {
+  const journey = journeyPresets.find((preset) => preset.id === activeJourneySession?.journeyId);
+  const validSteps = getValidJourneySteps(journey);
+  const stepIndex = activeJourneySession?.currentStepIndex || 0;
+  const currentStep = validSteps[stepIndex];
+  const nextStep = validSteps[stepIndex + 1];
+
+  if (!journey || !currentStep) {
+    return;
+  }
+
+  atlasProgress = markStepComplete(journey.id, currentStep.id, activeJourneySession.difficulty, {
+    nextStepIndex: nextStep ? stepIndex + 1 : null,
+    isJourneyComplete: !nextStep
+  }, atlasProgress);
+}
+
+function showJourneyCompletionCard() {
+  const journey = journeyPresets.find((preset) => preset.id === activeJourneySession?.journeyId);
+  const validSteps = getValidJourneySteps(journey);
+  const nextStep = validSteps[(activeJourneySession?.currentStepIndex || 0) + 1];
+  const isFinalStep = !nextStep;
+
+  clearJourneyAutoAdvanceTimer();
+  cancelGrabbedAnswer({ clearSelection: false });
+  journeyCompletionState = {
+    isVisible: true,
+    isFinalStep,
+    nextStepIndex: isFinalStep ? null : (activeJourneySession?.currentStepIndex || 0) + 1,
+    autoAdvanceScheduled: !isFinalStep,
+    isPerfect: getCurrentJourneyStepIncorrectPlacements() === 0
+  };
+
+  if (journeyCompletionOverlay) {
+    journeyCompletionOverlay.hidden = false;
+    journeyCompletionOverlay.classList.toggle("journey-celebration-overlay", !isFinalStep);
+  }
+
+  if (journeyCompletionCard) {
+    journeyCompletionCard.classList.toggle("journey-celebration-card", !isFinalStep);
+  }
+
+  if (journeyCompletionKicker) {
+    journeyCompletionKicker.textContent = isFinalStep ? "Journey Complete" : "On to the Next Stop!";
+  }
+
+  if (journeyCompletionTitle) {
+    journeyCompletionTitle.textContent = isFinalStep
+      ? "Journey Complete!"
+      : journeyCompletionState.isPerfect
+        ? "PERFECT!"
+        : "GREAT JOB!";
+  }
+
+  if (journeyCompletionMessage) {
+    journeyCompletionMessage.textContent = isFinalStep
+      ? `You finished ${journey?.title || "this journey"}.`
+      : "Flying to your next destination...";
+  }
+
+  if (journeyCompletionNext) {
+    journeyCompletionNext.textContent = isFinalStep
+      ? "Nice work. You made it through every step in this journey."
+      : `Next stop: ${nextStep.title}`;
+  }
+
+  if (journeyCompletionPrimary) {
+    journeyCompletionPrimary.hidden = !isFinalStep;
+    journeyCompletionPrimary.disabled = false;
+    journeyCompletionPrimary.textContent = "Back to Journeys";
+  }
+
+  if (journeyCompletionSecondary) {
+    journeyCompletionSecondary.hidden = !isFinalStep;
+    journeyCompletionSecondary.disabled = false;
+    journeyCompletionSecondary.textContent = "Play Again";
+  }
+
+  syncAnswerBank();
+
+  if (!isFinalStep) {
+    scheduleJourneyAutoAdvance(journeyCompletionState.nextStepIndex);
+  }
+}
+
+function hideJourneyCompletionCard() {
+  clearJourneyAutoAdvanceTimer();
+  journeyCompletionState = null;
+
+  if (journeyCompletionOverlay) {
+    journeyCompletionOverlay.hidden = true;
+    journeyCompletionOverlay.classList.remove("journey-celebration-overlay");
+  }
+
+  if (journeyCompletionCard) {
+    journeyCompletionCard.classList.remove("journey-celebration-card");
+  }
+
+  if (journeyCompletionPrimary) {
+    journeyCompletionPrimary.hidden = false;
+  }
+
+  if (journeyCompletionSecondary) {
+    journeyCompletionSecondary.hidden = false;
+  }
+}
+
+function scheduleJourneyAutoAdvance(nextStepIndex) {
+  if (!Number.isInteger(nextStepIndex) || isJourneyTransitioning) {
+    return;
+  }
+
+  journeyAutoAdvanceTimer = window.setTimeout(() => {
+    journeyAutoAdvanceTimer = null;
+
+    if (!journeyCompletionState?.isVisible || journeyCompletionState?.isFinalStep || isJourneyTransitioning) {
+      return;
+    }
+
+    void advanceToJourneyStep(nextStepIndex);
+  }, 1500);
+}
+
+function clearJourneyAutoAdvanceTimer() {
+  if (!journeyAutoAdvanceTimer) {
+    return;
+  }
+
+  window.clearTimeout(journeyAutoAdvanceTimer);
+  journeyAutoAdvanceTimer = null;
+}
+
+function handleJourneyCompletionPrimary() {
+  if (isJourneyTransitioning) {
+    return;
+  }
+
+  if (!activeJourneySession) {
+    hideJourneyCompletionCard();
+    showAppScreen("choose-journey");
+    return;
+  }
+
+  const journey = journeyPresets.find((preset) => preset.id === activeJourneySession.journeyId);
+  const validSteps = getValidJourneySteps(journey);
+  const nextStepIndex = activeJourneySession.currentStepIndex + 1;
+
+  hideJourneyCompletionCard();
+
+  if (nextStepIndex < validSteps.length) {
+    void advanceToJourneyStep(nextStepIndex);
+    return;
+  }
+
+  atlasProgress = clearActiveJourney(atlasProgress);
+  activeJourneySession = null;
+  showAppScreen("choose-journey");
+}
+
+async function advanceToJourneyStep(nextStepIndex) {
+  const journey = journeyPresets.find((preset) => preset.id === activeJourneySession?.journeyId);
+  const validSteps = getValidJourneySteps(journey);
+  const nextStep = validSteps[nextStepIndex];
+
+  if (!nextStep) {
+    hideJourneyCompletionCard();
+    showJourneyStepNotReady();
+    return;
+  }
+
+  isJourneyTransitioning = true;
+  setJourneyCompletionTransitionState(nextStep);
+  playJourneyTransitionSound();
+
+  await transitionToJourneyStep(nextStep);
+
+  hideJourneyCompletionCard();
+  isJourneyTransitioning = false;
+  openJourneyStep(nextStepIndex);
+}
+
+function playJourneyTransitionSound() {
+  playJourneyWhooshSound();
+}
+
+function playJourneyWhooshSound() {
+  // TODO: add a short whoosh sound asset later, routed through mute/settings.
+}
+
+function setJourneyCompletionTransitionState(nextStep) {
+  if (journeyCompletionState) {
+    journeyCompletionState.autoAdvanceScheduled = false;
+    journeyCompletionState.isTransitioning = true;
+  }
+
+  if (journeyCompletionMessage) {
+    journeyCompletionMessage.textContent = "Flying to your next destination...";
+  }
+
+  if (journeyCompletionNext) {
+    journeyCompletionNext.textContent = `Next stop: ${nextStep.title}`;
+  }
+
+  if (journeyCompletionPrimary) {
+    journeyCompletionPrimary.hidden = true;
+    journeyCompletionPrimary.disabled = true;
+    journeyCompletionPrimary.textContent = `Flying to ${nextStep.title}...`;
+  }
+
+  if (journeyCompletionSecondary) {
+    journeyCompletionSecondary.hidden = true;
+    journeyCompletionSecondary.disabled = true;
+  }
+
+  syncAnswerBank();
+}
+
+function showJourneyStepNotReady() {
+  activeJourneySession = null;
+  showAppScreen(selectedJourneyId ? "journey-detail" : "choose-journey");
+  showFeedback("This journey step is not ready yet.");
+}
+
+function handleJourneyCompletionSecondary() {
+  if (isJourneyTransitioning) {
+    return;
+  }
+
+  if (journeyCompletionState?.isFinalStep && activeJourneySession) {
+    hideJourneyCompletionCard();
+    activeJourneySession.currentStepIndex = 0;
+    activeJourneySession.incorrectPlacements = 0;
+    atlasProgress = setActiveJourney(activeJourneySession.journeyId, 0, activeJourneySession.difficulty, atlasProgress);
+    openJourneyStep(0);
+    return;
+  }
+
+  exitJourney();
+}
+
+function exitJourney() {
+  if (isJourneyTransitioning) {
+    return;
+  }
+
+  clearJourneyAutoAdvanceTimer();
+  hideJourneyCompletionCard();
+  atlasProgress = clearActiveJourney(atlasProgress);
+  activeJourneySession = null;
+  showAppScreen(selectedJourneyId ? "journey-detail" : "main-menu");
 }
 
 function getCurrentActivitySequence(mapSet = activeMapSet) {
@@ -3472,11 +6317,11 @@ function updateTopBarNavigation() {
   const isHome = activeHierarchyNodeId === "world";
 
   if (backButton) {
-    backButton.hidden = isHome;
+    backButton.hidden = isHome && !["free-play", "journey-gameplay", "study-explore"].includes(currentAppScreen);
   }
 
   if (homeButton) {
-    homeButton.disabled = isHome && !isStudyModeActive();
+    homeButton.disabled = false;
     homeButton.setAttribute("aria-current", isHome ? "page" : "false");
   }
 }
@@ -3494,11 +6339,11 @@ function updateDifficultyControls() {
     return;
   }
 
-  const isApplicable = isStudyModeActive() && isDifficultyApplicable(session?.currentActivity);
-  difficultyToggle.hidden = !isApplicable;
+  const isApplicable = false;
+  difficultyToggle.hidden = true;
 
   if (difficultyControlGroup) {
-    difficultyControlGroup.hidden = !isApplicable;
+    difficultyControlGroup.hidden = true;
   }
 
   difficultyButtons.forEach((button) => {
@@ -3523,6 +6368,10 @@ function updateStudyCardDetails() {
 
 function getSelectedActivity() {
   return activities.find((activity) => activity.id === selectedActivityId) || activities[0];
+}
+
+function getActivityById(activityId) {
+  return activities.find((activity) => activity.id === activityId) || null;
 }
 
 function showFeedback(message, isSuccess = false) {
