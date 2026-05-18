@@ -6,31 +6,37 @@
     <title>Atlas Quest</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css" />
-    <link rel="stylesheet" href="maplibre-poc.css?v=entry-auth-screen" />
+    <link rel="stylesheet" href="maplibre-poc.css?v=minimal-compass-launch" />
   </head>
   <body class="overview-mode launch-mode">
     <section id="launch-screen" class="launch-screen" aria-labelledby="launch-title">
+      <button id="launch-settings-gear" class="launch-gear-button" type="button" aria-label="Settings" title="Settings"></button>
       <div class="launch-content">
+        <svg class="launch-compass" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+          <circle cx="100" cy="100" r="78" fill="none" stroke="rgba(245, 221, 163, 0.65)" stroke-width="2"/>
+          <circle cx="100" cy="100" r="56" fill="none" stroke="rgba(245, 221, 163, 0.35)" stroke-width="1"/>
+          <polygon points="100,18 112,88 100,100 88,88" fill="#f5dda3"/>
+          <polygon points="100,182 88,112 100,100 112,112" fill="#c9a85f"/>
+          <polygon points="18,100 88,88 100,100 88,112" fill="#f5dda3"/>
+          <polygon points="182,100 112,112 100,100 112,88" fill="#c9a85f"/>
+          <polygon points="100,42 107,91 100,100 93,91" fill="#fff7d6"/>
+          <polygon points="100,158 93,109 100,100 107,109" fill="#8f733d"/>
+          <polygon points="42,100 91,93 100,100 91,107" fill="#fff7d6"/>
+          <polygon points="158,100 109,107 100,100 109,93" fill="#8f733d"/>
+          <text x="100" y="14" text-anchor="middle" fill="#f5dda3" font-size="16" font-family="serif">N</text>
+          <text x="100" y="195" text-anchor="middle" fill="#f5dda3" font-size="16" font-family="serif">S</text>
+          <text x="12" y="106" text-anchor="middle" fill="#f5dda3" font-size="16" font-family="serif">W</text>
+          <text x="188" y="106" text-anchor="middle" fill="#f5dda3" font-size="16" font-family="serif">E</text>
+        </svg>
         <div class="launch-title-lockup">
           <h1 id="launch-title">Atlas Quest</h1>
           <p class="launch-subtitle">Learn the world, one place at a time.</p>
         </div>
-        <div class="launch-actions" aria-label="App entry actions">
+        <div class="launch-actions" aria-label="Launch actions">
           <button id="launch-start-button" class="launch-button launch-button-primary" type="button">
-            <span>Continue as Guest</span>
+            <span class="launch-button-icon" aria-hidden="true"></span>
+            <span>Start</span>
           </button>
-          <div class="launch-auth-actions">
-            <button id="launch-continue-button" class="launch-button launch-button-secondary" type="button">
-              <span>Sign In</span>
-            </button>
-            <button id="launch-choose-button" class="launch-button launch-button-secondary" type="button">
-              <span>Create Account</span>
-            </button>
-          </div>
-        </div>
-        <div id="launch-placeholder-card" class="launch-placeholder-card" role="status" aria-live="polite" hidden>
-          <strong id="launch-placeholder-title">Coming Soon</strong>
-          <p id="launch-placeholder-message">This feature is coming soon.</p>
         </div>
       </div>
     </section>
@@ -45,7 +51,6 @@
         <div id="main-menu-actions" class="main-menu-actions">
           <button id="main-menu-continue-button" class="main-menu-button main-menu-button-blue" type="button">Continue Journey</button>
           <button id="main-menu-choose-button" class="main-menu-button main-menu-button-purple" type="button">Choose Journey</button>
-          <button id="main-menu-study-button" class="main-menu-button main-menu-button-green" type="button">Study</button>
           <button id="main-menu-free-play-button" class="main-menu-button main-menu-button-orange" type="button">Free Play</button>
           <button id="main-menu-settings-button" class="main-menu-button main-menu-button-teal" type="button">Settings</button>
           <button id="main-menu-launch-button" class="main-menu-button main-menu-button-quiet" type="button">Back to Title</button>
@@ -120,13 +125,6 @@
           <h2>Word Bank</h2>
           <p id="feedback" class="feedback" aria-live="polite"></p>
         </div>
-        <div id="study-mode-control-group" class="control-group">
-          <span class="control-label">Study Mode</span>
-          <div class="study-mode-toggle" role="group" aria-label="Study mode">
-            <button class="active" type="button" data-study-mode="cumulative">Cumulative Review</button>
-            <button type="button" data-study-mode="sectionOnly">Section Only</button>
-          </div>
-        </div>
         <div id="difficulty-control-group" class="control-group" hidden>
           <span class="control-label">Difficulty</span>
           <div id="difficulty-toggle" class="difficulty-toggle" role="group" aria-label="Difficulty">
@@ -168,6 +166,6 @@
     </div>
 
     <script src="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js"></script>
-    <script type="module" src="src/maplibre-poc.js?v=entry-auth-screen"></script>
+    <script type="module" src="src/maplibre-poc.js?v=minimal-compass-launch"></script>
   </body>
 </html>

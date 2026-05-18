@@ -2,7 +2,7 @@ import { normalizeActivity } from "./map-engines/activity-normalizer.js";
 import { ActivitySession, studyModes } from "./maplibre/activity-session.js?v=progress-state";
 import "./chip-speech.js?v=tts-answer-chips";
 import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=curriculum-layer-settings";
-import { journeyPresets } from "./journey-presets.js?v=journey-presets";
+import { journeyPresets } from "./journey-presets.js?v=journey-presets-expanded";
 import {
   clearActiveJourney,
   getJourneyProgress,
@@ -118,7 +118,7 @@ const mapLayerPresets = [
       showProvinces: true,
       showTerritories: true,
       showCities: false,
-      showCapitals: true
+      showCapitals: false
     }
   }
 ];
@@ -1526,7 +1526,9 @@ let pendingFreePlayHierarchyNodeId = null;
 let selectedFreePlayDifficultyId = difficultyModes.easy;
 let activeJourneySession = null;
 let activeStudySession = null;
+let activeStudyPracticeSession = null;
 let journeyCompletionState = null;
+let studyPracticeCompletionState = null;
 let isJourneyTransitioning = false;
 let journeyAutoAdvanceTimer = null;
 let activityAttemptState = createActivityAttemptState();
@@ -1534,6 +1536,7 @@ let atlasProgress = loadProgress();
 let mapLayerSettings = loadMapLayerSettings();
 let studyTargetSettings = loadStudyTargetSettings();
 let currentPresentationSettings = {};
+let isCurrentActivityProgressDisabled = false;
 
 const incorrectRevealThreshold = 3;
 const activityRetryThreshold = 5;
@@ -1571,23 +1574,17 @@ const difficultyButtons = document.querySelectorAll("[data-difficulty]");
 const launchScreen = document.querySelector("#launch-screen");
 const launchTitle = document.querySelector("#launch-title");
 const launchStartButton = document.querySelector("#launch-start-button");
-const launchFreePlayButton = document.querySelector("#launch-free-play-button");
-const launchContinueButton = document.querySelector("#launch-continue-button");
-const launchChooseButton = document.querySelector("#launch-choose-button");
-const launchSettingsButton = document.querySelector("#launch-settings-button");
 const launchSettingsGear = document.querySelector("#launch-settings-gear");
-const launchPlaceholderCard = document.querySelector("#launch-placeholder-card");
-const launchPlaceholderTitle = document.querySelector("#launch-placeholder-title");
-const launchPlaceholderMessage = document.querySelector("#launch-placeholder-message");
 const appShellScreen = document.querySelector("#app-shell-screen");
 const appShellTitle = document.querySelector("#app-shell-title");
 const appShellSubtitle = document.querySelector("#app-shell-subtitle");
 const appShellBackButton = document.querySelector("#app-shell-back-button");
 const appShellSettingsGear = document.querySelector("#app-shell-settings-gear");
 const mainMenuActions = document.querySelector("#main-menu-actions");
+const mainMenuActionsAnchor = document.createComment("main-menu-actions");
+mainMenuActions?.parentNode?.insertBefore(mainMenuActionsAnchor, mainMenuActions);
 const mainMenuContinueButton = document.querySelector("#main-menu-continue-button");
 const mainMenuChooseButton = document.querySelector("#main-menu-choose-button");
-const mainMenuStudyButton = document.querySelector("#main-menu-study-button");
 const mainMenuFreePlayButton = document.querySelector("#main-menu-free-play-button");
 const mainMenuSettingsButton = document.querySelector("#main-menu-settings-button");
 const mainMenuLaunchButton = document.querySelector("#main-menu-launch-button");
@@ -2374,11 +2371,21 @@ function bindUiEvents() {
       return;
     }
 
+    if (currentAppScreen === "study-practice") {
+      returnToStudyScreen();
+      return;
+    }
+
     showAppScreen("main-menu");
   });
   backButton?.addEventListener("click", () => {
     if (currentAppScreen === "study-explore") {
       exitStudyExplore();
+      return;
+    }
+
+    if (currentAppScreen === "study-practice") {
+      returnToStudyScreen();
       return;
     }
 
@@ -2420,16 +2427,6 @@ function bindLaunchScreenEvents() {
     showAppScreen("main-menu");
   });
 
-  launchContinueButton?.addEventListener("click", () => {
-    showLaunchPlaceholder("Sign in is coming soon.", "Soon you’ll be able to save Atlas Quest progress to an account.");
-  });
-
-  launchChooseButton?.addEventListener("click", () => {
-    showLaunchPlaceholder("Account creation is coming soon.", "Guest mode is ready now, and accounts will arrive later.");
-  });
-
-  launchFreePlayButton?.addEventListener("click", openFreePlay);
-  launchSettingsButton?.addEventListener("click", () => showAppScreen("settings"));
   launchSettingsGear?.addEventListener("click", () => showAppScreen("settings"));
   appShellBackButton?.addEventListener("click", goBackAppScreen);
   appShellSettingsGear?.addEventListener("click", () => {
@@ -2441,9 +2438,6 @@ function bindLaunchScreenEvents() {
   mainMenuChooseButton?.addEventListener("click", () => {
     showAppScreen("choose-journey");
   });
-  mainMenuStudyButton?.addEventListener("click", () => {
-    showAppScreen("choose-journey");
-  });
   mainMenuFreePlayButton?.addEventListener("click", openFreePlay);
   mainMenuSettingsButton?.addEventListener("click", () => {
     showAppScreen("settings");
@@ -2451,20 +2445,6 @@ function bindLaunchScreenEvents() {
   mainMenuLaunchButton?.addEventListener("click", () => {
     showAppScreen("launch", { pushHistory: false });
   });
-}
-
-function showLaunchPlaceholder(titleText, messageText) {
-  if (launchPlaceholderTitle) {
-    launchPlaceholderTitle.textContent = titleText;
-  }
-
-  if (launchPlaceholderMessage) {
-    launchPlaceholderMessage.textContent = messageText;
-  }
-
-  if (launchPlaceholderCard) {
-    launchPlaceholderCard.hidden = false;
-  }
 }
 
 function showAppScreen(screenId, options = {}) {
@@ -2475,6 +2455,9 @@ function showAppScreen(screenId, options = {}) {
   }
 
   saveCurrentActivityProgress();
+  hideStudyPracticeCompletionCard();
+  activeStudyPracticeSession = null;
+  isCurrentActivityProgressDisabled = false;
   currentAppScreen = screenId;
   closeBrowseDrawer();
   cancelGrabbedAnswer();
@@ -2512,6 +2495,9 @@ function openFreePlay(options = {}) {
   }
 
   saveCurrentActivityProgress();
+  hideStudyPracticeCompletionCard();
+  activeStudyPracticeSession = null;
+  isCurrentActivityProgressDisabled = false;
   currentAppScreen = "free-play";
   document.body.classList.remove("launch-mode", "app-shell-mode");
 
@@ -2546,7 +2532,22 @@ function renderAppShellScreen(screenId) {
   }
 
   if (mainMenuActions) {
+    if (isMainMenu && !mainMenuActions.isConnected && mainMenuActionsAnchor.parentNode) {
+      mainMenuActionsAnchor.parentNode.insertBefore(mainMenuActions, mainMenuActionsAnchor.nextSibling);
+    }
+
+    mainMenuActions.querySelectorAll("button").forEach((button) => {
+      button.disabled = !isMainMenu;
+      button.tabIndex = isMainMenu ? 0 : -1;
+    });
+
     mainMenuActions.hidden = !isMainMenu;
+    mainMenuActions.style.display = isMainMenu ? "" : "none";
+    mainMenuActions.setAttribute("aria-hidden", String(!isMainMenu));
+
+    if (!isMainMenu && mainMenuActions.isConnected) {
+      mainMenuActions.remove();
+    }
   }
 
   if (appShellPlaceholderCard) {
@@ -2581,13 +2582,13 @@ function getAppShellScreenContent(screenId) {
     },
     "choose-journey": {
       title: "Choose Journey",
-      subtitle: "Pick an adventure. Study and journey play unlock in a later phase."
+      subtitle: "Pick a journey to study or play."
     },
     "journey-detail": {
       title: selectedJourneyTitle,
       subtitle: "Choose how you want to begin this journey."
     },
-    "study-placeholder": {
+    study: {
       title: `Study: ${selectedJourneyTitle}`,
       subtitle: "Choose a section to explore calmly before playing."
     },
@@ -2614,14 +2615,32 @@ function getAppShellScreenContent(screenId) {
   return contentByScreen[screenId] || contentByScreen["main-menu"];
 }
 
+function getEffectiveJourneyStatus(journey) {
+  if (!journey) {
+    return "coming-soon";
+  }
+
+  if (journey.id === "world-tour") {
+    return isWorldTourUnlocked(journey) && getValidJourneySteps(journey).length > 0
+      ? "available"
+      : "locked";
+  }
+
+  if (journey.status === "available" && getValidJourneySteps(journey).length === 0) {
+    return "coming-soon";
+  }
+
+  return journey.status || "coming-soon";
+}
+
 function isJourneyAvailable(journey) {
-  return journey.status === "available";
+  return getEffectiveJourneyStatus(journey) === "available";
 }
 
 function isJourneyShellScreen(screenId) {
   return [
     "journey-detail",
-    "study-placeholder",
+    "study",
     "choose-difficulty",
     "begin-journey-placeholder",
     "free-play-difficulty",
@@ -2630,7 +2649,38 @@ function isJourneyShellScreen(screenId) {
 }
 
 function getJourneyStatusLabel(journey) {
-  return isJourneyAvailable(journey) ? "Available" : "Coming Soon";
+  const status = getEffectiveJourneyStatus(journey);
+  if (status === "available") {
+    return "Available";
+  }
+
+  if (status === "locked") {
+    return "Locked";
+  }
+
+  return "Coming Soon";
+}
+
+function isWorldTourUnlocked(worldTourJourney) {
+  const requiredJourneyIds = getWorldTourRequiredJourneyIds(worldTourJourney);
+  return requiredJourneyIds.length > 0 && requiredJourneyIds.every((journeyId) => (
+    isJourneyCompleteForAnyDifficulty(journeyPresets.find((journey) => journey.id === journeyId))
+  ));
+}
+
+function getWorldTourRequiredJourneyIds(worldTourJourney) {
+  return (worldTourJourney?.unlock?.requires || []).filter((journeyId) => {
+    const journey = journeyPresets.find((candidate) => candidate.id === journeyId);
+    return journey?.status === "available" && getValidJourneySteps(journey).length > 0;
+  });
+}
+
+function isJourneyCompleteForAnyDifficulty(journey) {
+  const summary = getJourneyProgressSummary(journey);
+  return summary.total > 0 && (
+    Object.values(summary.completedDifficulties).some(Boolean)
+    || summary.bestCompletedCount >= summary.total
+  );
 }
 
 function getJourneyProgressSummary(journey) {
@@ -2683,7 +2733,7 @@ function continueSavedJourney() {
   const validSteps = getValidJourneySteps(journey);
   const stepIndex = Math.min(atlasProgress.activeStepIndex || 0, Math.max(validSteps.length - 1, 0));
 
-  if (!journey || validSteps.length === 0) {
+  if (!journey || !isJourneyAvailable(journey) || validSteps.length === 0) {
     showAppScreen("continue-placeholder");
     return;
   }
@@ -2827,7 +2877,7 @@ function startSelectedJourney() {
   const journey = getSelectedJourney();
   const validSteps = getValidJourneySteps(journey);
 
-  if (!journey || validSteps.length === 0) {
+  if (!journey || !isJourneyAvailable(journey) || validSteps.length === 0) {
     showAppScreen("begin-journey-placeholder");
     return;
   }
@@ -2879,21 +2929,59 @@ function getJourneyActivityPresentationSettings() {
   };
 }
 
-function startStudyActivity(journeyId, stepId) {
+function getStudyStepContext(journeyId, stepId) {
   const journey = journeyPresets.find((preset) => preset.id === journeyId);
   const step = getValidJourneySteps(journey).find((candidate) => candidate.id === stepId);
   const activity = getActivityById(step?.activityId);
 
+  return { journey, step, activity };
+}
+
+function startStudyPreviewActivity(journeyId, stepId) {
+  const { journey, step, activity } = getStudyStepContext(journeyId, stepId);
+
   if (!journey || !step || !activity) {
-    showFeedback("This study section is not ready yet.");
+    showStudyStepNotReady();
     return;
   }
 
   selectedJourneyId = journey.id;
-  openStudyExploreActivity(journey, step, activity);
+  openStudyExploreActivity(journey, step, activity, { revealAll: true });
 }
 
-function openStudyExploreActivity(journey, step, activity) {
+function startStudyPracticeActivity(journeyId, stepId) {
+  const { journey, step, activity } = getStudyStepContext(journeyId, stepId);
+
+  if (!journey || !step || !activity) {
+    showStudyStepNotReady();
+    return;
+  }
+
+  selectedJourneyId = journey.id;
+  activeJourneySession = null;
+  activeStudyPracticeSession = {
+    journeyId: journey.id,
+    stepId: step.id,
+    activityId: activity.id
+  };
+
+  openActivity(activity.id, {
+    appScreen: "study-practice",
+    difficultyId: difficultyModes.easy,
+    disableActivityProgress: true,
+    forceGameplayVisible: true,
+    hierarchyNodeId: findHierarchyNodeForActivity(activity.id),
+    presentationSettings: {
+      reviewMode: studyModes.sectionOnly
+    }
+  });
+}
+
+function showStudyStepNotReady() {
+  showFeedback("This study section is not ready yet.");
+}
+
+function openStudyExploreActivity(journey, step, activity, options = {}) {
   saveCurrentActivityProgress();
   cancelGrabbedAnswer();
   clearJourneyAutoAdvanceTimer();
@@ -2901,9 +2989,12 @@ function openStudyExploreActivity(journey, step, activity) {
     journeyId: journey.id,
     stepId: step.id,
     activityId: activity.id,
-    revealedTargetIds: [],
+    revealedTargetIds: options.revealAll ? activity.targets.map((target) => target.id) : [],
     selectedTargetId: null
   };
+  activeStudyPracticeSession = null;
+  hideStudyPracticeCompletionCard();
+  isCurrentActivityProgressDisabled = true;
   currentAppScreen = "study-explore";
   document.body.classList.remove("launch-mode", "app-shell-mode", "browse-mode", "overview-mode");
   document.body.classList.add("study-mode", "study-explore-mode");
@@ -2936,9 +3027,11 @@ function openStudyExploreActivity(journey, step, activity) {
   runner.updateActivity(session.activity);
   runner.setPresentationSettings(currentPresentationSettings);
   runner.setDifficulty(difficultyModes.easy);
-  runner.setCompletedTargets([]);
+  runner.setCompletedTargets(activeStudySession.revealedTargetIds);
   title.textContent = `Study: ${step.title}`;
-  instruction.textContent = "Tap a target or choose a name below to reveal it.";
+  instruction.textContent = options.revealAll
+    ? "Review the answers, or hide labels and reveal them one at a time."
+    : "Tap a target or choose a name below to reveal it.";
   studyCard.hidden = false;
   studyCard.querySelector("strong").textContent = step.title;
   studyCard.querySelector("span").textContent = "Study Mode";
@@ -2988,23 +3081,17 @@ function launchPracticeForStudySet() {
     return;
   }
 
-  const activityId = activeStudySession.activityId;
-  const hierarchyNodeId = findHierarchyNodeForActivity(activityId);
-  activeStudySession = null;
+  const { journeyId, stepId } = activeStudySession;
   document.body.classList.remove("study-explore-mode");
-  openActivity(activityId, {
-    appScreen: "free-play",
-    difficultyId: difficultyModes.easy,
-    forceGameplayVisible: true,
-    hierarchyNodeId
-  });
+  activeStudySession = null;
+  startStudyPracticeActivity(journeyId, stepId);
 }
 
 function exitStudyExplore() {
   activeStudySession = null;
   document.body.classList.remove("study-explore-mode");
   runner.setCompletedTargets([]);
-  showAppScreen(selectedJourneyId ? "journey-detail" : "main-menu");
+  showAppScreen(selectedJourneyId ? "study" : "main-menu", { pushHistory: false });
 }
 
 function renderStudyExplorePanel() {
@@ -3090,9 +3177,6 @@ function getRequiredTargetLayerOverrides(activity, settings = mapLayerSettings) 
   if (isPointOnlyActivity(activity)) {
     overrides.showCities = true;
     overrides.showCapitals = true;
-  } else if (isCityCapitalPrimaryActivity(activity) && (settings.showCities || settings.showCapitals)) {
-    overrides.showCities = settings.showCities;
-    overrides.showCapitals = settings.showCapitals;
   }
 
   return overrides;
@@ -3102,23 +3186,19 @@ function shouldShowCityCapitalLayer(settings = mapLayerSettings) {
   return settings.showCities !== false || settings.showCapitals !== false;
 }
 
-function isCityCapitalPrimaryActivity(activity) {
-  if (!activity?.targets?.some((target) => target.kind === "point")) {
-    return false;
-  }
-
+function shouldShowPointMarkers(activity, mode = currentAppScreen, settings = mapLayerSettings) {
   if (isPointOnlyActivity(activity)) {
     return true;
   }
 
-  const searchableText = [
-    activity.title,
-    activity.category,
-    activity.targetNoun,
-    activity.description
-  ].filter(Boolean).join(" ").toLowerCase();
+  // Journey Mode treats mixed state/capital activities as state sections first;
+  // city/capital point targets stay hidden unless the activity is point-only or
+  // an explicit layer setting enables optional point markers.
+  if (mode === "journey-gameplay") {
+    return shouldShowCityCapitalLayer(settings);
+  }
 
-  return /\bcities\b|\bcity\b|\bcapitals\b|\bcapital\b/.test(searchableText);
+  return shouldShowCityCapitalLayer(settings);
 }
 
 function isPointOnlyActivity(activity) {
@@ -3154,8 +3234,9 @@ function renderJourneyPresetList(isVisible) {
 
   journeyPresets.forEach((journey) => {
     const isAvailable = isJourneyAvailable(journey);
+    const status = getEffectiveJourneyStatus(journey);
     const card = document.createElement("article");
-    card.className = `journey-preset-card${isAvailable ? "" : " journey-preset-card-coming-soon"}`;
+    card.className = `journey-preset-card${isAvailable ? "" : ` journey-preset-card-${status}`}`;
     card.dataset.journeyId = journey.id;
 
     const header = document.createElement("div");
@@ -3164,11 +3245,11 @@ function renderJourneyPresetList(isVisible) {
     const heading = document.createElement("h3");
     heading.textContent = journey.title;
 
-    const status = document.createElement("span");
-    status.className = `journey-status journey-status-${journey.status}`;
-    status.textContent = getJourneyStatusLabel(journey);
+    const statusBadge = document.createElement("span");
+    statusBadge.className = `journey-status journey-status-${status}`;
+    statusBadge.textContent = getJourneyStatusLabel(journey);
 
-    header.append(heading, status);
+    header.append(heading, statusBadge);
 
     const description = document.createElement("p");
     description.textContent = journey.description;
@@ -3176,17 +3257,17 @@ function renderJourneyPresetList(isVisible) {
     const meta = document.createElement("p");
     meta.className = "journey-preset-meta";
     const progressText = isAvailable ? formatJourneyProgressText(journey) : "";
-    meta.textContent = progressText
-      ? `${formatJourneyStepCount(journey.steps.length)} | ${progressText}`
-      : formatJourneyStepCount(journey.steps.length);
+    const statusText = status === "locked" ? journey.lockedMessage : "";
+    meta.textContent = statusText || (progressText
+      ? `${formatJourneyStepCount(getValidJourneySteps(journey).length)} | ${progressText}`
+      : formatJourneyStepCount(getValidJourneySteps(journey).length));
 
     const actions = document.createElement("div");
     actions.className = "journey-card-actions";
 
     const selectButton = document.createElement("button");
     selectButton.type = "button";
-    selectButton.textContent = isAvailable ? "Select Journey" : "Coming soon";
-    selectButton.disabled = !isAvailable;
+    selectButton.textContent = isAvailable ? "Select Journey" : "View Details";
     selectButton.addEventListener("click", () => {
       selectJourney(journey.id);
     });
@@ -3222,7 +3303,7 @@ function renderJourneyShellContent(screenId) {
     return;
   }
 
-  if (!selectedJourney || !isJourneyAvailable(selectedJourney)) {
+  if (!selectedJourney) {
     const missingCard = document.createElement("div");
     missingCard.className = "app-shell-placeholder-card";
     missingCard.setAttribute("role", "status");
@@ -3236,7 +3317,16 @@ function renderJourneyShellContent(screenId) {
     return;
   }
 
-  if (screenId === "study-placeholder") {
+  if (!isJourneyAvailable(selectedJourney)) {
+    const unavailableCard = document.createElement("div");
+    unavailableCard.className = "app-shell-placeholder-card";
+    unavailableCard.setAttribute("role", "status");
+    unavailableCard.textContent = getUnavailableJourneyMessage(selectedJourney);
+    journeyShellContent.appendChild(unavailableCard);
+    return;
+  }
+
+  if (screenId === "study") {
     renderStudySelectionScreen(selectedJourney);
     return;
   }
@@ -3250,6 +3340,8 @@ function renderJourneyShellContent(screenId) {
 }
 
 function renderJourneyDetail(journey) {
+  const isAvailable = isJourneyAvailable(journey);
+  const status = getEffectiveJourneyStatus(journey);
   const summary = document.createElement("section");
   summary.className = "journey-detail-summary";
 
@@ -3261,9 +3353,16 @@ function renderJourneyDetail(journey) {
 
   const meta = document.createElement("p");
   meta.className = "journey-preset-meta";
-  meta.textContent = formatJourneyStepCount(journey.steps.length);
+  meta.textContent = formatJourneyStepCount(getValidJourneySteps(journey).length);
 
   summary.append(heading, description, meta);
+
+  if (!isAvailable) {
+    const statusMessage = document.createElement("p");
+    statusMessage.className = "journey-detail-progress";
+    statusMessage.textContent = getUnavailableJourneyMessage(journey);
+    summary.appendChild(statusMessage);
+  }
 
   const progressSummary = getJourneyProgressSummary(journey);
   if (progressSummary.total > 0 && progressSummary.bestCompletedCount > 0) {
@@ -3280,11 +3379,11 @@ function renderJourneyDetail(journey) {
     summary.appendChild(difficultyProgress);
   }
 
-  if (journey.steps.length > 0) {
+  if (getValidJourneySteps(journey).length > 0) {
     const stepList = document.createElement("ol");
     stepList.className = "journey-step-list";
 
-    journey.steps.forEach((step) => {
+    getValidJourneySteps(journey).forEach((step) => {
       const item = document.createElement("li");
       item.textContent = step.title;
       stepList.appendChild(item);
@@ -3296,34 +3395,60 @@ function renderJourneyDetail(journey) {
   const actions = document.createElement("div");
   actions.className = "journey-path-actions";
 
-  actions.append(
-    createJourneyPathCard({
-      title: "Study",
-      description: "Practice freely before playing the journey.",
-      buttonLabel: "Open Study",
-      variant: "study",
-      onClick: () => showAppScreen("study-placeholder")
-    }),
-    createJourneyPathCard({
-      title: "Play Journey",
-      description: "Complete the journey in order.",
-      buttonLabel: "Play",
-      variant: "play",
-      onClick: () => showAppScreen("choose-difficulty")
-    })
-  );
+  if (isAvailable) {
+    actions.append(
+      createJourneyPathCard({
+        title: "Play Journey",
+        description: "Complete the journey in order.",
+        buttonLabel: "Play",
+        variant: "play",
+        onClick: () => showAppScreen("choose-difficulty")
+      }),
+      createJourneyPathCard({
+        title: "Study",
+        description: "Practice freely before playing the journey.",
+        buttonLabel: "Open Study",
+        variant: "study",
+        onClick: () => showAppScreen("study")
+      })
+    );
+  } else {
+    actions.append(createJourneyPathCard({
+      title: status === "locked" ? "Locked" : "Coming Soon",
+      description: getUnavailableJourneyMessage(journey),
+      buttonLabel: status === "locked" ? "Locked" : "Coming soon",
+      variant: "locked",
+      disabled: true,
+      onClick: () => {}
+    }));
+  }
 
-  journeyShellContent.append(summary, actions);
+  journeyShellContent.append(actions, summary);
+
+  const secondaryActions = document.createElement("div");
+  secondaryActions.className = "journey-secondary-actions";
 
   const restartButton = document.createElement("button");
   restartButton.type = "button";
   restartButton.className = "journey-restart-button";
   restartButton.textContent = "Restart Journey";
   restartButton.addEventListener("click", restartSelectedJourneyDifficulty);
-  journeyShellContent.appendChild(restartButton);
+
+  const backButton = document.createElement("button");
+  backButton.type = "button";
+  backButton.className = "journey-restart-button journey-back-button";
+  backButton.textContent = "Back to Journeys";
+  backButton.addEventListener("click", () => showAppScreen("choose-journey"));
+
+  if (isAvailable) {
+    secondaryActions.appendChild(restartButton);
+  }
+
+  secondaryActions.appendChild(backButton);
+  journeyShellContent.appendChild(secondaryActions);
 }
 
-function createJourneyPathCard({ title, description, buttonLabel, variant, onClick }) {
+function createJourneyPathCard({ title, description, buttonLabel, variant, onClick, disabled = false }) {
   const card = document.createElement("article");
   card.className = `journey-path-card journey-path-card-${variant}`;
 
@@ -3336,37 +3461,21 @@ function createJourneyPathCard({ title, description, buttonLabel, variant, onCli
   const button = document.createElement("button");
   button.type = "button";
   button.textContent = buttonLabel;
+  button.disabled = disabled;
   button.addEventListener("click", onClick);
 
   card.append(heading, copy, button);
   return card;
 }
 
-function renderJourneyStudyPlaceholder(journey) {
-  const panel = document.createElement("section");
-  panel.className = "journey-mode-panel";
+function getUnavailableJourneyMessage(journey) {
+  const status = getEffectiveJourneyStatus(journey);
 
-  const message = document.createElement("p");
-  message.className = "journey-mode-message";
-  message.textContent = "Study Mode setup is coming soon.";
+  if (status === "locked") {
+    return journey.lockedMessage || "Complete the regional journeys to unlock this journey.";
+  }
 
-  const options = document.createElement("div");
-  options.className = "journey-placeholder-options";
-
-  ["Preview Map", "Practice One Section", "Review Missed Answers", "Practice Target Types"].forEach((label) => {
-    const option = document.createElement("button");
-    option.type = "button";
-    option.disabled = true;
-    option.textContent = label;
-    options.appendChild(option);
-  });
-
-  const context = document.createElement("p");
-  context.className = "journey-preset-meta";
-  context.textContent = `${journey.title} | ${formatJourneyStepCount(journey.steps.length)}`;
-
-  panel.append(message, options, context);
-  journeyShellContent.appendChild(panel);
+  return "Activities are still being added for this journey.";
 }
 
 function renderStudySelectionScreen(journey) {
@@ -3375,7 +3484,26 @@ function renderStudySelectionScreen(journey) {
 
   const message = document.createElement("p");
   message.className = "journey-mode-message";
-  message.textContent = "Pick one section to explore. Labels stay hidden until you reveal them.";
+  message.textContent = "Preview the map or practice one activity before playing the journey.";
+
+  const modeActions = document.createElement("div");
+  modeActions.className = "study-mode-option-grid";
+  [
+    ["Preview", "Open a calm study map with the answers visible."],
+    ["Practice", "Try one activity in Easy mode without journey progress."]
+  ].forEach(([titleText, copyText]) => {
+    const card = document.createElement("article");
+    card.className = "study-mode-option-card";
+
+    const heading = document.createElement("h3");
+    heading.textContent = titleText;
+
+    const copy = document.createElement("p");
+    copy.textContent = copyText;
+
+    card.append(heading, copy);
+    modeActions.appendChild(card);
+  });
 
   const stepList = document.createElement("div");
   stepList.className = "study-step-list";
@@ -3383,12 +3511,8 @@ function renderStudySelectionScreen(journey) {
   const validSteps = getValidJourneySteps(journey);
   validSteps.forEach((step, index) => {
     const activity = getActivityById(step.activityId);
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "study-step-card";
-    button.addEventListener("click", () => {
-      startStudyActivity(journey.id, step.id);
-    });
+    const card = document.createElement("article");
+    card.className = "study-step-card";
 
     const titleNode = document.createElement("strong");
     titleNode.textContent = step.title;
@@ -3397,11 +3521,37 @@ function renderStudySelectionScreen(journey) {
     const targetCount = activity?.targets?.length || 0;
     meta.textContent = `Section ${index + 1} | ${targetCount} target${targetCount === 1 ? "" : "s"}`;
 
-    button.append(titleNode, meta);
-    stepList.appendChild(button);
+    const actions = document.createElement("div");
+    actions.className = "study-step-actions";
+
+    const previewButton = document.createElement("button");
+    previewButton.type = "button";
+    previewButton.textContent = "Preview";
+    previewButton.disabled = !activity;
+    previewButton.addEventListener("click", () => {
+      startStudyPreviewActivity(journey.id, step.id);
+    });
+
+    const practiceButton = document.createElement("button");
+    practiceButton.type = "button";
+    practiceButton.textContent = "Practice";
+    practiceButton.disabled = !activity;
+    practiceButton.addEventListener("click", () => {
+      startStudyPracticeActivity(journey.id, step.id);
+    });
+
+    actions.append(previewButton, practiceButton);
+    card.append(titleNode, meta, actions);
+    stepList.appendChild(card);
   });
 
-  panel.append(message, stepList);
+  const backButton = document.createElement("button");
+  backButton.type = "button";
+  backButton.className = "journey-begin-button";
+  backButton.textContent = "Back to Journey";
+  backButton.addEventListener("click", () => showAppScreen("journey-detail"));
+
+  panel.append(message, modeActions, stepList, backButton);
   journeyShellContent.appendChild(panel);
 }
 
@@ -3557,17 +3707,30 @@ function renderStudyTargetGroup(group) {
   details.open = group.defaultOpen;
 
   const summary = document.createElement("summary");
+  const selectedCount = group.targets.filter((target) => isStudyTargetEnabled(group.settingKey, target.id)).length;
+
+  const groupCheckbox = document.createElement("input");
+  groupCheckbox.type = "checkbox";
+  groupCheckbox.className = "settings-target-group-checkbox";
+  groupCheckbox.checked = selectedCount === group.targets.length;
+  groupCheckbox.indeterminate = selectedCount > 0 && selectedCount < group.targets.length;
+  groupCheckbox.setAttribute("aria-label", `Toggle all ${group.title}`);
+  groupCheckbox.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+  groupCheckbox.addEventListener("change", () => {
+    toggleTargetGroup(group.settingKey, group.targets, groupCheckbox.checked);
+  });
 
   const title = document.createElement("span");
   title.className = "settings-target-group-title";
   title.textContent = group.title;
 
-  const selectedCount = group.targets.filter((target) => isStudyTargetEnabled(group.settingKey, target.id)).length;
   const count = document.createElement("span");
   count.className = "settings-target-group-count";
   count.textContent = `${selectedCount} / ${group.targets.length} selected`;
 
-  summary.append(title, count);
+  summary.append(groupCheckbox, title, count);
 
   const controls = document.createElement("div");
   controls.className = "settings-target-group-actions";
@@ -3939,7 +4102,7 @@ function renderMapSetTabs() {
 }
 
 function saveCurrentActivityProgress() {
-  if (!session?.currentActivity) {
+  if (!session?.currentActivity || isCurrentActivityProgressDisabled) {
     return;
   }
 
@@ -4632,11 +4795,13 @@ function openActivity(activityId, options = {}) {
   saveCurrentActivityProgress();
   cancelGrabbedAnswer();
   clearJourneyAutoAdvanceTimer();
+  hideStudyPracticeCompletionCard();
   resetActivityAttemptState();
   activeStudySession = null;
   document.body.classList.remove("study-explore-mode");
   const baseActivity = getActivityById(activityId);
   currentPresentationSettings = getEffectivePresentationSettings(baseActivity, options);
+  isCurrentActivityProgressDisabled = options.disableActivityProgress === true;
   session.setStudyMode(currentPresentationSettings.reviewMode);
   const shouldRevealGameplay = options.forceGameplayVisible || currentAppScreen !== "launch";
   if (shouldRevealGameplay) {
@@ -4660,7 +4825,7 @@ function openActivity(activityId, options = {}) {
   const presentedActivity = getPresentedActivity(baseActivity, currentPresentationSettings);
   ensureCurrentDifficultyForActivity(presentedActivity);
   session.setActivity(presentedActivity);
-  session.setCompletedIds(getActivityProgress(selectedActivityId, getEffectiveDifficulty(session.currentActivity)));
+  session.setCompletedIds(isCurrentActivityProgressDisabled ? [] : getActivityProgress(selectedActivityId, getEffectiveDifficulty(session.currentActivity)));
   selectedOverviewActivityId = selectedActivityId;
   activePreviewActivityId = null;
   runner.updateActivity(session.activity);
@@ -4676,7 +4841,7 @@ function openActivity(activityId, options = {}) {
 }
 
 function getPresentedActivity(activity, presentationSettings = {}) {
-  if (!activity || shouldShowCityCapitalLayer(presentationSettings)) {
+  if (!activity || shouldShowPointMarkers(activity, currentAppScreen, presentationSettings)) {
     return activity;
   }
 
@@ -5231,6 +5396,7 @@ function placeGrabbedAnswer(targetIds, options = {}) {
     updateProgress();
     updateCompletedActivityState();
     handleJourneyActivityCompletion();
+    handleStudyPracticeCompletion();
     ensureActivityNavControls();
     showFeedback(`Correct: ${result.feature.name}`, true);
   }
@@ -5284,6 +5450,7 @@ function clearActivityAttemptTimers() {
 
 function isActivityInputLocked() {
   return isJourneyAdvanceInputLocked()
+    || studyPracticeCompletionState?.isVisible
     || activityAttemptState?.isRevealing
     || activityAttemptState?.isReviewingRetry;
 }
@@ -5406,8 +5573,10 @@ function restartActivityAfterRetryReview() {
 function resetCurrentActivityProgress() {
   cancelGrabbedAnswer();
   session.reset();
-  setActivityProgress(session.currentActivity.id, [], getEffectiveDifficulty(session.currentActivity));
-  setActivityCompletedState(session.currentActivity.id, false);
+  if (!isCurrentActivityProgressDisabled) {
+    setActivityProgress(session.currentActivity.id, [], getEffectiveDifficulty(session.currentActivity));
+    setActivityCompletedState(session.currentActivity.id, false);
+  }
   runner.setCompletedTargets(session.completedIds);
   runner.setDifficulty(getEffectiveDifficulty(session.currentActivity));
   renderAnswerBank();
@@ -5432,8 +5601,10 @@ function resetActivity() {
   resetActivityAttemptState();
   cancelGrabbedAnswer();
   session.reset();
-  setActivityProgress(session.currentActivity.id, [], getEffectiveDifficulty(session.currentActivity));
-  setActivityCompletedState(session.currentActivity.id, false);
+  if (!isCurrentActivityProgressDisabled) {
+    setActivityProgress(session.currentActivity.id, [], getEffectiveDifficulty(session.currentActivity));
+    setActivityCompletedState(session.currentActivity.id, false);
+  }
   clearFeedback();
   runner.setCompletedTargets(session.completedIds);
   runner.setDifficulty(getEffectiveDifficulty(session.currentActivity));
@@ -5896,6 +6067,10 @@ function setActivityCompletedState(activityId, isComplete) {
 }
 
 function updateCompletedActivityState() {
+  if (isCurrentActivityProgressDisabled) {
+    return;
+  }
+
   const { completedCount, targetCount } = getSessionCompletionSummary();
 
   if (targetCount <= 0) {
@@ -5904,6 +6079,106 @@ function updateCompletedActivityState() {
 
   const isComplete = completedCount === targetCount;
   setActivityCompletedState(session.currentActivity.id, isComplete);
+}
+
+function handleStudyPracticeCompletion() {
+  if (currentAppScreen !== "study-practice" || !activeStudyPracticeSession || studyPracticeCompletionState?.isVisible) {
+    return;
+  }
+
+  const { completedCount, targetCount } = getSessionCompletionSummary();
+  if (targetCount <= 0 || completedCount !== targetCount) {
+    return;
+  }
+
+  showStudyPracticeCompletionCard();
+}
+
+function showStudyPracticeCompletionCard() {
+  cancelGrabbedAnswer({ clearSelection: false });
+  studyPracticeCompletionState = {
+    isVisible: true
+  };
+
+  if (journeyCompletionOverlay) {
+    journeyCompletionOverlay.hidden = false;
+    journeyCompletionOverlay.classList.remove("journey-celebration-overlay");
+  }
+
+  if (journeyCompletionCard) {
+    journeyCompletionCard.classList.remove("journey-celebration-card");
+  }
+
+  if (journeyCompletionKicker) {
+    journeyCompletionKicker.textContent = "Study Practice";
+  }
+
+  if (journeyCompletionTitle) {
+    journeyCompletionTitle.textContent = "Great job!";
+  }
+
+  if (journeyCompletionMessage) {
+    journeyCompletionMessage.textContent = "You practiced this activity.";
+  }
+
+  if (journeyCompletionNext) {
+    journeyCompletionNext.textContent = "Ready to review it again or head back to Study.";
+  }
+
+  if (journeyCompletionPrimary) {
+    journeyCompletionPrimary.hidden = false;
+    journeyCompletionPrimary.disabled = false;
+    journeyCompletionPrimary.textContent = "Practice Again";
+  }
+
+  if (journeyCompletionSecondary) {
+    journeyCompletionSecondary.hidden = false;
+    journeyCompletionSecondary.disabled = false;
+    journeyCompletionSecondary.textContent = "Back to Study";
+  }
+
+  syncAnswerBank();
+}
+
+function hideStudyPracticeCompletionCard() {
+  if (!studyPracticeCompletionState?.isVisible) {
+    studyPracticeCompletionState = null;
+    return;
+  }
+
+  studyPracticeCompletionState = null;
+
+  if (journeyCompletionOverlay && !journeyCompletionState?.isVisible) {
+    journeyCompletionOverlay.hidden = true;
+    journeyCompletionOverlay.classList.remove("journey-celebration-overlay");
+  }
+
+  if (journeyCompletionCard && !journeyCompletionState?.isVisible) {
+    journeyCompletionCard.classList.remove("journey-celebration-card");
+  }
+}
+
+function handleStudyPracticePrimary() {
+  const sessionToRepeat = activeStudyPracticeSession;
+  if (!sessionToRepeat) {
+    hideStudyPracticeCompletionCard();
+    returnToStudyScreen();
+    return;
+  }
+
+  hideStudyPracticeCompletionCard();
+  startStudyPracticeActivity(sessionToRepeat.journeyId, sessionToRepeat.stepId);
+}
+
+function handleStudyPracticeSecondary() {
+  hideStudyPracticeCompletionCard();
+  returnToStudyScreen();
+}
+
+function returnToStudyScreen() {
+  activeStudyPracticeSession = null;
+  resetActivityAttemptState();
+  showAppScreen(selectedJourneyId ? "study" : "main-menu", { pushHistory: false });
 }
 
 function handleJourneyActivityCompletion() {
@@ -6069,6 +6344,11 @@ function clearJourneyAutoAdvanceTimer() {
 }
 
 function handleJourneyCompletionPrimary() {
+  if (studyPracticeCompletionState?.isVisible) {
+    handleStudyPracticePrimary();
+    return;
+  }
+
   if (isJourneyTransitioning) {
     return;
   }
@@ -6160,6 +6440,11 @@ function showJourneyStepNotReady() {
 }
 
 function handleJourneyCompletionSecondary() {
+  if (studyPracticeCompletionState?.isVisible) {
+    handleStudyPracticeSecondary();
+    return;
+  }
+
   if (isJourneyTransitioning) {
     return;
   }
@@ -6317,7 +6602,7 @@ function updateTopBarNavigation() {
   const isHome = activeHierarchyNodeId === "world";
 
   if (backButton) {
-    backButton.hidden = isHome && !["free-play", "journey-gameplay", "study-explore"].includes(currentAppScreen);
+    backButton.hidden = isHome && !["free-play", "journey-gameplay", "study-explore", "study-practice"].includes(currentAppScreen);
   }
 
   if (homeButton) {
