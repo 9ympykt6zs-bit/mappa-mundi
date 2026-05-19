@@ -1,0 +1,56 @@
+{
+  "id": "more-southern-africa-countries",
+  "title": "More Southern Africa Countries",
+  "sequence": 76,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "more-southern-africa"
+  },
+  "features": [
+    {
+      "id": "south-africa",
+      "name": "South Africa",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ZAF",
+      "color": "#ef4444",
+      "labelAnchor": [23.67, -29.71],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "lesotho",
+      "name": "Lesotho",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "LSO",
+      "color": "#f59e0b",
+      "labelAnchor": [28.25, -29.48],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "eswatini",
+      "name": "Eswatini",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "SWZ",
+      "color": "#22c55e",
+      "labelAnchor": [31.47, -26.53],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "madagascar",
+      "name": "Madagascar",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "MDG",
+      "color": "#3b82f6",
+      "labelAnchor": [46.7, -18.63],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

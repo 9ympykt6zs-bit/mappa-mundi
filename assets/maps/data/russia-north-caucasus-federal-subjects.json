@@ -1,0 +1,117 @@
+{
+  "id": "russia-north-caucasus-federal-subjects",
+  "title": "Russia: North Caucasus",
+  "targetNoun": "federal subject",
+  "visibleAnswerLimit": 7,
+  "map": {
+    "region": "russia-north-caucasus-federal-subjects",
+    "admin1Source": "russia-admin1"
+  },
+  "features": [
+    {
+      "id": "republic-of-dagestan",
+      "name": "Republic of Dagestan",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "republic-of-dagestan",
+      "iso_3166_2": "RU-DA",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        47.1424,
+        42.36
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "republic-of-ingushetia",
+      "name": "Republic of Ingushetia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "republic-of-ingushetia",
+      "iso_3166_2": "RU-IN",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        44.8468,
+        43.3661
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "kabardino-balkarian-republic",
+      "name": "Kabardino-Balkarian Republic",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "kabardino-balkarian-republic",
+      "iso_3166_2": "RU-KB",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        43.3982,
+        43.3757
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "karachay-cherkess-republic",
+      "name": "Karachay-Cherkess Republic",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "karachay-cherkess-republic",
+      "iso_3166_2": "RU-KC",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        41.6866,
+        43.7073
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "republic-of-north-ossetia-alania",
+      "name": "Republic of North Ossetia-Alania",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "republic-of-north-ossetia-alania",
+      "iso_3166_2": "RU-SE",
+      "color": "#d88052",
+      "labelAnchor": [
+        44.1653,
+        42.9969
+      ],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "chechen-republic",
+      "name": "Chechen Republic",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "chechen-republic",
+      "iso_3166_2": "RU-CE",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        45.757,
+        43.2153
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "stavropol-krai",
+      "name": "Stavropol Krai",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "stavropol-krai",
+      "iso_3166_2": "RU-STA",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        43.2791,
+        44.981
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "id": "india-west-central-political-divisions",
+  "title": "India: West & Central",
+  "targetNoun": "state or union territory",
+  "visibleAnswerLimit": 6,
+  "map": {
+    "region": "india-west-central-political-divisions",
+    "admin1Source": "india-admin1"
+  },
+  "features": [
+    {
+      "id": "gujarat",
+      "name": "Gujarat",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "gujarat",
+      "iso_3166_2": "IN-GJ",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        71.3013,
+        22.7501
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "maharashtra",
+      "name": "Maharashtra",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "maharashtra",
+      "iso_3166_2": "IN-MH",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        75.4647,
+        19.4723
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "goa",
+      "name": "Goa",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "goa",
+      "iso_3166_2": "IN-GA",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        73.9951,
+        15.3133
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "madhya-pradesh",
+      "name": "Madhya Pradesh",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "madhya-pradesh",
+      "iso_3166_2": "IN-MP",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        78.4214,
+        22.9404
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "chhattisgarh",
+      "name": "Chhattisgarh",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "chhattisgarh",
+      "iso_3166_2": "IN-CT",
+      "color": "#d88052",
+      "labelAnchor": [
+        82.3069,
+        21.8044
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "dadra-and-nagar-haveli-and-daman-and-diu",
+      "name": "Dadra and Nagar Haveli and Daman and Diu",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "dadra-and-nagar-haveli-and-daman-and-diu",
+      "iso_3166_2": "IN-DH",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        73.029,
+        20.1841
+      ],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    }
+  ]
+}

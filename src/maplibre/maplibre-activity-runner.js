@@ -207,12 +207,23 @@ export class MapLibreActivityRunner {
     this.regionSelectHandler = handler;
   }
 
-  async load({ activity, worldCountries, usStatesAtlas, stateTargets, northAmericaAdmin1 }) {
+  async load({ activity, worldCountries, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1 }) {
     this.activity = activity;
     this.worldCountries = worldCountries;
     this.usStatesAtlas = usStatesAtlas;
     this.stateTargets = stateTargets;
     this.northAmericaAdmin1 = northAmericaAdmin1 || emptyFeatureCollection;
+    this.australiaAdmin1 = australiaAdmin1 || emptyFeatureCollection;
+    this.chinaAdmin1 = chinaAdmin1 || emptyFeatureCollection;
+    this.russiaAdmin1 = russiaAdmin1 || emptyFeatureCollection;
+    this.indiaAdmin1 = indiaAdmin1 || emptyFeatureCollection;
+    this.brazilAdmin1 = brazilAdmin1 || emptyFeatureCollection;
+    this.japanAdmin1 = japanAdmin1 || emptyFeatureCollection;
+    this.germanyAdmin1 = germanyAdmin1 || emptyFeatureCollection;
+    this.franceAdmin1 = franceAdmin1 || emptyFeatureCollection;
+    this.spainAdmin1 = spainAdmin1 || emptyFeatureCollection;
+    this.italyAdmin1 = italyAdmin1 || emptyFeatureCollection;
+    this.unitedKingdomAdmin1 = unitedKingdomAdmin1 || emptyFeatureCollection;
     this.shapeTargets = activity.targets.filter((target) => target.kind === "shape");
     this.pointTargets = activity.targets.filter((target) => target.kind === "point");
 
@@ -400,7 +411,7 @@ export class MapLibreActivityRunner {
     const countryFeature = this.worldCountries.features.find((feature) => {
       const properties = feature.properties || {};
       return [properties.ISO_A3, properties.ADM0_A3, properties.SOV_A3]
-        .filter(Boolean)
+        .filter((value) => this.isValidCountryCode(value))
         .map((value) => String(value).toUpperCase())
         .includes(normalizedIsoA3);
     });
@@ -939,6 +950,14 @@ export class MapLibreActivityRunner {
   }
 
   handleMapClick(event) {
+    if (this.isNavigationDebugEnabled()) {
+      console.log("[map-click-handler]", {
+        currentView: this.currentView,
+        point: event.point,
+        lngLat: event.lngLat
+      });
+    }
+
     if (this.currentView === "overview") {
       this.targetClickHandler?.(event.point);
       return;
@@ -1088,9 +1107,87 @@ export class MapLibreActivityRunner {
           targetIds.push(feature.properties.id);
         }
       });
+
+      if (stateFeatures.length === 0 && this.currentView === "study") {
+        this.getFallbackShapeTargetIdsAtPoint(queryPoint, selectedTarget).forEach((targetId) => {
+          if (!targetIds.includes(targetId)) {
+            targetIds.push(targetId);
+          }
+        });
+      }
     }
 
     return targetIds;
+  }
+
+  getFallbackShapeTargetIdsAtPoint(queryPoint, selectedTarget = null) {
+    if (!this.map || !this.activity?.targets?.length) {
+      return [];
+    }
+
+    const lngLat = this.map.unproject(queryPoint);
+    const point = [lngLat.lng, lngLat.lat];
+    const shapeTargets = this.shapeTargets.filter((target) => (
+      !selectedTarget || target.id === selectedTarget.id || selectedTarget.kind !== "shape"
+    ));
+
+    return shapeTargets
+      .filter((target) => {
+        const sourceFeature = this.getTargetShapeFeature(target);
+        return this.isPointInGeoJsonGeometry(point, sourceFeature?.geometry);
+      })
+      .map((target) => target.id);
+  }
+
+  isPointInGeoJsonGeometry(point, geometry) {
+    if (!geometry) {
+      return false;
+    }
+
+    if (geometry.type === "Polygon") {
+      return this.isPointInPolygon(point, geometry.coordinates);
+    }
+
+    if (geometry.type === "MultiPolygon") {
+      return geometry.coordinates.some((polygon) => this.isPointInPolygon(point, polygon));
+    }
+
+    return false;
+  }
+
+  isPointInPolygon(point, polygon) {
+    const [outerRing, ...holes] = polygon || [];
+
+    if (!outerRing || !this.isPointInRing(point, outerRing)) {
+      return false;
+    }
+
+    return !holes.some((hole) => this.isPointInRing(point, hole));
+  }
+
+  isPointInRing(point, ring) {
+    const [longitude, latitude] = point;
+    let inside = false;
+
+    for (let index = 0, previousIndex = ring.length - 1; index < ring.length; previousIndex = index, index += 1) {
+      const [currentLongitude, currentLatitude] = ring[index];
+      const [previousLongitude, previousLatitude] = ring[previousIndex];
+      const crossesLatitude = (currentLatitude > latitude) !== (previousLatitude > latitude);
+
+      if (!crossesLatitude) {
+        continue;
+      }
+
+      const crossingLongitude = ((previousLongitude - currentLongitude) * (latitude - currentLatitude))
+        / (previousLatitude - currentLatitude)
+        + currentLongitude;
+
+      if (longitude < crossingLongitude) {
+        inside = !inside;
+      }
+    }
+
+    return inside;
   }
 
   getNavigationCandidatesAtMapPoint(point) {
@@ -1119,10 +1216,35 @@ export class MapLibreActivityRunner {
 
     this.getRenderedNavigationFeatures(queryPoint, "overview-region-fill", "overview").forEach(addCandidate);
     this.getRenderedNavigationFeatures(queryPoint, "overview-point-preview", "overview").forEach(addCandidate);
-    this.getRenderedNavigationFeatures(queryPoint, "world-land", "world-country").forEach(addCandidate);
+    const renderedWorldCountryCandidates = this.getRenderedNavigationFeatures(queryPoint, "world-land", "world-country");
+    renderedWorldCountryCandidates.forEach(addCandidate);
+    const fallbackWorldCountryCandidates = this.currentView === "overview" && renderedWorldCountryCandidates.length === 0
+      ? this.getFallbackWorldCountryNavigationCandidatesAtPoint(queryPoint)
+      : [];
+    fallbackWorldCountryCandidates.forEach(addCandidate);
     this.getRenderedNavigationFeatures(queryPoint, "us-state-context-fill", "us-state").forEach(addCandidate);
+    this.debugNavigationHitTest(queryPoint, {
+      renderedWorldCountryCandidates,
+      fallbackWorldCountryCandidates
+    });
 
     return candidates;
+  }
+
+  getFallbackWorldCountryNavigationCandidatesAtPoint(queryPoint) {
+    if (!this.map || !this.worldCountries?.features?.length) {
+      return [];
+    }
+
+    const lngLat = this.map.unproject(queryPoint);
+    const point = [lngLat.lng, lngLat.lat];
+
+    return this.worldCountries.features
+      .filter((feature) => this.isPointInGeoJsonGeometry(point, feature.geometry))
+      .map((feature) => this.getNavigationCandidateFromFeature({
+        ...feature,
+        layer: { id: "world-country-fallback" }
+      }, "world-country"));
   }
 
   getRenderedNavigationFeatures(queryPoint, layerId, kind) {
@@ -1137,6 +1259,9 @@ export class MapLibreActivityRunner {
 
   getNavigationCandidateFromFeature(feature, kind) {
     const properties = feature?.properties || {};
+    const normalizedWorldCountryId = kind === "world-country"
+      ? this.getWorldCountryIdFromProperties(properties)
+      : null;
     const names = [
       properties.browseLabel,
       properties.ADMIN,
@@ -1148,14 +1273,87 @@ export class MapLibreActivityRunner {
 
     return {
       kind,
-      targetId: properties.activityId || properties.id || null,
-      sourceTargetId: properties.id || null,
+      targetId: properties.activityId || properties.id || normalizedWorldCountryId || null,
+      sourceTargetId: properties.id || normalizedWorldCountryId || null,
       layerId: feature?.layer?.id || null,
-      isoA3: properties.ISO_A3 || properties.ADM0_A3 || properties.SOV_A3 || properties.isoA3 || null,
+      isoA3: this.getStableCountryCode(properties),
       stateId: properties.id || properties.postal || null,
       continent: properties.CONTINENT || null,
       names
     };
+  }
+
+  getWorldCountryIdFromProperties(properties = {}) {
+    const name = properties.ADMIN || properties.NAME_LONG || properties.NAME || properties.SOVEREIGNT;
+
+    return this.normalizeNavigationId(name || properties.ISO_A3 || properties.ADM0_A3 || properties.SOV_A3);
+  }
+
+  getStableCountryCode(properties = {}) {
+    return [
+      properties.ISO_A3,
+      properties.ADM0_A3,
+      properties.SOV_A3,
+      properties.isoA3
+    ].find((value) => this.isValidCountryCode(value)) || null;
+  }
+
+  isValidCountryCode(value) {
+    const normalized = String(value || "").toUpperCase();
+
+    return /^[A-Z0-9]{3}$/.test(normalized) && normalized !== "-99";
+  }
+
+  normalizeNavigationId(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/&/g, "and")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+
+  debugNavigationHitTest(queryPoint, details = {}) {
+    if (!this.isNavigationDebugEnabled()) {
+      return;
+    }
+
+    const summarizeFeature = (feature) => {
+      const properties = feature?.properties || {};
+
+      return {
+        layerId: feature?.layer?.id || null,
+        targetId: properties.activityId || properties.id || this.getWorldCountryIdFromProperties(properties),
+        ADMIN: properties.ADMIN,
+        NAME: properties.NAME,
+        NAME_LONG: properties.NAME_LONG,
+        ISO_A3: properties.ISO_A3,
+        ADM0_A3: properties.ADM0_A3,
+        SOV_A3: properties.SOV_A3,
+        CONTINENT: properties.CONTINENT
+      };
+    };
+
+    const renderedAtPoint = this.map?.queryRenderedFeatures(queryPoint).map(summarizeFeature) || [];
+
+    console.groupCollapsed("[map-navigation-hit-test]", this.currentView);
+    console.log("click point", queryPoint);
+    console.log("rendered features at pointer", renderedAtPoint);
+    console.log("world-land candidates", details.renderedWorldCountryCandidates || []);
+    console.log("fallback world-country candidate count", details.fallbackWorldCountryCandidates?.length || 0);
+    console.log("fallback world-country candidates", details.fallbackWorldCountryCandidates || []);
+    console.groupEnd();
+  }
+
+  isNavigationDebugEnabled() {
+    try {
+      return new URLSearchParams(window.location.search).has("debugMapNavigation")
+        || localStorage.getItem("geography-memory-debug-map-navigation") === "true";
+    } catch {
+      return false;
+    }
   }
 
   getCapitalGeoJson() {
@@ -1224,8 +1422,10 @@ export class MapLibreActivityRunner {
       return this.stateTargets.features.find((feature) => feature.properties.id === sourceFeatureId) || null;
     }
 
-    if (activity?.map?.admin1Source === "north-america-admin1") {
-      return this.northAmericaAdmin1.features.find((feature) => {
+    const admin1FeatureCollection = this.getAdmin1FeatureCollection(activity?.map?.admin1Source);
+
+    if (admin1FeatureCollection) {
+      return admin1FeatureCollection.features.find((feature) => {
         const properties = feature.properties || {};
 
         return properties.id === sourceFeatureId
@@ -1250,6 +1450,58 @@ export class MapLibreActivityRunner {
     }) || null;
 
     return this.getRegionalWorldSourceFeature(worldFeature, activity);
+  }
+
+  getAdmin1FeatureCollection(sourceId) {
+    if (sourceId === "north-america-admin1") {
+      return this.northAmericaAdmin1;
+    }
+
+    if (sourceId === "australia-admin1") {
+      return this.australiaAdmin1;
+    }
+
+    if (sourceId === "china-admin1") {
+      return this.chinaAdmin1;
+    }
+
+    if (sourceId === "russia-admin1") {
+      return this.russiaAdmin1;
+    }
+
+    if (sourceId === "india-admin1") {
+      return this.indiaAdmin1;
+    }
+
+    if (sourceId === "brazil-admin1") {
+      return this.brazilAdmin1;
+    }
+
+    if (sourceId === "japan-admin1") {
+      return this.japanAdmin1;
+    }
+
+    if (sourceId === "germany-admin1") {
+      return this.germanyAdmin1;
+    }
+
+    if (sourceId === "france-admin1") {
+      return this.franceAdmin1;
+    }
+
+    if (sourceId === "spain-admin1") {
+      return this.spainAdmin1;
+    }
+
+    if (sourceId === "italy-admin1") {
+      return this.italyAdmin1;
+    }
+
+    if (sourceId === "united-kingdom-admin1") {
+      return this.unitedKingdomAdmin1;
+    }
+
+    return null;
   }
 
   getContinentsOceanSourceFeature(target) {

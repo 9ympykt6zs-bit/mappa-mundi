@@ -1,0 +1,40 @@
+{
+  "id": "italy-islands-political-divisions",
+  "title": "Italy: Islands",
+  "targetNoun": "region",
+  "visibleAnswerLimit": 2,
+  "map": {
+    "region": "italy-islands-political-divisions",
+    "admin1Source": "italy-admin1"
+  },
+  "features": [
+    {
+      "id": "sicily",
+      "name": "Sicily",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "sicily",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        14.2168,
+        37.5228
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "sardinia",
+      "name": "Sardinia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "sardinia",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        9.0232,
+        39.999
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

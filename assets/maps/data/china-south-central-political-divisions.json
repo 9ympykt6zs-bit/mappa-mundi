@@ -1,0 +1,132 @@
+{
+  "id": "china-south-central-political-divisions",
+  "title": "China: South Central",
+  "targetNoun": "political division",
+  "visibleAnswerLimit": 8,
+  "map": {
+    "region": "china-south-central-political-divisions",
+    "admin1Source": "china-admin1"
+  },
+  "features": [
+    {
+      "id": "henan",
+      "name": "Henan",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "henan",
+      "iso_3166_2": "CN-HA",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        113.484,
+        33.9055
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "hubei",
+      "name": "Hubei",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "hubei",
+      "iso_3166_2": "CN-HB",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        112.264,
+        30.9857
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "hunan",
+      "name": "Hunan",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "hunan",
+      "iso_3166_2": "CN-HN",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        111.712,
+        27.6667
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "guangdong",
+      "name": "Guangdong",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "guangdong",
+      "iso_3166_2": "CN-GD",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        113.72,
+        23.7924
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "guangxi",
+      "name": "Guangxi",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "guangxi",
+      "iso_3166_2": "CN-GX",
+      "color": "#d88052",
+      "labelAnchor": [
+        108.756,
+        23.7451
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "hainan",
+      "name": "Hainan",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "hainan",
+      "iso_3166_2": "CN-HI",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        109.825,
+        19.1865
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "hong-kong",
+      "name": "Hong Kong",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "hong-kong",
+      "iso_3166_2": "HK-HK",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        114.1193,
+        22.3705
+      ],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "macau",
+      "name": "Macau",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "macau",
+      "iso_3166_2": "MO-M",
+      "color": "#d65a8c",
+      "labelAnchor": [
+        113.56,
+        22.1349
+      ],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    }
+  ]
+}

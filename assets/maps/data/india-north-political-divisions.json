@@ -1,0 +1,162 @@
+{
+  "id": "india-north-political-divisions",
+  "title": "India: North",
+  "targetNoun": "state or union territory",
+  "visibleAnswerLimit": 8,
+  "map": {
+    "region": "india-north-political-divisions",
+    "admin1Source": "india-admin1"
+  },
+  "features": [
+    {
+      "id": "delhi",
+      "name": "Delhi",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "delhi",
+      "iso_3166_2": "IN-DL",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        77.0856,
+        28.69
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "haryana",
+      "name": "Haryana",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "haryana",
+      "iso_3166_2": "IN-HR",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        76.271,
+        29.1003
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "himachal-pradesh",
+      "name": "Himachal Pradesh",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "himachal-pradesh",
+      "iso_3166_2": "IN-HP",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        77.2875,
+        31.6755
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "jammu-and-kashmir",
+      "name": "Jammu and Kashmir",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "jammu-and-kashmir",
+      "iso_3166_2": "IN-JK",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        76.6395,
+        33.9658
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "ladakh",
+      "name": "Ladakh",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "ladakh",
+      "iso_3166_2": "IN-LA",
+      "color": "#d88052",
+      "labelAnchor": [
+        77.4806,
+        34.0256
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "punjab",
+      "name": "Punjab",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "punjab",
+      "iso_3166_2": "IN-PB",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        75.3762,
+        31.0245
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "rajasthan",
+      "name": "Rajasthan",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "rajasthan",
+      "iso_3166_2": "IN-RJ",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        73.8556,
+        26.7468
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "uttarakhand",
+      "name": "Uttarakhand",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "uttarakhand",
+      "iso_3166_2": "IN-UT",
+      "color": "#d65a8c",
+      "labelAnchor": [
+        79.2841,
+        30.0576
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "uttar-pradesh",
+      "name": "Uttar Pradesh",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "uttar-pradesh",
+      "iso_3166_2": "IN-UP",
+      "color": "#5aa6a6",
+      "labelAnchor": [
+        80.9966,
+        26.7201
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "chandigarh",
+      "name": "Chandigarh",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "chandigarh",
+      "iso_3166_2": "IN-CH",
+      "color": "#a67a5a",
+      "labelAnchor": [
+        76.7605,
+        30.7452
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

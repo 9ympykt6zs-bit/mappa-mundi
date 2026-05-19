@@ -1,0 +1,122 @@
+{
+  "id": "east-africa-countries",
+  "title": "East Africa Countries",
+  "sequence": 74,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "east-africa"
+  },
+  "features": [
+    {
+      "id": "ethiopia",
+      "name": "Ethiopia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ETH",
+      "color": "#ef4444",
+      "labelAnchor": [39.09, 8.03],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "eritrea",
+      "name": "Eritrea",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ERI",
+      "color": "#f59e0b",
+      "labelAnchor": [38.29, 15.79],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "djibouti",
+      "name": "Djibouti",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "DJI",
+      "color": "#22c55e",
+      "labelAnchor": [42.5, 11.98],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "somalia",
+      "name": "Somalia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "SOM",
+      "color": "#3b82f6",
+      "labelAnchor": [45.19, 3.57],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "south-sudan",
+      "name": "South Sudan",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "SSD",
+      "color": "#a855f7",
+      "labelAnchor": [30.39, 7.23],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "uganda",
+      "name": "Uganda",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "UGA",
+      "color": "#06b6d4",
+      "labelAnchor": [32.95, 1.97],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "kenya",
+      "name": "Kenya",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "KEN",
+      "color": "#ec4899",
+      "labelAnchor": [37.91, 0.55],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "rwanda",
+      "name": "Rwanda",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "RWA",
+      "color": "#84cc16",
+      "labelAnchor": [30.1, -1.9],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "burundi",
+      "name": "Burundi",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "BDI",
+      "color": "#eab308",
+      "labelAnchor": [29.92, -3.33],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "tanzania",
+      "name": "Tanzania",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "TZA",
+      "color": "#14b8a6",
+      "labelAnchor": [34.96, -6.05],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

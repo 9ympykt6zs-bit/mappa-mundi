@@ -1,0 +1,102 @@
+{
+  "id": "russia-ural-federal-subjects",
+  "title": "Russia: Ural",
+  "targetNoun": "federal subject",
+  "visibleAnswerLimit": 6,
+  "map": {
+    "region": "russia-ural-federal-subjects",
+    "admin1Source": "russia-admin1"
+  },
+  "features": [
+    {
+      "id": "kurgan-oblast",
+      "name": "Kurgan Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "kurgan-oblast",
+      "iso_3166_2": "RU-KGN",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        65.3505,
+        55.4316
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "sverdlovsk-oblast",
+      "name": "Sverdlovsk Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "sverdlovsk-oblast",
+      "iso_3166_2": "RU-SVE",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        61.7078,
+        58.8952
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tyumen-oblast",
+      "name": "Tyumen Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tyumen-oblast",
+      "iso_3166_2": "RU-TYU",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        68.5186,
+        57.2639
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "chelyabinsk-oblast",
+      "name": "Chelyabinsk Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "chelyabinsk-oblast",
+      "iso_3166_2": "RU-CHE",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        60.2383,
+        54.1131
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "khanty-mansi-autonomous-okrug",
+      "name": "Khanty-Mansi Autonomous Okrug",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "khanty-mansi-autonomous-okrug",
+      "iso_3166_2": "RU-KHM",
+      "color": "#d88052",
+      "labelAnchor": [
+        71.3806,
+        61.4315
+      ],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "yamalo-nenets-autonomous-okrug",
+      "name": "Yamalo-Nenets Autonomous Okrug",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "yamalo-nenets-autonomous-okrug",
+      "iso_3166_2": "RU-YAN",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        75.1874,
+        65.4117
+      ],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    }
+  ]
+}

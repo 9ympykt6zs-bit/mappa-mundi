@@ -1,0 +1,132 @@
+{
+  "id": "japan-kyushu-okinawa-political-divisions",
+  "title": "Japan: Kyushu & Okinawa",
+  "targetNoun": "prefecture",
+  "visibleAnswerLimit": 8,
+  "map": {
+    "region": "japan-kyushu-okinawa-political-divisions",
+    "admin1Source": "japan-admin1"
+  },
+  "features": [
+    {
+      "id": "fukuoka",
+      "name": "Fukuoka",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "fukuoka",
+      "iso_3166_2": "JP-40",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        130.616,
+        33.4906
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "saga",
+      "name": "Saga",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "saga",
+      "iso_3166_2": "JP-41",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        130.147,
+        33.0097
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "nagasaki",
+      "name": "Nagasaki",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "nagasaki",
+      "iso_3166_2": "JP-42",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        128.755,
+        32.6745
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "kumamoto",
+      "name": "Kumamoto",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "kumamoto",
+      "iso_3166_2": "JP-43",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        130.834,
+        32.588
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "oita",
+      "name": "Oita",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "oita",
+      "iso_3166_2": "JP-44",
+      "color": "#d88052",
+      "labelAnchor": [
+        131.449,
+        33.2006
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "miyazaki",
+      "name": "Miyazaki",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "miyazaki",
+      "iso_3166_2": "JP-45",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        131.286,
+        32.0981
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "kagoshima",
+      "name": "Kagoshima",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "kagoshima",
+      "iso_3166_2": "JP-46",
+      "color": "#60a6a6",
+      "labelAnchor": [
+        129.601,
+        29.4572
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "okinawa",
+      "name": "Okinawa",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "okinawa",
+      "iso_3166_2": "JP-47",
+      "color": "#c96b6b",
+      "labelAnchor": [
+        123.802,
+        24.3349
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

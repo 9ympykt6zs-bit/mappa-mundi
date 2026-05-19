@@ -1,0 +1,152 @@
+{
+  "id": "italy-central-southern-regions-political-divisions",
+  "title": "Italy: Central & Southern Regions",
+  "targetNoun": "region",
+  "visibleAnswerLimit": 8,
+  "map": {
+    "region": "italy-central-southern-regions-political-divisions",
+    "admin1Source": "italy-admin1"
+  },
+  "features": [
+    {
+      "id": "tuscany",
+      "name": "Tuscany",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tuscany",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        10.9442,
+        43.598
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "umbria",
+      "name": "Umbria",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "umbria",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        12.4893,
+        42.84
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "marche",
+      "name": "Marche",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "marche",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        13.2371,
+        43.2921
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "lazio",
+      "name": "Lazio",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "lazio",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        12.8582,
+        41.945
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "abruzzo",
+      "name": "Abruzzo",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "abruzzo",
+      "color": "#d88052",
+      "labelAnchor": [
+        13.9051,
+        42.286
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "molise",
+      "name": "Molise",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "molise",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        14.4903,
+        41.6437
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "campania",
+      "name": "Campania",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "campania",
+      "color": "#60a6a6",
+      "labelAnchor": [
+        14.7309,
+        40.9404
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "apulia",
+      "name": "Apulia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "apulia",
+      "color": "#c96b6b",
+      "labelAnchor": [
+        16.9088,
+        40.839
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "basilicata",
+      "name": "Basilicata",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "basilicata",
+      "color": "#b7a14a",
+      "labelAnchor": [
+        16.2142,
+        40.3932
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "calabria",
+      "name": "Calabria",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "calabria",
+      "color": "#5e8f6f",
+      "labelAnchor": [
+        16.3886,
+        38.8955
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

@@ -1,0 +1,117 @@
+{
+  "id": "china-east-political-divisions",
+  "title": "China: East",
+  "targetNoun": "political division",
+  "visibleAnswerLimit": 7,
+  "map": {
+    "region": "china-east-political-divisions",
+    "admin1Source": "china-admin1"
+  },
+  "features": [
+    {
+      "id": "shanghai",
+      "name": "Shanghai",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "shanghai",
+      "iso_3166_2": "CN-SH",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        121.409,
+        31.0909
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "jiangsu",
+      "name": "Jiangsu",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "jiangsu",
+      "iso_3166_2": "CN-JS",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        119.942,
+        32.9844
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "zhejiang",
+      "name": "Zhejiang",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "zhejiang",
+      "iso_3166_2": "CN-ZJ",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        119.97,
+        29.1084
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "anhui",
+      "name": "Anhui",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "anhui",
+      "iso_3166_2": "CN-AH",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        117.253,
+        31.9537
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "fujian",
+      "name": "Fujian",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "fujian",
+      "iso_3166_2": "CN-FJ",
+      "color": "#d88052",
+      "labelAnchor": [
+        118.178,
+        26.408
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "jiangxi",
+      "name": "Jiangxi",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "jiangxi",
+      "iso_3166_2": "CN-JX",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        116.017,
+        27.6397
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "shandong",
+      "name": "Shandong",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "shandong",
+      "iso_3166_2": "CN-SD",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        118.114,
+        36.3271
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

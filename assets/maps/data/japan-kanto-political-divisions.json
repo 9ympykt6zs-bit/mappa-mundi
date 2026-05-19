@@ -1,0 +1,117 @@
+{
+  "id": "japan-kanto-political-divisions",
+  "title": "Japan: Kanto",
+  "targetNoun": "prefecture",
+  "visibleAnswerLimit": 7,
+  "map": {
+    "region": "japan-kanto-political-divisions",
+    "admin1Source": "japan-admin1"
+  },
+  "features": [
+    {
+      "id": "ibaraki",
+      "name": "Ibaraki",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "ibaraki",
+      "iso_3166_2": "JP-08",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        140.257,
+        36.2773
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tochigi",
+      "name": "Tochigi",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tochigi",
+      "iso_3166_2": "JP-09",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        139.786,
+        36.6593
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "gunma",
+      "name": "Gunma",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "gunma",
+      "iso_3166_2": "JP-10",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        139.025,
+        36.5592
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "saitama",
+      "name": "Saitama",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "saitama",
+      "iso_3166_2": "JP-11",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        139.287,
+        36.0173
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "chiba",
+      "name": "Chiba",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "chiba",
+      "iso_3166_2": "JP-12",
+      "color": "#d88052",
+      "labelAnchor": [
+        140.318,
+        35.489
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tokyo",
+      "name": "Tokyo",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tokyo",
+      "iso_3166_2": "JP-13",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        139.407,
+        35.6578
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "kanagawa",
+      "name": "Kanagawa",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "kanagawa",
+      "iso_3166_2": "JP-14",
+      "color": "#60a6a6",
+      "labelAnchor": [
+        139.344,
+        35.4378
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

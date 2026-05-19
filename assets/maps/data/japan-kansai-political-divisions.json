@@ -1,0 +1,117 @@
+{
+  "id": "japan-kansai-political-divisions",
+  "title": "Japan: Kansai",
+  "targetNoun": "prefecture",
+  "visibleAnswerLimit": 7,
+  "map": {
+    "region": "japan-kansai-political-divisions",
+    "admin1Source": "japan-admin1"
+  },
+  "features": [
+    {
+      "id": "mie",
+      "name": "Mie",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "mie",
+      "iso_3166_2": "JP-24",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        136.386,
+        34.5679
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "shiga",
+      "name": "Shiga",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "shiga",
+      "iso_3166_2": "JP-25",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        136.093,
+        35.1832
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "kyoto",
+      "name": "Kyoto",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "kyoto",
+      "iso_3166_2": "JP-26",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        135.451,
+        35.2117
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "osaka",
+      "name": "Osaka",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "osaka",
+      "iso_3166_2": "JP-27",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        135.519,
+        34.5993
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "hyogo",
+      "name": "Hyogo",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "hyogo",
+      "iso_3166_2": "JP-28",
+      "color": "#d88052",
+      "labelAnchor": [
+        134.837,
+        35.063
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "nara",
+      "name": "Nara",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "nara",
+      "iso_3166_2": "JP-29",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        135.877,
+        34.2815
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "wakayama",
+      "name": "Wakayama",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "wakayama",
+      "iso_3166_2": "JP-30",
+      "color": "#60a6a6",
+      "labelAnchor": [
+        135.401,
+        33.93
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

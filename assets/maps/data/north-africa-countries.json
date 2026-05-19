@@ -1,7 +1,7 @@
 {
   "id": "north-africa-countries",
   "title": "North Africa Countries",
-  "sequence": 70,
+  "sequence": 69,
   "targetNoun": "country",
   "visibleAnswerLimit": 10,
   "map": {
@@ -15,7 +15,7 @@
       "shape": "path",
       "isoA3": "MAR",
       "color": "#ef4444",
-      "labelAnchor": [-6.3, 31.8],
+      "labelAnchor": [-7.19, 31.65],
       "labelFontSize": 12,
       "labelRotation": 0
     },
@@ -26,7 +26,7 @@
       "shape": "path",
       "isoA3": "DZA",
       "color": "#f59e0b",
-      "labelAnchor": [2.8, 28.2],
+      "labelAnchor": [2.81, 27.4],
       "labelFontSize": 13,
       "labelRotation": 0
     },
@@ -37,7 +37,7 @@
       "shape": "path",
       "isoA3": "TUN",
       "color": "#22c55e",
-      "labelAnchor": [9.5, 34.0],
+      "labelAnchor": [9.01, 33.69],
       "labelFontSize": 11,
       "labelRotation": 0
     },
@@ -48,7 +48,7 @@
       "shape": "path",
       "isoA3": "LBY",
       "color": "#3b82f6",
-      "labelAnchor": [18.0, 27.0],
+      "labelAnchor": [18.01, 26.64],
       "labelFontSize": 13,
       "labelRotation": 0
     },
@@ -59,8 +59,30 @@
       "shape": "path",
       "isoA3": "EGY",
       "color": "#a855f7",
-      "labelAnchor": [29.8, 26.7],
+      "labelAnchor": [29.45, 26.19],
       "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "sudan",
+      "name": "Sudan",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "SDN",
+      "color": "#06b6d4",
+      "labelAnchor": [29.26, 16.33],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "western-sahara",
+      "name": "Western Sahara",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ESH",
+      "color": "#ec4899",
+      "labelAnchor": [-12.63, 23.97],
+      "labelFontSize": 10,
       "labelRotation": 0
     }
   ]

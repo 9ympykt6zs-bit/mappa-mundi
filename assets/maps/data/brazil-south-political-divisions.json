@@ -1,0 +1,57 @@
+{
+  "id": "brazil-south-political-divisions",
+  "title": "Brazil: South",
+  "targetNoun": "state or federal district",
+  "visibleAnswerLimit": 3,
+  "map": {
+    "region": "brazil-south-political-divisions",
+    "admin1Source": "brazil-admin1"
+  },
+  "features": [
+    {
+      "id": "parana",
+      "name": "Paraná",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "parana",
+      "iso_3166_2": "BR-PR",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        -51.3228,
+        -24.6618
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "rio-grande-do-sul",
+      "name": "Rio Grande do Sul",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "rio-grande-do-sul",
+      "iso_3166_2": "BR-RS",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        -53.656,
+        -29.7277
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "santa-catarina",
+      "name": "Santa Catarina",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "santa-catarina",
+      "iso_3166_2": "BR-SC",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        -51.1586,
+        -27.0392
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

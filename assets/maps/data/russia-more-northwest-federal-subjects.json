@@ -1,0 +1,87 @@
+{
+  "id": "russia-more-northwest-federal-subjects",
+  "title": "Russia: More Northwest",
+  "targetNoun": "federal subject",
+  "visibleAnswerLimit": 5,
+  "map": {
+    "region": "russia-more-northwest-federal-subjects",
+    "admin1Source": "russia-admin1"
+  },
+  "features": [
+    {
+      "id": "republic-of-karelia",
+      "name": "Republic of Karelia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "republic-of-karelia",
+      "iso_3166_2": "RU-KR",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        33.1446,
+        63.5295
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "komi-republic",
+      "name": "Komi Republic",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "komi-republic",
+      "iso_3166_2": "RU-KO",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        55.8183,
+        64.1194
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "arkhangelsk-oblast",
+      "name": "Arkhangelsk Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "arkhangelsk-oblast",
+      "iso_3166_2": "RU-ARK",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        41.9939,
+        63.3132
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "nenets-autonomous-okrug",
+      "name": "Nenets Autonomous Okrug",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "nenets-autonomous-okrug",
+      "iso_3166_2": "RU-NEN",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        56.2877,
+        67.8271
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "murmansk-oblast",
+      "name": "Murmansk Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "murmansk-oblast",
+      "iso_3166_2": "RU-MUR",
+      "color": "#d88052",
+      "labelAnchor": [
+        34.3212,
+        67.9609
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

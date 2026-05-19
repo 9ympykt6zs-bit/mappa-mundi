@@ -1,0 +1,117 @@
+{
+  "id": "india-northeast-political-divisions",
+  "title": "India: Northeast",
+  "targetNoun": "state or union territory",
+  "visibleAnswerLimit": 7,
+  "map": {
+    "region": "india-northeast-political-divisions",
+    "admin1Source": "india-admin1"
+  },
+  "features": [
+    {
+      "id": "arunachal-pradesh",
+      "name": "Arunachal Pradesh",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "arunachal-pradesh",
+      "iso_3166_2": "IN-AR",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        94.4673,
+        28.4056
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "assam",
+      "name": "Assam",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "assam",
+      "iso_3166_2": "IN-AS",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        92.9929,
+        26.3302
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "manipur",
+      "name": "Manipur",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "manipur",
+      "iso_3166_2": "IN-MN",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        93.8457,
+        24.7442
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "meghalaya",
+      "name": "Meghalaya",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "meghalaya",
+      "iso_3166_2": "IN-ML",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        91.3031,
+        25.4804
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "mizoram",
+      "name": "Mizoram",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "mizoram",
+      "iso_3166_2": "IN-MZ",
+      "color": "#d88052",
+      "labelAnchor": [
+        92.8409,
+        23.2037
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "nagaland",
+      "name": "Nagaland",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "nagaland",
+      "iso_3166_2": "IN-NL",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        94.5664,
+        26.1094
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tripura",
+      "name": "Tripura",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tripura",
+      "iso_3166_2": "IN-TR",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        91.7031,
+        23.8519
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

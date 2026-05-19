@@ -1,0 +1,87 @@
+{
+  "id": "russia-more-far-east-federal-subjects",
+  "title": "Russia: More Far East",
+  "targetNoun": "federal subject",
+  "visibleAnswerLimit": 5,
+  "map": {
+    "region": "russia-more-far-east-federal-subjects",
+    "admin1Source": "russia-admin1"
+  },
+  "features": [
+    {
+      "id": "sakha-republic-yakutia",
+      "name": "Sakha Republic / Yakutia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "sakha-republic-yakutia",
+      "iso_3166_2": "RU-SA",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        130.989,
+        65.5964
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "kamchatka-krai",
+      "name": "Kamchatka Krai",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "kamchatka-krai",
+      "iso_3166_2": "RU-KAM",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        160.187,
+        56.5325
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "chukotka-autonomous-okrug",
+      "name": "Chukotka Autonomous Okrug",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "chukotka-autonomous-okrug",
+      "iso_3166_2": "RU-CHU",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        170.516,
+        66.7517
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "republic-of-buryatia",
+      "name": "Republic of Buryatia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "republic-of-buryatia",
+      "iso_3166_2": "RU-BU",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        109.341,
+        52.9061
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "zabaykalsky-krai",
+      "name": "Zabaykalsky Krai",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "zabaykalsky-krai",
+      "iso_3166_2": "RU-ZAB",
+      "color": "#d88052",
+      "labelAnchor": [
+        116.559,
+        52.159
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

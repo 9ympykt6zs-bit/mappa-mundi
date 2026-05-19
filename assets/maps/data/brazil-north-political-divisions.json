@@ -1,0 +1,117 @@
+{
+  "id": "brazil-north-political-divisions",
+  "title": "Brazil: North",
+  "targetNoun": "state or federal district",
+  "visibleAnswerLimit": 7,
+  "map": {
+    "region": "brazil-north-political-divisions",
+    "admin1Source": "brazil-admin1"
+  },
+  "features": [
+    {
+      "id": "acre",
+      "name": "Acre",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "acre",
+      "iso_3166_2": "BR-AC",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        -70.2976,
+        -8.9285
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "amapa",
+      "name": "Amapá",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "amapa",
+      "iso_3166_2": "BR-AP",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        -51.6842,
+        1.4116
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "amazonas",
+      "name": "Amazonas",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "amazonas",
+      "iso_3166_2": "BR-AM",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        -63.7853,
+        -4.2177
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "para",
+      "name": "Pará",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "para",
+      "iso_3166_2": "BR-PA",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        -52.6491,
+        -4.4431
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "rondonia",
+      "name": "Rondônia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "rondonia",
+      "iso_3166_2": "BR-RO",
+      "color": "#d88052",
+      "labelAnchor": [
+        -63.1439,
+        -10.9712
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "roraima",
+      "name": "Roraima",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "roraima",
+      "iso_3166_2": "BR-RR",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        -61.3325,
+        1.938
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tocantins",
+      "name": "Tocantins",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tocantins",
+      "iso_3166_2": "BR-TO",
+      "color": "#60a6a6",
+      "labelAnchor": [
+        -48.2502,
+        -10.223
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

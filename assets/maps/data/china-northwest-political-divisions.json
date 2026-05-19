@@ -1,0 +1,87 @@
+{
+  "id": "china-northwest-political-divisions",
+  "title": "China: Northwest",
+  "targetNoun": "political division",
+  "visibleAnswerLimit": 5,
+  "map": {
+    "region": "china-northwest-political-divisions",
+    "admin1Source": "china-admin1"
+  },
+  "features": [
+    {
+      "id": "shaanxi",
+      "name": "Shaanxi",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "shaanxi",
+      "iso_3166_2": "CN-SN",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        108.363,
+        33.7713
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "gansu",
+      "name": "Gansu",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "gansu",
+      "iso_3166_2": "CN-GS",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        100.735,
+        38.7393
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "qinghai",
+      "name": "Qinghai",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "qinghai",
+      "iso_3166_2": "CN-QH",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        96.2377,
+        35.2652
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "ningxia",
+      "name": "Ningxia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "ningxia",
+      "iso_3166_2": "CN-NX",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        106.038,
+        37.1762
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "xinjiang",
+      "name": "Xinjiang",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "xinjiang",
+      "iso_3166_2": "CN-XJ",
+      "color": "#d88052",
+      "labelAnchor": [
+        85.4253,
+        41.122
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

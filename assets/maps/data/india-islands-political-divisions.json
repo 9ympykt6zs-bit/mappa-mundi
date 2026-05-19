@@ -1,0 +1,42 @@
+{
+  "id": "india-islands-political-divisions",
+  "title": "India: Islands",
+  "targetNoun": "state or union territory",
+  "visibleAnswerLimit": 2,
+  "map": {
+    "region": "india-islands-political-divisions",
+    "admin1Source": "india-admin1"
+  },
+  "features": [
+    {
+      "id": "andaman-and-nicobar-islands",
+      "name": "Andaman and Nicobar Islands",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "andaman-and-nicobar-islands",
+      "iso_3166_2": "IN-AN",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        93.7895,
+        6.8365
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "lakshadweep",
+      "name": "Lakshadweep",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "lakshadweep",
+      "iso_3166_2": "IN-LD",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        72.7811,
+        11.2249
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

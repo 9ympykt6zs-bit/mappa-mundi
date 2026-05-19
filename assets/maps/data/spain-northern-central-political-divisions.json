@@ -1,0 +1,138 @@
+{
+  "id": "spain-northern-central-political-divisions",
+  "title": "Spain: Northern & Central",
+  "targetNoun": "autonomous community or city",
+  "visibleAnswerLimit": 8,
+  "map": {
+    "region": "spain-northern-central-political-divisions",
+    "admin1Source": "spain-admin1"
+  },
+  "features": [
+    {
+      "id": "galicia",
+      "name": "Galicia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "galicia",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        -7.983,
+        42.684
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "asturias",
+      "name": "Asturias",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "asturias",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        -5.842,
+        43.3261
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "cantabria",
+      "name": "Cantabria",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "cantabria",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        -4.0209,
+        43.2182
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "basque-country",
+      "name": "Basque Country",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "basque-country",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        -2.5721,
+        43.093
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "navarre",
+      "name": "Navarre",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "navarre",
+      "color": "#d88052",
+      "labelAnchor": [
+        -1.6384,
+        42.7493
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "la-rioja",
+      "name": "La Rioja",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "la-rioja",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        -2.4034,
+        42.3179
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "castile-and-leon",
+      "name": "Castile and León",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "castile-and-leon",
+      "color": "#60a6a6",
+      "labelAnchor": [
+        -4.6798,
+        41.6432
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "community-of-madrid",
+      "name": "Community of Madrid",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "community-of-madrid",
+      "color": "#c96b6b",
+      "labelAnchor": [
+        -3.6701,
+        40.4593
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "aragon",
+      "name": "Aragon",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "aragon",
+      "color": "#b7a14a",
+      "labelAnchor": [
+        -0.6253,
+        41.4642
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

@@ -1,0 +1,117 @@
+{
+  "id": "russia-more-volga-federal-subjects",
+  "title": "Russia: More Volga",
+  "targetNoun": "federal subject",
+  "visibleAnswerLimit": 7,
+  "map": {
+    "region": "russia-more-volga-federal-subjects",
+    "admin1Source": "russia-admin1"
+  },
+  "features": [
+    {
+      "id": "republic-of-bashkortostan",
+      "name": "Republic of Bashkortostan",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "republic-of-bashkortostan",
+      "iso_3166_2": "RU-BA",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        56.5575,
+        54.2086
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "perm-krai",
+      "name": "Perm Krai",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "perm-krai",
+      "iso_3166_2": "RU-PER",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        56.5878,
+        58.8735
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "orenburg-oblast",
+      "name": "Orenburg Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "orenburg-oblast",
+      "iso_3166_2": "RU-ORE",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        56.2149,
+        51.5157
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "penza-oblast",
+      "name": "Penza Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "penza-oblast",
+      "iso_3166_2": "RU-PNZ",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        44.8159,
+        53.0562
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "samara-oblast",
+      "name": "Samara Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "samara-oblast",
+      "iso_3166_2": "RU-SAM",
+      "color": "#d88052",
+      "labelAnchor": [
+        50.4377,
+        53.1783
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "saratov-oblast",
+      "name": "Saratov Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "saratov-oblast",
+      "iso_3166_2": "RU-SAR",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        46.6368,
+        51.6742
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "ulyanovsk-oblast",
+      "name": "Ulyanovsk Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "ulyanovsk-oblast",
+      "iso_3166_2": "RU-ULY",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        47.3773,
+        53.9248
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

@@ -1,0 +1,117 @@
+{
+  "id": "russia-volga-federal-subjects",
+  "title": "Russia: Volga",
+  "targetNoun": "federal subject",
+  "visibleAnswerLimit": 7,
+  "map": {
+    "region": "russia-volga-federal-subjects",
+    "admin1Source": "russia-admin1"
+  },
+  "features": [
+    {
+      "id": "nizhny-novgorod-oblast",
+      "name": "Nizhny Novgorod Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "nizhny-novgorod-oblast",
+      "iso_3166_2": "RU-NIZ",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        44.7751,
+        56.1384
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "kirov-oblast",
+      "name": "Kirov Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "kirov-oblast",
+      "iso_3166_2": "RU-KIR",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        50.1112,
+        58.1926
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "mari-el-republic",
+      "name": "Mari El Republic",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "mari-el-republic",
+      "iso_3166_2": "RU-ME",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        47.9131,
+        56.5407
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "chuvash-republic",
+      "name": "Chuvash Republic",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "chuvash-republic",
+      "iso_3166_2": "RU-CU",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        47.1662,
+        55.4883
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "republic-of-mordovia",
+      "name": "Republic of Mordovia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "republic-of-mordovia",
+      "iso_3166_2": "RU-MO",
+      "color": "#d88052",
+      "labelAnchor": [
+        44.4631,
+        54.1154
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "republic-of-tatarstan",
+      "name": "Republic of Tatarstan",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "republic-of-tatarstan",
+      "iso_3166_2": "RU-TA",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        50.7364,
+        55.374
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "udmurt-republic",
+      "name": "Udmurt Republic",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "udmurt-republic",
+      "iso_3166_2": "RU-UD",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        52.7957,
+        57.3433
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

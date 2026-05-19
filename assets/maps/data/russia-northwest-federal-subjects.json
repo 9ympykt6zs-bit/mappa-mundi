@@ -1,0 +1,102 @@
+{
+  "id": "russia-northwest-federal-subjects",
+  "title": "Russia: Northwest",
+  "targetNoun": "federal subject",
+  "visibleAnswerLimit": 6,
+  "map": {
+    "region": "russia-northwest-federal-subjects",
+    "admin1Source": "russia-admin1"
+  },
+  "features": [
+    {
+      "id": "saint-petersburg",
+      "name": "Saint Petersburg",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "saint-petersburg",
+      "iso_3166_2": "RU-SPE",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        30.2901,
+        59.8064
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "leningrad-oblast",
+      "name": "Leningrad Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "leningrad-oblast",
+      "iso_3166_2": "RU-LEN",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        32.7736,
+        59.9905
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "novgorod-oblast",
+      "name": "Novgorod Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "novgorod-oblast",
+      "iso_3166_2": "RU-NGR",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        32.9454,
+        58.4228
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "pskov-oblast",
+      "name": "Pskov Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "pskov-oblast",
+      "iso_3166_2": "RU-PSK",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        29.1229,
+        57.2449
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "vologda-oblast",
+      "name": "Vologda Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "vologda-oblast",
+      "iso_3166_2": "RU-VLG",
+      "color": "#d88052",
+      "labelAnchor": [
+        40.9333,
+        59.6397
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "kaliningrad-oblast",
+      "name": "Kaliningrad Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "kaliningrad-oblast",
+      "iso_3166_2": "RU-KGD",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        21.2287,
+        54.6636
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

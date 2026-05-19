@@ -1,0 +1,152 @@
+{
+  "id": "spain-southern-eastern-political-divisions",
+  "title": "Spain: Southern & Eastern",
+  "targetNoun": "autonomous community or city",
+  "visibleAnswerLimit": 8,
+  "map": {
+    "region": "spain-southern-eastern-political-divisions",
+    "admin1Source": "spain-admin1"
+  },
+  "features": [
+    {
+      "id": "catalonia",
+      "name": "Catalonia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "catalonia",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        1.6968,
+        41.7259
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "valencian-community",
+      "name": "Valencian Community",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "valencian-community",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        -0.4479,
+        39.3547
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "region-of-murcia",
+      "name": "Region of Murcia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "region-of-murcia",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        -1.4576,
+        37.9136
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "castile-la-mancha",
+      "name": "Castile-La Mancha",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "castile-la-mancha",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        -2.8648,
+        39.6443
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "extremadura",
+      "name": "Extremadura",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "extremadura",
+      "color": "#d88052",
+      "labelAnchor": [
+        -6.1746,
+        39.1505
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "andalusia",
+      "name": "Andalusia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "andalusia",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        -4.6004,
+        37.3445
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "balearic-islands",
+      "name": "Balearic Islands",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "balearic-islands",
+      "color": "#60a6a6",
+      "labelAnchor": [
+        2.9916,
+        39.6162
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "canary-islands",
+      "name": "Canary Islands",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "canary-islands",
+      "color": "#c96b6b",
+      "labelAnchor": [
+        -16.1078,
+        28.1014
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "ceuta",
+      "name": "Ceuta",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "ceuta",
+      "color": "#b7a14a",
+      "labelAnchor": [
+        -5.341,
+        35.8803
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "melilla",
+      "name": "Melilla",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "melilla",
+      "color": "#5e8f6f",
+      "labelAnchor": [
+        -2.9402,
+        35.2934
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

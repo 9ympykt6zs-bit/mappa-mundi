@@ -1,0 +1,82 @@
+{
+  "id": "france-southern-regions-political-divisions",
+  "title": "France: Southern Regions",
+  "targetNoun": "region",
+  "visibleAnswerLimit": 5,
+  "map": {
+    "region": "france-southern-regions-political-divisions",
+    "admin1Source": "france-admin1"
+  },
+  "features": [
+    {
+      "id": "nouvelle-aquitaine",
+      "name": "Nouvelle-Aquitaine",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "nouvelle-aquitaine",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        0.3239,
+        45.2848
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "occitanie",
+      "name": "Occitanie",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "occitanie",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        2.1012,
+        43.6684
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "auvergne-rhone-alpes",
+      "name": "Auvergne-Rhône-Alpes",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "auvergne-rhone-alpes",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        4.5964,
+        45.5384
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "provence-alpes-cote-d-azur",
+      "name": "Provence-Alpes-Côte d’Azur",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "provence-alpes-cote-d-azur",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        6.117,
+        43.9214
+      ],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "corsica",
+      "name": "Corsica",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "corsica",
+      "color": "#d88052",
+      "labelAnchor": [
+        9.1267,
+        42.1223
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

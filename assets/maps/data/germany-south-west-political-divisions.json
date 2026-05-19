@@ -1,0 +1,102 @@
+{
+  "id": "germany-south-west-political-divisions",
+  "title": "Germany: South & West",
+  "targetNoun": "state",
+  "visibleAnswerLimit": 6,
+  "map": {
+    "region": "germany-south-west-political-divisions",
+    "admin1Source": "germany-admin1"
+  },
+  "features": [
+    {
+      "id": "north-rhine-westphalia",
+      "name": "North Rhine-Westphalia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "north-rhine-westphalia",
+      "iso_3166_2": "DE-NW",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        7.6571,
+        51.6146
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "hesse",
+      "name": "Hesse",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "hesse",
+      "iso_3166_2": "DE-HE",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        8.9587,
+        50.6098
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "rhineland-palatinate",
+      "name": "Rhineland-Palatinate",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "rhineland-palatinate",
+      "iso_3166_2": "DE-RP",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        7.3697,
+        49.8685
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "saarland",
+      "name": "Saarland",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "saarland",
+      "iso_3166_2": "DE-SL",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        6.8662,
+        49.4026
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "baden-wurttemberg",
+      "name": "Baden-Württemberg",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "baden-wurttemberg",
+      "iso_3166_2": "DE-BW",
+      "color": "#d88052",
+      "labelAnchor": [
+        9.0033,
+        48.59
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "bavaria",
+      "name": "Bavaria",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "bavaria",
+      "iso_3166_2": "DE-BY",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        11.3966,
+        49.0056
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

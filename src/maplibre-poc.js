@@ -18,6 +18,18 @@ const activityDataPaths = [
   "assets/maps/data/western-european-countries.json",
   "assets/maps/data/european-cities.json",
   "assets/maps/data/former-soviet-republics-review.json",
+  "assets/maps/data/russia-central-federal-subjects.json",
+  "assets/maps/data/russia-more-central-federal-subjects.json",
+  "assets/maps/data/russia-northwest-federal-subjects.json",
+  "assets/maps/data/russia-more-northwest-federal-subjects.json",
+  "assets/maps/data/russia-southern-federal-subjects.json",
+  "assets/maps/data/russia-north-caucasus-federal-subjects.json",
+  "assets/maps/data/russia-volga-federal-subjects.json",
+  "assets/maps/data/russia-more-volga-federal-subjects.json",
+  "assets/maps/data/russia-ural-federal-subjects.json",
+  "assets/maps/data/russia-siberia-federal-subjects.json",
+  "assets/maps/data/russia-far-east-federal-subjects.json",
+  "assets/maps/data/russia-more-far-east-federal-subjects.json",
   "assets/maps/data/world-cities-east-south-asia.json",
   "assets/maps/data/world-cities-europe-eastern-mediterranean.json",
   "assets/maps/data/world-cities-middle-east-north-africa.json",
@@ -27,23 +39,59 @@ const activityDataPaths = [
   "assets/maps/data/balkans-countries.json",
   "assets/maps/data/central-european-countries.json",
   "assets/maps/data/more-central-european-countries.json",
+  "assets/maps/data/germany-north-east-political-divisions.json",
+  "assets/maps/data/germany-south-west-political-divisions.json",
+  "assets/maps/data/france-northern-eastern-regions-political-divisions.json",
+  "assets/maps/data/france-southern-regions-political-divisions.json",
+  "assets/maps/data/spain-northern-central-political-divisions.json",
+  "assets/maps/data/spain-southern-eastern-political-divisions.json",
+  "assets/maps/data/italy-northern-regions-political-divisions.json",
+  "assets/maps/data/italy-central-southern-regions-political-divisions.json",
+  "assets/maps/data/italy-islands-political-divisions.json",
+  "assets/maps/data/united-kingdom-countries-political-divisions.json",
   "assets/maps/data/eastern-europe-countries.json",
   "assets/maps/data/southern-africa-countries.json",
+  "assets/maps/data/more-southern-africa-countries.json",
   "assets/maps/data/north-africa-countries.json",
   "assets/maps/data/west-africa-countries.json",
-  "assets/maps/data/east-africa-indian-ocean-countries.json",
+  "assets/maps/data/more-west-africa-countries.json",
+  "assets/maps/data/central-africa-countries.json",
+  "assets/maps/data/east-africa-countries.json",
   "assets/maps/data/middle-east-countries.json",
   "assets/maps/data/central-america.json",
   "assets/maps/data/central-asia.json",
   "assets/maps/data/caucasus-countries.json",
   "assets/maps/data/south-america-west.json",
   "assets/maps/data/south-america-east.json",
+  "assets/maps/data/brazil-north-political-divisions.json",
+  "assets/maps/data/brazil-northeast-political-divisions.json",
+  "assets/maps/data/brazil-central-west-political-divisions.json",
+  "assets/maps/data/brazil-southeast-political-divisions.json",
+  "assets/maps/data/brazil-south-political-divisions.json",
   "assets/maps/data/caribbean.json",
   "assets/maps/data/south-asia-countries.json",
+  "assets/maps/data/india-north-political-divisions.json",
+  "assets/maps/data/india-west-central-political-divisions.json",
+  "assets/maps/data/india-east-political-divisions.json",
+  "assets/maps/data/india-northeast-political-divisions.json",
+  "assets/maps/data/india-south-political-divisions.json",
+  "assets/maps/data/india-islands-political-divisions.json",
   "assets/maps/data/east-asia-countries.json",
+  "assets/maps/data/japan-hokkaido-tohoku-political-divisions.json",
+  "assets/maps/data/japan-kanto-political-divisions.json",
+  "assets/maps/data/japan-chubu-political-divisions.json",
+  "assets/maps/data/japan-kansai-political-divisions.json",
+  "assets/maps/data/japan-chugoku-shikoku-political-divisions.json",
+  "assets/maps/data/japan-kyushu-okinawa-political-divisions.json",
+  "assets/maps/data/china-north-northeast-political-divisions.json",
+  "assets/maps/data/china-east-political-divisions.json",
+  "assets/maps/data/china-south-central-political-divisions.json",
+  "assets/maps/data/china-southwest-political-divisions.json",
+  "assets/maps/data/china-northwest-political-divisions.json",
   "assets/maps/data/mainland-southeast-asia-countries.json",
   "assets/maps/data/maritime-southeast-asia-countries.json",
   "assets/maps/data/oceania-pacific-countries.json",
+  "assets/maps/data/australia-states-territories.json",
   "assets/maps/data/canada-atlantic-provinces.json",
   "assets/maps/data/canada-central-canada.json",
   "assets/maps/data/canada-prairie-provinces.json",
@@ -76,6 +124,17 @@ const worldCountrySupplements = [
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const northAmericaAdmin1Path = "assets/maps/data/maplibre-north-america-admin1.geojson";
+const australiaAdmin1Path = "assets/maps/data/maplibre-australia-admin1.geojson";
+const chinaAdmin1Path = "assets/maps/data/maplibre-china-admin1.geojson";
+const russiaAdmin1Path = "assets/maps/data/maplibre-russia-admin1.geojson";
+const indiaAdmin1Path = "assets/maps/data/maplibre-india-admin1.geojson";
+const brazilAdmin1Path = "assets/maps/data/maplibre-brazil-admin1.geojson";
+const japanAdmin1Path = "assets/maps/data/maplibre-japan-admin1.geojson";
+const germanyAdmin1Path = "assets/maps/data/maplibre-germany-admin1.geojson";
+const franceAdmin1Path = "assets/maps/data/maplibre-france-admin1.geojson";
+const spainAdmin1Path = "assets/maps/data/maplibre-spain-admin1.geojson";
+const italyAdmin1Path = "assets/maps/data/maplibre-italy-admin1.geojson";
+const unitedKingdomAdmin1Path = "assets/maps/data/maplibre-united-kingdom-admin1.geojson";
 const defaultActivityId = "continents-oceans";
 const defaultMenuRoot = "world";
 const defaultMapSet = "world-europe";
@@ -565,8 +624,11 @@ const ACTIVITY_MENU = [
         children: [
           { label: "North Africa Countries", activityId: "north-africa-countries" },
           { label: "West Africa Countries", activityId: "west-africa-countries" },
-          { label: "East Africa and Indian Ocean Countries", activityId: "east-africa-indian-ocean-countries" },
+          { label: "More West Africa Countries", activityId: "more-west-africa-countries" },
+          { label: "Central Africa Countries", activityId: "central-africa-countries" },
+          { label: "East Africa Countries", activityId: "east-africa-countries" },
           { label: "Southern Africa Countries", activityId: "southern-africa-countries" },
+          { label: "More Southern Africa Countries", activityId: "more-southern-africa-countries" },
           { label: "Cities", activityId: "world-cities-middle-east-north-africa" }
         ]
       }
@@ -588,7 +650,43 @@ const ACTIVITY_MENU = [
         children: [
           { label: "Countries", activityId: "western-european-countries" },
           { label: "Central European Countries", activityId: "central-european-countries" },
-          { label: "More Central European Countries", activityId: "more-central-european-countries" }
+          { label: "More Central European Countries", activityId: "more-central-european-countries" },
+          {
+            label: "Germany: States / Länder",
+            children: [
+              { label: "North & East", activityId: "germany-north-east-political-divisions" },
+              { label: "South & West", activityId: "germany-south-west-political-divisions" }
+            ]
+          },
+          {
+            label: "France: Regions",
+            children: [
+              { label: "Northern & Eastern Regions", activityId: "france-northern-eastern-regions-political-divisions" },
+              { label: "Southern Regions", activityId: "france-southern-regions-political-divisions" },
+              { label: "Overseas Regions", disabled: true, badge: "Coming soon" }
+            ]
+          },
+          {
+            label: "Spain: Autonomous Communities & Cities",
+            children: [
+              { label: "Northern & Central", activityId: "spain-northern-central-political-divisions" },
+              { label: "Southern & Eastern", activityId: "spain-southern-eastern-political-divisions" }
+            ]
+          },
+          {
+            label: "Italy: Regions",
+            children: [
+              { label: "Northern Regions", activityId: "italy-northern-regions-political-divisions" },
+              { label: "Central & Southern Regions", activityId: "italy-central-southern-regions-political-divisions" },
+              { label: "Islands", activityId: "italy-islands-political-divisions" }
+            ]
+          },
+          {
+            label: "United Kingdom: Countries",
+            children: [
+              { label: "Countries", activityId: "united-kingdom-countries-political-divisions" }
+            ]
+          }
         ]
       },
       {
@@ -628,12 +726,68 @@ const ACTIVITY_MENU = [
         children: [
           { label: "Middle East Countries", activityId: "middle-east-countries" },
           { label: "South Asia Countries", activityId: "south-asia-countries" },
+          {
+            label: "India: States & Union Territories",
+            children: [
+              { label: "North", activityId: "india-north-political-divisions" },
+              { label: "West & Central", activityId: "india-west-central-political-divisions" },
+              { label: "East", activityId: "india-east-political-divisions" },
+              { label: "Northeast", activityId: "india-northeast-political-divisions" },
+              { label: "South", activityId: "india-south-political-divisions" },
+              { label: "Islands", activityId: "india-islands-political-divisions" }
+            ]
+          },
           { label: "Central Asia Countries", activityId: "central-asia" },
           { label: "Caucasus Countries", activityId: "caucasus-countries" },
           { label: "East Asia Countries", activityId: "east-asia-countries" },
+          {
+            label: "Japan: Prefectures",
+            children: [
+              { label: "Hokkaido & Tohoku", activityId: "japan-hokkaido-tohoku-political-divisions" },
+              { label: "Kanto", activityId: "japan-kanto-political-divisions" },
+              { label: "Chubu", activityId: "japan-chubu-political-divisions" },
+              { label: "Kansai", activityId: "japan-kansai-political-divisions" },
+              { label: "Chugoku & Shikoku", activityId: "japan-chugoku-shikoku-political-divisions" },
+              { label: "Kyushu & Okinawa", activityId: "japan-kyushu-okinawa-political-divisions" }
+            ]
+          },
+          {
+            label: "China: Provinces, Regions, Municipalities & SARs",
+            children: [
+              { label: "North & Northeast", activityId: "china-north-northeast-political-divisions" },
+              { label: "East", activityId: "china-east-political-divisions" },
+              { label: "South Central", activityId: "china-south-central-political-divisions" },
+              { label: "Southwest", activityId: "china-southwest-political-divisions" },
+              { label: "Northwest", activityId: "china-northwest-political-divisions" }
+            ]
+          },
           { label: "Mainland Southeast Asia Countries", activityId: "mainland-southeast-asia-countries" },
           { label: "Maritime Southeast Asia Countries", activityId: "maritime-southeast-asia-countries" },
           { label: "Cities", activityId: "world-cities-east-south-asia" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "russia",
+    label: "Russia",
+    overviewView: { center: [82, 58], zoom: 1.5 },
+    children: [
+      {
+        label: "Russia: Federal Subjects",
+        children: [
+          { label: "Central", activityId: "russia-central-federal-subjects" },
+          { label: "More Central", activityId: "russia-more-central-federal-subjects" },
+          { label: "Northwest", activityId: "russia-northwest-federal-subjects" },
+          { label: "More Northwest", activityId: "russia-more-northwest-federal-subjects" },
+          { label: "Southern", activityId: "russia-southern-federal-subjects" },
+          { label: "North Caucasus", activityId: "russia-north-caucasus-federal-subjects" },
+          { label: "Volga", activityId: "russia-volga-federal-subjects" },
+          { label: "More Volga", activityId: "russia-more-volga-federal-subjects" },
+          { label: "Ural", activityId: "russia-ural-federal-subjects" },
+          { label: "Siberia", activityId: "russia-siberia-federal-subjects" },
+          { label: "Far East", activityId: "russia-far-east-federal-subjects" },
+          { label: "More Far East", activityId: "russia-more-far-east-federal-subjects" }
         ]
       }
     ]
@@ -697,6 +851,16 @@ const ACTIVITY_MENU = [
         children: [
           { label: "Countries", activityId: "south-america-west" },
           { label: "Eastern South America Countries", activityId: "south-america-east" },
+          {
+            label: "Brazil: States & Federal District",
+            children: [
+              { label: "North", activityId: "brazil-north-political-divisions" },
+              { label: "Northeast", activityId: "brazil-northeast-political-divisions" },
+              { label: "Central-West", activityId: "brazil-central-west-political-divisions" },
+              { label: "Southeast", activityId: "brazil-southeast-political-divisions" },
+              { label: "South", activityId: "brazil-south-political-divisions" }
+            ]
+          },
           { label: "Cities", disabled: true, badge: "Coming soon" }
         ]
       }
@@ -711,6 +875,7 @@ const ACTIVITY_MENU = [
         label: "Australia / Oceania",
         children: [
           { label: "Oceania and Pacific Countries", activityId: "oceania-pacific-countries" },
+          { label: "Australia States & Territories", activityId: "australia-states-territories" },
           { label: "Cities", disabled: true, badge: "Coming soon" }
         ]
       }
@@ -767,9 +932,10 @@ const GEOGRAPHY_NAV_NODES = {
       europe: "europe",
       africa: "africa",
       asia: "asia",
+      russia: "russia",
       australia: "oceania"
     },
-    children: ["north-america", "south-america", "europe", "africa", "asia", "oceania"]
+    children: ["north-america", "south-america", "europe", "africa", "asia", "russia", "oceania"]
   },
   africa: {
     id: "africa",
@@ -777,7 +943,16 @@ const GEOGRAPHY_NAV_NODES = {
     parent: "world",
     menuRoot: "africa",
     view: { center: [20, 0], zoom: 2.1 },
-    children: ["africa-north", "africa-west", "africa-east-indian-ocean", "southern-africa", "africa-cities"]
+    children: [
+      "africa-north",
+      "africa-west",
+      "africa-more-west",
+      "africa-central",
+      "africa-east",
+      "southern-africa",
+      "more-southern-africa",
+      "africa-cities"
+    ]
   },
   "africa-north": {
     id: "africa-north",
@@ -793,11 +968,25 @@ const GEOGRAPHY_NAV_NODES = {
     activityId: "west-africa-countries",
     activityLabel: "Countries"
   },
-  "africa-east-indian-ocean": {
-    id: "africa-east-indian-ocean",
-    label: "East Africa and Indian Ocean",
+  "africa-more-west": {
+    id: "africa-more-west",
+    label: "More West Africa",
     parent: "africa",
-    activityId: "east-africa-indian-ocean-countries",
+    activityId: "more-west-africa-countries",
+    activityLabel: "Countries"
+  },
+  "africa-central": {
+    id: "africa-central",
+    label: "Central Africa",
+    parent: "africa",
+    activityId: "central-africa-countries",
+    activityLabel: "Countries"
+  },
+  "africa-east": {
+    id: "africa-east",
+    label: "East Africa",
+    parent: "africa",
+    activityId: "east-africa-countries",
     activityLabel: "Countries"
   },
   "southern-africa": {
@@ -805,6 +994,13 @@ const GEOGRAPHY_NAV_NODES = {
     label: "Southern Africa",
     parent: "africa",
     activityId: "southern-africa-countries",
+    activityLabel: "Countries"
+  },
+  "more-southern-africa": {
+    id: "more-southern-africa",
+    label: "More Southern Africa",
+    parent: "africa",
+    activityId: "more-southern-africa-countries",
     activityLabel: "Countries"
   },
   "africa-cities": {
@@ -820,7 +1016,7 @@ const GEOGRAPHY_NAV_NODES = {
     parent: "world",
     menuRoot: "europe",
     view: { center: [14, 52], zoom: 2.35 },
-    children: ["europe-nordic", "europe-western", "europe-baltic", "europe-eastern", "europe-balkans", "europe-wide"]
+    children: ["europe-nordic", "europe-western", "europe-germany-political-divisions", "europe-france-political-divisions", "europe-spain-political-divisions", "europe-italy-political-divisions", "europe-united-kingdom-political-divisions", "europe-baltic", "europe-eastern", "europe-balkans", "europe-wide"]
   },
   "europe-nordic": {
     id: "europe-nordic",
@@ -835,6 +1031,124 @@ const GEOGRAPHY_NAV_NODES = {
     parent: "europe",
     activityId: "western-european-countries",
     activityLabel: "Countries"
+  },
+  "europe-germany-political-divisions": {
+    id: "europe-germany-political-divisions",
+    label: "Germany: States / Länder",
+    parent: "europe",
+    view: { center: [10.2, 51.1], zoom: 4.4 },
+    children: [
+      "germany-north-east-political-divisions",
+      "germany-south-west-political-divisions"
+    ]
+  },
+  "germany-north-east-political-divisions": {
+    id: "germany-north-east-political-divisions",
+    label: "North & East",
+    parent: "europe-germany-political-divisions",
+    activityId: "germany-north-east-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "germany-south-west-political-divisions": {
+    id: "germany-south-west-political-divisions",
+    label: "South & West",
+    parent: "europe-germany-political-divisions",
+    activityId: "germany-south-west-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "europe-france-political-divisions": {
+    id: "europe-france-political-divisions",
+    label: "France: Regions",
+    parent: "europe",
+    view: { center: [2.4, 46.8], zoom: 4.1 },
+    children: [
+      "france-northern-eastern-regions-political-divisions",
+      "france-southern-regions-political-divisions"
+    ]
+  },
+  "france-northern-eastern-regions-political-divisions": {
+    id: "france-northern-eastern-regions-political-divisions",
+    label: "Northern & Eastern Regions",
+    parent: "europe-france-political-divisions",
+    activityId: "france-northern-eastern-regions-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "france-southern-regions-political-divisions": {
+    id: "france-southern-regions-political-divisions",
+    label: "Southern Regions",
+    parent: "europe-france-political-divisions",
+    activityId: "france-southern-regions-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "europe-spain-political-divisions": {
+    id: "europe-spain-political-divisions",
+    label: "Spain: Autonomous Communities & Cities",
+    parent: "europe",
+    view: { center: [-3.7, 39.6], zoom: 4.2 },
+    children: [
+      "spain-northern-central-political-divisions",
+      "spain-southern-eastern-political-divisions"
+    ]
+  },
+  "spain-northern-central-political-divisions": {
+    id: "spain-northern-central-political-divisions",
+    label: "Northern & Central",
+    parent: "europe-spain-political-divisions",
+    activityId: "spain-northern-central-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "spain-southern-eastern-political-divisions": {
+    id: "spain-southern-eastern-political-divisions",
+    label: "Southern & Eastern",
+    parent: "europe-spain-political-divisions",
+    activityId: "spain-southern-eastern-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "europe-italy-political-divisions": {
+    id: "europe-italy-political-divisions",
+    label: "Italy: Regions",
+    parent: "europe",
+    view: { center: [12.5, 42.7], zoom: 4.25 },
+    children: [
+      "italy-northern-regions-political-divisions",
+      "italy-central-southern-regions-political-divisions",
+      "italy-islands-political-divisions"
+    ]
+  },
+  "italy-northern-regions-political-divisions": {
+    id: "italy-northern-regions-political-divisions",
+    label: "Northern Regions",
+    parent: "europe-italy-political-divisions",
+    activityId: "italy-northern-regions-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "italy-central-southern-regions-political-divisions": {
+    id: "italy-central-southern-regions-political-divisions",
+    label: "Central & Southern Regions",
+    parent: "europe-italy-political-divisions",
+    activityId: "italy-central-southern-regions-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "italy-islands-political-divisions": {
+    id: "italy-islands-political-divisions",
+    label: "Islands",
+    parent: "europe-italy-political-divisions",
+    activityId: "italy-islands-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "europe-united-kingdom-political-divisions": {
+    id: "europe-united-kingdom-political-divisions",
+    label: "United Kingdom: Countries",
+    parent: "europe",
+    view: { center: [-3.2, 54.8], zoom: 4.0 },
+    children: ["united-kingdom-countries-political-divisions"]
+  },
+  "united-kingdom-countries-political-divisions": {
+    id: "united-kingdom-countries-political-divisions",
+    label: "Countries",
+    parent: "europe-united-kingdom-political-divisions",
+    activityId: "united-kingdom-countries-political-divisions",
+    activityLabel: "Political Divisions"
   },
   "europe-baltic": {
     id: "europe-baltic",
@@ -870,7 +1184,7 @@ const GEOGRAPHY_NAV_NODES = {
     parent: "world",
     menuRoot: "asia",
     view: { center: [88, 31], zoom: 1.55 },
-    children: ["asia-middle-east", "asia-south", "asia-central", "asia-caucasus", "asia-east", "asia-mainland-southeast", "asia-maritime-southeast", "asia-cities"]
+    children: ["asia-middle-east", "asia-south", "asia-india-political-divisions", "asia-central", "asia-caucasus", "asia-east", "asia-japan-political-divisions", "asia-china-political-divisions", "asia-mainland-southeast", "asia-maritime-southeast", "asia-cities"]
   },
   "asia-middle-east": {
     id: "asia-middle-east",
@@ -885,6 +1199,62 @@ const GEOGRAPHY_NAV_NODES = {
     parent: "asia",
     activityId: "south-asia-countries",
     activityLabel: "Countries"
+  },
+  "asia-india-political-divisions": {
+    id: "asia-india-political-divisions",
+    label: "India: States & Union Territories",
+    parent: "asia",
+    view: { center: [79, 22], zoom: 3.1 },
+    children: [
+      "india-north-political-divisions",
+      "india-west-central-political-divisions",
+      "india-east-political-divisions",
+      "india-northeast-political-divisions",
+      "india-south-political-divisions",
+      "india-islands-political-divisions"
+    ]
+  },
+  "india-north-political-divisions": {
+    id: "india-north-political-divisions",
+    label: "North",
+    parent: "asia-india-political-divisions",
+    activityId: "india-north-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "india-west-central-political-divisions": {
+    id: "india-west-central-political-divisions",
+    label: "West & Central",
+    parent: "asia-india-political-divisions",
+    activityId: "india-west-central-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "india-east-political-divisions": {
+    id: "india-east-political-divisions",
+    label: "East",
+    parent: "asia-india-political-divisions",
+    activityId: "india-east-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "india-northeast-political-divisions": {
+    id: "india-northeast-political-divisions",
+    label: "Northeast",
+    parent: "asia-india-political-divisions",
+    activityId: "india-northeast-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "india-south-political-divisions": {
+    id: "india-south-political-divisions",
+    label: "South",
+    parent: "asia-india-political-divisions",
+    activityId: "india-south-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "india-islands-political-divisions": {
+    id: "india-islands-political-divisions",
+    label: "Islands",
+    parent: "asia-india-political-divisions",
+    activityId: "india-islands-political-divisions",
+    activityLabel: "Political Divisions"
   },
   "asia-central": {
     id: "asia-central",
@@ -907,6 +1277,110 @@ const GEOGRAPHY_NAV_NODES = {
     activityId: "east-asia-countries",
     activityLabel: "Countries"
   },
+  "asia-japan-political-divisions": {
+    id: "asia-japan-political-divisions",
+    label: "Japan: Prefectures",
+    parent: "asia",
+    view: { center: [137.5, 37.0], zoom: 3.2 },
+    children: [
+      "japan-hokkaido-tohoku-political-divisions",
+      "japan-kanto-political-divisions",
+      "japan-chubu-political-divisions",
+      "japan-kansai-political-divisions",
+      "japan-chugoku-shikoku-political-divisions",
+      "japan-kyushu-okinawa-political-divisions"
+    ]
+  },
+  "japan-hokkaido-tohoku-political-divisions": {
+    id: "japan-hokkaido-tohoku-political-divisions",
+    label: "Hokkaido & Tohoku",
+    parent: "asia-japan-political-divisions",
+    activityId: "japan-hokkaido-tohoku-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "japan-kanto-political-divisions": {
+    id: "japan-kanto-political-divisions",
+    label: "Kanto",
+    parent: "asia-japan-political-divisions",
+    activityId: "japan-kanto-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "japan-chubu-political-divisions": {
+    id: "japan-chubu-political-divisions",
+    label: "Chubu",
+    parent: "asia-japan-political-divisions",
+    activityId: "japan-chubu-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "japan-kansai-political-divisions": {
+    id: "japan-kansai-political-divisions",
+    label: "Kansai",
+    parent: "asia-japan-political-divisions",
+    activityId: "japan-kansai-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "japan-chugoku-shikoku-political-divisions": {
+    id: "japan-chugoku-shikoku-political-divisions",
+    label: "Chugoku & Shikoku",
+    parent: "asia-japan-political-divisions",
+    activityId: "japan-chugoku-shikoku-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "japan-kyushu-okinawa-political-divisions": {
+    id: "japan-kyushu-okinawa-political-divisions",
+    label: "Kyushu & Okinawa",
+    parent: "asia-japan-political-divisions",
+    activityId: "japan-kyushu-okinawa-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "asia-china-political-divisions": {
+    id: "asia-china-political-divisions",
+    label: "China: Provinces, Regions, Municipalities & SARs",
+    parent: "asia",
+    view: { center: [105, 35], zoom: 2.6 },
+    children: [
+      "china-north-northeast-political-divisions",
+      "china-east-political-divisions",
+      "china-south-central-political-divisions",
+      "china-southwest-political-divisions",
+      "china-northwest-political-divisions"
+    ]
+  },
+  "china-north-northeast-political-divisions": {
+    id: "china-north-northeast-political-divisions",
+    label: "North & Northeast",
+    parent: "asia-china-political-divisions",
+    activityId: "china-north-northeast-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "china-east-political-divisions": {
+    id: "china-east-political-divisions",
+    label: "East",
+    parent: "asia-china-political-divisions",
+    activityId: "china-east-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "china-south-central-political-divisions": {
+    id: "china-south-central-political-divisions",
+    label: "South Central",
+    parent: "asia-china-political-divisions",
+    activityId: "china-south-central-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "china-southwest-political-divisions": {
+    id: "china-southwest-political-divisions",
+    label: "Southwest",
+    parent: "asia-china-political-divisions",
+    activityId: "china-southwest-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "china-northwest-political-divisions": {
+    id: "china-northwest-political-divisions",
+    label: "Northwest",
+    parent: "asia-china-political-divisions",
+    activityId: "china-northwest-political-divisions",
+    activityLabel: "Political Divisions"
+  },
   "asia-mainland-southeast": {
     id: "asia-mainland-southeast",
     label: "Mainland Southeast Asia",
@@ -927,6 +1401,111 @@ const GEOGRAPHY_NAV_NODES = {
     parent: "asia",
     activityId: "world-cities-east-south-asia",
     activityLabel: "Cities"
+  },
+  russia: {
+    id: "russia",
+    label: "Russia",
+    parent: "world",
+    menuRoot: "russia",
+    view: { center: [82, 58], zoom: 1.5 },
+    children: [
+      "russia-central-federal-subjects",
+      "russia-more-central-federal-subjects",
+      "russia-northwest-federal-subjects",
+      "russia-more-northwest-federal-subjects",
+      "russia-southern-federal-subjects",
+      "russia-north-caucasus-federal-subjects",
+      "russia-volga-federal-subjects",
+      "russia-more-volga-federal-subjects",
+      "russia-ural-federal-subjects",
+      "russia-siberia-federal-subjects",
+      "russia-far-east-federal-subjects",
+      "russia-more-far-east-federal-subjects"
+    ]
+  },
+  "russia-central-federal-subjects": {
+    id: "russia-central-federal-subjects",
+    label: "Central",
+    parent: "russia",
+    activityId: "russia-central-federal-subjects",
+    activityLabel: "Federal Subjects"
+  },
+  "russia-more-central-federal-subjects": {
+    id: "russia-more-central-federal-subjects",
+    label: "More Central",
+    parent: "russia",
+    activityId: "russia-more-central-federal-subjects",
+    activityLabel: "Federal Subjects"
+  },
+  "russia-northwest-federal-subjects": {
+    id: "russia-northwest-federal-subjects",
+    label: "Northwest",
+    parent: "russia",
+    activityId: "russia-northwest-federal-subjects",
+    activityLabel: "Federal Subjects"
+  },
+  "russia-more-northwest-federal-subjects": {
+    id: "russia-more-northwest-federal-subjects",
+    label: "More Northwest",
+    parent: "russia",
+    activityId: "russia-more-northwest-federal-subjects",
+    activityLabel: "Federal Subjects"
+  },
+  "russia-southern-federal-subjects": {
+    id: "russia-southern-federal-subjects",
+    label: "Southern",
+    parent: "russia",
+    activityId: "russia-southern-federal-subjects",
+    activityLabel: "Federal Subjects"
+  },
+  "russia-north-caucasus-federal-subjects": {
+    id: "russia-north-caucasus-federal-subjects",
+    label: "North Caucasus",
+    parent: "russia",
+    activityId: "russia-north-caucasus-federal-subjects",
+    activityLabel: "Federal Subjects"
+  },
+  "russia-volga-federal-subjects": {
+    id: "russia-volga-federal-subjects",
+    label: "Volga",
+    parent: "russia",
+    activityId: "russia-volga-federal-subjects",
+    activityLabel: "Federal Subjects"
+  },
+  "russia-more-volga-federal-subjects": {
+    id: "russia-more-volga-federal-subjects",
+    label: "More Volga",
+    parent: "russia",
+    activityId: "russia-more-volga-federal-subjects",
+    activityLabel: "Federal Subjects"
+  },
+  "russia-ural-federal-subjects": {
+    id: "russia-ural-federal-subjects",
+    label: "Ural",
+    parent: "russia",
+    activityId: "russia-ural-federal-subjects",
+    activityLabel: "Federal Subjects"
+  },
+  "russia-siberia-federal-subjects": {
+    id: "russia-siberia-federal-subjects",
+    label: "Siberia",
+    parent: "russia",
+    activityId: "russia-siberia-federal-subjects",
+    activityLabel: "Federal Subjects"
+  },
+  "russia-far-east-federal-subjects": {
+    id: "russia-far-east-federal-subjects",
+    label: "Far East",
+    parent: "russia",
+    activityId: "russia-far-east-federal-subjects",
+    activityLabel: "Federal Subjects"
+  },
+  "russia-more-far-east-federal-subjects": {
+    id: "russia-more-far-east-federal-subjects",
+    label: "More Far East",
+    parent: "russia",
+    activityId: "russia-more-far-east-federal-subjects",
+    activityLabel: "Federal Subjects"
   },
   "north-america": {
     id: "north-america",
@@ -1091,7 +1670,7 @@ const GEOGRAPHY_NAV_NODES = {
     parent: "world",
     menuRoot: "south-america",
     view: { center: [-60, -18], zoom: 2.05 },
-    children: ["south-america-west", "south-america-east"]
+    children: ["south-america-west", "south-america-east", "south-america-brazil-political-divisions"]
   },
   "south-america-west": {
     id: "south-america-west",
@@ -1107,13 +1686,61 @@ const GEOGRAPHY_NAV_NODES = {
     activityId: "south-america-east",
     activityLabel: "Countries"
   },
+  "south-america-brazil-political-divisions": {
+    id: "south-america-brazil-political-divisions",
+    label: "Brazil: States & Federal District",
+    parent: "south-america",
+    view: { center: [-53, -14], zoom: 3.0 },
+    children: [
+      "brazil-north-political-divisions",
+      "brazil-northeast-political-divisions",
+      "brazil-central-west-political-divisions",
+      "brazil-southeast-political-divisions",
+      "brazil-south-political-divisions"
+    ]
+  },
+  "brazil-north-political-divisions": {
+    id: "brazil-north-political-divisions",
+    label: "North",
+    parent: "south-america-brazil-political-divisions",
+    activityId: "brazil-north-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "brazil-northeast-political-divisions": {
+    id: "brazil-northeast-political-divisions",
+    label: "Northeast",
+    parent: "south-america-brazil-political-divisions",
+    activityId: "brazil-northeast-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "brazil-central-west-political-divisions": {
+    id: "brazil-central-west-political-divisions",
+    label: "Central-West",
+    parent: "south-america-brazil-political-divisions",
+    activityId: "brazil-central-west-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "brazil-southeast-political-divisions": {
+    id: "brazil-southeast-political-divisions",
+    label: "Southeast",
+    parent: "south-america-brazil-political-divisions",
+    activityId: "brazil-southeast-political-divisions",
+    activityLabel: "Political Divisions"
+  },
+  "brazil-south-political-divisions": {
+    id: "brazil-south-political-divisions",
+    label: "South",
+    parent: "south-america-brazil-political-divisions",
+    activityId: "brazil-south-political-divisions",
+    activityLabel: "Political Divisions"
+  },
   oceania: {
     id: "oceania",
     label: "Australia / Oceania",
     parent: "world",
     menuRoot: "oceania",
     view: { center: [141, -18], zoom: 2.1 },
-    children: ["oceania-countries"]
+    children: ["oceania-countries", "australia-political-divisions"]
   },
   "oceania-countries": {
     id: "oceania-countries",
@@ -1121,6 +1748,13 @@ const GEOGRAPHY_NAV_NODES = {
     parent: "oceania",
     activityId: "oceania-pacific-countries",
     activityLabel: "Countries"
+  },
+  "australia-political-divisions": {
+    id: "australia-political-divisions",
+    label: "Australia States & Territories",
+    parent: "oceania",
+    activityId: "australia-states-territories",
+    activityLabel: "Political Divisions"
   },
   review: {
     id: "review",
@@ -1163,6 +1797,90 @@ const activityCatalogMetadata = {
     category: "Review",
     description: "Review activity for modern countries that share former Soviet history.",
     sortOrder: 200
+  },
+  "russia-central-federal-subjects": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Russia central federal subjects.",
+    sortOrder: 84,
+    sectionNumber: 84
+  },
+  "russia-more-central-federal-subjects": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "More Russia central federal subjects.",
+    sortOrder: 85,
+    sectionNumber: 85
+  },
+  "russia-northwest-federal-subjects": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Russia northwest federal subjects.",
+    sortOrder: 86,
+    sectionNumber: 86
+  },
+  "russia-more-northwest-federal-subjects": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "More Russia northwest federal subjects.",
+    sortOrder: 87,
+    sectionNumber: 87
+  },
+  "russia-southern-federal-subjects": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Russia southern federal subjects.",
+    sortOrder: 88,
+    sectionNumber: 88
+  },
+  "russia-north-caucasus-federal-subjects": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Russia north Caucasus federal subjects.",
+    sortOrder: 89,
+    sectionNumber: 89
+  },
+  "russia-volga-federal-subjects": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Russia Volga federal subjects.",
+    sortOrder: 90,
+    sectionNumber: 90
+  },
+  "russia-more-volga-federal-subjects": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "More Russia Volga federal subjects.",
+    sortOrder: 91,
+    sectionNumber: 91
+  },
+  "russia-ural-federal-subjects": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Russia Ural federal subjects.",
+    sortOrder: 92,
+    sectionNumber: 92
+  },
+  "russia-siberia-federal-subjects": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Russia Siberia federal subjects.",
+    sortOrder: 93,
+    sectionNumber: 93
+  },
+  "russia-far-east-federal-subjects": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Russia Far East federal subjects.",
+    sortOrder: 94,
+    sectionNumber: 94
+  },
+  "russia-more-far-east-federal-subjects": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "More Russia Far East federal subjects.",
+    sortOrder: 95,
+    sectionNumber: 95
   },
   "world-cities-east-south-asia": {
     mapSet: "world-europe",
@@ -1230,12 +1948,89 @@ const activityCatalogMetadata = {
     sortOrder: 18,
     sectionNumber: 18
   },
+  "germany-north-east-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Germany north and east states.",
+    sortOrder: 18.1,
+    sectionNumber: 18.1
+  },
+  "germany-south-west-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Germany south and west states.",
+    sortOrder: 18.2,
+    sectionNumber: 18.2
+  },
+  "france-northern-eastern-regions-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "France northern and eastern regions.",
+    sortOrder: 18.3,
+    sectionNumber: 18.3
+  },
+  "france-southern-regions-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "France southern regions.",
+    sortOrder: 18.4,
+    sectionNumber: 18.4
+  },
+  "spain-northern-central-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Spain northern and central autonomous communities.",
+    sortOrder: 18.5,
+    sectionNumber: 18.5
+  },
+  "spain-southern-eastern-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Spain southern and eastern autonomous communities and cities.",
+    sortOrder: 18.6,
+    sectionNumber: 18.6
+  },
+  "italy-northern-regions-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Italy northern regions.",
+    sortOrder: 18.7,
+    sectionNumber: 18.7
+  },
+  "italy-central-southern-regions-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Italy central and southern regions.",
+    sortOrder: 18.8,
+    sectionNumber: 18.8
+  },
+  "italy-islands-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Italy island regions.",
+    sortOrder: 18.9,
+    sectionNumber: 18.9
+  },
+  "united-kingdom-countries-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Countries of the United Kingdom.",
+    sortOrder: 18.95,
+    sectionNumber: 18.95
+  },
   "southern-africa-countries": {
     mapSet: "world-europe",
     category: "Countries",
     description: "Southern Africa country practice.",
-    sortOrder: 70,
-    sectionNumber: 70
+    sortOrder: 75,
+    sectionNumber: 75
+  },
+  "more-southern-africa-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "More Southern Africa country practice.",
+    sortOrder: 76,
+    sectionNumber: 76
   },
   "north-africa-countries": {
     mapSet: "world-europe",
@@ -1248,15 +2043,29 @@ const activityCatalogMetadata = {
     mapSet: "world-europe",
     category: "Countries",
     description: "West Africa country practice.",
-    sortOrder: 70.5,
+    sortOrder: 70,
     sectionNumber: 71
   },
-  "east-africa-indian-ocean-countries": {
+  "more-west-africa-countries": {
     mapSet: "world-europe",
     category: "Countries",
-    description: "East Africa and Indian Ocean country practice.",
+    description: "More West Africa country practice.",
     sortOrder: 71,
     sectionNumber: 72
+  },
+  "central-africa-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Central Africa country practice.",
+    sortOrder: 72,
+    sectionNumber: 73
+  },
+  "east-africa-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "East Africa country practice.",
+    sortOrder: 73,
+    sectionNumber: 74
   },
   "middle-east-countries": {
     mapSet: "world-europe",
@@ -1300,6 +2109,41 @@ const activityCatalogMetadata = {
     sortOrder: 75,
     sectionNumber: 23
   },
+  "brazil-north-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Brazil north states.",
+    sortOrder: 75.1,
+    sectionNumber: 23.1
+  },
+  "brazil-northeast-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Brazil northeast states.",
+    sortOrder: 75.2,
+    sectionNumber: 23.2
+  },
+  "brazil-central-west-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Brazil central-west states and Federal District.",
+    sortOrder: 75.3,
+    sectionNumber: 23.3
+  },
+  "brazil-southeast-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Brazil southeast states.",
+    sortOrder: 75.4,
+    sectionNumber: 23.4
+  },
+  "brazil-south-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Brazil south states.",
+    sortOrder: 75.5,
+    sectionNumber: 23.5
+  },
   "caribbean": {
     mapSet: "world-europe",
     category: "Countries",
@@ -1314,12 +2158,131 @@ const activityCatalogMetadata = {
     sortOrder: 77,
     sectionNumber: 10
   },
+  "india-north-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "India north states and union territories.",
+    sortOrder: 77.1,
+    sectionNumber: 10.1
+  },
+  "india-west-central-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "India west and central states and union territories.",
+    sortOrder: 77.2,
+    sectionNumber: 10.2
+  },
+  "india-east-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "India east states.",
+    sortOrder: 77.3,
+    sectionNumber: 10.3
+  },
+  "india-northeast-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "India northeast states.",
+    sortOrder: 77.4,
+    sectionNumber: 10.4
+  },
+  "india-south-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "India south states and union territories.",
+    sortOrder: 77.5,
+    sectionNumber: 10.5
+  },
+  "india-islands-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "India island union territories.",
+    sortOrder: 77.6,
+    sectionNumber: 10.6
+  },
   "east-asia-countries": {
     mapSet: "world-europe",
     category: "Countries",
     description: "East Asia country practice.",
     sortOrder: 78,
     sectionNumber: 19
+  },
+  "japan-hokkaido-tohoku-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Japan Hokkaido and Tohoku prefectures.",
+    sortOrder: 78.01,
+    sectionNumber: 19.01
+  },
+  "japan-kanto-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Japan Kanto prefectures.",
+    sortOrder: 78.02,
+    sectionNumber: 19.02
+  },
+  "japan-chubu-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Japan Chubu prefectures.",
+    sortOrder: 78.03,
+    sectionNumber: 19.03
+  },
+  "japan-kansai-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Japan Kansai prefectures.",
+    sortOrder: 78.04,
+    sectionNumber: 19.04
+  },
+  "japan-chugoku-shikoku-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Japan Chugoku and Shikoku prefectures.",
+    sortOrder: 78.05,
+    sectionNumber: 19.05
+  },
+  "japan-kyushu-okinawa-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Japan Kyushu and Okinawa prefectures.",
+    sortOrder: 78.06,
+    sectionNumber: 19.06
+  },
+  "china-north-northeast-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "China north and northeast provincial-level political divisions.",
+    sortOrder: 78.1,
+    sectionNumber: 19.1
+  },
+  "china-east-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "China east provincial-level political divisions.",
+    sortOrder: 78.2,
+    sectionNumber: 19.2
+  },
+  "china-south-central-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "China south central provincial-level political divisions and SARs.",
+    sortOrder: 78.3,
+    sectionNumber: 19.3
+  },
+  "china-southwest-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "China southwest provincial-level political divisions.",
+    sortOrder: 78.4,
+    sectionNumber: 19.4
+  },
+  "china-northwest-political-divisions": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "China northwest provincial-level political divisions.",
+    sortOrder: 78.5,
+    sectionNumber: 19.5
   },
   "mainland-southeast-asia-countries": {
     mapSet: "world-europe",
@@ -1342,69 +2305,76 @@ const activityCatalogMetadata = {
     sortOrder: 79,
     sectionNumber: 22
   },
+  "australia-states-territories": {
+    mapSet: "world-europe",
+    category: "Political Divisions",
+    description: "Australia states and mainland territories practice.",
+    sortOrder: 79.5,
+    sectionNumber: 23
+  },
   "canada-atlantic-provinces": {
     mapSet: "world-europe",
-    category: "Provinces & Territories",
+    category: "Political Divisions",
     description: "Atlantic Canada province practice.",
     sortOrder: 80.1
   },
   "canada-central-canada": {
     mapSet: "world-europe",
-    category: "Provinces & Territories",
+    category: "Political Divisions",
     description: "Quebec and Ontario province practice.",
     sortOrder: 80.2
   },
   "canada-prairie-provinces": {
     mapSet: "world-europe",
-    category: "Provinces & Territories",
+    category: "Political Divisions",
     description: "Prairie Provinces practice.",
     sortOrder: 80.3
   },
   "canada-western-northern": {
     mapSet: "world-europe",
-    category: "Provinces & Territories",
+    category: "Political Divisions",
     description: "Western and northern Canada province and territory practice.",
     sortOrder: 80.4
   },
   "mexico-states": {
     mapSet: "world-europe",
-    category: "States",
+    category: "Political Divisions",
     description: "Full Mexico states review with state and capital-district polygons.",
     sortOrder: 82
   },
   "mexico-northwest": {
     mapSet: "world-europe",
-    category: "States",
+    category: "Political Divisions",
     description: "Northwest Mexico state practice.",
     sortOrder: 81.1
   },
   "mexico-northeast": {
     mapSet: "world-europe",
-    category: "States",
+    category: "Political Divisions",
     description: "Northeast Mexico state practice.",
     sortOrder: 81.2
   },
   "mexico-west-bajio": {
     mapSet: "world-europe",
-    category: "States",
+    category: "Political Divisions",
     description: "West and Bajío Mexico state practice.",
     sortOrder: 81.3
   },
   "mexico-central": {
     mapSet: "world-europe",
-    category: "States",
+    category: "Political Divisions",
     description: "Central Mexico state and federal entity practice.",
     sortOrder: 81.4
   },
   "mexico-south-gulf-yucatan": {
     mapSet: "world-europe",
-    category: "States",
+    category: "Political Divisions",
     description: "South, Gulf, and Yucatán Mexico state practice.",
     sortOrder: 81.5
   },
   "canada-provinces-territories": {
     mapSet: "world-europe",
-    category: "Provinces & Territories",
+    category: "Political Divisions",
     description: "Full Canada provinces and territories review.",
     sortOrder: 83
   }
@@ -1506,6 +2476,7 @@ let isNavigationBrowseMode = false;
 let isBrowseDrawerOpen = false;
 let activePreviewActivityId = null;
 let selectedOverviewActivityId = null;
+let freePlaySelectedMapFeature = null;
 let grabbedAnswerId = null;
 let grabbedPointerId = null;
 let grabbedStartPoint = null;
@@ -1643,13 +2614,24 @@ async function init() {
     launchTitle.textContent = APP_NAME;
   }
 
-  const [loadedActivities, worldCountries, supplementalWorldCountries, usStatesAtlas, stateTargets, northAmericaAdmin1] = await Promise.all([
+  const [loadedActivities, worldCountries, supplementalWorldCountries, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
     Promise.all(activityDataPaths.map((path) => fetchJson(path))),
     fetchJson(worldCountriesPath),
     Promise.all(worldCountrySupplements.map((path) => fetchJson(path))),
     fetchJson(usStatesAtlasPath),
     fetchJson(stateGeoJsonPath),
-    fetchJson(northAmericaAdmin1Path)
+    fetchJson(northAmericaAdmin1Path),
+    fetchJson(australiaAdmin1Path),
+    fetchJson(chinaAdmin1Path),
+    fetchJson(russiaAdmin1Path),
+    fetchJson(indiaAdmin1Path),
+    fetchJson(brazilAdmin1Path),
+    fetchJson(japanAdmin1Path),
+    fetchJson(germanyAdmin1Path),
+    fetchJson(franceAdmin1Path),
+    fetchJson(spainAdmin1Path),
+    fetchJson(italyAdmin1Path),
+    fetchJson(unitedKingdomAdmin1Path)
   ]);
 
   const mergedWorldCountries = mergeFeatureCollections(worldCountries, supplementalWorldCountries);
@@ -1693,7 +2675,18 @@ async function init() {
     worldCountries: mergedWorldCountries,
     usStatesAtlas,
     stateTargets,
-    northAmericaAdmin1
+    northAmericaAdmin1,
+    australiaAdmin1,
+    chinaAdmin1,
+    russiaAdmin1,
+    indiaAdmin1,
+    brazilAdmin1,
+    japanAdmin1,
+    germanyAdmin1,
+    franceAdmin1,
+    spainAdmin1,
+    italyAdmin1,
+    unitedKingdomAdmin1
   });
   runner.setDifficulty(getEffectiveDifficulty(session.currentActivity));
 
@@ -1757,6 +2750,83 @@ function normalizeMapLibrePocActivity(rawActivity) {
         url: northAmericaAdmin1Path,
         promoteId: "id",
         attribution: "Natural Earth public domain"
+      },
+      {
+        id: "australia-admin1",
+        type: "geojson",
+        url: australiaAdmin1Path,
+        promoteId: "id",
+        attribution: "Natural Earth public domain"
+      },
+      {
+        id: "china-admin1",
+        type: "geojson",
+        url: chinaAdmin1Path,
+        promoteId: "id",
+        attribution: "Natural Earth public domain"
+      },
+      {
+        id: "russia-admin1",
+        type: "geojson",
+        url: russiaAdmin1Path,
+        promoteId: "id",
+        attribution: "Natural Earth public domain"
+      },
+      {
+        id: "india-admin1",
+        type: "geojson",
+        url: indiaAdmin1Path,
+        promoteId: "id",
+        attribution: "Natural Earth public domain"
+      },
+      {
+        id: "brazil-admin1",
+        type: "geojson",
+        url: brazilAdmin1Path,
+        promoteId: "id",
+        attribution: "Natural Earth public domain"
+      },
+      {
+        id: "japan-admin1",
+        type: "geojson",
+        url: japanAdmin1Path,
+        promoteId: "id",
+        attribution: "Natural Earth public domain"
+      },
+      {
+        id: "germany-admin1",
+        type: "geojson",
+        url: germanyAdmin1Path,
+        promoteId: "id",
+        attribution: "Natural Earth public domain"
+      },
+      {
+        id: "france-admin1",
+        type: "geojson",
+        url: franceAdmin1Path,
+        promoteId: "id",
+        attribution: "Natural Earth public domain"
+      },
+      {
+        id: "spain-admin1",
+        type: "geojson",
+        url: spainAdmin1Path,
+        promoteId: "id",
+        attribution: "Natural Earth public domain"
+      },
+      {
+        id: "italy-admin1",
+        type: "geojson",
+        url: italyAdmin1Path,
+        promoteId: "id",
+        attribution: "Natural Earth public domain"
+      },
+      {
+        id: "united-kingdom-admin1",
+        type: "geojson",
+        url: unitedKingdomAdmin1Path,
+        promoteId: "id",
+        attribution: "Natural Earth public domain"
       }
     ],
     targetLayers: [
@@ -1794,6 +2864,42 @@ function inferActivityRegion(activityId = "") {
     return "united-states";
   }
 
+  if (activityId.startsWith("russia-") && activityId.endsWith("-federal-subjects")) {
+    return activityId;
+  }
+
+  if (activityId.startsWith("india-") && activityId.endsWith("-political-divisions")) {
+    return activityId;
+  }
+
+  if (activityId.startsWith("brazil-") && activityId.endsWith("-political-divisions")) {
+    return activityId;
+  }
+
+  if (activityId.startsWith("japan-") && activityId.endsWith("-political-divisions")) {
+    return activityId;
+  }
+
+  if (activityId.startsWith("germany-") && activityId.endsWith("-political-divisions")) {
+    return activityId;
+  }
+
+  if (activityId.startsWith("france-") && activityId.endsWith("-political-divisions")) {
+    return activityId;
+  }
+
+  if (activityId.startsWith("spain-") && activityId.endsWith("-political-divisions")) {
+    return activityId;
+  }
+
+  if (activityId.startsWith("italy-") && activityId.endsWith("-political-divisions")) {
+    return activityId;
+  }
+
+  if (activityId.startsWith("united-kingdom-") && activityId.endsWith("-political-divisions")) {
+    return activityId;
+  }
+
   const regionByActivityId = {
     "western-european-countries": "western-europe",
     "european-cities": "western-europe",
@@ -1810,9 +2916,12 @@ function inferActivityRegion(activityId = "") {
     "more-central-european-countries": "more-central-europe",
     "eastern-europe-countries": "eastern-europe",
     "southern-africa-countries": "southern-africa",
+    "more-southern-africa-countries": "more-southern-africa",
     "north-africa-countries": "north-africa",
     "west-africa-countries": "west-africa",
-    "east-africa-indian-ocean-countries": "east-africa-indian-ocean",
+    "more-west-africa-countries": "more-west-africa",
+    "central-africa-countries": "central-africa",
+    "east-africa-countries": "east-africa",
     "middle-east-countries": "middle-east",
     "central-america": "central-america",
     "central-asia": "central-asia",
@@ -1822,9 +2931,15 @@ function inferActivityRegion(activityId = "") {
     "caribbean": "caribbean",
     "south-asia-countries": "south-asia",
     "east-asia-countries": "east-asia",
+    "china-north-northeast-political-divisions": "china-north-northeast-political-divisions",
+    "china-east-political-divisions": "china-east-political-divisions",
+    "china-south-central-political-divisions": "china-south-central-political-divisions",
+    "china-southwest-political-divisions": "china-southwest-political-divisions",
+    "china-northwest-political-divisions": "china-northwest-political-divisions",
     "mainland-southeast-asia-countries": "mainland-southeast-asia",
     "maritime-southeast-asia-countries": "maritime-southeast-asia",
     "oceania-pacific-countries": "oceania-pacific",
+    "australia-states-territories": "australia-states-territories",
     "canada-atlantic-provinces": "canada-atlantic-provinces",
     "canada-central-canada": "canada-central-canada",
     "canada-prairie-provinces": "canada-prairie-provinces",
@@ -1887,6 +3002,102 @@ function getMapDefaults(rawActivity, region) {
       regionView: { center: [59, 49], zoom: 2.0 },
       studyView: {
         bounds: [[18.0, 34.0], [180.0, 73.0]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "russia-central-federal-subjects": {
+      regionView: { center: [38.0, 55.7], zoom: 5.0 },
+      studyView: {
+        bounds: [[29.0, 51.0], [43.5, 59.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "russia-more-central-federal-subjects": {
+      regionView: { center: [37.5, 52.4], zoom: 4.7 },
+      studyView: {
+        bounds: [[30.0, 49.0], [43.0, 56.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "russia-northwest-federal-subjects": {
+      regionView: { center: [32.0, 58.0], zoom: 3.85 },
+      studyView: {
+        bounds: [[18.0, 53.0], [61.0, 62.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "russia-more-northwest-federal-subjects": {
+      regionView: { center: [45.0, 64.8], zoom: 3.1 },
+      studyView: {
+        bounds: [[27.0, 58.5], [69.0, 70.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "russia-southern-federal-subjects": {
+      regionView: { center: [43.5, 46.2], zoom: 4.6 },
+      studyView: {
+        bounds: [[36.0, 43.0], [50.0, 50.0]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "russia-north-caucasus-federal-subjects": {
+      regionView: { center: [43.8, 43.5], zoom: 5.6 },
+      studyView: {
+        bounds: [[39.5, 41.0], [48.5, 45.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "russia-volga-federal-subjects": {
+      regionView: { center: [49.5, 56.2], zoom: 4.45 },
+      studyView: {
+        bounds: [[42.0, 53.0], [58.5, 60.0]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "russia-more-volga-federal-subjects": {
+      regionView: { center: [53.5, 53.5], zoom: 4.0 },
+      studyView: {
+        bounds: [[44.0, 50.0], [61.5, 59.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "russia-ural-federal-subjects": {
+      regionView: { center: [65.5, 60.0], zoom: 3.2 },
+      studyView: {
+        bounds: [[54.0, 53.0], [79.0, 68.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "russia-siberia-federal-subjects": {
+      regionView: { center: [91.0, 55.0], zoom: 2.7 },
+      studyView: {
+        bounds: [[74.0, 48.0], [107.5, 62.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "russia-far-east-federal-subjects": {
+      regionView: { center: [139.0, 53.5], zoom: 2.65 },
+      studyView: {
+        bounds: [[127.0, 42.0], [156.0, 64.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "russia-more-far-east-federal-subjects": {
+      regionView: { center: [132.0, 61.0], zoom: 1.75 },
+      studyView: {
+        bounds: [[101.0, 45.0], [180.0, 74.5]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
@@ -1963,6 +3174,86 @@ function getMapDefaults(rawActivity, region) {
         duration: 1050
       }
     },
+    "germany-north-east-political-divisions": {
+      regionView: { center: [11.2, 52.5], zoom: 5.0 },
+      studyView: {
+        bounds: [[6.5, 50.0], [15.5, 55.2]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "germany-south-west-political-divisions": {
+      regionView: { center: [8.9, 49.3], zoom: 5.0 },
+      studyView: {
+        bounds: [[5.5, 47.0], [13.8, 52.6]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "france-northern-eastern-regions-political-divisions": {
+      regionView: { center: [1.9, 48.0], zoom: 5.0 },
+      studyView: {
+        bounds: [[-5.6, 46.0], [8.5, 51.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "france-southern-regions-political-divisions": {
+      regionView: { center: [3.3, 44.3], zoom: 4.65 },
+      studyView: {
+        bounds: [[-2.0, 41.0], [9.8, 47.6]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "spain-northern-central-political-divisions": {
+      regionView: { center: [-3.9, 41.8], zoom: 5.0 },
+      studyView: {
+        bounds: [[-9.8, 39.0], [3.6, 43.9]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "spain-southern-eastern-political-divisions": {
+      regionView: { center: [-4.0, 35.6], zoom: 3.45 },
+      studyView: {
+        bounds: [[-18.5, 27.0], [5.0, 42.8]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "italy-northern-regions-political-divisions": {
+      regionView: { center: [10.6, 44.8], zoom: 5.2 },
+      studyView: {
+        bounds: [[6.2, 43.1], [14.4, 47.2]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "italy-central-southern-regions-political-divisions": {
+      regionView: { center: [13.2, 41.0], zoom: 4.6 },
+      studyView: {
+        bounds: [[8.8, 37.5], [18.7, 44.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "italy-islands-political-divisions": {
+      regionView: { center: [11.9, 39.0], zoom: 4.5 },
+      studyView: {
+        bounds: [[8.0, 35.3], [15.8, 41.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "united-kingdom-countries-political-divisions": {
+      regionView: { center: [-3.2, 54.7], zoom: 4.0 },
+      studyView: {
+        bounds: [[-8.7, 49.7], [2.0, 59.2]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
     "eastern-europe": {
       regionView: { center: [26.5, 50.5], zoom: 3.35 },
       studyView: {
@@ -1972,33 +3263,57 @@ function getMapDefaults(rawActivity, region) {
       }
     },
     "southern-africa": {
-      regionView: { center: [25, -23], zoom: 3.1 },
+      regionView: { center: [25.5, -17.6], zoom: 3.55 },
       studyView: {
-        bounds: [[10, -36.5], [42, -9.7]],
+        bounds: [[10.5, -25.5], [42, -8.0]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "more-southern-africa": {
+      regionView: { center: [34.5, -24.0], zoom: 3.0 },
+      studyView: {
+        bounds: [[15.0, -36.5], [51.0, -11.0]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
     },
     "north-africa": {
-      regionView: { center: [12, 28], zoom: 3.0 },
+      regionView: { center: [12, 27], zoom: 2.55 },
       studyView: {
-        bounds: [[-18.5, 18.0], [36.5, 37.8]],
+        bounds: [[-18.5, 12.0], [38.5, 37.8]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
     },
     "west-africa": {
-      regionView: { center: [-5.5, 9.5], zoom: 4.3 },
+      regionView: { center: [-10.2, 12.6], zoom: 3.55 },
       studyView: {
-        bounds: [[-16.0, 4.0], [3.5, 15.5]],
+        bounds: [[-18.6, 5.0], [4.5, 22.0]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
     },
-    "east-africa-indian-ocean": {
-      regionView: { center: [38, -4], zoom: 3.0 },
+    "more-west-africa": {
+      regionView: { center: [3.4, 10.5], zoom: 3.8 },
       studyView: {
-        bounds: [[27.0, -26.5], [51.5, 15.2]],
+        bounds: [[-9.5, 3.5], [15.0, 20.8]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "central-africa": {
+      regionView: { center: [18.8, 3.5], zoom: 3.3 },
+      studyView: {
+        bounds: [[7.0, -7.5], [32.8, 18.8]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "east-africa": {
+      regionView: { center: [37.0, 4.0], zoom: 3.3 },
+      studyView: {
+        bounds: [[28.0, -12.5], [52.5, 18.5]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
@@ -2051,6 +3366,46 @@ function getMapDefaults(rawActivity, region) {
         duration: 1050
       }
     },
+    "brazil-north-political-divisions": {
+      regionView: { center: [-58.5, -4.0], zoom: 3.25 },
+      studyView: {
+        bounds: [[-74.5, -13.8], [-45.0, 6.0]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "brazil-northeast-political-divisions": {
+      regionView: { center: [-40.0, -8.0], zoom: 4.15 },
+      studyView: {
+        bounds: [[-48.8, -18.5], [-34.5, -1.0]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "brazil-central-west-political-divisions": {
+      regionView: { center: [-53.5, -15.5], zoom: 4.0 },
+      studyView: {
+        bounds: [[-61.0, -24.5], [-45.0, -7.0]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "brazil-southeast-political-divisions": {
+      regionView: { center: [-45.5, -20.5], zoom: 4.6 },
+      studyView: {
+        bounds: [[-52.0, -25.0], [-39.0, -14.0]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "brazil-south-political-divisions": {
+      regionView: { center: [-51.5, -27.0], zoom: 5.0 },
+      studyView: {
+        bounds: [[-58.8, -34.2], [-47.0, -22.0]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
     "caribbean": {
       regionView: { center: [-74.5, 19.2], zoom: 4.25 },
       studyView: {
@@ -2067,10 +3422,146 @@ function getMapDefaults(rawActivity, region) {
         duration: 1050
       }
     },
+    "india-north-political-divisions": {
+      regionView: { center: [77.0, 29.8], zoom: 4.25 },
+      studyView: {
+        bounds: [[68.0, 23.5], [82.5, 36.8]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "india-west-central-political-divisions": {
+      regionView: { center: [75.5, 20.8], zoom: 4.0 },
+      studyView: {
+        bounds: [[68.0, 14.5], [84.5, 27.2]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "india-east-political-divisions": {
+      regionView: { center: [85.8, 23.6], zoom: 4.7 },
+      studyView: {
+        bounds: [[82.0, 20.0], [90.5, 28.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "india-northeast-political-divisions": {
+      regionView: { center: [93.5, 25.5], zoom: 5.1 },
+      studyView: {
+        bounds: [[88.0, 21.5], [98.5, 29.8]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "india-south-political-divisions": {
+      regionView: { center: [78.4, 13.1], zoom: 4.4 },
+      studyView: {
+        bounds: [[73.0, 7.2], [84.8, 19.8]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "india-islands-political-divisions": {
+      regionView: { center: [82.0, 10.5], zoom: 3.1 },
+      studyView: {
+        bounds: [[71.0, 6.0], [94.5, 14.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
     "east-asia": {
       regionView: { center: [113, 38], zoom: 2.25 },
       studyView: {
         bounds: [[73.0, 17.0], [146.5, 54.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "japan-hokkaido-tohoku-political-divisions": {
+      regionView: { center: [141.0, 40.5], zoom: 4.2 },
+      studyView: {
+        bounds: [[138.0, 36.5], [146.5, 45.8]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "japan-kanto-political-divisions": {
+      regionView: { center: [139.6, 35.9], zoom: 6.0 },
+      studyView: {
+        bounds: [[138.0, 34.8], [141.2, 37.2]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "japan-chubu-political-divisions": {
+      regionView: { center: [137.5, 36.1], zoom: 5.0 },
+      studyView: {
+        bounds: [[135.0, 34.2], [140.2, 38.6]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "japan-kansai-political-divisions": {
+      regionView: { center: [135.6, 34.7], zoom: 5.9 },
+      studyView: {
+        bounds: [[134.0, 33.3], [137.2, 35.9]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "japan-chugoku-shikoku-political-divisions": {
+      regionView: { center: [133.2, 34.3], zoom: 5.0 },
+      studyView: {
+        bounds: [[130.5, 32.6], [136.3, 35.9]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "japan-kyushu-okinawa-political-divisions": {
+      regionView: { center: [130.5, 29.8], zoom: 4.2 },
+      studyView: {
+        bounds: [[122.5, 23.5], [132.5, 34.0]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "china-north-northeast-political-divisions": {
+      regionView: { center: [117.0, 42.6], zoom: 3.0 },
+      studyView: {
+        bounds: [[96.0, 34.0], [135.5, 54.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "china-east-political-divisions": {
+      regionView: { center: [118.5, 31.5], zoom: 4.15 },
+      studyView: {
+        bounds: [[113.0, 23.0], [123.8, 39.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "china-south-central-political-divisions": {
+      regionView: { center: [111.6, 25.9], zoom: 4.0 },
+      studyView: {
+        bounds: [[104.0, 17.5], [116.5, 35.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "china-southwest-political-divisions": {
+      regionView: { center: [94.5, 29.0], zoom: 3.05 },
+      studyView: {
+        bounds: [[77.0, 20.5], [110.5, 34.8]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "china-northwest-political-divisions": {
+      regionView: { center: [91.5, 39.5], zoom: 2.75 },
+      studyView: {
+        bounds: [[73.0, 30.5], [111.5, 49.5]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
@@ -2095,6 +3586,14 @@ function getMapDefaults(rawActivity, region) {
       regionView: { center: [151, -18], zoom: 2.2 },
       studyView: {
         bounds: [[112.0, -49.5], [180.0, 15.5]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "australia-states-territories": {
+      regionView: { center: [134.5, -25.0], zoom: 3.35 },
+      studyView: {
+        bounds: [[112.0, -44.5], [154.5, -9.0]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
@@ -2499,6 +3998,9 @@ function openFreePlay(options = {}) {
   activeStudyPracticeSession = null;
   isCurrentActivityProgressDisabled = false;
   currentAppScreen = "free-play";
+  freePlaySelectedMapFeature = null;
+  activePreviewActivityId = null;
+  selectedOverviewActivityId = null;
   document.body.classList.remove("launch-mode", "app-shell-mode");
 
   if (launchScreen) {
@@ -3858,7 +5360,7 @@ function getStateProvinceTerritoryStudyTargetGroups() {
     .forEach((activity) => {
       const group = getOrCreateStudyGroup(groups, "us-states", {
         id: "us-states",
-        title: "States / United States",
+        title: "Political Divisions / United States",
         settingKey: "states",
         defaultOpen: true,
         targets: []
@@ -3871,14 +5373,14 @@ function getStateProvinceTerritoryStudyTargetGroups() {
     .forEach((activity) => {
       const provinceGroup = getOrCreateStudyGroup(groups, "canada-provinces", {
         id: "canada-provinces",
-        title: "Provinces / Canada",
+        title: "Political Divisions / Canada Provinces",
         settingKey: "provinces",
         defaultOpen: false,
         targets: []
       });
       const territoryGroup = getOrCreateStudyGroup(groups, "canada-territories", {
         id: "canada-territories",
-        title: "Territories / Canada",
+        title: "Political Divisions / Canada Territories",
         settingKey: "territories",
         defaultOpen: false,
         targets: []
@@ -3893,8 +5395,160 @@ function getStateProvinceTerritoryStudyTargetGroups() {
     .forEach((activity) => {
       const group = getOrCreateStudyGroup(groups, "mexico-states", {
         id: "mexico-states",
-        title: "States / Mexico",
+        title: "Political Divisions / Mexico",
         settingKey: "states",
+        defaultOpen: false,
+        targets: []
+      });
+      addStudyTargets(group.targets, activity.targets, activity, (target) => target.kind === "shape");
+    });
+
+  activities
+    .filter((activity) => activity.id === "australia-states-territories")
+    .forEach((activity) => {
+      const group = getOrCreateStudyGroup(groups, "australia-political-divisions", {
+        id: "australia-political-divisions",
+        title: "Political Divisions / Australia",
+        settingKey: "politicalDivisions",
+        defaultOpen: false,
+        targets: []
+      });
+      addStudyTargets(group.targets, activity.targets, activity, (target) => target.kind === "shape");
+    });
+
+  activities
+    .filter((activity) => activity.id.startsWith("china-") && activity.id.endsWith("-political-divisions"))
+    .forEach((activity) => {
+      const regionLabel = activity.title.replace(/^China:\s*/, "");
+      const group = getOrCreateStudyGroup(groups, activity.id, {
+        id: activity.id,
+        title: `Political Divisions / China / ${regionLabel}`,
+        settingKey: "politicalDivisions",
+        defaultOpen: false,
+        targets: []
+      });
+      addStudyTargets(group.targets, activity.targets, activity, (target) => target.kind === "shape");
+    });
+
+  activities
+    .filter((activity) => activity.id.startsWith("japan-") && activity.id.endsWith("-political-divisions"))
+    .forEach((activity) => {
+      const regionLabel = activity.title.replace(/^Japan:\s*/, "");
+      const group = getOrCreateStudyGroup(groups, activity.id, {
+        id: activity.id,
+        title: `Political Divisions / Japan / ${regionLabel}`,
+        settingKey: "politicalDivisions",
+        defaultOpen: false,
+        targets: []
+      });
+      addStudyTargets(group.targets, activity.targets, activity, (target) => target.kind === "shape");
+    });
+
+  activities
+    .filter((activity) => activity.id.startsWith("germany-") && activity.id.endsWith("-political-divisions"))
+    .forEach((activity) => {
+      const regionLabel = activity.title.replace(/^Germany:\s*/, "");
+      const group = getOrCreateStudyGroup(groups, activity.id, {
+        id: activity.id,
+        title: `Political Divisions / Germany / ${regionLabel}`,
+        settingKey: "politicalDivisions",
+        defaultOpen: false,
+        targets: []
+      });
+      addStudyTargets(group.targets, activity.targets, activity, (target) => target.kind === "shape");
+    });
+
+  activities
+    .filter((activity) => activity.id.startsWith("france-") && activity.id.endsWith("-political-divisions"))
+    .forEach((activity) => {
+      const regionLabel = activity.title.replace(/^France:\s*/, "");
+      const group = getOrCreateStudyGroup(groups, activity.id, {
+        id: activity.id,
+        title: `Political Divisions / France / ${regionLabel}`,
+        settingKey: "politicalDivisions",
+        defaultOpen: false,
+        targets: []
+      });
+      addStudyTargets(group.targets, activity.targets, activity, (target) => target.kind === "shape");
+    });
+
+  activities
+    .filter((activity) => activity.id.startsWith("spain-") && activity.id.endsWith("-political-divisions"))
+    .forEach((activity) => {
+      const regionLabel = activity.title.replace(/^Spain:\s*/, "");
+      const group = getOrCreateStudyGroup(groups, activity.id, {
+        id: activity.id,
+        title: `Political Divisions / Spain / ${regionLabel}`,
+        settingKey: "politicalDivisions",
+        defaultOpen: false,
+        targets: []
+      });
+      addStudyTargets(group.targets, activity.targets, activity, (target) => target.kind === "shape");
+    });
+
+  activities
+    .filter((activity) => activity.id.startsWith("italy-") && activity.id.endsWith("-political-divisions"))
+    .forEach((activity) => {
+      const regionLabel = activity.title.replace(/^Italy:\s*/, "");
+      const group = getOrCreateStudyGroup(groups, activity.id, {
+        id: activity.id,
+        title: `Political Divisions / Italy / ${regionLabel}`,
+        settingKey: "politicalDivisions",
+        defaultOpen: false,
+        targets: []
+      });
+      addStudyTargets(group.targets, activity.targets, activity, (target) => target.kind === "shape");
+    });
+
+  activities
+    .filter((activity) => activity.id === "united-kingdom-countries-political-divisions")
+    .forEach((activity) => {
+      const group = getOrCreateStudyGroup(groups, activity.id, {
+        id: activity.id,
+        title: "Political Divisions / United Kingdom / Countries",
+        settingKey: "politicalDivisions",
+        defaultOpen: false,
+        targets: []
+      });
+      addStudyTargets(group.targets, activity.targets, activity, (target) => target.kind === "shape");
+    });
+
+  activities
+    .filter((activity) => activity.id.startsWith("india-") && activity.id.endsWith("-political-divisions"))
+    .forEach((activity) => {
+      const regionLabel = activity.title.replace(/^India:\s*/, "");
+      const group = getOrCreateStudyGroup(groups, activity.id, {
+        id: activity.id,
+        title: `Political Divisions / India / ${regionLabel}`,
+        settingKey: "politicalDivisions",
+        defaultOpen: false,
+        targets: []
+      });
+      addStudyTargets(group.targets, activity.targets, activity, (target) => target.kind === "shape");
+    });
+
+  activities
+    .filter((activity) => activity.id.startsWith("russia-") && activity.id.endsWith("-federal-subjects"))
+    .forEach((activity) => {
+      const regionLabel = activity.title.replace(/^Russia:\s*/, "");
+      const group = getOrCreateStudyGroup(groups, activity.id, {
+        id: activity.id,
+        title: `Political Divisions / Russia / ${regionLabel}`,
+        settingKey: "politicalDivisions",
+        defaultOpen: false,
+        targets: []
+      });
+      addStudyTargets(group.targets, activity.targets, activity, (target) => target.kind === "shape");
+    });
+
+  activities
+    .filter((activity) => activity.id.startsWith("brazil-") && activity.id.endsWith("-political-divisions"))
+    .forEach((activity) => {
+      const regionLabel = activity.title.replace(/^Brazil:\s*/, "");
+      const group = getOrCreateStudyGroup(groups, activity.id, {
+        id: activity.id,
+        title: `Political Divisions / Brazil / ${regionLabel}`,
+        settingKey: "politicalDivisions",
         defaultOpen: false,
         targets: []
       });
@@ -4505,12 +6159,14 @@ function getCurrentOverviewPreviewId() {
 }
 
 function setOverviewPreviewActivity(activityId) {
+  freePlaySelectedMapFeature = null;
   activePreviewActivityId = activityId;
   highlightOverviewCard(activityId);
   updateOverviewPreview();
 }
 
 function restoreOverviewPreview() {
+  freePlaySelectedMapFeature = null;
   activePreviewActivityId = null;
   highlightOverviewCard(selectedOverviewActivityId);
   updateOverviewPreview();
@@ -4525,11 +6181,24 @@ function highlightOverviewCard(activityId) {
 }
 
 function updateOverviewPreview() {
+  if (freePlaySelectedMapFeature) {
+    runner?.setOverviewFeatureCollection(getFreePlaySelectedFeatureCollection(freePlaySelectedMapFeature));
+    return;
+  }
+
   const previewActivity = [...activities, ...supplementalOverviewEntries]
     .find((activity) => activity.id === getCurrentOverviewPreviewId()) || null;
 
   if (previewActivity) {
     runner?.setOverviewPreview(previewActivity, getActivityProgress(previewActivity.id, getEffectiveDifficulty(previewActivity)));
+    return;
+  }
+
+  if (isNeutralFreePlayRootExplore()) {
+    runner?.setOverviewFeatureCollection({
+      type: "FeatureCollection",
+      features: []
+    });
     return;
   }
 
@@ -4539,6 +6208,46 @@ function updateOverviewPreview() {
   }
 
   runner?.setOverviewPreview(null);
+}
+
+function isNeutralFreePlayRootExplore() {
+  return isFreePlayRootExplore()
+    && !freePlaySelectedMapFeature;
+}
+
+function isFreePlayRootExplore() {
+  return currentAppScreen === "free-play"
+    && isNavigationBrowseMode
+    && activeHierarchyNodeId === "world"
+    && !activePreviewActivityId
+    && !selectedOverviewActivityId;
+}
+
+function getFreePlaySelectedFeatureCollection(candidate) {
+  if (!runner || !candidate) {
+    return {
+      type: "FeatureCollection",
+      features: []
+    };
+  }
+
+  if (candidate.kind === "world-country" && candidate.isoA3 && runner.getOverviewGeoJsonForCountry) {
+    return runner.getOverviewGeoJsonForCountry(candidate.isoA3, {
+      activityId: candidate.targetId,
+      label: getNavigationCandidateDisplayName(candidate)
+    });
+  }
+
+  return {
+    type: "FeatureCollection",
+    features: []
+  };
+}
+
+function getNavigationCandidateDisplayName(candidate) {
+  return candidate?.names?.find(Boolean)
+    || candidate?.targetId
+    || "Selected place";
 }
 
 function getBrowseFeatureCollection(nodeId) {
@@ -4669,11 +6378,15 @@ function showHierarchyBrowseNode(nodeId) {
   }
 
   cancelGrabbedAnswer();
+  freePlaySelectedMapFeature = null;
+  activeHierarchyNodeId = node.id;
   isNavigationBrowseMode = true;
   document.body.classList.add("overview-mode", "browse-mode");
   document.body.classList.remove("study-mode");
   title.textContent = getHierarchyBreadcrumb(node.id);
-  instruction.textContent = "Choose a place on the map or pick a label below.";
+  instruction.textContent = isNeutralFreePlayRootExplore()
+    ? "Tap a place on the globe to explore."
+    : "Choose a place on the map or pick a label below.";
   studyCard.hidden = true;
   renderNavigationAnswerBank(node.id);
   renderOverviewLibrary();
@@ -4747,6 +6460,10 @@ function renderNavigationAnswerBank(nodeId = activeHierarchyNodeId) {
   setAnswerPanelMode("navigation");
   answerBank.innerHTML = "";
 
+  if (currentAppScreen === "free-play" && freePlaySelectedMapFeature) {
+    answerBank.appendChild(renderFreePlaySelectedTargetCard(freePlaySelectedMapFeature));
+  }
+
   getHierarchyChildren(node).forEach((child) => {
     const chip = document.createElement("button");
     chip.className = "label-chip navigation-chip";
@@ -4762,6 +6479,106 @@ function renderNavigationAnswerBank(nodeId = activeHierarchyNodeId) {
     });
     answerBank.appendChild(chip);
   });
+}
+
+function renderFreePlaySelectedTargetCard(candidate) {
+  const details = getFreePlaySelectedTargetDetails(candidate);
+  const card = document.createElement("section");
+  card.className = "free-play-selected-card";
+  card.setAttribute("aria-label", `Selected: ${details.name}`);
+
+  const label = document.createElement("span");
+  label.className = "free-play-selected-label";
+  label.textContent = "Selected";
+
+  const name = document.createElement("strong");
+  name.className = "free-play-selected-name";
+  name.textContent = details.name;
+
+  const nameRow = document.createElement("div");
+  nameRow.className = "free-play-selected-name-row";
+  nameRow.appendChild(name);
+
+  const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(details.name);
+  if (speaker) {
+    speaker.classList.add("free-play-selected-speaker");
+    speaker.setAttribute("aria-label", `Hear pronunciation of ${details.name}`);
+    speaker.setAttribute("title", `Hear pronunciation of ${details.name}`);
+    nameRow.appendChild(speaker);
+  }
+
+  const path = document.createElement("span");
+  path.className = "free-play-selected-path";
+  path.textContent = details.pathLabels.join(" -> ");
+
+  const clearButton = document.createElement("button");
+  clearButton.className = "free-play-selected-clear";
+  clearButton.type = "button";
+  clearButton.textContent = "Clear";
+  clearButton.addEventListener("click", () => {
+    freePlaySelectedMapFeature = null;
+    instruction.textContent = "Tap a place on the globe to explore.";
+    updateOverviewPreview();
+    renderNavigationAnswerBank(activeHierarchyNodeId);
+    clearFeedback();
+  });
+
+  const textWrap = document.createElement("div");
+  textWrap.className = "free-play-selected-copy";
+  textWrap.append(label, nameRow, path);
+  card.append(textWrap, clearButton);
+
+  return card;
+}
+
+function getFreePlaySelectedTargetDetails(candidate) {
+  const name = getNavigationCandidateDisplayName(candidate);
+  const contentPath = getKnownContentPathForNavigationCandidate(candidate);
+
+  if (contentPath.length > 0) {
+    return {
+      name,
+      pathLabels: [...contentPath, name]
+    };
+  }
+
+  const continentNodeId = getContinentNodeIdForCandidate(candidate);
+  const fallbackPath = continentNodeId
+    ? getHierarchyPath(continentNodeId).map((node) => node.label)
+    : ["World"];
+
+  return {
+    name,
+    pathLabels: [...fallbackPath, name]
+  };
+}
+
+function getKnownContentPathForNavigationCandidate(candidate) {
+  const matchingNodeIds = getHierarchyNodeIdsForActivityTargetCandidate(candidate)
+    .filter((nodeId) => nodeId && !getHierarchyNode(nodeId)?.disabled);
+
+  if (matchingNodeIds.length === 0) {
+    return [];
+  }
+
+  const preferredNodeId = matchingNodeIds
+    .sort(compareFreePlayContentPathCandidates)[0];
+
+  return getHierarchyPath(preferredNodeId).map((node) => node.label);
+}
+
+function compareFreePlayContentPathCandidates(leftNodeId, rightNodeId) {
+  const leftPath = getHierarchyPath(leftNodeId);
+  const rightPath = getHierarchyPath(rightNodeId);
+  const leftIsReview = leftPath.some((node) => node.id === "review");
+  const rightIsReview = rightPath.some((node) => node.id === "review");
+
+  if (leftIsReview !== rightIsReview) {
+    return leftIsReview ? 1 : -1;
+  }
+
+  return leftPath.length - rightPath.length
+    || leftPath.map((node) => node.label).join(" ").localeCompare(rightPath.map((node) => node.label).join(" "));
 }
 
 function setAnswerPanelMode(mode) {
@@ -4936,6 +6753,10 @@ function handleTargetClick(targetIds) {
     const navigationScopeNode = getNavigationScopeNode();
     const scopeHasAvailableChildren = getHierarchyChildren(navigationScopeNode).some((child) => !child.disabled);
 
+    if (tryShowFreePlaySelectedMapFeature(navigationCandidates)) {
+      return;
+    }
+
     if (!tryDrillFromMapTargets(navigationCandidates) && !scopeHasAvailableChildren && (isNavigationBrowseMode || hasMapNavigationFeatureCandidate(navigationCandidates))) {
       showFeedback("No activities here yet.");
     }
@@ -4948,6 +6769,30 @@ function handleTargetClick(targetIds) {
   placeGrabbedAnswer(resolvedTargetIds, {
     keepGrabbedOnIncorrect: true
   });
+}
+
+function tryShowFreePlaySelectedMapFeature(navigationCandidates) {
+  if (!isFreePlayRootExplore()) {
+    return false;
+  }
+
+  const candidate = navigationCandidates.find((item) => item?.kind === "world-country" && item.isoA3)
+    || navigationCandidates.find((item) => item?.kind === "world-country");
+
+  if (!candidate) {
+    return false;
+  }
+
+  freePlaySelectedMapFeature = candidate;
+  updateOverviewPreview();
+  renderNavigationAnswerBank(activeHierarchyNodeId);
+
+  const placeName = getNavigationCandidateDisplayName(candidate);
+  const details = getFreePlaySelectedTargetDetails(candidate);
+  instruction.textContent = `${placeName} | ${details.pathLabels.join(" -> ")}`;
+  showFeedback(placeName, true);
+
+  return true;
 }
 
 function getNavigationCandidatesFromTargetIds(targetIds) {
@@ -5874,6 +7719,7 @@ function getPresetCategoryEnabled(settings = {}, settingKey) {
     states: "showStates",
     provinces: "showProvinces",
     territories: "showTerritories",
+    politicalDivisions: "showStates",
     cities: "showCities",
     capitals: "showCapitals"
   };

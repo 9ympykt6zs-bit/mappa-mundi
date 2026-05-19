@@ -1,0 +1,102 @@
+{
+  "id": "india-south-political-divisions",
+  "title": "India: South",
+  "targetNoun": "state or union territory",
+  "visibleAnswerLimit": 6,
+  "map": {
+    "region": "india-south-political-divisions",
+    "admin1Source": "india-admin1"
+  },
+  "features": [
+    {
+      "id": "andhra-pradesh",
+      "name": "Andhra Pradesh",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "andhra-pradesh",
+      "iso_3166_2": "IN-AP",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        79.208,
+        16.4854
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "telangana",
+      "name": "Telangana",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "telangana",
+      "iso_3166_2": "IN-TG",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        78.4684,
+        17.4273
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "karnataka",
+      "name": "Karnataka",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "karnataka",
+      "iso_3166_2": "IN-KA",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        75.667,
+        14.3681
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "kerala",
+      "name": "Kerala",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "kerala",
+      "iso_3166_2": "IN-KL",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        76.5237,
+        10.3666
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tamil-nadu",
+      "name": "Tamil Nadu",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tamil-nadu",
+      "iso_3166_2": "IN-TN",
+      "color": "#d88052",
+      "labelAnchor": [
+        78.2704,
+        11.0159
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "puducherry",
+      "name": "Puducherry",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "puducherry",
+      "iso_3166_2": "IN-PY",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        79.7758,
+        10.9224
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

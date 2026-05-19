@@ -1,0 +1,68 @@
+{
+  "id": "united-kingdom-countries-political-divisions",
+  "title": "United Kingdom: Countries",
+  "targetNoun": "country",
+  "visibleAnswerLimit": 4,
+  "map": {
+    "region": "united-kingdom-countries-political-divisions",
+    "admin1Source": "united-kingdom-admin1"
+  },
+  "features": [
+    {
+      "id": "england",
+      "name": "England",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "england",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        -1.402,
+        52.6098
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "scotland",
+      "name": "Scotland",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "scotland",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        -4.045,
+        56.7924
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "wales",
+      "name": "Wales",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "wales",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        -3.6438,
+        52.1359
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "northern-ireland",
+      "name": "Northern Ireland",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "northern-ireland",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        -6.4663,
+        54.6555
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

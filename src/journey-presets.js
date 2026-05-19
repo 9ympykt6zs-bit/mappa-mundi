@@ -168,6 +168,74 @@ export const journeyPresets = [
         activityId: "south-america-east",
         title: "Eastern South America Countries",
         kind: "countries"
+      },
+      {
+        id: "brazil-north-political-divisions",
+        activityId: "brazil-north-political-divisions",
+        title: "Brazil: North",
+        kind: "political-divisions"
+      },
+      {
+        id: "brazil-northeast-political-divisions",
+        activityId: "brazil-northeast-political-divisions",
+        title: "Brazil: Northeast",
+        kind: "political-divisions"
+      },
+      {
+        id: "brazil-central-west-political-divisions",
+        activityId: "brazil-central-west-political-divisions",
+        title: "Brazil: Central-West",
+        kind: "political-divisions"
+      },
+      {
+        id: "brazil-southeast-political-divisions",
+        activityId: "brazil-southeast-political-divisions",
+        title: "Brazil: Southeast",
+        kind: "political-divisions"
+      },
+      {
+        id: "brazil-south-political-divisions",
+        activityId: "brazil-south-political-divisions",
+        title: "Brazil: South",
+        kind: "political-divisions"
+      }
+    ]
+  },
+  {
+    id: "brazil",
+    title: "Brazil",
+    description: "Learn Brazil's states and Federal District by region.",
+    status: "available",
+    steps: [
+      {
+        id: "brazil-north-political-divisions",
+        activityId: "brazil-north-political-divisions",
+        title: "Brazil: North",
+        kind: "political-divisions"
+      },
+      {
+        id: "brazil-northeast-political-divisions",
+        activityId: "brazil-northeast-political-divisions",
+        title: "Brazil: Northeast",
+        kind: "political-divisions"
+      },
+      {
+        id: "brazil-central-west-political-divisions",
+        activityId: "brazil-central-west-political-divisions",
+        title: "Brazil: Central-West",
+        kind: "political-divisions"
+      },
+      {
+        id: "brazil-southeast-political-divisions",
+        activityId: "brazil-southeast-political-divisions",
+        title: "Brazil: Southeast",
+        kind: "political-divisions"
+      },
+      {
+        id: "brazil-south-political-divisions",
+        activityId: "brazil-south-political-divisions",
+        title: "Brazil: South",
+        kind: "political-divisions"
       }
     ]
   },
@@ -266,6 +334,66 @@ export const journeyPresets = [
         kind: "countries"
       },
       {
+        id: "germany-north-east-political-divisions",
+        activityId: "germany-north-east-political-divisions",
+        title: "Germany: North & East",
+        kind: "political-divisions"
+      },
+      {
+        id: "germany-south-west-political-divisions",
+        activityId: "germany-south-west-political-divisions",
+        title: "Germany: South & West",
+        kind: "political-divisions"
+      },
+      {
+        id: "france-northern-eastern-regions-political-divisions",
+        activityId: "france-northern-eastern-regions-political-divisions",
+        title: "France: Northern & Eastern Regions",
+        kind: "political-divisions"
+      },
+      {
+        id: "france-southern-regions-political-divisions",
+        activityId: "france-southern-regions-political-divisions",
+        title: "France: Southern Regions",
+        kind: "political-divisions"
+      },
+      {
+        id: "spain-northern-central-political-divisions",
+        activityId: "spain-northern-central-political-divisions",
+        title: "Spain: Northern & Central",
+        kind: "political-divisions"
+      },
+      {
+        id: "spain-southern-eastern-political-divisions",
+        activityId: "spain-southern-eastern-political-divisions",
+        title: "Spain: Southern & Eastern",
+        kind: "political-divisions"
+      },
+      {
+        id: "italy-northern-regions-political-divisions",
+        activityId: "italy-northern-regions-political-divisions",
+        title: "Italy: Northern Regions",
+        kind: "political-divisions"
+      },
+      {
+        id: "italy-central-southern-regions-political-divisions",
+        activityId: "italy-central-southern-regions-political-divisions",
+        title: "Italy: Central & Southern Regions",
+        kind: "political-divisions"
+      },
+      {
+        id: "italy-islands-political-divisions",
+        activityId: "italy-islands-political-divisions",
+        title: "Italy: Islands",
+        kind: "political-divisions"
+      },
+      {
+        id: "united-kingdom-countries-political-divisions",
+        activityId: "united-kingdom-countries-political-divisions",
+        title: "United Kingdom: Countries",
+        kind: "political-divisions"
+      },
+      {
         id: "european-cities",
         activityId: "european-cities",
         title: "European Cities",
@@ -277,6 +405,238 @@ export const journeyPresets = [
         title: "Europe & Eastern Mediterranean Cities",
         kind: "cities"
       }
+    ]
+  },
+  {
+    id: "germany",
+    title: "Germany",
+    description: "Learn Germany's states by region.",
+    status: "available",
+    steps: [
+      {
+        id: "germany-north-east-political-divisions",
+        activityId: "germany-north-east-political-divisions",
+        title: "Germany: North & East",
+        kind: "political-divisions"
+      },
+      {
+        id: "germany-south-west-political-divisions",
+        activityId: "germany-south-west-political-divisions",
+        title: "Germany: South & West",
+        kind: "political-divisions"
+      }
+    ]
+  },
+  {
+    id: "france",
+    title: "France",
+    description: "Learn France's regions.",
+    status: "available",
+    steps: [
+      {
+        id: "france-northern-eastern-regions-political-divisions",
+        activityId: "france-northern-eastern-regions-political-divisions",
+        title: "France: Northern & Eastern Regions",
+        kind: "political-divisions"
+      },
+      {
+        id: "france-southern-regions-political-divisions",
+        activityId: "france-southern-regions-political-divisions",
+        title: "France: Southern Regions",
+        kind: "political-divisions"
+      }
+      // TODO: Add France overseas regions as a special activity after overseas camera/fit handling is designed.
+    ]
+  },
+  {
+    id: "spain",
+    title: "Spain",
+    description: "Learn Spain's autonomous communities and cities.",
+    status: "available",
+    steps: [
+      {
+        id: "spain-northern-central-political-divisions",
+        activityId: "spain-northern-central-political-divisions",
+        title: "Spain: Northern & Central",
+        kind: "political-divisions"
+      },
+      {
+        id: "spain-southern-eastern-political-divisions",
+        activityId: "spain-southern-eastern-political-divisions",
+        title: "Spain: Southern & Eastern",
+        kind: "political-divisions"
+      }
+    ]
+  },
+  {
+    id: "italy",
+    title: "Italy",
+    description: "Learn Italy's regions.",
+    status: "available",
+    steps: [
+      {
+        id: "italy-northern-regions-political-divisions",
+        activityId: "italy-northern-regions-political-divisions",
+        title: "Italy: Northern Regions",
+        kind: "political-divisions"
+      },
+      {
+        id: "italy-central-southern-regions-political-divisions",
+        activityId: "italy-central-southern-regions-political-divisions",
+        title: "Italy: Central & Southern Regions",
+        kind: "political-divisions"
+      },
+      {
+        id: "italy-islands-political-divisions",
+        activityId: "italy-islands-political-divisions",
+        title: "Italy: Islands",
+        kind: "political-divisions"
+      }
+    ]
+  },
+  {
+    id: "united-kingdom",
+    title: "United Kingdom",
+    description: "Learn the countries of the United Kingdom.",
+    status: "available",
+    steps: [
+      {
+        id: "united-kingdom-countries-political-divisions",
+        activityId: "united-kingdom-countries-political-divisions",
+        title: "United Kingdom: Countries",
+        kind: "political-divisions"
+      }
+    ]
+  },
+  {
+    id: "russia",
+    title: "Russia",
+    description: "Learn Russia's federal subjects by region.",
+    status: "available",
+    steps: [
+      {
+        id: "russia-central-federal-subjects",
+        activityId: "russia-central-federal-subjects",
+        title: "Russia: Central",
+        kind: "political-divisions"
+      },
+      {
+        id: "russia-more-central-federal-subjects",
+        activityId: "russia-more-central-federal-subjects",
+        title: "Russia: More Central",
+        kind: "political-divisions"
+      },
+      {
+        id: "russia-northwest-federal-subjects",
+        activityId: "russia-northwest-federal-subjects",
+        title: "Russia: Northwest",
+        kind: "political-divisions"
+      },
+      {
+        id: "russia-more-northwest-federal-subjects",
+        activityId: "russia-more-northwest-federal-subjects",
+        title: "Russia: More Northwest",
+        kind: "political-divisions"
+      },
+      {
+        id: "russia-southern-federal-subjects",
+        activityId: "russia-southern-federal-subjects",
+        title: "Russia: Southern",
+        kind: "political-divisions"
+      },
+      {
+        id: "russia-north-caucasus-federal-subjects",
+        activityId: "russia-north-caucasus-federal-subjects",
+        title: "Russia: North Caucasus",
+        kind: "political-divisions"
+      },
+      {
+        id: "russia-volga-federal-subjects",
+        activityId: "russia-volga-federal-subjects",
+        title: "Russia: Volga",
+        kind: "political-divisions"
+      },
+      {
+        id: "russia-more-volga-federal-subjects",
+        activityId: "russia-more-volga-federal-subjects",
+        title: "Russia: More Volga",
+        kind: "political-divisions"
+      },
+      {
+        id: "russia-ural-federal-subjects",
+        activityId: "russia-ural-federal-subjects",
+        title: "Russia: Ural",
+        kind: "political-divisions"
+      },
+      {
+        id: "russia-siberia-federal-subjects",
+        activityId: "russia-siberia-federal-subjects",
+        title: "Russia: Siberia",
+        kind: "political-divisions"
+      },
+      {
+        id: "russia-far-east-federal-subjects",
+        activityId: "russia-far-east-federal-subjects",
+        title: "Russia: Far East",
+        kind: "political-divisions"
+      },
+      {
+        id: "russia-more-far-east-federal-subjects",
+        activityId: "russia-more-far-east-federal-subjects",
+        title: "Russia: More Far East",
+        kind: "political-divisions"
+      }
+    ]
+  },
+  {
+    id: "africa",
+    title: "Africa",
+    description: "Practice African countries in focused regional groups.",
+    status: "available",
+    steps: [
+      {
+        id: "north-africa-countries",
+        activityId: "north-africa-countries",
+        title: "North Africa",
+        kind: "countries"
+      },
+      {
+        id: "west-africa-countries",
+        activityId: "west-africa-countries",
+        title: "West Africa",
+        kind: "countries"
+      },
+      {
+        id: "more-west-africa-countries",
+        activityId: "more-west-africa-countries",
+        title: "More West Africa",
+        kind: "countries"
+      },
+      {
+        id: "central-africa-countries",
+        activityId: "central-africa-countries",
+        title: "Central Africa",
+        kind: "countries"
+      },
+      {
+        id: "east-africa-countries",
+        activityId: "east-africa-countries",
+        title: "East Africa",
+        kind: "countries"
+      },
+      {
+        id: "southern-africa-countries",
+        activityId: "southern-africa-countries",
+        title: "Southern Africa",
+        kind: "countries"
+      },
+      {
+        id: "more-southern-africa-countries",
+        activityId: "more-southern-africa-countries",
+        title: "More Southern Africa",
+        kind: "countries"
+      }
+      // TODO: Add Cabo Verde, Sao Tome and Principe, Comoros, Mauritius, and Seychelles if the world country source supports them later.
     ]
   },
   {
@@ -298,6 +658,42 @@ export const journeyPresets = [
         kind: "countries"
       },
       {
+        id: "india-north-political-divisions",
+        activityId: "india-north-political-divisions",
+        title: "India: North",
+        kind: "political-divisions"
+      },
+      {
+        id: "india-west-central-political-divisions",
+        activityId: "india-west-central-political-divisions",
+        title: "India: West & Central",
+        kind: "political-divisions"
+      },
+      {
+        id: "india-east-political-divisions",
+        activityId: "india-east-political-divisions",
+        title: "India: East",
+        kind: "political-divisions"
+      },
+      {
+        id: "india-northeast-political-divisions",
+        activityId: "india-northeast-political-divisions",
+        title: "India: Northeast",
+        kind: "political-divisions"
+      },
+      {
+        id: "india-south-political-divisions",
+        activityId: "india-south-political-divisions",
+        title: "India: South",
+        kind: "political-divisions"
+      },
+      {
+        id: "india-islands-political-divisions",
+        activityId: "india-islands-political-divisions",
+        title: "India: Islands",
+        kind: "political-divisions"
+      },
+      {
         id: "central-asia",
         activityId: "central-asia",
         title: "Central Asia Countries",
@@ -314,6 +710,72 @@ export const journeyPresets = [
         activityId: "east-asia-countries",
         title: "East Asia Countries",
         kind: "countries"
+      },
+      {
+        id: "japan-hokkaido-tohoku-political-divisions",
+        activityId: "japan-hokkaido-tohoku-political-divisions",
+        title: "Japan: Hokkaido & Tohoku",
+        kind: "political-divisions"
+      },
+      {
+        id: "japan-kanto-political-divisions",
+        activityId: "japan-kanto-political-divisions",
+        title: "Japan: Kanto",
+        kind: "political-divisions"
+      },
+      {
+        id: "japan-chubu-political-divisions",
+        activityId: "japan-chubu-political-divisions",
+        title: "Japan: Chubu",
+        kind: "political-divisions"
+      },
+      {
+        id: "japan-kansai-political-divisions",
+        activityId: "japan-kansai-political-divisions",
+        title: "Japan: Kansai",
+        kind: "political-divisions"
+      },
+      {
+        id: "japan-chugoku-shikoku-political-divisions",
+        activityId: "japan-chugoku-shikoku-political-divisions",
+        title: "Japan: Chugoku & Shikoku",
+        kind: "political-divisions"
+      },
+      {
+        id: "japan-kyushu-okinawa-political-divisions",
+        activityId: "japan-kyushu-okinawa-political-divisions",
+        title: "Japan: Kyushu & Okinawa",
+        kind: "political-divisions"
+      },
+      {
+        id: "china-north-northeast-political-divisions",
+        activityId: "china-north-northeast-political-divisions",
+        title: "China: North & Northeast",
+        kind: "political-divisions"
+      },
+      {
+        id: "china-east-political-divisions",
+        activityId: "china-east-political-divisions",
+        title: "China: East",
+        kind: "political-divisions"
+      },
+      {
+        id: "china-south-central-political-divisions",
+        activityId: "china-south-central-political-divisions",
+        title: "China: South Central",
+        kind: "political-divisions"
+      },
+      {
+        id: "china-southwest-political-divisions",
+        activityId: "china-southwest-political-divisions",
+        title: "China: Southwest",
+        kind: "political-divisions"
+      },
+      {
+        id: "china-northwest-political-divisions",
+        activityId: "china-northwest-political-divisions",
+        title: "China: Northwest",
+        kind: "political-divisions"
       },
       {
         id: "mainland-southeast-asia-countries",
@@ -336,6 +798,94 @@ export const journeyPresets = [
     ]
   },
   {
+    id: "india",
+    title: "India",
+    description: "Learn India's states and union territories by region.",
+    status: "available",
+    steps: [
+      {
+        id: "india-north-political-divisions",
+        activityId: "india-north-political-divisions",
+        title: "India: North",
+        kind: "political-divisions"
+      },
+      {
+        id: "india-west-central-political-divisions",
+        activityId: "india-west-central-political-divisions",
+        title: "India: West & Central",
+        kind: "political-divisions"
+      },
+      {
+        id: "india-east-political-divisions",
+        activityId: "india-east-political-divisions",
+        title: "India: East",
+        kind: "political-divisions"
+      },
+      {
+        id: "india-northeast-political-divisions",
+        activityId: "india-northeast-political-divisions",
+        title: "India: Northeast",
+        kind: "political-divisions"
+      },
+      {
+        id: "india-south-political-divisions",
+        activityId: "india-south-political-divisions",
+        title: "India: South",
+        kind: "political-divisions"
+      },
+      {
+        id: "india-islands-political-divisions",
+        activityId: "india-islands-political-divisions",
+        title: "India: Islands",
+        kind: "political-divisions"
+      }
+    ]
+  },
+  {
+    id: "japan",
+    title: "Japan",
+    description: "Learn Japan's prefectures by region.",
+    status: "available",
+    steps: [
+      {
+        id: "japan-hokkaido-tohoku-political-divisions",
+        activityId: "japan-hokkaido-tohoku-political-divisions",
+        title: "Japan: Hokkaido & Tohoku",
+        kind: "political-divisions"
+      },
+      {
+        id: "japan-kanto-political-divisions",
+        activityId: "japan-kanto-political-divisions",
+        title: "Japan: Kanto",
+        kind: "political-divisions"
+      },
+      {
+        id: "japan-chubu-political-divisions",
+        activityId: "japan-chubu-political-divisions",
+        title: "Japan: Chubu",
+        kind: "political-divisions"
+      },
+      {
+        id: "japan-kansai-political-divisions",
+        activityId: "japan-kansai-political-divisions",
+        title: "Japan: Kansai",
+        kind: "political-divisions"
+      },
+      {
+        id: "japan-chugoku-shikoku-political-divisions",
+        activityId: "japan-chugoku-shikoku-political-divisions",
+        title: "Japan: Chugoku & Shikoku",
+        kind: "political-divisions"
+      },
+      {
+        id: "japan-kyushu-okinawa-political-divisions",
+        activityId: "japan-kyushu-okinawa-political-divisions",
+        title: "Japan: Kyushu & Okinawa",
+        kind: "political-divisions"
+      }
+    ]
+  },
+  {
     id: "oceania",
     title: "Oceania",
     description: "Learn Australia, New Zealand, Pacific islands, and nearby territories.",
@@ -346,6 +896,12 @@ export const journeyPresets = [
         activityId: "oceania-pacific-countries",
         title: "Oceania and Pacific Countries",
         kind: "countries"
+      },
+      {
+        id: "australia-states-territories",
+        activityId: "australia-states-territories",
+        title: "Australia States & Territories",
+        kind: "political-divisions"
       }
     ]
   },
@@ -407,6 +963,12 @@ export const journeyPresets = [
         activityId: "oceania-pacific-countries",
         title: "Oceania and Pacific Countries",
         kind: "countries"
+      },
+      {
+        id: "australia-states-territories",
+        activityId: "australia-states-territories",
+        title: "Australia States & Territories",
+        kind: "political-divisions"
       },
       {
         id: "caribbean",

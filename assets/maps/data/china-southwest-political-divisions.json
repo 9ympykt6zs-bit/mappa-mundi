@@ -1,0 +1,87 @@
+{
+  "id": "china-southwest-political-divisions",
+  "title": "China: Southwest",
+  "targetNoun": "political division",
+  "visibleAnswerLimit": 5,
+  "map": {
+    "region": "china-southwest-political-divisions",
+    "admin1Source": "china-admin1"
+  },
+  "features": [
+    {
+      "id": "chongqing",
+      "name": "Chongqing",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "chongqing",
+      "iso_3166_2": "CN-CQ",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        107.73,
+        30.0173
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "sichuan",
+      "name": "Sichuan",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "sichuan",
+      "iso_3166_2": "CN-SC",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        102.384,
+        30.5431
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "guizhou",
+      "name": "Guizhou",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "guizhou",
+      "iso_3166_2": "CN-GZ",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        106.559,
+        26.8033
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "yunnan",
+      "name": "Yunnan",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "yunnan",
+      "iso_3166_2": "CN-YN",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        101.661,
+        24.4603
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tibet",
+      "name": "Tibet",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tibet",
+      "iso_3166_2": "CN-XZ",
+      "color": "#d88052",
+      "labelAnchor": [
+        88.4137,
+        31.4515
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

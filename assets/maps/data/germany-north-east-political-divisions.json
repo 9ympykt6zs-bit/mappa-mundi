@@ -1,0 +1,162 @@
+{
+  "id": "germany-north-east-political-divisions",
+  "title": "Germany: North & East",
+  "targetNoun": "state",
+  "visibleAnswerLimit": 8,
+  "map": {
+    "region": "germany-north-east-political-divisions",
+    "admin1Source": "germany-admin1"
+  },
+  "features": [
+    {
+      "id": "schleswig-holstein",
+      "name": "Schleswig-Holstein",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "schleswig-holstein",
+      "iso_3166_2": "DE-SH",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        9.846,
+        54.1315
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "hamburg",
+      "name": "Hamburg",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "hamburg",
+      "iso_3166_2": "DE-HH",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        10.0344,
+        53.559
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "bremen",
+      "name": "Bremen",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "bremen",
+      "iso_3166_2": "DE-HB",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        8.743,
+        53.1211
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "lower-saxony",
+      "name": "Lower Saxony",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "lower-saxony",
+      "iso_3166_2": "DE-NI",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        8.8618,
+        52.775
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "mecklenburg-vorpommern",
+      "name": "Mecklenburg-Vorpommern",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "mecklenburg-vorpommern",
+      "iso_3166_2": "DE-MV",
+      "color": "#d88052",
+      "labelAnchor": [
+        12.5647,
+        53.7528
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "brandenburg",
+      "name": "Brandenburg",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "brandenburg",
+      "iso_3166_2": "DE-BB",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        12.9206,
+        52.8156
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "berlin",
+      "name": "Berlin",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "berlin",
+      "iso_3166_2": "DE-BE",
+      "color": "#60a6a6",
+      "labelAnchor": [
+        13.4213,
+        52.5131
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "saxony-anhalt",
+      "name": "Saxony-Anhalt",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "saxony-anhalt",
+      "iso_3166_2": "DE-ST",
+      "color": "#c96b6b",
+      "labelAnchor": [
+        11.6796,
+        51.9338
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "saxony",
+      "name": "Saxony",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "saxony",
+      "iso_3166_2": "DE-SN",
+      "color": "#b7a14a",
+      "labelAnchor": [
+        13.4596,
+        51.0053
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "thuringia",
+      "name": "Thuringia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "thuringia",
+      "iso_3166_2": "DE-TH",
+      "color": "#5e8f6f",
+      "labelAnchor": [
+        11.0976,
+        50.9052
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

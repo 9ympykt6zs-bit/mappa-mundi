@@ -1,0 +1,117 @@
+{
+  "id": "japan-hokkaido-tohoku-political-divisions",
+  "title": "Japan: Hokkaido & Tohoku",
+  "targetNoun": "prefecture",
+  "visibleAnswerLimit": 7,
+  "map": {
+    "region": "japan-hokkaido-tohoku-political-divisions",
+    "admin1Source": "japan-admin1"
+  },
+  "features": [
+    {
+      "id": "hokkaido",
+      "name": "Hokkaido",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "hokkaido",
+      "iso_3166_2": "JP-01",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        142.805,
+        43.37
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "aomori",
+      "name": "Aomori",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "aomori",
+      "iso_3166_2": "JP-02",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        140.769,
+        40.6385
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "iwate",
+      "name": "Iwate",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "iwate",
+      "iso_3166_2": "JP-03",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        141.364,
+        39.5715
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "miyagi",
+      "name": "Miyagi",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "miyagi",
+      "iso_3166_2": "JP-04",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        140.972,
+        38.5307
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "akita",
+      "name": "Akita",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "akita",
+      "iso_3166_2": "JP-05",
+      "color": "#d88052",
+      "labelAnchor": [
+        140.334,
+        39.7318
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "yamagata",
+      "name": "Yamagata",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "yamagata",
+      "iso_3166_2": "JP-06",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        140.084,
+        38.4024
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "fukushima",
+      "name": "Fukushima",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "fukushima",
+      "iso_3166_2": "JP-07",
+      "color": "#60a6a6",
+      "labelAnchor": [
+        140.099,
+        37.4153
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "id": "russia-southern-federal-subjects",
+  "title": "Russia: Southern",
+  "targetNoun": "federal subject",
+  "visibleAnswerLimit": 6,
+  "map": {
+    "region": "russia-southern-federal-subjects",
+    "admin1Source": "russia-admin1"
+  },
+  "features": [
+    {
+      "id": "republic-of-adygea",
+      "name": "Republic of Adygea",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "republic-of-adygea",
+      "iso_3166_2": "RU-AD",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        40.1293,
+        44.4658
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "astrakhan-oblast",
+      "name": "Astrakhan Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "astrakhan-oblast",
+      "iso_3166_2": "RU-AST",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        47.7227,
+        47.0334
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "volgograd-oblast",
+      "name": "Volgograd Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "volgograd-oblast",
+      "iso_3166_2": "RU-VGG",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        44.4488,
+        49.5014
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "republic-of-kalmykia",
+      "name": "Republic of Kalmykia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "republic-of-kalmykia",
+      "iso_3166_2": "RU-KL",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        45.4681,
+        46.5191
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "krasnodar-krai",
+      "name": "Krasnodar Krai",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "krasnodar-krai",
+      "iso_3166_2": "RU-KDA",
+      "color": "#d88052",
+      "labelAnchor": [
+        39.4688,
+        45.8397
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "rostov-oblast",
+      "name": "Rostov Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "rostov-oblast",
+      "iso_3166_2": "RU-ROS",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        41.2613,
+        47.9913
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

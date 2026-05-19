@@ -1,0 +1,124 @@
+{
+  "id": "france-northern-eastern-regions-political-divisions",
+  "title": "France: Northern & Eastern Regions",
+  "targetNoun": "region",
+  "visibleAnswerLimit": 8,
+  "map": {
+    "region": "france-northern-eastern-regions-political-divisions",
+    "admin1Source": "france-admin1"
+  },
+  "features": [
+    {
+      "id": "brittany",
+      "name": "Brittany",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "brittany",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        -2.8522,
+        48.1955
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "normandy",
+      "name": "Normandy",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "normandy",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        0.1016,
+        49.1024
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "hauts-de-france",
+      "name": "Hauts-de-France",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "hauts-de-france",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        2.8215,
+        49.9416
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "ile-de-france",
+      "name": "Île-de-France",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "ile-de-france",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        2.3559,
+        48.8035
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "grand-est",
+      "name": "Grand Est",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "grand-est",
+      "color": "#d88052",
+      "labelAnchor": [
+        5.8085,
+        48.6519
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "bourgogne-franche-comte",
+      "name": "Bourgogne-Franche-Comté",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "bourgogne-franche-comte",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        5.2058,
+        47.2807
+      ],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "centre-val-de-loire",
+      "name": "Centre-Val de Loire",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "centre-val-de-loire",
+      "color": "#60a6a6",
+      "labelAnchor": [
+        1.6668,
+        47.5053
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "pays-de-la-loire",
+      "name": "Pays de la Loire",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "pays-de-la-loire",
+      "color": "#c96b6b",
+      "labelAnchor": [
+        -0.7827,
+        47.5109
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

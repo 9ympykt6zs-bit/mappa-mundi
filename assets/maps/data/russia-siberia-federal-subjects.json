@@ -1,0 +1,162 @@
+{
+  "id": "russia-siberia-federal-subjects",
+  "title": "Russia: Siberia",
+  "targetNoun": "federal subject",
+  "visibleAnswerLimit": 8,
+  "map": {
+    "region": "russia-siberia-federal-subjects",
+    "admin1Source": "russia-admin1"
+  },
+  "features": [
+    {
+      "id": "altai-krai",
+      "name": "Altai Krai",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "altai-krai",
+      "iso_3166_2": "RU-ALT",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        82.8667,
+        52.4268
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "altai-republic",
+      "name": "Altai Republic",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "altai-republic",
+      "iso_3166_2": "RU-AL",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        86.937,
+        50.9782
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "irkutsk-oblast",
+      "name": "Irkutsk Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "irkutsk-oblast",
+      "iso_3166_2": "RU-IRK",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        105.966,
+        56.8255
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "kemerovo-oblast",
+      "name": "Kemerovo Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "kemerovo-oblast",
+      "iso_3166_2": "RU-KEM",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        87.1676,
+        54.6462
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "republic-of-khakassia",
+      "name": "Republic of Khakassia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "republic-of-khakassia",
+      "iso_3166_2": "RU-KK",
+      "color": "#d88052",
+      "labelAnchor": [
+        89.8405,
+        53.3643
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "krasnoyarsk-krai",
+      "name": "Krasnoyarsk Krai",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "krasnoyarsk-krai",
+      "iso_3166_2": "RU-KYA",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        95.2029,
+        65.5602
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "novosibirsk-oblast",
+      "name": "Novosibirsk Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "novosibirsk-oblast",
+      "iso_3166_2": "RU-NVS",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        80.0832,
+        55.3139
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "omsk-oblast",
+      "name": "Omsk Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "omsk-oblast",
+      "iso_3166_2": "RU-OMS",
+      "color": "#d65a8c",
+      "labelAnchor": [
+        73.3995,
+        56.0471
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tomsk-oblast",
+      "name": "Tomsk Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tomsk-oblast",
+      "iso_3166_2": "RU-TOM",
+      "color": "#5aa6a6",
+      "labelAnchor": [
+        82.2299,
+        58.4467
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tuva-republic",
+      "name": "Tuva Republic",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tuva-republic",
+      "iso_3166_2": "RU-TY",
+      "color": "#a67a5a",
+      "labelAnchor": [
+        93.9927,
+        51.6051
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

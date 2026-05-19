@@ -1,0 +1,147 @@
+{
+  "id": "japan-chugoku-shikoku-political-divisions",
+  "title": "Japan: Chugoku & Shikoku",
+  "targetNoun": "prefecture",
+  "visibleAnswerLimit": 8,
+  "map": {
+    "region": "japan-chugoku-shikoku-political-divisions",
+    "admin1Source": "japan-admin1"
+  },
+  "features": [
+    {
+      "id": "tottori",
+      "name": "Tottori",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tottori",
+      "iso_3166_2": "JP-31",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        133.819,
+        35.3657
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "shimane",
+      "name": "Shimane",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "shimane",
+      "iso_3166_2": "JP-32",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        132.603,
+        35.0972
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "okayama",
+      "name": "Okayama",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "okayama",
+      "iso_3166_2": "JP-33",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        133.831,
+        34.8521
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "hiroshima",
+      "name": "Hiroshima",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "hiroshima",
+      "iso_3166_2": "JP-34",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        132.853,
+        34.6067
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "yamaguchi",
+      "name": "Yamaguchi",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "yamaguchi",
+      "iso_3166_2": "JP-35",
+      "color": "#d88052",
+      "labelAnchor": [
+        131.645,
+        34.2154
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tokushima",
+      "name": "Tokushima",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tokushima",
+      "iso_3166_2": "JP-36",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        134.2,
+        33.8546
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "kagawa",
+      "name": "Kagawa",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "kagawa",
+      "iso_3166_2": "JP-37",
+      "color": "#60a6a6",
+      "labelAnchor": [
+        134.001,
+        34.2162
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "ehime",
+      "name": "Ehime",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "ehime",
+      "iso_3166_2": "JP-38",
+      "color": "#c96b6b",
+      "labelAnchor": [
+        132.916,
+        33.8141
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "kochi",
+      "name": "Kochi",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "kochi",
+      "iso_3166_2": "JP-39",
+      "color": "#b7a14a",
+      "labelAnchor": [
+        133.442,
+        33.6129
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

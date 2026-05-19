@@ -1,0 +1,89 @@
+{
+  "id": "central-africa-countries",
+  "title": "Central Africa Countries",
+  "sequence": 73,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "central-africa"
+  },
+  "features": [
+    {
+      "id": "cameroon",
+      "name": "Cameroon",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "CMR",
+      "color": "#ef4444",
+      "labelAnchor": [12.47, 4.59],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "central-african-republic",
+      "name": "Central African Republic",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "CAF",
+      "color": "#f59e0b",
+      "labelAnchor": [20.91, 6.99],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "chad",
+      "name": "Chad",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "TCD",
+      "color": "#22c55e",
+      "labelAnchor": [18.65, 15.14],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "equatorial-guinea",
+      "name": "Equatorial Guinea",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "GNQ",
+      "color": "#3b82f6",
+      "labelAnchor": [8.99, 2.33],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "gabon",
+      "name": "Gabon",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "GAB",
+      "color": "#a855f7",
+      "labelAnchor": [11.84, -0.44],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "republic-of-the-congo",
+      "name": "Republic of the Congo",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "COG",
+      "color": "#06b6d4",
+      "labelAnchor": [15.9, 0.14],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "democratic-republic-of-the-congo",
+      "name": "Democratic Republic of the Congo",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "COD",
+      "color": "#ec4899",
+      "labelAnchor": [23.46, -1.86],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    }
+  ]
+}

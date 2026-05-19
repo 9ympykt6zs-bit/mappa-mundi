@@ -9,14 +9,80 @@
   },
   "features": [
     {
+      "id": "mauritania",
+      "name": "Mauritania",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "MRT",
+      "color": "#ef4444",
+      "labelAnchor": [-9.74, 19.59],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "mali",
+      "name": "Mali",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "MLI",
+      "color": "#f59e0b",
+      "labelAnchor": [-2.04, 18.69],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "senegal",
+      "name": "Senegal",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "SEN",
+      "color": "#22c55e",
+      "labelAnchor": [-14.78, 15.14],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "the-gambia",
+      "name": "The Gambia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "GMB",
+      "color": "#3b82f6",
+      "labelAnchor": [-15.0, 13.64],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "guinea-bissau",
+      "name": "Guinea-Bissau",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "GNB",
+      "color": "#a855f7",
+      "labelAnchor": [-14.52, 12.16],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
       "id": "guinea",
       "name": "Guinea",
       "type": "country",
       "shape": "path",
       "isoA3": "GIN",
-      "color": "#ef4444",
-      "labelAnchor": [-10.9, 10.4],
+      "color": "#06b6d4",
+      "labelAnchor": [-10.02, 10.62],
       "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "sierra-leone",
+      "name": "Sierra Leone",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "SLE",
+      "color": "#ec4899",
+      "labelAnchor": [-11.76, 8.62],
+      "labelFontSize": 10,
       "labelRotation": 0
     },
     {
@@ -25,41 +91,8 @@
       "type": "country",
       "shape": "path",
       "isoA3": "LBR",
-      "color": "#3b82f6",
-      "labelAnchor": [-9.3, 6.5],
-      "labelFontSize": 10,
-      "labelRotation": 0
-    },
-    {
-      "id": "ivory-coast",
-      "name": "Ivory Coast",
-      "type": "country",
-      "shape": "path",
-      "isoA3": "CIV",
-      "color": "#22c55e",
-      "labelAnchor": [-5.55, 7.55],
-      "labelFontSize": 10,
-      "labelRotation": 0
-    },
-    {
-      "id": "ghana",
-      "name": "Ghana",
-      "type": "country",
-      "shape": "path",
-      "isoA3": "GHA",
-      "color": "#f59e0b",
-      "labelAnchor": [-1.1, 7.9],
-      "labelFontSize": 11,
-      "labelRotation": 0
-    },
-    {
-      "id": "burkina-faso",
-      "name": "Burkina Faso",
-      "type": "country",
-      "shape": "path",
-      "isoA3": "BFA",
-      "color": "#a855f7",
-      "labelAnchor": [-1.7, 12.3],
+      "color": "#84cc16",
+      "labelAnchor": [-9.46, 6.45],
       "labelFontSize": 10,
       "labelRotation": 0
     }

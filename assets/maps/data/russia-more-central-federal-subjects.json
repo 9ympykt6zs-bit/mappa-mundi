@@ -1,0 +1,147 @@
+{
+  "id": "russia-more-central-federal-subjects",
+  "title": "Russia: More Central",
+  "targetNoun": "federal subject",
+  "visibleAnswerLimit": 8,
+  "map": {
+    "region": "russia-more-central-federal-subjects",
+    "admin1Source": "russia-admin1"
+  },
+  "features": [
+    {
+      "id": "belgorod-oblast",
+      "name": "Belgorod Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "belgorod-oblast",
+      "iso_3166_2": "RU-BEL",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        37.277,
+        50.8757
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "bryansk-oblast",
+      "name": "Bryansk Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "bryansk-oblast",
+      "iso_3166_2": "RU-BRY",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        33.2803,
+        53.0868
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "voronezh-oblast",
+      "name": "Voronezh Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "voronezh-oblast",
+      "iso_3166_2": "RU-VOR",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        40.5223,
+        50.7774
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "kaluga-oblast",
+      "name": "Kaluga Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "kaluga-oblast",
+      "iso_3166_2": "RU-KLU",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        35.3416,
+        54.2421
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "kursk-oblast",
+      "name": "Kursk Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "kursk-oblast",
+      "iso_3166_2": "RU-KRS",
+      "color": "#d88052",
+      "labelAnchor": [
+        36.2921,
+        51.7358
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "lipetsk-oblast",
+      "name": "Lipetsk Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "lipetsk-oblast",
+      "iso_3166_2": "RU-LIP",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        39.2073,
+        52.7462
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "oryol-oblast",
+      "name": "Oryol Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "oryol-oblast",
+      "iso_3166_2": "RU-ORL",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        36.4166,
+        52.8778
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "smolensk-oblast",
+      "name": "Smolensk Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "smolensk-oblast",
+      "iso_3166_2": "RU-SMO",
+      "color": "#d65a8c",
+      "labelAnchor": [
+        33.0803,
+        54.6726
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tambov-oblast",
+      "name": "Tambov Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tambov-oblast",
+      "iso_3166_2": "RU-TAM",
+      "color": "#5aa6a6",
+      "labelAnchor": [
+        41.5945,
+        52.7808
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

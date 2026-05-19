@@ -1,0 +1,89 @@
+{
+  "id": "more-west-africa-countries",
+  "title": "More West Africa Countries",
+  "sequence": 72,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "more-west-africa"
+  },
+  "features": [
+    {
+      "id": "ivory-coast",
+      "name": "Ivory Coast",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "CIV",
+      "color": "#ef4444",
+      "labelAnchor": [-5.57, 7.49],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "ghana",
+      "name": "Ghana",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "GHA",
+      "color": "#f59e0b",
+      "labelAnchor": [-1.04, 7.72],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "togo",
+      "name": "Togo",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "TGO",
+      "color": "#22c55e",
+      "labelAnchor": [1.06, 8.81],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "benin",
+      "name": "Benin",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "BEN",
+      "color": "#3b82f6",
+      "labelAnchor": [2.35, 10.32],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "burkina-faso",
+      "name": "Burkina Faso",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "BFA",
+      "color": "#a855f7",
+      "labelAnchor": [-1.36, 12.67],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "niger",
+      "name": "Niger",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "NER",
+      "color": "#06b6d4",
+      "labelAnchor": [9.5, 17.45],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "nigeria",
+      "name": "Nigeria",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "NGA",
+      "color": "#ec4899",
+      "labelAnchor": [7.5, 9.44],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

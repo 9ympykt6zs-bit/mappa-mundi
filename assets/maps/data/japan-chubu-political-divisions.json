@@ -1,0 +1,147 @@
+{
+  "id": "japan-chubu-political-divisions",
+  "title": "Japan: Chubu",
+  "targetNoun": "prefecture",
+  "visibleAnswerLimit": 8,
+  "map": {
+    "region": "japan-chubu-political-divisions",
+    "admin1Source": "japan-admin1"
+  },
+  "features": [
+    {
+      "id": "niigata",
+      "name": "Niigata",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "niigata",
+      "iso_3166_2": "JP-15",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        139.005,
+        37.5471
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "toyama",
+      "name": "Toyama",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "toyama",
+      "iso_3166_2": "JP-16",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        137.246,
+        36.596
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "ishikawa",
+      "name": "Ishikawa",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "ishikawa",
+      "iso_3166_2": "JP-17",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        136.677,
+        36.5654
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "fukui",
+      "name": "Fukui",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "fukui",
+      "iso_3166_2": "JP-18",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        136.316,
+        35.9297
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "yamanashi",
+      "name": "Yamanashi",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "yamanashi",
+      "iso_3166_2": "JP-19",
+      "color": "#d88052",
+      "labelAnchor": [
+        138.645,
+        35.6149
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "nagano",
+      "name": "Nagano",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "nagano",
+      "iso_3166_2": "JP-20",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        138.019,
+        36.0666
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "gifu",
+      "name": "Gifu",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "gifu",
+      "iso_3166_2": "JP-21",
+      "color": "#60a6a6",
+      "labelAnchor": [
+        136.941,
+        35.8522
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "shizuoka",
+      "name": "Shizuoka",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "shizuoka",
+      "iso_3166_2": "JP-22",
+      "color": "#c96b6b",
+      "labelAnchor": [
+        138.306,
+        35.0359
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "aichi",
+      "name": "Aichi",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "aichi",
+      "iso_3166_2": "JP-23",
+      "color": "#b7a14a",
+      "labelAnchor": [
+        137.214,
+        34.9973
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

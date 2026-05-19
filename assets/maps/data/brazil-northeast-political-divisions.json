@@ -1,0 +1,147 @@
+{
+  "id": "brazil-northeast-political-divisions",
+  "title": "Brazil: Northeast",
+  "targetNoun": "state or federal district",
+  "visibleAnswerLimit": 8,
+  "map": {
+    "region": "brazil-northeast-political-divisions",
+    "admin1Source": "brazil-admin1"
+  },
+  "features": [
+    {
+      "id": "alagoas",
+      "name": "Alagoas",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "alagoas",
+      "iso_3166_2": "BR-AL",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        -36.6917,
+        -9.7739
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "bahia",
+      "name": "Bahia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "bahia",
+      "iso_3166_2": "BR-BA",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        -41.8027,
+        -12.3651
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "ceara",
+      "name": "Ceará",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "ceara",
+      "iso_3166_2": "BR-CE",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        -39.3429,
+        -5.376
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "maranhao",
+      "name": "Maranhão",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "maranhao",
+      "iso_3166_2": "BR-MA",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        -45.389,
+        -5.019
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "paraiba",
+      "name": "Paraíba",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "paraiba",
+      "iso_3166_2": "BR-PB",
+      "color": "#d88052",
+      "labelAnchor": [
+        -36.2726,
+        -7.3423
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "pernambuco",
+      "name": "Pernambuco",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "pernambuco",
+      "iso_3166_2": "BR-PE",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        -37.2958,
+        -8.4728
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "piaui",
+      "name": "Piauí",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "piaui",
+      "iso_3166_2": "BR-PI",
+      "color": "#60a6a6",
+      "labelAnchor": [
+        -43.1974,
+        -8.087
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "rio-grande-do-norte",
+      "name": "Rio Grande do Norte",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "rio-grande-do-norte",
+      "iso_3166_2": "BR-RN",
+      "color": "#c96b6b",
+      "labelAnchor": [
+        -36.5472,
+        -5.6616
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "sergipe",
+      "name": "Sergipe",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "sergipe",
+      "iso_3166_2": "BR-SE",
+      "color": "#b7a14a",
+      "labelAnchor": [
+        -37.3836,
+        -10.5918
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

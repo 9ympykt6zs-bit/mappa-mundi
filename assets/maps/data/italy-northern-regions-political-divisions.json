@@ -1,0 +1,124 @@
+{
+  "id": "italy-northern-regions-political-divisions",
+  "title": "Italy: Northern Regions",
+  "targetNoun": "region",
+  "visibleAnswerLimit": 8,
+  "map": {
+    "region": "italy-northern-regions-political-divisions",
+    "admin1Source": "italy-admin1"
+  },
+  "features": [
+    {
+      "id": "aosta-valley",
+      "name": "Aosta Valley",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "aosta-valley",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        7.3506,
+        45.7126
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "piedmont",
+      "name": "Piedmont",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "piedmont",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        8.1438,
+        45.3097
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "liguria",
+      "name": "Liguria",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "liguria",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        8.7381,
+        44.2439
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "lombardy",
+      "name": "Lombardy",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "lombardy",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        9.5962,
+        45.5798
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "trentino-alto-adige",
+      "name": "Trentino-Alto Adige",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "trentino-alto-adige",
+      "color": "#d88052",
+      "labelAnchor": [
+        11.2179,
+        46.3743
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "veneto",
+      "name": "Veneto",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "veneto",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        11.8237,
+        45.5949
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "friuli-venezia-giulia",
+      "name": "Friuli Venezia Giulia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "friuli-venezia-giulia",
+      "color": "#60a6a6",
+      "labelAnchor": [
+        13.2919,
+        45.9607
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "emilia-romagna",
+      "name": "Emilia-Romagna",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "emilia-romagna",
+      "color": "#c96b6b",
+      "labelAnchor": [
+        11.2403,
+        44.4728
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

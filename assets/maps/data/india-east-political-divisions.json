@@ -1,0 +1,87 @@
+{
+  "id": "india-east-political-divisions",
+  "title": "India: East",
+  "targetNoun": "state or union territory",
+  "visibleAnswerLimit": 5,
+  "map": {
+    "region": "india-east-political-divisions",
+    "admin1Source": "india-admin1"
+  },
+  "features": [
+    {
+      "id": "bihar",
+      "name": "Bihar",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "bihar",
+      "iso_3166_2": "IN-BR",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        85.8134,
+        25.6853
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "jharkhand",
+      "name": "Jharkhand",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "jharkhand",
+      "iso_3166_2": "IN-JH",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        85.0584,
+        23.5221
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "odisha",
+      "name": "Odisha",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "odisha",
+      "iso_3166_2": "IN-OR",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        84.4341,
+        20.625
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "west-bengal",
+      "name": "West Bengal",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "west-bengal",
+      "iso_3166_2": "IN-WB",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        87.7289,
+        23.0523
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "sikkim",
+      "name": "Sikkim",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "sikkim",
+      "iso_3166_2": "IN-SK",
+      "color": "#d88052",
+      "labelAnchor": [
+        88.4482,
+        27.5709
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

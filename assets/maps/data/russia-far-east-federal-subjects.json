@@ -1,0 +1,102 @@
+{
+  "id": "russia-far-east-federal-subjects",
+  "title": "Russia: Far East",
+  "targetNoun": "federal subject",
+  "visibleAnswerLimit": 6,
+  "map": {
+    "region": "russia-far-east-federal-subjects",
+    "admin1Source": "russia-admin1"
+  },
+  "features": [
+    {
+      "id": "primorsky-krai",
+      "name": "Primorsky Krai",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "primorsky-krai",
+      "iso_3166_2": "RU-PRI",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        134.594,
+        44.8622
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "khabarovsk-krai",
+      "name": "Khabarovsk Krai",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "khabarovsk-krai",
+      "iso_3166_2": "RU-KHA",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        135.443,
+        57.0232
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "amur-oblast",
+      "name": "Amur Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "amur-oblast",
+      "iso_3166_2": "RU-AMU",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        128.354,
+        52.9236
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "jewish-autonomous-oblast",
+      "name": "Jewish Autonomous Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "jewish-autonomous-oblast",
+      "iso_3166_2": "RU-YEV",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        132.758,
+        48.64
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "sakhalin-oblast",
+      "name": "Sakhalin Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "sakhalin-oblast",
+      "iso_3166_2": "RU-SAK",
+      "color": "#d88052",
+      "labelAnchor": [
+        152.467,
+        47.3479
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "magadan-oblast",
+      "name": "Magadan Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "magadan-oblast",
+      "iso_3166_2": "RU-MAG",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        153.797,
+        62.6257
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

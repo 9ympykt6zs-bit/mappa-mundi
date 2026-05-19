@@ -1,0 +1,147 @@
+{
+  "id": "russia-central-federal-subjects",
+  "title": "Russia: Central",
+  "targetNoun": "federal subject",
+  "visibleAnswerLimit": 8,
+  "map": {
+    "region": "russia-central-federal-subjects",
+    "admin1Source": "russia-admin1"
+  },
+  "features": [
+    {
+      "id": "moscow",
+      "name": "Moscow",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "moscow",
+      "iso_3166_2": "RU-MOS",
+      "color": "#4f83cc",
+      "labelAnchor": [
+        37.6188,
+        55.7177
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "moscow-oblast",
+      "name": "Moscow Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "moscow-oblast",
+      "iso_3166_2": "RU-MOW",
+      "color": "#7aa35a",
+      "labelAnchor": [
+        38.671,
+        55.1508
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tver-oblast",
+      "name": "Tver Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tver-oblast",
+      "iso_3166_2": "RU-TVE",
+      "color": "#d9b48f",
+      "labelAnchor": [
+        34.5445,
+        57.0297
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "yaroslavl-oblast",
+      "name": "Yaroslavl Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "yaroslavl-oblast",
+      "iso_3166_2": "RU-YAR",
+      "color": "#8d9fd6",
+      "labelAnchor": [
+        39.2547,
+        57.7329
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "vladimir-oblast",
+      "name": "Vladimir Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "vladimir-oblast",
+      "iso_3166_2": "RU-VLA",
+      "color": "#d88052",
+      "labelAnchor": [
+        40.6207,
+        55.8966
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "ivanovo-oblast",
+      "name": "Ivanovo Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "ivanovo-oblast",
+      "iso_3166_2": "RU-IVA",
+      "color": "#7a5aa6",
+      "labelAnchor": [
+        41.6244,
+        57.1213
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "kostroma-oblast",
+      "name": "Kostroma Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "kostroma-oblast",
+      "iso_3166_2": "RU-KOS",
+      "color": "#b7a74a",
+      "labelAnchor": [
+        43.4689,
+        58.3882
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "ryazan-oblast",
+      "name": "Ryazan Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "ryazan-oblast",
+      "iso_3166_2": "RU-RYA",
+      "color": "#d65a8c",
+      "labelAnchor": [
+        40.6258,
+        54.3363
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tula-oblast",
+      "name": "Tula Oblast",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tula-oblast",
+      "iso_3166_2": "RU-TUL",
+      "color": "#5aa6a6",
+      "labelAnchor": [
+        37.4161,
+        54.0668
+      ],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

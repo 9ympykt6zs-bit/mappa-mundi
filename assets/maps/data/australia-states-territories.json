@@ -1,0 +1,108 @@
+{
+  "id": "australia-states-territories",
+  "title": "Australia: States & Territories",
+  "targetNoun": "state or territory",
+  "visibleAnswerLimit": 8,
+  "map": {
+    "region": "australia-states-territories",
+    "admin1Source": "australia-admin1"
+  },
+  "features": [
+    {
+      "id": "new-south-wales",
+      "name": "New South Wales",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "new-south-wales",
+      "iso_3166_2": "AU-NSW",
+      "color": "#4f83cc",
+      "labelAnchor": [146.0, -32.0],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "queensland",
+      "name": "Queensland",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "queensland",
+      "iso_3166_2": "AU-QLD",
+      "color": "#7aa35a",
+      "labelAnchor": [145.0, -21.0],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "south-australia",
+      "name": "South Australia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "south-australia",
+      "iso_3166_2": "AU-SA",
+      "color": "#d9b48f",
+      "labelAnchor": [135.5, -30.0],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "tasmania",
+      "name": "Tasmania",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "tasmania",
+      "iso_3166_2": "AU-TAS",
+      "color": "#8d9fd6",
+      "labelAnchor": [146.7, -42.0],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "victoria",
+      "name": "Victoria",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "victoria",
+      "iso_3166_2": "AU-VIC",
+      "color": "#d88052",
+      "labelAnchor": [144.0, -37.0],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "western-australia",
+      "name": "Western Australia",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "western-australia",
+      "iso_3166_2": "AU-WA",
+      "color": "#7a5aa6",
+      "labelAnchor": [121.0, -26.0],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "australian-capital-territory",
+      "name": "Australian Capital Territory",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "australian-capital-territory",
+      "iso_3166_2": "AU-ACT",
+      "color": "#b7a74a",
+      "labelAnchor": [149.1, -35.4],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "northern-territory",
+      "name": "Northern Territory",
+      "type": "admin1",
+      "shape": "path",
+      "sourceFeatureId": "northern-territory",
+      "iso_3166_2": "AU-NT",
+      "color": "#d65a8c",
+      "labelAnchor": [133.0, -19.0],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    }
+  ]
+}

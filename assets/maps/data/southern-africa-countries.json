@@ -1,6 +1,7 @@
 {
   "id": "southern-africa-countries",
   "title": "Southern Africa Countries",
+  "sequence": 75,
   "targetNoun": "country",
   "visibleAnswerLimit": 10,
   "map": {
@@ -8,36 +9,36 @@
   },
   "features": [
     {
-      "id": "south-africa",
-      "name": "South Africa",
+      "id": "angola",
+      "name": "Angola",
       "type": "country",
       "shape": "path",
-      "isoA3": "ZAF",
+      "isoA3": "AGO",
+      "color": "#ef4444",
+      "labelAnchor": [17.98, -12.18],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "zambia",
+      "name": "Zambia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ZMB",
+      "color": "#f59e0b",
+      "labelAnchor": [26.4, -14.66],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "malawi",
+      "name": "Malawi",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "MWI",
       "color": "#22c55e",
-      "labelAnchor": [23.67, -29.71],
-      "labelFontSize": 13,
-      "labelRotation": 0
-    },
-    {
-      "id": "lesotho",
-      "name": "Lesotho",
-      "type": "country",
-      "shape": "path",
-      "isoA3": "LSO",
-      "color": "#a855f7",
-      "labelAnchor": [28.25, -29.48],
-      "labelFontSize": 11,
-      "labelRotation": 0
-    },
-    {
-      "id": "botswana",
-      "name": "Botswana",
-      "type": "country",
-      "shape": "path",
-      "isoA3": "BWA",
-      "color": "#38bdf8",
-      "labelAnchor": [24.18, -22.1],
-      "labelFontSize": 13,
+      "labelAnchor": [33.61, -13.39],
+      "labelFontSize": 10,
       "labelRotation": 0
     },
     {
@@ -46,20 +47,9 @@
       "type": "country",
       "shape": "path",
       "isoA3": "MOZ",
-      "color": "#f97316",
-      "labelAnchor": [35.3, -18.2],
+      "color": "#3b82f6",
+      "labelAnchor": [37.84, -13.94],
       "labelFontSize": 12,
-      "labelRotation": 0
-    },
-    {
-      "id": "namibia",
-      "name": "Namibia",
-      "type": "country",
-      "shape": "path",
-      "isoA3": "NAM",
-      "color": "#eab308",
-      "labelAnchor": [17.1, -20.58],
-      "labelFontSize": 13,
       "labelRotation": 0
     },
     {
@@ -69,7 +59,29 @@
       "shape": "path",
       "isoA3": "ZWE",
       "color": "#a855f7",
-      "labelAnchor": [29.8, -19.1],
+      "labelAnchor": [29.93, -18.91],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "botswana",
+      "name": "Botswana",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "BWA",
+      "color": "#06b6d4",
+      "labelAnchor": [24.18, -22.1],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "namibia",
+      "name": "Namibia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "NAM",
+      "color": "#ec4899",
+      "labelAnchor": [17.11, -20.58],
       "labelFontSize": 12,
       "labelRotation": 0
     }
