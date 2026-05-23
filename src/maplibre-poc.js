@@ -2565,6 +2565,21 @@ function isCompactTouchLayout() {
   return Boolean(window.matchMedia?.("(max-width: 760px), (max-width: 900px) and (max-height: 520px)")?.matches);
 }
 
+function isActiveGameplayScreen() {
+  return currentAppScreen === "journey-gameplay"
+    || currentAppScreen === "study-practice"
+    || (currentAppScreen === "free-play" && isStudyModeActive());
+}
+
+function isCurrentActivityComplete() {
+  const { completedCount, targetCount } = getSessionCompletionSummary();
+  return targetCount > 0 && completedCount >= targetCount;
+}
+
+function isGameplayNavigationLocked() {
+  return isActiveGameplayScreen() && !isCurrentActivityComplete();
+}
+
 function setHeaderTitle(fullTitle, options = {}) {
   if (!title) {
     return;
@@ -3812,6 +3827,11 @@ function bindUiEvents() {
       return;
     }
 
+    if (isGameplayNavigationLocked()) {
+      showFeedback("Finish this activity first.");
+      return;
+    }
+
     drillToHierarchyNode(button.dataset.menuRoot);
     closeBrowseDrawer();
   });
@@ -3820,6 +3840,11 @@ function bindUiEvents() {
     const card = event.target.closest("[data-activity-id]");
 
     if (!card) {
+      return;
+    }
+
+    if (isGameplayNavigationLocked()) {
+      showFeedback("Finish this activity first.");
       return;
     }
 
@@ -5760,6 +5785,11 @@ function renderOverviewLibrary() {
 }
 
 function toggleBrowseDrawer() {
+  if (isGameplayNavigationLocked()) {
+    showFeedback("Finish this activity first.");
+    return;
+  }
+
   setBrowseDrawerOpen(!isBrowseDrawerOpen);
 }
 
@@ -6534,6 +6564,11 @@ function renderNavigationAnswerBank(nodeId = activeHierarchyNodeId) {
     chip.textContent = child.badge ? `${child.label} (${child.badge})` : child.label;
     chip.disabled = Boolean(child.disabled);
     chip.addEventListener("click", () => {
+      if (isGameplayNavigationLocked()) {
+        showFeedback("Finish this activity first.");
+        return;
+      }
+
       if (!child.disabled) {
         closeBrowseDrawer();
         drillToHierarchyNode(child.id);
@@ -6876,10 +6911,14 @@ function handleTargetClick(targetIds) {
     ? runner.getTargetIdsAtMapPoint(targetIds, selectedFeature)
     : targetIds;
 
-  // With no answer chip selected, map clicks are navigation gestures. The app
-  // resolves the clicked map feature through the hierarchy and never treats it
-  // as a quiz placement attempt.
+  // No-chip map clicks are navigation gestures only outside locked gameplay.
+  // During gameplay they must not drill away from the current activity.
   if (!session.selectedId) {
+    if (isGameplayNavigationLocked()) {
+      showFeedback("Choose a label first.");
+      return;
+    }
+
     const navigationCandidates = targetIds && !Array.isArray(targetIds) && typeof targetIds.x === "number"
       ? runner.getNavigationCandidatesAtMapPoint(targetIds)
       : getNavigationCandidatesFromTargetIds(resolvedTargetIds);
@@ -8505,6 +8544,12 @@ function getCurrentActivitySequence(mapSet = activeMapSet) {
 }
 
 function openPreviousActivity() {
+  if (isGameplayNavigationLocked()) {
+    showFeedback("Finish this activity first.");
+    updateActivityNavigationControls();
+    return;
+  }
+
   const activitySequence = getCurrentActivitySequence(session.currentActivity.mapSet || activeMapSet);
   const currentIndex = activitySequence.findIndex((activity) => activity.id === selectedActivityId);
 
@@ -8518,6 +8563,12 @@ function openPreviousActivity() {
 }
 
 function openNextIncompleteActivity() {
+  if (isGameplayNavigationLocked()) {
+    showFeedback("Finish this activity first.");
+    updateActivityNavigationControls();
+    return;
+  }
+
   const activitySequence = getCurrentActivitySequence(session.currentActivity.mapSet || activeMapSet);
   const currentIndex = activitySequence.findIndex((activity) => activity.id === selectedActivityId);
 
@@ -8548,11 +8599,11 @@ function updateActivityNavigationControls() {
   const currentIndex = activitySequence.findIndex((activity) => activity.id === selectedActivityId);
 
   if (previousActivityButton) {
-    previousActivityButton.disabled = currentIndex <= 0;
+    previousActivityButton.disabled = isGameplayNavigationLocked() || currentIndex <= 0;
   }
 
   if (nextIncompleteButton) {
-    nextIncompleteButton.disabled = false;
+    nextIncompleteButton.disabled = isGameplayNavigationLocked();
   }
 }
 
@@ -8590,11 +8641,13 @@ function isStudyModeActive() {
 }
 
 function renderActivityNavControls(activityId) {
+  const shouldShow = Boolean(activityId) && !isGameplayNavigationLocked();
+
   if (activityNavControls) {
-    activityNavControls.hidden = !activityId;
-    activityNavControls.style.display = activityId ? "flex" : "none";
-    activityNavControls.style.visibility = activityId ? "visible" : "hidden";
-    activityNavControls.style.opacity = activityId ? "1" : "0";
+    activityNavControls.hidden = !shouldShow;
+    activityNavControls.style.display = shouldShow ? "flex" : "none";
+    activityNavControls.style.visibility = shouldShow ? "visible" : "hidden";
+    activityNavControls.style.opacity = shouldShow ? "1" : "0";
   }
 
   updateActivityNavigationControls();
