@@ -1,10 +1,8 @@
 import {
   baseWaterColor,
-  createBaseWaterImage,
-  globeTextureBounds,
   oceanRegionColors,
   oceanTextureSize
-} from "./ocean-textures.js?v=ocean-geojson-regions";
+} from "./ocean-textures.js?v=inland-water-layer";
 
 const colors = {
   ink: "#172033",
@@ -52,7 +50,6 @@ const colors = {
   ]
 };
 
-const baseWaterImage = createBaseWaterImage();
 const oceanHighlightLatExtent = 89.5;
 const oceanHighlightTextureBounds = [
   [-180, oceanHighlightLatExtent],
@@ -226,10 +223,11 @@ export class MapLibreActivityRunner {
     this.regionSelectHandler = handler;
   }
 
-  async load({ activity, worldCountries, oceanZones, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1 }) {
+  async load({ activity, worldCountries, oceanZones, inlandWaters, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1 }) {
     this.activity = activity;
     this.worldCountries = worldCountries;
     this.oceanZones = oceanZones || emptyFeatureCollection;
+    this.inlandWaters = inlandWaters || emptyFeatureCollection;
     this.usStatesAtlas = usStatesAtlas;
     this.stateTargets = stateTargets;
     this.northAmericaAdmin1 = northAmericaAdmin1 || emptyFeatureCollection;
@@ -773,30 +771,14 @@ export class MapLibreActivityRunner {
       attribution: "U.S. Census Bureau"
     });
 
-    this.map.addSource("base-water", {
-      type: "image",
-      url: baseWaterImage,
-      coordinates: globeTextureBounds
-    });
-
-    this.map.addLayer({
-      id: "base-water-raster",
-      type: "raster",
-      source: "base-water",
-      paint: {
-        "raster-opacity": 1,
-        "raster-fade-duration": 0,
-        "raster-resampling": "linear"
-      }
-    });
-
     this.map.addLayer({
       id: "world-land",
       type: "fill",
       source: "world-countries",
       paint: {
         "fill-color": this.getPoliticalFillExpression(),
-        "fill-opacity": 1
+        "fill-opacity": 1,
+        "fill-antialias": false
       }
     });
 
@@ -830,7 +812,72 @@ export class MapLibreActivityRunner {
           7,
           1.35
         ],
-        "line-opacity": 0.88
+        "line-opacity": this.getCountryBorderOpacityExpression()
+      }
+    });
+
+    this.map.addLayer({
+      id: "us-state-context-fill",
+      type: "fill",
+      source: "us-states-atlas",
+      layout: {
+        visibility: "none"
+      },
+      paint: {
+        "fill-color": this.getUsStateContextFillExpression(),
+        "fill-opacity": 0.86
+      }
+    });
+
+    this.map.addLayer({
+      id: "us-state-context-line",
+      type: "line",
+      source: "us-states-atlas",
+      layout: {
+        visibility: "none"
+      },
+      paint: {
+        "line-color": colors.contextLine,
+        "line-width": 1.2,
+        "line-opacity": 0.95
+      }
+    });
+
+    this.map.addSource("inland-waters", {
+      type: "geojson",
+      data: this.inlandWaters || emptyFeatureCollection,
+      attribution: "Natural Earth public domain"
+    });
+
+    this.map.addLayer({
+      id: "inland-waters-fill",
+      type: "fill",
+      source: "inland-waters",
+      paint: {
+        "fill-color": colors.ocean,
+        "fill-opacity": 1,
+        "fill-antialias": true
+      }
+    });
+
+    this.map.addLayer({
+      id: "inland-waters-line",
+      type: "line",
+      source: "inland-waters",
+      paint: {
+        "line-color": "rgba(17, 104, 183, 0.28)",
+        "line-width": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          0,
+          0.35,
+          4,
+          0.8,
+          7,
+          1.2
+        ],
+        "line-opacity": 1
       }
     });
 
@@ -873,33 +920,6 @@ export class MapLibreActivityRunner {
         ]
       }
     });
-
-    this.map.addLayer({
-      id: "us-state-context-fill",
-      type: "fill",
-      source: "us-states-atlas",
-      layout: {
-        visibility: "none"
-      },
-      paint: {
-        "fill-color": this.getUsStateContextFillExpression(),
-        "fill-opacity": 0.86
-      }
-    });
-
-    this.map.addLayer({
-      id: "us-state-context-line",
-      type: "line",
-      source: "us-states-atlas",
-      layout: {
-        visibility: "none"
-      },
-      paint: {
-        "line-color": colors.contextLine,
-        "line-width": 1.2,
-        "line-opacity": 0.95
-      }
-    });
   }
 
   addOceanRegionLayer() {
@@ -931,7 +951,7 @@ export class MapLibreActivityRunner {
       },
       paint: {
         "line-color": this.getOceanRegionColorExpression(),
-        "line-opacity": 0.46,
+        "line-opacity": this.getOceanRegionLineOpacityExpression(),
         "line-width": [
           "interpolate",
           ["linear"],
@@ -945,6 +965,28 @@ export class MapLibreActivityRunner {
         ]
       }
     }, "world-land");
+  }
+
+  getCountryBorderOpacityExpression() {
+    return [
+      "case",
+      ["==", ["coalesce", ["get", "NAME"], ["get", "ADMIN"]], "Antarctica"],
+      0,
+      0.88
+    ];
+  }
+
+  getOceanRegionLineOpacityExpression() {
+    return [
+      "case",
+      [
+        "in",
+        ["coalesce", ["get", "id"], ["get", "ocean"], ["get", "name"]],
+        ["literal", ["arctic-ocean", "Arctic Ocean", "southern-ocean", "Southern Ocean"]]
+      ],
+      0,
+      0.46
+    ];
   }
 
   addOverviewLayers() {

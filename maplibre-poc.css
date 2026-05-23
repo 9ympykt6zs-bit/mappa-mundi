@@ -339,6 +339,18 @@ a {
   margin: 0;
 }
 
+.quick-start-row {
+  align-items: start;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  width: min(688px, 100%);
+}
+
+.quick-start-row[hidden] {
+  display: none;
+}
+
 .quick-start-card {
   align-items: start;
   background:
@@ -357,7 +369,7 @@ a {
   position: relative;
   text-align: left;
   touch-action: manipulation;
-  width: min(640px, 100%);
+  width: 100%;
 }
 
 .quick-start-card[hidden] {
@@ -437,6 +449,13 @@ a {
   width: min(560px, 100%);
 }
 
+.main-menu-action-row {
+  align-items: stretch;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 .main-menu-button {
   border: 0;
   border-radius: 16px;
@@ -449,6 +468,55 @@ a {
   padding: 14px 16px;
   text-transform: uppercase;
   touch-action: manipulation;
+  width: 100%;
+}
+
+.info-button {
+  align-items: center;
+  align-self: start;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(153, 178, 210, 0.86);
+  border-radius: 999px;
+  box-shadow: 0 8px 16px rgba(18, 39, 72, 0.14);
+  color: #31517f;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.9rem;
+  font-weight: 950;
+  height: 40px;
+  justify-content: center;
+  line-height: 1;
+  min-width: 40px;
+  padding: 0;
+  text-transform: none;
+  touch-action: manipulation;
+}
+
+.info-button:hover,
+.info-button:focus-visible {
+  background: #ffffff;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18), 0 8px 16px rgba(18, 39, 72, 0.14);
+  outline: none;
+}
+
+.info-popover {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(153, 178, 210, 0.88);
+  border-radius: 14px;
+  box-shadow: 0 18px 38px rgba(18, 39, 72, 0.24);
+  color: var(--ink);
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.35;
+  max-width: min(320px, calc(100vw - 24px));
+  padding: 12px 14px;
+  position: fixed;
+  z-index: 120;
+}
+
+.info-popover[hidden] {
+  display: none;
 }
 
 .main-menu-button:hover,
@@ -515,8 +583,8 @@ a {
 
 .journey-preset-list {
   display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  grid-template-columns: 1fr;
   margin-top: 10px;
   text-align: left;
   width: 100%;
@@ -535,6 +603,28 @@ a {
 
 .journey-shell-content[hidden] {
   display: none;
+}
+
+.journey-preset-section {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
+.journey-preset-section-title {
+  color: var(--brand-strong);
+  font-size: 0.94rem;
+  font-weight: 950;
+  letter-spacing: 0;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.journey-preset-section-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
 }
 
 .journey-preset-card {
@@ -663,6 +753,99 @@ a {
   display: grid;
   gap: 12px;
   padding: 18px;
+}
+
+.onboarding-panel {
+  display: grid;
+  gap: 20px;
+  width: min(720px, 100%);
+}
+
+.onboarding-copy {
+  margin: 0 auto;
+  max-width: 620px;
+  text-align: center;
+}
+
+.onboarding-card-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.onboarding-card {
+  background: rgba(245, 250, 255, 0.94);
+  border: 1px solid rgba(188, 211, 237, 0.92);
+  border-radius: 18px;
+  box-shadow: 0 12px 26px rgba(23, 47, 84, 0.1);
+  padding: 18px;
+  text-align: left;
+}
+
+.onboarding-card h3 {
+  color: var(--ink);
+  font-size: 1.05rem;
+  line-height: 1.15;
+  margin: 0 0 8px;
+}
+
+.onboarding-card p {
+  font-size: 0.94rem;
+  line-height: 1.35;
+}
+
+.onboarding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.onboarding-actions button {
+  background: linear-gradient(180deg, #eef4fb, #d7e3f0);
+  border: 1px solid rgba(188, 211, 237, 0.9);
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 950;
+  min-height: 50px;
+  padding: 12px 18px;
+  touch-action: manipulation;
+}
+
+.onboarding-actions .onboarding-primary-button {
+  background: linear-gradient(180deg, #2389da, #064b9f);
+  border-color: rgba(161, 202, 255, 0.72);
+  color: #ffffff;
+}
+
+.onboarding-actions .onboarding-skip-button {
+  background: transparent;
+  box-shadow: none;
+}
+
+.onboarding-actions button:hover,
+.onboarding-actions button:focus-visible {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+  outline: none;
+}
+
+.journey-section-heading-row,
+.journey-path-card-header {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.journey-section-heading-row {
+  justify-content: center;
+}
+
+.journey-section-heading-row h2,
+.journey-path-card-header h3 {
+  margin: 0;
 }
 
 .journey-detail-summary h2,
@@ -1563,6 +1746,29 @@ body.study-explore-mode .answer-panel {
   font-size: 1rem;
   font-weight: 750;
   margin: 0;
+}
+
+.activity-retry-actions {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 8px;
+}
+
+.activity-retry-actions button {
+  min-height: 48px;
+}
+
+.activity-retry-actions button:first-child {
+  background: linear-gradient(180deg, var(--brand), var(--brand-strong));
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.activity-retry-actions button:last-child {
+  background: #ffffff;
+  border-color: rgba(188, 211, 237, 0.95);
+  color: var(--brand-strong);
 }
 
 .poc-header {
@@ -2493,6 +2699,11 @@ body.browse-mode .answer-panel-title {
     padding: 18px;
   }
 
+  .quick-start-row {
+    grid-template-columns: minmax(0, 1fr) 40px;
+    max-width: 408px;
+  }
+
   .quick-start-title {
     font-size: 1.55rem;
   }
@@ -2520,9 +2731,38 @@ body.browse-mode .answer-panel-title {
     max-width: 360px;
   }
 
-  .journey-preset-list {
+  .main-menu-action-row {
+    grid-template-columns: minmax(0, 1fr) 40px;
+  }
+
+  .info-button {
+    height: 40px;
+    min-width: 40px;
+  }
+
+  .onboarding-card-grid {
     grid-template-columns: 1fr;
+  }
+
+  .onboarding-card {
+    padding: 14px;
+  }
+
+  .onboarding-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .onboarding-actions button {
+    min-height: 48px;
+  }
+
+  .journey-preset-list {
     max-width: 420px;
+  }
+
+  .journey-preset-section-grid {
+    grid-template-columns: 1fr;
   }
 
   .journey-preset-card {

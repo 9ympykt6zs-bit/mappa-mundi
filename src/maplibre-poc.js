@@ -1,7 +1,7 @@
 import { normalizeActivity } from "./map-engines/activity-normalizer.js";
 import { ActivitySession, studyModes } from "./maplibre/activity-session.js?v=progress-state";
 import "./chip-speech.js?v=tts-answer-chips";
-import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=study-preview-neutral";
+import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=polar-artifact-cleanup";
 import { journeyPresets } from "./journey-presets.js?v=journey-presets-expanded";
 import {
   clearActiveJourney,
@@ -122,6 +122,7 @@ const worldCountrySupplements = [
   "assets/maps/world/guam-map-unit.geojson"
 ];
 const oceanZonesPath = "assets/maps/data/ocean-zones.geojson";
+const inlandWatersPath = "assets/maps/data/inland-waters.geojson";
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const northAmericaAdmin1Path = "assets/maps/data/maplibre-north-america-admin1.geojson";
@@ -144,6 +145,7 @@ const activityProgressStorageKey = "geography-memory-activity-progress";
 const difficultyStorageKey = "geography-memory-difficulty-mode";
 const appSettingsStorageKey = "atlasQuestSettings";
 const legacyLayerSettingsStorageKey = "atlas-quest-layer-settings";
+const onboardingSeenStorageKey = "atlasQuestOnboardingSeen";
 const defaultMapLayerSettings = Object.freeze({
   showContinents: true,
   showOceans: true,
@@ -2505,6 +2507,7 @@ let studyPracticeCompletionState = null;
 let isJourneyTransitioning = false;
 let journeyAutoAdvanceTimer = null;
 let activityAttemptState = createActivityAttemptState();
+let activeRetryReviewState = null;
 let atlasProgress = loadProgress();
 let mapLayerSettings = loadMapLayerSettings();
 let studyTargetSettings = loadStudyTargetSettings();
@@ -2514,7 +2517,6 @@ let isCurrentActivityProgressDisabled = false;
 const incorrectRevealThreshold = 3;
 const activityRetryThreshold = 5;
 const incorrectRevealDurationMs = 1700;
-const activityRetryReviewDurationMs = 2600;
 
 const title = document.querySelector("#poc-title");
 const instruction = document.querySelector("#poc-instruction");
@@ -2553,6 +2555,7 @@ const appShellTitle = document.querySelector("#app-shell-title");
 const appShellSubtitle = document.querySelector("#app-shell-subtitle");
 const appShellBackButton = document.querySelector("#app-shell-back-button");
 const appShellSettingsGear = document.querySelector("#app-shell-settings-gear");
+const mainMenuQuickStartRow = document.querySelector("#main-menu-quick-start-row");
 const mainMenuQuickStartButton = document.querySelector("#main-menu-quick-start-button");
 const quickStartKicker = document.querySelector("#quick-start-kicker");
 const quickStartTitle = document.querySelector("#quick-start-title");
@@ -2565,6 +2568,7 @@ mainMenuActions?.parentNode?.insertBefore(mainMenuActionsAnchor, mainMenuActions
 const mainMenuChooseButton = document.querySelector("#main-menu-choose-button");
 const mainMenuFreePlayButton = document.querySelector("#main-menu-free-play-button");
 const mainMenuSettingsButton = document.querySelector("#main-menu-settings-button");
+const infoPopover = document.querySelector("#info-popover");
 
 function isCompactTouchLayout() {
   return Boolean(window.matchMedia?.("(max-width: 760px), (max-width: 900px) and (max-height: 520px)")?.matches);
@@ -2646,6 +2650,8 @@ const journeyCompletionPrimary = document.querySelector("#journey-completion-pri
 const journeyCompletionSecondary = document.querySelector("#journey-completion-secondary");
 const activityRetryOverlay = document.querySelector("#activity-retry-overlay");
 const activityRetryMessage = document.querySelector("#activity-retry-message");
+const activityRetryStudyButton = document.querySelector("#activity-retry-study-button");
+const activityRetryAgainButton = document.querySelector("#activity-retry-again-button");
 
 const journeyDifficultyOptions = [
   {
@@ -2689,11 +2695,12 @@ async function init() {
     launchTitle.textContent = APP_NAME;
   }
 
-  const [loadedActivities, worldCountries, supplementalWorldCountries, oceanZones, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
+  const [loadedActivities, worldCountries, supplementalWorldCountries, oceanZones, inlandWaters, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
     Promise.all(activityDataPaths.map((path) => fetchJson(path))),
     fetchJson(worldCountriesPath),
     Promise.all(worldCountrySupplements.map((path) => fetchJson(path))),
     fetchJson(oceanZonesPath),
+    fetchJson(inlandWatersPath),
     fetchJson(usStatesAtlasPath),
     fetchJson(stateGeoJsonPath),
     fetchJson(northAmericaAdmin1Path),
@@ -2750,6 +2757,7 @@ async function init() {
     activity: session.activity,
     worldCountries: mergedWorldCountries,
     oceanZones,
+    inlandWaters,
     usStatesAtlas,
     stateTargets,
     northAmericaAdmin1,
@@ -3996,8 +4004,11 @@ function bindUiEvents() {
   previousActivityButton?.addEventListener("click", openPreviousActivity);
   nextIncompleteButton?.addEventListener("click", openNextIncompleteActivity);
   resetButton.addEventListener("click", handleResetButtonClick);
+  activityRetryStudyButton?.addEventListener("click", handleActivityRetryStudyChoice);
+  activityRetryAgainButton?.addEventListener("click", handleActivityRetryAgainChoice);
   journeyCompletionPrimary?.addEventListener("click", handleJourneyCompletionPrimary);
   journeyCompletionSecondary?.addEventListener("click", handleJourneyCompletionSecondary);
+  document.addEventListener("click", handleDocumentInfoClick);
   document.addEventListener("pointermove", handleDocumentPointerMove);
   document.addEventListener("pointerup", handleDocumentPointerUp);
   document.addEventListener("pointercancel", cancelGrabbedAnswer);
@@ -4005,6 +4016,7 @@ function bindUiEvents() {
   window.addEventListener("orientationchange", refreshHeaderTitleForLayout);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+      closeInfoPopover();
       closeBrowseDrawer();
       cancelGrabbedAnswer();
     }
@@ -4012,9 +4024,7 @@ function bindUiEvents() {
 }
 
 function bindLaunchScreenEvents() {
-  launchStartButton?.addEventListener("click", () => {
-    showAppScreen("main-menu");
-  });
+  launchStartButton?.addEventListener("click", handleLaunchStart);
 
   launchSettingsGear?.addEventListener("click", () => showAppScreen("settings"));
   appShellBackButton?.addEventListener("click", goBackAppScreen);
@@ -4034,6 +4044,15 @@ function bindLaunchScreenEvents() {
   });
 }
 
+function handleLaunchStart() {
+  if (hasSeenOnboarding()) {
+    showAppScreen("main-menu");
+    return;
+  }
+
+  showAppScreen("onboarding");
+}
+
 function showAppScreen(screenId, options = {}) {
   const pushHistory = options.pushHistory !== false && currentAppScreen !== screenId;
 
@@ -4046,6 +4065,7 @@ function showAppScreen(screenId, options = {}) {
   activeStudyPracticeSession = null;
   isCurrentActivityProgressDisabled = false;
   currentAppScreen = screenId;
+  closeInfoPopover();
   closeBrowseDrawer();
   cancelGrabbedAnswer();
   document.body.classList.toggle("launch-mode", screenId === "launch");
@@ -4173,6 +4193,10 @@ function getAppShellScreenContent(screenId) {
       title: "Choose Journey",
       subtitle: "Pick a journey to study or play."
     },
+    onboarding: {
+      title: "Welcome to Atlas Quest",
+      subtitle: "Learn geography by choosing a journey, placing labels on the map, and reviewing what you miss."
+    },
     "journey-detail": {
       title: selectedJourneyTitle,
       subtitle: "Choose how you want to begin this journey."
@@ -4229,6 +4253,7 @@ function isJourneyAvailable(journey) {
 function isJourneyShellScreen(screenId) {
   return [
     "journey-detail",
+    "onboarding",
     "study",
     "choose-difficulty",
     "begin-journey-placeholder",
@@ -4369,6 +4394,11 @@ function renderQuickStartCard(isMainMenu) {
     return;
   }
 
+  if (mainMenuQuickStartRow) {
+    mainMenuQuickStartRow.hidden = !isMainMenu;
+    mainMenuQuickStartRow.setAttribute("aria-hidden", String(!isMainMenu));
+  }
+
   mainMenuQuickStartButton.hidden = !isMainMenu;
   mainMenuQuickStartButton.disabled = !isMainMenu;
   mainMenuQuickStartButton.tabIndex = isMainMenu ? 0 : -1;
@@ -4410,6 +4440,50 @@ function selectJourney(journeyId) {
       : "medium"
   };
   showAppScreen("journey-detail");
+}
+
+function hasSeenOnboarding() {
+  try {
+    return localStorage.getItem(onboardingSeenStorageKey) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function markOnboardingSeen() {
+  try {
+    localStorage.setItem(onboardingSeenStorageKey, "true");
+  } catch {
+    // localStorage can be unavailable in private or embedded contexts.
+  }
+}
+
+function startWorldFoundationsFromOnboarding() {
+  const journey = journeyPresets.find((candidate) => candidate.id === defaultQuickStartJourneyId);
+
+  markOnboardingSeen();
+
+  if (!journey || !isJourneyAvailable(journey)) {
+    showAppScreen("choose-journey");
+    return;
+  }
+
+  selectedJourneyId = journey.id;
+  selectedJourneyPlayState = {
+    journeyId: journey.id,
+    difficultyId: defaultQuickStartDifficulty
+  };
+  showAppScreen("choose-difficulty");
+}
+
+function chooseJourneyFromOnboarding() {
+  markOnboardingSeen();
+  showAppScreen("choose-journey");
+}
+
+function skipOnboarding() {
+  markOnboardingSeen();
+  showAppScreen("main-menu");
 }
 
 function startQuickStartJourney() {
@@ -4673,7 +4747,8 @@ function openStudyExploreActivity(journey, step, activity, options = {}) {
     journeyId: journey.id,
     stepId: step.id,
     activityId: activity.id,
-    revealedTargetIds: options.revealAll ? activity.targets.map((target) => target.id) : []
+    revealedTargetIds: options.revealAll ? activity.targets.map((target) => target.id) : [],
+    retryReturnState: options.retryReturnState || null
   };
   activeStudyPracticeSession = null;
   hideStudyPracticeCompletionCard();
@@ -4738,7 +4813,7 @@ function revealStudyTarget(targetId) {
 }
 
 function launchPracticeForStudySet() {
-  if (!activeStudySession) {
+  if (!activeStudySession || activeStudySession.retryReturnState) {
     return;
   }
 
@@ -4750,10 +4825,17 @@ function launchPracticeForStudySet() {
 }
 
 function exitStudyExplore() {
+  const retryReturnState = activeStudySession?.retryReturnState || null;
   activeStudySession = null;
   document.body.classList.remove("study-explore-mode");
   runner.setStudyPreviewMode(false);
   runner.setCompletedTargets([]);
+
+  if (retryReturnState) {
+    returnToRetryReviewActivity(retryReturnState);
+    return;
+  }
+
   showAppScreen(selectedJourneyId ? "study" : "main-menu", { pushHistory: false });
 }
 
@@ -4763,10 +4845,14 @@ function renderStudyExplorePanel() {
 
   const controls = document.createElement("div");
   controls.className = "study-explore-controls";
-  [
-    ["Practice This Set", launchPracticeForStudySet],
-    ["Exit Study", exitStudyExplore]
-  ].forEach(([label, handler]) => {
+  const controlDefinitions = activeStudySession?.retryReturnState
+    ? [["Exit Study", exitStudyExplore]]
+    : [
+      ["Practice This Set", launchPracticeForStudySet],
+      ["Exit Study", exitStudyExplore]
+    ];
+
+  controlDefinitions.forEach(([label, handler]) => {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = label;
@@ -4878,6 +4964,87 @@ function formatJourneyStepCount(count) {
   return "No activities yet";
 }
 
+const journeyPresetSections = [
+  {
+    title: "Start Here",
+    ids: ["world-foundations", "united-states", "north-america", "europe"]
+  },
+  {
+    title: "World",
+    ids: ["world-foundations"]
+  },
+  {
+    title: "Americas",
+    ids: ["the-americas", "north-america", "united-states", "the-caribbean", "south-america", "brazil"]
+  },
+  {
+    title: "Europe",
+    ids: ["europe", "germany", "france", "spain", "italy", "united-kingdom", "russia"]
+  },
+  {
+    title: "Africa",
+    ids: ["africa"]
+  },
+  {
+    title: "Asia",
+    ids: ["asia", "india", "japan"]
+  },
+  {
+    title: "Oceania",
+    ids: ["oceania"]
+  },
+  {
+    title: "Capstone",
+    ids: ["world-tour"]
+  }
+];
+
+function createJourneyPresetCard(journey) {
+  const isAvailable = isJourneyAvailable(journey);
+  const status = getEffectiveJourneyStatus(journey);
+  const card = document.createElement("article");
+  card.className = `journey-preset-card${isAvailable ? "" : ` journey-preset-card-${status}`}`;
+  card.dataset.journeyId = journey.id;
+
+  const header = document.createElement("div");
+  header.className = "journey-preset-card-header";
+
+  const heading = document.createElement("h3");
+  heading.textContent = journey.title;
+
+  const statusBadge = document.createElement("span");
+  statusBadge.className = `journey-status journey-status-${status}`;
+  statusBadge.textContent = getJourneyStatusLabel(journey);
+
+  header.append(heading, statusBadge);
+
+  const description = document.createElement("p");
+  description.textContent = journey.description;
+
+  const meta = document.createElement("p");
+  meta.className = "journey-preset-meta";
+  const progressText = isAvailable ? formatJourneyProgressText(journey) : "";
+  const statusText = status === "locked" ? journey.lockedMessage : "";
+  meta.textContent = statusText || (progressText
+    ? `${formatJourneyStepCount(getValidJourneySteps(journey).length)} | ${progressText}`
+    : formatJourneyStepCount(getValidJourneySteps(journey).length));
+
+  const actions = document.createElement("div");
+  actions.className = "journey-card-actions";
+
+  const selectButton = document.createElement("button");
+  selectButton.type = "button";
+  selectButton.textContent = isAvailable ? "Select Journey" : "View Details";
+  selectButton.addEventListener("click", () => {
+    selectJourney(journey.id);
+  });
+
+  actions.append(selectButton);
+
+  card.append(header, description, meta, actions);
+  return card;
+}
+
 function renderJourneyPresetList(isVisible) {
   if (!journeyPresetList) {
     return;
@@ -4892,50 +5059,34 @@ function renderJourneyPresetList(isVisible) {
 
   journeyPresetList.innerHTML = "";
 
-  journeyPresets.forEach((journey) => {
-    const isAvailable = isJourneyAvailable(journey);
-    const status = getEffectiveJourneyStatus(journey);
-    const card = document.createElement("article");
-    card.className = `journey-preset-card${isAvailable ? "" : ` journey-preset-card-${status}`}`;
-    card.dataset.journeyId = journey.id;
+  const journeysById = new Map(journeyPresets.map((journey) => [journey.id, journey]));
 
-    const header = document.createElement("div");
-    header.className = "journey-preset-card-header";
+  journeyPresetSections.forEach((sectionDefinition) => {
+    const sectionJourneys = sectionDefinition.ids
+      .map((journeyId) => journeysById.get(journeyId))
+      .filter(Boolean);
 
-    const heading = document.createElement("h3");
-    heading.textContent = journey.title;
+    if (!sectionJourneys.length) {
+      return;
+    }
 
-    const statusBadge = document.createElement("span");
-    statusBadge.className = `journey-status journey-status-${status}`;
-    statusBadge.textContent = getJourneyStatusLabel(journey);
+    const section = document.createElement("section");
+    section.className = "journey-preset-section";
+    section.dataset.journeySection = sectionDefinition.title.toLowerCase().replace(/\s+/g, "-");
 
-    header.append(heading, statusBadge);
+    const sectionHeading = document.createElement("h3");
+    sectionHeading.className = "journey-preset-section-title";
+    sectionHeading.textContent = sectionDefinition.title;
 
-    const description = document.createElement("p");
-    description.textContent = journey.description;
+    const sectionGrid = document.createElement("div");
+    sectionGrid.className = "journey-preset-section-grid";
 
-    const meta = document.createElement("p");
-    meta.className = "journey-preset-meta";
-    const progressText = isAvailable ? formatJourneyProgressText(journey) : "";
-    const statusText = status === "locked" ? journey.lockedMessage : "";
-    meta.textContent = statusText || (progressText
-      ? `${formatJourneyStepCount(getValidJourneySteps(journey).length)} | ${progressText}`
-      : formatJourneyStepCount(getValidJourneySteps(journey).length));
-
-    const actions = document.createElement("div");
-    actions.className = "journey-card-actions";
-
-    const selectButton = document.createElement("button");
-    selectButton.type = "button";
-    selectButton.textContent = isAvailable ? "Select Journey" : "View Details";
-    selectButton.addEventListener("click", () => {
-      selectJourney(journey.id);
+    sectionJourneys.forEach((journey) => {
+      sectionGrid.appendChild(createJourneyPresetCard(journey));
     });
 
-    actions.append(selectButton);
-
-    card.append(header, description, meta, actions);
-    journeyPresetList.appendChild(card);
+    section.append(sectionHeading, sectionGrid);
+    journeyPresetList.appendChild(section);
   });
 }
 
@@ -4960,6 +5111,11 @@ function renderJourneyShellContent(screenId) {
 
   if (screenId === "settings") {
     renderSettingsScreen();
+    return;
+  }
+
+  if (screenId === "onboarding") {
+    renderOnboardingScreen();
     return;
   }
 
@@ -4997,6 +5153,60 @@ function renderJourneyShellContent(screenId) {
   }
 
   renderBeginJourneyPlaceholder(selectedJourney);
+}
+
+function renderOnboardingScreen() {
+  const panel = document.createElement("section");
+  panel.className = "onboarding-panel";
+
+  const intro = document.createElement("p");
+  intro.className = "onboarding-copy";
+  intro.textContent = "Learn geography by choosing a journey, placing labels on the map, and reviewing what you miss.";
+
+  const cards = document.createElement("div");
+  cards.className = "onboarding-card-grid";
+
+  [
+    ["Choose a Journey", "Follow a guided path through the world."],
+    ["Tap a Label, Tap the Map", "Pick a label below, then tap where it belongs."],
+    ["Study First Anytime", "Preview a set before you practice."]
+  ].forEach(([titleText, copyText]) => {
+    const card = document.createElement("article");
+    card.className = "onboarding-card";
+
+    const heading = document.createElement("h3");
+    heading.textContent = titleText;
+
+    const copy = document.createElement("p");
+    copy.textContent = copyText;
+
+    card.append(heading, copy);
+    cards.appendChild(card);
+  });
+
+  const actions = document.createElement("div");
+  actions.className = "onboarding-actions";
+
+  const startButton = document.createElement("button");
+  startButton.type = "button";
+  startButton.className = "onboarding-primary-button";
+  startButton.textContent = "Start World Foundations";
+  startButton.addEventListener("click", startWorldFoundationsFromOnboarding);
+
+  const chooseButton = document.createElement("button");
+  chooseButton.type = "button";
+  chooseButton.textContent = "Choose Journey";
+  chooseButton.addEventListener("click", chooseJourneyFromOnboarding);
+
+  const skipButton = document.createElement("button");
+  skipButton.type = "button";
+  skipButton.className = "onboarding-skip-button";
+  skipButton.textContent = "Skip";
+  skipButton.addEventListener("click", skipOnboarding);
+
+  actions.append(startButton, chooseButton, skipButton);
+  panel.append(intro, cards, actions);
+  journeyShellContent.appendChild(panel);
 }
 
 function renderJourneyDetail(journey) {
@@ -5069,7 +5279,8 @@ function renderJourneyDetail(journey) {
         description: "Practice freely before playing the journey.",
         buttonLabel: "Open Study",
         variant: "study",
-        onClick: () => showAppScreen("study")
+        onClick: () => showAppScreen("study"),
+        infoText: "Preview or practice without changing journey progress."
       })
     );
   } else {
@@ -5108,12 +5319,21 @@ function renderJourneyDetail(journey) {
   journeyShellContent.appendChild(secondaryActions);
 }
 
-function createJourneyPathCard({ title, description, buttonLabel, variant, onClick, disabled = false }) {
+function createJourneyPathCard({ title, description, buttonLabel, variant, onClick, disabled = false, infoText = "" }) {
   const card = document.createElement("article");
   card.className = `journey-path-card journey-path-card-${variant}`;
 
+  const header = document.createElement("div");
+  header.className = "journey-path-card-header";
+
   const heading = document.createElement("h3");
   heading.textContent = title;
+
+  header.appendChild(heading);
+
+  if (infoText) {
+    header.appendChild(createInfoButton(infoText, `More info about ${title}`));
+  }
 
   const copy = document.createElement("p");
   copy.textContent = description;
@@ -5124,7 +5344,7 @@ function createJourneyPathCard({ title, description, buttonLabel, variant, onCli
   button.disabled = disabled;
   button.addEventListener("click", onClick);
 
-  card.append(heading, copy, button);
+  card.append(header, copy, button);
   return card;
 }
 
@@ -5136,6 +5356,74 @@ function getUnavailableJourneyMessage(journey) {
   }
 
   return "Activities are still being added for this journey.";
+}
+
+function createInfoButton(infoText, labelText) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "info-button";
+  button.textContent = "i";
+  button.dataset.infoText = infoText;
+  button.setAttribute("aria-label", labelText);
+  return button;
+}
+
+function showInfoPopover(button) {
+  if (!infoPopover || !button?.dataset?.infoText) {
+    return;
+  }
+
+  const rect = button.getBoundingClientRect();
+  infoPopover.textContent = button.dataset.infoText;
+  infoPopover.hidden = false;
+  infoPopover.dataset.activeInfo = button.getAttribute("aria-label") || "";
+
+  const margin = 12;
+  const popoverRect = infoPopover.getBoundingClientRect();
+  const left = Math.min(
+    window.innerWidth - popoverRect.width - margin,
+    Math.max(margin, rect.left + (rect.width / 2) - (popoverRect.width / 2))
+  );
+  const top = Math.min(
+    window.innerHeight - popoverRect.height - margin,
+    Math.max(margin, rect.bottom + 8)
+  );
+
+  infoPopover.style.left = `${left}px`;
+  infoPopover.style.top = `${top}px`;
+}
+
+function closeInfoPopover() {
+  if (!infoPopover) {
+    return;
+  }
+
+  infoPopover.hidden = true;
+  infoPopover.textContent = "";
+  infoPopover.style.left = "";
+  infoPopover.style.top = "";
+  delete infoPopover.dataset.activeInfo;
+}
+
+function handleDocumentInfoClick(event) {
+  const infoButton = event.target.closest?.(".info-button");
+
+  if (infoButton) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!infoPopover?.hidden && infoPopover?.dataset.activeInfo === infoButton.getAttribute("aria-label")) {
+      closeInfoPopover();
+      return;
+    }
+
+    showInfoPopover(infoButton);
+    return;
+  }
+
+  if (infoPopover && !infoPopover.hidden && !event.target.closest?.(".info-popover")) {
+    closeInfoPopover();
+  }
 }
 
 function renderStudySelectionScreen(journey) {
@@ -5195,6 +5483,16 @@ function renderJourneyDifficultyScreen(journey) {
   const journeyName = document.createElement("h2");
   journeyName.textContent = journey.title;
 
+  const headingRow = document.createElement("div");
+  headingRow.className = "journey-section-heading-row";
+  headingRow.append(
+    journeyName,
+    createInfoButton(
+      "Difficulty changes how much visual help you get. It does not change the places you learn.",
+      "More info about Difficulty"
+    )
+  );
+
   const message = document.createElement("p");
   message.className = "journey-mode-message";
   message.textContent = "Choose how much help you want during this journey.";
@@ -5220,7 +5518,7 @@ function renderJourneyDifficultyScreen(journey) {
   beginButton.textContent = "Begin Journey";
   beginButton.addEventListener("click", startSelectedJourney);
 
-  panel.append(journeyName, message, context, options, beginButton);
+  panel.append(headingRow, message, context, options, beginButton);
   journeyShellContent.appendChild(panel);
 }
 
@@ -5231,6 +5529,16 @@ function renderFreePlayDifficultyScreen() {
 
   const activityName = document.createElement("h2");
   activityName.textContent = activity?.title || "Free Play Activity";
+
+  const headingRow = document.createElement("div");
+  headingRow.className = "journey-section-heading-row";
+  headingRow.append(
+    activityName,
+    createInfoButton(
+      "Difficulty changes how much visual help you get. It does not change the places you learn.",
+      "More info about Difficulty"
+    )
+  );
 
   const message = document.createElement("p");
   message.className = "journey-mode-message";
@@ -5263,7 +5571,7 @@ function renderFreePlayDifficultyScreen() {
   startButton.disabled = !activity;
   startButton.addEventListener("click", startPendingFreePlayActivity);
 
-  panel.append(activityName, message, context, options, startButton);
+  panel.append(headingRow, message, context, options, startButton);
   journeyShellContent.appendChild(panel);
 }
 
@@ -7918,14 +8226,14 @@ function createActivityAttemptState() {
     missesByTargetId: {},
     isRevealing: false,
     isReviewingRetry: false,
-    revealTimer: null,
-    retryTimer: null
+    revealTimer: null
   };
 }
 
 function resetActivityAttemptState() {
   clearActivityAttemptTimers();
   hideActivityRetryOverlay();
+  activeRetryReviewState = null;
   activityAttemptState = createActivityAttemptState();
   if (activeJourneySession?.mode === "journey") {
     activeJourneySession.incorrectPlacements = 0;
@@ -7935,10 +8243,6 @@ function resetActivityAttemptState() {
 function clearActivityAttemptTimers() {
   if (activityAttemptState?.revealTimer) {
     window.clearTimeout(activityAttemptState.revealTimer);
-  }
-
-  if (activityAttemptState?.retryTimer) {
-    window.clearTimeout(activityAttemptState.retryTimer);
   }
 }
 
@@ -8019,6 +8323,7 @@ function beginActivityRetryReview() {
     return;
   }
 
+  activeRetryReviewState = createRetryReviewState();
   activityAttemptState.isReviewingRetry = true;
   activityAttemptState.isRevealing = false;
   if (activityAttemptState.revealTimer) {
@@ -8027,27 +8332,22 @@ function beginActivityRetryReview() {
   }
 
   cancelGrabbedAnswer();
-  showFeedback("Let’s review this one again.");
+  showFeedback("Quick review: choose how to continue.");
   showActivityRetryOverlay();
   revealTemporaryTargets(session.activity.targets.map((target) => target.id));
   syncAnswerBank();
-
-  // TODO: tune these thresholds by difficulty later:
-  // Easy can reveal sooner, Medium can keep this default, and Hard can be stricter.
-  activityAttemptState.retryTimer = window.setTimeout(() => {
-    activityAttemptState.retryTimer = null;
-    restartActivityAfterRetryReview();
-  }, activityRetryReviewDurationMs);
 }
 
 function showActivityRetryOverlay() {
   if (activityRetryMessage) {
-    activityRetryMessage.textContent = "Let’s review this one again.";
+    activityRetryMessage.textContent = "This set needs a little more practice.";
   }
 
   if (activityRetryOverlay) {
     activityRetryOverlay.hidden = false;
   }
+
+  activityRetryStudyButton?.focus();
 }
 
 function hideActivityRetryOverlay() {
@@ -8056,12 +8356,144 @@ function hideActivityRetryOverlay() {
   }
 }
 
+function handleActivityRetryAgainChoice() {
+  restartActivityAfterRetryReview();
+}
+
+function handleActivityRetryStudyChoice() {
+  const retryState = activeRetryReviewState;
+
+  if (!retryState) {
+    restartActivityAfterRetryReview();
+    return;
+  }
+
+  hideActivityRetryOverlay();
+  restoreTemporaryReveals();
+  resetCurrentActivityProgress();
+  activityAttemptState = createActivityAttemptState();
+  activeRetryReviewState = null;
+  openStudyExploreForRetryReview(retryState);
+}
+
 function restartActivityAfterRetryReview() {
   hideActivityRetryOverlay();
   restoreTemporaryReveals();
+  activeRetryReviewState = null;
   resetActivityAttemptState();
   resetCurrentActivityProgress();
-  showFeedback("Fresh start. You’ve got this.");
+  showFeedback("Fresh start. You've got this.");
+}
+
+function createRetryReviewState() {
+  return {
+    sourceScreen: currentAppScreen,
+    activityId: selectedActivityId || session.currentActivity?.id || null,
+    difficultyId: getEffectiveDifficulty(session.currentActivity),
+    hierarchyNodeId: activeHierarchyNodeId,
+    menuRootId: activeMenuRoot?.id || activeMenuRoot || null,
+    selectedJourneyId,
+    presentationSettings: { ...currentPresentationSettings },
+    isProgressDisabled: isCurrentActivityProgressDisabled,
+    journeySession: activeJourneySession ? { ...activeJourneySession } : null,
+    studyPracticeSession: activeStudyPracticeSession ? { ...activeStudyPracticeSession } : null
+  };
+}
+
+function getRetryReviewStudyContext(retryState) {
+  const activity = getActivityById(retryState?.activityId) || session.currentActivity;
+  const journey = retryState?.journeySession
+    ? journeyPresets.find((preset) => preset.id === retryState.journeySession.journeyId)
+    : retryState?.studyPracticeSession
+      ? journeyPresets.find((preset) => preset.id === retryState.studyPracticeSession.journeyId)
+      : null;
+  const validSteps = getValidJourneySteps(journey);
+  const step = retryState?.journeySession
+    ? validSteps[retryState.journeySession.currentStepIndex]
+    : retryState?.studyPracticeSession
+      ? validSteps.find((candidate) => candidate.id === retryState.studyPracticeSession.stepId)
+      : null;
+
+  return {
+    journey: journey || {
+      id: "retry-review",
+      title: "Quick Review"
+    },
+    step: step || {
+      id: retryState?.activityId || activity?.id || "retry-review",
+      activityId: activity?.id || retryState?.activityId,
+      title: activity?.title || "Current Activity"
+    },
+    activity
+  };
+}
+
+function openStudyExploreForRetryReview(retryState) {
+  const { journey, step, activity } = getRetryReviewStudyContext(retryState);
+
+  if (!activity) {
+    returnToRetryReviewActivity(retryState);
+    return;
+  }
+
+  openStudyExploreActivity(journey, step, activity, {
+    retryReturnState: retryState
+  });
+}
+
+function returnToRetryReviewActivity(retryState) {
+  if (!retryState?.activityId) {
+    showAppScreen("main-menu", { pushHistory: false });
+    return;
+  }
+
+  selectedJourneyId = retryState.selectedJourneyId || selectedJourneyId;
+  activeHierarchyNodeId = retryState.hierarchyNodeId || activeHierarchyNodeId;
+  activeMenuRoot = getHierarchyMenuRoot(activeHierarchyNodeId) || retryState.menuRootId || activeMenuRoot;
+
+  if (retryState.sourceScreen === "journey-gameplay" && retryState.journeySession) {
+    activeJourneySession = {
+      ...retryState.journeySession,
+      incorrectPlacements: 0
+    };
+    activeStudyPracticeSession = null;
+    openActivity(retryState.activityId, {
+      appScreen: "journey-gameplay",
+      difficultyId: retryState.difficultyId,
+      forceGameplayVisible: true,
+      hierarchyNodeId: retryState.hierarchyNodeId,
+      presentationSettings: retryState.presentationSettings
+    });
+    showFeedback("Fresh start. You've got this.");
+    return;
+  }
+
+  if (retryState.sourceScreen === "study-practice" && retryState.studyPracticeSession) {
+    activeJourneySession = null;
+    activeStudyPracticeSession = { ...retryState.studyPracticeSession };
+    openActivity(retryState.activityId, {
+      appScreen: "study-practice",
+      difficultyId: retryState.difficultyId,
+      disableActivityProgress: true,
+      forceGameplayVisible: true,
+      hierarchyNodeId: retryState.hierarchyNodeId,
+      presentationSettings: retryState.presentationSettings
+    });
+    showFeedback("Fresh start. You've got this.");
+    return;
+  }
+
+  activeJourneySession = null;
+  activeStudyPracticeSession = null;
+  openActivity(retryState.activityId, {
+    appScreen: "free-play",
+    difficultyId: retryState.difficultyId,
+    disableActivityProgress: retryState.isProgressDisabled,
+    forceGameplayVisible: true,
+    hierarchyNodeId: retryState.hierarchyNodeId,
+    presentationSettings: retryState.presentationSettings
+  });
+  showFeedback("Fresh start. You've got this.");
 }
 
 function resetCurrentActivityProgress() {

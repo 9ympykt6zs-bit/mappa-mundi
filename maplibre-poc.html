@@ -6,7 +6,7 @@
     <title>Atlas Quest</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css" />
-    <link rel="stylesheet" href="maplibre-poc.css?v=reset-confirm" />
+    <link rel="stylesheet" href="maplibre-poc.css?v=onboarding-first-pass" />
   </head>
   <body class="overview-mode launch-mode">
     <section id="launch-screen" class="launch-screen" aria-labelledby="launch-title">
@@ -48,17 +48,29 @@
         <p class="launch-kicker">Atlas Quest</p>
         <h1 id="app-shell-title">Main Menu</h1>
         <p id="app-shell-subtitle">Choose how you want to explore today.</p>
-        <button id="main-menu-quick-start-button" class="quick-start-card" type="button">
-          <span id="quick-start-kicker" class="quick-start-kicker">Start Learning</span>
-          <span id="quick-start-title" class="quick-start-title">World Foundations</span>
-          <span id="quick-start-detail" class="quick-start-detail">Continents and Oceans</span>
-          <span id="quick-start-meta" class="quick-start-meta">Difficulty: Easy</span>
-          <span id="quick-start-action" class="quick-start-action">Start</span>
-        </button>
+        <div id="main-menu-quick-start-row" class="quick-start-row">
+          <button id="main-menu-quick-start-button" class="quick-start-card" type="button">
+            <span id="quick-start-kicker" class="quick-start-kicker">Start Learning</span>
+            <span id="quick-start-title" class="quick-start-title">World Foundations</span>
+            <span id="quick-start-detail" class="quick-start-detail">Continents and Oceans</span>
+            <span id="quick-start-meta" class="quick-start-meta">Difficulty: Easy</span>
+            <span id="quick-start-action" class="quick-start-action">Start</span>
+          </button>
+          <button class="info-button" type="button" data-info-text="Resume your most recent saved journey." aria-label="More info about Continue Journey">i</button>
+        </div>
         <div id="main-menu-actions" class="main-menu-actions">
-          <button id="main-menu-choose-button" class="main-menu-button main-menu-button-purple" type="button">Choose Journey</button>
-          <button id="main-menu-free-play-button" class="main-menu-button main-menu-button-orange" type="button">Free Play</button>
-          <button id="main-menu-settings-button" class="main-menu-button main-menu-button-teal" type="button">Settings</button>
+          <div class="main-menu-action-row">
+            <button id="main-menu-choose-button" class="main-menu-button main-menu-button-purple" type="button">Choose Journey</button>
+            <button class="info-button" type="button" data-info-text="Pick a guided path and progress through activities in order." aria-label="More info about Choose Journey">i</button>
+          </div>
+          <div class="main-menu-action-row">
+            <button id="main-menu-free-play-button" class="main-menu-button main-menu-button-orange" type="button">Free Play</button>
+            <button class="info-button" type="button" data-info-text="Browse the map and launch activities outside a journey." aria-label="More info about Free Play">i</button>
+          </div>
+          <div class="main-menu-action-row">
+            <button id="main-menu-settings-button" class="main-menu-button main-menu-button-teal" type="button">Settings</button>
+            <button class="info-button" type="button" data-info-text="Adjust map display and study options." aria-label="More info about Settings">i</button>
+          </div>
           <button id="main-menu-launch-button" class="main-menu-button main-menu-button-quiet" type="button">Back to Title</button>
         </div>
         <div id="app-shell-placeholder-card" class="app-shell-placeholder-card" role="status" aria-live="polite" hidden>
@@ -69,6 +81,7 @@
         <div id="journey-shell-content" class="journey-shell-content" hidden></div>
       </div>
     </section>
+    <div id="info-popover" class="info-popover" role="tooltip" hidden></div>
     <header class="poc-header">
       <div class="top-bar">
         <div class="top-bar-side top-bar-left">
@@ -164,14 +177,18 @@
     </div>
 
     <div id="activity-retry-overlay" class="activity-retry-overlay" hidden>
-      <section class="activity-retry-card" role="status" aria-live="polite">
+      <section class="activity-retry-card" role="dialog" aria-modal="true" aria-labelledby="activity-retry-message">
         <p class="activity-retry-kicker">Quick Review</p>
-        <h2 id="activity-retry-message">Let’s review this one again.</h2>
-        <p>Watch the answers, then try this activity once more.</p>
+        <h2 id="activity-retry-message">This set needs a little more practice.</h2>
+        <p>Study the answers first, or try the activity again.</p>
+        <div class="activity-retry-actions">
+          <button id="activity-retry-study-button" type="button">Study This Set</button>
+          <button id="activity-retry-again-button" type="button">Try Again</button>
+        </div>
       </section>
     </div>
 
     <script src="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js"></script>
-    <script type="module" src="src/maplibre-poc.js?v=reset-confirm"></script>
+    <script type="module" src="src/maplibre-poc.js?v=polar-artifact-cleanup"></script>
   </body>
 </html>
