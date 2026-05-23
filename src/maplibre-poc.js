@@ -1,7 +1,7 @@
 import { normalizeActivity } from "./map-engines/activity-normalizer.js";
 import { ActivitySession, studyModes } from "./maplibre/activity-session.js?v=progress-state";
 import "./chip-speech.js?v=tts-answer-chips";
-import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=normal-placement";
+import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=study-preview-neutral";
 import { journeyPresets } from "./journey-presets.js?v=journey-presets-expanded";
 import {
   clearActiveJourney,
@@ -2078,7 +2078,7 @@ const activityCatalogMetadata = {
   "central-america": {
     mapSet: "world-europe",
     category: "Countries",
-    description: "Five-country Central America review sheet.",
+    description: "Central America country review sheet.",
     sortOrder: 72,
     sectionNumber: 21
   },
@@ -2553,10 +2553,15 @@ const appShellTitle = document.querySelector("#app-shell-title");
 const appShellSubtitle = document.querySelector("#app-shell-subtitle");
 const appShellBackButton = document.querySelector("#app-shell-back-button");
 const appShellSettingsGear = document.querySelector("#app-shell-settings-gear");
+const mainMenuQuickStartButton = document.querySelector("#main-menu-quick-start-button");
+const quickStartKicker = document.querySelector("#quick-start-kicker");
+const quickStartTitle = document.querySelector("#quick-start-title");
+const quickStartDetail = document.querySelector("#quick-start-detail");
+const quickStartMeta = document.querySelector("#quick-start-meta");
+const quickStartAction = document.querySelector("#quick-start-action");
 const mainMenuActions = document.querySelector("#main-menu-actions");
 const mainMenuActionsAnchor = document.createComment("main-menu-actions");
 mainMenuActions?.parentNode?.insertBefore(mainMenuActionsAnchor, mainMenuActions);
-const mainMenuContinueButton = document.querySelector("#main-menu-continue-button");
 const mainMenuChooseButton = document.querySelector("#main-menu-choose-button");
 const mainMenuFreePlayButton = document.querySelector("#main-menu-free-play-button");
 const mainMenuSettingsButton = document.querySelector("#main-menu-settings-button");
@@ -2578,6 +2583,22 @@ function isCurrentActivityComplete() {
 
 function isGameplayNavigationLocked() {
   return isActiveGameplayScreen() && !isCurrentActivityComplete();
+}
+
+function shouldShowResetControl() {
+  return Boolean(session?.currentActivity && isActiveGameplayScreen());
+}
+
+function updateResetControlVisibility() {
+  if (!resetButton) {
+    return;
+  }
+
+  const shouldShow = shouldShowResetControl();
+  resetButton.hidden = !shouldShow;
+  resetButton.disabled = !shouldShow;
+  resetButton.tabIndex = shouldShow ? 0 : -1;
+  resetButton.setAttribute("aria-hidden", String(!shouldShow));
 }
 
 function setHeaderTitle(fullTitle, options = {}) {
@@ -2658,6 +2679,9 @@ const journeyDifficultyOptions = [
     ]
   }
 ];
+
+const defaultQuickStartJourneyId = "world-foundations";
+const defaultQuickStartDifficulty = difficultyModes.easy;
 
 async function init() {
   document.title = APP_NAME;
@@ -2747,6 +2771,7 @@ async function init() {
   updateProgress();
   updateStudyModeButtons();
   updateDifficultyControls();
+  updateResetControlVisibility();
   studyCard.hidden = true;
   runner.setOverviewMapSet(activeMenuRoot, getMenuOverviewView(activeMenuRoot));
   renderOverviewLibrary();
@@ -3380,9 +3405,9 @@ function getMapDefaults(rawActivity, region) {
       }
     },
     "central-america": {
-      regionView: { center: [-88.1, 14.6], zoom: 4.6 },
+      regionView: { center: [-85.2, 13.2], zoom: 4.25 },
       studyView: {
-        bounds: [[-93.7, 7.2], [-82.8, 18.9]],
+        bounds: [[-93.7, 7.0], [-77.0, 18.9]],
         padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
@@ -3970,7 +3995,7 @@ function bindUiEvents() {
   });
   previousActivityButton?.addEventListener("click", openPreviousActivity);
   nextIncompleteButton?.addEventListener("click", openNextIncompleteActivity);
-  resetButton.addEventListener("click", resetActivity);
+  resetButton.addEventListener("click", handleResetButtonClick);
   journeyCompletionPrimary?.addEventListener("click", handleJourneyCompletionPrimary);
   journeyCompletionSecondary?.addEventListener("click", handleJourneyCompletionSecondary);
   document.addEventListener("pointermove", handleDocumentPointerMove);
@@ -3996,9 +4021,7 @@ function bindLaunchScreenEvents() {
   appShellSettingsGear?.addEventListener("click", () => {
     showAppScreen("settings");
   });
-  mainMenuContinueButton?.addEventListener("click", () => {
-    continueSavedJourney();
-  });
+  mainMenuQuickStartButton?.addEventListener("click", startQuickStartJourney);
   mainMenuChooseButton?.addEventListener("click", () => {
     showAppScreen("choose-journey");
   });
@@ -4036,6 +4059,7 @@ function showAppScreen(screenId, options = {}) {
     appShellScreen.hidden = screenId === "launch" || screenId === "free-play";
   }
 
+  updateResetControlVisibility();
   renderAppShellScreen(screenId);
 }
 
@@ -4063,6 +4087,7 @@ function openFreePlay(options = {}) {
   activeStudyPracticeSession = null;
   isCurrentActivityProgressDisabled = false;
   currentAppScreen = "free-play";
+  runner?.setStudyPreviewMode(false);
   freePlaySelectedMapFeature = null;
   activePreviewActivityId = null;
   selectedOverviewActivityId = null;
@@ -4076,6 +4101,7 @@ function openFreePlay(options = {}) {
     appShellScreen.hidden = true;
   }
 
+  updateResetControlVisibility();
   showHierarchyBrowseNode(options.hierarchyNodeId || "world");
   setBrowseDrawerOpen(!isCompactTouchLayout());
 }
@@ -4117,6 +4143,8 @@ function renderAppShellScreen(screenId) {
     }
   }
 
+  renderQuickStartCard(isMainMenu);
+
   if (appShellPlaceholderCard) {
     appShellPlaceholderCard.hidden = isMainMenu || isChooseJourney || hasJourneyShellContent;
   }
@@ -4140,12 +4168,6 @@ function getAppShellScreenContent(screenId) {
     "main-menu": {
       title: "Main Menu",
       subtitle: "Choose how you want to explore today."
-    },
-    "continue-placeholder": {
-      title: "Continue Journey",
-      subtitle: "Journey progress is coming soon.",
-      placeholderTitle: "Journey progress is coming soon.",
-      placeholderMessage: "Soon this will bring you back to your next recommended quest."
     },
     "choose-journey": {
       title: "Choose Journey",
@@ -4279,6 +4301,102 @@ function formatJourneyProgressText(journey) {
   return `${summary.bestCompletedCount} / ${summary.total} complete`;
 }
 
+function getJourneyDifficultyLabel(difficultyId) {
+  return journeyDifficultyOptions.find((option) => option.id === difficultyId)?.title || "Easy";
+}
+
+function normalizeJourneyDifficultyId(difficultyId) {
+  return journeyDifficultyOptions.some((option) => option.id === difficultyId)
+    ? difficultyId
+    : defaultQuickStartDifficulty;
+}
+
+function getDefaultQuickStartJourney() {
+  return journeyPresets.find((journey) => (
+    journey.id === defaultQuickStartJourneyId
+    && isJourneyAvailable(journey)
+    && getValidJourneySteps(journey).length > 0
+  )) || journeyPresets.find((journey) => isJourneyAvailable(journey) && getValidJourneySteps(journey).length > 0) || null;
+}
+
+function getNextIncompleteJourneyStepIndex(journey, difficultyId, progress) {
+  const validSteps = getValidJourneySteps(journey);
+  const journeyProgress = getJourneyProgress(journey?.id, progress);
+  const nextIncompleteIndex = validSteps.findIndex((step) => !journeyProgress.completedSteps?.[step.id]?.[difficultyId]);
+
+  return nextIncompleteIndex;
+}
+
+function getQuickStartTarget(progress = loadProgress()) {
+  const activeJourney = journeyPresets.find((journey) => journey.id === progress.activeJourneyId);
+  const activeDifficulty = normalizeJourneyDifficultyId(progress.activeDifficulty);
+
+  if (activeJourney && isJourneyAvailable(activeJourney) && getValidJourneySteps(activeJourney).length > 0) {
+    const activeStepIndex = getNextIncompleteJourneyStepIndex(activeJourney, activeDifficulty, progress);
+    const validSteps = getValidJourneySteps(activeJourney);
+
+    if (activeStepIndex >= 0) {
+      return {
+        isResume: true,
+        journey: activeJourney,
+        step: validSteps[activeStepIndex],
+        stepIndex: activeStepIndex,
+        difficultyId: activeDifficulty,
+        preserveProgress: true
+      };
+    }
+  }
+
+  const fallbackJourney = getDefaultQuickStartJourney();
+  const fallbackStep = getValidJourneySteps(fallbackJourney)[0];
+
+  if (!fallbackJourney || !fallbackStep) {
+    return null;
+  }
+
+  return {
+    isResume: false,
+    journey: fallbackJourney,
+    step: fallbackStep,
+    stepIndex: 0,
+    difficultyId: defaultQuickStartDifficulty,
+    preserveProgress: false
+  };
+}
+
+function renderQuickStartCard(isMainMenu) {
+  if (!mainMenuQuickStartButton) {
+    return;
+  }
+
+  mainMenuQuickStartButton.hidden = !isMainMenu;
+  mainMenuQuickStartButton.disabled = !isMainMenu;
+  mainMenuQuickStartButton.tabIndex = isMainMenu ? 0 : -1;
+  mainMenuQuickStartButton.setAttribute("aria-hidden", String(!isMainMenu));
+
+  if (!isMainMenu) {
+    return;
+  }
+
+  atlasProgress = loadProgress();
+  const target = getQuickStartTarget(atlasProgress);
+
+  if (!target) {
+    quickStartKicker.textContent = "Start Learning";
+    quickStartTitle.textContent = "Choose Journey";
+    quickStartDetail.textContent = "Pick a journey to begin.";
+    quickStartMeta.textContent = "Difficulty: Easy";
+    quickStartAction.textContent = "Start";
+    return;
+  }
+
+  quickStartKicker.textContent = target.isResume ? "Continue Journey" : "Start Learning";
+  quickStartTitle.textContent = target.journey.title;
+  quickStartDetail.textContent = target.isResume ? `Next: ${target.step.title}` : target.step.title;
+  quickStartMeta.textContent = `Difficulty: ${getJourneyDifficultyLabel(target.difficultyId)}`;
+  quickStartAction.textContent = "Start";
+}
+
 function getSelectedJourney() {
   return journeyPresets.find((journey) => journey.id === selectedJourneyId) || null;
 }
@@ -4294,30 +4412,29 @@ function selectJourney(journeyId) {
   showAppScreen("journey-detail");
 }
 
-function continueSavedJourney() {
+function startQuickStartJourney() {
   atlasProgress = loadProgress();
-  const journey = journeyPresets.find((preset) => preset.id === atlasProgress.activeJourneyId);
-  const validSteps = getValidJourneySteps(journey);
-  const stepIndex = Math.min(atlasProgress.activeStepIndex || 0, Math.max(validSteps.length - 1, 0));
+  const target = getQuickStartTarget(atlasProgress);
 
-  if (!journey || !isJourneyAvailable(journey) || validSteps.length === 0) {
-    showAppScreen("continue-placeholder");
+  if (!target) {
+    showAppScreen("choose-journey");
     return;
   }
 
-  selectedJourneyId = journey.id;
+  selectedJourneyId = target.journey.id;
   selectedJourneyPlayState = {
-    journeyId: journey.id,
-    difficultyId: atlasProgress.activeDifficulty || "easy"
+    journeyId: target.journey.id,
+    difficultyId: target.difficultyId
   };
   activeJourneySession = {
-    journeyId: journey.id,
-    currentStepIndex: stepIndex,
-    difficulty: selectedJourneyPlayState.difficultyId,
+    journeyId: target.journey.id,
+    currentStepIndex: target.stepIndex,
+    difficulty: target.difficultyId,
     mode: "journey",
     incorrectPlacements: 0
   };
-  openJourneyStep(stepIndex, { preserveProgress: true });
+  atlasProgress = setActiveJourney(target.journey.id, target.stepIndex, target.difficultyId, atlasProgress);
+  openJourneyStep(target.stepIndex, { preserveProgress: target.preserveProgress });
 }
 
 function getSelectedJourneyDifficultyId() {
@@ -4513,7 +4630,7 @@ function startStudyPreviewActivity(journeyId, stepId) {
   }
 
   selectedJourneyId = journey.id;
-  openStudyExploreActivity(journey, step, activity, { revealAll: true });
+  openStudyExploreActivity(journey, step, activity);
 }
 
 function startStudyPracticeActivity(journeyId, stepId) {
@@ -4556,8 +4673,7 @@ function openStudyExploreActivity(journey, step, activity, options = {}) {
     journeyId: journey.id,
     stepId: step.id,
     activityId: activity.id,
-    revealedTargetIds: options.revealAll ? activity.targets.map((target) => target.id) : [],
-    selectedTargetId: null
+    revealedTargetIds: options.revealAll ? activity.targets.map((target) => target.id) : []
   };
   activeStudyPracticeSession = null;
   hideStudyPracticeCompletionCard();
@@ -4594,11 +4710,10 @@ function openStudyExploreActivity(journey, step, activity, options = {}) {
   runner.updateActivity(session.activity);
   runner.setPresentationSettings(currentPresentationSettings);
   runner.setDifficulty(difficultyModes.easy);
+  runner.setStudyPreviewMode(true);
   runner.setCompletedTargets(activeStudySession.revealedTargetIds);
   setHeaderTitle(`Study: ${step.title}`, { shortTitle: step.title });
-  instruction.textContent = options.revealAll
-    ? "Review the answers, or hide labels and reveal them one at a time."
-    : "Tap a target or choose a name below to reveal it.";
+  instruction.textContent = "Tap a target or name to show it. Tap it again to hide it.";
   studyCard.hidden = false;
   studyCard.querySelector("strong").textContent = step.title;
   studyCard.querySelector("span").textContent = "Study Mode";
@@ -4612,34 +4727,13 @@ function revealStudyTarget(targetId) {
     return;
   }
 
-  activeStudySession.selectedTargetId = targetId;
-  if (!activeStudySession.revealedTargetIds.includes(targetId)) {
+  if (activeStudySession.revealedTargetIds.includes(targetId)) {
+    activeStudySession.revealedTargetIds = activeStudySession.revealedTargetIds.filter((id) => id !== targetId);
+  } else {
     activeStudySession.revealedTargetIds.push(targetId);
   }
 
   runner.setCompletedTargets(activeStudySession.revealedTargetIds);
-  renderStudyExplorePanel();
-}
-
-function revealAllStudyTargets() {
-  if (!activeStudySession) {
-    return;
-  }
-
-  activeStudySession.revealedTargetIds = session.currentActivity.targets.map((target) => target.id);
-  activeStudySession.selectedTargetId = activeStudySession.selectedTargetId || activeStudySession.revealedTargetIds[0] || null;
-  runner.setCompletedTargets(activeStudySession.revealedTargetIds);
-  renderStudyExplorePanel();
-}
-
-function hideStudyLabels() {
-  if (!activeStudySession) {
-    return;
-  }
-
-  activeStudySession.revealedTargetIds = [];
-  activeStudySession.selectedTargetId = null;
-  runner.setCompletedTargets([]);
   renderStudyExplorePanel();
 }
 
@@ -4651,12 +4745,14 @@ function launchPracticeForStudySet() {
   const { journeyId, stepId } = activeStudySession;
   document.body.classList.remove("study-explore-mode");
   activeStudySession = null;
+  runner.setStudyPreviewMode(false);
   startStudyPracticeActivity(journeyId, stepId);
 }
 
 function exitStudyExplore() {
   activeStudySession = null;
   document.body.classList.remove("study-explore-mode");
+  runner.setStudyPreviewMode(false);
   runner.setCompletedTargets([]);
   showAppScreen(selectedJourneyId ? "study" : "main-menu", { pushHistory: false });
 }
@@ -4668,8 +4764,6 @@ function renderStudyExplorePanel() {
   const controls = document.createElement("div");
   controls.className = "study-explore-controls";
   [
-    ["Reveal All", revealAllStudyTargets],
-    ["Hide Labels", hideStudyLabels],
     ["Practice This Set", launchPracticeForStudySet],
     ["Exit Study", exitStudyExplore]
   ].forEach(([label, handler]) => {
@@ -4687,7 +4781,6 @@ function renderStudyExplorePanel() {
     item.type = "button";
     item.className = "study-target-list-item";
     item.classList.toggle("revealed", activeStudySession?.revealedTargetIds.includes(target.id));
-    item.classList.toggle("selected", activeStudySession?.selectedTargetId === target.id);
     item.addEventListener("click", () => revealStudyTarget(target.id));
 
     const name = document.createElement("span");
@@ -5051,26 +5144,7 @@ function renderStudySelectionScreen(journey) {
 
   const message = document.createElement("p");
   message.className = "journey-mode-message";
-  message.textContent = "Preview the map or practice one activity before playing the journey.";
-
-  const modeActions = document.createElement("div");
-  modeActions.className = "study-mode-option-grid";
-  [
-    ["Preview", "Open a calm study map with the answers visible."],
-    ["Practice", "Try one activity in Easy mode without journey progress."]
-  ].forEach(([titleText, copyText]) => {
-    const card = document.createElement("article");
-    card.className = "study-mode-option-card";
-
-    const heading = document.createElement("h3");
-    heading.textContent = titleText;
-
-    const copy = document.createElement("p");
-    copy.textContent = copyText;
-
-    card.append(heading, copy);
-    modeActions.appendChild(card);
-  });
+  message.textContent = "Choose a section to study before playing the journey.";
 
   const stepList = document.createElement("div");
   stepList.className = "study-step-list";
@@ -5093,21 +5167,13 @@ function renderStudySelectionScreen(journey) {
 
     const previewButton = document.createElement("button");
     previewButton.type = "button";
-    previewButton.textContent = "Preview";
+    previewButton.textContent = "Study";
     previewButton.disabled = !activity;
     previewButton.addEventListener("click", () => {
       startStudyPreviewActivity(journey.id, step.id);
     });
 
-    const practiceButton = document.createElement("button");
-    practiceButton.type = "button";
-    practiceButton.textContent = "Practice";
-    practiceButton.disabled = !activity;
-    practiceButton.addEventListener("click", () => {
-      startStudyPracticeActivity(journey.id, step.id);
-    });
-
-    actions.append(previewButton, practiceButton);
+    actions.append(previewButton);
     card.append(titleNode, meta, actions);
     stepList.appendChild(card);
   });
@@ -5118,7 +5184,7 @@ function renderStudySelectionScreen(journey) {
   backButton.textContent = "Back to Journey";
   backButton.addEventListener("click", () => showAppScreen("journey-detail"));
 
-  panel.append(message, modeActions, stepList, backButton);
+  panel.append(message, stepList, backButton);
   journeyShellContent.appendChild(panel);
 }
 
@@ -5206,19 +5272,107 @@ function renderSettingsScreen() {
   panel.className = "settings-panel";
 
   const heading = document.createElement("h2");
-  heading.textContent = "Study Targets";
+  heading.textContent = "Settings";
 
   const description = document.createElement("p");
   description.className = "settings-panel-copy";
-  description.textContent = "Choose the individual targets Atlas Quest should include in study plans. Gameplay filtering will be wired in a later phase.";
+  description.textContent = "Choose map detail and save study-target preferences. Required activity targets stay available during gameplay.";
 
-  panel.append(heading, description, renderStudyPresetControl());
+  panel.append(heading, description);
 
-  getStudyTargetGroups().forEach((group) => {
-    panel.appendChild(renderStudyTargetGroup(group));
-  });
+  const mapLayersSection = createSettingsMenuSection("Map Layers", "Control which supported map details are shown. Presets also update saved study-target preferences.", true, "settings-menu-section", "map-layers");
+  mapLayersSection.content.append(renderStudyPresetControl(), renderMapLayerSettings());
+
+  const studyTargetsSection = createSettingsMenuSection("Study Targets", "Saved preferences for planning study sets. Gameplay filtering is not fully wired yet.", false, "settings-menu-section", "study-targets");
+  studyTargetsSection.content.appendChild(renderStudyTargetHierarchy());
+
+  const resetSection = createSettingsMenuSection("Reset / Defaults", "Restore the default map layer and study-target preferences.", false, "settings-menu-section", "reset-defaults");
+  resetSection.content.appendChild(renderSettingsDefaultsControl());
+
+  panel.append(mapLayersSection.details, studyTargetsSection.details, resetSection.details);
 
   journeyShellContent.appendChild(panel);
+}
+
+function getSettingsUiState() {
+  const panel = document.querySelector(".settings-panel");
+  const shell = document.querySelector("#app-shell-screen");
+  const activeControl = document.activeElement?.dataset?.settingsControl || "";
+
+  return {
+    panelScrollTop: panel?.scrollTop || 0,
+    shellScrollTop: shell?.scrollTop || 0,
+    openKeys: new Set(
+      [...document.querySelectorAll(".settings-panel details[data-settings-key]")]
+        .filter((details) => details.open)
+        .map((details) => details.dataset.settingsKey)
+    ),
+    activeControl
+  };
+}
+
+function restoreSettingsUiState(state = {}) {
+  if (!state || currentAppScreen !== "settings") {
+    return;
+  }
+
+  const panel = document.querySelector(".settings-panel");
+  const shell = document.querySelector("#app-shell-screen");
+
+  if (state.openKeys instanceof Set) {
+    document.querySelectorAll(".settings-panel details[data-settings-key]").forEach((details) => {
+      details.open = state.openKeys.has(details.dataset.settingsKey);
+    });
+  }
+
+  const restorePosition = () => {
+    if (panel) {
+      panel.scrollTop = state.panelScrollTop || 0;
+    }
+
+    if (shell) {
+      shell.scrollTop = state.shellScrollTop || 0;
+    }
+
+    if (state.activeControl) {
+      document.querySelector(`[data-settings-control="${CSS.escape(state.activeControl)}"]`)?.focus?.({ preventScroll: true });
+    }
+  };
+
+  requestAnimationFrame(() => {
+    restorePosition();
+    requestAnimationFrame(restorePosition);
+  });
+}
+
+function rerenderSettingsPreservingUiState(focusControl = "") {
+  const settingsState = getSettingsUiState();
+  settingsState.activeControl = focusControl || settingsState.activeControl;
+  renderJourneyShellContent("settings");
+  restoreSettingsUiState(settingsState);
+}
+
+function createSettingsMenuSection(titleText, copyText, isOpen = false, className = "settings-menu-section", settingsKey = "") {
+  const details = document.createElement("details");
+  details.className = className;
+  details.open = isOpen;
+  details.dataset.settingsKey = settingsKey || normalizeSettingKey(titleText);
+
+  const summary = document.createElement("summary");
+  summary.textContent = titleText;
+
+  const content = document.createElement("div");
+  content.className = "settings-menu-content";
+
+  if (copyText) {
+    const copy = document.createElement("p");
+    copy.className = "settings-panel-copy";
+    copy.textContent = copyText;
+    content.appendChild(copy);
+  }
+
+  details.append(summary, content);
+  return { details, content };
 }
 
 function renderStudyPresetControl() {
@@ -5244,6 +5398,7 @@ function renderStudyPresetControl() {
   });
 
   select.value = getCurrentStudyPresetId();
+  select.dataset.settingsControl = "preset-select";
   select.addEventListener("change", () => {
     if (select.value !== "custom") {
       applyStudyPreset(select.value);
@@ -5253,18 +5408,345 @@ function renderStudyPresetControl() {
   const helper = document.createElement("p");
   helper.className = "settings-panel-copy";
   const activePreset = mapLayerPresets.find((preset) => preset.id === select.value);
-  helper.textContent = activePreset?.description || "Manual target choices.";
+  helper.textContent = activePreset?.description || "Manual layer and target choices.";
+
+  label.appendChild(select);
+  wrapper.append(label, helper);
+  return wrapper;
+}
+
+function renderMapLayerSettings() {
+  const layerGroup = document.createElement("section");
+  layerGroup.className = "settings-layer-group";
+
+  const heading = document.createElement("h3");
+  heading.textContent = "Basic Layer Toggles";
+
+  const layerGrid = document.createElement("div");
+  layerGrid.className = "settings-layer-grid";
+  getMapLayerOptions().forEach((option) => {
+    layerGrid.appendChild(createMapLayerToggle(option));
+  });
+
+  layerGroup.append(heading, layerGrid);
+  return layerGroup;
+}
+
+function getMapLayerOptions() {
+  return [
+    {
+      id: "showContinents",
+      label: "Continents",
+      helper: "Show continent targets where the activity supports them."
+    },
+    {
+      id: "showOceans",
+      label: "Oceans",
+      helper: "Show ocean targets and ocean-zone context."
+    },
+    {
+      id: "showCountries",
+      label: "Countries",
+      helper: "Show country and region shapes."
+    },
+    {
+      id: "showStates",
+      label: "States",
+      helper: "Show state and comparable political division shapes."
+    },
+    {
+      id: "showProvinces",
+      label: "Provinces",
+      helper: "Show province-level targets where available."
+    },
+    {
+      id: "showTerritories",
+      label: "Territories",
+      helper: "Show territory-level targets where available."
+    },
+    {
+      id: "showCities",
+      label: "Cities",
+      helper: "Show city point markers when available."
+    },
+    {
+      id: "showCapitals",
+      label: "Capitals",
+      helper: "Show capital point markers when available."
+    }
+  ];
+}
+
+function createMapLayerToggle(option) {
+  const layerOption = document.createElement("label");
+  layerOption.className = "settings-layer-toggle";
+
+  const copy = document.createElement("span");
+  copy.className = "settings-layer-copy";
+
+  const labelText = document.createElement("strong");
+  labelText.textContent = option.label;
+
+  const helper = document.createElement("span");
+  helper.textContent = option.helper;
+
+  copy.append(labelText, helper);
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = mapLayerSettings[option.id] !== false;
+  checkbox.dataset.settingsControl = `map-layer-${option.id}`;
+  checkbox.addEventListener("change", () => {
+    setMapLayerSettings({
+      [option.id]: checkbox.checked
+    }, checkbox.dataset.settingsControl);
+  });
+
+  const switchTrack = document.createElement("span");
+  switchTrack.className = "settings-switch";
+  switchTrack.setAttribute("aria-hidden", "true");
+
+  layerOption.append(copy, checkbox, switchTrack);
+  return layerOption;
+}
+
+function renderStudyTargetHierarchy() {
+  const wrapper = document.createElement("div");
+  wrapper.className = "settings-target-hierarchy";
+  const groups = getStudyTargetGroups();
+  const usedGroupIds = new Set();
+
+  getStudyTargetHierarchySections().forEach((section) => {
+    const renderedSection = renderStudyTargetHierarchySection(section, groups, usedGroupIds);
+
+    if (renderedSection) {
+      wrapper.appendChild(renderedSection);
+    }
+  });
+
+  const remainingGroups = groups.filter((group) => !usedGroupIds.has(group.id));
+  if (remainingGroups.length > 0) {
+    const otherSection = createSettingsMenuSection("Other Available Targets", "", false, "settings-target-region", "target-region-other");
+    remainingGroups.forEach((group) => {
+      usedGroupIds.add(group.id);
+      otherSection.content.appendChild(renderStudyTargetGroup(group));
+    });
+    wrapper.appendChild(otherSection.details);
+  }
+
+  return wrapper;
+}
+
+function renderStudyTargetHierarchySection(section, groups, usedGroupIds) {
+  const renderedGroups = groups.filter((group) => section.matches(group));
+
+  if (renderedGroups.length === 0) {
+    return null;
+  }
+
+  const region = createSettingsMenuSection(
+    section.title,
+    section.copy || "",
+    Boolean(section.defaultOpen),
+    "settings-target-region",
+    `target-region-${normalizeSettingKey(section.title)}`
+  );
+
+  if (section.children?.length) {
+    section.children.forEach((child) => {
+      const childGroups = renderedGroups.filter((group) => child.matches(group));
+
+      if (childGroups.length === 0) {
+        return;
+      }
+
+      const childSection = createSettingsMenuSection(
+        child.title,
+        child.copy || "",
+        false,
+        "settings-target-subregion",
+        `target-subregion-${normalizeSettingKey(section.title)}-${normalizeSettingKey(child.title)}`
+      );
+      childGroups.forEach((group) => {
+        usedGroupIds.add(group.id);
+        childSection.content.appendChild(renderStudyTargetGroup(group));
+      });
+      region.content.appendChild(childSection.details);
+    });
+
+    const uncategorizedGroups = renderedGroups.filter((group) => !usedGroupIds.has(group.id));
+    uncategorizedGroups.forEach((group) => {
+      usedGroupIds.add(group.id);
+      region.content.appendChild(renderStudyTargetGroup(group));
+    });
+  } else {
+    renderedGroups.forEach((group) => {
+      usedGroupIds.add(group.id);
+      region.content.appendChild(renderStudyTargetGroup(group));
+    });
+  }
+
+  return region.content.children.length > 0 ? region.details : null;
+}
+
+function getStudyTargetHierarchySections() {
+  return [
+    {
+      title: "World",
+      defaultOpen: true,
+      matches: (group) => group.id === "world-continents" || group.id === "world-oceans",
+      children: [
+        {
+          title: "Continents",
+          matches: (group) => group.id === "world-continents"
+        },
+        {
+          title: "Oceans",
+          matches: (group) => group.id === "world-oceans"
+        }
+      ]
+    },
+    {
+      title: "North America",
+      defaultOpen: true,
+      matches: (group) => group.id === "countries-north-america"
+        || group.id.startsWith("canada-")
+        || group.id.startsWith("us-")
+        || group.id.startsWith("mexico-"),
+      children: [
+        {
+          title: "Countries",
+          copy: "Includes North America, Central America, and Caribbean country targets currently represented in activities.",
+          matches: (group) => group.id === "countries-north-america"
+        },
+        {
+          title: "Canada",
+          matches: (group) => group.id.startsWith("canada-")
+        },
+        {
+          title: "United States",
+          matches: (group) => group.id.startsWith("us-")
+        },
+        {
+          title: "Mexico",
+          matches: (group) => group.id.startsWith("mexico-")
+        }
+      ]
+    },
+    {
+      title: "South America",
+      matches: (group) => group.id === "countries-south-america" || group.id.startsWith("brazil-"),
+      children: [
+        {
+          title: "Countries",
+          matches: (group) => group.id === "countries-south-america"
+        },
+        {
+          title: "Brazil",
+          matches: (group) => group.id.startsWith("brazil-")
+        }
+      ]
+    },
+    {
+      title: "Europe",
+      matches: (group) => group.id === "countries-europe"
+        || group.id.startsWith("germany-")
+        || group.id.startsWith("france-")
+        || group.id.startsWith("spain-")
+        || group.id.startsWith("italy-")
+        || group.id.startsWith("united-kingdom-")
+        || group.id.startsWith("cities-europe-"),
+      children: [
+        {
+          title: "Countries",
+          matches: (group) => group.id === "countries-europe"
+        },
+        {
+          title: "Germany",
+          matches: (group) => group.id.startsWith("germany-")
+        },
+        {
+          title: "France",
+          matches: (group) => group.id.startsWith("france-")
+        },
+        {
+          title: "Spain",
+          matches: (group) => group.id.startsWith("spain-")
+        },
+        {
+          title: "Italy",
+          matches: (group) => group.id.startsWith("italy-")
+        },
+        {
+          title: "United Kingdom",
+          matches: (group) => group.id.startsWith("united-kingdom-")
+        },
+        {
+          title: "Cities",
+          matches: (group) => group.id.startsWith("cities-europe-")
+        }
+      ]
+    },
+    {
+      title: "Africa",
+      matches: (group) => group.id === "countries-africa"
+    },
+    {
+      title: "Asia",
+      matches: (group) => group.id === "countries-asia"
+        || group.id.startsWith("india-")
+        || group.id.startsWith("japan-")
+        || group.id.startsWith("china-"),
+      children: [
+        {
+          title: "Countries",
+          matches: (group) => group.id === "countries-asia"
+        },
+        {
+          title: "India",
+          matches: (group) => group.id.startsWith("india-")
+        },
+        {
+          title: "Japan",
+          matches: (group) => group.id.startsWith("japan-")
+        },
+        {
+          title: "China",
+          matches: (group) => group.id.startsWith("china-")
+        }
+      ]
+    },
+    {
+      title: "Russia",
+      matches: (group) => group.id.startsWith("russia-")
+    },
+    {
+      title: "Australia / Oceania",
+      matches: (group) => group.id === "countries-australia"
+        || group.id === "countries-oceania"
+        || group.id.startsWith("australia-")
+    }
+  ];
+}
+
+function renderSettingsDefaultsControl() {
+  const wrapper = document.createElement("div");
+  wrapper.className = "settings-defaults-control";
+
+  const copy = document.createElement("p");
+  copy.className = "settings-panel-copy";
+  copy.textContent = "This resets map layers and saved study-target preferences to the default Atlas Quest settings.";
 
   const resetButton = document.createElement("button");
   resetButton.type = "button";
   resetButton.className = "settings-reset-button";
   resetButton.textContent = "Reset to Default";
+  resetButton.dataset.settingsControl = "reset-defaults";
   resetButton.addEventListener("click", () => {
     applyStudyPreset("default");
   });
 
-  label.appendChild(select);
-  wrapper.append(label, helper, resetButton);
+  wrapper.append(copy, resetButton);
   return wrapper;
 }
 
@@ -5272,22 +5754,10 @@ function renderStudyTargetGroup(group) {
   const details = document.createElement("details");
   details.className = "settings-target-group";
   details.open = group.defaultOpen;
+  details.dataset.settingsKey = `target-group-${group.id}`;
 
   const summary = document.createElement("summary");
   const selectedCount = group.targets.filter((target) => isStudyTargetEnabled(group.settingKey, target.id)).length;
-
-  const groupCheckbox = document.createElement("input");
-  groupCheckbox.type = "checkbox";
-  groupCheckbox.className = "settings-target-group-checkbox";
-  groupCheckbox.checked = selectedCount === group.targets.length;
-  groupCheckbox.indeterminate = selectedCount > 0 && selectedCount < group.targets.length;
-  groupCheckbox.setAttribute("aria-label", `Toggle all ${group.title}`);
-  groupCheckbox.addEventListener("click", (event) => {
-    event.stopPropagation();
-  });
-  groupCheckbox.addEventListener("change", () => {
-    toggleTargetGroup(group.settingKey, group.targets, groupCheckbox.checked);
-  });
 
   const title = document.createElement("span");
   title.className = "settings-target-group-title";
@@ -5297,7 +5767,7 @@ function renderStudyTargetGroup(group) {
   count.className = "settings-target-group-count";
   count.textContent = `${selectedCount} / ${group.targets.length} selected`;
 
-  summary.append(groupCheckbox, title, count);
+  summary.append(title, count);
 
   const controls = document.createElement("div");
   controls.className = "settings-target-group-actions";
@@ -5305,15 +5775,17 @@ function renderStudyTargetGroup(group) {
   const selectAllButton = document.createElement("button");
   selectAllButton.type = "button";
   selectAllButton.textContent = "Select All";
+  selectAllButton.dataset.settingsControl = `target-group-select-all-${group.id}`;
   selectAllButton.addEventListener("click", () => {
-    toggleTargetGroup(group.settingKey, group.targets, true);
+    toggleTargetGroup(group.settingKey, group.targets, true, selectAllButton.dataset.settingsControl);
   });
 
   const deselectAllButton = document.createElement("button");
   deselectAllButton.type = "button";
   deselectAllButton.textContent = "Deselect All";
+  deselectAllButton.dataset.settingsControl = `target-group-deselect-all-${group.id}`;
   deselectAllButton.addEventListener("click", () => {
-    toggleTargetGroup(group.settingKey, group.targets, false);
+    toggleTargetGroup(group.settingKey, group.targets, false, deselectAllButton.dataset.settingsControl);
   });
 
   controls.append(selectAllButton, deselectAllButton);
@@ -5346,8 +5818,9 @@ function createStudyTargetToggle(settingKey, target) {
   const checkbox = document.createElement("input");
   checkbox.type = "checkbox";
   checkbox.checked = isStudyTargetEnabled(settingKey, target.id);
+  checkbox.dataset.settingsControl = `target-${settingKey}-${target.id}`;
   checkbox.addEventListener("change", () => {
-    toggleTarget(settingKey, target.id, checkbox.checked);
+    toggleTarget(settingKey, target.id, checkbox.checked, checkbox.dataset.settingsControl);
   });
 
   const switchTrack = document.createElement("span");
@@ -6770,6 +7243,7 @@ function openActivity(activityId, options = {}) {
   hideStudyPracticeCompletionCard();
   resetActivityAttemptState();
   activeStudySession = null;
+  runner?.setStudyPreviewMode(false);
   document.body.classList.remove("study-explore-mode");
   const baseActivity = getActivityById(activityId);
   currentPresentationSettings = getEffectivePresentationSettings(baseActivity, options);
@@ -6809,6 +7283,7 @@ function openActivity(activityId, options = {}) {
   updateDifficultyControls();
   clearFeedback();
   renderOverviewLibrary();
+  updateResetControlVisibility();
   enterStudy();
 }
 
@@ -6860,6 +7335,7 @@ function enterStudy() {
   runner.enterStudyView();
   renderActivityNavControls(session.currentActivity.id);
   updateTopBarNavigation();
+  updateResetControlVisibility();
 }
 
 function updateStudyInstruction() {
@@ -7629,6 +8105,21 @@ function resetActivity() {
   renderAnswerBank();
   updateProgress();
   ensureActivityNavControls();
+  updateResetControlVisibility();
+}
+
+function handleResetButtonClick() {
+  if (!shouldShowResetControl()) {
+    return;
+  }
+
+  const shouldReset = window.confirm("Reset this activity? Your current progress will be cleared.");
+
+  if (!shouldReset) {
+    return;
+  }
+
+  resetActivity();
 }
 
 function syncAnswerBank() {
@@ -7850,7 +8341,7 @@ function applyStudyPreset(presetId) {
   studyTargetSettings = normalizeStudyTargetSettings(nextTargetSettings);
   saveAppSettings();
   refreshCurrentActivityLayerPresentation();
-  renderJourneyShellContent("settings");
+  rerenderSettingsPreservingUiState();
 }
 
 function getCurrentLayerPresetId() {
@@ -7954,7 +8445,7 @@ function isStudyTargetEnabled(settingKey, targetId) {
   return studyTargetSettings?.[settingKey]?.[targetId] !== false;
 }
 
-function toggleTarget(settingKey, targetId, enabled) {
+function toggleTarget(settingKey, targetId, enabled, focusControl = "") {
   studyTargetSettings = normalizeStudyTargetSettings({
     ...studyTargetSettings,
     [settingKey]: {
@@ -7963,10 +8454,10 @@ function toggleTarget(settingKey, targetId, enabled) {
     }
   });
   saveAppSettings();
-  renderJourneyShellContent("settings");
+  rerenderSettingsPreservingUiState(focusControl);
 }
 
-function toggleTargetGroup(settingKey, targets, enabled) {
+function toggleTargetGroup(settingKey, targets, enabled, focusControl = "") {
   studyTargetSettings = normalizeStudyTargetSettings({
     ...studyTargetSettings,
     [settingKey]: {
@@ -7975,7 +8466,7 @@ function toggleTargetGroup(settingKey, targets, enabled) {
     }
   });
   saveAppSettings();
-  renderJourneyShellContent("settings");
+  rerenderSettingsPreservingUiState(focusControl);
 }
 
 function loadMapLayerSettings() {
@@ -8031,7 +8522,7 @@ function saveMapLayerSettings() {
   saveAppSettings();
 }
 
-function setMapLayerSettings(nextSettings = {}) {
+function setMapLayerSettings(nextSettings = {}, focusControl = "") {
   mapLayerSettings = normalizeMapLayerSettings({
     ...mapLayerSettings,
     ...nextSettings
@@ -8039,7 +8530,7 @@ function setMapLayerSettings(nextSettings = {}) {
   saveMapLayerSettings();
   refreshCurrentActivityLayerPresentation();
   if (currentAppScreen === "settings") {
-    renderJourneyShellContent("settings");
+    rerenderSettingsPreservingUiState(focusControl);
   }
 }
 
@@ -8664,6 +9155,8 @@ function updateTopBarNavigation() {
     homeButton.disabled = false;
     homeButton.setAttribute("aria-current", isHome ? "page" : "false");
   }
+
+  updateResetControlVisibility();
 }
 
 function updateStudyModeButtons() {

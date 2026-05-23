@@ -18,6 +18,8 @@ const colors = {
   previewFill: "#3b82f6",
   completedFill: "#1d4ed8",
   selectedLine: "#0f4fa8",
+  studyTargetFill: "#dbeafe",
+  studyTargetLine: "#2563eb",
   hardContinentChallengeFill: "#4f7f5f",
   neutralMarker: "#ffffff",
   neutralMarkerStroke: "#172033",
@@ -213,6 +215,7 @@ export class MapLibreActivityRunner {
     this.difficulty = difficultyModes.easy;
     this.pendingDifficultyVisualRefresh = false;
     this.presentationSettings = {};
+    this.studyPreviewMode = false;
   }
 
   onTargetClick(handler) {
@@ -360,6 +363,11 @@ export class MapLibreActivityRunner {
 
   setCompletedTargets(completedIds) {
     this.completedIds = Array.from(completedIds);
+    this.refreshDifficultyVisuals();
+  }
+
+  setStudyPreviewMode(isActive) {
+    this.studyPreviewMode = Boolean(isActive);
     this.refreshDifficultyVisuals();
   }
 
@@ -1698,6 +1706,19 @@ export class MapLibreActivityRunner {
   }
 
   getOceanRegionColorExpression() {
+    if (this.studyPreviewMode && this.isContinentsOceansActivity()) {
+      return [
+        "case",
+        ["in", ["coalesce", ["get", "id"], ["get", "ocean"], ["get", "name"]], ["literal", this.completedIds]],
+        this.getBaseOceanRegionColorMatchExpression(),
+        colors.studyTargetFill
+      ];
+    }
+
+    return this.getBaseOceanRegionColorMatchExpression();
+  }
+
+  getBaseOceanRegionColorMatchExpression() {
     return [
       "match",
       ["coalesce", ["get", "id"], ["get", "ocean"], ["get", "name"]],
@@ -2117,6 +2138,8 @@ export class MapLibreActivityRunner {
       return;
     }
 
+    this.refreshOceanRegionPaint();
+
     if (this.map.getLayer("state-fill")) {
       this.map.setPaintProperty("state-fill", "fill-color", this.getStateFillExpression());
       this.map.setPaintProperty("state-fill", "fill-opacity", this.getShapeFillOpacityExpression());
@@ -2157,6 +2180,19 @@ export class MapLibreActivityRunner {
 
     if (labelSource) {
       labelSource.setData(this.getCompletedLabelGeoJson());
+    }
+  }
+
+  refreshOceanRegionPaint() {
+    if (!this.map?.getLayer("ocean-region-fill")) {
+      return;
+    }
+
+    const colorExpression = this.getOceanRegionColorExpression();
+    this.map.setPaintProperty("ocean-region-fill", "fill-color", colorExpression);
+
+    if (this.map.getLayer("ocean-region-line")) {
+      this.map.setPaintProperty("ocean-region-line", "line-color", colorExpression);
     }
   }
 
@@ -2270,6 +2306,15 @@ export class MapLibreActivityRunner {
       return this.getContinentsOceansFillExpression();
     }
 
+    if (this.studyPreviewMode) {
+      return [
+        "case",
+        ["in", ["get", "id"], ["literal", this.completedIds]],
+        ["match", ["get", "id"], ...this.getColorMatchStops(), colors.targetFill],
+        colors.studyTargetFill
+      ];
+    }
+
     if (this.getDifficultyVisualState().isHard) {
       return this.activity?.map?.region === "united-states"
         ? this.getUsStateContextFillExpression()
@@ -2285,6 +2330,17 @@ export class MapLibreActivityRunner {
   }
 
   getContinentsOceansFillExpression() {
+    if (this.studyPreviewMode) {
+      return [
+        "case",
+        ["boolean", ["get", "isOceanZone"], false],
+        ["match", ["get", "id"], ...this.getColorMatchStops(), colors.ocean],
+        ["in", ["get", "id"], ["literal", this.completedIds]],
+        ["match", ["get", "id"], ...this.getColorMatchStops(), colors.targetFill],
+        colors.studyTargetFill
+      ];
+    }
+
     const isHard = this.getDifficultyVisualState().isHard;
     const shouldRevealContinents = !isHard || this.areAllContinentTargetsCompleted();
 
@@ -2308,6 +2364,15 @@ export class MapLibreActivityRunner {
       return this.getContinentsOceansFillOpacityExpression();
     }
 
+    if (this.studyPreviewMode) {
+      return [
+        "case",
+        ["in", ["get", "id"], ["literal", this.completedIds]],
+        0.96,
+        0.52
+      ];
+    }
+
     if (this.getDifficultyVisualState().isHard) {
       return 0.01;
     }
@@ -2328,6 +2393,17 @@ export class MapLibreActivityRunner {
   }
 
   getContinentsOceansFillOpacityExpression() {
+    if (this.studyPreviewMode) {
+      return [
+        "case",
+        ["boolean", ["get", "isOceanZone"], false],
+        0,
+        ["in", ["get", "id"], ["literal", this.completedIds]],
+        0.96,
+        0.52
+      ];
+    }
+
     if (this.getDifficultyVisualState().isHard) {
       return [
         "case",
@@ -2355,10 +2431,32 @@ export class MapLibreActivityRunner {
   }
 
   getStateLineExpression() {
+    if (this.studyPreviewMode) {
+      return [
+        "case",
+        ["in", ["get", "id"], ["literal", this.completedIds]],
+        colors.targetStroke,
+        colors.studyTargetLine
+      ];
+    }
+
     return colors.targetStroke;
   }
 
   getShapeLineOpacityExpression() {
+    if (this.studyPreviewMode) {
+      return [
+        "case",
+        ["boolean", ["get", "isOceanZone"], false],
+        0,
+        ["boolean", ["get", "suppressInternalTargetLines"], false],
+        0,
+        ["in", ["get", "id"], ["literal", this.completedIds]],
+        1,
+        0.86
+      ];
+    }
+
     if (this.shouldShowHardContinentChallenge()) {
       return [
         "case",
@@ -2385,6 +2483,15 @@ export class MapLibreActivityRunner {
   }
 
   getShapeLineWidthExpression() {
+    if (this.studyPreviewMode) {
+      return [
+        "case",
+        ["in", ["get", "id"], ["literal", this.completedIds]],
+        2.15,
+        1.7
+      ];
+    }
+
     if (this.shouldShowHardContinentChallenge()) {
       return 2.15;
     }
@@ -2439,6 +2546,15 @@ export class MapLibreActivityRunner {
   }
 
   getCapitalFillExpression() {
+    if (this.studyPreviewMode) {
+      return [
+        "case",
+        ["in", ["get", "id"], ["literal", this.completedIds]],
+        ["match", ["get", "id"], ...this.getColorMatchStops(), colors.neutralMarker],
+        colors.neutralMarker
+      ];
+    }
+
     if (this.getDifficultyVisualState().isHard) {
       return colors.neutralMarker;
     }
@@ -2475,6 +2591,10 @@ export class MapLibreActivityRunner {
   }
 
   getCapitalOpacityExpression() {
+    if (this.studyPreviewMode) {
+      return 1;
+    }
+
     const visualState = this.getDifficultyVisualState();
 
     if (visualState.showsPointHintsBeforePlacement) {
@@ -2498,6 +2618,15 @@ export class MapLibreActivityRunner {
   }
 
   getCapitalHaloOpacityExpression() {
+    if (this.studyPreviewMode) {
+      return [
+        "case",
+        ["in", ["get", "id"], ["literal", this.completedIds]],
+        0.18,
+        0.1
+      ];
+    }
+
     const visualState = this.getDifficultyVisualState();
 
     if (visualState.showsPointHintsBeforePlacement) {

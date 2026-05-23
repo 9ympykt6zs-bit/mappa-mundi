@@ -67,6 +67,30 @@
       "labelAnchor": [-85.2, 12.95],
       "labelFontSize": 10,
       "labelRotation": 0
+    },
+    {
+      "id": "costa-rica",
+      "name": "Costa Rica",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "CRI",
+      "color": "#14b8a6",
+      "flag": "\ud83c\udde8\ud83c\uddf7",
+      "labelAnchor": [-84.08, 10.06],
+      "labelFontSize": 9,
+      "labelRotation": 0
+    },
+    {
+      "id": "panama",
+      "name": "Panama",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "PAN",
+      "color": "#ec4899",
+      "flag": "\ud83c\uddf5\ud83c\udde6",
+      "labelAnchor": [-80.35, 8.72],
+      "labelFontSize": 9,
+      "labelRotation": 0
     }
   ]
 }

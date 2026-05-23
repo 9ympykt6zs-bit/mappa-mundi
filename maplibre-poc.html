@@ -6,7 +6,7 @@
     <title>Atlas Quest</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css" />
-    <link rel="stylesheet" href="maplibre-poc.css?v=mobile-active-play" />
+    <link rel="stylesheet" href="maplibre-poc.css?v=reset-confirm" />
   </head>
   <body class="overview-mode launch-mode">
     <section id="launch-screen" class="launch-screen" aria-labelledby="launch-title">
@@ -48,8 +48,14 @@
         <p class="launch-kicker">Atlas Quest</p>
         <h1 id="app-shell-title">Main Menu</h1>
         <p id="app-shell-subtitle">Choose how you want to explore today.</p>
+        <button id="main-menu-quick-start-button" class="quick-start-card" type="button">
+          <span id="quick-start-kicker" class="quick-start-kicker">Start Learning</span>
+          <span id="quick-start-title" class="quick-start-title">World Foundations</span>
+          <span id="quick-start-detail" class="quick-start-detail">Continents and Oceans</span>
+          <span id="quick-start-meta" class="quick-start-meta">Difficulty: Easy</span>
+          <span id="quick-start-action" class="quick-start-action">Start</span>
+        </button>
         <div id="main-menu-actions" class="main-menu-actions">
-          <button id="main-menu-continue-button" class="main-menu-button main-menu-button-blue" type="button">Continue Journey</button>
           <button id="main-menu-choose-button" class="main-menu-button main-menu-button-purple" type="button">Choose Journey</button>
           <button id="main-menu-free-play-button" class="main-menu-button main-menu-button-orange" type="button">Free Play</button>
           <button id="main-menu-settings-button" class="main-menu-button main-menu-button-teal" type="button">Settings</button>
@@ -75,6 +81,7 @@
         </div>
         <div class="top-bar-side top-bar-right">
           <button id="browse-button" class="top-bar-button" type="button" aria-expanded="false" aria-controls="region-panel">Browse</button>
+          <button id="reset-button" class="top-bar-button reset-button" type="button" hidden>Reset</button>
           <button id="settings-button" class="top-bar-button settings-button" type="button" aria-label="Settings" title="Settings"></button>
         </div>
       </div>
@@ -137,7 +144,6 @@
           <span class="control-label">Progress</span>
           <div class="progress-actions">
             <strong id="progress">0 of 20 completed</strong>
-            <button id="reset-button" type="button">Reset</button>
           </div>
         </div>
       </div>
@@ -166,6 +172,6 @@
     </div>
 
     <script src="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js"></script>
-    <script type="module" src="src/maplibre-poc.js?v=mobile-active-play"></script>
+    <script type="module" src="src/maplibre-poc.js?v=reset-confirm"></script>
   </body>
 </html>

@@ -25,6 +25,10 @@ Use this as a manual smoke matrix before release.
 
 ## Journey Mode
 
+- [ ] From a fresh Main Menu, tap Quick Start and confirm it launches World Foundations / Continents and Oceans on Easy.
+- [ ] With saved active Journey progress, tap Quick Start and confirm it resumes the active journey at the next incomplete step.
+- [ ] With malformed, missing, or completed active progress, tap Quick Start and confirm it falls back safely to World Foundations on Easy.
+- [ ] Confirm Quick Start works with a single mobile tap.
 - [ ] Choose Journey.
 - [ ] Open United States.
 - [ ] Select difficulty.

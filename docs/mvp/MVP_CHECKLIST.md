@@ -3,7 +3,7 @@
 ## Must Fix Before MVP
 
 - [ ] Hide or remove the public developer SVG link in `maplibre-poc.html`.
-- [ ] Resolve the Continue Journey placeholder versus actual progress behavior in `src/maplibre-poc.js`.
+- [x] Replace the Continue Journey placeholder path with a functional Quick Start / Continue Journey Main Menu card in `src/maplibre-poc.js`.
 - [ ] Fix visible text encoding/mojibake in user-facing UI strings.
 - [ ] Confirm no Name Target feature remains in public UI or runtime paths.
 - [ ] Confirm selected-chip target highlighting/pulsing does not reveal the correct answer.
