@@ -1,9 +1,10 @@
 import {
   baseWaterColor,
   createBaseWaterImage,
-  createOceanRegionImage,
-  globeTextureBounds
-} from "./ocean-textures.js?v=global-ocean-png";
+  globeTextureBounds,
+  oceanRegionColors,
+  oceanTextureSize
+} from "./ocean-textures.js?v=ocean-geojson-regions";
 
 const colors = {
   ink: "#172033",
@@ -50,7 +51,13 @@ const colors = {
 };
 
 const baseWaterImage = createBaseWaterImage();
-const oceanRegionImage = createOceanRegionImage();
+const oceanHighlightLatExtent = 89.5;
+const oceanHighlightTextureBounds = [
+  [-180, oceanHighlightLatExtent],
+  [180, oceanHighlightLatExtent],
+  [180, -oceanHighlightLatExtent],
+  [-180, -oceanHighlightLatExtent]
+];
 const fallbackLabelAnchors = {
   "north-america": [-103, 47],
   "south-america": [-60, -18],
@@ -94,6 +101,15 @@ function normalizeDifficulty(difficulty) {
   return Object.values(difficultyModes).includes(difficulty) ? difficulty : difficultyModes.easy;
 }
 
+function normalizeTargetId(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function parseHexColor(hex) {
   const normalized = typeof hex === "string" ? hex.trim().replace(/^#/, "") : "";
 
@@ -123,7 +139,7 @@ function mixHexColor(color, mixWith = "#eef3f7", amount = 0.64) {
   return `#${toHexChannel(base.r * (1 - amount) + overlay.r * amount)}${toHexChannel(base.g * (1 - amount) + overlay.g * amount)}${toHexChannel(base.b * (1 - amount) + overlay.b * amount)}`;
 }
 
-function getOceanZoneFeature(id) {
+function getFallbackOceanZoneFeature(id) {
   const oceanBounds = {
     "arctic-ocean": [[-180, 58], [180, 85]],
     "southern-ocean": [[-180, -85], [180, -46]],
@@ -207,9 +223,10 @@ export class MapLibreActivityRunner {
     this.regionSelectHandler = handler;
   }
 
-  async load({ activity, worldCountries, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1 }) {
+  async load({ activity, worldCountries, oceanZones, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1 }) {
     this.activity = activity;
     this.worldCountries = worldCountries;
+    this.oceanZones = oceanZones || emptyFeatureCollection;
     this.usStatesAtlas = usStatesAtlas;
     this.stateTargets = stateTargets;
     this.northAmericaAdmin1 = northAmericaAdmin1 || emptyFeatureCollection;
@@ -487,6 +504,7 @@ export class MapLibreActivityRunner {
     }
 
     this.refreshStudyFilters();
+    this.refreshOceanHighlightImages();
     this.updateOceanRegionVisibility();
     this.refreshDifficultyVisuals();
   }
@@ -542,6 +560,190 @@ export class MapLibreActivityRunner {
     }
 
     this.enterOverview();
+  }
+
+  focusTarget(target) {
+    if (!this.map || !target) {
+      return;
+    }
+
+    const camera = this.getTargetFocusCamera(target);
+
+    if (!camera) {
+      return;
+    }
+
+    this.map.stop();
+
+    if (camera.bounds) {
+      this.map.fitBounds(camera.bounds, {
+        padding: camera.padding,
+        maxZoom: camera.maxZoom,
+        retainPadding: false,
+        duration: camera.duration,
+        essential: true
+      });
+      return;
+    }
+
+    this.map.easeTo({
+      center: camera.center,
+      zoom: camera.zoom,
+      padding: camera.padding,
+      pitch: 0,
+      bearing: 0,
+      retainPadding: false,
+      duration: camera.duration,
+      essential: true
+    });
+  }
+
+  getTargetFocusCamera(target) {
+    const padding = this.getTargetFocusPadding(target);
+    const duration = Number.isFinite(target.focusDuration) ? target.focusDuration : 650;
+
+    if (this.hasValidBounds(target.focusBounds)) {
+      return {
+        bounds: target.focusBounds,
+        padding,
+        maxZoom: this.getTargetMaxFocusZoom(target),
+        duration
+      };
+    }
+
+    const explicitCenter = this.getExplicitTargetFocusCenter(target);
+
+    if (explicitCenter) {
+      return {
+        center: explicitCenter,
+        zoom: this.getTargetFocusZoom(target),
+        padding,
+        duration
+      };
+    }
+
+    if (target.kind === "point" && Number.isFinite(target.lon) && Number.isFinite(target.lat)) {
+      return {
+        center: [target.lon, target.lat],
+        zoom: this.getTargetFocusZoom(target),
+        padding,
+        duration
+      };
+    }
+
+    const feature = this.getTargetShapeFeature(target);
+    const bounds = this.getGeometryBounds(feature?.geometry);
+
+    if (!bounds) {
+      return null;
+    }
+
+    return {
+      bounds,
+      padding,
+      maxZoom: this.getTargetMaxFocusZoom(target),
+      duration
+    };
+  }
+
+  getExplicitTargetFocusCenter(target) {
+    if (Array.isArray(target.focusCenter) && target.focusCenter.length >= 2) {
+      const [lon, lat] = target.focusCenter;
+
+      if (Number.isFinite(lon) && Number.isFinite(lat)) {
+        return [lon, lat];
+      }
+    }
+
+    if (Number.isFinite(target.focusLon) && Number.isFinite(target.focusLat)) {
+      return [target.focusLon, target.focusLat];
+    }
+
+    return null;
+  }
+
+  getTargetFocusZoom(target) {
+    if (Number.isFinite(target.focusZoom)) {
+      return target.focusZoom;
+    }
+
+    if (target.kind === "point") {
+      return 5.2;
+    }
+
+    if (this.isOceanTarget(target)) {
+      return 1.65;
+    }
+
+    return 3.6;
+  }
+
+  getTargetMaxFocusZoom(target) {
+    if (Number.isFinite(target.focusMaxZoom)) {
+      return target.focusMaxZoom;
+    }
+
+    if (Number.isFinite(target.focusZoom)) {
+      return target.focusZoom;
+    }
+
+    return target.kind === "point" ? 6 : 5;
+  }
+
+  getTargetFocusPadding(target = {}) {
+    if (target.focusPadding && typeof target.focusPadding === "object") {
+      return this.normalizePadding(target.focusPadding);
+    }
+
+    const compact = this.isCompactFocusLayout();
+    const short = typeof window !== "undefined" && window.innerHeight <= 520;
+
+    if (compact) {
+      return this.normalizePadding({
+        top: short ? 74 : 112,
+        right: 30,
+        bottom: short ? 104 : 210,
+        left: 30
+      });
+    }
+
+    return this.normalizePadding({
+      top: 110,
+      right: 90,
+      bottom: 150,
+      left: 90
+    });
+  }
+
+  normalizePadding(padding = {}) {
+    const mapElement = typeof this.container === "string"
+      ? document.getElementById(this.container)
+      : this.container;
+    const mapHeight = mapElement?.clientHeight || window.innerHeight || 720;
+    const mapWidth = mapElement?.clientWidth || window.innerWidth || 1024;
+    const maxVertical = Math.max(24, Math.floor(mapHeight * 0.38));
+    const maxHorizontal = Math.max(24, Math.floor(mapWidth * 0.28));
+
+    return {
+      top: Math.min(Number(padding.top) || 0, maxVertical),
+      right: Math.min(Number(padding.right) || 0, maxHorizontal),
+      bottom: Math.min(Number(padding.bottom) || 0, maxVertical),
+      left: Math.min(Number(padding.left) || 0, maxHorizontal)
+    };
+  }
+
+  isCompactFocusLayout() {
+    try {
+      return window.matchMedia?.("(max-width: 760px), (max-width: 900px) and (max-height: 520px)")?.matches || false;
+    } catch {
+      return false;
+    }
+  }
+
+  hasValidBounds(bounds) {
+    return Array.isArray(bounds)
+      && bounds.length === 2
+      && bounds.every((point) => Array.isArray(point) && point.length >= 2 && point.every(Number.isFinite));
   }
 
   onZoomChange(handler) {
@@ -694,22 +896,45 @@ export class MapLibreActivityRunner {
 
   addOceanRegionLayer() {
     this.map.addSource("ocean-regions", {
-      type: "image",
-      url: oceanRegionImage,
-      coordinates: globeTextureBounds
+      type: "geojson",
+      data: this.oceanZones || emptyFeatureCollection
     });
 
     this.map.addLayer({
-      id: "ocean-region-raster",
-      type: "raster",
+      id: "ocean-region-fill",
+      type: "fill",
       source: "ocean-regions",
       layout: {
         visibility: "visible"
       },
       paint: {
-        "raster-opacity": 1,
-        "raster-fade-duration": 0,
-        "raster-resampling": "linear"
+        "fill-color": this.getOceanRegionColorExpression(),
+        "fill-opacity": 1,
+        "fill-antialias": true
+      }
+    }, "world-land");
+
+    this.map.addLayer({
+      id: "ocean-region-line",
+      type: "line",
+      source: "ocean-regions",
+      layout: {
+        visibility: "visible"
+      },
+      paint: {
+        "line-color": this.getOceanRegionColorExpression(),
+        "line-opacity": 0.46,
+        "line-width": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          1,
+          0.7,
+          4,
+          1.2,
+          7,
+          1.8
+        ]
       }
     }, "world-land");
   }
@@ -823,16 +1048,38 @@ export class MapLibreActivityRunner {
       data: this.getCompletedLabelGeoJson()
     });
 
+    this.map.addSource("ocean-target-raster", {
+      type: "image",
+      url: this.createOceanTargetHighlightImage(),
+      coordinates: oceanHighlightTextureBounds
+    });
+
+    this.map.addLayer({
+      id: "ocean-target-raster",
+      type: "raster",
+      source: "ocean-target-raster",
+      layout: {
+        visibility: "none"
+      },
+      paint: {
+        "raster-opacity": 1,
+        "raster-fade-duration": 0,
+        "raster-resampling": "linear"
+      }
+    }, "world-land");
+
     this.map.addLayer({
       id: "state-fill",
       type: "fill",
       source: "target-shapes",
+      filter: ["!=", ["get", "isOceanZone"], true],
       layout: {
         visibility: "none"
       },
       paint: {
         "fill-color": this.getStateFillExpression(),
-        "fill-opacity": this.getShapeFillOpacityExpression()
+        "fill-opacity": this.getShapeFillOpacityExpression(),
+        "fill-antialias": false
       }
     });
 
@@ -859,7 +1106,14 @@ export class MapLibreActivityRunner {
       },
       paint: {
         "fill-color": colors.neutralMarker,
-        "fill-opacity": 0.01
+        "fill-opacity": [
+          "case",
+          ["boolean", ["get", "isOceanZone"], false],
+          0,
+          ["boolean", ["get", "suppressInternalTargetLines"], false],
+          0,
+          0.01
+        ]
       }
     });
 
@@ -1274,11 +1528,26 @@ export class MapLibreActivityRunner {
     return {
       kind,
       targetId: properties.activityId || properties.id || normalizedWorldCountryId || null,
+      normalizedCountryId: normalizedWorldCountryId,
       sourceTargetId: properties.id || normalizedWorldCountryId || null,
       layerId: feature?.layer?.id || null,
       isoA3: this.getStableCountryCode(properties),
+      isoA2: this.getStableCountryIso2(properties),
       stateId: properties.id || properties.postal || null,
       continent: properties.CONTINENT || null,
+      sourceProperties: {
+        ADMIN: properties.ADMIN,
+        NAME: properties.NAME,
+        NAME_LONG: properties.NAME_LONG,
+        GEOUNIT: properties.GEOUNIT,
+        SOVEREIGNT: properties.SOVEREIGNT,
+        ISO_A2: properties.ISO_A2,
+        ISO_A2_EH: properties.ISO_A2_EH,
+        ISO_A3: properties.ISO_A3,
+        ADM0_A3: properties.ADM0_A3,
+        SOV_A3: properties.SOV_A3,
+        CONTINENT: properties.CONTINENT
+      },
       names
     };
   }
@@ -1298,10 +1567,24 @@ export class MapLibreActivityRunner {
     ].find((value) => this.isValidCountryCode(value)) || null;
   }
 
+  getStableCountryIso2(properties = {}) {
+    return [
+      properties.ISO_A2,
+      properties.ISO_A2_EH,
+      properties.isoA2
+    ].find((value) => this.isValidCountryIso2(value)) || null;
+  }
+
   isValidCountryCode(value) {
     const normalized = String(value || "").toUpperCase();
 
     return /^[A-Z0-9]{3}$/.test(normalized) && normalized !== "-99";
+  }
+
+  isValidCountryIso2(value) {
+    const normalized = String(value || "").toUpperCase();
+
+    return /^[A-Z]{2}$/.test(normalized);
   }
 
   normalizeNavigationId(value) {
@@ -1403,10 +1686,172 @@ export class MapLibreActivityRunner {
         id: target.id,
         name: target.name,
         color: target.color,
-        isOceanZone: target.type === "zone"
+        isOceanZone: target.type === "zone",
+        suppressInternalTargetLines: this.shouldSuppressInternalTargetLines(target)
       },
       geometry: sourceFeature.geometry
     };
+  }
+
+  shouldSuppressInternalTargetLines(target) {
+    return this.isContinentsOceansActivity() && target?.type === "region";
+  }
+
+  getOceanRegionColorExpression() {
+    return [
+      "match",
+      ["coalesce", ["get", "id"], ["get", "ocean"], ["get", "name"]],
+      "atlantic-ocean",
+      oceanRegionColors.atlantic,
+      "Atlantic Ocean",
+      oceanRegionColors.atlantic,
+      "pacific-ocean",
+      oceanRegionColors.pacific,
+      "Pacific Ocean",
+      oceanRegionColors.pacific,
+      "indian-ocean",
+      oceanRegionColors.indian,
+      "Indian Ocean",
+      oceanRegionColors.indian,
+      "arctic-ocean",
+      oceanRegionColors.arctic,
+      "Arctic Ocean",
+      oceanRegionColors.arctic,
+      "southern-ocean",
+      oceanRegionColors.southern,
+      "Southern Ocean",
+      oceanRegionColors.southern,
+      colors.ocean
+    ];
+  }
+
+  createOceanTargetHighlightImage() {
+    if (!this.isContinentsOceansActivity()) {
+      return this.createTransparentOceanHighlightImage();
+    }
+
+    return this.createTransparentOceanHighlightImage();
+  }
+
+  createTransparentOceanHighlightImage() {
+    if (typeof document === "undefined") {
+      return "";
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 2;
+    canvas.height = 2;
+    return canvas.toDataURL("image/png");
+  }
+
+  createOceanHighlightImage(entries, forcedColor = null) {
+    if (typeof document === "undefined" || !entries?.length) {
+      return this.createTransparentOceanHighlightImage();
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = oceanTextureSize.width;
+    canvas.height = oceanTextureSize.height;
+    const context = canvas.getContext("2d");
+
+    entries.forEach(({ target, opacity }) => {
+      const feature = this.getTargetShapeFeature(target);
+
+      if (!feature?.geometry || opacity <= 0) {
+        return;
+      }
+
+      const color = forcedColor || target.color || colors.ocean;
+      this.drawOceanHighlightFeature(context, feature, color, opacity);
+    });
+
+    return canvas.toDataURL("image/png");
+  }
+
+  drawOceanHighlightFeature(context, feature, color, opacity) {
+    const rgba = this.hexToRgba(color, opacity);
+    context.save();
+    context.fillStyle = rgba;
+    this.traceOceanFeaturePath(context, feature);
+    context.fill("evenodd");
+    context.restore();
+  }
+
+  traceOceanFeaturePath(context, feature) {
+    const polygons = feature.geometry.type === "Polygon"
+      ? [feature.geometry.coordinates]
+      : feature.geometry.coordinates;
+
+    context.beginPath();
+
+    polygons.forEach((polygon) => {
+      polygon.forEach((ring) => {
+        ring.forEach(([lon, lat], index) => {
+          const [x, y] = this.projectOceanTexturePoint(lon, lat);
+
+          if (index === 0) {
+            context.moveTo(x, y);
+          } else {
+            context.lineTo(x, y);
+          }
+        });
+        context.closePath();
+      });
+    });
+  }
+
+  projectOceanTexturePoint(lon, lat) {
+    const width = oceanTextureSize.width;
+    const height = oceanTextureSize.height;
+    const clampedLon = lon <= -179.5 ? -180 : lon >= 179.5 ? 180 : Math.max(-180, Math.min(180, lon));
+    const clampedLat = Math.max(-oceanHighlightLatExtent, Math.min(oceanHighlightLatExtent, lat));
+    return [
+      ((clampedLon + 180) / 360) * width,
+      ((oceanHighlightLatExtent - clampedLat) / (oceanHighlightLatExtent * 2)) * height
+    ];
+  }
+
+  hexToRgba(color, opacity) {
+    const parsed = parseHexColor(color);
+
+    if (!parsed) {
+      return `rgba(17, 104, 183, ${opacity})`;
+    }
+
+    return `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, ${opacity})`;
+  }
+
+  refreshOceanHighlightImages() {
+    this.refreshOceanTargetHighlightImage();
+  }
+
+  refreshOceanTargetHighlightImage() {
+    this.updateOceanImageSource("ocean-target-raster", this.createOceanTargetHighlightImage());
+  }
+
+  updateOceanImageSource(sourceId, url) {
+    const source = this.map?.getSource(sourceId);
+
+    if (source?.updateImage) {
+      source.updateImage({
+        url,
+        coordinates: oceanHighlightTextureBounds
+      });
+    }
+  }
+
+  getGeometryBounds(geometry) {
+    if (!geometry) {
+      return null;
+    }
+
+    const bounds = this.getCoordinateBounds(geometry.coordinates);
+
+    if (!bounds.every(Number.isFinite)) {
+      return null;
+    }
+
+    return [[bounds[0], bounds[1]], [bounds[2], bounds[3]]];
   }
 
   findSourceShapeFeature(target, activity = this.activity) {
@@ -1506,7 +1951,7 @@ export class MapLibreActivityRunner {
 
   getContinentsOceanSourceFeature(target) {
     if (target.type === "zone") {
-      return getOceanZoneFeature(target.id);
+      return this.getOceanZoneFeature(target.id);
     }
 
     const continentName = target.id === "australia" ? "Oceania" : target.name;
@@ -1528,6 +1973,22 @@ export class MapLibreActivityRunner {
         coordinates
       }
     };
+  }
+
+  getOceanZoneFeature(id) {
+    const targetId = normalizeTargetId(id);
+    const feature = this.oceanZones?.features?.find((candidate) => {
+      const properties = candidate?.properties || {};
+
+      return [
+        candidate?.id,
+        properties.id,
+        properties.ocean,
+        properties.name
+      ].some((value) => normalizeTargetId(value) === targetId);
+    });
+
+    return feature || getFallbackOceanZoneFeature(id);
   }
 
   getContinentFeaturePolygons(feature, target) {
@@ -1660,6 +2121,8 @@ export class MapLibreActivityRunner {
       this.map.setPaintProperty("state-fill", "fill-color", this.getStateFillExpression());
       this.map.setPaintProperty("state-fill", "fill-opacity", this.getShapeFillOpacityExpression());
     }
+
+    this.refreshOceanTargetHighlightImage();
 
     if (this.map.getLayer("state-line")) {
       this.map.setPaintProperty("state-line", "line-color", this.getStateLineExpression());
@@ -1901,6 +2364,8 @@ export class MapLibreActivityRunner {
         "case",
         ["boolean", ["get", "isOceanZone"], false],
         0,
+        ["boolean", ["get", "suppressInternalTargetLines"], false],
+        0,
         1
       ];
     }
@@ -1912,6 +2377,8 @@ export class MapLibreActivityRunner {
     return [
       "case",
       ["boolean", ["get", "isOceanZone"], false],
+      0,
+      ["boolean", ["get", "suppressInternalTargetLines"], false],
       0,
       1
     ];
@@ -2079,11 +2546,15 @@ export class MapLibreActivityRunner {
   }
 
   updateOceanRegionVisibility() {
-    if (!this.map?.getLayer("ocean-region-raster")) {
+    if (!this.map?.getLayer("ocean-region-fill")) {
       return;
     }
 
-    this.map.setLayoutProperty("ocean-region-raster", "visibility", "visible");
+    this.map.setLayoutProperty("ocean-region-fill", "visibility", "visible");
+
+    if (this.map.getLayer("ocean-region-line")) {
+      this.map.setLayoutProperty("ocean-region-line", "visibility", "visible");
+    }
   }
 
   updateBaseLabelVisibility() {
@@ -2113,7 +2584,7 @@ export class MapLibreActivityRunner {
 
   updateDifficultyLayerVisibility() {
     if (!this.map || this.currentView !== "study") {
-      ["state-fill", "state-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "capital-hit", "completed-label"].forEach((layerId) => {
+      ["ocean-target-raster", "state-fill", "state-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "capital-hit", "completed-label"].forEach((layerId) => {
         if (this.map?.getLayer(layerId)) {
           this.map.setLayoutProperty(layerId, "visibility", "none");
         }
@@ -2126,6 +2597,10 @@ export class MapLibreActivityRunner {
 
     if (this.map.getLayer("state-fill")) {
       this.map.setLayoutProperty("state-fill", "visibility", showGuidedTargets ? "visible" : "none");
+    }
+
+    if (this.map.getLayer("ocean-target-raster")) {
+      this.map.setLayoutProperty("ocean-target-raster", "visibility", showGuidedTargets ? "visible" : "none");
     }
 
     if (this.map.getLayer("state-line")) {
@@ -2158,7 +2633,7 @@ export class MapLibreActivityRunner {
   }
 
   setStudyVisibility(visibility) {
-    ["state-fill", "state-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "capital-hit", "completed-label"].forEach((layerId) => {
+    ["ocean-target-raster", "state-fill", "state-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "capital-hit", "completed-label"].forEach((layerId) => {
       if (this.map.getLayer(layerId)) {
         this.map.setLayoutProperty(layerId, "visibility", visibility);
       }

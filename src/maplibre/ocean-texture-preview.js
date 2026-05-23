@@ -1,20 +1,19 @@
 import {
   oceanRegionColors,
-  oceanRegionTextureUrl,
   oceanTextureSize
-} from "./ocean-textures.js?v=global-ocean-png";
+} from "./ocean-textures.js?v=ocean-geojson-regions";
 
 const preview = document.querySelector("#texture-preview");
 const legend = document.querySelector("#legend");
 const rawSvgLink = document.querySelector("#raw-svg-link");
+const oceanZonesPath = "assets/maps/data/ocean-zones.geojson";
 
-const image = document.createElement("img");
-image.id = "ocean-region-texture-image";
-image.src = oceanRegionTextureUrl;
-image.alt = `${oceanTextureSize.width} by ${oceanTextureSize.height} ocean region PNG texture`;
-preview.append(image);
+const notice = document.createElement("p");
+notice.className = "texture-preview-note";
+notice.textContent = `The retired ${oceanTextureSize.width} by ${oceanTextureSize.height} ocean PNG is no longer used. Ocean regions now render directly from ${oceanZonesPath}.`;
+preview.append(notice);
 
-rawSvgLink.href = oceanRegionTextureUrl;
+rawSvgLink.href = oceanZonesPath;
 
 const regionLabels = {
   pacific: "Pacific Ocean",
@@ -38,7 +37,7 @@ Object.entries(oceanRegionColors).forEach(([region, color]) => {
   const detail = document.createElement("span");
 
   name.textContent = regionLabels[region];
-  detail.textContent = region === "pacific" ? "Full-background base layer" : "Painted into the PNG texture";
+  detail.textContent = "Rendered from ocean-zones.geojson";
 
   copy.append(name, detail);
   card.append(swatch, copy);

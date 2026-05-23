@@ -1,7 +1,7 @@
 import { normalizeActivity } from "./map-engines/activity-normalizer.js";
 import { ActivitySession, studyModes } from "./maplibre/activity-session.js?v=progress-state";
 import "./chip-speech.js?v=tts-answer-chips";
-import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=curriculum-layer-settings";
+import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=normal-placement";
 import { journeyPresets } from "./journey-presets.js?v=journey-presets-expanded";
 import {
   clearActiveJourney,
@@ -121,6 +121,7 @@ const worldCountrySupplements = [
   "assets/maps/world/french-guiana-map-unit.geojson",
   "assets/maps/world/guam-map-unit.geojson"
 ];
+const oceanZonesPath = "assets/maps/data/ocean-zones.geojson";
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const northAmericaAdmin1Path = "assets/maps/data/maplibre-north-america-admin1.geojson";
@@ -2476,6 +2477,7 @@ let isNavigationBrowseMode = false;
 let isBrowseDrawerOpen = false;
 let activePreviewActivityId = null;
 let selectedOverviewActivityId = null;
+// Selected Free Play country/card state is separate from activity sessions so browsing stays non-scored.
 let freePlaySelectedMapFeature = null;
 let grabbedAnswerId = null;
 let grabbedPointerId = null;
@@ -2558,6 +2560,40 @@ const mainMenuContinueButton = document.querySelector("#main-menu-continue-butto
 const mainMenuChooseButton = document.querySelector("#main-menu-choose-button");
 const mainMenuFreePlayButton = document.querySelector("#main-menu-free-play-button");
 const mainMenuSettingsButton = document.querySelector("#main-menu-settings-button");
+
+function isCompactTouchLayout() {
+  return Boolean(window.matchMedia?.("(max-width: 760px), (max-width: 900px) and (max-height: 520px)")?.matches);
+}
+
+function setHeaderTitle(fullTitle, options = {}) {
+  if (!title) {
+    return;
+  }
+
+  const normalizedTitle = String(fullTitle || "").trim();
+  const shortTitle = options.shortTitle
+    || normalizedTitle.split(" -> ").filter(Boolean).pop()
+    || normalizedTitle
+    || "Atlas Quest";
+
+  title.textContent = isCompactTouchLayout() ? shortTitle : normalizedTitle;
+  title.title = normalizedTitle;
+  title.dataset.shortTitle = shortTitle;
+}
+
+function refreshHeaderTitleForLayout() {
+  if (!title?.title) {
+    return;
+  }
+
+  title.textContent = isCompactTouchLayout()
+    ? title.dataset.shortTitle || title.title.split(" -> ").filter(Boolean).pop() || title.title
+    : title.title;
+
+  if (session) {
+    updateProgress();
+  }
+}
 const mainMenuLaunchButton = document.querySelector("#main-menu-launch-button");
 const appShellPlaceholderCard = document.querySelector("#app-shell-placeholder-card");
 const appShellPlaceholderTitle = document.querySelector("#app-shell-placeholder-title");
@@ -2614,10 +2650,11 @@ async function init() {
     launchTitle.textContent = APP_NAME;
   }
 
-  const [loadedActivities, worldCountries, supplementalWorldCountries, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
+  const [loadedActivities, worldCountries, supplementalWorldCountries, oceanZones, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
     Promise.all(activityDataPaths.map((path) => fetchJson(path))),
     fetchJson(worldCountriesPath),
     Promise.all(worldCountrySupplements.map((path) => fetchJson(path))),
+    fetchJson(oceanZonesPath),
     fetchJson(usStatesAtlasPath),
     fetchJson(stateGeoJsonPath),
     fetchJson(northAmericaAdmin1Path),
@@ -2673,6 +2710,7 @@ async function init() {
   await runner.load({
     activity: session.activity,
     worldCountries: mergedWorldCountries,
+    oceanZones,
     usStatesAtlas,
     stateTargets,
     northAmericaAdmin1,
@@ -3913,6 +3951,8 @@ function bindUiEvents() {
   document.addEventListener("pointermove", handleDocumentPointerMove);
   document.addEventListener("pointerup", handleDocumentPointerUp);
   document.addEventListener("pointercancel", cancelGrabbedAnswer);
+  window.addEventListener("resize", refreshHeaderTitleForLayout);
+  window.addEventListener("orientationchange", refreshHeaderTitleForLayout);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       closeBrowseDrawer();
@@ -4012,7 +4052,7 @@ function openFreePlay(options = {}) {
   }
 
   showHierarchyBrowseNode(options.hierarchyNodeId || "world");
-  setBrowseDrawerOpen(true);
+  setBrowseDrawerOpen(!isCompactTouchLayout());
 }
 
 function renderAppShellScreen(screenId) {
@@ -4530,7 +4570,7 @@ function openStudyExploreActivity(journey, step, activity, options = {}) {
   runner.setPresentationSettings(currentPresentationSettings);
   runner.setDifficulty(difficultyModes.easy);
   runner.setCompletedTargets(activeStudySession.revealedTargetIds);
-  title.textContent = `Study: ${step.title}`;
+  setHeaderTitle(`Study: ${step.title}`, { shortTitle: step.title });
   instruction.textContent = options.revealAll
     ? "Review the answers, or hide labels and reveal them one at a time."
     : "Tap a target or choose a name below to reveal it.";
@@ -6250,6 +6290,19 @@ function getNavigationCandidateDisplayName(candidate) {
     || "Selected place";
 }
 
+// Converts a Natural Earth ISO_A2 country code into a flag emoji for Free Play country info cards.
+function iso2ToFlagEmoji(iso2) {
+  const normalizedIso2 = String(iso2 || "").trim().toUpperCase();
+
+  if (!/^[A-Z]{2}$/.test(normalizedIso2)) {
+    return "";
+  }
+
+  return Array.from(normalizedIso2)
+    .map((letter) => String.fromCodePoint(0x1f1e6 + letter.charCodeAt(0) - 65))
+    .join("");
+}
+
 function getBrowseFeatureCollection(nodeId) {
   if (!runner) {
     return {
@@ -6316,7 +6369,7 @@ function showMenuRoot(menuRootId = activeMenuRoot) {
   cancelGrabbedAnswer();
   document.body.classList.add("overview-mode");
   document.body.classList.remove("study-mode");
-  title.textContent = "World View";
+  setHeaderTitle("World View", { shortTitle: "World" });
   instruction.textContent = "Choose a study region from the globe or the list below.";
   studyCard.hidden = true;
   renderOverviewLibrary();
@@ -6383,7 +6436,7 @@ function showHierarchyBrowseNode(nodeId) {
   isNavigationBrowseMode = true;
   document.body.classList.add("overview-mode", "browse-mode");
   document.body.classList.remove("study-mode");
-  title.textContent = getHierarchyBreadcrumb(node.id);
+  setHeaderTitle(getHierarchyBreadcrumb(node.id), { shortTitle: node.label });
   instruction.textContent = isNeutralFreePlayRootExplore()
     ? "Tap a place on the globe to explore."
     : "Choose a place on the map or pick a label below.";
@@ -6426,7 +6479,7 @@ function renderAnswerBank() {
   setAnswerPanelMode("activity");
   answerBank.innerHTML = "";
 
-  session.answerItems.forEach((feature) => {
+  getCurrentAnswerItems().forEach((feature) => {
     const chip = document.createElement("button");
     chip.className = "label-chip";
     chip.type = "button";
@@ -6441,11 +6494,18 @@ function renderAnswerBank() {
     chip.addEventListener("pointerdown", (event) => {
       handleChipPointerDown(event, feature);
     });
+    chip.addEventListener("pointerup", (event) => {
+      handleChipPointerUp(event, feature);
+    });
     chip.addEventListener("click", (event) => {
       event.preventDefault();
     });
     answerBank.appendChild(chip);
   });
+}
+
+function getCurrentAnswerItems() {
+  return session.answerItems;
 }
 
 function createChipLabelText(labelText) {
@@ -6459,7 +6519,9 @@ function renderNavigationAnswerBank(nodeId = activeHierarchyNodeId) {
   const node = getHierarchyNode(nodeId);
   setAnswerPanelMode("navigation");
   answerBank.innerHTML = "";
+  answerBank.appendChild(createMobileBrowseChip());
 
+  // Free Play country browsing keeps the clicked country card in the existing control area.
   if (currentAppScreen === "free-play" && freePlaySelectedMapFeature) {
     answerBank.appendChild(renderFreePlaySelectedTargetCard(freePlaySelectedMapFeature));
   }
@@ -6481,11 +6543,31 @@ function renderNavigationAnswerBank(nodeId = activeHierarchyNodeId) {
   });
 }
 
+function createMobileBrowseChip() {
+  const chip = document.createElement("button");
+  chip.className = "label-chip navigation-chip mobile-browse-chip";
+  chip.type = "button";
+  chip.textContent = "Browse";
+  chip.addEventListener("click", toggleBrowseDrawer);
+  return chip;
+}
+
 function renderFreePlaySelectedTargetCard(candidate) {
   const details = getFreePlaySelectedTargetDetails(candidate);
   const card = document.createElement("section");
-  card.className = "free-play-selected-card";
+  card.className = "free-play-selected-card free-play-country-card";
   card.setAttribute("aria-label", `Selected: ${details.name}`);
+  if (details.normalizedId) {
+    card.dataset.countryId = details.normalizedId;
+  }
+
+  if (details.flagEmoji) {
+    const flag = document.createElement("span");
+    flag.className = "free-play-country-flag";
+    flag.setAttribute("aria-hidden", "true");
+    flag.textContent = details.flagEmoji;
+    card.appendChild(flag);
+  }
 
   const label = document.createElement("span");
   label.className = "free-play-selected-label";
@@ -6511,6 +6593,14 @@ function renderFreePlaySelectedTargetCard(candidate) {
   path.className = "free-play-selected-path";
   path.textContent = details.pathLabels.join(" -> ");
 
+  const audioRow = document.createElement("span");
+  audioRow.className = "free-play-country-audio-row";
+  audioRow.textContent = "Pronunciation and audio tools coming soon.";
+
+  const facts = document.createElement("span");
+  facts.className = "free-play-country-facts";
+  facts.textContent = "More country facts coming soon.";
+
   const clearButton = document.createElement("button");
   clearButton.className = "free-play-selected-clear";
   clearButton.type = "button";
@@ -6524,8 +6614,8 @@ function renderFreePlaySelectedTargetCard(candidate) {
   });
 
   const textWrap = document.createElement("div");
-  textWrap.className = "free-play-selected-copy";
-  textWrap.append(label, nameRow, path);
+  textWrap.className = "free-play-selected-copy free-play-country-copy";
+  textWrap.append(label, nameRow, path, audioRow, facts);
   card.append(textWrap, clearButton);
 
   return card;
@@ -6533,11 +6623,17 @@ function renderFreePlaySelectedTargetCard(candidate) {
 
 function getFreePlaySelectedTargetDetails(candidate) {
   const name = getNavigationCandidateDisplayName(candidate);
+  const isoA2 = getNavigationCandidateIsoA2(candidate);
+  const normalizedId = getNavigationCandidateNormalizedId(candidate);
+  const flagEmoji = iso2ToFlagEmoji(isoA2);
   const contentPath = getKnownContentPathForNavigationCandidate(candidate);
 
   if (contentPath.length > 0) {
     return {
       name,
+      isoA2,
+      normalizedId,
+      flagEmoji,
       pathLabels: [...contentPath, name]
     };
   }
@@ -6549,8 +6645,30 @@ function getFreePlaySelectedTargetDetails(candidate) {
 
   return {
     name,
+    isoA2,
+    normalizedId,
+    flagEmoji,
     pathLabels: [...fallbackPath, name]
   };
+}
+
+function getNavigationCandidateIsoA2(candidate) {
+  return [
+    candidate?.isoA2,
+    candidate?.sourceProperties?.ISO_A2,
+    candidate?.sourceProperties?.ISO_A2_EH,
+    candidate?.properties?.ISO_A2,
+    candidate?.properties?.ISO_A2_EH
+  ].find((value) => /^[A-Z]{2}$/i.test(String(value || ""))) || "";
+}
+
+function getNavigationCandidateNormalizedId(candidate) {
+  return [
+    candidate?.normalizedCountryId,
+    candidate?.targetId,
+    candidate?.sourceTargetId,
+    candidate?.id
+  ].find(Boolean) || "";
 }
 
 function getKnownContentPathForNavigationCandidate(candidate) {
@@ -6606,11 +6724,13 @@ function setAnswerPanelMode(mode) {
   if (difficultyControlGroup) {
     difficultyControlGroup.hidden = true;
   }
+
 }
 
 function openActivity(activityId, options = {}) {
   saveCurrentActivityProgress();
   cancelGrabbedAnswer();
+  closeBrowseDrawer();
   clearJourneyAutoAdvanceTimer();
   hideStudyPracticeCompletionCard();
   resetActivityAttemptState();
@@ -6692,16 +6812,30 @@ function enterStudy() {
   document.body.classList.remove("overview-mode");
   document.body.classList.add("study-mode");
   const node = getHierarchyNode(activeHierarchyNodeId);
-  title.textContent = node ? getHierarchyBreadcrumb(node.id, { activityLabel: node.activityLabel }) : session.currentActivity.title;
-  instruction.textContent = node?.id === "world"
-    ? "Place a label, or click a continent with no label selected to explore."
-    : `Select a ${session.currentActivity.targetNoun} label, then click its target on the map.`;
+  const activityTitle = node?.activityLabel || session.currentActivity.title;
+  setHeaderTitle(
+    node ? getHierarchyBreadcrumb(node.id, { activityLabel: activityTitle }) : session.currentActivity.title,
+    { shortTitle: activityTitle }
+  );
+  updateStudyInstruction();
   updateStudyCardDetails();
+  updateProgress();
   updateDifficultyControls();
   studyCard.hidden = false;
   runner.enterStudyView();
   renderActivityNavControls(session.currentActivity.id);
   updateTopBarNavigation();
+}
+
+function updateStudyInstruction() {
+  if (!isStudyModeActive()) {
+    return;
+  }
+
+  const node = getHierarchyNode(activeHierarchyNodeId);
+  instruction.textContent = node?.id === "world"
+    ? "Place a label, or click a continent with no label selected to explore."
+    : `Select a ${session.currentActivity.targetNoun} label, then click its target on the map.`;
 }
 
 function showLaunchScreen() {
@@ -7468,16 +7602,34 @@ function syncAnswerBank() {
 
     chip.classList.toggle("selected", isSelected);
     chip.classList.toggle("used", isCompleted);
-    chip.disabled = isCompleted || isInputLocked;
+    chip.disabled = isInputLocked || isCompleted;
     chip.setAttribute("aria-pressed", String(isSelected));
   });
 }
 
+function handleChipPointerUp(event, feature) {
+  // Pointer-up is intentionally unused for answer selection. Chips select on
+  // pointer-down, and placement happens only when the user taps the map.
+}
+
 function handleChipPointerDown(event, feature) {
-  event.preventDefault();
   event.stopPropagation();
 
   if (isActivityInputLocked()) {
+    return;
+  }
+
+  event.preventDefault();
+
+  if (isCompactTouchLayout()) {
+    if (session.selectedId === feature.id) {
+      session.clearSelection();
+    } else {
+      session.toggleAnswer(feature.id);
+    }
+
+    cancelGrabbedAnswer({ clearSelection: false });
+    syncAnswerBank();
     return;
   }
 
@@ -7581,7 +7733,11 @@ function cancelGrabbedAnswer(options = {}) {
 }
 
 function updateProgress() {
-  progress.textContent = session.progressText;
+  const completed = session?.completedIds?.length || 0;
+  const total = session?.allAvailableTargets?.length || 0;
+  progress.textContent = isCompactTouchLayout() && isStudyModeActive()
+    ? `${completed}/${total}`
+    : session.progressText;
 }
 
 function loadActivityProgress() {
@@ -8485,6 +8641,7 @@ function updateDifficultyControls() {
     button.setAttribute("aria-pressed", String(isActive));
     button.disabled = isApplicable && !isAvailable;
   });
+
 }
 
 function updateStudyCardDetails() {
@@ -8523,6 +8680,6 @@ function clearFeedback() {
 }
 
 init().catch((error) => {
-  title.textContent = "Geography Memory could not load";
+  setHeaderTitle("Geography Memory could not load", { shortTitle: "Load Error" });
   instruction.textContent = error.message;
 });

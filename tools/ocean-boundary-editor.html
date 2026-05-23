@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ocean Boundary Editor</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css" />
+    <link rel="stylesheet" href="./ocean-boundary-editor.css" />
+  </head>
+  <body>
+    <aside class="editor-panel" aria-label="Ocean boundary editor controls">
+      <header>
+        <p class="eyebrow">Developer Tool</p>
+        <h1>Ocean Boundary Editor</h1>
+        <p class="lede">Draw rough educational ocean zones by hand. This page does not save or overwrite production files.</p>
+      </header>
+
+      <label class="field">
+        <span>Ocean</span>
+        <select id="ocean-select">
+          <option value="atlantic-ocean">Atlantic Ocean</option>
+          <option value="pacific-ocean">Pacific Ocean</option>
+          <option value="indian-ocean">Indian Ocean</option>
+          <option value="arctic-ocean">Arctic Ocean</option>
+          <option value="southern-ocean">Southern Ocean</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Part</span>
+        <select id="part-select"></select>
+      </label>
+
+      <section class="part-actions" aria-label="Polygon part actions">
+        <button id="add-part-button" type="button">Add new part</button>
+        <button id="rename-part-button" type="button">Rename part</button>
+        <button id="duplicate-part-button" type="button">Duplicate current part</button>
+        <button id="delete-part-button" type="button">Delete current part</button>
+      </section>
+
+      <label class="field">
+        <span>Segment Mode</span>
+        <select id="segment-mode">
+          <option value="straight">Straight</option>
+          <option value="follow-latitude">Follow latitude</option>
+          <option value="follow-longitude">Follow longitude</option>
+        </select>
+      </label>
+
+      <section class="toggle-group" aria-label="Layer visibility">
+        <label><input id="toggle-selected" type="checkbox" checked /> Show selected ocean</label>
+        <label><input id="toggle-all" type="checkbox" checked /> Show all oceans</label>
+        <label><input id="toggle-draft" type="checkbox" checked /> Show draft polygon</label>
+        <label><input id="toggle-handles" type="checkbox" checked /> Show point handles</label>
+      </section>
+
+      <section class="legend" aria-label="Ocean color legend">
+        <div class="legend-row"><span class="legend-swatch" style="--legend-color:#2fb8e0"></span><span>Atlantic Ocean</span></div>
+        <div class="legend-row"><span class="legend-swatch" style="--legend-color:#2d6cdf"></span><span>Pacific Ocean</span></div>
+        <div class="legend-row"><span class="legend-swatch" style="--legend-color:#1a9c89"></span><span>Indian Ocean</span></div>
+        <div class="legend-row"><span class="legend-swatch" style="--legend-color:#88d7f7"></span><span>Arctic Ocean</span></div>
+        <div class="legend-row"><span class="legend-swatch" style="--legend-color:#7b5fbf"></span><span>Southern Ocean</span></div>
+      </section>
+
+      <section class="button-grid" aria-label="Editing actions">
+        <button id="import-button" type="button">Import current selected ocean boundary</button>
+        <button id="export-button" type="button">Export draft GeoJSON</button>
+        <button id="copy-button" type="button">Copy GeoJSON to clipboard</button>
+        <button id="undo-button" type="button">Undo last point</button>
+        <button id="delete-point-button" type="button">Delete selected point</button>
+        <button id="close-button" type="button">Close polygon</button>
+        <button id="clear-button" type="button">Clear draft</button>
+      </section>
+
+      <label class="field">
+        <span>Draft GeoJSON</span>
+        <textarea id="export-output" spellcheck="false" placeholder="Exported GeoJSON appears here. Nothing is saved automatically."></textarea>
+      </label>
+
+      <section class="status-card" aria-live="polite">
+        <strong id="draft-summary">0 points</strong>
+        <p id="status-text">Click the map to add the first control point.</p>
+      </section>
+
+      <section class="notes">
+        <h2>Phase 2 Notes</h2>
+        <p>Editing is in memory only. MultiPolygon imports load each outer ring as its own editable part.</p>
+      </section>
+    </aside>
+
+    <main class="map-area">
+      <div id="map"></div>
+      <div id="coordinate-readout" class="coordinate-readout" aria-live="polite">Lon: -- | Lat: --</div>
+    </main>
+
+    <script src="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js"></script>
+    <script type="module" src="./ocean-boundary-editor.js"></script>
+  </body>
+</html>

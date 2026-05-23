@@ -29,6 +29,26 @@
     event.stopPropagation();
   }
 
+  function stopChipGesture(event) {
+    event.stopPropagation();
+  }
+
+  function isChipSpeechDebugEnabled() {
+    try {
+      return global.localStorage?.getItem("geography-memory-debug-chip-speech") === "true";
+    } catch {
+      return false;
+    }
+  }
+
+  function debugChipSpeech(labelText, eventType) {
+    if (!isChipSpeechDebugEnabled()) {
+      return;
+    }
+
+    console.debug("[chip-speech]", eventType, labelText);
+  }
+
   function createSpeakerIcon() {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("viewBox", "0 0 24 24");
@@ -55,21 +75,49 @@
     speaker.setAttribute("title", `Hear ${labelText}`);
     speaker.appendChild(createSpeakerIcon());
 
-    speaker.addEventListener("pointerdown", stopChipInteraction);
-    speaker.addEventListener("mousedown", stopChipInteraction);
-    speaker.addEventListener("touchstart", stopChipInteraction, { passive: false });
-    speaker.addEventListener("dragstart", stopChipInteraction);
-    speaker.addEventListener("click", (event) => {
+    let lastSpeechGestureAt = 0;
+    const speakFromGesture = (event) => {
       stopChipInteraction(event);
+      lastSpeechGestureAt = Date.now();
+      debugChipSpeech(labelText, event.type);
       speakLabel(labelText);
-    });
+    };
+
+    const speakFromFallbackClick = (event) => {
+      stopChipInteraction(event);
+
+      if (Date.now() - lastSpeechGestureAt < 500) {
+        return;
+      }
+
+      lastSpeechGestureAt = Date.now();
+      debugChipSpeech(labelText, event.type);
+      speakLabel(labelText);
+    };
+
+    speaker.addEventListener("pointerdown", stopChipGesture);
+    speaker.addEventListener("pointerup", speakFromGesture);
+    speaker.addEventListener("pointercancel", stopChipInteraction);
+    speaker.addEventListener("mousedown", stopChipGesture);
+    speaker.addEventListener("mouseup", stopChipGesture);
+    speaker.addEventListener("touchstart", stopChipGesture, { passive: true });
+    speaker.addEventListener("touchend", (event) => {
+      if (global.PointerEvent && Date.now() - lastSpeechGestureAt < 500) {
+        stopChipInteraction(event);
+        return;
+      }
+
+      speakFromGesture(event);
+    }, { passive: false });
+    speaker.addEventListener("touchcancel", stopChipInteraction, { passive: false });
+    speaker.addEventListener("dragstart", stopChipInteraction);
+    speaker.addEventListener("click", speakFromFallbackClick);
     speaker.addEventListener("keydown", (event) => {
       if (event.key !== "Enter" && event.key !== " ") {
         return;
       }
 
-      stopChipInteraction(event);
-      speakLabel(labelText);
+      speakFromGesture(event);
     });
 
     return speaker;

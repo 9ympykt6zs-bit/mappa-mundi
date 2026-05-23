@@ -2,18 +2,18 @@
   "id": "continents-oceans",
   "title": "Continents and Oceans",
   "features": [
-    { "id": "north-america", "name": "North America", "type": "region", "color": "#3b82f6" },
-    { "id": "south-america", "name": "South America", "type": "region", "color": "#ef4444" },
-    { "id": "europe", "name": "Europe", "type": "region", "color": "#a855f7" },
-    { "id": "africa", "name": "Africa", "type": "region", "color": "#f97316" },
-    { "id": "asia", "name": "Asia", "type": "region", "color": "#22c55e" },
-    { "id": "australia", "name": "Australia", "type": "region", "color": "#06b6d4" },
-    { "id": "antarctica", "name": "Antarctica", "type": "region", "color": "#64748b" },
+    { "id": "north-america", "name": "North America", "type": "region", "color": "#3b82f6", "focusLon": -103, "focusLat": 46, "focusZoom": 2.15 },
+    { "id": "south-america", "name": "South America", "type": "region", "color": "#ef4444", "focusLon": -60, "focusLat": -18, "focusZoom": 2.25 },
+    { "id": "europe", "name": "Europe", "type": "region", "color": "#a855f7", "focusLon": 14, "focusLat": 52, "focusZoom": 2.35 },
+    { "id": "africa", "name": "Africa", "type": "region", "color": "#f97316", "focusLon": 20, "focusLat": 2, "focusZoom": 2.25 },
+    { "id": "asia", "name": "Asia", "type": "region", "color": "#22c55e", "focusLon": 86, "focusLat": 36, "focusZoom": 1.75 },
+    { "id": "australia", "name": "Australia", "type": "region", "color": "#06b6d4", "focusLon": 135, "focusLat": -25, "focusZoom": 2.7 },
+    { "id": "antarctica", "name": "Antarctica", "type": "region", "color": "#64748b", "focusLon": 20, "focusLat": -72, "focusZoom": 1.25 },
 
-    { "id": "indian-ocean", "name": "Indian Ocean", "type": "zone", "color": "#bfdbfe" },
-    { "id": "arctic-ocean", "name": "Arctic Ocean", "type": "zone", "color": "#dbeafe" },
-    { "id": "atlantic-ocean", "name": "Atlantic Ocean", "type": "zone", "color": "#93c5fd" },
-    { "id": "pacific-ocean", "name": "Pacific Ocean", "type": "zone", "color": "#60a5fa" },
-    { "id": "southern-ocean", "name": "Southern Ocean", "type": "zone", "color": "#c7d2fe" }
+    { "id": "indian-ocean", "name": "Indian Ocean", "type": "zone", "color": "#bfdbfe", "focusLon": 76, "focusLat": -22, "focusZoom": 2.05 },
+    { "id": "arctic-ocean", "name": "Arctic Ocean", "type": "zone", "color": "#dbeafe", "focusLon": 0, "focusLat": 74, "focusZoom": 1.35 },
+    { "id": "atlantic-ocean", "name": "Atlantic Ocean", "type": "zone", "color": "#93c5fd", "focusLon": -34, "focusLat": 8, "focusZoom": 1.75 },
+    { "id": "pacific-ocean", "name": "Pacific Ocean", "type": "zone", "color": "#60a5fa", "focusLon": -150, "focusLat": 0, "focusZoom": 1.45 },
+    { "id": "southern-ocean", "name": "Southern Ocean", "type": "zone", "color": "#c7d2fe", "focusLon": 20, "focusLat": -64, "focusZoom": 1.15 }
   ]
 }

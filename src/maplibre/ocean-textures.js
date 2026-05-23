@@ -1,5 +1,4 @@
 export const baseWaterColor = "#1168b7";
-export const oceanRegionTextureUrl = "assets/maps/oceans/ocean-regions.png?v=global-ocean-png";
 
 export const globeTextureBounds = [
   [-180, 85],
@@ -37,8 +36,4 @@ export function createBaseWaterImage() {
   context.fillStyle = gradient;
   context.fillRect(0, 0, canvas.width, canvas.height);
   return canvas.toDataURL("image/png");
-}
-
-export function createOceanRegionImage() {
-  return oceanRegionTextureUrl;
 }
