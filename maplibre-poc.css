@@ -1256,9 +1256,14 @@ a {
   background: linear-gradient(180deg, #37a8f2, #1260b5);
 }
 
-.journey-path-card-play button:not(.info-button),
 .journey-begin-button {
   background: linear-gradient(180deg, #74d82f, #279012);
+}
+
+.journey-path-card-play button:not(.info-button) {
+  background: linear-gradient(180deg, #eef4fb, #d7e3f0);
+  border: 1px solid rgba(188, 211, 237, 0.95);
+  color: var(--ink);
 }
 
 .journey-path-card-locked button:not(.info-button):disabled {

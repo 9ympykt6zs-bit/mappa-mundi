@@ -4352,11 +4352,11 @@ function getAppShellScreenContent(screenId) {
   const contentByScreen = {
     "main-menu": {
       title: "Main Menu",
-      subtitle: "Choose how you want to explore today."
+      subtitle: "Choose a journey and learn with guided map memory."
     },
     "choose-journey": {
       title: "Choose Journey",
-      subtitle: "Pick a journey to study or play."
+      subtitle: "Pick a journey to learn, study, and play."
     },
     onboarding: {
       title: "How Atlas Quest Works",
@@ -4364,11 +4364,11 @@ function getAppShellScreenContent(screenId) {
     },
     "journey-detail": {
       title: selectedJourneyTitle,
-      subtitle: "Choose how you want to begin this journey."
+      subtitle: "Learn each section with Memory Trail, then play when you are ready."
     },
     study: {
       title: `Study: ${selectedJourneyTitle}`,
-      subtitle: "Choose a section to explore calmly before playing."
+      subtitle: "Memory Trail guides each section one place at a time."
     },
     "choose-difficulty": {
       title: "Choose Difficulty",
@@ -5917,19 +5917,19 @@ function renderJourneyDetail(journey) {
   if (isAvailable) {
     actions.append(
       createJourneyPathCard({
-        title: "Play Journey",
-        description: "Complete the journey in order.",
-        buttonLabel: "Play",
-        variant: "play",
-        onClick: () => showAppScreen("choose-difficulty")
-      }),
-      createJourneyPathCard({
-        title: "Study",
-        description: "Practice freely before playing the journey.",
-        buttonLabel: "Open Study",
+        title: "Learn with Memory Trail",
+        description: "Study a section with guided map memory before playing.",
+        buttonLabel: "Learn with Memory Trail",
         variant: "study",
         onClick: () => showAppScreen("study"),
-        infoText: "Preview or practice without changing journey progress."
+        infoText: "Memory Trail shows each place, then asks you to repeat the map pattern. It does not change journey progress."
+      }),
+      createJourneyPathCard({
+        title: "Play Journey",
+        description: "Go straight into the journey activities in order.",
+        buttonLabel: "Play Journey",
+        variant: "play",
+        onClick: () => showAppScreen("choose-difficulty")
       })
     );
   } else {
@@ -6165,7 +6165,7 @@ function renderStudySelectionScreen(journey) {
 
   const message = document.createElement("p");
   message.className = "journey-mode-message";
-  message.textContent = "Choose a section to study before playing the journey.";
+  message.textContent = "Study a section, then practice it when you're ready. Memory Trail guides you through the map one place at a time.";
 
   const stepList = document.createElement("div");
   stepList.className = "study-step-list";
@@ -6188,7 +6188,7 @@ function renderStudySelectionScreen(journey) {
 
     const previewButton = document.createElement("button");
     previewButton.type = "button";
-    previewButton.textContent = "Study";
+    previewButton.textContent = "Learn";
     previewButton.disabled = !activity;
     previewButton.addEventListener("click", () => {
       startStudyPreviewActivity(journey.id, step.id);
