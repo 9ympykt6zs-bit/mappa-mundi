@@ -1516,6 +1516,154 @@ body.study-explore-mode .answer-panel {
   margin: -4px -6px -4px 0;
 }
 
+.memory-trail-panel {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.memory-trail-status {
+  background: #ffffff;
+  border: 1px solid rgba(188, 211, 237, 0.95);
+  border-radius: var(--radius-card);
+  color: var(--ink);
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+}
+
+.memory-trail-kicker {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.memory-trail-status strong {
+  font-size: 1rem;
+}
+
+.memory-trail-status p {
+  margin: 0;
+}
+
+.memory-trail-prompt {
+  background: #fff7cf;
+  border: 1px solid rgba(215, 157, 36, 0.4);
+  border-radius: var(--radius-control);
+  color: #694000;
+  font-weight: 950;
+  padding: 8px 10px;
+}
+
+.memory-trail-controls {
+  margin-bottom: 0;
+}
+
+.memory-trail-overlay {
+  align-items: center;
+  background: rgba(2, 6, 17, 0.46);
+  display: grid;
+  inset: 0;
+  justify-items: center;
+  padding: 18px;
+  position: fixed;
+  z-index: 112;
+}
+
+.memory-trail-overlay[hidden] {
+  display: none;
+}
+
+.memory-trail-card {
+  background: #ffffff;
+  border: 1px solid rgba(188, 211, 237, 0.95);
+  border-radius: var(--radius-card);
+  box-shadow: 0 24px 62px rgba(15, 23, 42, 0.24);
+  color: var(--ink);
+  display: grid;
+  gap: 10px;
+  max-width: 420px;
+  padding: 18px;
+  width: min(100%, 420px);
+}
+
+.memory-trail-card-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.memory-trail-card h2,
+.memory-trail-card p {
+  margin: 0;
+}
+
+.memory-trail-info-button {
+  align-items: center;
+  background: rgba(44, 131, 200, 0.08);
+  border: 1px solid rgba(44, 131, 200, 0.22);
+  border-radius: 999px;
+  color: #155a9e;
+  cursor: pointer;
+  display: inline-grid;
+  font-size: 0.85rem;
+  font-weight: 950;
+  height: 34px;
+  justify-items: center;
+  min-width: 34px;
+  padding: 0;
+}
+
+.memory-trail-info-button:hover,
+.memory-trail-info-button:focus-visible {
+  background: rgba(44, 131, 200, 0.15);
+  outline: 2px solid rgba(44, 131, 200, 0.28);
+  outline-offset: 2px;
+}
+
+.memory-trail-info-copy {
+  background: #eef6ff;
+  border: 1px solid rgba(44, 131, 200, 0.22);
+  border-radius: var(--radius-control);
+  color: #25415f;
+  padding: 10px 12px;
+}
+
+.memory-trail-info-copy[hidden] {
+  display: none;
+}
+
+.memory-trail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.memory-trail-actions button {
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  flex: 1 1 150px;
+  font-weight: 950;
+  min-height: 44px;
+  padding: 10px 14px;
+}
+
+.memory-trail-actions button:first-child {
+  background: linear-gradient(180deg, #2c83c8, #155a9e);
+  color: #ffffff;
+}
+
+.memory-trail-actions button:last-child {
+  background: #eef4fb;
+  border: 1px solid rgba(188, 211, 237, 0.95);
+  color: var(--ink);
+}
+
 .journey-completion-overlay {
   align-items: center;
   background: rgba(2, 6, 17, 0.62);
@@ -3126,7 +3274,7 @@ body.browse-mode .answer-panel-title {
   body.study-explore-mode .study-explore-controls {
     display: grid;
     gap: 8px;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
     margin-bottom: 0;
   }
 
@@ -3138,16 +3286,9 @@ body.browse-mode .answer-panel-title {
   }
 
   body.study-explore-mode .study-explore-controls button::after {
+    content: attr(data-mobile-label);
     font-size: 0.95rem;
     font-weight: 950;
-  }
-
-  body.study-explore-mode .study-explore-controls button:first-child::after {
-    content: "Practice";
-  }
-
-  body.study-explore-mode .study-explore-controls button:last-child::after {
-    content: "Exit";
   }
 
   body.study-explore-mode .study-target-list {

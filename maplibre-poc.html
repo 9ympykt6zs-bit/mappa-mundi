@@ -6,7 +6,7 @@
     <title>Atlas Quest</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css" />
-    <link rel="stylesheet" href="maplibre-poc.css?v=ocean-palette-tune" />
+    <link rel="stylesheet" href="maplibre-poc.css?v=memory-trail-refine" />
   </head>
   <body class="overview-mode launch-mode">
     <section id="launch-screen" class="launch-screen" aria-labelledby="launch-title">
@@ -183,7 +183,23 @@
       </section>
     </div>
 
+    <div id="memory-trail-overlay" class="memory-trail-overlay" hidden>
+      <section class="memory-trail-card" role="dialog" aria-modal="true" aria-labelledby="memory-trail-title">
+        <div class="memory-trail-card-heading">
+          <p class="memory-trail-kicker">Study Preview</p>
+          <button id="memory-trail-info-button" class="memory-trail-info-button" type="button" aria-expanded="false" aria-controls="memory-trail-info-copy" aria-label="More about Memory Trail">i</button>
+        </div>
+        <h2 id="memory-trail-title">Try Memory Trail?</h2>
+        <p id="memory-trail-message">Watch and listen as places are shown in order, then tap them back in the same pattern.</p>
+        <p id="memory-trail-info-copy" class="memory-trail-info-copy" hidden>Memory Trail shows one place, then adds another each round. Repeat the map pattern to learn the set.</p>
+        <div class="memory-trail-actions">
+          <button id="memory-trail-primary-button" type="button">Start Memory Trail</button>
+          <button id="memory-trail-secondary-button" type="button">Study Normally</button>
+        </div>
+      </section>
+    </div>
+
     <script src="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js"></script>
-    <script type="module" src="src/maplibre-poc.js?v=us-capitals-journey"></script>
+    <script type="module" src="src/maplibre-poc.js?v=memory-trail-refine"></script>
   </body>
 </html>

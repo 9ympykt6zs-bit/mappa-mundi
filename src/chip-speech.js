@@ -3,21 +3,71 @@
     return Boolean(global?.speechSynthesis && global?.SpeechSynthesisUtterance);
   }
 
-  function speakLabel(labelText) {
-    if (!isSpeechSupported()) {
-      return false;
-    }
+  function getSpeechFallbackDurationMs(labelText) {
+    const text = String(labelText || "").trim();
+    return Math.max(1200, Math.min(4200, 650 + text.length * 85));
+  }
 
+  function createUtterance(labelText) {
     const text = String(labelText || "").trim();
 
     if (!text) {
-      return false;
+      return null;
     }
 
     const utterance = new global.SpeechSynthesisUtterance(text);
     utterance.lang = "en-US";
     utterance.rate = 0.9;
     utterance.pitch = 1;
+    return utterance;
+  }
+
+  function speakLabel(labelText) {
+    if (!isSpeechSupported()) {
+      return false;
+    }
+
+    const utterance = createUtterance(labelText);
+
+    if (!utterance) {
+      return false;
+    }
+
+    global.speechSynthesis.cancel();
+    global.speechSynthesis.speak(utterance);
+    return true;
+  }
+
+  function speakLabelWithCompletion(labelText, onComplete) {
+    if (!isSpeechSupported()) {
+      return false;
+    }
+
+    const utterance = createUtterance(labelText);
+
+    if (!utterance) {
+      return false;
+    }
+
+    let isFinished = false;
+    const finish = () => {
+      if (isFinished) {
+        return;
+      }
+
+      isFinished = true;
+      onComplete?.();
+    };
+
+    const fallbackTimer = global.setTimeout(finish, getSpeechFallbackDurationMs(labelText));
+    utterance.onend = () => {
+      global.clearTimeout(fallbackTimer);
+      finish();
+    };
+    utterance.onerror = () => {
+      global.clearTimeout(fallbackTimer);
+      finish();
+    };
 
     global.speechSynthesis.cancel();
     global.speechSynthesis.speak(utterance);
@@ -126,6 +176,7 @@
   global.GeographyChipSpeech = {
     isSpeechSupported,
     speakLabel,
+    speakLabelWithCompletion,
     createChipSpeakerControl
   };
 })(window);

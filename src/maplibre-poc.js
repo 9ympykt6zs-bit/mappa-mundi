@@ -1,7 +1,7 @@
 import { normalizeActivity } from "./map-engines/activity-normalizer.js";
 import { ActivitySession, studyModes } from "./maplibre/activity-session.js?v=progress-state";
-import "./chip-speech.js?v=tts-answer-chips";
-import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=us-state-capital-split";
+import "./chip-speech.js?v=memory-trail-refine";
+import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=memory-trail";
 import { journeyPresets } from "./journey-presets.js?v=us-capitals-journey";
 import {
   clearActiveJourney,
@@ -2550,6 +2550,7 @@ let isJourneyTransitioning = false;
 let journeyAutoAdvanceTimer = null;
 let activityAttemptState = createActivityAttemptState();
 let activeRetryReviewState = null;
+let memoryTrailOverlayMode = null;
 let atlasProgress = loadProgress();
 let mapLayerSettings = loadMapLayerSettings();
 let studyTargetSettings = loadStudyTargetSettings();
@@ -2559,6 +2560,10 @@ let isCurrentActivityProgressDisabled = false;
 const incorrectRevealThreshold = 3;
 const activityRetryThreshold = 5;
 const incorrectRevealDurationMs = 1700;
+const memoryTrailPostSpeechHoldMs = 1000;
+const memoryTrailGapDurationMs = 240;
+const memoryTrailCorrectPauseMs = 520;
+const memoryTrailReplayPauseMs = 900;
 
 const title = document.querySelector("#poc-title");
 const instruction = document.querySelector("#poc-instruction");
@@ -2695,6 +2700,13 @@ const activityRetryOverlay = document.querySelector("#activity-retry-overlay");
 const activityRetryMessage = document.querySelector("#activity-retry-message");
 const activityRetryStudyButton = document.querySelector("#activity-retry-study-button");
 const activityRetryAgainButton = document.querySelector("#activity-retry-again-button");
+const memoryTrailOverlay = document.querySelector("#memory-trail-overlay");
+const memoryTrailTitle = document.querySelector("#memory-trail-title");
+const memoryTrailMessage = document.querySelector("#memory-trail-message");
+const memoryTrailInfoButton = document.querySelector("#memory-trail-info-button");
+const memoryTrailInfoCopy = document.querySelector("#memory-trail-info-copy");
+const memoryTrailPrimaryButton = document.querySelector("#memory-trail-primary-button");
+const memoryTrailSecondaryButton = document.querySelector("#memory-trail-secondary-button");
 
 const journeyDifficultyOptions = [
   {
@@ -4110,6 +4122,9 @@ function bindUiEvents() {
   activityRetryAgainButton?.addEventListener("click", handleActivityRetryAgainChoice);
   journeyCompletionPrimary?.addEventListener("click", handleJourneyCompletionPrimary);
   journeyCompletionSecondary?.addEventListener("click", handleJourneyCompletionSecondary);
+  memoryTrailPrimaryButton?.addEventListener("click", handleMemoryTrailOverlayPrimary);
+  memoryTrailSecondaryButton?.addEventListener("click", handleMemoryTrailOverlaySecondary);
+  memoryTrailInfoButton?.addEventListener("click", toggleMemoryTrailInfo);
   document.addEventListener("pointerdown", handleDocumentInfoPointerDown, true);
   document.addEventListener("pointerover", handleDocumentInfoPointerOver);
   document.addEventListener("pointerout", handleDocumentInfoPointerOut);
@@ -4123,6 +4138,11 @@ function bindUiEvents() {
   window.addEventListener("orientationchange", refreshHeaderTitleForLayout);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+      if (!memoryTrailOverlay?.hidden) {
+        handleMemoryTrailOverlaySecondary();
+        return;
+      }
+
       closeInfoPopover();
       closeBrowseDrawer();
       cancelGrabbedAnswer();
@@ -4893,6 +4913,7 @@ function openStudyExploreActivity(journey, step, activity, options = {}) {
     stepId: step.id,
     activityId: activity.id,
     revealedTargetIds: options.revealAll ? activity.targets.map((target) => target.id) : [],
+    memoryTrail: null,
     retryReturnState: options.retryReturnState || null
   };
   activeStudyPracticeSession = null;
@@ -4931,6 +4952,7 @@ function openStudyExploreActivity(journey, step, activity, options = {}) {
   runner.setPresentationSettings(currentPresentationSettings);
   runner.setDifficulty(difficultyModes.easy);
   runner.setStudyPreviewMode(true);
+  runner.setMemoryTrailHighlight([]);
   runner.setCompletedTargets(activeStudySession.revealedTargetIds);
   setHeaderTitle(`Study: ${step.title}`, { shortTitle: step.title });
   instruction.textContent = "Tap a target or name to show it. Tap it again to hide it.";
@@ -4940,12 +4962,19 @@ function openStudyExploreActivity(journey, step, activity, options = {}) {
   runner.enterStudyView();
   renderStudyExplorePanel();
   updateTopBarNavigation();
+  showMemoryTrailOfferOverlay();
 }
 
 function revealStudyTarget(targetId) {
   if (currentAppScreen !== "study-explore" || !activeStudySession || !session.getFeature(targetId)) {
     return;
   }
+
+  if (isMemoryTrailActive()) {
+    return;
+  }
+
+  speakStudyPreviewTarget(targetId);
 
   if (activeStudySession.revealedTargetIds.includes(targetId)) {
     activeStudySession.revealedTargetIds = activeStudySession.revealedTargetIds.filter((id) => id !== targetId);
@@ -4963,17 +4992,23 @@ function launchPracticeForStudySet() {
   }
 
   const { journeyId, stepId } = activeStudySession;
+  hideMemoryTrailOverlay();
+  clearMemoryTrailState({ restoreReveals: false });
   document.body.classList.remove("study-explore-mode");
   activeStudySession = null;
   runner.setStudyPreviewMode(false);
+  runner.setMemoryTrailHighlight([]);
   startStudyPracticeActivity(journeyId, stepId);
 }
 
 function exitStudyExplore() {
   const retryReturnState = activeStudySession?.retryReturnState || null;
+  hideMemoryTrailOverlay();
+  clearMemoryTrailState({ restoreReveals: false });
   activeStudySession = null;
   document.body.classList.remove("study-explore-mode");
   runner.setStudyPreviewMode(false);
+  runner.setMemoryTrailHighlight([]);
   runner.setCompletedTargets([]);
 
   if (retryReturnState) {
@@ -4988,21 +5023,22 @@ function renderStudyExplorePanel() {
   setAnswerPanelMode("study-explore");
   answerBank.innerHTML = "";
 
+  if (isMemoryTrailActive()) {
+    renderMemoryTrailPanel();
+    return;
+  }
+
   const controls = document.createElement("div");
   controls.className = "study-explore-controls";
   const controlDefinitions = activeStudySession?.retryReturnState
-    ? [["Exit Study", exitStudyExplore]]
+    ? [["Exit Study", exitStudyExplore, "Exit"]]
     : [
-      ["Practice This Set", launchPracticeForStudySet],
-      ["Exit Study", exitStudyExplore]
+      ["Practice This Set", launchPracticeForStudySet, "Practice"],
+      ["Exit Study", exitStudyExplore, "Exit"]
     ];
 
-  controlDefinitions.forEach(([label, handler]) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = label;
-    button.addEventListener("click", handler);
-    controls.appendChild(button);
+  controlDefinitions.forEach(([label, handler, mobileLabel]) => {
+    appendStudyControlButton(controls, label, handler, mobileLabel);
   });
 
   const list = document.createElement("div");
@@ -5018,7 +5054,7 @@ function renderStudyExplorePanel() {
     name.textContent = target.name;
     item.appendChild(name);
 
-    const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(target.name);
+    const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(getStudyPreviewSpeechLabel(target));
     if (speaker) {
       item.appendChild(speaker);
     }
@@ -5027,6 +5063,473 @@ function renderStudyExplorePanel() {
   });
 
   answerBank.append(controls, list);
+}
+
+function getStudyPreviewSpeechLabel(targetOrId) {
+  const target = typeof targetOrId === "string"
+    ? session.getFeature(targetOrId)
+    : targetOrId;
+
+  if (!target) {
+    return "";
+  }
+
+  return target.completedLabelName || target.name || "";
+}
+
+function speakStudyPreviewTarget(targetOrId) {
+  const text = getStudyPreviewSpeechLabel(targetOrId);
+
+  if (!text) {
+    return false;
+  }
+
+  return window.GeographyChipSpeech?.speakLabel(text) || false;
+}
+
+function configureMemoryTrailOverlay({ mode, titleText, messageText, primaryText, secondaryText, showInfo }) {
+  if (!memoryTrailOverlay) {
+    return;
+  }
+
+  memoryTrailOverlayMode = mode;
+  memoryTrailTitle.textContent = titleText;
+  memoryTrailMessage.textContent = messageText;
+  memoryTrailPrimaryButton.textContent = primaryText;
+  memoryTrailSecondaryButton.textContent = secondaryText;
+  memoryTrailOverlay.hidden = false;
+
+  if (memoryTrailInfoButton) {
+    memoryTrailInfoButton.hidden = !showInfo;
+    memoryTrailInfoButton.setAttribute("aria-expanded", "false");
+  }
+
+  if (memoryTrailInfoCopy) {
+    memoryTrailInfoCopy.hidden = true;
+  }
+
+  window.requestAnimationFrame(() => {
+    memoryTrailPrimaryButton?.focus();
+  });
+}
+
+function showMemoryTrailOfferOverlay() {
+  if (currentAppScreen !== "study-explore" || !activeStudySession || isMemoryTrailActive()) {
+    return;
+  }
+
+  configureMemoryTrailOverlay({
+    mode: "offer",
+    titleText: "Try Memory Trail?",
+    messageText: "Watch and listen as places are shown in order, then tap them back in the same pattern.",
+    primaryText: "Start Memory Trail",
+    secondaryText: "Study Normally",
+    showInfo: true
+  });
+}
+
+function showMemoryTrailCompletionOverlay() {
+  if (currentAppScreen !== "study-explore" || !activeStudySession) {
+    return;
+  }
+
+  configureMemoryTrailOverlay({
+    mode: "complete",
+    titleText: "Memory Trail Complete",
+    messageText: "Do you want to repeat this exercise?",
+    primaryText: "Do Memory Trail Again",
+    secondaryText: "Return to Study",
+    showInfo: false
+  });
+}
+
+function hideMemoryTrailOverlay() {
+  memoryTrailOverlayMode = null;
+
+  if (memoryTrailOverlay) {
+    memoryTrailOverlay.hidden = true;
+  }
+
+  if (memoryTrailInfoCopy) {
+    memoryTrailInfoCopy.hidden = true;
+  }
+
+  if (memoryTrailInfoButton) {
+    memoryTrailInfoButton.setAttribute("aria-expanded", "false");
+  }
+}
+
+function handleMemoryTrailOverlayPrimary() {
+  if (memoryTrailOverlayMode === "offer") {
+    hideMemoryTrailOverlay();
+    startMemoryTrail();
+    return;
+  }
+
+  if (memoryTrailOverlayMode === "complete") {
+    hideMemoryTrailOverlay();
+    restartMemoryTrail();
+  }
+}
+
+function handleMemoryTrailOverlaySecondary() {
+  if (memoryTrailOverlayMode === "complete") {
+    hideMemoryTrailOverlay();
+    exitMemoryTrail();
+    return;
+  }
+
+  hideMemoryTrailOverlay();
+}
+
+function toggleMemoryTrailInfo() {
+  if (!memoryTrailInfoButton || !memoryTrailInfoCopy) {
+    return;
+  }
+
+  const isExpanded = memoryTrailInfoButton.getAttribute("aria-expanded") === "true";
+  memoryTrailInfoButton.setAttribute("aria-expanded", String(!isExpanded));
+  memoryTrailInfoCopy.hidden = isExpanded;
+}
+
+function isMemoryTrailActive() {
+  return Boolean(activeStudySession?.memoryTrail?.active);
+}
+
+function getActiveMemoryTrail() {
+  return isMemoryTrailActive() ? activeStudySession.memoryTrail : null;
+}
+
+function createMemoryTrailState() {
+  return {
+    active: true,
+    order: session.currentActivity.targets.map((target) => target.id),
+    roundIndex: 0,
+    expectedIndex: 0,
+    phase: "idle",
+    message: "Watch the trail, then tap the places in the same order.",
+    promptName: "",
+    timers: [],
+    previousRevealedTargetIds: [...(activeStudySession?.revealedTargetIds || [])]
+  };
+}
+
+function isCurrentMemoryTrailState(memoryTrail) {
+  return Boolean(memoryTrail && activeStudySession?.memoryTrail === memoryTrail && memoryTrail.active);
+}
+
+function clearMemoryTrailTimers(memoryTrail = getActiveMemoryTrail()) {
+  if (!memoryTrail?.timers?.length) {
+    return;
+  }
+
+  memoryTrail.timers.forEach((timer) => window.clearTimeout(timer));
+  memoryTrail.timers = [];
+}
+
+function scheduleMemoryTrailStep(memoryTrail, callback, delay) {
+  const timer = window.setTimeout(() => {
+    memoryTrail.timers = memoryTrail.timers.filter((item) => item !== timer);
+
+    if (isCurrentMemoryTrailState(memoryTrail)) {
+      callback();
+    }
+  }, delay);
+
+  memoryTrail.timers.push(timer);
+}
+
+function clearMemoryTrailState({ restoreReveals = true, render = false } = {}) {
+  const memoryTrail = getActiveMemoryTrail();
+
+  if (!memoryTrail) {
+    return;
+  }
+
+  clearMemoryTrailTimers(memoryTrail);
+  try {
+    window.speechSynthesis?.cancel();
+  } catch {
+    // Speech cleanup is best-effort; visual state is still cleared below.
+  }
+  runner?.setMemoryTrailHighlight([]);
+
+  if (restoreReveals && activeStudySession) {
+    activeStudySession.revealedTargetIds = [...memoryTrail.previousRevealedTargetIds];
+    runner?.setCompletedTargets(activeStudySession.revealedTargetIds);
+  }
+
+  if (activeStudySession) {
+    activeStudySession.memoryTrail = null;
+  }
+
+  if (render) {
+    instruction.textContent = "Tap a target or name to show it. Tap it again to hide it.";
+    renderStudyExplorePanel();
+  }
+}
+
+function startMemoryTrail() {
+  if (!activeStudySession || currentAppScreen !== "study-explore" || !session.currentActivity.targets.length) {
+    return;
+  }
+
+  hideMemoryTrailOverlay();
+  clearMemoryTrailState({ restoreReveals: false });
+  activeStudySession.memoryTrail = createMemoryTrailState();
+  activeStudySession.revealedTargetIds = [];
+  runner.setCompletedTargets([]);
+  instruction.textContent = "Watch the Memory Trail, then tap the targets in order.";
+  renderStudyExplorePanel();
+  playMemoryTrailRound(activeStudySession.memoryTrail);
+}
+
+function restartMemoryTrail() {
+  if (!activeStudySession) {
+    return;
+  }
+
+  hideMemoryTrailOverlay();
+  const previousRevealedTargetIds = [...(activeStudySession.memoryTrail?.previousRevealedTargetIds || activeStudySession.revealedTargetIds || [])];
+  clearMemoryTrailState({ restoreReveals: false });
+  activeStudySession.memoryTrail = createMemoryTrailState();
+  activeStudySession.memoryTrail.previousRevealedTargetIds = previousRevealedTargetIds;
+  activeStudySession.revealedTargetIds = [];
+  runner.setCompletedTargets([]);
+  renderStudyExplorePanel();
+  playMemoryTrailRound(activeStudySession.memoryTrail);
+}
+
+function exitMemoryTrail() {
+  hideMemoryTrailOverlay();
+  clearMemoryTrailState({ restoreReveals: true, render: true });
+}
+
+function playMemoryTrailRound(memoryTrail = getActiveMemoryTrail()) {
+  if (!isCurrentMemoryTrailState(memoryTrail)) {
+    return;
+  }
+
+  clearMemoryTrailTimers(memoryTrail);
+  runner.setMemoryTrailHighlight([]);
+  memoryTrail.phase = "playing";
+  memoryTrail.expectedIndex = 0;
+  memoryTrail.promptName = "";
+  memoryTrail.message = `Round ${memoryTrail.roundIndex + 1}: watch the trail.`;
+  renderStudyExplorePanel();
+
+  const roundTargetIds = getMemoryTrailRoundTargetIds(memoryTrail);
+  scheduleMemoryTrailStep(memoryTrail, () => {
+    playMemoryTrailPlaybackItem(memoryTrail, roundTargetIds, 0);
+  }, 250);
+}
+
+function getMemoryTrailRoundTargetIds(memoryTrail = getActiveMemoryTrail()) {
+  if (!memoryTrail) {
+    return [];
+  }
+
+  return memoryTrail.order.slice(0, memoryTrail.roundIndex + 1);
+}
+
+function playMemoryTrailPlaybackItem(memoryTrail, roundTargetIds, targetIndex) {
+  if (!isCurrentMemoryTrailState(memoryTrail)) {
+    return;
+  }
+
+  if (targetIndex >= roundTargetIds.length) {
+    memoryTrail.phase = "answering";
+    memoryTrail.expectedIndex = 0;
+    memoryTrail.promptName = "";
+    memoryTrail.message = `Now tap the trail in order: 1 of ${roundTargetIds.length}.`;
+    runner.setMemoryTrailHighlight([]);
+    renderStudyExplorePanel();
+    return;
+  }
+
+  const targetId = roundTargetIds[targetIndex];
+  const target = session.getFeature(targetId);
+  const speechLabel = getStudyPreviewSpeechLabel(target);
+  memoryTrail.promptName = speechLabel || target?.name || "";
+  memoryTrail.message = memoryTrail.promptName ? `Watch: ${memoryTrail.promptName}` : "Watch this target.";
+  runner.setMemoryTrailHighlight(targetId);
+  renderStudyExplorePanel();
+  speakMemoryTrailTarget(target, () => {
+    scheduleMemoryTrailStep(memoryTrail, () => {
+      memoryTrail.promptName = "";
+      runner.setMemoryTrailHighlight([]);
+      renderStudyExplorePanel();
+
+      scheduleMemoryTrailStep(memoryTrail, () => {
+        playMemoryTrailPlaybackItem(memoryTrail, roundTargetIds, targetIndex + 1);
+      }, memoryTrailGapDurationMs);
+    }, memoryTrailPostSpeechHoldMs);
+  });
+}
+
+function getMemoryTrailFallbackSpeechDurationMs(labelText) {
+  const text = String(labelText || "").trim();
+  return Math.max(1200, Math.min(4200, 650 + text.length * 85));
+}
+
+function speakMemoryTrailTarget(target, onComplete) {
+  const labelText = getStudyPreviewSpeechLabel(target);
+  let didFinish = false;
+  const finish = () => {
+    if (didFinish) {
+      return;
+    }
+
+    didFinish = true;
+    onComplete?.();
+  };
+
+  try {
+    const didSpeak = window.GeographyChipSpeech?.speakLabelWithCompletion?.(labelText, finish);
+
+    if (didSpeak) {
+      return;
+    }
+  } catch {
+    // Speech is an enhancement; the visible prompt carries the exercise.
+  }
+
+  window.setTimeout(finish, getMemoryTrailFallbackSpeechDurationMs(labelText));
+}
+
+function handleMemoryTrailTargetTap(targetIds) {
+  const memoryTrail = getActiveMemoryTrail();
+
+  if (!memoryTrail) {
+    return;
+  }
+
+  if (memoryTrail.phase === "playing") {
+    return;
+  }
+
+  if (memoryTrail.phase !== "answering") {
+    return;
+  }
+
+  const candidateIds = Array.isArray(targetIds)
+    ? targetIds
+    : [targetIds].filter(Boolean);
+  const roundTargetIds = getMemoryTrailRoundTargetIds(memoryTrail);
+  const expectedTargetId = roundTargetIds[memoryTrail.expectedIndex];
+
+  if (candidateIds.includes(expectedTargetId)) {
+    handleCorrectMemoryTrailTap(memoryTrail, expectedTargetId, roundTargetIds);
+  } else {
+    handleIncorrectMemoryTrailTap(memoryTrail);
+  }
+}
+
+function handleCorrectMemoryTrailTap(memoryTrail, targetId, roundTargetIds) {
+  memoryTrail.expectedIndex += 1;
+  runner.setMemoryTrailHighlight(targetId);
+  showFeedback("Yes.", true);
+
+  const roundComplete = memoryTrail.expectedIndex >= roundTargetIds.length;
+  const trailComplete = roundComplete && memoryTrail.roundIndex >= memoryTrail.order.length - 1;
+
+  memoryTrail.phase = "feedback";
+  memoryTrail.message = trailComplete
+    ? "Memory Trail complete."
+    : roundComplete
+      ? "Good. Get ready for the next round."
+      : `Good. Next tap ${memoryTrail.expectedIndex + 1} of ${roundTargetIds.length}.`;
+  renderStudyExplorePanel();
+
+  scheduleMemoryTrailStep(memoryTrail, () => {
+    runner.setMemoryTrailHighlight([]);
+
+    if (trailComplete) {
+      memoryTrail.phase = "complete";
+      memoryTrail.promptName = "";
+      memoryTrail.message = "You completed the Memory Trail.";
+      renderStudyExplorePanel();
+      showMemoryTrailCompletionOverlay();
+      return;
+    }
+
+    if (roundComplete) {
+      memoryTrail.roundIndex += 1;
+      playMemoryTrailRound(memoryTrail);
+      return;
+    }
+
+    memoryTrail.phase = "answering";
+    renderStudyExplorePanel();
+  }, memoryTrailCorrectPauseMs);
+}
+
+function handleIncorrectMemoryTrailTap(memoryTrail) {
+  memoryTrail.phase = "feedback";
+  memoryTrail.promptName = "";
+  memoryTrail.message = "Not quite. Watch this round again.";
+  runner.setMemoryTrailHighlight([]);
+  showFeedback("Not quite - watch it again.");
+  renderStudyExplorePanel();
+
+  scheduleMemoryTrailStep(memoryTrail, () => {
+    playMemoryTrailRound(memoryTrail);
+  }, memoryTrailReplayPauseMs);
+}
+
+function renderMemoryTrailPanel() {
+  const memoryTrail = getActiveMemoryTrail();
+
+  if (!memoryTrail) {
+    return;
+  }
+
+  const panel = document.createElement("div");
+  panel.className = "memory-trail-panel";
+
+  const status = document.createElement("div");
+  status.className = "memory-trail-status";
+
+  const kicker = document.createElement("span");
+  kicker.className = "memory-trail-kicker";
+  kicker.textContent = "Memory Trail";
+
+  const title = document.createElement("strong");
+  title.textContent = memoryTrail.phase === "complete"
+    ? "Trail complete"
+    : `Round ${memoryTrail.roundIndex + 1} of ${memoryTrail.order.length}`;
+
+  const message = document.createElement("p");
+  message.textContent = memoryTrail.message;
+
+  status.append(kicker, title, message);
+
+  if (memoryTrail.promptName) {
+    const prompt = document.createElement("p");
+    prompt.className = "memory-trail-prompt";
+    prompt.textContent = memoryTrail.promptName;
+    status.appendChild(prompt);
+  }
+
+  const controls = document.createElement("div");
+  controls.className = "study-explore-controls memory-trail-controls";
+
+  if (memoryTrail.phase !== "complete") {
+    appendStudyControlButton(controls, "Exit Memory Trail", exitMemoryTrail, "Exit Trail");
+  }
+
+  panel.append(status, controls);
+  answerBank.appendChild(panel);
+}
+
+function appendStudyControlButton(container, label, handler, mobileLabel = label) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = label;
+  button.dataset.mobileLabel = mobileLabel;
+  button.addEventListener("click", handler);
+  container.appendChild(button);
+  return button;
 }
 
 function getEffectivePresentationSettings(activity, options = {}) {
@@ -7780,8 +8283,11 @@ function openActivity(activityId, options = {}) {
   clearJourneyAutoAdvanceTimer();
   hideStudyPracticeCompletionCard();
   resetActivityAttemptState();
+  hideMemoryTrailOverlay();
+  clearMemoryTrailState({ restoreReveals: false });
   activeStudySession = null;
   runner?.setStudyPreviewMode(false);
+  runner?.setMemoryTrailHighlight([]);
   document.body.classList.remove("study-explore-mode");
   const baseActivity = getActivityById(activityId);
   currentPresentationSettings = getEffectivePresentationSettings(baseActivity, options);
@@ -7910,6 +8416,12 @@ function handleTargetClick(targetIds) {
     const resolvedStudyTargetIds = targetIds && !Array.isArray(targetIds) && typeof targetIds.x === "number"
       ? runner.getTargetIdsAtMapPoint(targetIds)
       : targetIds;
+
+    if (isMemoryTrailActive()) {
+      handleMemoryTrailTargetTap(resolvedStudyTargetIds);
+      return;
+    }
+
     const targetId = Array.isArray(resolvedStudyTargetIds)
       ? resolvedStudyTargetIds[0]
       : resolvedStudyTargetIds;

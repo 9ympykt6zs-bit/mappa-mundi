@@ -21,6 +21,8 @@ const colors = {
   selectedLine: "#0f4fa8",
   studyTargetFill: "#dbeafe",
   studyTargetLine: "#2563eb",
+  memoryTrailFill: "#f5c542",
+  memoryTrailLine: "#9a5f05",
   hardContinentChallengeFill: "#4f7f5f",
   neutralMarker: "#ffffff",
   neutralMarkerStroke: "#172033",
@@ -216,6 +218,7 @@ export class MapLibreActivityRunner {
     this.pendingDifficultyVisualRefresh = false;
     this.presentationSettings = {};
     this.studyPreviewMode = false;
+    this.memoryTrailHighlightIds = [];
   }
 
   onTargetClick(handler) {
@@ -369,6 +372,16 @@ export class MapLibreActivityRunner {
 
   setStudyPreviewMode(isActive) {
     this.studyPreviewMode = Boolean(isActive);
+    if (!this.studyPreviewMode) {
+      this.memoryTrailHighlightIds = [];
+    }
+    this.refreshDifficultyVisuals();
+  }
+
+  setMemoryTrailHighlight(targetIds = []) {
+    this.memoryTrailHighlightIds = Array.isArray(targetIds)
+      ? targetIds.filter(Boolean)
+      : [targetIds].filter(Boolean);
     this.refreshDifficultyVisuals();
   }
 
@@ -980,6 +993,21 @@ export class MapLibreActivityRunner {
   }
 
   getOceanRegionLineOpacityExpression() {
+    if (this.studyPreviewMode && this.isContinentsOceansActivity()) {
+      return [
+        "case",
+        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.memoryTrailHighlightIds]],
+        0.9,
+        [
+          "in",
+          ["coalesce", ["get", "id"], ["get", "ocean"], ["get", "name"]],
+          ["literal", ["arctic-ocean", "Arctic Ocean", "southern-ocean", "Southern Ocean"]]
+        ],
+        0,
+        0.46
+      ];
+    }
+
     if (this.isContinentsOceansActivity() && !this.studyPreviewMode) {
       return [
         "case",
@@ -1781,6 +1809,8 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode && this.isContinentsOceansActivity()) {
       return [
         "case",
+        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.memoryTrailHighlightIds]],
+        colors.memoryTrailFill,
         ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.completedIds]],
         this.getCompletedOceanRegionColorExpression(),
         colors.studyTargetFill
@@ -2287,6 +2317,17 @@ export class MapLibreActivityRunner {
   }
 
   getOceanRegionLineColorExpression() {
+    if (this.studyPreviewMode && this.isContinentsOceansActivity()) {
+      return [
+        "case",
+        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.memoryTrailHighlightIds]],
+        colors.memoryTrailLine,
+        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.completedIds]],
+        oceanCompletedOutlineColor,
+        colors.studyTargetLine
+      ];
+    }
+
     if (this.isContinentsOceansActivity() && !this.studyPreviewMode) {
       return [
         "case",
@@ -2412,6 +2453,8 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode) {
       return [
         "case",
+        ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
+        colors.memoryTrailFill,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         ["match", ["get", "id"], ...this.getColorMatchStops(), colors.targetFill],
         colors.studyTargetFill
@@ -2441,6 +2484,8 @@ export class MapLibreActivityRunner {
         "case",
         ["boolean", ["get", "isOceanZone"], false],
         ["match", ["get", "id"], ...this.getColorMatchStops(), colors.ocean],
+        ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
+        colors.memoryTrailFill,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         ["match", ["get", "id"], ...this.getColorMatchStops(), colors.targetFill],
         colors.studyTargetFill
@@ -2470,6 +2515,8 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode) {
       return [
         "case",
+        ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
+        0.98,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         0.96,
         0.52
@@ -2506,6 +2553,8 @@ export class MapLibreActivityRunner {
         "case",
         ["boolean", ["get", "isOceanZone"], false],
         0,
+        ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
+        0.98,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         0.96,
         0.52
@@ -2544,6 +2593,8 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode) {
       return [
         "case",
+        ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
+        colors.memoryTrailLine,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         colors.targetStroke,
         colors.studyTargetLine
@@ -2561,6 +2612,8 @@ export class MapLibreActivityRunner {
         0,
         ["boolean", ["get", "suppressInternalTargetLines"], false],
         0,
+        ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
+        1,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         1,
         0.86
@@ -2605,6 +2658,8 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode) {
       return [
         "case",
+        ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
+        3,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         2.15,
         1.7
@@ -2677,6 +2732,8 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode) {
       return [
         "case",
+        ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
+        colors.memoryTrailFill,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         ["match", ["get", "id"], ...this.getColorMatchStops(), colors.neutralMarker],
         colors.neutralMarker
@@ -2698,6 +2755,8 @@ export class MapLibreActivityRunner {
   getCapitalRadiusExpression() {
     return [
       "case",
+      ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
+      8,
       ["in", ["get", "id"], ["literal", this.completedIds]],
       7,
       6
@@ -2749,6 +2808,8 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode) {
       return [
         "case",
+        ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
+        0.28,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         0.18,
         0.1
