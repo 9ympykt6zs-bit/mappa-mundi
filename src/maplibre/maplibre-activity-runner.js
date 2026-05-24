@@ -219,6 +219,10 @@ export class MapLibreActivityRunner {
     this.presentationSettings = {};
     this.studyPreviewMode = false;
     this.memoryTrailHighlightIds = [];
+    this.placementInteractionState = {
+      active: false,
+      dragging: false
+    };
   }
 
   onTargetClick(handler) {
@@ -304,6 +308,7 @@ export class MapLibreActivityRunner {
     }
 
     this.currentView = "study";
+    this.updatePlacementCursor();
     this.resizeSoon();
     this.updateOceanRegionVisibility();
     this.updateBaseLabelVisibility();
@@ -336,6 +341,7 @@ export class MapLibreActivityRunner {
 
   enterOverview() {
     this.currentView = "overview";
+    this.setPlacementInteractionState({ active: false, dragging: false });
     this.resizeSoon();
     this.updateOceanRegionVisibility();
     this.updateBaseLabelVisibility();
@@ -506,6 +512,31 @@ export class MapLibreActivityRunner {
     const method = isEnabled ? "enable" : "disable";
     this.map.dragPan[method]();
     this.map.boxZoom[method]();
+  }
+
+  setPlacementInteractionState(state = {}) {
+    this.placementInteractionState = {
+      active: Boolean(state.active),
+      dragging: Boolean(state.dragging)
+    };
+    this.updatePlacementCursor();
+  }
+
+  updatePlacementCursor() {
+    if (!this.map) {
+      return;
+    }
+
+    if (!this.placementInteractionState.active) {
+      this.map.getCanvas().style.cursor = "";
+      return;
+    }
+
+    this.map.getCanvas().style.cursor = this.placementInteractionState.dragging ? "grabbing" : "";
+  }
+
+  canUseTargetHoverCursor() {
+    return this.currentView === "study" && !this.placementInteractionState.active;
   }
 
   updateActivity(activity) {
@@ -1283,12 +1314,16 @@ export class MapLibreActivityRunner {
 
     ["state-fill", "target-hit-fill", "capital-hit", "capital-marker", "capital-marker-halo"].forEach((layerId) => {
       this.map.on("mouseenter", layerId, () => {
-        if (this.currentView === "study") {
+        if (this.canUseTargetHoverCursor()) {
           this.map.getCanvas().style.cursor = "pointer";
         }
       });
       this.map.on("mouseleave", layerId, () => {
-        this.map.getCanvas().style.cursor = "";
+        if (this.placementInteractionState.active) {
+          this.updatePlacementCursor();
+        } else {
+          this.map.getCanvas().style.cursor = "";
+        }
       });
     });
   }

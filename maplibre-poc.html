@@ -6,7 +6,7 @@
     <title>Atlas Quest</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css" />
-    <link rel="stylesheet" href="maplibre-poc.css?v=memory-trail-study-nudge" />
+    <link rel="stylesheet" href="maplibre-poc.css?v=audio-instructions-mute" />
   </head>
   <body class="overview-mode launch-mode">
     <section id="launch-screen" class="launch-screen" aria-labelledby="launch-title">
@@ -90,6 +90,10 @@
         <div class="top-bar-side top-bar-right">
           <button id="browse-button" class="top-bar-button" type="button" aria-expanded="false" aria-controls="region-panel">Browse</button>
           <button id="reset-button" class="top-bar-button reset-button" type="button" hidden>Reset</button>
+          <button id="audio-mute-button" class="top-bar-button audio-mute-button" type="button" aria-label="Mute audio" title="Mute audio">
+            <span class="audio-mute-icon" aria-hidden="true"></span>
+            <span class="audio-mute-label">Audio</span>
+          </button>
           <button id="settings-button" class="top-bar-button settings-button" type="button" aria-label="Settings" title="Settings"></button>
         </div>
       </div>
@@ -105,6 +109,7 @@
     <main class="poc-main">
       <section class="map-shell" aria-label="Interactive MapLibre map">
         <div id="map"></div>
+        <div id="audio-instruction-banner" class="audio-instruction-banner" role="status" aria-live="polite" hidden></div>
         <div class="zoom-panel" aria-label="Map controls">
           <button id="zoom-in-button" type="button" title="Zoom in" aria-label="Zoom in">+</button>
           <button id="zoom-out-button" type="button" title="Zoom out" aria-label="Zoom out">-</button>
@@ -200,6 +205,6 @@
     </div>
 
     <script src="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js"></script>
-    <script type="module" src="src/maplibre-poc.js?v=memory-trail-study-nudge"></script>
+    <script type="module" src="src/maplibre-poc.js?v=audio-instructions-mute"></script>
   </body>
 </html>

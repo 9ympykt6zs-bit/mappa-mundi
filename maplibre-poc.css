@@ -2006,6 +2006,58 @@ body.study-explore-mode .answer-panel {
   font-size: 1rem;
 }
 
+.audio-mute-button {
+  align-items: center;
+  display: inline-flex;
+  gap: 7px;
+}
+
+.audio-mute-button.muted {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.audio-mute-icon {
+  display: inline-block;
+  height: 18px;
+  position: relative;
+  width: 20px;
+}
+
+.audio-mute-icon::before {
+  background: currentColor;
+  clip-path: polygon(0 35%, 35% 35%, 78% 4%, 78% 96%, 35% 65%, 0 65%);
+  content: "";
+  height: 16px;
+  left: 1px;
+  position: absolute;
+  top: 1px;
+  width: 15px;
+}
+
+.audio-mute-icon::after {
+  border: 2px solid currentColor;
+  border-left: 0;
+  border-radius: 0 999px 999px 0;
+  content: "";
+  height: 10px;
+  left: 13px;
+  position: absolute;
+  top: 4px;
+  width: 6px;
+}
+
+.audio-mute-button.muted .audio-mute-icon::after {
+  background: currentColor;
+  border: 0;
+  border-radius: 999px;
+  height: 22px;
+  left: 10px;
+  top: -2px;
+  transform: rotate(-38deg);
+  width: 3px;
+}
+
 .reset-button {
   border-color: rgba(239, 68, 68, 0.34);
   color: #9f1239;
@@ -2165,6 +2217,29 @@ body.study-mode .map-shell {
 
 #map canvas {
   outline: none;
+}
+
+.audio-instruction-banner {
+  background: rgba(248, 251, 255, 0.94);
+  border: 1px solid rgba(183, 207, 248, 0.84);
+  border-radius: 999px;
+  box-shadow: 0 12px 28px rgba(9, 22, 42, 0.16);
+  color: #12345f;
+  font-size: 0.95rem;
+  font-weight: 850;
+  left: 50%;
+  max-width: min(520px, calc(100vw - 32px));
+  padding: 10px 16px;
+  pointer-events: none;
+  position: absolute;
+  text-align: center;
+  top: 96px;
+  transform: translateX(-50%);
+  z-index: 16;
+}
+
+.audio-instruction-banner[hidden] {
+  display: none;
 }
 
 .map-overlay-card {
@@ -3102,6 +3177,22 @@ body.browse-mode .answer-panel-title {
     width: 40px;
   }
 
+  .audio-mute-button {
+    gap: 0;
+    padding-inline: 0;
+    width: 40px;
+  }
+
+  .audio-mute-label {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
   .reset-button {
     font-size: 0.78rem;
     font-weight: 900;
@@ -3147,6 +3238,16 @@ body.browse-mode .answer-panel-title {
   body.overview-mode .map-shell {
     height: 100dvh;
     min-height: 0;
+  }
+
+  .audio-instruction-banner {
+    font-size: 0.86rem;
+    left: 10px;
+    max-width: calc(100vw - 20px);
+    padding: 8px 12px;
+    right: 10px;
+    top: calc(var(--mobile-header-height) + 8px);
+    transform: none;
   }
 
   .region-panel {
@@ -3523,6 +3624,7 @@ body.browse-mode .answer-panel-title {
   }
 
   .settings-button,
+  .audio-mute-button,
   #back-button {
     width: 36px;
   }

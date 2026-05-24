@@ -33,7 +33,7 @@ const instructionAudioDir = path.join(repoRoot, "assets", "audio", "instructions
 const manifestPath = path.join(repoRoot, "assets", "audio", "audio-manifest.json");
 
 const instructionPhrases = [
-  "Match the pattern.",
+  "Match the pattern and say the names.",
   "Choose a label.",
   "Tap the matching place on the map.",
   "Correct.",

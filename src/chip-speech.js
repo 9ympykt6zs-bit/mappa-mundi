@@ -1,8 +1,14 @@
 (function attachChipSpeech(global) {
   const audioManifestUrl = "assets/audio/audio-manifest.json";
+  const audioMutedStorageKey = "atlasQuestAudioMuted";
   let audioManifestPromise = null;
   let audioManifestLookup = null;
   let currentAudio = null;
+  let currentAudioCancel = null;
+  let currentSpeechFinish = null;
+  let sharedAudio = null;
+  let speechQueue = Promise.resolve();
+  let isAudioMuted = loadAudioMuted();
 
   function isLocalAudioSupported() {
     return Boolean(global?.Audio && global?.fetch);
@@ -14,6 +20,44 @@
 
   function isAudioOutputSupported() {
     return isLocalAudioSupported() || isSpeechSupported();
+  }
+
+  function loadAudioMuted() {
+    try {
+      return global.localStorage?.getItem(audioMutedStorageKey) === "true";
+    } catch {
+      return false;
+    }
+  }
+
+  function getAudioMuted() {
+    return isAudioMuted;
+  }
+
+  function setAudioMuted(nextMuted) {
+    isAudioMuted = Boolean(nextMuted);
+
+    try {
+      global.localStorage?.setItem(audioMutedStorageKey, String(isAudioMuted));
+    } catch {
+      // Muting still works for this page session if localStorage is unavailable.
+    }
+
+    if (isAudioMuted) {
+      stopAudio();
+    }
+
+    if (global.CustomEvent && global.dispatchEvent) {
+      global.dispatchEvent(new global.CustomEvent("atlas-quest-audio-muted-change", {
+        detail: { muted: isAudioMuted }
+      }));
+    }
+
+    return isAudioMuted;
+  }
+
+  function toggleAudioMuted() {
+    return setAudioMuted(!isAudioMuted);
   }
 
   function getSpeechFallbackDurationMs(labelText) {
@@ -130,21 +174,52 @@
     }
 
     currentAudio.__atlasQuestCancelled = true;
+    currentAudioCancel?.();
+    currentAudioCancel = null;
     currentAudio.pause();
     currentAudio.removeAttribute("src");
     currentAudio.load();
     currentAudio = null;
   }
 
+  function getSharedAudio() {
+    if (!sharedAudio && isLocalAudioSupported()) {
+      sharedAudio = new global.Audio();
+      sharedAudio.preload = "auto";
+    }
+
+    return sharedAudio;
+  }
+
+  function primeLocalAudio() {
+    if (isAudioMuted) {
+      return;
+    }
+
+    getSharedAudio();
+  }
+
   function stopBrowserSpeech() {
     if (isSpeechSupported()) {
+      currentSpeechFinish?.();
+      currentSpeechFinish = null;
       global.speechSynthesis.cancel();
     }
   }
 
-  function playLocalAudio(audioPath, onComplete) {
+  function stopAudio() {
+    stopCurrentAudio();
+    stopBrowserSpeech();
+  }
+
+  function playLocalAudio(audioPath, options = {}) {
     return new Promise((resolve) => {
       if (!audioPath || !isLocalAudioSupported()) {
+        resolve(false);
+        return;
+      }
+
+      if (isAudioMuted) {
         resolve(false);
         return;
       }
@@ -152,7 +227,15 @@
       stopCurrentAudio();
       stopBrowserSpeech();
 
-      const audio = new global.Audio(audioPath);
+      const audio = getSharedAudio();
+
+      if (!audio) {
+        resolve(false);
+        return;
+      }
+
+      audio.__atlasQuestCancelled = false;
+      audio.src = audioPath;
       currentAudio = audio;
 
       let isFinished = false;
@@ -172,31 +255,64 @@
           currentAudio = null;
         }
 
-        if (didPlay) {
-          onComplete?.();
+        if (currentAudioCancel === cancelPlayback) {
+          currentAudioCancel = null;
         }
+
         resolve(didPlay);
       };
+      const cancelPlayback = () => {
+        cleanup();
+        finish(false);
+      };
 
-      audio.addEventListener("ended", () => finish(true), { once: true });
-      audio.addEventListener("error", () => finish(false), { once: true });
+      const cleanup = () => {
+        audio.removeEventListener("ended", handleEnded);
+        audio.removeEventListener("error", handleError);
+      };
+      const handleEnded = () => {
+        cleanup();
+        finish(true);
+      };
+      const handleError = () => {
+        cleanup();
+        warnMemoryTrailAudioFailure(audioPath, "audio element error", options);
+        finish(false);
+      };
+
+      audio.addEventListener("ended", handleEnded);
+      audio.addEventListener("error", handleError);
+      currentAudioCancel = cancelPlayback;
 
       const playResult = audio.play();
 
       if (playResult?.catch) {
-        playResult.catch(() => finish(false));
+        playResult.catch((error) => {
+          cleanup();
+          warnMemoryTrailAudioFailure(audioPath, error, options);
+          finish(false);
+        });
       }
     });
   }
 
-  function scheduleCompletionFallback(labelText, onComplete) {
-    global.setTimeout(() => {
-      onComplete?.();
-    }, getSpeechFallbackDurationMs(labelText));
+  function warnMemoryTrailAudioFailure(audioPath, error, options = {}) {
+    if (!options.warnOnAudioFailure) {
+      return;
+    }
+
+    console.warn("[memory-trail-audio] Local audio playback failed; falling back to browser speech.", {
+      audioPath,
+      error
+    });
   }
 
   function speakWithBrowserSpeech(labelText) {
     if (!isSpeechSupported()) {
+      return false;
+    }
+
+    if (isAudioMuted) {
       return false;
     }
 
@@ -216,6 +332,10 @@
     const text = normalizeSpokenText(labelText);
 
     if (!text || !isAudioOutputSupported()) {
+      return false;
+    }
+
+    if (isAudioMuted) {
       return false;
     }
 
@@ -244,28 +364,76 @@
       return false;
     }
 
-    getAudioManifest().then((lookup) => {
-      const audioPath = lookup ? findLocalAudioPath(text) : null;
+    if (isAudioMuted) {
+      return false;
+    }
 
-      if (!audioPath) {
-        if (!speakWithBrowserSpeechWithCompletion(text, onComplete)) {
-          scheduleCompletionFallback(text, onComplete);
-        }
-        return;
-      }
-
-      playLocalAudio(audioPath, onComplete).then((didPlay) => {
-        if (!didPlay && !speakWithBrowserSpeechWithCompletion(text, onComplete)) {
-          scheduleCompletionFallback(text, onComplete);
-        }
-      });
+    speakLabelAndWait(text).then(() => {
+      onComplete?.();
     });
 
     return true;
   }
 
+  async function speakLabelAndWait(labelText, options = {}) {
+    if (options.queue) {
+      const queuedSpeech = speechQueue
+        .catch(() => false)
+        .then(() => playLabelAndWait(labelText, options));
+
+      speechQueue = queuedSpeech;
+      return queuedSpeech;
+    }
+
+    return playLabelAndWait(labelText, options);
+  }
+
+  async function playLabelAndWait(labelText, options = {}) {
+    const text = normalizeSpokenText(labelText);
+
+    if (!text || !isAudioOutputSupported()) {
+      return false;
+    }
+
+    if (isAudioMuted) {
+      return false;
+    }
+
+    const lookup = await getAudioManifest();
+    const audioPath = lookup ? findLocalAudioPath(text) : null;
+
+    if (!audioPath) {
+      if (!(await waitForBrowserSpeech(text))) {
+        await wait(getSpeechFallbackDurationMs(text));
+      }
+      return false;
+    }
+
+    const didPlay = await playLocalAudio(audioPath, options);
+
+    if (didPlay) {
+      return true;
+    }
+
+    if (!(await waitForBrowserSpeech(text))) {
+      await wait(getSpeechFallbackDurationMs(text));
+    }
+
+    return false;
+  }
+
+  function wait(durationMs) {
+    return new Promise((resolve) => {
+      global.setTimeout(resolve, durationMs);
+    });
+  }
+
   function speakWithBrowserSpeechWithCompletion(labelText, onComplete) {
     if (!isSpeechSupported()) {
+      return false;
+    }
+
+    if (isAudioMuted) {
       return false;
     }
 
@@ -282,6 +450,9 @@
       }
 
       isFinished = true;
+      if (currentSpeechFinish === finish) {
+        currentSpeechFinish = null;
+      }
       onComplete?.();
     };
 
@@ -297,8 +468,21 @@
 
     stopCurrentAudio();
     global.speechSynthesis.cancel();
+    currentSpeechFinish = finish;
     global.speechSynthesis.speak(utterance);
     return true;
+  }
+
+  function waitForBrowserSpeech(labelText) {
+    return new Promise((resolve) => {
+      const didSpeak = speakWithBrowserSpeechWithCompletion(labelText, () => {
+        resolve(true);
+      });
+
+      if (!didSpeak) {
+        resolve(false);
+      }
+    });
   }
 
   function stopChipInteraction(event) {
@@ -402,10 +586,16 @@
 
   global.GeographyChipSpeech = {
     getAudioManifest,
+    getAudioMuted,
     isSpeechSupported,
     isLocalAudioSupported,
+    primeLocalAudio,
+    setAudioMuted,
+    stopAudio,
     speakLabel,
     speakLabelWithCompletion,
+    speakLabelAndWait,
+    toggleAudioMuted,
     createChipSpeakerControl
   };
 

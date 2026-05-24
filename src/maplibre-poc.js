@@ -1,6 +1,6 @@
 import { normalizeActivity } from "./map-engines/activity-normalizer.js";
 import { ActivitySession, studyModes } from "./maplibre/activity-session.js?v=progress-state";
-import "./chip-speech.js?v=local-audio-fallback";
+import "./chip-speech.js?v=audio-mute-instructions";
 import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=memory-trail";
 import { journeyPresets } from "./journey-presets.js?v=us-capitals-journey";
 import {
@@ -2551,6 +2551,8 @@ let journeyAutoAdvanceTimer = null;
 let activityAttemptState = createActivityAttemptState();
 let activeRetryReviewState = null;
 let memoryTrailOverlayMode = null;
+let audioInstructionState = createAudioInstructionState("app");
+let audioInstructionHideTimer = null;
 let atlasProgress = loadProgress();
 let mapLayerSettings = loadMapLayerSettings();
 let studyTargetSettings = loadStudyTargetSettings();
@@ -2564,6 +2566,13 @@ const memoryTrailPostSpeechHoldMs = 1000;
 const memoryTrailGapDurationMs = 240;
 const memoryTrailCorrectPauseMs = 520;
 const memoryTrailReplayPauseMs = 900;
+const audioInstructionVisibleDurationMs = 5200;
+const audioInstructionPhrases = {
+  chooseLabel: "Choose a label.",
+  tapMatchingPlace: "Tap the matching place on the map.",
+  matchPattern: "Match the pattern and say the names.",
+  studyPreview: "Study the places, then try the challenge."
+};
 
 const title = document.querySelector("#poc-title");
 const instruction = document.querySelector("#poc-instruction");
@@ -2576,6 +2585,8 @@ const homeButton = document.querySelector("#home-button");
 const browseButton = document.querySelector("#browse-button");
 const browseCloseButton = document.querySelector("#browse-close-button");
 const settingsButton = document.querySelector("#settings-button");
+const audioMuteButton = document.querySelector("#audio-mute-button");
+const audioInstructionBanner = document.querySelector("#audio-instruction-banner");
 const previousActivityButton = document.querySelector("#previous-activity-button");
 const nextIncompleteButton = document.querySelector("#next-incomplete-button");
 const activityNavControls = document.querySelector("#activity-nav-controls");
@@ -2651,6 +2662,102 @@ function updateResetControlVisibility() {
   resetButton.disabled = !shouldShow;
   resetButton.tabIndex = shouldShow ? 0 : -1;
   resetButton.setAttribute("aria-hidden", String(!shouldShow));
+}
+
+function createAudioInstructionState(scope) {
+  return {
+    scope,
+    playedKeys: new Set()
+  };
+}
+
+function resetAudioInstructionState(scope) {
+  audioInstructionState = createAudioInstructionState(scope);
+  hideAudioInstructionBanner();
+}
+
+function updateAudioMuteControl() {
+  if (!audioMuteButton) {
+    return;
+  }
+
+  const isMuted = window.GeographyChipSpeech?.getAudioMuted?.() === true;
+  audioMuteButton.classList.toggle("muted", isMuted);
+  audioMuteButton.setAttribute("aria-pressed", String(isMuted));
+  audioMuteButton.setAttribute("aria-label", isMuted ? "Unmute audio" : "Mute audio");
+  audioMuteButton.setAttribute("title", isMuted ? "Unmute audio" : "Mute audio");
+
+  const label = audioMuteButton.querySelector(".audio-mute-label");
+  if (label) {
+    label.textContent = isMuted ? "Muted" : "Audio";
+  }
+}
+
+function toggleAudioMute() {
+  window.GeographyChipSpeech?.toggleAudioMuted?.();
+  updateAudioMuteControl();
+}
+
+function showAudioInstructionText(message) {
+  const text = String(message || "").trim();
+
+  if (!audioInstructionBanner || !text) {
+    return;
+  }
+
+  window.clearTimeout(audioInstructionHideTimer);
+  audioInstructionBanner.textContent = text;
+  audioInstructionBanner.hidden = false;
+
+  audioInstructionHideTimer = window.setTimeout(() => {
+    hideAudioInstructionBanner();
+  }, audioInstructionVisibleDurationMs);
+}
+
+function hideAudioInstructionBanner() {
+  window.clearTimeout(audioInstructionHideTimer);
+  audioInstructionHideTimer = null;
+
+  if (audioInstructionBanner) {
+    audioInstructionBanner.hidden = true;
+    audioInstructionBanner.textContent = "";
+  }
+}
+
+function playInstructionOnce(instructionKey, phrase, options = {}) {
+  if (!instructionKey || audioInstructionState.playedKeys.has(instructionKey)) {
+    return Promise.resolve(false);
+  }
+
+  audioInstructionState.playedKeys.add(instructionKey);
+  showAudioInstructionText(phrase);
+
+  if (window.GeographyChipSpeech?.getAudioMuted?.()) {
+    return Promise.resolve(false);
+  }
+
+  if (options.awaitCompletion && window.GeographyChipSpeech?.speakLabelAndWait) {
+    return window.GeographyChipSpeech.speakLabelAndWait(phrase, {
+      queue: true,
+      warnOnAudioFailure: options.warnOnAudioFailure === true
+    }).catch((error) => {
+      if (options.warnOnAudioFailure) {
+        console.warn("[atlas-quest-instruction-audio] Instruction playback failed.", error);
+      }
+      return false;
+    });
+  }
+
+  const didSpeak = window.GeographyChipSpeech?.speakLabel?.(phrase) || false;
+  return Promise.resolve(didSpeak);
+}
+
+function playFirstChipInstructionIfNeeded() {
+  if (!isActiveGameplayScreen() || isCurrentActivityComplete()) {
+    return;
+  }
+
+  playInstructionOnce("tap-matching-place", audioInstructionPhrases.tapMatchingPlace);
 }
 
 function setHeaderTitle(fullTitle, options = {}) {
@@ -2844,6 +2951,7 @@ async function init() {
   bindZoomControls();
   setBrowseDrawerOpen(false);
   updateActivityNavigationControls();
+  updateAudioMuteControl();
 
   const initialActivityId = getInitialActivityFromUrl();
 
@@ -4112,6 +4220,8 @@ function bindUiEvents() {
   });
   browseButton?.addEventListener("click", toggleBrowseDrawer);
   browseCloseButton?.addEventListener("click", closeBrowseDrawer);
+  audioMuteButton?.addEventListener("click", toggleAudioMute);
+  window.addEventListener("atlas-quest-audio-muted-change", updateAudioMuteControl);
   settingsButton?.addEventListener("click", () => {
     showAppScreen("settings");
   });
@@ -4908,6 +5018,7 @@ function openStudyExploreActivity(journey, step, activity, options = {}) {
   saveCurrentActivityProgress();
   cancelGrabbedAnswer();
   clearJourneyAutoAdvanceTimer();
+  resetAudioInstructionState(`study-preview:${journey.id}:${step.id}:${activity.id}`);
   activeStudySession = {
     journeyId: journey.id,
     stepId: step.id,
@@ -4963,6 +5074,7 @@ function openStudyExploreActivity(journey, step, activity, options = {}) {
   renderStudyExplorePanel();
   updateTopBarNavigation();
   showMemoryTrailOfferOverlay();
+  playInstructionOnce("study-preview", audioInstructionPhrases.studyPreview);
 }
 
 function revealStudyTarget(targetId) {
@@ -5248,6 +5360,7 @@ function clearMemoryTrailState({ restoreReveals = true, render = false } = {}) {
 
   clearMemoryTrailTimers(memoryTrail);
   try {
+    window.GeographyChipSpeech?.stopAudio?.();
     window.speechSynthesis?.cancel();
   } catch {
     // Speech cleanup is best-effort; visual state is still cleared below.
@@ -5276,12 +5389,19 @@ function startMemoryTrail() {
 
   hideMemoryTrailOverlay();
   clearMemoryTrailState({ restoreReveals: false });
+  resetAudioInstructionState(`memory-trail:${activeStudySession.activityId}:${Date.now()}`);
+  window.GeographyChipSpeech?.primeLocalAudio?.();
   activeStudySession.memoryTrail = createMemoryTrailState();
   activeStudySession.revealedTargetIds = [];
   runner.setCompletedTargets([]);
   instruction.textContent = "Watch the Memory Trail, then tap the targets in order.";
   renderStudyExplorePanel();
-  playMemoryTrailRound(activeStudySession.memoryTrail);
+  playInstructionOnce("match-pattern", audioInstructionPhrases.matchPattern, {
+    awaitCompletion: true,
+    warnOnAudioFailure: true
+  }).then(() => {
+    playMemoryTrailRound(activeStudySession?.memoryTrail);
+  });
 }
 
 function restartMemoryTrail() {
@@ -5292,12 +5412,19 @@ function restartMemoryTrail() {
   hideMemoryTrailOverlay();
   const previousRevealedTargetIds = [...(activeStudySession.memoryTrail?.previousRevealedTargetIds || activeStudySession.revealedTargetIds || [])];
   clearMemoryTrailState({ restoreReveals: false });
+  resetAudioInstructionState(`memory-trail:${activeStudySession.activityId}:${Date.now()}`);
+  window.GeographyChipSpeech?.primeLocalAudio?.();
   activeStudySession.memoryTrail = createMemoryTrailState();
   activeStudySession.memoryTrail.previousRevealedTargetIds = previousRevealedTargetIds;
   activeStudySession.revealedTargetIds = [];
   runner.setCompletedTargets([]);
   renderStudyExplorePanel();
-  playMemoryTrailRound(activeStudySession.memoryTrail);
+  playInstructionOnce("match-pattern", audioInstructionPhrases.matchPattern, {
+    awaitCompletion: true,
+    warnOnAudioFailure: true
+  }).then(() => {
+    playMemoryTrailRound(activeStudySession?.memoryTrail);
+  });
 }
 
 function exitMemoryTrail() {
@@ -5385,6 +5512,17 @@ function speakMemoryTrailTarget(target, onComplete) {
   };
 
   try {
+    if (window.GeographyChipSpeech?.speakLabelAndWait) {
+      window.GeographyChipSpeech.speakLabelAndWait(labelText, {
+        queue: true,
+        warnOnAudioFailure: true
+      }).then(finish).catch((error) => {
+        console.warn("[memory-trail-audio] Speech sequence failed; continuing Memory Trail.", error);
+        window.setTimeout(finish, getMemoryTrailFallbackSpeechDurationMs(labelText));
+      });
+      return;
+    }
+
     const didSpeak = window.GeographyChipSpeech?.speakLabelWithCompletion?.(labelText, finish);
 
     if (didSpeak) {
@@ -8285,6 +8423,7 @@ function openActivity(activityId, options = {}) {
   resetActivityAttemptState();
   hideMemoryTrailOverlay();
   clearMemoryTrailState({ restoreReveals: false });
+  resetAudioInstructionState(`activity:${options.appScreen || currentAppScreen}:${activityId}:${Date.now()}`);
   activeStudySession = null;
   runner?.setStudyPreviewMode(false);
   runner?.setMemoryTrailHighlight([]);
@@ -8329,6 +8468,10 @@ function openActivity(activityId, options = {}) {
   renderOverviewLibrary();
   updateResetControlVisibility();
   enterStudy();
+
+  if (isActiveGameplayScreen()) {
+    playInstructionOnce("choose-label", audioInstructionPhrases.chooseLabel);
+  }
 }
 
 function getPresentedActivity(activity, presentationSettings = {}) {
@@ -9309,6 +9452,16 @@ function syncAnswerBank() {
     chip.disabled = isInputLocked || isCompleted;
     chip.setAttribute("aria-pressed", String(isSelected));
   });
+
+  updatePlacementCursorState();
+}
+
+function updatePlacementCursorState() {
+  const active = isActiveGameplayScreen() && Boolean(session?.selectedId || grabbedAnswerId);
+  runner?.setPlacementInteractionState?.({
+    active,
+    dragging: active && Boolean(grabbedAnswerId)
+  });
 }
 
 function handleChipPointerUp(event, feature) {
@@ -9334,6 +9487,10 @@ function handleChipPointerDown(event, feature) {
 
     cancelGrabbedAnswer({ clearSelection: false });
     syncAnswerBank();
+
+    if (session.selectedId === feature.id) {
+      playFirstChipInstructionIfNeeded();
+    }
     return;
   }
 
@@ -9343,6 +9500,7 @@ function handleChipPointerDown(event, feature) {
   }
 
   beginGrabbedAnswer(feature.id, event.clientX, event.clientY, event.pointerId);
+  playFirstChipInstructionIfNeeded();
   event.currentTarget.setPointerCapture?.(event.pointerId);
 }
 
