@@ -1,6 +1,19 @@
 (function attachChipSpeech(global) {
+  const audioManifestUrl = "assets/audio/audio-manifest.json";
+  let audioManifestPromise = null;
+  let audioManifestLookup = null;
+  let currentAudio = null;
+
+  function isLocalAudioSupported() {
+    return Boolean(global?.Audio && global?.fetch);
+  }
+
   function isSpeechSupported() {
     return Boolean(global?.speechSynthesis && global?.SpeechSynthesisUtterance);
+  }
+
+  function isAudioOutputSupported() {
+    return isLocalAudioSupported() || isSpeechSupported();
   }
 
   function getSpeechFallbackDurationMs(labelText) {
@@ -22,7 +35,167 @@
     return utterance;
   }
 
-  function speakLabel(labelText) {
+  function sanitizeAudioLookupKey(text) {
+    return String(text || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+
+  function normalizeSpokenText(value) {
+    return String(value || "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function getAudioManifest() {
+    if (!isLocalAudioSupported()) {
+      return Promise.resolve(null);
+    }
+
+    if (!audioManifestPromise) {
+      audioManifestPromise = global.fetch(audioManifestUrl)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Audio manifest request failed: ${response.status}`);
+          }
+
+          return response.json();
+        })
+        .then(createAudioManifestLookup)
+        .catch((error) => {
+          debugChipSpeech(error.message || "Audio manifest unavailable", "manifest");
+          return null;
+        });
+    }
+
+    return audioManifestPromise;
+  }
+
+  function createAudioManifestLookup(manifest) {
+    const exact = new Map();
+    const sanitized = new Map();
+    const entries = [
+      ...Object.entries(manifest?.chips || {}),
+      ...Object.entries(manifest?.instructions || {})
+    ];
+
+    entries.forEach(([text, audioPath]) => {
+      const normalizedText = normalizeSpokenText(text);
+      const key = sanitizeAudioLookupKey(normalizedText);
+
+      if (!normalizedText || !audioPath) {
+        return;
+      }
+
+      exact.set(normalizedText, audioPath);
+
+      if (key && !sanitized.has(key)) {
+        sanitized.set(key, audioPath);
+      }
+
+      const pathKey = getAudioPathLookupKey(audioPath);
+      if (pathKey && !sanitized.has(pathKey)) {
+        sanitized.set(pathKey, audioPath);
+      }
+    });
+
+    audioManifestLookup = { exact, sanitized };
+    return audioManifestLookup;
+  }
+
+  function findLocalAudioPath(labelText) {
+    const lookup = audioManifestLookup;
+    const text = normalizeSpokenText(labelText);
+
+    if (!lookup || !text) {
+      return null;
+    }
+
+    return lookup.exact.get(text) || lookup.sanitized.get(sanitizeAudioLookupKey(text)) || null;
+  }
+
+  function getAudioPathLookupKey(audioPath) {
+    return String(audioPath || "")
+      .split("/")
+      .pop()
+      ?.replace(/\.mp3$/i, "") || "";
+  }
+
+  function stopCurrentAudio() {
+    if (!currentAudio) {
+      return;
+    }
+
+    currentAudio.__atlasQuestCancelled = true;
+    currentAudio.pause();
+    currentAudio.removeAttribute("src");
+    currentAudio.load();
+    currentAudio = null;
+  }
+
+  function stopBrowserSpeech() {
+    if (isSpeechSupported()) {
+      global.speechSynthesis.cancel();
+    }
+  }
+
+  function playLocalAudio(audioPath, onComplete) {
+    return new Promise((resolve) => {
+      if (!audioPath || !isLocalAudioSupported()) {
+        resolve(false);
+        return;
+      }
+
+      stopCurrentAudio();
+      stopBrowserSpeech();
+
+      const audio = new global.Audio(audioPath);
+      currentAudio = audio;
+
+      let isFinished = false;
+      const finish = (didPlay) => {
+        if (isFinished) {
+          return;
+        }
+
+        isFinished = true;
+
+        if (audio.__atlasQuestCancelled) {
+          resolve(true);
+          return;
+        }
+
+        if (currentAudio === audio) {
+          currentAudio = null;
+        }
+
+        if (didPlay) {
+          onComplete?.();
+        }
+        resolve(didPlay);
+      };
+
+      audio.addEventListener("ended", () => finish(true), { once: true });
+      audio.addEventListener("error", () => finish(false), { once: true });
+
+      const playResult = audio.play();
+
+      if (playResult?.catch) {
+        playResult.catch(() => finish(false));
+      }
+    });
+  }
+
+  function scheduleCompletionFallback(labelText, onComplete) {
+    global.setTimeout(() => {
+      onComplete?.();
+    }, getSpeechFallbackDurationMs(labelText));
+  }
+
+  function speakWithBrowserSpeech(labelText) {
     if (!isSpeechSupported()) {
       return false;
     }
@@ -33,12 +206,65 @@
       return false;
     }
 
+    stopCurrentAudio();
     global.speechSynthesis.cancel();
     global.speechSynthesis.speak(utterance);
     return true;
   }
 
+  function speakLabel(labelText) {
+    const text = normalizeSpokenText(labelText);
+
+    if (!text || !isAudioOutputSupported()) {
+      return false;
+    }
+
+    getAudioManifest().then((lookup) => {
+      const audioPath = lookup ? findLocalAudioPath(text) : null;
+
+      if (!audioPath) {
+        speakWithBrowserSpeech(text);
+        return;
+      }
+
+      playLocalAudio(audioPath).then((didPlay) => {
+        if (!didPlay) {
+          speakWithBrowserSpeech(text);
+        }
+      });
+    });
+
+    return true;
+  }
+
   function speakLabelWithCompletion(labelText, onComplete) {
+    const text = normalizeSpokenText(labelText);
+
+    if (!text || !isAudioOutputSupported()) {
+      return false;
+    }
+
+    getAudioManifest().then((lookup) => {
+      const audioPath = lookup ? findLocalAudioPath(text) : null;
+
+      if (!audioPath) {
+        if (!speakWithBrowserSpeechWithCompletion(text, onComplete)) {
+          scheduleCompletionFallback(text, onComplete);
+        }
+        return;
+      }
+
+      playLocalAudio(audioPath, onComplete).then((didPlay) => {
+        if (!didPlay && !speakWithBrowserSpeechWithCompletion(text, onComplete)) {
+          scheduleCompletionFallback(text, onComplete);
+        }
+      });
+    });
+
+    return true;
+  }
+
+  function speakWithBrowserSpeechWithCompletion(labelText, onComplete) {
     if (!isSpeechSupported()) {
       return false;
     }
@@ -69,6 +295,7 @@
       finish();
     };
 
+    stopCurrentAudio();
     global.speechSynthesis.cancel();
     global.speechSynthesis.speak(utterance);
     return true;
@@ -113,7 +340,7 @@
   }
 
   function createChipSpeakerControl(labelText) {
-    if (!isSpeechSupported()) {
+    if (!isAudioOutputSupported()) {
       return null;
     }
 
@@ -174,9 +401,13 @@
   }
 
   global.GeographyChipSpeech = {
+    getAudioManifest,
     isSpeechSupported,
+    isLocalAudioSupported,
     speakLabel,
     speakLabelWithCompletion,
     createChipSpeakerControl
   };
+
+  getAudioManifest();
 })(window);

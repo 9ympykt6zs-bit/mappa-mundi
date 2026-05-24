@@ -1,6 +1,6 @@
 import { normalizeActivity } from "./map-engines/activity-normalizer.js";
 import { ActivitySession, studyModes } from "./maplibre/activity-session.js?v=progress-state";
-import "./chip-speech.js?v=memory-trail-refine";
+import "./chip-speech.js?v=local-audio-fallback";
 import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=memory-trail";
 import { journeyPresets } from "./journey-presets.js?v=us-capitals-journey";
 import {
