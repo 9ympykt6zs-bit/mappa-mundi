@@ -1,5 +1,5 @@
 (function attachChipSpeech(global) {
-  const audioManifestUrl = "assets/audio/audio-manifest.json";
+  const audioManifestUrl = "assets/audio/audio-manifest.json?v=local-tts-desktop";
   const audioMutedStorageKey = "atlasQuestAudioMuted";
   let audioManifestPromise = null;
   let audioManifestLookup = null;
@@ -339,7 +339,7 @@
       return false;
     }
 
-    getAudioManifest().then((lookup) => {
+    const playFromLookup = (lookup) => {
       const audioPath = lookup ? findLocalAudioPath(text) : null;
 
       if (!audioPath) {
@@ -352,7 +352,13 @@
           speakWithBrowserSpeech(text);
         }
       });
-    });
+    };
+
+    if (audioManifestLookup) {
+      playFromLookup(audioManifestLookup);
+    } else {
+      getAudioManifest().then(playFromLookup);
+    }
 
     return true;
   }
@@ -541,6 +547,8 @@
       stopChipInteraction(event);
       lastSpeechGestureAt = Date.now();
       debugChipSpeech(labelText, event.type);
+      primeLocalAudio();
+      getAudioManifest();
       speakLabel(labelText);
     };
 

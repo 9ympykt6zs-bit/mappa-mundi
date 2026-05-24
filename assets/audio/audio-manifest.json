@@ -694,7 +694,7 @@
     "Zimbabwe": "assets/audio/chips/zimbabwe.mp3"
   },
   "instructions": {
-    "Match the pattern.": "assets/audio/instructions/match-the-pattern.mp3",
+    "Match the pattern and say the names.": "assets/audio/instructions/match-the-pattern-and-say-the-names.mp3",
     "Choose a label.": "assets/audio/instructions/choose-a-label.mp3",
     "Tap the matching place on the map.": "assets/audio/instructions/tap-the-matching-place-on-the-map.mp3",
     "Correct.": "assets/audio/instructions/correct.mp3",

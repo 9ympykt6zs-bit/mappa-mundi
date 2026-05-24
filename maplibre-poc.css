@@ -55,6 +55,30 @@ a {
   font: inherit;
 }
 
+.launch-screen,
+.app-shell-screen,
+.poc-header,
+.poc-main,
+.answer-panel,
+.region-panel,
+.journey-completion-overlay,
+.activity-retry-overlay,
+.memory-trail-overlay,
+.info-popover {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 .launch-screen {
   align-items: center;
   background: var(--atlas-space-background);

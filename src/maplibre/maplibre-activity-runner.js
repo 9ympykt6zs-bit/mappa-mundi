@@ -1509,6 +1509,52 @@ export class MapLibreActivityRunner {
     return targetIds;
   }
 
+  isTargetNearMapPoint(targetId, point) {
+    if (!this.map || !targetId || this.currentView !== "study") {
+      return false;
+    }
+
+    const queryPoint = Array.isArray(point) ? point : [point?.x, point?.y];
+
+    if (!Number.isFinite(queryPoint[0]) || !Number.isFinite(queryPoint[1])) {
+      return false;
+    }
+
+    const target = this.activity?.targets?.find((item) => item.id === targetId);
+
+    if (!target) {
+      return false;
+    }
+
+    const isCoarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches;
+
+    if (target.kind === "point" && Number.isFinite(target.lon) && Number.isFinite(target.lat)) {
+      const projected = this.map.project([target.lon, target.lat]);
+      const nearMissRadius = isCoarsePointer ? 60 : 44;
+      const dx = projected.x - queryPoint[0];
+      const dy = projected.y - queryPoint[1];
+
+      return Math.hypot(dx, dy) <= nearMissRadius;
+    }
+
+    const nearMissBox = isCoarsePointer ? 46 : 32;
+    const nearbyFeatures = this.map.queryRenderedFeatures([
+      [queryPoint[0] - nearMissBox, queryPoint[1] - nearMissBox],
+      [queryPoint[0] + nearMissBox, queryPoint[1] + nearMissBox]
+    ], {
+      layers: ["target-hit-fill"]
+    });
+
+    if (nearbyFeatures.some((feature) => feature.properties?.id === targetId)) {
+      return true;
+    }
+
+    const lngLat = this.map.unproject(queryPoint);
+    const sourceFeature = this.getTargetShapeFeature(target);
+
+    return this.isPointInGeoJsonGeometry([lngLat.lng, lngLat.lat], sourceFeature?.geometry);
+  }
+
   isMapPointInsideStateTarget(queryPoint, stateTargetId) {
     const lngLat = this.map.unproject(queryPoint);
     const point = [lngLat.lng, lngLat.lat];

@@ -1,6 +1,7 @@
 import { normalizeActivity } from "./map-engines/activity-normalizer.js";
 import { ActivitySession, studyModes } from "./maplibre/activity-session.js?v=progress-state";
-import "./chip-speech.js?v=audio-mute-instructions";
+import "./chip-speech.js?v=local-tts-desktop";
+import { playCompletionSound, playCorrectSound, playIncorrectSound } from "./sound-effects.js?v=mvp-feedback";
 import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=memory-trail";
 import { journeyPresets } from "./journey-presets.js?v=us-capitals-journey";
 import {
@@ -2402,25 +2403,7 @@ const activityCatalogMetadata = {
     sortOrder: 83
   }
 };
-const supplementalOverviewEntries = [
-  {
-    id: "world-map",
-    title: "Continents / Oceans",
-    mapSet: "world-europe",
-    category: "Physical Features",
-    sectionNumber: null,
-    itemCount: null,
-    baseMap: "world-map",
-    previewBounds: [[-180, -60], [180, 82]],
-    previewRegionId: "continents-oceans-legacy",
-    description: "Practice the continents and oceans on the world outline map.",
-    sortOrder: 90,
-    launch: {
-      type: "legacy",
-      activityId: "world-map"
-    }
-  }
-];
+const supplementalOverviewEntries = [];
 const usSectionDescriptions = {
   1: "Maine, New Hampshire, Massachusetts, Rhode Island, Connecticut, and their capitals.",
   2: "Vermont, New York, New Jersey, Pennsylvania, Delaware, and their capitals.",
@@ -5318,6 +5301,8 @@ function createMemoryTrailState() {
     order: session.currentActivity.targets.map((target) => target.id),
     roundIndex: 0,
     expectedIndex: 0,
+    nearMissCount: 0,
+    nearMissTargetId: null,
     phase: "idle",
     message: "Watch the trail, then tap the places in the same order.",
     promptName: "",
@@ -5441,6 +5426,7 @@ function playMemoryTrailRound(memoryTrail = getActiveMemoryTrail()) {
   runner.setMemoryTrailHighlight([]);
   memoryTrail.phase = "playing";
   memoryTrail.expectedIndex = 0;
+  resetMemoryTrailNearMiss(memoryTrail);
   memoryTrail.promptName = "";
   memoryTrail.message = `Round ${memoryTrail.roundIndex + 1}: watch the trail.`;
   renderStudyExplorePanel();
@@ -5467,6 +5453,7 @@ function playMemoryTrailPlaybackItem(memoryTrail, roundTargetIds, targetIndex) {
   if (targetIndex >= roundTargetIds.length) {
     memoryTrail.phase = "answering";
     memoryTrail.expectedIndex = 0;
+    resetMemoryTrailNearMiss(memoryTrail);
     memoryTrail.promptName = "";
     memoryTrail.message = `Now tap the trail in order: 1 of ${roundTargetIds.length}.`;
     runner.setMemoryTrailHighlight([]);
@@ -5535,7 +5522,16 @@ function speakMemoryTrailTarget(target, onComplete) {
   window.setTimeout(finish, getMemoryTrailFallbackSpeechDurationMs(labelText));
 }
 
-function handleMemoryTrailTargetTap(targetIds) {
+function resetMemoryTrailNearMiss(memoryTrail) {
+  if (!memoryTrail) {
+    return;
+  }
+
+  memoryTrail.nearMissCount = 0;
+  memoryTrail.nearMissTargetId = null;
+}
+
+function handleMemoryTrailTargetTap(targetIds, mapPoint = null) {
   const memoryTrail = getActiveMemoryTrail();
 
   if (!memoryTrail) {
@@ -5558,12 +5554,15 @@ function handleMemoryTrailTargetTap(targetIds) {
 
   if (candidateIds.includes(expectedTargetId)) {
     handleCorrectMemoryTrailTap(memoryTrail, expectedTargetId, roundTargetIds);
+  } else if (runner?.isTargetNearMapPoint?.(expectedTargetId, mapPoint)) {
+    handleNearMissMemoryTrailTap(memoryTrail, expectedTargetId);
   } else {
     handleIncorrectMemoryTrailTap(memoryTrail);
   }
 }
 
 function handleCorrectMemoryTrailTap(memoryTrail, targetId, roundTargetIds) {
+  resetMemoryTrailNearMiss(memoryTrail);
   memoryTrail.expectedIndex += 1;
   runner.setMemoryTrailHighlight(targetId);
   showFeedback("Yes.", true);
@@ -5578,6 +5577,7 @@ function handleCorrectMemoryTrailTap(memoryTrail, targetId, roundTargetIds) {
       ? "Good. Get ready for the next round."
       : `Good. Next tap ${memoryTrail.expectedIndex + 1} of ${roundTargetIds.length}.`;
   renderStudyExplorePanel();
+  playCorrectSound();
 
   scheduleMemoryTrailStep(memoryTrail, () => {
     runner.setMemoryTrailHighlight([]);
@@ -5587,6 +5587,7 @@ function handleCorrectMemoryTrailTap(memoryTrail, targetId, roundTargetIds) {
       memoryTrail.promptName = "";
       memoryTrail.message = "You completed the Memory Trail.";
       renderStudyExplorePanel();
+      playCompletionSound();
       showMemoryTrailCompletionOverlay();
       return;
     }
@@ -5598,8 +5599,37 @@ function handleCorrectMemoryTrailTap(memoryTrail, targetId, roundTargetIds) {
     }
 
     memoryTrail.phase = "answering";
+    resetMemoryTrailNearMiss(memoryTrail);
     renderStudyExplorePanel();
   }, memoryTrailCorrectPauseMs);
+}
+
+function handleNearMissMemoryTrailTap(memoryTrail, expectedTargetId) {
+  if (memoryTrail.nearMissTargetId !== expectedTargetId) {
+    memoryTrail.nearMissTargetId = expectedTargetId;
+    memoryTrail.nearMissCount = 0;
+  }
+
+  memoryTrail.nearMissCount += 1;
+
+  if (memoryTrail.nearMissCount < 2) {
+    memoryTrail.message = "Close - try again.";
+    showFeedback("Close - try again.");
+    renderStudyExplorePanel();
+    return;
+  }
+
+  memoryTrail.phase = "feedback";
+  memoryTrail.promptName = "";
+  memoryTrail.message = "Let's watch that round again.";
+  runner.setMemoryTrailHighlight([]);
+  showFeedback("Let's watch that round again.");
+  renderStudyExplorePanel();
+  resetMemoryTrailNearMiss(memoryTrail);
+
+  scheduleMemoryTrailStep(memoryTrail, () => {
+    playMemoryTrailRound(memoryTrail);
+  }, memoryTrailReplayPauseMs);
 }
 
 function handleIncorrectMemoryTrailTap(memoryTrail) {
@@ -5608,7 +5638,9 @@ function handleIncorrectMemoryTrailTap(memoryTrail) {
   memoryTrail.message = "Not quite. Watch this round again.";
   runner.setMemoryTrailHighlight([]);
   showFeedback("Not quite - watch it again.");
+  playIncorrectSound();
   renderStudyExplorePanel();
+  resetMemoryTrailNearMiss(memoryTrail);
 
   scheduleMemoryTrailStep(memoryTrail, () => {
     playMemoryTrailRound(memoryTrail);
@@ -8556,12 +8588,15 @@ function handleTargetClick(targetIds) {
   }
 
   if (currentAppScreen === "study-explore") {
+    const studyMapPoint = targetIds && !Array.isArray(targetIds) && typeof targetIds.x === "number"
+      ? targetIds
+      : null;
     const resolvedStudyTargetIds = targetIds && !Array.isArray(targetIds) && typeof targetIds.x === "number"
       ? runner.getTargetIdsAtMapPoint(targetIds)
       : targetIds;
 
     if (isMemoryTrailActive()) {
-      handleMemoryTrailTargetTap(resolvedStudyTargetIds);
+      handleMemoryTrailTargetTap(resolvedStudyTargetIds, studyMapPoint);
       return;
     }
 
@@ -9076,6 +9111,7 @@ function placeGrabbedAnswer(targetIds, options = {}) {
   }
 
   if (result.status === "correct") {
+    const isCompletingActivity = session.completedIds.length >= session.currentActivity.targets.length;
     runner.setCompletedTargets(session.completedIds);
     saveCurrentActivityProgress();
     cancelGrabbedAnswer({ clearSelection: false });
@@ -9086,6 +9122,11 @@ function placeGrabbedAnswer(targetIds, options = {}) {
     handleStudyPracticeCompletion();
     ensureActivityNavControls();
     showFeedback(`Correct: ${result.feature.name}`, true);
+    if (isCompletingActivity) {
+      playCompletionSound();
+    } else {
+      playCorrectSound();
+    }
   }
 }
 
@@ -9141,6 +9182,7 @@ function isActivityInputLocked() {
 function handleIncorrectPlacement(result) {
   const missedTargetId = result?.selectedId;
   const missCountForTarget = recordIncorrectPlacementAttempt(missedTargetId);
+  playIncorrectSound();
 
   if (activityAttemptState.incorrectPlacements >= activityRetryThreshold) {
     beginActivityRetryReview();
@@ -9152,7 +9194,7 @@ function handleIncorrectPlacement(result) {
     return;
   }
 
-  showFeedback("Not quite — try again.");
+  showFeedback("Not quite - try again.");
 }
 
 function recordIncorrectPlacementAttempt(targetId) {
@@ -9188,7 +9230,7 @@ function revealCorrectPlacementForRetry(targetId) {
     activityAttemptState.isRevealing = false;
     restoreTemporaryReveals();
     syncAnswerBank();
-    showFeedback("Not quite — try this one again.");
+    showFeedback("Not quite - try this one again.");
   }, incorrectRevealDurationMs);
 }
 
