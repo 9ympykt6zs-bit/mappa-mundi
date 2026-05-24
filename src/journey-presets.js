@@ -16,7 +16,7 @@ export const journeyPresets = [
   {
     id: "united-states",
     title: "United States",
-    description: "Learn U.S. states, capitals, regions, and major physical features.",
+    description: "Learn U.S. states by region.",
     status: "available",
     steps: [
       {
@@ -26,22 +26,10 @@ export const journeyPresets = [
         kind: "states"
       },
       {
-        id: "us-capitals-01",
-        activityId: "us-capitals-01",
-        title: "New England Capitals",
-        kind: "capitals"
-      },
-      {
         id: "us-states-02",
         activityId: "us-states-02",
         title: "Northeast / Mid-Atlantic States",
         kind: "states"
-      },
-      {
-        id: "us-capitals-02",
-        activityId: "us-capitals-02",
-        title: "Northeast / Mid-Atlantic Capitals",
-        kind: "capitals"
       },
       {
         id: "us-states-03",
@@ -50,22 +38,10 @@ export const journeyPresets = [
         kind: "states"
       },
       {
-        id: "us-capitals-03",
-        activityId: "us-capitals-03",
-        title: "Atlantic South Capitals",
-        kind: "capitals"
-      },
-      {
         id: "us-states-04",
         activityId: "us-states-04",
         title: "Southeast / Gulf States",
         kind: "states"
-      },
-      {
-        id: "us-capitals-04",
-        activityId: "us-capitals-04",
-        title: "Southeast / Gulf Capitals",
-        kind: "capitals"
       },
       {
         id: "us-states-05",
@@ -74,22 +50,10 @@ export const journeyPresets = [
         kind: "states"
       },
       {
-        id: "us-capitals-05",
-        activityId: "us-capitals-05",
-        title: "Great Lakes / Upper South Capitals",
-        kind: "capitals"
-      },
-      {
         id: "us-states-06",
         activityId: "us-states-06",
         title: "Midwest / Mississippi Valley States",
         kind: "states"
-      },
-      {
-        id: "us-capitals-06",
-        activityId: "us-capitals-06",
-        title: "Midwest / Mississippi Valley Capitals",
-        kind: "capitals"
       },
       {
         id: "us-states-07",
@@ -98,22 +62,10 @@ export const journeyPresets = [
         kind: "states"
       },
       {
-        id: "us-capitals-07",
-        activityId: "us-capitals-07",
-        title: "Northern Plains / Rockies Capitals",
-        kind: "capitals"
-      },
-      {
         id: "us-states-08",
         activityId: "us-states-08",
         title: "Southern Plains / Southwest States",
         kind: "states"
-      },
-      {
-        id: "us-capitals-08",
-        activityId: "us-capitals-08",
-        title: "Southern Plains / Southwest Capitals",
-        kind: "capitals"
       },
       {
         id: "us-states-09",
@@ -122,16 +74,73 @@ export const journeyPresets = [
         kind: "states"
       },
       {
-        id: "us-capitals-09",
-        activityId: "us-capitals-09",
-        title: "Far West / Pacific Capitals",
-        kind: "capitals"
-      },
-      {
         id: "us-states-10",
         activityId: "us-states-10",
         title: "Northwest / Alaska States",
         kind: "states"
+      }
+      // TODO: Add U.S. physical feature activity IDs when those activities are playable in the MapLibre app.
+    ]
+  },
+  {
+    id: "us-capitals",
+    title: "U.S. Capitals",
+    description: "Learn the state capitals by region.",
+    status: "available",
+    steps: [
+      {
+        id: "us-capitals-01",
+        activityId: "us-capitals-01",
+        title: "New England Capitals",
+        kind: "capitals"
+      },
+      {
+        id: "us-capitals-02",
+        activityId: "us-capitals-02",
+        title: "Northeast / Mid-Atlantic Capitals",
+        kind: "capitals"
+      },
+      {
+        id: "us-capitals-03",
+        activityId: "us-capitals-03",
+        title: "Atlantic South Capitals",
+        kind: "capitals"
+      },
+      {
+        id: "us-capitals-04",
+        activityId: "us-capitals-04",
+        title: "Southeast / Gulf Capitals",
+        kind: "capitals"
+      },
+      {
+        id: "us-capitals-05",
+        activityId: "us-capitals-05",
+        title: "Great Lakes / Upper South Capitals",
+        kind: "capitals"
+      },
+      {
+        id: "us-capitals-06",
+        activityId: "us-capitals-06",
+        title: "Midwest / Mississippi Valley Capitals",
+        kind: "capitals"
+      },
+      {
+        id: "us-capitals-07",
+        activityId: "us-capitals-07",
+        title: "Northern Plains / Rockies Capitals",
+        kind: "capitals"
+      },
+      {
+        id: "us-capitals-08",
+        activityId: "us-capitals-08",
+        title: "Southern Plains / Southwest Capitals",
+        kind: "capitals"
+      },
+      {
+        id: "us-capitals-09",
+        activityId: "us-capitals-09",
+        title: "Far West / Pacific Capitals",
+        kind: "capitals"
       },
       {
         id: "us-capitals-10",
@@ -139,7 +148,6 @@ export const journeyPresets = [
         title: "Northwest / Alaska Capitals",
         kind: "capitals"
       }
-      // TODO: Add U.S. physical feature activity IDs when those activities are playable in the MapLibre app.
     ]
   },
   {

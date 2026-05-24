@@ -2,7 +2,7 @@ import { normalizeActivity } from "./map-engines/activity-normalizer.js";
 import { ActivitySession, studyModes } from "./maplibre/activity-session.js?v=progress-state";
 import "./chip-speech.js?v=tts-answer-chips";
 import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=us-state-capital-split";
-import { journeyPresets } from "./journey-presets.js?v=us-state-capital-split";
+import { journeyPresets } from "./journey-presets.js?v=us-capitals-journey";
 import {
   clearActiveJourney,
   getJourneyProgress,
@@ -5120,7 +5120,7 @@ const journeyPresetSections = [
   },
   {
     title: "Americas",
-    ids: ["the-americas", "north-america", "united-states", "the-caribbean", "south-america", "brazil"]
+    ids: ["the-americas", "north-america", "united-states", "us-capitals", "the-caribbean", "south-america", "brazil"]
   },
   {
     title: "Europe",
