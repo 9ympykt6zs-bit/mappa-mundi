@@ -1,4 +1,7 @@
-export const baseWaterColor = "#1168b7";
+export const baseWaterColor = "#173f63";
+export const oceanZoneMutedColor = "#2f6f99";
+export const oceanCompletedColor = "#244f8f";
+export const oceanCompletedOutlineColor = "#c8def3";
 
 export const globeTextureBounds = [
   [-180, 85],
@@ -13,11 +16,11 @@ export const oceanTextureSize = {
 };
 
 export const oceanRegionColors = {
-  pacific: "#1f62bc",
-  atlantic: "#33b2db",
-  indian: "#1a96a8",
-  arctic: "#c4ebf9",
-  southern: "#5c71b5"
+  pacific: "#2f6f99",
+  atlantic: "#34779e",
+  indian: "#2d6f87",
+  arctic: "#7fa7bf",
+  southern: "#526f9b"
 };
 
 export function createBaseWaterImage() {
@@ -30,9 +33,9 @@ export function createBaseWaterImage() {
   canvas.height = 32;
   const context = canvas.getContext("2d");
   const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
-  gradient.addColorStop(0, "#1f8de2");
+  gradient.addColorStop(0, "#225a80");
   gradient.addColorStop(0.46, baseWaterColor);
-  gradient.addColorStop(1, "#074b94");
+  gradient.addColorStop(1, "#0f2f4f");
   context.fillStyle = gradient;
   context.fillRect(0, 0, canvas.width, canvas.height);
   return canvas.toDataURL("image/png");

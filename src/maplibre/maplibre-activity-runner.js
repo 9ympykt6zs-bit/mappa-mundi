@@ -1,8 +1,11 @@
 import {
   baseWaterColor,
+  oceanCompletedColor,
+  oceanCompletedOutlineColor,
   oceanRegionColors,
+  oceanZoneMutedColor,
   oceanTextureSize
-} from "./ocean-textures.js?v=inland-water-layer";
+} from "./ocean-textures.js?v=ocean-palette-tune";
 
 const colors = {
   ink: "#172033",
@@ -950,7 +953,7 @@ export class MapLibreActivityRunner {
         visibility: "visible"
       },
       paint: {
-        "line-color": this.getOceanRegionColorExpression(),
+        "line-color": this.getOceanRegionLineColorExpression(),
         "line-opacity": this.getOceanRegionLineOpacityExpression(),
         "line-width": [
           "interpolate",
@@ -977,6 +980,15 @@ export class MapLibreActivityRunner {
   }
 
   getOceanRegionLineOpacityExpression() {
+    if (this.isContinentsOceansActivity() && !this.studyPreviewMode) {
+      return [
+        "case",
+        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.completedIds]],
+        0.82,
+        0
+      ];
+    }
+
     return [
       "case",
       [
@@ -1395,6 +1407,16 @@ export class MapLibreActivityRunner {
           targetIds.push(feature.properties.id);
         }
       });
+
+      if (
+        selectedTarget?.kind === "point"
+        && this.getDifficultyVisualState().isEasy
+        && selectedTarget.easyAcceptShapeTargetId
+        && this.isMapPointInsideStateTarget(queryPoint, selectedTarget.easyAcceptShapeTargetId)
+        && !targetIds.includes(selectedTarget.id)
+      ) {
+        targetIds.push(selectedTarget.id);
+      }
     }
 
     if (selectedTarget?.kind === "point") {
@@ -1422,6 +1444,14 @@ export class MapLibreActivityRunner {
     }
 
     return targetIds;
+  }
+
+  isMapPointInsideStateTarget(queryPoint, stateTargetId) {
+    const lngLat = this.map.unproject(queryPoint);
+    const point = [lngLat.lng, lngLat.lat];
+    const stateFeature = this.stateTargets?.features?.find((feature) => feature.properties?.id === stateTargetId);
+
+    return this.isPointInGeoJsonGeometry(point, stateFeature?.geometry);
   }
 
   getFallbackShapeTargetIdsAtPoint(queryPoint, selectedTarget = null) {
@@ -1700,9 +1730,9 @@ export class MapLibreActivityRunner {
             name: feature.name,
             color: feature.color,
             hitRadius: feature.hitRadius || 14,
-            easyHitRadius: Math.max(feature.hitRadius || 14, 24),
-            mediumHitRadius: Math.max(feature.hitRadius || 14, 20),
-            hardHitRadius: Math.max(feature.hitRadius || 14, 16),
+            easyHitRadius: feature.easyHitRadius || Math.max(feature.hitRadius || 14, 24),
+            mediumHitRadius: feature.mediumHitRadius || Math.max(feature.hitRadius || 14, 20),
+            hardHitRadius: feature.hardHitRadius || Math.max(feature.hitRadius || 14, 16),
             labelFontSize: feature.label?.fontSize || feature.labelFontSize || 11
           },
           geometry: {
@@ -1751,19 +1781,36 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode && this.isContinentsOceansActivity()) {
       return [
         "case",
-        ["in", ["coalesce", ["get", "id"], ["get", "ocean"], ["get", "name"]], ["literal", this.completedIds]],
-        this.getBaseOceanRegionColorMatchExpression(),
+        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.completedIds]],
+        this.getCompletedOceanRegionColorExpression(),
         colors.studyTargetFill
+      ];
+    }
+
+    if (this.isContinentsOceansActivity()) {
+      return [
+        "case",
+        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.completedIds]],
+        this.getCompletedOceanRegionColorExpression(),
+        oceanZoneMutedColor
       ];
     }
 
     return this.getBaseOceanRegionColorMatchExpression();
   }
 
+  getOceanRegionFeatureIdExpression() {
+    return ["coalesce", ["get", "id"], ["get", "ocean"], ["get", "name"]];
+  }
+
+  getCompletedOceanRegionColorExpression() {
+    return oceanCompletedColor;
+  }
+
   getBaseOceanRegionColorMatchExpression() {
     return [
       "match",
-      ["coalesce", ["get", "id"], ["get", "ocean"], ["get", "name"]],
+      this.getOceanRegionFeatureIdExpression(),
       "atlantic-ocean",
       oceanRegionColors.atlantic,
       "Atlantic Ocean",
@@ -2148,7 +2195,7 @@ export class MapLibreActivityRunner {
           type: "Feature",
           properties: {
             id: feature.id,
-            name: feature.name,
+            name: feature.completedLabelName || feature.name,
             labelFontSize: feature.label?.fontSize || feature.labelFontSize || 11
           },
           geometry: {
@@ -2234,8 +2281,22 @@ export class MapLibreActivityRunner {
     this.map.setPaintProperty("ocean-region-fill", "fill-color", colorExpression);
 
     if (this.map.getLayer("ocean-region-line")) {
-      this.map.setPaintProperty("ocean-region-line", "line-color", colorExpression);
+      this.map.setPaintProperty("ocean-region-line", "line-color", this.getOceanRegionLineColorExpression());
+      this.map.setPaintProperty("ocean-region-line", "line-opacity", this.getOceanRegionLineOpacityExpression());
     }
+  }
+
+  getOceanRegionLineColorExpression() {
+    if (this.isContinentsOceansActivity() && !this.studyPreviewMode) {
+      return [
+        "case",
+        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.completedIds]],
+        oceanCompletedOutlineColor,
+        colors.ocean
+      ];
+    }
+
+    return this.getOceanRegionColorExpression();
   }
 
   refreshStudyFilters() {
@@ -2305,7 +2366,7 @@ export class MapLibreActivityRunner {
       isHard: difficulty === difficultyModes.hard,
       usesProgressReveal: difficulty !== difficultyModes.hard,
       showsPointHintsBeforePlacement: difficulty === difficultyModes.easy,
-      showsPointCompletionFeedback: difficulty !== difficultyModes.hard,
+      showsPointCompletionFeedback: true,
       showsCompletedLabels: difficulty !== difficultyModes.hard,
       forcesContextFill: difficulty === difficultyModes.hard
     };
@@ -2358,9 +2419,12 @@ export class MapLibreActivityRunner {
     }
 
     if (this.getDifficultyVisualState().isHard) {
-      return this.activity?.map?.region === "united-states"
-        ? this.getUsStateContextFillExpression()
-        : this.getHardWorldContextFillExpression();
+      return [
+        "case",
+        ["in", ["get", "id"], ["literal", this.completedIds]],
+        ["match", ["get", "id"], ...this.getColorMatchStops(), colors.targetFill],
+        colors.targetFill
+      ];
     }
 
     return [
@@ -2389,14 +2453,11 @@ export class MapLibreActivityRunner {
     return [
       "case",
       ["boolean", ["get", "isOceanZone"], false],
-      ["match", ["get", "id"], ...this.getColorMatchStops(), colors.ocean],
+      oceanZoneMutedColor,
+      ["in", ["get", "id"], ["literal", this.completedIds]],
+      ["match", ["get", "id"], ...this.getColorMatchStops(), colors.targetFill],
       shouldRevealContinents,
-      [
-        "case",
-        ["in", ["get", "id"], ["literal", this.completedIds]],
-        ["match", ["get", "id"], ...this.getColorMatchStops(), colors.targetFill],
-        ["match", ["get", "id"], ...this.getMutedTargetColorStops(), colors.targetFill]
-      ],
+      ["match", ["get", "id"], ...this.getMutedTargetColorStops(), colors.targetFill],
       colors.hardContinentChallengeFill
     ];
   }
@@ -2416,7 +2477,12 @@ export class MapLibreActivityRunner {
     }
 
     if (this.getDifficultyVisualState().isHard) {
-      return 0.01;
+      return [
+        "case",
+        ["in", ["get", "id"], ["literal", this.completedIds]],
+        0.96,
+        0
+      ];
     }
 
     return [
@@ -2451,6 +2517,8 @@ export class MapLibreActivityRunner {
         "case",
         ["boolean", ["get", "isOceanZone"], false],
         0,
+        ["in", ["get", "id"], ["literal", this.completedIds]],
+        0.96,
         this.areAllContinentTargetsCompleted(),
         0.96,
         0.9
@@ -2511,7 +2579,16 @@ export class MapLibreActivityRunner {
     }
 
     if (this.getDifficultyVisualState().isHard) {
-      return 0;
+      return [
+        "case",
+        ["boolean", ["get", "isOceanZone"], false],
+        0,
+        ["boolean", ["get", "suppressInternalTargetLines"], false],
+        0,
+        ["in", ["get", "id"], ["literal", this.completedIds]],
+        1,
+        0
+      ];
     }
 
     return [
@@ -2538,7 +2615,16 @@ export class MapLibreActivityRunner {
       return 2.15;
     }
 
-    return this.getDifficultyVisualState().isHard ? 0 : 2.15;
+    if (this.getDifficultyVisualState().isHard) {
+      return [
+        "case",
+        ["in", ["get", "id"], ["literal", this.completedIds]],
+        2.15,
+        0
+      ];
+    }
+
+    return 2.15;
   }
 
   getPoliticalFillExpression() {
@@ -2764,7 +2850,10 @@ export class MapLibreActivityRunner {
     }
 
     const visualState = this.getDifficultyVisualState();
-    const showGuidedTargets = visualState.usesProgressReveal || this.shouldShowHardContinentChallenge();
+    const hasCompletedTargets = this.completedIds.length > 0;
+    const showGuidedTargets = visualState.usesProgressReveal
+      || this.shouldShowHardContinentChallenge()
+      || (visualState.isHard && hasCompletedTargets);
 
     if (this.map.getLayer("state-fill")) {
       this.map.setLayoutProperty("state-fill", "visibility", showGuidedTargets ? "visible" : "none");
@@ -2787,11 +2876,11 @@ export class MapLibreActivityRunner {
       || this.presentationSettings.showCapitals !== false;
 
     if (this.map.getLayer("capital-marker-halo")) {
-      this.map.setLayoutProperty("capital-marker-halo", "visibility", !visualState.isHard && shouldShowPointMarkers ? "visible" : "none");
+      this.map.setLayoutProperty("capital-marker-halo", "visibility", shouldShowPointMarkers ? "visible" : "none");
     }
 
     if (this.map.getLayer("capital-marker")) {
-      this.map.setLayoutProperty("capital-marker", "visibility", !visualState.isHard && shouldShowPointMarkers ? "visible" : "none");
+      this.map.setLayoutProperty("capital-marker", "visibility", shouldShowPointMarkers ? "visible" : "none");
     }
 
     if (this.map.getLayer("capital-hit")) {

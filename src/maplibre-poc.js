@@ -1,8 +1,8 @@
 import { normalizeActivity } from "./map-engines/activity-normalizer.js";
 import { ActivitySession, studyModes } from "./maplibre/activity-session.js?v=progress-state";
 import "./chip-speech.js?v=tts-answer-chips";
-import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=polar-artifact-cleanup";
-import { journeyPresets } from "./journey-presets.js?v=journey-presets-expanded";
+import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=us-state-capital-split";
+import { journeyPresets } from "./journey-presets.js?v=us-state-capital-split";
 import {
   clearActiveJourney,
   getJourneyProgress,
@@ -146,6 +146,22 @@ const difficultyStorageKey = "geography-memory-difficulty-mode";
 const appSettingsStorageKey = "atlasQuestSettings";
 const legacyLayerSettingsStorageKey = "atlas-quest-layer-settings";
 const onboardingSeenStorageKey = "atlasQuestOnboardingSeen";
+const appShellScreenIds = new Set([
+  "launch",
+  "main-menu",
+  "onboarding",
+  "choose-journey",
+  "journey-detail",
+  "study",
+  "choose-difficulty",
+  "begin-journey-placeholder",
+  "free-play-difficulty",
+  "settings",
+  "free-play",
+  "journey-gameplay",
+  "study-practice",
+  "study-explore"
+]);
 const defaultMapLayerSettings = Object.freeze({
   showContinents: true,
   showOceans: true,
@@ -549,18 +565,22 @@ const mapSetLabels = {
   us: "United States",
   "world-europe": "World"
 };
-const US_STATE_CAPITAL_MENU_ITEMS = [
-  { label: "New England States & Capitals", activityId: "us-states-capitals-01" },
-  { label: "Northeast / Mid-Atlantic States & Capitals", activityId: "us-states-capitals-02" },
-  { label: "Atlantic South States & Capitals", activityId: "us-states-capitals-03" },
-  { label: "Southeast / Gulf States & Capitals", activityId: "us-states-capitals-04" },
-  { label: "Great Lakes / Upper South States & Capitals", activityId: "us-states-capitals-05" },
-  { label: "Midwest / Mississippi Valley States & Capitals", activityId: "us-states-capitals-06" },
-  { label: "Northern Plains / Rockies States & Capitals", activityId: "us-states-capitals-07" },
-  { label: "Southern Plains / Southwest States & Capitals", activityId: "us-states-capitals-08" },
-  { label: "Far West / Pacific States & Capitals", activityId: "us-states-capitals-09" },
-  { label: "Northwest / Alaska States & Capitals", activityId: "us-states-capitals-10" }
+const US_STATE_CAPITAL_SECTIONS = [
+  { number: 1, id: "01", label: "New England" },
+  { number: 2, id: "02", label: "Northeast / Mid-Atlantic" },
+  { number: 3, id: "03", label: "Atlantic South" },
+  { number: 4, id: "04", label: "Southeast / Gulf" },
+  { number: 5, id: "05", label: "Great Lakes / Upper South" },
+  { number: 6, id: "06", label: "Midwest / Mississippi Valley" },
+  { number: 7, id: "07", label: "Northern Plains / Rockies" },
+  { number: 8, id: "08", label: "Southern Plains / Southwest" },
+  { number: 9, id: "09", label: "Far West / Pacific" },
+  { number: 10, id: "10", label: "Northwest / Alaska" }
 ];
+const US_STATE_CAPITAL_MENU_ITEMS = US_STATE_CAPITAL_SECTIONS.flatMap((section) => [
+  { label: `${section.label} States`, activityId: `us-states-${section.id}` },
+  { label: `${section.label} Capitals`, activityId: `us-capitals-${section.id}` }
+]);
 const US_STATE_CAPITAL_SECTION_VIEWS = {
   1: {
     regionView: { center: [-70.7, 43.6], zoom: 5.25 },
@@ -2414,6 +2434,28 @@ const usSectionDescriptions = {
   10: "Montana, Idaho, Washington, Oregon, Alaska, and their capitals."
 };
 
+function getUsSectionDescription(sectionNumber, activityId = "") {
+  const baseDescription = usSectionDescriptions[sectionNumber] || "United States section review.";
+
+  if (activityId.startsWith("us-states-")) {
+    return baseDescription
+      .replace(/, and their capitals\.?$/i, ".")
+      .replace(/, their capitals\.?$/i, ".")
+      .replace(/, and Washington, DC\.?$/i, ".")
+      .replace(/\band their capitals\b/gi, "states")
+      .replace(/\bstate, capital, or location\b/gi, "state");
+  }
+
+  if (activityId.startsWith("us-capitals-")) {
+    return baseDescription
+      .replace(/^(.+?), and their capitals\.?$/i, "Capital cities for $1.")
+      .replace(/^(.+?), their capitals\.?$/i, "Capital cities for $1.")
+      .replace(/^(.+?), and Washington, DC\.?$/i, "Capital cities for $1.");
+  }
+
+  return baseDescription;
+}
+
 const stateLabelAnchors = {
   maine: [-69.2, 45.25],
   "new-hampshire": [-71.58, 43.75],
@@ -2566,9 +2608,10 @@ const mainMenuActions = document.querySelector("#main-menu-actions");
 const mainMenuActionsAnchor = document.createComment("main-menu-actions");
 mainMenuActions?.parentNode?.insertBefore(mainMenuActionsAnchor, mainMenuActions);
 const mainMenuChooseButton = document.querySelector("#main-menu-choose-button");
-const mainMenuFreePlayButton = document.querySelector("#main-menu-free-play-button");
 const mainMenuSettingsButton = document.querySelector("#main-menu-settings-button");
 const infoPopover = document.querySelector("#info-popover");
+let infoPopoverCloseTimer = null;
+let lastInfoPointerType = "";
 
 function isCompactTouchLayout() {
   return Boolean(window.matchMedia?.("(max-width: 760px), (max-width: 900px) and (max-height: 520px)")?.matches);
@@ -2719,7 +2762,7 @@ async function init() {
 
   const mergedWorldCountries = mergeFeatureCollections(worldCountries, supplementalWorldCountries);
 
-  activities = loadedActivities.map((activity) => normalizeMapLibrePocActivity(activity));
+  activities = expandDerivedActivityData(loadedActivities).map((activity) => normalizeMapLibrePocActivity(activity));
   session = new ActivitySession(getSelectedActivity(), {
     activityCatalog: activities,
     studyMode: studyModes.cumulative
@@ -2797,6 +2840,63 @@ async function init() {
   } else {
     openHome();
   }
+}
+
+function expandDerivedActivityData(rawActivities) {
+  return rawActivities.flatMap((activity) => {
+    if (!activity?.id?.startsWith("us-states-capitals-")) {
+      return [activity];
+    }
+
+    return [
+      activity,
+      ...createDerivedUsStateCapitalActivities(activity)
+    ];
+  });
+}
+
+function createDerivedUsStateCapitalActivities(activity) {
+  const sectionId = activity.id.replace("us-states-capitals-", "");
+  const section = US_STATE_CAPITAL_SECTIONS.find((candidate) => candidate.id === sectionId);
+  const sectionLabel = section?.label || `Section ${Number(activity.sequence) || sectionId}`;
+  const stateTargets = (activity.features || activity.targets || []).filter((target) => target.type === "state");
+  const stateTargetsByAbbreviation = new Map(stateTargets.map((target) => [target.state, target]));
+  const capitalTargets = (activity.features || activity.targets || [])
+    .filter((target) => target.type === "capital")
+    .map((target) => {
+      const stateTarget = stateTargetsByAbbreviation.get(target.state);
+
+      return {
+        ...target,
+        name: target.city || target.name,
+        completedLabelName: target.name,
+        easyAcceptShapeTargetId: stateTarget?.id || null,
+        easyHitRadius: Math.max(target.hitRadius || 14, 24),
+        mediumHitRadius: 16,
+        hardHitRadius: 12
+      };
+    });
+
+  return [
+    {
+      ...activity,
+      id: `us-states-${sectionId}`,
+      title: `${sectionLabel} States`,
+      cumulativeGroup: "us-states",
+      targetNoun: "state",
+      features: stateTargets,
+      targets: undefined
+    },
+    {
+      ...activity,
+      id: `us-capitals-${sectionId}`,
+      title: `${sectionLabel} Capitals`,
+      cumulativeGroup: "us-capitals",
+      targetNoun: "capital city",
+      features: capitalTargets,
+      targets: undefined
+    }
+  ];
 }
 
 function normalizeMapLibrePocActivity(rawActivity) {
@@ -3790,18 +3890,20 @@ function getMapDefaults(rawActivity, region) {
 function getActivityMetadata(rawActivity, region, mapDefaults) {
   const featureCount = (rawActivity.targets || rawActivity.features || []).length;
 
-  if (rawActivity.id.startsWith("us-states-capitals-")) {
+  if (rawActivity.id.startsWith("us-states-capitals-") || rawActivity.id.startsWith("us-states-") || rawActivity.id.startsWith("us-capitals-")) {
     const sectionNumber = Number(rawActivity.sequence);
+    const isStateOnly = rawActivity.id.startsWith("us-states-");
+    const isCapitalOnly = rawActivity.id.startsWith("us-capitals-");
 
     return {
       mapSet: "us",
-      category: "States & Capitals",
+      category: isCapitalOnly ? "Capitals" : isStateOnly ? "States" : "States & Capitals",
       sectionNumber,
       itemCount: featureCount,
       baseMap: "usa-map",
       previewBounds: mapDefaults.studyView.bounds,
       previewRegionId: rawActivity.id,
-      description: usSectionDescriptions[sectionNumber] || "United States section review.",
+      description: getUsSectionDescription(sectionNumber, rawActivity.id),
       sortOrder: sectionNumber
     };
   }
@@ -4008,6 +4110,11 @@ function bindUiEvents() {
   activityRetryAgainButton?.addEventListener("click", handleActivityRetryAgainChoice);
   journeyCompletionPrimary?.addEventListener("click", handleJourneyCompletionPrimary);
   journeyCompletionSecondary?.addEventListener("click", handleJourneyCompletionSecondary);
+  document.addEventListener("pointerdown", handleDocumentInfoPointerDown, true);
+  document.addEventListener("pointerover", handleDocumentInfoPointerOver);
+  document.addEventListener("pointerout", handleDocumentInfoPointerOut);
+  document.addEventListener("focusin", handleDocumentInfoFocusIn);
+  document.addEventListener("focusout", handleDocumentInfoFocusOut);
   document.addEventListener("click", handleDocumentInfoClick);
   document.addEventListener("pointermove", handleDocumentPointerMove);
   document.addEventListener("pointerup", handleDocumentPointerUp);
@@ -4035,7 +4142,6 @@ function bindLaunchScreenEvents() {
   mainMenuChooseButton?.addEventListener("click", () => {
     showAppScreen("choose-journey");
   });
-  mainMenuFreePlayButton?.addEventListener("click", openFreePlay);
   mainMenuSettingsButton?.addEventListener("click", () => {
     showAppScreen("settings");
   });
@@ -4053,38 +4159,76 @@ function handleLaunchStart() {
   showAppScreen("onboarding");
 }
 
+function normalizeAppShellScreenId(screenId) {
+  return appShellScreenIds.has(screenId) ? screenId : "main-menu";
+}
+
+function pushAppScreenHistory(screenId) {
+  const normalizedScreenId = normalizeAppShellScreenId(screenId);
+
+  if (!normalizedScreenId || normalizedScreenId === currentAppScreen) {
+    return;
+  }
+
+  const lastScreenId = appScreenHistory[appScreenHistory.length - 1];
+  if (lastScreenId === normalizedScreenId) {
+    return;
+  }
+
+  appScreenHistory.push(normalizedScreenId);
+}
+
+function popAppScreenHistory() {
+  while (appScreenHistory.length > 0) {
+    const screenId = normalizeAppShellScreenId(appScreenHistory.pop());
+
+    if (!screenId) {
+      continue;
+    }
+
+    if (screenId === "main-menu" && appScreenHistory[appScreenHistory.length - 1] === "main-menu") {
+      continue;
+    }
+
+    return screenId;
+  }
+
+  return "launch";
+}
+
 function showAppScreen(screenId, options = {}) {
-  const pushHistory = options.pushHistory !== false && currentAppScreen !== screenId;
+  const normalizedScreenId = normalizeAppShellScreenId(screenId);
+  const pushHistory = options.pushHistory !== false && currentAppScreen !== normalizedScreenId;
 
   if (pushHistory) {
-    appScreenHistory.push(currentAppScreen);
+    pushAppScreenHistory(currentAppScreen);
   }
 
   saveCurrentActivityProgress();
   hideStudyPracticeCompletionCard();
   activeStudyPracticeSession = null;
   isCurrentActivityProgressDisabled = false;
-  currentAppScreen = screenId;
+  currentAppScreen = normalizedScreenId;
   closeInfoPopover();
   closeBrowseDrawer();
   cancelGrabbedAnswer();
-  document.body.classList.toggle("launch-mode", screenId === "launch");
-  document.body.classList.toggle("app-shell-mode", screenId !== "launch" && screenId !== "free-play");
+  document.body.classList.toggle("launch-mode", normalizedScreenId === "launch");
+  document.body.classList.toggle("app-shell-mode", normalizedScreenId !== "launch" && normalizedScreenId !== "free-play");
 
   if (launchScreen) {
-    launchScreen.hidden = screenId !== "launch";
+    launchScreen.hidden = normalizedScreenId !== "launch";
   }
 
   if (appShellScreen) {
-    appShellScreen.hidden = screenId === "launch" || screenId === "free-play";
+    appShellScreen.hidden = normalizedScreenId === "launch" || normalizedScreenId === "free-play";
   }
 
   updateResetControlVisibility();
-  renderAppShellScreen(screenId);
+  renderAppShellScreen(normalizedScreenId);
 }
 
 function goBackAppScreen() {
-  const previousScreen = appScreenHistory.pop() || "launch";
+  const previousScreen = popAppScreenHistory();
   if (previousScreen === "free-play") {
     openFreePlay({
       pushHistory: false,
@@ -4127,10 +4271,11 @@ function openFreePlay(options = {}) {
 }
 
 function renderAppShellScreen(screenId) {
-  const isMainMenu = screenId === "main-menu";
-  const isChooseJourney = screenId === "choose-journey";
-  const hasJourneyShellContent = isJourneyShellScreen(screenId);
-  const content = getAppShellScreenContent(screenId);
+  const normalizedScreenId = normalizeAppShellScreenId(screenId);
+  const isMainMenu = normalizedScreenId === "main-menu";
+  const isChooseJourney = normalizedScreenId === "choose-journey";
+  const hasJourneyShellContent = isJourneyShellScreen(normalizedScreenId);
+  const content = getAppShellScreenContent(normalizedScreenId);
 
   if (!content) {
     return;
@@ -4194,8 +4339,8 @@ function getAppShellScreenContent(screenId) {
       subtitle: "Pick a journey to study or play."
     },
     onboarding: {
-      title: "Welcome to Atlas Quest",
-      subtitle: "Learn geography by choosing a journey, placing labels on the map, and reviewing what you miss."
+      title: "How Atlas Quest Works",
+      subtitle: "Start with a journey, then place each label on the map."
     },
     "journey-detail": {
       title: selectedJourneyTitle,
@@ -5159,20 +5304,21 @@ function renderOnboardingScreen() {
   const panel = document.createElement("section");
   panel.className = "onboarding-panel";
 
-  const intro = document.createElement("p");
-  intro.className = "onboarding-copy";
-  intro.textContent = "Learn geography by choosing a journey, placing labels on the map, and reviewing what you miss.";
-
   const cards = document.createElement("div");
   cards.className = "onboarding-card-grid";
 
   [
-    ["Choose a Journey", "Follow a guided path through the world."],
-    ["Tap a Label, Tap the Map", "Pick a label below, then tap where it belongs."],
-    ["Study First Anytime", "Preview a set before you practice."]
-  ].forEach(([titleText, copyText]) => {
+    ["1.", "Pick a Journey", "Choose a guided path like World Foundations."],
+    ["2.", "Select a Label", "Tap one of the answer chips at the bottom of the screen."],
+    ["3.", "Tap the Map", "Tap the matching place on the globe. Correct answers stay on the map."],
+    ["4.", "Study When Needed", "Use Study to preview or practice without changing journey progress."]
+  ].forEach(([stepText, titleText, copyText]) => {
     const card = document.createElement("article");
     card.className = "onboarding-card";
+
+    const step = document.createElement("span");
+    step.className = "onboarding-step-number";
+    step.textContent = stepText;
 
     const heading = document.createElement("h3");
     heading.textContent = titleText;
@@ -5180,7 +5326,7 @@ function renderOnboardingScreen() {
     const copy = document.createElement("p");
     copy.textContent = copyText;
 
-    card.append(heading, copy);
+    card.append(step, heading, copy);
     cards.appendChild(card);
   });
 
@@ -5205,7 +5351,7 @@ function renderOnboardingScreen() {
   skipButton.addEventListener("click", skipOnboarding);
 
   actions.append(startButton, chooseButton, skipButton);
-  panel.append(intro, cards, actions);
+  panel.append(cards, actions);
   journeyShellContent.appendChild(panel);
 }
 
@@ -5321,7 +5467,7 @@ function renderJourneyDetail(journey) {
 
 function createJourneyPathCard({ title, description, buttonLabel, variant, onClick, disabled = false, infoText = "" }) {
   const card = document.createElement("article");
-  card.className = `journey-path-card journey-path-card-${variant}`;
+  card.className = `journey-path-card journey-path-card-${variant}${infoText ? " info-anchor" : ""}`;
 
   const header = document.createElement("div");
   header.className = "journey-path-card-header";
@@ -5373,6 +5519,7 @@ function showInfoPopover(button) {
     return;
   }
 
+  clearInfoPopoverCloseTimer();
   const rect = button.getBoundingClientRect();
   infoPopover.textContent = button.dataset.infoText;
   infoPopover.hidden = false;
@@ -5398,11 +5545,85 @@ function closeInfoPopover() {
     return;
   }
 
+  clearInfoPopoverCloseTimer();
   infoPopover.hidden = true;
   infoPopover.textContent = "";
   infoPopover.style.left = "";
   infoPopover.style.top = "";
   delete infoPopover.dataset.activeInfo;
+}
+
+function clearInfoPopoverCloseTimer() {
+  if (infoPopoverCloseTimer) {
+    window.clearTimeout(infoPopoverCloseTimer);
+    infoPopoverCloseTimer = null;
+  }
+}
+
+function scheduleInfoPopoverClose() {
+  clearInfoPopoverCloseTimer();
+  infoPopoverCloseTimer = window.setTimeout(() => {
+    closeInfoPopover();
+  }, 180);
+}
+
+function isInfoPopoverElement(element) {
+  return Boolean(element?.closest?.(".info-popover"));
+}
+
+function handleDocumentInfoPointerDown(event) {
+  const infoButton = event.target.closest?.(".info-button");
+
+  if (infoButton) {
+    lastInfoPointerType = event.pointerType || "mouse";
+  }
+}
+
+function handleDocumentInfoPointerOver(event) {
+  const infoButton = event.target.closest?.(".info-button");
+
+  if (infoButton && event.pointerType === "mouse") {
+    showInfoPopover(infoButton);
+    return;
+  }
+
+  if (isInfoPopoverElement(event.target)) {
+    clearInfoPopoverCloseTimer();
+  }
+}
+
+function handleDocumentInfoPointerOut(event) {
+  const leftInfoButton = event.target.closest?.(".info-button");
+  const leftPopover = isInfoPopoverElement(event.target);
+
+  if (!leftInfoButton && !leftPopover) {
+    return;
+  }
+
+  const nextTarget = event.relatedTarget;
+  if (nextTarget?.closest?.(".info-button") || isInfoPopoverElement(nextTarget)) {
+    return;
+  }
+
+  if (event.pointerType === "mouse") {
+    scheduleInfoPopoverClose();
+  }
+}
+
+function handleDocumentInfoFocusIn(event) {
+  const infoButton = event.target.closest?.(".info-button");
+
+  if (infoButton) {
+    showInfoPopover(infoButton);
+  }
+}
+
+function handleDocumentInfoFocusOut(event) {
+  const infoButton = event.target.closest?.(".info-button");
+
+  if (infoButton) {
+    scheduleInfoPopoverClose();
+  }
 }
 
 function handleDocumentInfoClick(event) {
@@ -5413,11 +5634,20 @@ function handleDocumentInfoClick(event) {
     event.stopPropagation();
 
     if (!infoPopover?.hidden && infoPopover?.dataset.activeInfo === infoButton.getAttribute("aria-label")) {
-      closeInfoPopover();
+      const isTouchActivation = event.detail !== 0 && (lastInfoPointerType === "touch" || lastInfoPointerType === "pen");
+
+      if (isTouchActivation) {
+        closeInfoPopover();
+      } else {
+        showInfoPopover(infoButton);
+      }
+
+      lastInfoPointerType = "";
       return;
     }
 
     showInfoPopover(infoButton);
+    lastInfoPointerType = "";
     return;
   }
 
@@ -5484,7 +5714,7 @@ function renderJourneyDifficultyScreen(journey) {
   journeyName.textContent = journey.title;
 
   const headingRow = document.createElement("div");
-  headingRow.className = "journey-section-heading-row";
+  headingRow.className = "journey-section-heading-row info-anchor";
   headingRow.append(
     journeyName,
     createInfoButton(
@@ -5531,7 +5761,7 @@ function renderFreePlayDifficultyScreen() {
   activityName.textContent = activity?.title || "Free Play Activity";
 
   const headingRow = document.createElement("div");
-  headingRow.className = "journey-section-heading-row";
+  headingRow.className = "journey-section-heading-row info-anchor";
   headingRow.append(
     activityName,
     createInfoButton(
@@ -6202,7 +6432,7 @@ function getStateProvinceTerritoryStudyTargetGroups() {
   const groups = new Map();
 
   activities
-    .filter((activity) => activity.id.startsWith("us-states-capitals-"))
+    .filter((activity) => activity.id.startsWith("us-states-"))
     .forEach((activity) => {
       const group = getOrCreateStudyGroup(groups, "us-states", {
         id: "us-states",
@@ -6408,7 +6638,7 @@ function getCityCapitalStudyTargetGroups() {
   const groups = new Map();
 
   activities
-    .filter((activity) => activity.id.startsWith("us-states-capitals-"))
+    .filter((activity) => activity.id.startsWith("us-capitals-"))
     .forEach((activity) => {
       const group = getOrCreateStudyGroup(groups, "us-capitals", {
         id: "us-capitals",
@@ -6421,7 +6651,7 @@ function getCityCapitalStudyTargetGroups() {
     });
 
   activities
-    .filter((activity) => activity.category === "Cities" && !activity.id.startsWith("us-states-capitals-"))
+    .filter((activity) => activity.category === "Cities" && !activity.id.startsWith("us-capitals-"))
     .forEach((activity) => {
       const continentLabel = getActivityContinentLabel(activity) || "World";
       const groupId = `cities-${normalizeSettingKey(continentLabel)}-${activity.id}`;

@@ -6,7 +6,7 @@
     <title>Atlas Quest</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css" />
-    <link rel="stylesheet" href="maplibre-poc.css?v=onboarding-first-pass" />
+    <link rel="stylesheet" href="maplibre-poc.css?v=ocean-palette-tune" />
   </head>
   <body class="overview-mode launch-mode">
     <section id="launch-screen" class="launch-screen" aria-labelledby="launch-title">
@@ -41,14 +41,13 @@
       </div>
     </section>
     <section id="app-shell-screen" class="app-shell-screen" aria-labelledby="app-shell-title" hidden>
-      <div class="launch-stars" aria-hidden="true"></div>
       <button id="app-shell-back-button" class="app-shell-corner-button app-shell-back-button" type="button">Back</button>
       <button id="app-shell-settings-gear" class="launch-gear-button" type="button" aria-label="Settings" title="Settings"></button>
       <div class="app-shell-panel">
         <p class="launch-kicker">Atlas Quest</p>
         <h1 id="app-shell-title">Main Menu</h1>
         <p id="app-shell-subtitle">Choose how you want to explore today.</p>
-        <div id="main-menu-quick-start-row" class="quick-start-row">
+        <div id="main-menu-quick-start-row" class="quick-start-row info-anchor">
           <button id="main-menu-quick-start-button" class="quick-start-card" type="button">
             <span id="quick-start-kicker" class="quick-start-kicker">Start Learning</span>
             <span id="quick-start-title" class="quick-start-title">World Foundations</span>
@@ -59,15 +58,11 @@
           <button class="info-button" type="button" data-info-text="Resume your most recent saved journey." aria-label="More info about Continue Journey">i</button>
         </div>
         <div id="main-menu-actions" class="main-menu-actions">
-          <div class="main-menu-action-row">
+          <div class="main-menu-action-row info-anchor">
             <button id="main-menu-choose-button" class="main-menu-button main-menu-button-purple" type="button">Choose Journey</button>
             <button class="info-button" type="button" data-info-text="Pick a guided path and progress through activities in order." aria-label="More info about Choose Journey">i</button>
           </div>
-          <div class="main-menu-action-row">
-            <button id="main-menu-free-play-button" class="main-menu-button main-menu-button-orange" type="button">Free Play</button>
-            <button class="info-button" type="button" data-info-text="Browse the map and launch activities outside a journey." aria-label="More info about Free Play">i</button>
-          </div>
-          <div class="main-menu-action-row">
+          <div class="main-menu-action-row info-anchor">
             <button id="main-menu-settings-button" class="main-menu-button main-menu-button-teal" type="button">Settings</button>
             <button class="info-button" type="button" data-info-text="Adjust map display and study options." aria-label="More info about Settings">i</button>
           </div>
@@ -189,6 +184,6 @@
     </div>
 
     <script src="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js"></script>
-    <script type="module" src="src/maplibre-poc.js?v=polar-artifact-cleanup"></script>
+    <script type="module" src="src/maplibre-poc.js?v=us-state-capital-split"></script>
   </body>
 </html>
