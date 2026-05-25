@@ -44,68 +44,84 @@ const instructionPhrases = [
   "Study the places, then try the challenge."
 ];
 
-const defaultPronunciationInstruction = "Pronounce place names as a well-educated American English speaker would in an English-language geography lesson. Use standard English geography pronunciations. Avoid obvious spelling-based mispronunciations, but do not use a strong native-language accent.";
+const defaultPronunciationInstruction = "Pronounce each place name as a well-educated American English speaker would in an English-language geography lesson. Use standard English geography pronunciations. Avoid obvious spelling-based mispronunciations. Do not use a strong native-language accent. Say the place name naturally and at normal speed.";
 
 const regionalPronunciationHints = [
   {
     id: "mexico-spanish-america",
-    filePatterns: [
+    sourcePatterns: [
       /^mexico-/,
       /^central-america\.json$/,
       /^caribbean\.json$/,
-      /^south-america-west\.json$/
+      /^south-america-west\.json$/,
+      /mexico/i,
+      /central america/i,
+      /caribbean/i,
+      /spanish america/i
     ],
-    instructions: "Use standard American English geography pronunciation for Spanish place names, approximating Spanish where English speakers normally do. For example, Chihuahua should be chee-WAH-wah, not an English spelling pronunciation."
+    instructions: "Use standard American English geography pronunciation for Spanish place names. Avoid English spelling guesses; approximate Spanish where educated English speakers normally do. Say names naturally and at normal speed."
   },
   {
     id: "spain",
-    filePatterns: [/^spain-/],
-    instructions: "Use standard English geography pronunciation for Spanish place names, approximating Spanish where English speakers normally do."
+    sourcePatterns: [/^spain-/, /spain/i],
+    instructions: "Use standard English geography pronunciation for Spanish place names, approximating Spanish where educated English speakers normally do."
   },
   {
     id: "brazil-portugal",
-    filePatterns: [/^brazil-/],
+    sourcePatterns: [/^brazil-/, /brazil/i, /portugal/i],
     textPatterns: [/^Brazil$/i, /^Portugal$/i],
-    instructions: "Use standard English geography pronunciation for Portuguese place names, approximating Portuguese where English speakers normally do."
+    instructions: "Use standard English geography pronunciation for Portuguese place names, approximating Portuguese where educated English speakers normally do."
   },
   {
     id: "france",
-    filePatterns: [/^france-/],
+    sourcePatterns: [/^france-/, /france/i],
     textPatterns: [/^France$/i],
-    instructions: "Use standard English geography pronunciation for French place names, approximating French where English speakers normally do."
+    instructions: "Use standard English geography pronunciation for French place names, approximating French where educated English speakers normally do."
   },
   {
     id: "china",
-    filePatterns: [/^china-/],
+    sourcePatterns: [/^china-/, /china/i],
     instructions: "Use standard English geography pronunciation of modern Chinese place names based on pinyin, without Mandarin tones and without a strong native Chinese accent."
   },
   {
     id: "russia",
-    filePatterns: [/^russia-/],
+    sourcePatterns: [/^russia-/, /russia/i],
     textPatterns: [/^Russia$/i],
     instructions: "Use standard English-language geography pronunciation of Russian place names, avoiding simple English spelling misreadings but not using a strong Russian accent."
   },
   {
     id: "japan",
-    filePatterns: [/^japan-/],
+    sourcePatterns: [/^japan-/, /japan/i],
     instructions: "Use standard English geography pronunciation of Japanese place names, approximating Japanese syllables without a strong native accent."
   },
   {
     id: "india",
-    filePatterns: [/^india-/],
+    sourcePatterns: [/^india-/, /india/i],
     textPatterns: [/^India$/i],
     instructions: "Use standard English geography pronunciation of Indian place names, avoiding obvious spelling misreadings but not using a strong native accent."
   },
   {
+    id: "germany",
+    sourcePatterns: [/^germany-/, /germany/i],
+    textPatterns: [/^Germany$/i],
+    instructions: "Use standard English geography pronunciation of German place names, approximating German where educated English speakers normally do."
+  },
+  {
+    id: "italy",
+    sourcePatterns: [/^italy-/, /italy/i],
+    textPatterns: [/^Italy$/i],
+    instructions: "Use standard English geography pronunciation of Italian place names, approximating Italian where educated English speakers normally do."
+  },
+  {
     id: "us",
-    filePatterns: [/^us-/],
+    sourcePatterns: [/^us-/, /united states/i, /\bu\.?s\.?\b/i],
     instructions: "Use standard American English pronunciation."
   },
   {
     id: "canada",
-    filePatterns: [/^canada-/],
+    sourcePatterns: [/^canada-/, /canada/i],
     textPatterns: [/^Canada$/i],
-    instructions: "Use standard North American English pronunciation; use common English/French-informed pronunciation for names such as Québec."
+    instructions: "Use standard North American English pronunciation; use common English/French-informed pronunciation for names such as Qu\u00e9bec."
   }
 ];
 
@@ -208,11 +224,13 @@ async function collectChipLabels() {
     const absolutePath = path.join(dataDir, file);
     const data = await parseJsonFile(absolutePath);
     const targets = getActivityTargets(data);
+    const sourceContexts = getActivitySourceContexts(file, data);
 
     for (const target of targets) {
       for (const label of collectTargetLabels(target)) {
-        const entry = labels.get(label) || { text: label, sourceFiles: new Set() };
+        const entry = labels.get(label) || { text: label, sourceFiles: new Set(), sourceContexts: new Set() };
         entry.sourceFiles.add(file);
+        sourceContexts.forEach((sourceContext) => entry.sourceContexts.add(sourceContext));
         labels.set(label, entry);
       }
     }
@@ -221,7 +239,8 @@ async function collectChipLabels() {
   return Array.from(labels.values())
     .map((entry) => ({
       text: entry.text,
-      sourceFiles: Array.from(entry.sourceFiles).sort((first, second) => first.localeCompare(second))
+      sourceFiles: Array.from(entry.sourceFiles).sort((first, second) => first.localeCompare(second)),
+      sourceContexts: Array.from(entry.sourceContexts).sort((first, second) => first.localeCompare(second))
     }))
     .sort((first, second) => first.text.localeCompare(second.text));
 }
@@ -247,6 +266,18 @@ function getActivityTargets(data) {
   }
 
   return targets;
+}
+
+function getActivitySourceContexts(file, data) {
+  return [
+    file,
+    data?.id,
+    data?.title,
+    data?.name,
+    data?.description
+  ]
+    .map(normalizeSpokenText)
+    .filter(Boolean);
 }
 
 function collectTargetLabels(target) {
@@ -342,13 +373,18 @@ function getPronunciationInstructions(entry, override = findPronunciationOverrid
 }
 
 function matchesPronunciationHint(hint, entry) {
-  const sourceFiles = Array.isArray(entry.sourceFiles) ? entry.sourceFiles : [];
-  const matchesFile = sourceFiles.some((file) =>
-    (hint.filePatterns || []).some((pattern) => pattern.test(file))
+  const sourceContexts = Array.isArray(entry.sourceContexts)
+    ? entry.sourceContexts
+    : Array.isArray(entry.sourceFiles)
+      ? entry.sourceFiles
+      : [];
+  const sourcePatterns = hint.sourcePatterns || hint.filePatterns || [];
+  const matchesSource = sourceContexts.some((sourceContext) =>
+    sourcePatterns.some((pattern) => pattern.test(sourceContext))
   );
   const matchesText = (hint.textPatterns || []).some((pattern) => pattern.test(entry.text));
 
-  return matchesFile || matchesText;
+  return matchesSource || matchesText;
 }
 
 async function generateSpeechFile(text, outputPath, instructions = null) {
