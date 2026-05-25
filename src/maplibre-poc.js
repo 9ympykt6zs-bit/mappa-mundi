@@ -1,7 +1,6 @@
 import { normalizeActivity } from "./map-engines/activity-normalizer.js";
 import { ActivitySession, studyModes } from "./maplibre/activity-session.js?v=progress-state";
 import "./chip-speech.js?v=local-tts-desktop";
-import { playCompletionSound, playCorrectSound, playIncorrectSound } from "./sound-effects.js?v=mvp-feedback";
 import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=memory-trail";
 import { journeyPresets } from "./journey-presets.js?v=us-capitals-journey";
 import {
@@ -2536,6 +2535,7 @@ let activeRetryReviewState = null;
 let memoryTrailOverlayMode = null;
 let audioInstructionState = createAudioInstructionState("app");
 let audioInstructionHideTimer = null;
+let journeyGameplayInstructionKeys = new Set();
 let atlasProgress = loadProgress();
 let mapLayerSettings = loadMapLayerSettings();
 let studyTargetSettings = loadStudyTargetSettings();
@@ -2659,6 +2659,22 @@ function resetAudioInstructionState(scope) {
   hideAudioInstructionBanner();
 }
 
+function resetJourneyGameplayInstructionSession() {
+  journeyGameplayInstructionKeys = new Set();
+}
+
+function playGameplayInstructionOnce(instructionKey, phrase, options = {}) {
+  if (currentAppScreen === "journey-gameplay") {
+    if (journeyGameplayInstructionKeys.has(instructionKey)) {
+      return Promise.resolve(false);
+    }
+
+    journeyGameplayInstructionKeys.add(instructionKey);
+  }
+
+  return playInstructionOnce(instructionKey, phrase, options);
+}
+
 function updateAudioMuteControl() {
   if (!audioMuteButton) {
     return;
@@ -2740,7 +2756,7 @@ function playFirstChipInstructionIfNeeded() {
     return;
   }
 
-  playInstructionOnce("tap-matching-place", audioInstructionPhrases.tapMatchingPlace);
+  playGameplayInstructionOnce("tap-matching-place", audioInstructionPhrases.tapMatchingPlace);
 }
 
 function setHeaderTitle(fullTitle, options = {}) {
@@ -4176,6 +4192,10 @@ function bindUiEvents() {
       return;
     }
 
+    if (currentAppScreen === "journey-gameplay") {
+      resetJourneyGameplayInstructionSession();
+    }
+
     showAppScreen("main-menu");
   });
   backButton?.addEventListener("click", () => {
@@ -4610,6 +4630,70 @@ function getNextIncompleteJourneyStepIndex(journey, difficultyId, progress) {
   return nextIncompleteIndex;
 }
 
+function getJourneyProgressState(journey, difficultyId, progress = atlasProgress) {
+  const validSteps = getValidJourneySteps(journey);
+  const safeDifficultyId = normalizeJourneyDifficultyId(difficultyId);
+  const journeyProgress = getJourneyProgress(journey?.id, progress);
+  const completedCount = validSteps.filter((step) => journeyProgress.completedSteps?.[step.id]?.[safeDifficultyId]).length;
+  const nextIncompleteIndex = getNextIncompleteJourneyStepIndex(journey, safeDifficultyId, progress);
+  const isActiveJourneyDifficulty = progress.activeJourneyId === journey?.id && normalizeJourneyDifficultyId(progress.activeDifficulty) === safeDifficultyId;
+  const activeStepIndex = isActiveJourneyDifficulty && Number.isInteger(progress.activeStepIndex)
+    ? Math.min(Math.max(progress.activeStepIndex, 0), Math.max(validSteps.length - 1, 0))
+    : null;
+  const isComplete = validSteps.length > 0 && (
+    Boolean(journeyProgress.completedDifficulties?.[safeDifficultyId])
+    || completedCount >= validSteps.length
+  );
+  const hasPartialProgress = !isComplete && (
+    completedCount > 0
+    || (activeStepIndex !== null && activeStepIndex > 0)
+  );
+  const activeStep = activeStepIndex !== null ? validSteps[activeStepIndex] : null;
+  const canResumeActiveStep = Boolean(activeStep && !journeyProgress.completedSteps?.[activeStep.id]?.[safeDifficultyId]);
+  const resumeStepIndex = isComplete
+    ? 0
+    : canResumeActiveStep
+      ? activeStepIndex
+      : nextIncompleteIndex >= 0
+      ? nextIncompleteIndex
+      : activeStepIndex || 0;
+
+  return {
+    difficultyId: safeDifficultyId,
+    completedCount,
+    total: validSteps.length,
+    isComplete,
+    hasPartialProgress,
+    resumeStepIndex
+  };
+}
+
+function getPreferredJourneyDifficultyId(journey, progress = atlasProgress) {
+  const selectedDifficultyId = selectedJourneyPlayState.journeyId === journey?.id
+    ? normalizeJourneyDifficultyId(selectedJourneyPlayState.difficultyId)
+    : null;
+  const activeDifficultyId = progress.activeJourneyId === journey?.id
+    ? normalizeJourneyDifficultyId(progress.activeDifficulty)
+    : null;
+  const states = journeyDifficultyOptions.map((difficulty) => getJourneyProgressState(journey, difficulty.id, progress));
+  const partialState = states
+    .filter((state) => state.hasPartialProgress)
+    .sort((first, second) => second.completedCount - first.completedCount)[0];
+  const completeState = states
+    .filter((state) => state.isComplete)
+    .sort((first, second) => second.completedCount - first.completedCount)[0];
+
+  return activeDifficultyId
+    || partialState?.difficultyId
+    || completeState?.difficultyId
+    || selectedDifficultyId
+    || "medium";
+}
+
+function getSelectedJourneyProgressState(journey = getSelectedJourney()) {
+  return getJourneyProgressState(journey, getSelectedJourneyDifficultyId(), atlasProgress);
+}
+
 function getQuickStartTarget(progress = loadProgress()) {
   const activeJourney = journeyPresets.find((journey) => journey.id === progress.activeJourneyId);
   const activeDifficulty = normalizeJourneyDifficultyId(progress.activeDifficulty);
@@ -4690,12 +4774,14 @@ function getSelectedJourney() {
 }
 
 function selectJourney(journeyId) {
+  atlasProgress = loadProgress();
+  const journey = journeyPresets.find((candidate) => candidate.id === journeyId) || null;
   selectedJourneyId = journeyId;
   selectedJourneyPlayState = {
     journeyId,
     difficultyId: selectedJourneyPlayState.journeyId === journeyId
       ? selectedJourneyPlayState.difficultyId
-      : "medium"
+      : getPreferredJourneyDifficultyId(journey, atlasProgress)
   };
   showAppScreen("journey-detail");
 }
@@ -4758,6 +4844,7 @@ function startQuickStartJourney() {
     journeyId: target.journey.id,
     difficultyId: target.difficultyId
   };
+  resetJourneyGameplayInstructionSession();
   activeJourneySession = {
     journeyId: target.journey.id,
     currentStepIndex: target.stepIndex,
@@ -4890,6 +4977,20 @@ function prefersReducedMotion() {
 }
 
 function startSelectedJourney() {
+  startSelectedJourneyFromBeginning();
+}
+
+function startSelectedJourneyFromBeginning() {
+  beginSelectedJourneyAtStep(0, { preserveProgress: false });
+}
+
+function resumeSelectedJourney() {
+  const journey = getSelectedJourney();
+  const state = getSelectedJourneyProgressState(journey);
+  beginSelectedJourneyAtStep(state.resumeStepIndex, { preserveProgress: true });
+}
+
+function beginSelectedJourneyAtStep(stepIndex, options = {}) {
   const journey = getSelectedJourney();
   const validSteps = getValidJourneySteps(journey);
 
@@ -4898,15 +4999,18 @@ function startSelectedJourney() {
     return;
   }
 
+  const safeStepIndex = Math.min(Math.max(Number.isInteger(stepIndex) ? stepIndex : 0, 0), validSteps.length - 1);
+
   activeJourneySession = {
     journeyId: journey.id,
-    currentStepIndex: 0,
+    currentStepIndex: safeStepIndex,
     difficulty: getSelectedJourneyDifficultyId(),
     mode: "journey",
     incorrectPlacements: 0
   };
-  atlasProgress = setActiveJourney(journey.id, 0, activeJourneySession.difficulty, atlasProgress);
-  openJourneyStep(0);
+  resetJourneyGameplayInstructionSession();
+  atlasProgress = setActiveJourney(journey.id, safeStepIndex, activeJourneySession.difficulty, atlasProgress);
+  openJourneyStep(safeStepIndex, { preserveProgress: Boolean(options.preserveProgress) });
 }
 
 function openJourneyStep(stepIndex, options = {}) {
@@ -5577,7 +5681,6 @@ function handleCorrectMemoryTrailTap(memoryTrail, targetId, roundTargetIds) {
       ? "Good. Get ready for the next round."
       : `Good. Next tap ${memoryTrail.expectedIndex + 1} of ${roundTargetIds.length}.`;
   renderStudyExplorePanel();
-  playCorrectSound();
 
   scheduleMemoryTrailStep(memoryTrail, () => {
     runner.setMemoryTrailHighlight([]);
@@ -5587,7 +5690,6 @@ function handleCorrectMemoryTrailTap(memoryTrail, targetId, roundTargetIds) {
       memoryTrail.promptName = "";
       memoryTrail.message = "You completed the Memory Trail.";
       renderStudyExplorePanel();
-      playCompletionSound();
       showMemoryTrailCompletionOverlay();
       return;
     }
@@ -5638,7 +5740,6 @@ function handleIncorrectMemoryTrailTap(memoryTrail) {
   memoryTrail.message = "Not quite. Watch this round again.";
   runner.setMemoryTrailHighlight([]);
   showFeedback("Not quite - watch it again.");
-  playIncorrectSound();
   renderStudyExplorePanel();
   resetMemoryTrailNearMiss(memoryTrail);
 
@@ -6085,6 +6186,31 @@ function renderJourneyDetail(journey) {
   actions.className = "journey-path-actions";
 
   if (isAvailable) {
+    const playState = getSelectedJourneyProgressState(journey);
+    const difficultyLabel = getJourneyDifficultyLabel(playState.difficultyId);
+    const playAction = playState.isComplete
+      ? {
+          title: "Play Again",
+          description: `${difficultyLabel} is complete. Review this journey from the beginning without deleting your progress.`,
+          buttonLabel: "Review From Beginning",
+          onClick: startSelectedJourneyFromBeginning
+        }
+      : playState.hasPartialProgress
+        ? {
+            title: "Continue or Replay",
+            description: `${difficultyLabel}: ${playState.completedCount} of ${playState.total} complete.`,
+            buttonLabel: "Pick Up Where You Left Off",
+            onClick: resumeSelectedJourney,
+            secondaryButtonLabel: "Start From Beginning",
+            onSecondaryClick: startSelectedJourneyFromBeginning
+          }
+        : {
+            title: "Start Journey",
+            description: `Start ${journey.title} on ${difficultyLabel}.`,
+            buttonLabel: "Start Journey",
+            onClick: startSelectedJourneyFromBeginning
+          };
+
     actions.append(
       createJourneyPathCard({
         title: "Learn with Memory Trail",
@@ -6095,11 +6221,15 @@ function renderJourneyDetail(journey) {
         infoText: "Memory Trail shows each place, then asks you to repeat the map pattern. It does not change journey progress."
       }),
       createJourneyPathCard({
-        title: "Play Journey",
-        description: "Go straight into the journey activities in order.",
-        buttonLabel: "Play Journey",
+        title: playAction.title,
+        description: playAction.description,
+        buttonLabel: playAction.buttonLabel,
         variant: "play",
-        onClick: () => showAppScreen("choose-difficulty")
+        onClick: playAction.onClick,
+        secondaryButtonLabel: playAction.secondaryButtonLabel,
+        onSecondaryClick: playAction.onSecondaryClick,
+        tertiaryButtonLabel: "Choose Difficulty",
+        onTertiaryClick: () => showAppScreen("choose-difficulty")
       })
     );
   } else {
@@ -6138,7 +6268,19 @@ function renderJourneyDetail(journey) {
   journeyShellContent.appendChild(secondaryActions);
 }
 
-function createJourneyPathCard({ title, description, buttonLabel, variant, onClick, disabled = false, infoText = "" }) {
+function createJourneyPathCard({
+  title,
+  description,
+  buttonLabel,
+  variant,
+  onClick,
+  disabled = false,
+  infoText = "",
+  secondaryButtonLabel = "",
+  onSecondaryClick = null,
+  tertiaryButtonLabel = "",
+  onTertiaryClick = null
+}) {
   const card = document.createElement("article");
   card.className = `journey-path-card journey-path-card-${variant}${infoText ? " info-anchor" : ""}`;
 
@@ -6164,6 +6306,27 @@ function createJourneyPathCard({ title, description, buttonLabel, variant, onCli
   button.addEventListener("click", onClick);
 
   card.append(header, copy, button);
+
+  if (secondaryButtonLabel && typeof onSecondaryClick === "function") {
+    const secondaryButton = document.createElement("button");
+    secondaryButton.type = "button";
+    secondaryButton.className = "journey-path-secondary-button";
+    secondaryButton.textContent = secondaryButtonLabel;
+    secondaryButton.disabled = disabled;
+    secondaryButton.addEventListener("click", onSecondaryClick);
+    card.appendChild(secondaryButton);
+  }
+
+  if (tertiaryButtonLabel && typeof onTertiaryClick === "function") {
+    const tertiaryButton = document.createElement("button");
+    tertiaryButton.type = "button";
+    tertiaryButton.className = "journey-path-tertiary-button";
+    tertiaryButton.textContent = tertiaryButtonLabel;
+    tertiaryButton.disabled = disabled;
+    tertiaryButton.addEventListener("click", onTertiaryClick);
+    card.appendChild(tertiaryButton);
+  }
+
   return card;
 }
 
@@ -6415,13 +6578,35 @@ function renderJourneyDifficultyScreen(journey) {
     }));
   });
 
+  const progressState = getSelectedJourneyProgressState(journey);
+  const actionRow = document.createElement("div");
+  actionRow.className = "journey-difficulty-actions";
+
   const beginButton = document.createElement("button");
   beginButton.type = "button";
   beginButton.className = "journey-begin-button";
-  beginButton.textContent = "Begin Journey";
-  beginButton.addEventListener("click", startSelectedJourney);
 
-  panel.append(headingRow, message, context, options, beginButton);
+  if (progressState.isComplete) {
+    beginButton.textContent = "Review From Beginning";
+    beginButton.addEventListener("click", startSelectedJourneyFromBeginning);
+    actionRow.appendChild(beginButton);
+  } else if (progressState.hasPartialProgress) {
+    beginButton.textContent = "Pick Up Where You Left Off";
+    beginButton.addEventListener("click", resumeSelectedJourney);
+
+    const startOverButton = document.createElement("button");
+    startOverButton.type = "button";
+    startOverButton.className = "journey-begin-button journey-begin-secondary-button";
+    startOverButton.textContent = "Start From Beginning";
+    startOverButton.addEventListener("click", startSelectedJourneyFromBeginning);
+    actionRow.append(beginButton, startOverButton);
+  } else {
+    beginButton.textContent = "Start Journey";
+    beginButton.addEventListener("click", startSelectedJourneyFromBeginning);
+    actionRow.appendChild(beginButton);
+  }
+
+  panel.append(headingRow, message, context, options, actionRow);
   journeyShellContent.appendChild(panel);
 }
 
@@ -8502,7 +8687,7 @@ function openActivity(activityId, options = {}) {
   enterStudy();
 
   if (isActiveGameplayScreen()) {
-    playInstructionOnce("choose-label", audioInstructionPhrases.chooseLabel);
+    playGameplayInstructionOnce("choose-label", audioInstructionPhrases.chooseLabel);
   }
 }
 
@@ -9111,7 +9296,6 @@ function placeGrabbedAnswer(targetIds, options = {}) {
   }
 
   if (result.status === "correct") {
-    const isCompletingActivity = session.completedIds.length >= session.currentActivity.targets.length;
     runner.setCompletedTargets(session.completedIds);
     saveCurrentActivityProgress();
     cancelGrabbedAnswer({ clearSelection: false });
@@ -9122,11 +9306,6 @@ function placeGrabbedAnswer(targetIds, options = {}) {
     handleStudyPracticeCompletion();
     ensureActivityNavControls();
     showFeedback(`Correct: ${result.feature.name}`, true);
-    if (isCompletingActivity) {
-      playCompletionSound();
-    } else {
-      playCorrectSound();
-    }
   }
 }
 
@@ -9182,7 +9361,6 @@ function isActivityInputLocked() {
 function handleIncorrectPlacement(result) {
   const missedTargetId = result?.selectedId;
   const missCountForTarget = recordIncorrectPlacementAttempt(missedTargetId);
-  playIncorrectSound();
 
   if (activityAttemptState.incorrectPlacements >= activityRetryThreshold) {
     beginActivityRetryReview();
@@ -10278,6 +10456,7 @@ function handleJourneyCompletionPrimary() {
 
   atlasProgress = clearActiveJourney(atlasProgress);
   activeJourneySession = null;
+  resetJourneyGameplayInstructionSession();
   showAppScreen("choose-journey");
 }
 
@@ -10341,6 +10520,7 @@ function setJourneyCompletionTransitionState(nextStep) {
 
 function showJourneyStepNotReady() {
   activeJourneySession = null;
+  resetJourneyGameplayInstructionSession();
   showAppScreen(selectedJourneyId ? "journey-detail" : "choose-journey");
   showFeedback("This journey step is not ready yet.");
 }
@@ -10376,6 +10556,7 @@ function exitJourney() {
   hideJourneyCompletionCard();
   atlasProgress = clearActiveJourney(atlasProgress);
   activeJourneySession = null;
+  resetJourneyGameplayInstructionSession();
   showAppScreen(selectedJourneyId ? "journey-detail" : "main-menu");
 }
 

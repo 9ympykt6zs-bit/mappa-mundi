@@ -1290,6 +1290,25 @@ select,
   color: var(--ink);
 }
 
+.journey-path-card .journey-path-secondary-button,
+.journey-path-card .journey-path-tertiary-button,
+.journey-begin-secondary-button {
+  background: linear-gradient(180deg, #f8fbff, #e9f1f8);
+  border: 1px solid rgba(188, 211, 237, 0.95);
+  box-shadow: none;
+  color: var(--ink);
+}
+
+.journey-path-card .journey-path-tertiary-button {
+  min-height: 44px;
+  padding-block: 10px;
+}
+
+.journey-difficulty-actions {
+  display: grid;
+  gap: 12px;
+}
+
 .journey-path-card-locked button:not(.info-button):disabled {
   background: var(--disabled-bg);
   border: 1px solid var(--panel-border);
@@ -2947,10 +2966,22 @@ body.browse-mode .answer-panel-title {
     padding: 16px;
   }
 
+  .app-shell-screen:has(.onboarding-panel) {
+    align-items: start;
+    height: 100dvh;
+    min-height: 100svh;
+    padding: 16px 16px calc(132px + max(env(safe-area-inset-bottom), 16px));
+    scroll-padding-bottom: calc(132px + max(env(safe-area-inset-bottom), 16px));
+  }
+
   .app-shell-panel {
     border-radius: 20px;
     gap: 14px;
     padding: 22px 16px;
+  }
+
+  .app-shell-screen:has(.onboarding-panel) .app-shell-panel {
+    margin: 0 auto;
   }
 
   .app-shell-panel h1 {
@@ -3016,6 +3047,10 @@ body.browse-mode .answer-panel-title {
   .onboarding-actions {
     display: grid;
     grid-template-columns: 1fr;
+    margin-bottom: calc(24px + env(safe-area-inset-bottom));
+    position: sticky;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    z-index: 2;
   }
 
   .onboarding-actions button {
