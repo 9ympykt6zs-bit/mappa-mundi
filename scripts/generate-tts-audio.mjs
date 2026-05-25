@@ -6,6 +6,7 @@
  * Usage:
  *   OPENAI_API_KEY=sk-... node scripts/generate-tts-audio.mjs
  *   OPENAI_API_KEY=sk-... node scripts/generate-tts-audio.mjs --force
+ *   OPENAI_API_KEY=sk-... node scripts/generate-tts-audio.mjs --only "Chihuahua"
  *   node scripts/generate-tts-audio.mjs --dry-run
  *
  * This script pre-generates static MP3 files. It is intentionally not wired
@@ -43,9 +44,83 @@ const instructionPhrases = [
   "Study the places, then try the challenge."
 ];
 
-const args = new Set(process.argv.slice(2));
+const defaultPronunciationInstruction = "Pronounce place names as a well-educated American English speaker would in an English-language geography lesson. Use standard English geography pronunciations. Avoid obvious spelling-based mispronunciations, but do not use a strong native-language accent.";
+
+const regionalPronunciationHints = [
+  {
+    id: "mexico-spanish-america",
+    filePatterns: [
+      /^mexico-/,
+      /^central-america\.json$/,
+      /^caribbean\.json$/,
+      /^south-america-west\.json$/
+    ],
+    instructions: "Use standard American English geography pronunciation for Spanish place names, approximating Spanish where English speakers normally do. For example, Chihuahua should be chee-WAH-wah, not an English spelling pronunciation."
+  },
+  {
+    id: "spain",
+    filePatterns: [/^spain-/],
+    instructions: "Use standard English geography pronunciation for Spanish place names, approximating Spanish where English speakers normally do."
+  },
+  {
+    id: "brazil-portugal",
+    filePatterns: [/^brazil-/],
+    textPatterns: [/^Brazil$/i, /^Portugal$/i],
+    instructions: "Use standard English geography pronunciation for Portuguese place names, approximating Portuguese where English speakers normally do."
+  },
+  {
+    id: "france",
+    filePatterns: [/^france-/],
+    textPatterns: [/^France$/i],
+    instructions: "Use standard English geography pronunciation for French place names, approximating French where English speakers normally do."
+  },
+  {
+    id: "china",
+    filePatterns: [/^china-/],
+    instructions: "Use standard English geography pronunciation of modern Chinese place names based on pinyin, without Mandarin tones and without a strong native Chinese accent."
+  },
+  {
+    id: "russia",
+    filePatterns: [/^russia-/],
+    textPatterns: [/^Russia$/i],
+    instructions: "Use standard English-language geography pronunciation of Russian place names, avoiding simple English spelling misreadings but not using a strong Russian accent."
+  },
+  {
+    id: "japan",
+    filePatterns: [/^japan-/],
+    instructions: "Use standard English geography pronunciation of Japanese place names, approximating Japanese syllables without a strong native accent."
+  },
+  {
+    id: "india",
+    filePatterns: [/^india-/],
+    textPatterns: [/^India$/i],
+    instructions: "Use standard English geography pronunciation of Indian place names, avoiding obvious spelling misreadings but not using a strong native accent."
+  },
+  {
+    id: "us",
+    filePatterns: [/^us-/],
+    instructions: "Use standard American English pronunciation."
+  },
+  {
+    id: "canada",
+    filePatterns: [/^canada-/],
+    textPatterns: [/^Canada$/i],
+    instructions: "Use standard North American English pronunciation; use common English/French-informed pronunciation for names such as Québec."
+  }
+];
+
+const pronunciationOverrides = {
+  "Chihuahua": {
+    spokenText: "Chihuahua",
+    instructions: "Pronounce this single word as the standard American English geography pronunciation of the Mexican place name Chihuahua: chee-WAH-wah. Say it at a natural conversational pace. Do not pause between syllables. Do not pronounce it as an English spelling guess."
+  }
+};
+
+const rawArgs = process.argv.slice(2);
+const args = new Set(rawArgs);
 const force = args.has("--force");
 const dryRun = args.has("--dry-run");
+const onlyText = getOnlyText(rawArgs);
 
 main().catch((error) => {
   console.error(error?.stack || error);
@@ -54,13 +129,22 @@ main().catch((error) => {
 
 async function main() {
   const chipLabels = await collectChipLabels();
-  const chipItems = createAudioItems(chipLabels, chipAudioDir, "assets/audio/chips");
+  const chipItems = createAudioItems(chipLabels, chipAudioDir, "assets/audio/chips", {
+    usePronunciationHints: true
+  });
   const instructionItems = createAudioItems(instructionPhrases, instructionAudioDir, "assets/audio/instructions");
   const allItems = [...chipItems, ...instructionItems];
-  const itemsToCreate = force ? allItems : allItems.filter((item) => !item.exists);
+  const selectedItems = onlyText
+    ? allItems.filter((item) => item.text.toLowerCase() === onlyText.toLowerCase())
+    : allItems;
+  const itemsToCreate = force || onlyText ? selectedItems : selectedItems.filter((item) => !item.exists);
 
   console.log(`Total unique chip labels: ${chipItems.length}`);
   console.log(`Total instruction phrases: ${instructionItems.length}`);
+
+  if (onlyText && selectedItems.length === 0) {
+    throw new Error(`No audio item found for --only "${onlyText}".`);
+  }
 
   if (!dryRun && itemsToCreate.length > 0 && !process.env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is required to generate missing audio files.");
@@ -76,8 +160,8 @@ async function main() {
   let created = 0;
   let skipped = 0;
 
-  for (const item of allItems) {
-    if (!force && item.exists) {
+  for (const item of selectedItems) {
+    if (!force && !onlyText && item.exists) {
       skipped += 1;
       continue;
     }
@@ -88,7 +172,7 @@ async function main() {
     }
 
     try {
-      await generateSpeechFile(item.text, item.absolutePath);
+      await generateSpeechFile(item.spokenText, item.absolutePath, item.instructions);
       created += 1;
       console.log(`Created ${item.relativePath}`);
     } catch (error) {
@@ -115,7 +199,7 @@ async function main() {
 }
 
 async function collectChipLabels() {
-  const labels = new Set();
+  const labels = new Map();
   const files = (await readdir(dataDir))
     .filter((file) => file.endsWith(".json"))
     .sort((first, second) => first.localeCompare(second));
@@ -126,11 +210,20 @@ async function collectChipLabels() {
     const targets = getActivityTargets(data);
 
     for (const target of targets) {
-      collectTargetLabels(target).forEach((label) => labels.add(label));
+      for (const label of collectTargetLabels(target)) {
+        const entry = labels.get(label) || { text: label, sourceFiles: new Set() };
+        entry.sourceFiles.add(file);
+        labels.set(label, entry);
+      }
     }
   }
 
-  return Array.from(labels).sort((first, second) => first.localeCompare(second));
+  return Array.from(labels.values())
+    .map((entry) => ({
+      text: entry.text,
+      sourceFiles: Array.from(entry.sourceFiles).sort((first, second) => first.localeCompare(second))
+    }))
+    .sort((first, second) => first.text.localeCompare(second.text));
 }
 
 async function parseJsonFile(filePath) {
@@ -176,10 +269,28 @@ function normalizeSpokenText(value) {
     .trim();
 }
 
-function createAudioItems(texts, absoluteDir, relativeDir) {
+function getOnlyText(values) {
+  const onlyIndex = values.indexOf("--only");
+
+  if (onlyIndex === -1) {
+    return "";
+  }
+
+  const value = normalizeSpokenText(values[onlyIndex + 1]);
+  if (!value || value.startsWith("--")) {
+    throw new Error('--only requires an exact audio label, such as --only "Chihuahua".');
+  }
+
+  return value;
+}
+
+function createAudioItems(texts, absoluteDir, relativeDir, options = {}) {
   const slugOwners = new Map();
 
-  return texts.map((text) => {
+  return texts.map((value) => {
+    const entry = typeof value === "string" ? { text: value, sourceFiles: [] } : value;
+    const text = entry.text;
+    const pronunciationOverride = options.usePronunciationHints ? findPronunciationOverride(entry) : null;
     const baseSlug = sanitizeFilename(text) || "audio";
     const owner = slugOwners.get(baseSlug);
     const slug = owner && owner !== text
@@ -193,8 +304,10 @@ function createAudioItems(texts, absoluteDir, relativeDir) {
 
     return {
       text,
+      spokenText: pronunciationOverride?.spokenText || text,
       relativePath,
       absolutePath,
+      instructions: options.usePronunciationHints ? getPronunciationInstructions(entry, pronunciationOverride) : null,
       get exists() {
         return fileExistsSync(absolutePath);
       }
@@ -215,19 +328,48 @@ function shortHash(text) {
   return createHash("sha1").update(text).digest("hex").slice(0, 8);
 }
 
-async function generateSpeechFile(text, outputPath) {
+function findPronunciationOverride(entry) {
+  return pronunciationOverrides[entry.text] || null;
+}
+
+function getPronunciationInstructions(entry, override = findPronunciationOverride(entry)) {
+  if (override) {
+    return `${defaultPronunciationInstruction} ${override.instructions}`;
+  }
+
+  const regionalHint = regionalPronunciationHints.find((hint) => matchesPronunciationHint(hint, entry));
+  return [defaultPronunciationInstruction, regionalHint?.instructions].filter(Boolean).join(" ");
+}
+
+function matchesPronunciationHint(hint, entry) {
+  const sourceFiles = Array.isArray(entry.sourceFiles) ? entry.sourceFiles : [];
+  const matchesFile = sourceFiles.some((file) =>
+    (hint.filePatterns || []).some((pattern) => pattern.test(file))
+  );
+  const matchesText = (hint.textPatterns || []).some((pattern) => pattern.test(entry.text));
+
+  return matchesFile || matchesText;
+}
+
+async function generateSpeechFile(text, outputPath, instructions = null) {
+  const requestBody = {
+    model: MODEL,
+    voice: VOICE,
+    input: text,
+    response_format: RESPONSE_FORMAT
+  };
+
+  if (instructions) {
+    requestBody.instructions = instructions;
+  }
+
   const response = await fetch(OPENAI_SPEECH_URL, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({
-      model: MODEL,
-      voice: VOICE,
-      input: text,
-      response_format: RESPONSE_FORMAT
-    })
+    body: JSON.stringify(requestBody)
   });
 
   if (!response.ok) {
