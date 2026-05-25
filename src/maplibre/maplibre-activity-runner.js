@@ -91,6 +91,38 @@ const europeanRegionalActivityRegions = new Set([
   "central-europe",
   "more-central-europe"
 ]);
+const admin1SourceParentCountryIsoA3 = Object.freeze({
+  "australia-admin1": "AUS",
+  "brazil-admin1": "BRA",
+  "china-admin1": "CHN",
+  "france-admin1": "FRA",
+  "germany-admin1": "DEU",
+  "india-admin1": "IND",
+  "italy-admin1": "ITA",
+  "japan-admin1": "JPN",
+  "russia-admin1": "RUS",
+  "spain-admin1": "ESP",
+  "united-kingdom-admin1": "GBR"
+});
+const admin1Iso31662PrefixParentCountryIsoA3 = Object.freeze({
+  AU: "AUS",
+  BR: "BRA",
+  CA: "CAN",
+  CN: "CHN",
+  DE: "DEU",
+  ES: "ESP",
+  FR: "FRA",
+  GB: "GBR",
+  IN: "IND",
+  IT: "ITA",
+  JP: "JPN",
+  MX: "MEX",
+  RU: "RUS"
+});
+const parentCountryOutlineLayerIds = [
+  "parent-country-outline-halo",
+  "parent-country-outline"
+];
 
 // Difficulty rules are intentionally renderer-level: Easy shows all visual
 // aids, Medium hides point hints until placement, and Hard keeps accepted
@@ -316,19 +348,23 @@ export class MapLibreActivityRunner {
     this.setOverviewVisibility("none");
     this.setUnitedStatesContextVisibility(this.activity.map?.region === "united-states" ? "visible" : "none");
     this.setStudyVisibility("visible");
+    this.updateParentCountryOutline();
     this.refreshDifficultyVisuals();
+
+    const regionFlyDuration = 1100;
+    const activityId = this.activity?.id;
 
     this.map.flyTo({
       center: this.activity.map?.regionView?.center || [-98, 39],
       zoom: this.activity.map?.regionView?.zoom || 3.1,
       pitch: 0,
       bearing: 0,
-      duration: 1100,
+      duration: regionFlyDuration,
       essential: true
     });
 
     window.setTimeout(() => {
-      if (this.currentView === "study") {
+      if (this.currentView === "study" && this.activity?.id === activityId) {
         const studyView = this.activity.map?.studyView || {};
         this.map.fitBounds(studyView.bounds || [[-74.35, 40.85], [-66.75, 47.55]], {
           padding: studyView.padding || { top: 55, right: 46, bottom: 78, left: 46 },
@@ -336,7 +372,7 @@ export class MapLibreActivityRunner {
           essential: true
         });
       }
-    }, 950);
+    }, regionFlyDuration + 100);
   }
 
   enterOverview() {
@@ -349,6 +385,7 @@ export class MapLibreActivityRunner {
     this.setOverviewVisibility("visible");
     this.setUnitedStatesContextVisibility("none");
     this.setStudyVisibility("none");
+    this.updateParentCountryOutline();
     this.updateDifficultyLayerVisibility();
     const overviewView = this.overviewMapView || {
       center: this.activity.map?.initialView?.center || [-18, 18],
@@ -557,6 +594,7 @@ export class MapLibreActivityRunner {
     }
 
     this.refreshStudyFilters();
+    this.updateParentCountryOutline();
     this.refreshOceanHighlightImages();
     this.updateOceanRegionVisibility();
     this.refreshDifficultyVisuals();
@@ -1201,6 +1239,36 @@ export class MapLibreActivityRunner {
         "fill-color": this.getStateFillExpression(),
         "fill-opacity": this.getShapeFillOpacityExpression(),
         "fill-antialias": false
+      }
+    });
+
+    this.map.addLayer({
+      id: "parent-country-outline-halo",
+      type: "line",
+      source: "world-countries",
+      filter: this.getParentCountryOutlineFilter(),
+      layout: {
+        visibility: "none"
+      },
+      paint: {
+        "line-color": "#f8fafc",
+        "line-opacity": 0.9,
+        "line-width": this.getParentCountryOutlineHaloWidthExpression()
+      }
+    });
+
+    this.map.addLayer({
+      id: "parent-country-outline",
+      type: "line",
+      source: "world-countries",
+      filter: this.getParentCountryOutlineFilter(),
+      layout: {
+        visibility: "none"
+      },
+      paint: {
+        "line-color": "#1e3a8a",
+        "line-opacity": 0.82,
+        "line-width": this.getParentCountryOutlineWidthExpression()
       }
     });
 
@@ -2168,6 +2236,118 @@ export class MapLibreActivityRunner {
     }
 
     return null;
+  }
+
+  getParentCountryOutlineFilter() {
+    const isoA3 = this.getParentCountryIsoA3();
+
+    if (!isoA3) {
+      return ["==", ["get", "ISO_A3"], "__atlas_quest_no_parent_country__"];
+    }
+
+    return [
+      "any",
+      ["==", ["get", "ISO_A3"], isoA3],
+      ["==", ["get", "ADM0_A3"], isoA3],
+      ["==", ["get", "SOV_A3"], isoA3],
+      ["==", ["get", "ADM0_ISO"], isoA3]
+    ];
+  }
+
+  getParentCountryIsoA3(activity = this.activity) {
+    if (!this.shouldShowParentCountryOutline(activity)) {
+      return null;
+    }
+
+    const explicitIsoA3 = this.normalizeIsoA3(
+      activity.map?.parentCountryIsoA3
+      || activity.map?.parentCountryIso
+      || activity.parentCountryIsoA3
+      || activity.parentCountryIso
+    );
+
+    if (explicitIsoA3) {
+      return explicitIsoA3;
+    }
+
+    const sourceIsoA3 = this.normalizeIsoA3(admin1SourceParentCountryIsoA3[activity.map?.admin1Source]);
+
+    if (sourceIsoA3) {
+      return sourceIsoA3;
+    }
+
+    return this.inferParentCountryIsoA3FromTargets(activity);
+  }
+
+  shouldShowParentCountryOutline(activity = this.activity) {
+    return Boolean(
+      activity?.map?.admin1Source
+      && activity?.targets?.some((target) => target.kind === "shape" && target.type === "admin1")
+    );
+  }
+
+  inferParentCountryIsoA3FromTargets(activity = this.activity) {
+    const isoA2Prefixes = new Set((activity?.targets || [])
+      .map((target) => String(target.iso_3166_2 || "").trim().split("-")[0].toUpperCase())
+      .filter(Boolean));
+
+    if (isoA2Prefixes.size !== 1) {
+      return null;
+    }
+
+    const [isoA2] = [...isoA2Prefixes];
+    return this.normalizeIsoA3(admin1Iso31662PrefixParentCountryIsoA3[isoA2]);
+  }
+
+  normalizeIsoA3(value) {
+    const normalized = String(value || "").trim().toUpperCase();
+    return /^[A-Z]{3}$/.test(normalized) ? normalized : null;
+  }
+
+  getParentCountryOutlineHaloWidthExpression() {
+    return [
+      "interpolate",
+      ["linear"],
+      ["zoom"],
+      1,
+      2.6,
+      4,
+      4.6,
+      7,
+      6.2
+    ];
+  }
+
+  getParentCountryOutlineWidthExpression() {
+    return [
+      "interpolate",
+      ["linear"],
+      ["zoom"],
+      1,
+      1.25,
+      4,
+      2.2,
+      7,
+      3.1
+    ];
+  }
+
+  updateParentCountryOutline() {
+    if (!this.map) {
+      return;
+    }
+
+    const filter = this.getParentCountryOutlineFilter();
+    const visibility = this.currentView === "study" && this.getParentCountryIsoA3() ? "visible" : "none";
+
+    parentCountryOutlineLayerIds.forEach((layerId) => {
+      if (!this.map.getLayer(layerId)) {
+        return;
+      }
+
+      this.map.setFilter(layerId, filter);
+      this.map.setLayoutProperty(layerId, "visibility", visibility);
+    });
   }
 
   getContinentsOceanSourceFeature(target) {

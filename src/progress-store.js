@@ -8,6 +8,8 @@ function createEmptyProgress() {
     activeJourneyId: null,
     activeStepIndex: 0,
     activeDifficulty: "easy",
+    recentJourneyId: null,
+    recentDifficulty: "easy",
     journeys: {}
   };
 }
@@ -53,6 +55,12 @@ function normalizeProgress(value) {
     activeJourneyId: typeof value.activeJourneyId === "string" ? value.activeJourneyId : null,
     activeStepIndex: Number.isInteger(value.activeStepIndex) && value.activeStepIndex >= 0 ? value.activeStepIndex : 0,
     activeDifficulty: normalizeDifficulty(value.activeDifficulty),
+    recentJourneyId: typeof value.recentJourneyId === "string"
+      ? value.recentJourneyId
+      : typeof value.activeJourneyId === "string"
+        ? value.activeJourneyId
+        : null,
+    recentDifficulty: normalizeDifficulty(value.recentDifficulty || value.activeDifficulty),
     journeys: Object.fromEntries(
       Object.entries(journeys)
         .filter(([journeyId]) => typeof journeyId === "string" && journeyId)
@@ -93,6 +101,8 @@ export function setActiveJourney(journeyId, stepIndex, difficulty, progress = lo
   normalized.activeJourneyId = journeyId;
   normalized.activeStepIndex = journeyProgress.currentStepIndex;
   normalized.activeDifficulty = normalizeDifficulty(difficulty);
+  normalized.recentJourneyId = journeyId;
+  normalized.recentDifficulty = normalized.activeDifficulty;
   return saveProgress(normalized);
 }
 
@@ -111,6 +121,8 @@ export function markStepComplete(journeyId, stepId, difficulty, options = {}, pr
   const stepProgress = normalizeStepDifficultyMap(journeyProgress.completedSteps[stepId]);
   stepProgress[safeDifficulty] = true;
   journeyProgress.completedSteps[stepId] = stepProgress;
+  normalized.recentJourneyId = journeyId;
+  normalized.recentDifficulty = safeDifficulty;
 
   if (Number.isInteger(options.nextStepIndex) && options.nextStepIndex >= 0) {
     journeyProgress.currentStepIndex = Math.max(0, options.nextStepIndex);
@@ -145,6 +157,8 @@ export function resetJourneyDifficulty(journeyId, difficulty, progress = loadPro
   if (normalized.activeJourneyId === journeyId && normalized.activeDifficulty === safeDifficulty) {
     normalized.activeStepIndex = 0;
   }
+  normalized.recentJourneyId = journeyId;
+  normalized.recentDifficulty = safeDifficulty;
 
   return saveProgress(normalized);
 }

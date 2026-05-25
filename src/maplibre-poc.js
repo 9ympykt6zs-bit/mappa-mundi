@@ -605,6 +605,62 @@ const US_STATE_CAPITAL_SECTION_VIEWS = {
       padding: { top: 58, right: 58, bottom: 96, left: 58 },
       duration: 1050
     }
+  },
+  4: {
+    regionView: { center: [-85.4, 31.1], zoom: 4.65 },
+    studyView: {
+      bounds: [[-93.2, 24.1], [-79.0, 35.6]],
+      padding: { top: 58, right: 58, bottom: 96, left: 58 },
+      duration: 1050
+    }
+  },
+  5: {
+    regionView: { center: [-85.3, 41.3], zoom: 4.15 },
+    studyView: {
+      bounds: [[-91.0, 34.5], [-80.0, 48.8]],
+      padding: { top: 58, right: 58, bottom: 96, left: 58 },
+      duration: 1050
+    }
+  },
+  6: {
+    regionView: { center: [-91.4, 40.1], zoom: 4.1 },
+    studyView: {
+      bounds: [[-97.2, 33.0], [-86.3, 47.5]],
+      padding: { top: 58, right: 58, bottom: 96, left: 58 },
+      duration: 1050
+    }
+  },
+  7: {
+    regionView: { center: [-100.4, 44.4], zoom: 3.75 },
+    studyView: {
+      bounds: [[-111.4, 39.7], [-89.0, 49.6]],
+      padding: { top: 58, right: 58, bottom: 96, left: 58 },
+      duration: 1050
+    }
+  },
+  8: {
+    regionView: { center: [-101.4, 34.3], zoom: 3.85 },
+    studyView: {
+      bounds: [[-109.6, 25.4], [-93.0, 41.2]],
+      padding: { top: 58, right: 58, bottom: 96, left: 58 },
+      duration: 1050
+    }
+  },
+  9: {
+    regionView: { center: [-124.5, 32.0], zoom: 2.65 },
+    studyView: {
+      bounds: [[-160.8, 18.2], [-109.0, 43.2]],
+      padding: { top: 58, right: 58, bottom: 96, left: 58 },
+      duration: 1050
+    }
+  },
+  10: {
+    regionView: { center: [-136.5, 56.5], zoom: 2.2 },
+    studyView: {
+      bounds: [[-170.5, 42.0], [-103.8, 72.1]],
+      padding: { top: 58, right: 58, bottom: 96, left: 58 },
+      duration: 1050
+    }
   }
 };
 const US_PHYSICAL_FEATURE_MENU_ITEMS = [
@@ -4694,24 +4750,95 @@ function getSelectedJourneyProgressState(journey = getSelectedJourney()) {
   return getJourneyProgressState(journey, getSelectedJourneyDifficultyId(), atlasProgress);
 }
 
+function createQuickStartResumeTarget(journey, difficultyId, progress, options = {}) {
+  if (!journey || !isJourneyAvailable(journey) || getValidJourneySteps(journey).length === 0) {
+    return null;
+  }
+
+  const state = getJourneyProgressState(journey, difficultyId, progress);
+  const validSteps = getValidJourneySteps(journey);
+  const step = validSteps[state.resumeStepIndex];
+
+  if (!step || state.isComplete || (!options.allowStartedJourney && state.completedCount <= 0)) {
+    return null;
+  }
+
+  return {
+    isResume: true,
+    journey,
+    step,
+    stepIndex: state.resumeStepIndex,
+    difficultyId: state.difficultyId,
+    preserveProgress: true
+  };
+}
+
+function hasAnyJourneyProgress(progress) {
+  return journeyPresets.some((journey) => {
+    const validSteps = getValidJourneySteps(journey);
+
+    if (!validSteps.length) {
+      return false;
+    }
+
+    return journeyDifficultyOptions.some((difficulty) => {
+      const state = getJourneyProgressState(journey, difficulty.id, progress);
+      return state.completedCount > 0 || state.isComplete;
+    });
+  });
+}
+
+function getFallbackSavedJourneyTarget(progress) {
+  const recentJourney = journeyPresets.find((journey) => journey.id === progress.recentJourneyId);
+  const recentDifficulty = normalizeJourneyDifficultyId(progress.recentDifficulty || progress.activeDifficulty);
+  const recentTarget = createQuickStartResumeTarget(recentJourney, recentDifficulty, progress, {
+    allowStartedJourney: Boolean(progress.recentJourneyId)
+  });
+
+  if (recentTarget) {
+    return recentTarget;
+  }
+
+  for (const journey of journeyPresets) {
+    for (const difficulty of journeyDifficultyOptions) {
+      const target = createQuickStartResumeTarget(journey, difficulty.id, progress);
+
+      if (target) {
+        return target;
+      }
+    }
+  }
+
+  return null;
+}
+
 function getQuickStartTarget(progress = loadProgress()) {
   const activeJourney = journeyPresets.find((journey) => journey.id === progress.activeJourneyId);
   const activeDifficulty = normalizeJourneyDifficultyId(progress.activeDifficulty);
+  const activeTarget = createQuickStartResumeTarget(activeJourney, activeDifficulty, progress, {
+    allowStartedJourney: Boolean(progress.activeJourneyId)
+  });
 
-  if (activeJourney && isJourneyAvailable(activeJourney) && getValidJourneySteps(activeJourney).length > 0) {
-    const activeStepIndex = getNextIncompleteJourneyStepIndex(activeJourney, activeDifficulty, progress);
-    const validSteps = getValidJourneySteps(activeJourney);
+  if (activeTarget) {
+    return activeTarget;
+  }
 
-    if (activeStepIndex >= 0) {
-      return {
-        isResume: true,
-        journey: activeJourney,
-        step: validSteps[activeStepIndex],
-        stepIndex: activeStepIndex,
-        difficultyId: activeDifficulty,
-        preserveProgress: true
-      };
-    }
+  const savedTarget = getFallbackSavedJourneyTarget(progress);
+
+  if (savedTarget) {
+    return savedTarget;
+  }
+
+  if (hasAnyJourneyProgress(progress)) {
+    return {
+      isChooseJourney: true,
+      isResume: false,
+      journey: null,
+      step: null,
+      stepIndex: 0,
+      difficultyId: defaultQuickStartDifficulty,
+      preserveProgress: false
+    };
   }
 
   const fallbackJourney = getDefaultQuickStartJourney();
@@ -4753,12 +4880,14 @@ function renderQuickStartCard(isMainMenu) {
   atlasProgress = loadProgress();
   const target = getQuickStartTarget(atlasProgress);
 
-  if (!target) {
+  if (!target || target.isChooseJourney) {
     quickStartKicker.textContent = "Start Learning";
     quickStartTitle.textContent = "Choose Journey";
-    quickStartDetail.textContent = "Pick a journey to begin.";
+    quickStartDetail.textContent = target?.isChooseJourney
+      ? "All saved journeys are complete. Pick one to review or start another."
+      : "Pick a journey to begin.";
     quickStartMeta.textContent = "Difficulty: Easy";
-    quickStartAction.textContent = "Start";
+    quickStartAction.textContent = "Choose";
     return;
   }
 
@@ -4834,7 +4963,7 @@ function startQuickStartJourney() {
   atlasProgress = loadProgress();
   const target = getQuickStartTarget(atlasProgress);
 
-  if (!target) {
+  if (!target || target.isChooseJourney) {
     showAppScreen("choose-journey");
     return;
   }
