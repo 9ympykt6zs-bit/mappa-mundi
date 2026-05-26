@@ -12,7 +12,7 @@ import {
   setActiveJourney
 } from "./progress-store.js";
 
-const APP_NAME = "Atlas Quest";
+const APP_NAME = "Mappa Mundi";
 const activityDataPaths = [
   "assets/maps/data/continents-oceans.json",
   "assets/maps/data/western-european-countries.json",
@@ -146,6 +146,7 @@ const difficultyStorageKey = "geography-memory-difficulty-mode";
 const appSettingsStorageKey = "atlasQuestSettings";
 const legacyLayerSettingsStorageKey = "atlas-quest-layer-settings";
 const onboardingSeenStorageKey = "atlasQuestOnboardingSeen";
+const feedbackFormUrl = "https://docs.google.com/forms/d/e/1FAIpQLSf3w51Tbeetre-iS4maV8X0UDRBhvueuuAreQFoGObCG3VFKA/viewform?usp=header";
 const appShellScreenIds = new Set([
   "launch",
   "main-menu",
@@ -179,7 +180,7 @@ const mapLayerPresets = [
   {
     id: "default",
     label: "Default",
-    description: "Balanced Atlas Quest defaults.",
+    description: "Balanced Mappa Mundi defaults.",
     settings: {
       ...defaultMapLayerSettings
     }
@@ -2824,7 +2825,7 @@ function setHeaderTitle(fullTitle, options = {}) {
   const shortTitle = options.shortTitle
     || normalizedTitle.split(" -> ").filter(Boolean).pop()
     || normalizedTitle
-    || "Atlas Quest";
+    || APP_NAME;
 
   title.textContent = isCompactTouchLayout() ? shortTitle : normalizedTitle;
   title.title = normalizedTitle;
@@ -4521,14 +4522,14 @@ function getAppShellScreenContent(screenId) {
   const contentByScreen = {
     "main-menu": {
       title: "Main Menu",
-      subtitle: "Choose a journey and learn with guided map memory."
+      subtitle: "Interactive map practice for learning the world."
     },
     "choose-journey": {
       title: "Choose Journey",
       subtitle: "Pick a journey to learn, study, and play."
     },
     onboarding: {
-      title: "How Atlas Quest Works",
+      title: "How Mappa Mundi Works",
       subtitle: "Start with a journey, then place each label on the map."
     },
     "journey-detail": {
@@ -4555,7 +4556,7 @@ function getAppShellScreenContent(screenId) {
     },
     settings: {
       title: "Settings",
-      subtitle: "Adjust how Atlas Quest presents the map."
+      subtitle: "Adjust how Mappa Mundi presents the map."
     }
   };
 
@@ -6803,7 +6804,14 @@ function renderSettingsScreen() {
   description.className = "settings-panel-copy";
   description.textContent = "Choose map detail and save study-target preferences. Required activity targets stay available during gameplay.";
 
-  panel.append(heading, description);
+  const feedbackLink = document.createElement("a");
+  feedbackLink.className = "settings-feedback-link";
+  feedbackLink.href = feedbackFormUrl;
+  feedbackLink.target = "_blank";
+  feedbackLink.rel = "noopener noreferrer";
+  feedbackLink.textContent = "Send Feedback";
+
+  panel.append(heading, description, feedbackLink);
 
   const mapLayersSection = createSettingsMenuSection("Map Layers", "Control which supported map details are shown. Presets also update saved study-target preferences.", true, "settings-menu-section", "map-layers");
   mapLayersSection.content.append(renderStudyPresetControl(), renderMapLayerSettings());
@@ -7260,7 +7268,7 @@ function renderSettingsDefaultsControl() {
 
   const copy = document.createElement("p");
   copy.className = "settings-panel-copy";
-  copy.textContent = "This resets map layers and saved study-target preferences to the default Atlas Quest settings.";
+  copy.textContent = "This resets map layers and saved study-target preferences to the default Mappa Mundi settings.";
 
   const resetButton = document.createElement("button");
   resetButton.type = "button";

@@ -968,8 +968,26 @@ select,
   touch-action: manipulation;
 }
 
+.settings-feedback-link {
+  align-items: center;
+  background: linear-gradient(180deg, #eef4fb, #d7e3f0);
+  border: 1px solid rgba(188, 211, 237, 0.95);
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  display: inline-flex;
+  font-weight: 900;
+  justify-content: center;
+  min-height: 46px;
+  padding: 8px 12px;
+  text-decoration: none;
+  touch-action: manipulation;
+  width: fit-content;
+}
+
 .settings-reset-button:hover,
 .settings-reset-button:focus-visible,
+.settings-feedback-link:hover,
+.settings-feedback-link:focus-visible,
 .settings-preset-label select:focus-visible {
   border-color: var(--brand);
   outline: none;

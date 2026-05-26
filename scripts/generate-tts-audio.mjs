@@ -129,6 +129,10 @@ const pronunciationOverrides = {
   "Chihuahua": {
     spokenText: "Chihuahua",
     instructions: "Pronounce this single word as the standard American English geography pronunciation of the Mexican place name Chihuahua: chee-WAH-wah. Say it at a natural conversational pace. Do not pause between syllables. Do not pronounce it as an English spelling guess."
+  },
+  "Nayarit": {
+    spokenText: "Nayarit",
+    instructions: "Pronounce this single word as the standard American English geography pronunciation of the Mexican state Nayarit: nah-yah-REET. Say it naturally at normal conversational speed. Do not pause between syllables. Do not pronounce it slowly or syllable-by-syllable."
   }
 };
 
