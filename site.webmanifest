@@ -1,7 +1,7 @@
 {
-  "name": "Mappa Geography",
-  "short_name": "Mappa Geography",
-  "description": "Mappa Geography is an interactive geography practice app for learning the world through map journeys, study preview, and tap-to-place activities.",
+  "name": "Mappa Mundi",
+  "short_name": "Mappa Mundi",
+  "description": "Mappa Mundi is an interactive geography practice app for learning the world through map journeys, study preview, and tap-to-place activities.",
   "start_url": "/maplibre-poc.html",
   "scope": "/",
   "display": "standalone",

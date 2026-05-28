@@ -12,7 +12,7 @@ import {
   setActiveJourney
 } from "./progress-store.js";
 
-const APP_NAME = "Mappa Geography";
+const APP_NAME = "Mappa Mundi";
 const activityDataPaths = [
   "assets/maps/data/continents-oceans.json",
   "assets/maps/data/world-core-americas-countries.json",
@@ -185,7 +185,7 @@ const mapLayerPresets = [
   {
     id: "default",
     label: "Default",
-    description: "Balanced Mappa Geography defaults.",
+    description: "Balanced Mappa Mundi defaults.",
     settings: {
       ...defaultMapLayerSettings
     }
@@ -4642,14 +4642,14 @@ function getAppShellScreenContent(screenId) {
   const contentByScreen = {
     "main-menu": {
       title: "Main Menu",
-      subtitle: "Interactive map practice for learning the world."
+      subtitle: "Know the world by heart."
     },
     "choose-journey": {
       title: "Choose Journey",
       subtitle: "Pick a journey to learn, study, and play."
     },
     onboarding: {
-      title: "How Mappa Geography Works",
+      title: "How Mappa Mundi Works",
       subtitle: "Start with a journey, then place each label on the map."
     },
     "journey-detail": {
@@ -4676,7 +4676,7 @@ function getAppShellScreenContent(screenId) {
     },
     settings: {
       title: "Customize",
-      subtitle: "Adjust how Mappa Geography presents the map."
+      subtitle: "Adjust how Mappa Mundi presents the map."
     }
   };
 
@@ -7819,7 +7819,7 @@ function renderSettingsDefaultsControl() {
 
   const copy = document.createElement("p");
   copy.className = "settings-panel-copy";
-  copy.textContent = "This resets map layers and saved study-target preferences to the default Mappa Geography settings.";
+  copy.textContent = "This resets map layers and saved study-target preferences to the default Mappa Mundi settings.";
 
   const resetButton = document.createElement("button");
   resetButton.type = "button";
