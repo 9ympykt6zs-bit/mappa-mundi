@@ -151,6 +151,7 @@ const difficultyStorageKey = "geography-memory-difficulty-mode";
 const appSettingsStorageKey = "atlasQuestSettings";
 const legacyLayerSettingsStorageKey = "atlas-quest-layer-settings";
 const onboardingSeenStorageKey = "atlasQuestOnboardingSeen";
+const gameplayIntroSpeechSessionKey = "atlasQuestGameplayIntroSpokenThisSession";
 const feedbackFormUrl = "https://docs.google.com/forms/d/e/1FAIpQLSf3w51Tbeetre-iS4maV8X0UDRBhvueuuAreQFoGObCG3VFKA/viewform?usp=header";
 const appShellScreenIds = new Set([
   "launch",
@@ -2796,13 +2797,51 @@ function resetJourneyGameplayInstructionSession() {
   journeyGameplayInstructionKeys = new Set();
 }
 
+function readGameplayIntroSpeechSessionKeys() {
+  try {
+    const storedValue = window.sessionStorage?.getItem(gameplayIntroSpeechSessionKey);
+    const storedKeys = storedValue ? JSON.parse(storedValue) : [];
+    return new Set(Array.isArray(storedKeys) ? storedKeys.filter(Boolean) : []);
+  } catch (error) {
+    return new Set();
+  }
+}
+
+function writeGameplayIntroSpeechSessionKeys(playedKeys) {
+  try {
+    window.sessionStorage?.setItem(gameplayIntroSpeechSessionKey, JSON.stringify([...playedKeys]));
+  } catch (error) {
+    // Session storage is a convenience guard; in-memory gating still prevents local repeats.
+  }
+}
+
+function shouldPlayGameplayIntroSpeech(instructionKey) {
+  if (!instructionKey) {
+    return false;
+  }
+
+  return !journeyGameplayInstructionKeys.has(instructionKey)
+    && !readGameplayIntroSpeechSessionKeys().has(instructionKey);
+}
+
+function markGameplayIntroSpeechPlayed(instructionKey) {
+  if (!instructionKey) {
+    return;
+  }
+
+  journeyGameplayInstructionKeys.add(instructionKey);
+  const playedKeys = readGameplayIntroSpeechSessionKeys();
+  playedKeys.add(instructionKey);
+  writeGameplayIntroSpeechSessionKeys(playedKeys);
+}
+
 function playGameplayInstructionOnce(instructionKey, phrase, options = {}) {
   if (currentAppScreen === "journey-gameplay") {
-    if (journeyGameplayInstructionKeys.has(instructionKey)) {
+    if (!shouldPlayGameplayIntroSpeech(instructionKey)) {
       return Promise.resolve(false);
     }
 
-    journeyGameplayInstructionKeys.add(instructionKey);
+    markGameplayIntroSpeechPlayed(instructionKey);
   }
 
   return playInstructionOnce(instructionKey, phrase, options);

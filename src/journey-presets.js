@@ -6,7 +6,7 @@ export const journeyPresets = [
     status: "available",
     recommended: true,
     badge: "Recommended",
-    note: "Start here if you're new to Mappa Geography.",
+    note: "Start here if you're new to Mappa Mundi.",
     steps: [
       {
         id: "continents-oceans",
