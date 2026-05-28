@@ -2708,6 +2708,8 @@ const mainMenuActionsAnchor = document.createComment("main-menu-actions");
 mainMenuActions?.parentNode?.insertBefore(mainMenuActionsAnchor, mainMenuActions);
 const mainMenuChooseButton = document.querySelector("#main-menu-choose-button");
 const mainMenuSettingsButton = document.querySelector("#main-menu-settings-button");
+const mainMenuFeedback = document.querySelector("#main-menu-feedback");
+const mainMenuFeedbackLink = document.querySelector("#main-menu-feedback-link");
 const infoPopover = document.querySelector("#info-popover");
 let infoPopoverCloseTimer = null;
 let lastInfoPointerType = "";
@@ -2933,6 +2935,7 @@ const journeyCompletionMessage = document.querySelector("#journey-completion-mes
 const journeyCompletionNext = document.querySelector("#journey-completion-next");
 const journeyCompletionPrimary = document.querySelector("#journey-completion-primary");
 const journeyCompletionSecondary = document.querySelector("#journey-completion-secondary");
+const journeyCompletionFeedback = document.querySelector("#journey-completion-feedback");
 const activityRetryOverlay = document.querySelector("#activity-retry-overlay");
 const activityRetryMessage = document.querySelector("#activity-retry-message");
 const activityRetryStudyButton = document.querySelector("#activity-retry-study-button");
@@ -3079,6 +3082,7 @@ async function init() {
   bindLaunchScreenEvents();
   bindUiEvents();
   bindZoomControls();
+  configureFeedbackLinks();
   setBrowseDrawerOpen(false);
   updateActivityNavigationControls();
   updateAudioMuteControl();
@@ -3090,6 +3094,18 @@ async function init() {
   } else {
     openHome();
   }
+}
+
+function configureFeedbackLinks() {
+  [mainMenuFeedbackLink, journeyCompletionFeedback].forEach((link) => {
+    if (!link) {
+      return;
+    }
+
+    link.href = feedbackFormUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+  });
 }
 
 function expandDerivedActivityData(rawActivities) {
@@ -4616,6 +4632,16 @@ function renderAppShellScreen(screenId) {
     if (!isMainMenu && mainMenuActions.isConnected) {
       mainMenuActions.remove();
     }
+  }
+
+  if (mainMenuFeedback) {
+    mainMenuFeedback.hidden = !isMainMenu;
+    mainMenuFeedback.style.display = isMainMenu ? "" : "none";
+    mainMenuFeedback.setAttribute("aria-hidden", String(!isMainMenu));
+  }
+
+  if (mainMenuFeedbackLink) {
+    mainMenuFeedbackLink.tabIndex = isMainMenu ? 0 : -1;
   }
 
   renderQuickStartCard(isMainMenu);
@@ -10909,6 +10935,10 @@ function showStudyPracticeCompletionCard() {
     journeyCompletionSecondary.textContent = "Back to Study";
   }
 
+  if (journeyCompletionFeedback) {
+    journeyCompletionFeedback.hidden = true;
+  }
+
   syncAnswerBank();
 }
 
@@ -11061,6 +11091,10 @@ function showJourneyCompletionCard() {
     journeyCompletionSecondary.textContent = "Play Again";
   }
 
+  if (journeyCompletionFeedback) {
+    journeyCompletionFeedback.hidden = !isFinalStep;
+  }
+
   updateJourneyMemoryTrailControlVisibility();
   syncAnswerBank();
 
@@ -11088,6 +11122,10 @@ function hideJourneyCompletionCard() {
 
   if (journeyCompletionSecondary) {
     journeyCompletionSecondary.hidden = false;
+  }
+
+  if (journeyCompletionFeedback) {
+    journeyCompletionFeedback.hidden = true;
   }
 
   updateJourneyMemoryTrailControlVisibility();
@@ -11204,6 +11242,10 @@ function setJourneyCompletionTransitionState(nextStep) {
   if (journeyCompletionSecondary) {
     journeyCompletionSecondary.hidden = true;
     journeyCompletionSecondary.disabled = true;
+  }
+
+  if (journeyCompletionFeedback) {
+    journeyCompletionFeedback.hidden = true;
   }
 
   updateJourneyMemoryTrailControlVisibility();
