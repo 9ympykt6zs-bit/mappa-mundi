@@ -309,6 +309,9 @@ export class MapLibreActivityRunner {
           }
         ],
         sky: {
+          "sky-color": "#030914",
+          "horizon-color": "#040b16",
+          "fog-color": "#030914",
           "atmosphere-blend": 0.28
         }
       }
@@ -1022,7 +1025,7 @@ export class MapLibreActivityRunner {
       },
       paint: {
         "fill-color": this.getOceanRegionColorExpression(),
-        "fill-opacity": 1,
+        "fill-opacity": this.getOceanRegionFillOpacityExpression(),
         "fill-antialias": true
       }
     }, "world-land");
@@ -1062,40 +1065,7 @@ export class MapLibreActivityRunner {
   }
 
   getOceanRegionLineOpacityExpression() {
-    if (this.studyPreviewMode && this.isContinentsOceansActivity()) {
-      return [
-        "case",
-        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.memoryTrailHighlightIds]],
-        0.9,
-        [
-          "in",
-          ["coalesce", ["get", "id"], ["get", "ocean"], ["get", "name"]],
-          ["literal", ["arctic-ocean", "Arctic Ocean", "southern-ocean", "Southern Ocean"]]
-        ],
-        0,
-        0.46
-      ];
-    }
-
-    if (this.isContinentsOceansActivity() && !this.studyPreviewMode) {
-      return [
-        "case",
-        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.completedIds]],
-        0.82,
-        0
-      ];
-    }
-
-    return [
-      "case",
-      [
-        "in",
-        ["coalesce", ["get", "id"], ["get", "ocean"], ["get", "name"]],
-        ["literal", ["arctic-ocean", "Arctic Ocean", "southern-ocean", "Southern Ocean"]]
-      ],
-      0,
-      0.46
-    ];
+    return 0;
   }
 
   addOverviewLayers() {
@@ -1978,6 +1948,21 @@ export class MapLibreActivityRunner {
     return this.getBaseOceanRegionColorMatchExpression();
   }
 
+  getOceanRegionFillOpacityExpression() {
+    if (this.isContinentsOceansActivity()) {
+      return [
+        "case",
+        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.memoryTrailHighlightIds]],
+        0.72,
+        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.completedIds]],
+        0.64,
+        0
+      ];
+    }
+
+    return 0;
+  }
+
   getOceanRegionFeatureIdExpression() {
     return ["coalesce", ["get", "id"], ["get", "ocean"], ["get", "name"]];
   }
@@ -2570,6 +2555,7 @@ export class MapLibreActivityRunner {
 
     const colorExpression = this.getOceanRegionColorExpression();
     this.map.setPaintProperty("ocean-region-fill", "fill-color", colorExpression);
+    this.map.setPaintProperty("ocean-region-fill", "fill-opacity", this.getOceanRegionFillOpacityExpression());
 
     if (this.map.getLayer("ocean-region-line")) {
       this.map.setPaintProperty("ocean-region-line", "line-color", this.getOceanRegionLineColorExpression());
