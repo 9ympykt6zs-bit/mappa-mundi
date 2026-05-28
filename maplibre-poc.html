@@ -13,19 +13,19 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#071528" />
-    <meta name="description" content="Mappa Mundi is an interactive geography practice app for learning the world through map journeys, study preview, and tap-to-place activities." />
-    <meta name="apple-mobile-web-app-title" content="Mappa Mundi" />
-    <meta name="application-name" content="Mappa Mundi" />
-    <meta property="og:title" content="Mappa Mundi – Interactive Geography Practice" />
-    <meta property="og:description" content="Mappa Mundi is an interactive geography practice app for learning the world through map journeys, study preview, and tap-to-place activities." />
+    <meta name="description" content="Mappa Geography is an interactive geography practice app for learning the world through map journeys, study preview, and tap-to-place activities." />
+    <meta name="apple-mobile-web-app-title" content="Mappa Geography" />
+    <meta name="application-name" content="Mappa Geography" />
+    <meta property="og:title" content="Mappa Geography" />
+    <meta property="og:description" content="Mappa Geography is an interactive geography practice app for learning the world through map journeys, study preview, and tap-to-place activities." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://mappamundi.earth/maplibre-poc.html" />
     <meta property="og:image" content="https://mappamundi.earth/assets/icons/atlas-quest-icon-512.png" />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Mappa Mundi – Interactive Geography Practice" />
-    <meta name="twitter:description" content="Mappa Mundi is an interactive geography practice app for learning the world through map journeys, study preview, and tap-to-place activities." />
+    <meta name="twitter:title" content="Mappa Geography" />
+    <meta name="twitter:description" content="Mappa Geography is an interactive geography practice app for learning the world through map journeys, study preview, and tap-to-place activities." />
     <meta name="twitter:image" content="https://mappamundi.earth/assets/icons/atlas-quest-icon-512.png" />
-    <title>Mappa Mundi – Interactive Geography Practice</title>
+    <title>Mappa Geography</title>
     <link rel="canonical" href="https://mappamundi.earth/" />
     <link rel="icon" type="image/png" href="/assets/icons/atlas-quest-icon-192.png" />
     <link rel="apple-touch-icon" href="/assets/icons/atlas-quest-icon-180.png" />
@@ -35,7 +35,7 @@
   </head>
   <body class="overview-mode launch-mode">
     <section id="launch-screen" class="launch-screen" aria-labelledby="launch-title">
-      <button id="launch-settings-gear" class="launch-gear-button" type="button" aria-label="Settings" title="Settings"></button>
+      <button id="launch-settings-gear" class="launch-gear-button" type="button" aria-label="Customize" title="Customize"></button>
       <div class="launch-content">
         <svg class="launch-compass" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
           <circle cx="100" cy="100" r="78" fill="none" stroke="rgba(245, 221, 163, 0.65)" stroke-width="2"/>
@@ -54,7 +54,7 @@
           <text x="188" y="106" text-anchor="middle" fill="#f5dda3" font-size="16" font-family="serif">E</text>
         </svg>
         <div class="launch-title-lockup">
-          <h1 id="launch-title">Mappa Mundi</h1>
+          <h1 id="launch-title">Mappa Geography</h1>
           <p class="launch-subtitle">Interactive map practice for learning the world.</p>
         </div>
         <div class="launch-actions" aria-label="Launch actions">
@@ -67,9 +67,9 @@
     </section>
     <section id="app-shell-screen" class="app-shell-screen" aria-labelledby="app-shell-title" hidden>
       <button id="app-shell-back-button" class="app-shell-corner-button app-shell-back-button" type="button">Back</button>
-      <button id="app-shell-settings-gear" class="launch-gear-button" type="button" aria-label="Settings" title="Settings"></button>
+      <button id="app-shell-settings-gear" class="launch-gear-button" type="button" aria-label="Customize" title="Customize"></button>
       <div class="app-shell-panel">
-        <p class="launch-kicker">Mappa Mundi</p>
+        <p class="launch-kicker">Mappa Geography</p>
         <h1 id="app-shell-title">Main Menu</h1>
         <p id="app-shell-subtitle">Interactive map practice for learning the world.</p>
         <div id="main-menu-quick-start-row" class="quick-start-row info-anchor">
@@ -88,8 +88,8 @@
             <button class="info-button" type="button" data-info-text="Pick a guided path, study sections with Memory Trail, and progress through activities in order." aria-label="More info about Choose Journey">i</button>
           </div>
           <div class="main-menu-action-row info-anchor">
-            <button id="main-menu-settings-button" class="main-menu-button main-menu-button-teal" type="button">Settings</button>
-            <button class="info-button" type="button" data-info-text="Adjust map display and study options." aria-label="More info about Settings">i</button>
+            <button id="main-menu-settings-button" class="main-menu-button main-menu-button-teal" type="button">Customize</button>
+            <button class="info-button" type="button" data-info-text="Adjust map display and study options." aria-label="More info about Customize">i</button>
           </div>
           <button id="main-menu-launch-button" class="main-menu-button main-menu-button-quiet" type="button">Back to Title</button>
         </div>
@@ -119,7 +119,7 @@
             <span class="audio-mute-icon" aria-hidden="true"></span>
             <span class="audio-mute-label">Audio</span>
           </button>
-          <button id="settings-button" class="top-bar-button settings-button" type="button" aria-label="Settings" title="Settings"></button>
+          <button id="settings-button" class="top-bar-button settings-button" type="button" aria-label="Customize" title="Customize"></button>
         </div>
       </div>
       <div id="activity-nav-controls" class="activity-nav-controls" hidden>

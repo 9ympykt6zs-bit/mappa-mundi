@@ -12,7 +12,7 @@ import {
   setActiveJourney
 } from "./progress-store.js";
 
-const APP_NAME = "Mappa Mundi";
+const APP_NAME = "Mappa Geography";
 const activityDataPaths = [
   "assets/maps/data/continents-oceans.json",
   "assets/maps/data/western-european-countries.json",
@@ -180,7 +180,7 @@ const mapLayerPresets = [
   {
     id: "default",
     label: "Default",
-    description: "Balanced Mappa Mundi defaults.",
+    description: "Balanced Mappa Geography defaults.",
     settings: {
       ...defaultMapLayerSettings
     }
@@ -4529,7 +4529,7 @@ function getAppShellScreenContent(screenId) {
       subtitle: "Pick a journey to learn, study, and play."
     },
     onboarding: {
-      title: "How Mappa Mundi Works",
+      title: "How Mappa Geography Works",
       subtitle: "Start with a journey, then place each label on the map."
     },
     "journey-detail": {
@@ -4555,8 +4555,8 @@ function getAppShellScreenContent(screenId) {
       subtitle: "Choose how much help you want for this activity."
     },
     settings: {
-      title: "Settings",
-      subtitle: "Adjust how Mappa Mundi presents the map."
+      title: "Customize",
+      subtitle: "Adjust how Mappa Geography presents the map."
     }
   };
 
@@ -5540,6 +5540,7 @@ function createMemoryTrailState() {
     phase: "idle",
     message: "Watch the trail, then tap the places in the same order.",
     promptName: "",
+    responseChipTargetId: null,
     timers: [],
     previousRevealedTargetIds: [...(activeStudySession?.revealedTargetIds || [])]
   };
@@ -5662,6 +5663,7 @@ function playMemoryTrailRound(memoryTrail = getActiveMemoryTrail()) {
   memoryTrail.expectedIndex = 0;
   resetMemoryTrailNearMiss(memoryTrail);
   memoryTrail.promptName = "";
+  memoryTrail.responseChipTargetId = null;
   memoryTrail.message = `Round ${memoryTrail.roundIndex + 1}: watch the trail.`;
   renderStudyExplorePanel();
 
@@ -5797,6 +5799,7 @@ function handleMemoryTrailTargetTap(targetIds, mapPoint = null) {
 
 function handleCorrectMemoryTrailTap(memoryTrail, targetId, roundTargetIds) {
   resetMemoryTrailNearMiss(memoryTrail);
+  memoryTrail.responseChipTargetId = targetId;
   memoryTrail.expectedIndex += 1;
   runner.setMemoryTrailHighlight(targetId);
   showFeedback("Yes.", true);
@@ -5818,6 +5821,7 @@ function handleCorrectMemoryTrailTap(memoryTrail, targetId, roundTargetIds) {
     if (trailComplete) {
       memoryTrail.phase = "complete";
       memoryTrail.promptName = "";
+      memoryTrail.responseChipTargetId = null;
       memoryTrail.message = "You completed the Memory Trail.";
       renderStudyExplorePanel();
       showMemoryTrailCompletionOverlay();
@@ -5853,6 +5857,7 @@ function handleNearMissMemoryTrailTap(memoryTrail, expectedTargetId) {
 
   memoryTrail.phase = "feedback";
   memoryTrail.promptName = "";
+  memoryTrail.responseChipTargetId = null;
   memoryTrail.message = "Let's watch that round again.";
   runner.setMemoryTrailHighlight([]);
   showFeedback("Let's watch that round again.");
@@ -5867,6 +5872,7 @@ function handleNearMissMemoryTrailTap(memoryTrail, expectedTargetId) {
 function handleIncorrectMemoryTrailTap(memoryTrail) {
   memoryTrail.phase = "feedback";
   memoryTrail.promptName = "";
+  memoryTrail.responseChipTargetId = null;
   memoryTrail.message = "Not quite. Watch this round again.";
   runner.setMemoryTrailHighlight([]);
   showFeedback("Not quite - watch it again.");
@@ -5912,6 +5918,11 @@ function renderMemoryTrailPanel() {
     status.appendChild(prompt);
   }
 
+  const responseChip = createMemoryTrailResponseChip(memoryTrail);
+  if (responseChip) {
+    status.appendChild(responseChip);
+  }
+
   const controls = document.createElement("div");
   controls.className = "study-explore-controls memory-trail-controls";
 
@@ -5921,6 +5932,32 @@ function renderMemoryTrailPanel() {
 
   panel.append(status, controls);
   answerBank.appendChild(panel);
+}
+
+function createMemoryTrailResponseChip(memoryTrail) {
+  if (!memoryTrail || (memoryTrail.phase !== "answering" && memoryTrail.phase !== "feedback")) {
+    return null;
+  }
+
+  const target = session.getFeature(memoryTrail.responseChipTargetId);
+  const labelText = target?.name || "";
+
+  if (!labelText) {
+    return null;
+  }
+
+  const chip = document.createElement("div");
+  chip.className = "label-chip memory-trail-response-chip";
+  chip.setAttribute("role", "status");
+  chip.setAttribute("aria-label", `Last correct: ${labelText}`);
+  chip.appendChild(createChipLabelText(labelText));
+
+  const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(labelText);
+  if (speaker) {
+    chip.appendChild(speaker);
+  }
+
+  return chip;
 }
 
 function appendStudyControlButton(container, label, handler, mobileLabel = label) {
@@ -6798,7 +6835,7 @@ function renderSettingsScreen() {
   panel.className = "settings-panel";
 
   const heading = document.createElement("h2");
-  heading.textContent = "Settings";
+  heading.textContent = "Customize";
 
   const description = document.createElement("p");
   description.className = "settings-panel-copy";
@@ -7268,7 +7305,7 @@ function renderSettingsDefaultsControl() {
 
   const copy = document.createElement("p");
   copy.className = "settings-panel-copy";
-  copy.textContent = "This resets map layers and saved study-target preferences to the default Mappa Mundi settings.";
+  copy.textContent = "This resets map layers and saved study-target preferences to the default Mappa Geography settings.";
 
   const resetButton = document.createElement("button");
   resetButton.type = "button";

@@ -1623,6 +1623,11 @@ body.study-explore-mode .answer-panel {
   padding: 8px 10px;
 }
 
+.memory-trail-response-chip {
+  cursor: default;
+  justify-self: start;
+}
+
 .memory-trail-controls {
   margin-bottom: 0;
 }
