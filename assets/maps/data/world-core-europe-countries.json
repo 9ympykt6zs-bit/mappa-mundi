@@ -1,0 +1,122 @@
+{
+  "id": "world-core-europe-countries",
+  "title": "Core Countries: Europe",
+  "sequence": 31,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "world-core-europe"
+  },
+  "features": [
+    {
+      "id": "united-kingdom",
+      "name": "United Kingdom",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "GBR",
+      "color": "#ef4444",
+      "labelAnchor": [-2.12, 54.4],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "france",
+      "name": "France",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "FRA",
+      "color": "#3b82f6",
+      "labelAnchor": [2.55, 46.7],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "germany",
+      "name": "Germany",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "DEU",
+      "color": "#ef4444",
+      "labelAnchor": [9.68, 50.96],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "italy",
+      "name": "Italy",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ITA",
+      "color": "#22c55e",
+      "labelAnchor": [11.08, 44.73],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "spain",
+      "name": "Spain",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ESP",
+      "color": "#eab308",
+      "labelAnchor": [-3.46, 40.09],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "netherlands",
+      "name": "Netherlands",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "NLD",
+      "color": "#f97316",
+      "labelAnchor": [5.61, 52.42],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "poland",
+      "name": "Poland",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "POL",
+      "color": "#f97316",
+      "labelAnchor": [19.49, 51.99],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "ukraine",
+      "name": "Ukraine",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "UKR",
+      "color": "#f59e0b",
+      "labelAnchor": [31.2, 49],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "sweden",
+      "name": "Sweden",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "SWE",
+      "color": "#facc15",
+      "labelAnchor": [17.5, 62.6],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "russia",
+      "name": "Russia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "RUS",
+      "color": "#3b82f6",
+      "labelAnchor": [88, 61],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "id": "world-core-east-southeast-asia-oceania-countries",
+  "title": "Core Countries: East Asia, Southeast Asia, and Oceania",
+  "sequence": 34,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "world-core-east-southeast-asia-oceania"
+  },
+  "features": [
+    {
+      "id": "china",
+      "name": "China",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "CHN",
+      "color": "#f97316",
+      "labelAnchor": [103.8, 35.4],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "japan",
+      "name": "Japan",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "JPN",
+      "color": "#38bdf8",
+      "labelAnchor": [138.2, 37.6],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "south-korea",
+      "name": "South Korea",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "KOR",
+      "color": "#3b82f6",
+      "labelAnchor": [127.85, 36.2],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "indonesia",
+      "name": "Indonesia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "IDN",
+      "color": "#a855f7",
+      "labelAnchor": [117.3, -2.7],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "vietnam",
+      "name": "Vietnam",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "VNM",
+      "color": "#a855f7",
+      "labelAnchor": [106.3, 16.2],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "thailand",
+      "name": "Thailand",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "THA",
+      "color": "#3b82f6",
+      "labelAnchor": [101, 15.3],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "philippines",
+      "name": "Philippines",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "PHL",
+      "color": "#f59e0b",
+      "labelAnchor": [122.9, 12.6],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "malaysia",
+      "name": "Malaysia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "MYS",
+      "color": "#22c55e",
+      "labelAnchor": [102.3, 4.2],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "australia",
+      "name": "Australia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "AUS",
+      "color": "#22c55e",
+      "labelAnchor": [134.5, -25.8],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "new-zealand",
+      "name": "New Zealand",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "NZL",
+      "color": "#3b82f6",
+      "labelAnchor": [172.2, -41.1],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    }
+  ]
+}

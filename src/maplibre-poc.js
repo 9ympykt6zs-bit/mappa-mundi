@@ -15,6 +15,11 @@ import {
 const APP_NAME = "Mappa Geography";
 const activityDataPaths = [
   "assets/maps/data/continents-oceans.json",
+  "assets/maps/data/world-core-americas-countries.json",
+  "assets/maps/data/world-core-europe-countries.json",
+  "assets/maps/data/world-core-africa-countries.json",
+  "assets/maps/data/world-core-west-central-south-asia-countries.json",
+  "assets/maps/data/world-core-east-southeast-asia-oceania-countries.json",
   "assets/maps/data/western-european-countries.json",
   "assets/maps/data/european-cities.json",
   "assets/maps/data/former-soviet-republics-review.json",
@@ -1860,6 +1865,41 @@ const activityCatalogMetadata = {
     description: "Practice the continents and major oceans on the modern 3D globe.",
     sortOrder: 8
   },
+  "world-core-americas-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Core country practice across the Americas.",
+    sortOrder: 8.1,
+    sectionNumber: 30
+  },
+  "world-core-europe-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Core country practice across Europe.",
+    sortOrder: 8.2,
+    sectionNumber: 31
+  },
+  "world-core-africa-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Core country practice across Africa.",
+    sortOrder: 8.3,
+    sectionNumber: 32
+  },
+  "world-core-west-central-south-asia-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Core country practice across West, Central, and South Asia.",
+    sortOrder: 8.4,
+    sectionNumber: 33
+  },
+  "world-core-east-southeast-asia-oceania-countries": {
+    mapSet: "world-europe",
+    category: "Countries",
+    description: "Core country practice across East Asia, Southeast Asia, and Oceania.",
+    sortOrder: 8.5,
+    sectionNumber: 34
+  },
   "western-european-countries": {
     mapSet: "world-europe",
     category: "Countries",
@@ -2590,6 +2630,8 @@ let journeyAutoAdvanceTimer = null;
 let activityAttemptState = createActivityAttemptState();
 let activeRetryReviewState = null;
 let memoryTrailOverlayMode = null;
+let pendingJourneyMemoryTrailRecommendation = null;
+const dismissedJourneyMemoryTrailRecommendations = new Set();
 let audioInstructionState = createAudioInstructionState("app");
 let audioInstructionHideTimer = null;
 let journeyGameplayInstructionKeys = new Set();
@@ -2620,6 +2662,7 @@ const answerBank = document.querySelector("#answer-bank");
 const progress = document.querySelector("#progress");
 const feedback = document.querySelector("#feedback");
 const resetButton = document.querySelector("#reset-button");
+const journeyMemoryTrailButton = document.querySelector("#journey-memory-trail-button");
 const backButton = document.querySelector("#back-button");
 const homeButton = document.querySelector("#home-button");
 const browseButton = document.querySelector("#browse-button");
@@ -2694,6 +2737,7 @@ function shouldShowResetControl() {
 
 function updateResetControlVisibility() {
   if (!resetButton) {
+    updateJourneyMemoryTrailControlVisibility();
     return;
   }
 
@@ -2702,6 +2746,36 @@ function updateResetControlVisibility() {
   resetButton.disabled = !shouldShow;
   resetButton.tabIndex = shouldShow ? 0 : -1;
   resetButton.setAttribute("aria-hidden", String(!shouldShow));
+  updateJourneyMemoryTrailControlVisibility();
+}
+
+function shouldShowJourneyMemoryTrailControl() {
+  const difficultyId = getEffectiveDifficulty(session?.currentActivity);
+
+  return Boolean(
+    currentAppScreen === "journey-gameplay"
+    && activeJourneySession?.mode === "journey"
+    && session?.currentActivity
+    && isMemoryTrailEligible(session.currentActivity)
+    && [difficultyModes.easy, difficultyModes.medium].includes(difficultyId)
+    && !isCurrentActivityComplete()
+    && !isJourneyTransitioning
+    && !journeyCompletionState?.isVisible
+    && !journeyAutoAdvanceTimer
+    && !isActivityInputLocked()
+  );
+}
+
+function updateJourneyMemoryTrailControlVisibility() {
+  if (!journeyMemoryTrailButton) {
+    return;
+  }
+
+  const shouldShow = shouldShowJourneyMemoryTrailControl();
+  journeyMemoryTrailButton.hidden = !shouldShow;
+  journeyMemoryTrailButton.disabled = !shouldShow;
+  journeyMemoryTrailButton.tabIndex = shouldShow ? 0 : -1;
+  journeyMemoryTrailButton.setAttribute("aria-hidden", String(!shouldShow));
 }
 
 function createAudioInstructionState(scope) {
@@ -2904,7 +2978,7 @@ const journeyDifficultyOptions = [
   }
 ];
 
-const defaultQuickStartJourneyId = "world-foundations";
+const defaultQuickStartJourneyId = "world-geography-core";
 const defaultQuickStartDifficulty = difficultyModes.easy;
 
 async function init() {
@@ -3264,6 +3338,11 @@ function inferActivityRegion(activityId = "") {
 
   const regionByActivityId = {
     "western-european-countries": "western-europe",
+    "world-core-americas-countries": "world-core-americas",
+    "world-core-europe-countries": "world-core-europe",
+    "world-core-africa-countries": "world-core-africa",
+    "world-core-west-central-south-asia-countries": "world-core-west-central-south-asia",
+    "world-core-east-southeast-asia-oceania-countries": "world-core-east-southeast-asia-oceania",
     "european-cities": "western-europe",
     "former-soviet-republics-review": "former-soviet-republics-review",
     "continents-oceans": "continents-oceans",
@@ -3349,6 +3428,46 @@ function getMapDefaults(rawActivity, region) {
       studyView: {
         bounds: [[-179, -66], [179, 82]],
         padding: { top: 36, right: 36, bottom: 64, left: 36 },
+        duration: 1050
+      }
+    },
+    "world-core-americas": {
+      regionView: { center: [-82, 16], zoom: 1.55 },
+      studyView: {
+        bounds: [[-168, -58], [-34, 72]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "world-core-europe": {
+      regionView: { center: [28, 55], zoom: 2.0 },
+      studyView: {
+        bounds: [[-13, 34], [103, 72]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "world-core-africa": {
+      regionView: { center: [19, 2], zoom: 2.1 },
+      studyView: {
+        bounds: [[-18, -36], [53, 38]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "world-core-west-central-south-asia": {
+      regionView: { center: [61, 28], zoom: 2.25 },
+      studyView: {
+        bounds: [[25, 5], [96, 56]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
+        duration: 1050
+      }
+    },
+    "world-core-east-southeast-asia-oceania": {
+      regionView: { center: [132, 1], zoom: 1.75 },
+      studyView: {
+        bounds: [[93, -49], [180, 49]],
+        padding: { top: 54, right: 54, bottom: 86, left: 54 },
         duration: 1050
       }
     },
@@ -4280,6 +4399,7 @@ function bindUiEvents() {
   });
   browseButton?.addEventListener("click", toggleBrowseDrawer);
   browseCloseButton?.addEventListener("click", closeBrowseDrawer);
+  journeyMemoryTrailButton?.addEventListener("click", startMemoryTrailFromJourneyGameplay);
   audioMuteButton?.addEventListener("click", toggleAudioMute);
   window.addEventListener("atlas-quest-audio-muted-change", updateAudioMuteControl);
   settingsButton?.addEventListener("click", () => {
@@ -4534,11 +4654,11 @@ function getAppShellScreenContent(screenId) {
     },
     "journey-detail": {
       title: selectedJourneyTitle,
-      subtitle: "Learn each section with Memory Trail, then play when you are ready."
+      subtitle: getJourneyDetailSubtitle(selectedJourney)
     },
     study: {
       title: `Study: ${selectedJourneyTitle}`,
-      subtitle: "Memory Trail guides each section one place at a time."
+      subtitle: getJourneyStudySubtitle(selectedJourney)
     },
     "choose-difficulty": {
       title: "Choose Difficulty",
@@ -5158,6 +5278,18 @@ function openJourneyStep(stepIndex, options = {}) {
   const stepActivity = getActivityById(step.activityId);
   const stepDifficulty = normalizeDifficultyForActivity(activeJourneySession.difficulty, stepActivity);
   activeJourneySession.difficulty = stepDifficulty;
+
+  const launchContext = {
+    journeyId: journey.id,
+    stepIndex,
+    difficultyId: stepDifficulty,
+    preserveProgress: Boolean(options.preserveProgress)
+  };
+  if (!options.skipMemoryTrailRecommendation && shouldShowJourneyMemoryTrailRecommendation(launchContext)) {
+    showJourneyMemoryTrailRecommendation(launchContext);
+    return;
+  }
+
   atlasProgress = setActiveJourney(activeJourneySession.journeyId, stepIndex, stepDifficulty, atlasProgress);
   if (!options.preserveProgress) {
     setActivityProgress(step.activityId, [], stepDifficulty);
@@ -5169,6 +5301,260 @@ function openJourneyStep(stepIndex, options = {}) {
     forceGameplayVisible: true,
     presentationSettings: getJourneyActivityPresentationSettings(step)
   });
+}
+
+function getJourneyLaunchContextParts(context) {
+  const journey = journeyPresets.find((preset) => preset.id === context?.journeyId);
+  const validSteps = getValidJourneySteps(journey);
+  const stepIndex = Number.isInteger(context?.stepIndex)
+    ? Math.min(Math.max(context.stepIndex, 0), Math.max(validSteps.length - 1, 0))
+    : 0;
+  const step = validSteps[stepIndex];
+  const activity = getActivityById(step?.activityId);
+
+  return { journey, step, activity, stepIndex };
+}
+
+function getJourneyMemoryTrailRecommendationKey(context) {
+  const { journey, step } = getJourneyLaunchContextParts(context);
+  const difficultyId = normalizeJourneyDifficultyId(context?.difficultyId);
+
+  return journey && step ? `${journey.id}:${step.id}:${difficultyId}` : "";
+}
+
+function isJourneyLaunchStepComplete(context) {
+  const { journey, step } = getJourneyLaunchContextParts(context);
+  const difficultyId = normalizeJourneyDifficultyId(context?.difficultyId);
+  const journeyProgress = getJourneyProgress(journey?.id, atlasProgress);
+
+  return Boolean(step && journeyProgress.completedSteps?.[step.id]?.[difficultyId]);
+}
+
+function hasSavedJourneyActivityProgress(context) {
+  const { step } = getJourneyLaunchContextParts(context);
+
+  if (!step) {
+    return false;
+  }
+
+  return getActivityProgress(step.activityId, context.difficultyId).length > 0;
+}
+
+function isMemoryTrailEligible(activity) {
+  return Boolean(activity?.id && activity.id !== "continents-oceans");
+}
+
+function getJourneyMemoryTrailEligibleSteps(journey) {
+  return getValidJourneySteps(journey)
+    .filter((step) => isMemoryTrailEligible(getActivityById(step.activityId)));
+}
+
+function getJourneyDetailSubtitle(journey) {
+  const validSteps = getValidJourneySteps(journey);
+  const eligibleCount = getJourneyMemoryTrailEligibleSteps(journey).length;
+
+  if (eligibleCount === 0) {
+    return "Study the places, then play when you are ready.";
+  }
+
+  if (eligibleCount === validSteps.length) {
+    return "Learn each section with Memory Trail, then play when you are ready.";
+  }
+
+  return "Use Memory Trail for focused sections, then play when you are ready.";
+}
+
+function getJourneyStudySubtitle(journey) {
+  return getJourneyMemoryTrailEligibleSteps(journey).length > 0
+    ? "Memory Trail is available for focused regional sets."
+    : "Study the places before playing.";
+}
+
+function shouldShowJourneyMemoryTrailRecommendation(context) {
+  const { journey, step, activity } = getJourneyLaunchContextParts(context);
+  const key = getJourneyMemoryTrailRecommendationKey(context);
+
+  return Boolean(
+    journey
+    && step
+    && activity
+    && key
+    && isMemoryTrailEligible(activity)
+    && !context.preserveProgress
+    && !dismissedJourneyMemoryTrailRecommendations.has(key)
+    && !isJourneyLaunchStepComplete(context)
+    && !hasSavedJourneyActivityProgress(context)
+  );
+}
+
+function dismissJourneyMemoryTrailRecommendation(context) {
+  const key = getJourneyMemoryTrailRecommendationKey(context);
+
+  if (key) {
+    dismissedJourneyMemoryTrailRecommendations.add(key);
+  }
+}
+
+function showJourneyMemoryTrailRecommendation(context) {
+  pendingJourneyMemoryTrailRecommendation = { ...context };
+  configureMemoryTrailOverlay({
+    mode: "journey-recommendation",
+    titleText: "Learn this set first?",
+    messageText: "Memory Trail shows each place, says its name, and helps you repeat the map pattern before playing.",
+    primaryText: "Start Memory Trail",
+    secondaryText: "Play Now",
+    showInfo: false
+  });
+}
+
+function startJourneyGameplayFromLaunchContext(context) {
+  const { journey, step, stepIndex } = getJourneyLaunchContextParts(context);
+
+  if (!journey || !step) {
+    showJourneyStepNotReady();
+    return;
+  }
+
+  selectedJourneyId = journey.id;
+  activeJourneySession = {
+    journeyId: journey.id,
+    currentStepIndex: stepIndex,
+    difficulty: context.difficultyId,
+    mode: "journey",
+    incorrectPlacements: 0
+  };
+  resetJourneyGameplayInstructionSession();
+  atlasProgress = setActiveJourney(journey.id, stepIndex, context.difficultyId, atlasProgress);
+  openJourneyStep(stepIndex, {
+    preserveProgress: Boolean(context.preserveProgress),
+    skipMemoryTrailRecommendation: true
+  });
+}
+
+function startJourneyMemoryTrailFromRecommendation(context) {
+  const { journey, step, activity } = getJourneyLaunchContextParts(context);
+
+  if (!journey || !step || !activity) {
+    showStudyStepNotReady();
+    return;
+  }
+
+  if (!isMemoryTrailEligible(activity)) {
+    openStudyExploreActivity(journey, step, activity, {
+      journeyPlayReturn: { ...context, preserveProgress: false }
+    });
+    return;
+  }
+
+  activeJourneySession = null;
+  resetJourneyGameplayInstructionSession();
+  atlasProgress = clearActiveJourney(atlasProgress);
+  selectedJourneyId = journey.id;
+  openStudyExploreActivity(journey, step, activity, {
+    autoStartMemoryTrail: true,
+    journeyPlayReturn: { ...context, preserveProgress: false }
+  });
+}
+
+function createJourneyActivityReturnState() {
+  if (currentAppScreen !== "journey-gameplay" || activeJourneySession?.mode !== "journey" || !session?.currentActivity) {
+    return null;
+  }
+
+  return {
+    journeyId: activeJourneySession.journeyId,
+    stepIndex: activeJourneySession.currentStepIndex,
+    activityId: session.currentActivity.id,
+    difficultyId: getEffectiveDifficulty(session.currentActivity),
+    hierarchyNodeId: activeHierarchyNodeId,
+    menuRootId: activeMenuRoot?.id || activeMenuRoot || null,
+    presentationSettings: { ...currentPresentationSettings },
+    incorrectPlacements: activeJourneySession.incorrectPlacements || 0
+  };
+}
+
+function startMemoryTrailFromJourneyGameplay() {
+  if (!shouldShowJourneyMemoryTrailControl()) {
+    return;
+  }
+
+  const returnState = createJourneyActivityReturnState();
+  const journey = journeyPresets.find((preset) => preset.id === returnState?.journeyId);
+  const validSteps = getValidJourneySteps(journey);
+  const stepIndex = Number.isInteger(returnState?.stepIndex)
+    ? Math.min(Math.max(returnState.stepIndex, 0), Math.max(validSteps.length - 1, 0))
+    : 0;
+  const step = validSteps[stepIndex];
+  const activity = getActivityById(returnState?.activityId || step?.activityId);
+
+  if (!returnState || !journey || !step || !activity || !isMemoryTrailEligible(activity)) {
+    return;
+  }
+
+  saveCurrentActivityProgress();
+  cancelGrabbedAnswer();
+  openStudyExploreActivity(journey, step, activity, {
+    autoStartMemoryTrail: true,
+    journeyActivityReturnState: {
+      ...returnState,
+      stepIndex,
+      activityId: activity.id
+    }
+  });
+}
+
+function returnToJourneyActivityFromStudy(returnState = activeStudySession?.journeyActivityReturnState || null) {
+  if (!returnState?.journeyId || !returnState?.activityId) {
+    showAppScreen(selectedJourneyId ? "journey-detail" : "choose-journey", { pushHistory: false });
+    return;
+  }
+
+  const journey = journeyPresets.find((preset) => preset.id === returnState.journeyId);
+  const validSteps = getValidJourneySteps(journey);
+  const stepIndex = Number.isInteger(returnState.stepIndex)
+    ? Math.min(Math.max(returnState.stepIndex, 0), Math.max(validSteps.length - 1, 0))
+    : 0;
+  const step = validSteps[stepIndex];
+  const activity = getActivityById(returnState.activityId || step?.activityId);
+
+  if (!journey || !step || !activity) {
+    showJourneyStepNotReady();
+    return;
+  }
+
+  hideMemoryTrailOverlay();
+  clearMemoryTrailState({ restoreReveals: false });
+  activeStudySession = null;
+  activeStudyPracticeSession = null;
+  document.body.classList.remove("study-explore-mode");
+  runner?.setStudyPreviewMode(false);
+  runner?.setMemoryTrailHighlight([]);
+  runner?.setCompletedTargets([]);
+
+  const difficultyId = normalizeDifficultyForActivity(returnState.difficultyId, activity);
+  selectedJourneyId = journey.id;
+  activeHierarchyNodeId = returnState.hierarchyNodeId || activeHierarchyNodeId;
+  activeMenuRoot = getHierarchyMenuRoot(activeHierarchyNodeId) || returnState.menuRootId || activeMenuRoot;
+  activeJourneySession = {
+    journeyId: journey.id,
+    currentStepIndex: stepIndex,
+    difficulty: difficultyId,
+    mode: "journey",
+    incorrectPlacements: returnState.incorrectPlacements || 0
+  };
+  atlasProgress = setActiveJourney(journey.id, stepIndex, difficultyId, atlasProgress);
+  openActivity(activity.id, {
+    appScreen: "journey-gameplay",
+    difficultyId,
+    forceGameplayVisible: true,
+    hierarchyNodeId: returnState.hierarchyNodeId,
+    presentationSettings: returnState.presentationSettings || getJourneyActivityPresentationSettings(step)
+  });
+
+  if (activeJourneySession) {
+    activeJourneySession.incorrectPlacements = returnState.incorrectPlacements || 0;
+  }
+  showFeedback("Back to your activity.", true);
 }
 
 function getJourneyActivityPresentationSettings() {
@@ -5242,7 +5628,9 @@ function openStudyExploreActivity(journey, step, activity, options = {}) {
     activityId: activity.id,
     revealedTargetIds: options.revealAll ? activity.targets.map((target) => target.id) : [],
     memoryTrail: null,
-    retryReturnState: options.retryReturnState || null
+    retryReturnState: options.retryReturnState || null,
+    journeyPlayReturn: options.journeyPlayReturn || null,
+    journeyActivityReturnState: options.journeyActivityReturnState || null
   };
   activeStudyPracticeSession = null;
   hideStudyPracticeCompletionCard();
@@ -5290,8 +5678,15 @@ function openStudyExploreActivity(journey, step, activity, options = {}) {
   runner.enterStudyView();
   renderStudyExplorePanel();
   updateTopBarNavigation();
-  showMemoryTrailOfferOverlay();
-  playInstructionOnce("study-preview", audioInstructionPhrases.studyPreview);
+  const canUseMemoryTrail = isMemoryTrailEligible(session.currentActivity);
+  if (options.autoStartMemoryTrail && canUseMemoryTrail) {
+    startMemoryTrail();
+  } else if (canUseMemoryTrail) {
+    showMemoryTrailOfferOverlay();
+    playInstructionOnce("study-preview", audioInstructionPhrases.studyPreview);
+  } else {
+    playInstructionOnce("study-preview", audioInstructionPhrases.studyPreview);
+  }
 }
 
 function revealStudyTarget(targetId) {
@@ -5316,7 +5711,7 @@ function revealStudyTarget(targetId) {
 }
 
 function launchPracticeForStudySet() {
-  if (!activeStudySession || activeStudySession.retryReturnState) {
+  if (!activeStudySession || activeStudySession.retryReturnState || activeStudySession.journeyActivityReturnState) {
     return;
   }
 
@@ -5330,8 +5725,35 @@ function launchPracticeForStudySet() {
   startStudyPracticeActivity(journeyId, stepId);
 }
 
+function startJourneyFromStudyRecommendation() {
+  const launchContext = activeStudySession?.journeyPlayReturn;
+
+  if (!launchContext) {
+    return;
+  }
+
+  hideMemoryTrailOverlay();
+  clearMemoryTrailState({ restoreReveals: false });
+  activeStudySession = null;
+  document.body.classList.remove("study-explore-mode");
+  runner.setStudyPreviewMode(false);
+  runner.setMemoryTrailHighlight([]);
+  runner.setCompletedTargets([]);
+  startJourneyGameplayFromLaunchContext({
+    ...launchContext,
+    preserveProgress: false
+  });
+}
+
 function exitStudyExplore() {
+  const journeyActivityReturnState = activeStudySession?.journeyActivityReturnState || null;
   const retryReturnState = activeStudySession?.retryReturnState || null;
+
+  if (journeyActivityReturnState) {
+    returnToJourneyActivityFromStudy(journeyActivityReturnState);
+    return;
+  }
+
   hideMemoryTrailOverlay();
   clearMemoryTrailState({ restoreReveals: false });
   activeStudySession = null;
@@ -5361,6 +5783,13 @@ function renderStudyExplorePanel() {
   controls.className = "study-explore-controls";
   const controlDefinitions = activeStudySession?.retryReturnState
     ? [["Exit Study", exitStudyExplore, "Exit"]]
+    : activeStudySession?.journeyActivityReturnState
+      ? [["Return to Activity", () => returnToJourneyActivityFromStudy(), "Return"]]
+    : activeStudySession?.journeyPlayReturn
+      ? [
+          ["Play Journey", startJourneyFromStudyRecommendation, "Play"],
+          ["Exit Study", exitStudyExplore, "Exit"]
+        ]
     : [
       ["Practice This Set", launchPracticeForStudySet, "Practice"],
       ["Exit Study", exitStudyExplore, "Exit"]
@@ -5443,7 +5872,12 @@ function configureMemoryTrailOverlay({ mode, titleText, messageText, primaryText
 }
 
 function showMemoryTrailOfferOverlay() {
-  if (currentAppScreen !== "study-explore" || !activeStudySession || isMemoryTrailActive()) {
+  if (
+    currentAppScreen !== "study-explore"
+    || !activeStudySession
+    || isMemoryTrailActive()
+    || !isMemoryTrailEligible(session.currentActivity)
+  ) {
     return;
   }
 
@@ -5462,12 +5896,14 @@ function showMemoryTrailCompletionOverlay() {
     return;
   }
 
+  const canPlayJourney = Boolean(activeStudySession.journeyPlayReturn);
+  const canReturnToActivity = Boolean(activeStudySession.journeyActivityReturnState);
   configureMemoryTrailOverlay({
     mode: "complete",
     titleText: "Memory Trail Complete",
     messageText: "Do you want to repeat this exercise?",
     primaryText: "Do Memory Trail Again",
-    secondaryText: "Return to Study",
+    secondaryText: canReturnToActivity ? "Return to Activity" : canPlayJourney ? "Play Journey" : "Return to Study",
     showInfo: false
   });
 }
@@ -5489,6 +5925,15 @@ function hideMemoryTrailOverlay() {
 }
 
 function handleMemoryTrailOverlayPrimary() {
+  if (memoryTrailOverlayMode === "journey-recommendation") {
+    const context = pendingJourneyMemoryTrailRecommendation;
+    pendingJourneyMemoryTrailRecommendation = null;
+    hideMemoryTrailOverlay();
+    dismissJourneyMemoryTrailRecommendation(context);
+    startJourneyMemoryTrailFromRecommendation(context);
+    return;
+  }
+
   if (memoryTrailOverlayMode === "offer") {
     hideMemoryTrailOverlay();
     startMemoryTrail();
@@ -5502,7 +5947,28 @@ function handleMemoryTrailOverlayPrimary() {
 }
 
 function handleMemoryTrailOverlaySecondary() {
+  if (memoryTrailOverlayMode === "journey-recommendation") {
+    const context = pendingJourneyMemoryTrailRecommendation;
+    pendingJourneyMemoryTrailRecommendation = null;
+    hideMemoryTrailOverlay();
+    dismissJourneyMemoryTrailRecommendation(context);
+    startJourneyGameplayFromLaunchContext(context);
+    return;
+  }
+
   if (memoryTrailOverlayMode === "complete") {
+    if (activeStudySession?.journeyActivityReturnState) {
+      hideMemoryTrailOverlay();
+      returnToJourneyActivityFromStudy();
+      return;
+    }
+
+    if (activeStudySession?.journeyPlayReturn) {
+      hideMemoryTrailOverlay();
+      startJourneyFromStudyRecommendation();
+      return;
+    }
+
     hideMemoryTrailOverlay();
     exitMemoryTrail();
     return;
@@ -5603,7 +6069,19 @@ function clearMemoryTrailState({ restoreReveals = true, render = false } = {}) {
 }
 
 function startMemoryTrail() {
-  if (!activeStudySession || currentAppScreen !== "study-explore" || !session.currentActivity.targets.length) {
+  if (
+    !activeStudySession
+    || currentAppScreen !== "study-explore"
+    || !session.currentActivity.targets.length
+  ) {
+    return;
+  }
+
+  if (!isMemoryTrailEligible(session.currentActivity)) {
+    hideMemoryTrailOverlay();
+    clearMemoryTrailState({ restoreReveals: true });
+    instruction.textContent = "Tap a target or name to show it. Tap it again to hide it.";
+    renderStudyExplorePanel();
     return;
   }
 
@@ -5626,6 +6104,12 @@ function startMemoryTrail() {
 
 function restartMemoryTrail() {
   if (!activeStudySession) {
+    return;
+  }
+
+  if (!isMemoryTrailEligible(session.currentActivity)) {
+    hideMemoryTrailOverlay();
+    clearMemoryTrailState({ restoreReveals: true, render: true });
     return;
   }
 
@@ -6053,11 +6537,11 @@ function formatJourneyStepCount(count) {
 const journeyPresetSections = [
   {
     title: "Start Here",
-    ids: ["world-foundations", "united-states", "north-america", "europe"]
+    ids: ["world-geography-core", "world-foundations", "united-states", "north-america", "europe"]
   },
   {
     title: "World",
-    ids: ["world-foundations"]
+    ids: ["world-geography-core", "world-foundations"]
   },
   {
     title: "Americas",
@@ -6089,7 +6573,11 @@ function createJourneyPresetCard(journey) {
   const isAvailable = isJourneyAvailable(journey);
   const status = getEffectiveJourneyStatus(journey);
   const card = document.createElement("article");
-  card.className = `journey-preset-card${isAvailable ? "" : ` journey-preset-card-${status}`}`;
+  card.className = [
+    "journey-preset-card",
+    isAvailable ? "" : `journey-preset-card-${status}`,
+    journey.recommended ? "journey-preset-card-recommended" : ""
+  ].filter(Boolean).join(" ");
   card.dataset.journeyId = journey.id;
 
   const header = document.createElement("div");
@@ -6099,13 +6587,17 @@ function createJourneyPresetCard(journey) {
   heading.textContent = journey.title;
 
   const statusBadge = document.createElement("span");
-  statusBadge.className = `journey-status journey-status-${status}`;
-  statusBadge.textContent = getJourneyStatusLabel(journey);
+  statusBadge.className = `journey-status journey-status-${journey.recommended ? "recommended" : status}`;
+  statusBadge.textContent = journey.recommended ? (journey.badge || "Recommended") : getJourneyStatusLabel(journey);
 
   header.append(heading, statusBadge);
 
   const description = document.createElement("p");
   description.textContent = journey.description;
+
+  const note = document.createElement("p");
+  note.className = "journey-preset-note";
+  note.textContent = journey.note || "";
 
   const meta = document.createElement("p");
   meta.className = "journey-preset-meta";
@@ -6120,14 +6612,18 @@ function createJourneyPresetCard(journey) {
 
   const selectButton = document.createElement("button");
   selectButton.type = "button";
-  selectButton.textContent = isAvailable ? "Select Journey" : "View Details";
+  selectButton.textContent = journey.recommended && isAvailable ? "Start Learning" : isAvailable ? "Select Journey" : "View Details";
   selectButton.addEventListener("click", () => {
     selectJourney(journey.id);
   });
 
   actions.append(selectButton);
 
-  card.append(header, description, meta, actions);
+  card.append(header, description);
+  if (journey.note) {
+    card.append(note);
+  }
+  card.append(meta, actions);
   return card;
 }
 
@@ -6299,6 +6795,7 @@ function renderOnboardingScreen() {
 function renderJourneyDetail(journey) {
   const isAvailable = isJourneyAvailable(journey);
   const status = getEffectiveJourneyStatus(journey);
+  const hasMemoryTrailEligibleStep = getJourneyMemoryTrailEligibleSteps(journey).length > 0;
   const summary = document.createElement("section");
   summary.className = "journey-detail-summary";
 
@@ -6378,14 +6875,28 @@ function renderJourneyDetail(journey) {
             onClick: startSelectedJourneyFromBeginning
           };
 
+    const studyAction = hasMemoryTrailEligibleStep
+      ? {
+          title: "Learn with Memory Trail",
+          description: "Study a section with guided map memory before playing.",
+          buttonLabel: "Learn with Memory Trail",
+          infoText: "Memory Trail shows each place, then asks you to repeat the map pattern. It does not change journey progress."
+        }
+      : {
+          title: "Study This Journey",
+          description: "Preview the places before playing.",
+          buttonLabel: "Study This Journey",
+          infoText: ""
+        };
+
     actions.append(
       createJourneyPathCard({
-        title: "Learn with Memory Trail",
-        description: "Study a section with guided map memory before playing.",
-        buttonLabel: "Learn with Memory Trail",
+        title: studyAction.title,
+        description: studyAction.description,
+        buttonLabel: studyAction.buttonLabel,
         variant: "study",
         onClick: () => showAppScreen("study"),
-        infoText: "Memory Trail shows each place, then asks you to repeat the map pattern. It does not change journey progress."
+        infoText: studyAction.infoText
       }),
       createJourneyPathCard({
         title: playAction.title,
@@ -6662,15 +7173,18 @@ function handleDocumentInfoClick(event) {
 function renderStudySelectionScreen(journey) {
   const panel = document.createElement("section");
   panel.className = "journey-mode-panel study-selection-panel";
+  const validSteps = getValidJourneySteps(journey);
+  const eligibleMemoryTrailCount = getJourneyMemoryTrailEligibleSteps(journey).length;
 
   const message = document.createElement("p");
   message.className = "journey-mode-message";
-  message.textContent = "Study a section, then practice it when you're ready. Memory Trail guides you through the map one place at a time.";
+  message.textContent = eligibleMemoryTrailCount > 0
+    ? "Study a section, then practice it when you're ready. Memory Trail is available for focused regional sets."
+    : "Study the places, then practice when you're ready.";
 
   const stepList = document.createElement("div");
   stepList.className = "study-step-list";
 
-  const validSteps = getValidJourneySteps(journey);
   validSteps.forEach((step, index) => {
     const activity = getActivityById(step.activityId);
     const card = document.createElement("article");
@@ -10547,6 +11061,7 @@ function showJourneyCompletionCard() {
     journeyCompletionSecondary.textContent = "Play Again";
   }
 
+  updateJourneyMemoryTrailControlVisibility();
   syncAnswerBank();
 
   if (!isFinalStep) {
@@ -10574,6 +11089,8 @@ function hideJourneyCompletionCard() {
   if (journeyCompletionSecondary) {
     journeyCompletionSecondary.hidden = false;
   }
+
+  updateJourneyMemoryTrailControlVisibility();
 }
 
 function scheduleJourneyAutoAdvance(nextStepIndex) {
@@ -10689,6 +11206,7 @@ function setJourneyCompletionTransitionState(nextStep) {
     journeyCompletionSecondary.disabled = true;
   }
 
+  updateJourneyMemoryTrailControlVisibility();
   syncAnswerBank();
 }
 

@@ -1,5 +1,112 @@
 export const journeyPresets = [
   {
+    id: "world-geography-core",
+    title: "World Geography Core",
+    description: "Build a strong foundation in continents, oceans, U.S. states, and key countries around the world.",
+    status: "available",
+    recommended: true,
+    badge: "Recommended",
+    note: "Start here if you're new to Mappa Geography.",
+    steps: [
+      {
+        id: "continents-oceans",
+        activityId: "continents-oceans",
+        title: "Continents and Oceans",
+        kind: "world"
+      },
+      {
+        id: "us-states-01",
+        activityId: "us-states-01",
+        title: "New England States",
+        kind: "states"
+      },
+      {
+        id: "us-states-02",
+        activityId: "us-states-02",
+        title: "Northeast / Mid-Atlantic States",
+        kind: "states"
+      },
+      {
+        id: "us-states-03",
+        activityId: "us-states-03",
+        title: "Atlantic South States",
+        kind: "states"
+      },
+      {
+        id: "us-states-04",
+        activityId: "us-states-04",
+        title: "Southeast / Gulf States",
+        kind: "states"
+      },
+      {
+        id: "us-states-05",
+        activityId: "us-states-05",
+        title: "Great Lakes / Upper South States",
+        kind: "states"
+      },
+      {
+        id: "us-states-06",
+        activityId: "us-states-06",
+        title: "Midwest / Mississippi Valley States",
+        kind: "states"
+      },
+      {
+        id: "us-states-07",
+        activityId: "us-states-07",
+        title: "Northern Plains / Rockies States",
+        kind: "states"
+      },
+      {
+        id: "us-states-08",
+        activityId: "us-states-08",
+        title: "Southern Plains / Southwest States",
+        kind: "states"
+      },
+      {
+        id: "us-states-09",
+        activityId: "us-states-09",
+        title: "Far West / Pacific States",
+        kind: "states"
+      },
+      {
+        id: "us-states-10",
+        activityId: "us-states-10",
+        title: "Northwest / Alaska States",
+        kind: "states"
+      },
+      {
+        id: "world-core-americas-countries",
+        activityId: "world-core-americas-countries",
+        title: "Core Countries: Americas",
+        kind: "countries"
+      },
+      {
+        id: "world-core-europe-countries",
+        activityId: "world-core-europe-countries",
+        title: "Core Countries: Europe",
+        kind: "countries"
+      },
+      {
+        id: "world-core-africa-countries",
+        activityId: "world-core-africa-countries",
+        title: "Core Countries: Africa",
+        kind: "countries"
+      },
+      {
+        id: "world-core-west-central-south-asia-countries",
+        activityId: "world-core-west-central-south-asia-countries",
+        title: "Core Countries: West, Central, and South Asia",
+        kind: "countries"
+      },
+      {
+        id: "world-core-east-southeast-asia-oceania-countries",
+        activityId: "world-core-east-southeast-asia-oceania-countries",
+        title: "Core Countries: East Asia, Southeast Asia, and Oceania",
+        kind: "countries"
+      }
+    ]
+  },
+  {
     id: "world-foundations",
     title: "World Foundations",
     description: "Start with continents, oceans, and the big picture of the world.",

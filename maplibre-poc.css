@@ -662,6 +662,12 @@ select,
   padding: 16px;
 }
 
+.journey-preset-card-recommended {
+  background: linear-gradient(180deg, #ffffff, #f0f8f4);
+  border-color: rgba(52, 168, 116, 0.52);
+  box-shadow: 0 12px 24px rgba(22, 101, 52, 0.14);
+}
+
 .journey-preset-card-coming-soon {
   background: linear-gradient(180deg, #ffffff, #f7f7fb);
   border-color: rgba(203, 213, 225, 0.9);
@@ -687,6 +693,12 @@ select,
   font-size: 0.92rem;
   font-weight: 650;
   margin: 0;
+}
+
+.journey-preset-note {
+  color: #166534 !important;
+  font-size: 0.86rem !important;
+  font-weight: 850 !important;
 }
 
 .journey-preset-meta {
@@ -720,6 +732,12 @@ select,
   background: var(--success-bg);
   border: 1px solid var(--success-border);
   color: var(--success);
+}
+
+.journey-status-recommended {
+  background: #eaf8f0;
+  border: 1px solid rgba(52, 168, 116, 0.5);
+  color: #166534;
 }
 
 .journey-status-coming-soon {
@@ -2129,6 +2147,21 @@ body.study-explore-mode .answer-panel {
   color: #9f1239;
 }
 
+.journey-memory-trail-button {
+  border-color: rgba(20, 184, 166, 0.36);
+  color: #0f766e;
+}
+
+.journey-memory-trail-button:hover,
+.journey-memory-trail-button:focus-visible {
+  border-color: rgba(13, 148, 136, 0.72);
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.14), 0 5px 14px rgba(24, 38, 64, 0.08);
+}
+
+.journey-memory-trail-button[hidden] {
+  display: none;
+}
+
 .reset-button:hover,
 .reset-button:focus-visible {
   border-color: rgba(220, 38, 38, 0.72);
@@ -3279,6 +3312,13 @@ body.browse-mode .answer-panel-title {
     font-size: 0.78rem;
     font-weight: 900;
     min-width: 58px;
+    padding-inline: 10px;
+  }
+
+  .journey-memory-trail-button {
+    font-size: 0.78rem;
+    font-weight: 900;
+    min-width: 54px;
     padding-inline: 10px;
   }
 

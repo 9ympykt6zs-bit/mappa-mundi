@@ -1,0 +1,122 @@
+{
+  "id": "world-core-americas-countries",
+  "title": "Core Countries: Americas",
+  "sequence": 30,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "world-core-americas"
+  },
+  "features": [
+    {
+      "id": "canada",
+      "name": "Canada",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "CAN",
+      "color": "#3b82f6",
+      "labelAnchor": [-101.91, 60.32],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "mexico",
+      "name": "Mexico",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "MEX",
+      "color": "#ef4444",
+      "labelAnchor": [-102.29, 23.92],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "brazil",
+      "name": "Brazil",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "BRA",
+      "color": "#f59e0b",
+      "labelAnchor": [-52.8, -10.8],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "argentina",
+      "name": "Argentina",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ARG",
+      "color": "#38bdf8",
+      "labelAnchor": [-64.25, -35],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "chile",
+      "name": "Chile",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "CHL",
+      "color": "#14b8a6",
+      "labelAnchor": [-71.1, -33.4],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "colombia",
+      "name": "Colombia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "COL",
+      "color": "#3b82f6",
+      "labelAnchor": [-73.3, 4.55],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "peru",
+      "name": "Peru",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "PER",
+      "color": "#ef4444",
+      "labelAnchor": [-74.5, -9.2],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "venezuela",
+      "name": "Venezuela",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "VEN",
+      "color": "#f59e0b",
+      "labelAnchor": [-66.5, 7.25],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "cuba",
+      "name": "Cuba",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "CUB",
+      "color": "#3b82f6",
+      "labelAnchor": [-79.45, 21.7],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "panama",
+      "name": "Panama",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "PAN",
+      "color": "#ec4899",
+      "labelAnchor": [-80.35, 8.72],
+      "labelFontSize": 9,
+      "labelRotation": 0
+    }
+  ]
+}

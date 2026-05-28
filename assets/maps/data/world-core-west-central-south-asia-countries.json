@@ -1,0 +1,122 @@
+{
+  "id": "world-core-west-central-south-asia-countries",
+  "title": "Core Countries: West, Central, and South Asia",
+  "sequence": 33,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "world-core-west-central-south-asia"
+  },
+  "features": [
+    {
+      "id": "turkey",
+      "name": "Turkey",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "TUR",
+      "color": "#ef4444",
+      "labelAnchor": [35.2, 39.1],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "saudi-arabia",
+      "name": "Saudi Arabia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "SAU",
+      "color": "#ec4899",
+      "labelAnchor": [45.1, 23.9],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "iran",
+      "name": "Iran",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "IRN",
+      "color": "#a855f7",
+      "labelAnchor": [53.4, 32.4],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "israel",
+      "name": "Israel",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ISR",
+      "color": "#38bdf8",
+      "labelAnchor": [35, 31.4],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "united-arab-emirates",
+      "name": "United Arab Emirates",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ARE",
+      "color": "#a855f7",
+      "labelAnchor": [54.55, 23.47],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
+      "id": "iraq",
+      "name": "Iraq",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "IRQ",
+      "color": "#3b82f6",
+      "labelAnchor": [43.75, 33.4],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "kazakhstan",
+      "name": "Kazakhstan",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "KAZ",
+      "color": "#38bdf8",
+      "labelAnchor": [67.5, 48.1],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "india",
+      "name": "India",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "IND",
+      "color": "#f59e0b",
+      "labelAnchor": [78.9, 22.8],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "pakistan",
+      "name": "Pakistan",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "PAK",
+      "color": "#3b82f6",
+      "labelAnchor": [69.35, 29.9],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "bangladesh",
+      "name": "Bangladesh",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "BGD",
+      "color": "#ef4444",
+      "labelAnchor": [90.3, 23.8],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    }
+  ]
+}

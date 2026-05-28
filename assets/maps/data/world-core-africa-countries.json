@@ -1,0 +1,122 @@
+{
+  "id": "world-core-africa-countries",
+  "title": "Core Countries: Africa",
+  "sequence": 32,
+  "targetNoun": "country",
+  "visibleAnswerLimit": 10,
+  "map": {
+    "region": "world-core-africa"
+  },
+  "features": [
+    {
+      "id": "egypt",
+      "name": "Egypt",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "EGY",
+      "color": "#a855f7",
+      "labelAnchor": [29.45, 26.19],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "nigeria",
+      "name": "Nigeria",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "NGA",
+      "color": "#ec4899",
+      "labelAnchor": [7.5, 9.44],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "south-africa",
+      "name": "South Africa",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ZAF",
+      "color": "#ef4444",
+      "labelAnchor": [23.67, -29.71],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "ethiopia",
+      "name": "Ethiopia",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "ETH",
+      "color": "#ef4444",
+      "labelAnchor": [39.09, 8.03],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "kenya",
+      "name": "Kenya",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "KEN",
+      "color": "#ec4899",
+      "labelAnchor": [37.91, 0.55],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "morocco",
+      "name": "Morocco",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "MAR",
+      "color": "#ef4444",
+      "labelAnchor": [-7.19, 31.65],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "algeria",
+      "name": "Algeria",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "DZA",
+      "color": "#f59e0b",
+      "labelAnchor": [2.81, 27.4],
+      "labelFontSize": 13,
+      "labelRotation": 0
+    },
+    {
+      "id": "ghana",
+      "name": "Ghana",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "GHA",
+      "color": "#f59e0b",
+      "labelAnchor": [-1.04, 7.72],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "tanzania",
+      "name": "Tanzania",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "TZA",
+      "color": "#14b8a6",
+      "labelAnchor": [34.96, -6.05],
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "democratic-republic-of-the-congo",
+      "name": "Democratic Republic of the Congo",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "COD",
+      "color": "#ec4899",
+      "labelAnchor": [23.46, -1.86],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    }
+  ]
+}
