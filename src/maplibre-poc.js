@@ -3,6 +3,7 @@ import { ActivitySession, studyModes } from "./maplibre/activity-session.js?v=pr
 import "./chip-speech.js?v=local-tts-desktop";
 import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=memory-trail";
 import { journeyPresets } from "./journey-presets.js?v=us-capitals-journey";
+import { trackEvent } from "./analytics.js";
 import {
   clearActiveJourney,
   getJourneyProgress,
@@ -2633,6 +2634,12 @@ let activeRetryReviewState = null;
 let memoryTrailOverlayMode = null;
 let pendingJourneyMemoryTrailRecommendation = null;
 const dismissedJourneyMemoryTrailRecommendations = new Set();
+let lastTrackedMainMenuVisibility = false;
+let activityAttemptAnalyticsSequence = 0;
+let currentActivityAttemptAnalyticsKey = "";
+let completedActivityAttemptAnalyticsKey = "";
+let currentMemoryTrailAnalyticsKey = "";
+let completedMemoryTrailAnalyticsKey = "";
 let audioInstructionState = createAudioInstructionState("app");
 let audioInstructionHideTimer = null;
 let journeyGameplayInstructionKeys = new Set();
@@ -3144,6 +3151,11 @@ function configureFeedbackLinks() {
     link.href = feedbackFormUrl;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
+    link.addEventListener("click", () => {
+      trackEvent("feedback_clicked", {
+        source_screen: currentAppScreen
+      });
+    });
   });
 }
 
@@ -4458,7 +4470,7 @@ function bindUiEvents() {
   audioMuteButton?.addEventListener("click", toggleAudioMute);
   window.addEventListener("atlas-quest-audio-muted-change", updateAudioMuteControl);
   settingsButton?.addEventListener("click", () => {
-    showAppScreen("settings");
+    showSettingsScreen();
   });
   previousActivityButton?.addEventListener("click", openPreviousActivity);
   nextIncompleteButton?.addEventListener("click", openNextIncompleteActivity);
@@ -4498,17 +4510,17 @@ function bindUiEvents() {
 function bindLaunchScreenEvents() {
   launchStartButton?.addEventListener("click", handleLaunchStart);
 
-  launchSettingsGear?.addEventListener("click", () => showAppScreen("settings"));
+  launchSettingsGear?.addEventListener("click", () => showSettingsScreen());
   appShellBackButton?.addEventListener("click", goBackAppScreen);
   appShellSettingsGear?.addEventListener("click", () => {
-    showAppScreen("settings");
+    showSettingsScreen();
   });
   mainMenuQuickStartButton?.addEventListener("click", startQuickStartJourney);
   mainMenuChooseButton?.addEventListener("click", () => {
     showAppScreen("choose-journey");
   });
   mainMenuSettingsButton?.addEventListener("click", () => {
-    showAppScreen("settings");
+    showSettingsScreen();
   });
   mainMenuLaunchButton?.addEventListener("click", () => {
     showAppScreen("launch", { pushHistory: false });
@@ -4516,12 +4528,21 @@ function bindLaunchScreenEvents() {
 }
 
 function handleLaunchStart() {
+  trackEvent("launch_start_pressed");
+
   if (hasSeenOnboarding()) {
     showAppScreen("main-menu");
     return;
   }
 
   showAppScreen("onboarding");
+}
+
+function showSettingsScreen() {
+  trackEvent("settings_opened", {
+    source_screen: currentAppScreen
+  });
+  showAppScreen("settings");
 }
 
 function normalizeAppShellScreenId(screenId) {
@@ -4590,6 +4611,17 @@ function showAppScreen(screenId, options = {}) {
 
   updateResetControlVisibility();
   renderAppShellScreen(normalizedScreenId);
+  trackAppScreenShown(normalizedScreenId);
+}
+
+function trackAppScreenShown(screenId) {
+  const isMainMenu = screenId === "main-menu";
+
+  if (isMainMenu && !lastTrackedMainMenuVisibility) {
+    trackEvent("main_menu_shown");
+  }
+
+  lastTrackedMainMenuVisibility = isMainMenu;
 }
 
 function goBackAppScreen() {
@@ -4616,6 +4648,7 @@ function openFreePlay(options = {}) {
   activeStudyPracticeSession = null;
   isCurrentActivityProgressDisabled = false;
   currentAppScreen = "free-play";
+  lastTrackedMainMenuVisibility = false;
   runner?.setStudyPreviewMode(false);
   freePlaySelectedMapFeature = null;
   activePreviewActivityId = null;
@@ -5091,6 +5124,13 @@ function getSelectedJourney() {
 function selectJourney(journeyId) {
   atlasProgress = loadProgress();
   const journey = journeyPresets.find((candidate) => candidate.id === journeyId) || null;
+  if (journey) {
+    trackEvent("select_content", {
+      content_type: "journey",
+      content_id: journey.id,
+      journey_title: journey.title
+    });
+  }
   selectedJourneyId = journeyId;
   selectedJourneyPlayState = {
     journeyId,
@@ -5099,6 +5139,19 @@ function selectJourney(journeyId) {
       : getPreferredJourneyDifficultyId(journey, atlasProgress)
   };
   showAppScreen("journey-detail");
+}
+
+function trackJourneyStarted(journey, difficultyId, stepIndex = 0) {
+  if (!journey) {
+    return;
+  }
+
+  trackEvent("journey_started", {
+    journey_id: journey.id,
+    journey_title: journey.title,
+    difficulty: difficultyId,
+    step_index: stepIndex
+  });
 }
 
 function hasSeenOnboarding() {
@@ -5167,6 +5220,7 @@ function startQuickStartJourney() {
     mode: "journey",
     incorrectPlacements: 0
   };
+  trackJourneyStarted(target.journey, target.difficultyId, target.stepIndex);
   atlasProgress = setActiveJourney(target.journey.id, target.stepIndex, target.difficultyId, atlasProgress);
   openJourneyStep(target.stepIndex, { preserveProgress: target.preserveProgress });
 }
@@ -5323,6 +5377,7 @@ function beginSelectedJourneyAtStep(stepIndex, options = {}) {
     mode: "journey",
     incorrectPlacements: 0
   };
+  trackJourneyStarted(journey, activeJourneySession.difficulty, safeStepIndex);
   resetJourneyGameplayInstructionSession();
   atlasProgress = setActiveJourney(journey.id, safeStepIndex, activeJourneySession.difficulty, atlasProgress);
   openJourneyStep(safeStepIndex, { preserveProgress: Boolean(options.preserveProgress) });
@@ -5462,6 +5517,16 @@ function dismissJourneyMemoryTrailRecommendation(context) {
 
 function showJourneyMemoryTrailRecommendation(context) {
   pendingJourneyMemoryTrailRecommendation = { ...context };
+  const { journey, activity } = getJourneyLaunchContextParts(context);
+  trackEvent("memory_trail_prompt_shown", {
+    activity_id: activity?.id || "",
+    activity_title: activity?.title || "",
+    journey_id: journey?.id || "",
+    journey_title: journey?.title || "",
+    difficulty: normalizeJourneyDifficultyId(context?.difficultyId),
+    sequence_length: activity?.targets?.length || 0,
+    round_count: activity?.targets?.length || 0
+  });
   configureMemoryTrailOverlay({
     mode: "journey-recommendation",
     titleText: "Learn this set first?",
@@ -5489,6 +5554,7 @@ function startJourneyGameplayFromLaunchContext(context) {
     incorrectPlacements: 0
   };
   resetJourneyGameplayInstructionSession();
+  trackJourneyStarted(journey, context.difficultyId, stepIndex);
   atlasProgress = setActiveJourney(journey.id, stepIndex, context.difficultyId, atlasProgress);
   openJourneyStep(stepIndex, {
     preserveProgress: Boolean(context.preserveProgress),
@@ -5660,6 +5726,13 @@ function startStudyPracticeActivity(journeyId, stepId) {
 
   selectedJourneyId = journey.id;
   activeJourneySession = null;
+  trackEvent("study_practice_started", {
+    activity_id: activity.id,
+    activity_title: activity.title,
+    journey_id: journey.id,
+    journey_title: journey.title,
+    difficulty: difficultyModes.easy
+  });
   activeStudyPracticeSession = {
     journeyId: journey.id,
     stepId: step.id,
@@ -5684,6 +5757,13 @@ function showStudyStepNotReady() {
 
 function openStudyExploreActivity(journey, step, activity, options = {}) {
   saveCurrentActivityProgress();
+  trackEvent("study_preview_opened", {
+    activity_id: activity.id,
+    activity_title: activity.title,
+    journey_id: journey.id,
+    journey_title: journey.title,
+    difficulty: difficultyModes.easy
+  });
   cancelGrabbedAnswer();
   clearJourneyAutoAdvanceTimer();
   resetAudioInstructionState(`study-preview:${journey.id}:${step.id}:${activity.id}`);
@@ -5946,6 +6026,7 @@ function showMemoryTrailOfferOverlay() {
     return;
   }
 
+  trackEvent("memory_trail_prompt_shown", getMemoryTrailAnalyticsContext());
   configureMemoryTrailOverlay({
     mode: "offer",
     titleText: "Try Memory Trail?",
@@ -6155,6 +6236,14 @@ function startMemoryTrail() {
   resetAudioInstructionState(`memory-trail:${activeStudySession.activityId}:${Date.now()}`);
   window.GeographyChipSpeech?.primeLocalAudio?.();
   activeStudySession.memoryTrail = createMemoryTrailState();
+  currentMemoryTrailAnalyticsKey = [
+    activeStudySession.journeyId,
+    activeStudySession.stepId,
+    session.currentActivity?.id || "",
+    Date.now()
+  ].join(":");
+  completedMemoryTrailAnalyticsKey = "";
+  trackEvent("memory_trail_started", getMemoryTrailAnalyticsContext());
   activeStudySession.revealedTargetIds = [];
   runner.setCompletedTargets([]);
   instruction.textContent = "Watch the Memory Trail, then tap the targets in order.";
@@ -6185,6 +6274,14 @@ function restartMemoryTrail() {
   window.GeographyChipSpeech?.primeLocalAudio?.();
   activeStudySession.memoryTrail = createMemoryTrailState();
   activeStudySession.memoryTrail.previousRevealedTargetIds = previousRevealedTargetIds;
+  currentMemoryTrailAnalyticsKey = [
+    activeStudySession.journeyId,
+    activeStudySession.stepId,
+    session.currentActivity?.id || "",
+    Date.now()
+  ].join(":");
+  completedMemoryTrailAnalyticsKey = "";
+  trackEvent("memory_trail_started", getMemoryTrailAnalyticsContext());
   activeStudySession.revealedTargetIds = [];
   runner.setCompletedTargets([]);
   renderStudyExplorePanel();
@@ -6197,8 +6294,19 @@ function restartMemoryTrail() {
 }
 
 function exitMemoryTrail() {
+  trackMemoryTrailAbandoned();
   hideMemoryTrailOverlay();
   clearMemoryTrailState({ restoreReveals: true, render: true });
+}
+
+function trackMemoryTrailAbandoned() {
+  const memoryTrail = getActiveMemoryTrail();
+
+  if (!memoryTrail || memoryTrail.phase === "complete" || completedMemoryTrailAnalyticsKey === currentMemoryTrailAnalyticsKey) {
+    return;
+  }
+
+  trackEvent("memory_trail_abandoned", getMemoryTrailAnalyticsContext());
 }
 
 function playMemoryTrailRound(memoryTrail = getActiveMemoryTrail()) {
@@ -6373,6 +6481,10 @@ function handleCorrectMemoryTrailTap(memoryTrail, targetId, roundTargetIds) {
       memoryTrail.responseChipTargetId = null;
       memoryTrail.message = "You completed the Memory Trail.";
       renderStudyExplorePanel();
+      if (completedMemoryTrailAnalyticsKey !== currentMemoryTrailAnalyticsKey) {
+        completedMemoryTrailAnalyticsKey = currentMemoryTrailAnalyticsKey;
+        trackEvent("memory_trail_completed", getMemoryTrailAnalyticsContext());
+      }
       showMemoryTrailCompletionOverlay();
       return;
     }
@@ -6640,6 +6752,8 @@ function createJourneyPresetCard(journey) {
   const card = document.createElement("article");
   card.className = [
     "journey-preset-card",
+    journey.thumbnailSrc ? "journey-preset-card-with-thumbnail" : "",
+    journey.thumbnailSrc ? `journey-preset-card-${journey.id}` : "",
     isAvailable ? "" : `journey-preset-card-${status}`,
     journey.recommended ? "journey-preset-card-recommended" : ""
   ].filter(Boolean).join(" ");
@@ -6689,6 +6803,23 @@ function createJourneyPresetCard(journey) {
     card.append(note);
   }
   card.append(meta, actions);
+
+  if (journey.thumbnailSrc) {
+    // Decorative journey thumbnail; card text and actions remain the interactive surface.
+    const thumbnail = document.createElement("div");
+    thumbnail.className = "journey-preset-card-thumbnail";
+    thumbnail.setAttribute("aria-hidden", "true");
+
+    const thumbnailImage = document.createElement("img");
+    thumbnailImage.src = journey.thumbnailSrc;
+    thumbnailImage.alt = "";
+    thumbnailImage.loading = "lazy";
+    thumbnailImage.decoding = "async";
+
+    thumbnail.append(thumbnailImage);
+    card.append(thumbnail);
+  }
+
   return card;
 }
 
@@ -7426,6 +7557,11 @@ function renderSettingsScreen() {
   feedbackLink.target = "_blank";
   feedbackLink.rel = "noopener noreferrer";
   feedbackLink.textContent = "Send Feedback";
+  feedbackLink.addEventListener("click", () => {
+    trackEvent("feedback_clicked", {
+      source_screen: currentAppScreen
+    });
+  });
 
   panel.append(heading, description, feedbackLink);
 
@@ -9384,6 +9520,95 @@ function setAnswerPanelMode(mode) {
 
 }
 
+function getJourneyAnalyticsContext(journeyId = activeJourneySession?.journeyId || selectedJourneyId) {
+  const journey = journeyPresets.find((preset) => preset.id === journeyId);
+
+  return journey
+    ? {
+        journey_id: journey.id,
+        journey_title: journey.title
+      }
+    : {};
+}
+
+function getActivityAnalyticsContext(activity = session?.currentActivity, options = {}) {
+  const journeyContext = getJourneyAnalyticsContext(options.journeyId);
+  const difficulty = options.difficulty || getEffectiveDifficulty(activity);
+
+  return {
+    level_name: activity?.title || "",
+    activity_id: activity?.id || "",
+    ...journeyContext,
+    mode: options.mode || activeJourneySession?.mode || currentAppScreen || "",
+    difficulty
+  };
+}
+
+function getCurrentActivityAttemptKey(activity = session?.currentActivity) {
+  const journeyId = activeJourneySession?.journeyId || activeStudyPracticeSession?.journeyId || "";
+  const stepId = activeStudyPracticeSession?.stepId || (activeJourneySession?.currentStepIndex ?? "");
+
+  return [
+    currentAppScreen,
+    activeJourneySession?.mode || currentAppScreen,
+    journeyId,
+    stepId,
+    activity?.id || "",
+    getEffectiveDifficulty(activity),
+    activityAttemptAnalyticsSequence
+  ].join(":");
+}
+
+function trackActivityStart(options = {}) {
+  const activity = session?.currentActivity;
+  if (!activity?.id || !isActiveGameplayScreen()) {
+    return;
+  }
+
+  const attemptKey = getCurrentActivityAttemptKey(activity);
+  if (!attemptKey || currentActivityAttemptAnalyticsKey === attemptKey) {
+    return;
+  }
+
+  currentActivityAttemptAnalyticsKey = attemptKey;
+  completedActivityAttemptAnalyticsKey = "";
+  trackEvent("level_start", getActivityAnalyticsContext(activity, options));
+}
+
+function trackActivityEnd(options = {}) {
+  const activity = session?.currentActivity;
+  const attemptKey = getCurrentActivityAttemptKey(activity);
+
+  if (!activity?.id || !attemptKey || completedActivityAttemptAnalyticsKey === attemptKey) {
+    return;
+  }
+
+  completedActivityAttemptAnalyticsKey = attemptKey;
+  const { completedCount, targetCount } = getSessionCompletionSummary();
+
+  trackEvent("level_end", {
+    ...getActivityAnalyticsContext(activity, options),
+    success: true,
+    incorrect_placements: getCurrentJourneyStepIncorrectPlacements(),
+    completed_count: completedCount,
+    target_count: targetCount
+  });
+}
+
+function getMemoryTrailAnalyticsContext() {
+  const activity = session?.currentActivity;
+  const memoryTrail = getActiveMemoryTrail();
+
+  return {
+    activity_id: activity?.id || activeStudySession?.activityId || "",
+    activity_title: activity?.title || "",
+    ...getJourneyAnalyticsContext(activeStudySession?.journeyId),
+    difficulty: getEffectiveDifficulty(activity),
+    sequence_length: memoryTrail?.order?.length || activity?.targets?.length || 0,
+    round_count: memoryTrail?.order?.length || activity?.targets?.length || 0
+  };
+}
+
 function openActivity(activityId, options = {}) {
   saveCurrentActivityProgress();
   cancelGrabbedAnswer();
@@ -9391,6 +9616,7 @@ function openActivity(activityId, options = {}) {
   clearJourneyAutoAdvanceTimer();
   hideStudyPracticeCompletionCard();
   resetActivityAttemptState();
+  activityAttemptAnalyticsSequence += 1;
   hideMemoryTrailOverlay();
   clearMemoryTrailState({ restoreReveals: false });
   resetAudioInstructionState(`activity:${options.appScreen || currentAppScreen}:${activityId}:${Date.now()}`);
@@ -9405,6 +9631,7 @@ function openActivity(activityId, options = {}) {
   const shouldRevealGameplay = options.forceGameplayVisible || currentAppScreen !== "launch";
   if (shouldRevealGameplay) {
     currentAppScreen = options.appScreen || "free-play";
+    lastTrackedMainMenuVisibility = false;
     document.body.classList.remove("launch-mode", "app-shell-mode");
     if (launchScreen) {
       launchScreen.hidden = true;
@@ -9438,6 +9665,10 @@ function openActivity(activityId, options = {}) {
   renderOverviewLibrary();
   updateResetControlVisibility();
   enterStudy();
+  trackActivityStart({
+    mode: options.appScreen === "journey-gameplay" ? "journey" : options.appScreen || currentAppScreen,
+    difficulty: getEffectiveDifficulty(session.currentActivity)
+  });
 
   if (isActiveGameplayScreen()) {
     playGameplayInstructionOnce("choose-label", audioInstructionPhrases.chooseLabel);
@@ -10928,6 +11159,16 @@ function handleStudyPracticeCompletion() {
     return;
   }
 
+  trackActivityEnd({
+    mode: "study"
+  });
+  trackEvent("study_practice_completed", {
+    activity_id: activeStudyPracticeSession.activityId,
+    ...getJourneyAnalyticsContext(activeStudyPracticeSession.journeyId),
+    difficulty: getEffectiveDifficulty(session.currentActivity),
+    completed_count: completedCount,
+    target_count: targetCount
+  });
   showStudyPracticeCompletionCard();
 }
 
@@ -11032,6 +11273,9 @@ function handleJourneyActivityCompletion() {
     return;
   }
 
+  trackActivityEnd({
+    mode: "journey"
+  });
   saveCompletedJourneyStep();
   showJourneyCompletionCard();
 }
@@ -11084,6 +11328,15 @@ function showJourneyCompletionCard() {
     autoAdvanceScheduled: !isFinalStep,
     isPerfect: getCurrentJourneyStepIncorrectPlacements() === 0
   };
+
+  if (isFinalStep && journey) {
+    trackEvent("journey_completed", {
+      journey_id: journey.id,
+      journey_title: journey.title,
+      difficulty: activeJourneySession?.difficulty,
+      incorrect_placements: getCurrentJourneyStepIncorrectPlacements()
+    });
+  }
 
   if (journeyCompletionOverlay) {
     journeyCompletionOverlay.hidden = false;

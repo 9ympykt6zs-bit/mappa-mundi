@@ -7,6 +7,8 @@ export const journeyPresets = [
     recommended: true,
     badge: "Recommended",
     note: "Start here if you're new to Mappa Mundi.",
+    // Journey card thumbnail art is supplied as a static asset; only this featured card uses it for now.
+    thumbnailSrc: "assets/journey-thumbnails/world-geography-core-card.png",
     steps: [
       {
         id: "continents-oceans",

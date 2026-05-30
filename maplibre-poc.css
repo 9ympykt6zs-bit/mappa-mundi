@@ -712,13 +712,60 @@ select,
   display: grid;
   gap: 12px;
   min-height: 218px;
+  overflow: hidden;
   padding: 16px;
+  position: relative;
 }
 
 .journey-preset-card-recommended {
   background: linear-gradient(180deg, #ffffff, #f0f8f4);
   border-color: rgba(52, 168, 116, 0.52);
   box-shadow: 0 12px 24px rgba(22, 101, 52, 0.14);
+}
+
+/* Experimental full-card atlas art treatment for the featured World Geography Core card. */
+.journey-preset-card-with-thumbnail {
+  background: #efe1c4;
+  border-color: rgba(123, 94, 48, 0.34);
+  box-shadow: 0 14px 28px rgba(72, 56, 33, 0.18);
+}
+
+.journey-preset-card-with-thumbnail::before {
+  background:
+    linear-gradient(90deg, rgba(255, 252, 242, 0.94) 0%, rgba(255, 252, 242, 0.82) 48%, rgba(255, 252, 242, 0.32) 76%, rgba(255, 252, 242, 0.06) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.36), rgba(239, 225, 196, 0.18));
+  bottom: 0;
+  content: "";
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 1;
+}
+
+.journey-preset-card-with-thumbnail > :not(.journey-preset-card-thumbnail) {
+  position: relative;
+  z-index: 2;
+}
+
+.journey-preset-card-thumbnail {
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
+.journey-preset-card-thumbnail img {
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  width: 100%;
 }
 
 .journey-preset-card-coming-soon {
@@ -3192,6 +3239,13 @@ body.browse-mode .answer-panel-title {
 
   .journey-preset-card {
     min-height: auto;
+  }
+
+  /* Mobile keeps the full artwork background but strengthens the readable parchment side. */
+  .journey-preset-card-with-thumbnail::before {
+    background:
+      linear-gradient(90deg, rgba(255, 252, 242, 0.98) 0%, rgba(255, 252, 242, 0.9) 62%, rgba(255, 252, 242, 0.42) 100%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.44), rgba(239, 225, 196, 0.24));
   }
 
   .journey-card-actions {
