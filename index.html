@@ -232,7 +232,46 @@
       </section>
     </div>
 
+    <script>
+      (() => {
+        const launchScreen = document.querySelector("#launch-screen");
+        const startButton = document.querySelector("#launch-start-button");
+        const appShellScreen = document.querySelector("#app-shell-screen");
+
+        if (!launchScreen || !startButton || !appShellScreen) {
+          return;
+        }
+
+        let didLaunch = false;
+
+        const showMainMenu = () => {
+          if (didLaunch) {
+            return;
+          }
+
+          didLaunch = true;
+          window.__mappaMundiLaunchRequested = true;
+          document.body.classList.remove("launch-mode");
+          document.body.classList.add("app-shell-mode");
+          launchScreen.hidden = true;
+          appShellScreen.hidden = false;
+        };
+
+        startButton.addEventListener("click", showMainMenu);
+        startButton.addEventListener("pointerup", (event) => {
+          if (event.pointerType === "touch" || event.pointerType === "pen") {
+            showMainMenu();
+          }
+        });
+        startButton.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            showMainMenu();
+          }
+        });
+      })();
+    </script>
     <script src="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js"></script>
-    <script type="module" src="src/maplibre-poc.js?v=mvp-rc"></script>
+    <script type="module" src="src/maplibre-poc.js?v=launch-start-fix"></script>
   </body>
 </html>

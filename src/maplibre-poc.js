@@ -2640,6 +2640,8 @@ let currentActivityAttemptAnalyticsKey = "";
 let completedActivityAttemptAnalyticsKey = "";
 let currentMemoryTrailAnalyticsKey = "";
 let completedMemoryTrailAnalyticsKey = "";
+let launchStartEventsBound = false;
+let launchScreenEventsBound = false;
 let audioInstructionState = createAudioInstructionState("app");
 let audioInstructionHideTimer = null;
 let journeyGameplayInstructionKeys = new Set();
@@ -3036,6 +3038,8 @@ async function init() {
     launchTitle.textContent = APP_NAME;
   }
 
+  bindLaunchStartEvents();
+
   const [loadedActivities, worldCountries, supplementalWorldCountries, oceanZones, inlandWaters, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
     Promise.all(activityDataPaths.map((path) => fetchJson(path))),
     fetchJson(worldCountriesPath),
@@ -3137,6 +3141,9 @@ async function init() {
 
   if (initialActivityId) {
     openActivity(initialActivityId, { forceGameplayVisible: true });
+  } else if (window.__mappaMundiLaunchRequested) {
+    trackEvent("launch_start_pressed");
+    showAppScreen("main-menu", { pushHistory: false });
   } else {
     openHome();
   }
@@ -4507,10 +4514,25 @@ function bindUiEvents() {
   });
 }
 
-function bindLaunchScreenEvents() {
+function bindLaunchStartEvents() {
+  if (launchStartEventsBound) {
+    return;
+  }
+
+  launchStartEventsBound = true;
   launchStartButton?.addEventListener("click", handleLaunchStart);
 
   launchSettingsGear?.addEventListener("click", () => showSettingsScreen());
+}
+
+function bindLaunchScreenEvents() {
+  if (launchScreenEventsBound) {
+    return;
+  }
+
+  launchScreenEventsBound = true;
+  bindLaunchStartEvents();
+
   appShellBackButton?.addEventListener("click", goBackAppScreen);
   appShellSettingsGear?.addEventListener("click", () => {
     showSettingsScreen();

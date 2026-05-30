@@ -231,8 +231,23 @@
         </div>
       </section>
     </div>
-
     <script src="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js"></script>
     <script type="module" src="src/maplibre-poc.js?v=mvp-rc"></script>
+      
+    <script>
+      window.addEventListener('DOMContentLoaded', function () {
+        const startButton = document.getElementById('launch-start-button');
+        const launchScreen = document.getElementById('launch-screen');
+        const appShell = document.getElementById('app-shell-screen');
+
+        if (startButton) {
+          startButton.addEventListener('click', () => {
+            launchScreen?.setAttribute('hidden', '');
+            appShell?.removeAttribute('hidden');
+            document.body.classList.remove('launch-mode');
+          });
+        }
+      });
+    </script>
   </body>
 </html>
