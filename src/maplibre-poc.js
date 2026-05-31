@@ -1,5 +1,5 @@
-import { journeyPresets } from "./journey-presets.js?v=us-capitals-journey";
-import { trackEvent } from "./analytics.js?v=analytics-events";
+import { journeyPresets } from "./journey-presets.js?v=20260531-menu-cards";
+import { trackEvent } from "./analytics.js?v=20260531-menu-cards";
 import {
   clearActiveJourney,
   getJourneyProgress,
@@ -7,7 +7,7 @@ import {
   markStepComplete,
   resetJourneyDifficulty,
   setActiveJourney
-} from "./progress-store.js";
+} from "./progress-store.js?v=20260531-menu-cards";
 
 const APP_NAME = "Mappa Mundi";
 const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
@@ -3192,10 +3192,10 @@ async function ensureMapRuntimeLoaded() {
     mapRuntimePromise = Promise.all([
       loadStylesheetOnce(mapLibreStylesheetUrl),
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
-      import("./map-engines/activity-normalizer.js"),
-      import("./maplibre/activity-session.js?v=progress-state"),
-      import("./maplibre/maplibre-activity-runner.js?v=memory-trail"),
-      import("./chip-speech.js?v=local-tts-desktop")
+      import("./map-engines/activity-normalizer.js?v=20260531-menu-cards"),
+      import("./maplibre/activity-session.js?v=20260531-menu-cards"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260531-menu-cards"),
+      import("./chip-speech.js?v=20260531-menu-cards")
     ]).then(([
       ,
       ,
