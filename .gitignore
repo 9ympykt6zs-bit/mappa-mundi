@@ -3,3 +3,6 @@
 .DS_Store
 dist/
 .vscode/
+
+# Local Netlify folder
+.netlify
