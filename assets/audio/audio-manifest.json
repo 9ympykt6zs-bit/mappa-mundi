@@ -108,6 +108,7 @@
     "Cameroon": "assets/audio/chips/cameroon.mp3",
     "Campania": "assets/audio/chips/campania.mp3",
     "Campeche": "assets/audio/chips/campeche.mp3",
+    "Canada": "assets/audio/chips/canada.mp3",
     "Canary Islands": "assets/audio/chips/canary-islands.mp3",
     "Cantabria": "assets/audio/chips/cantabria.mp3",
     "Carson City": "assets/audio/chips/carson-city.mp3",
@@ -370,6 +371,7 @@
     "Medina": "assets/audio/chips/medina.mp3",
     "Meghalaya": "assets/audio/chips/meghalaya.mp3",
     "Melilla": "assets/audio/chips/melilla.mp3",
+    "Mexico": "assets/audio/chips/mexico.mp3",
     "Mexico City": "assets/audio/chips/mexico-city.mp3",
     "Mexico State": "assets/audio/chips/mexico-state.mp3",
     "Michigan": "assets/audio/chips/michigan.mp3",
@@ -649,6 +651,7 @@
     "Ukraine": "assets/audio/chips/ukraine.mp3",
     "Ulyanovsk Oblast": "assets/audio/chips/ulyanovsk-oblast.mp3",
     "Umbria": "assets/audio/chips/umbria.mp3",
+    "United Arab Emirates": "assets/audio/chips/united-arab-emirates.mp3",
     "United Kingdom": "assets/audio/chips/united-kingdom.mp3",
     "Uruguay": "assets/audio/chips/uruguay.mp3",
     "Utah": "assets/audio/chips/utah.mp3",
@@ -701,6 +704,10 @@
     "Try again.": "assets/audio/instructions/try-again.mp3",
     "Great job.": "assets/audio/instructions/great-job.mp3",
     "Activity complete.": "assets/audio/instructions/activity-complete.mp3",
-    "Study the places, then try the challenge.": "assets/audio/instructions/study-the-places-then-try-the-challenge.mp3"
+    "Study the places, then try the challenge.": "assets/audio/instructions/study-the-places-then-try-the-challenge.mp3",
+    "Learn these places first.": "assets/audio/instructions/learn-these-places-first.mp3",
+    "Find the named country.": "assets/audio/instructions/find-the-named-country.mp3",
+    "Name the highlighted country.": "assets/audio/instructions/name-the-highlighted-country.mp3",
+    "Match each name to its place.": "assets/audio/instructions/match-each-name-to-its-place.mp3"
   }
 }

@@ -9,6 +9,16 @@
   let sharedAudio = null;
   let speechQueue = Promise.resolve();
   let isAudioMuted = loadAudioMuted();
+  const pronunciationOverrides = Object.freeze({
+    rondonia: {
+      lang: "pt-BR",
+      speakAs: "Rond\u00f4nia"
+    },
+    roraima: {
+      lang: "pt-BR",
+      speakAs: "Roraima"
+    }
+  });
 
   function isLocalAudioSupported() {
     return Boolean(global?.Audio && global?.fetch);
@@ -65,15 +75,15 @@
     return Math.max(1200, Math.min(4200, 650 + text.length * 85));
   }
 
-  function createUtterance(labelText) {
-    const text = String(labelText || "").trim();
+  function createUtterance(labelText, options = {}) {
+    const text = normalizeSpokenText(options.speakAs || options.speakText || labelText);
 
     if (!text) {
       return null;
     }
 
     const utterance = new global.SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
+    utterance.lang = options.lang || "en-US";
     utterance.rate = 0.9;
     utterance.pitch = 1;
     return utterance;
@@ -92,6 +102,25 @@
     return String(value || "")
       .replace(/\s+/g, " ")
       .trim();
+  }
+
+  function getPronunciationOverride(labelText) {
+    const key = sanitizeAudioLookupKey(normalizeSpokenText(labelText));
+    return key ? pronunciationOverrides[key] || null : null;
+  }
+
+  function resolveSpeechText(labelText) {
+    const text = normalizeSpokenText(labelText);
+    const override = getPronunciationOverride(text);
+
+    return {
+      text,
+      lookupText: text,
+      speakText: override?.speakAs || text,
+      lang: override?.lang || "en-US",
+      preferBrowserSpeech: override?.preferBrowserSpeech === true,
+      hasOverride: Boolean(override)
+    };
   }
 
   function getAudioManifest() {
@@ -307,7 +336,7 @@
     });
   }
 
-  function speakWithBrowserSpeech(labelText) {
+  function speakWithBrowserSpeech(labelText, speechOptions = {}) {
     if (!isSpeechSupported()) {
       return false;
     }
@@ -316,7 +345,11 @@
       return false;
     }
 
-    const utterance = createUtterance(labelText);
+    const resolved = resolveSpeechText(labelText);
+    const utterance = createUtterance(resolved.text, {
+      ...resolved,
+      ...speechOptions
+    });
 
     if (!utterance) {
       return false;
@@ -329,7 +362,8 @@
   }
 
   function speakLabel(labelText) {
-    const text = normalizeSpokenText(labelText);
+    const speech = resolveSpeechText(labelText);
+    const text = speech.text;
 
     if (!text || !isAudioOutputSupported()) {
       return false;
@@ -340,16 +374,16 @@
     }
 
     const playFromLookup = (lookup) => {
-      const audioPath = lookup ? findLocalAudioPath(text) : null;
+      const audioPath = lookup && !speech.preferBrowserSpeech ? findLocalAudioPath(speech.lookupText) : null;
 
       if (!audioPath) {
-        speakWithBrowserSpeech(text);
+        speakWithBrowserSpeech(speech.text, speech);
         return;
       }
 
       playLocalAudio(audioPath).then((didPlay) => {
         if (!didPlay) {
-          speakWithBrowserSpeech(text);
+          speakWithBrowserSpeech(speech.text, speech);
         }
       });
     };
@@ -395,7 +429,8 @@
   }
 
   async function playLabelAndWait(labelText, options = {}) {
-    const text = normalizeSpokenText(labelText);
+    const speech = resolveSpeechText(labelText);
+    const text = speech.text;
 
     if (!text || !isAudioOutputSupported()) {
       return false;
@@ -406,10 +441,10 @@
     }
 
     const lookup = await getAudioManifest();
-    const audioPath = lookup ? findLocalAudioPath(text) : null;
+    const audioPath = lookup && !speech.preferBrowserSpeech ? findLocalAudioPath(speech.lookupText) : null;
 
     if (!audioPath) {
-      if (!(await waitForBrowserSpeech(text))) {
+      if (!(await waitForBrowserSpeech(speech.text, speech))) {
         await wait(getSpeechFallbackDurationMs(text));
       }
       return false;
@@ -421,7 +456,7 @@
       return true;
     }
 
-    if (!(await waitForBrowserSpeech(text))) {
+    if (!(await waitForBrowserSpeech(speech.text, speech))) {
       await wait(getSpeechFallbackDurationMs(text));
     }
 
@@ -434,7 +469,7 @@
     });
   }
 
-  function speakWithBrowserSpeechWithCompletion(labelText, onComplete) {
+  function speakWithBrowserSpeechWithCompletion(labelText, onComplete, speechOptions = {}) {
     if (!isSpeechSupported()) {
       return false;
     }
@@ -443,7 +478,11 @@
       return false;
     }
 
-    const utterance = createUtterance(labelText);
+    const resolved = resolveSpeechText(labelText);
+    const utterance = createUtterance(resolved.text, {
+      ...resolved,
+      ...speechOptions
+    });
 
     if (!utterance) {
       return false;
@@ -479,11 +518,11 @@
     return true;
   }
 
-  function waitForBrowserSpeech(labelText) {
+  function waitForBrowserSpeech(labelText, speechOptions = {}) {
     return new Promise((resolve) => {
       const didSpeak = speakWithBrowserSpeechWithCompletion(labelText, () => {
         resolve(true);
-      });
+      }, speechOptions);
 
       if (!didSpeak) {
         resolve(false);

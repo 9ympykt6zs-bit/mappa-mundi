@@ -41,7 +41,11 @@ const instructionPhrases = [
   "Try again.",
   "Great job.",
   "Activity complete.",
-  "Study the places, then try the challenge."
+  "Study the places, then try the challenge.",
+  "Learn these places first.",
+  "Find the named country.",
+  "Name the highlighted country.",
+  "Match each name to its place."
 ];
 
 const defaultPronunciationInstruction = "Pronounce each place name as a well-educated American English speaker would in an English-language geography lesson. Use standard English geography pronunciations. Avoid obvious spelling-based mispronunciations. Do not use a strong native-language accent. Say the place name naturally and at normal speed.";
@@ -133,6 +137,18 @@ const pronunciationOverrides = {
   "Nayarit": {
     spokenText: "Nayarit",
     instructions: "Pronounce this single word as the standard American English geography pronunciation of the Mexican state Nayarit: nah-yah-REET. Say it naturally at normal conversational speed. Do not pause between syllables. Do not pronounce it slowly or syllable-by-syllable."
+  },
+  "Rond\u00f4nia": {
+    spokenText: "Hond\u00f4nia",
+    instructions: "This is the Brazilian state Rond\u00f4nia. Pronounce the supplied H as the Brazilian Portuguese h-like initial R sound. Say it naturally as Brazilian Portuguese: hon-DOH-nyah. Do not pronounce an English r at the beginning."
+  },
+  "Rondonia": {
+    spokenText: "Hond\u00f4nia",
+    instructions: "This is the Brazilian state Rond\u00f4nia. Pronounce the supplied H as the Brazilian Portuguese h-like initial R sound. Say it naturally as Brazilian Portuguese: hon-DOH-nyah. Do not pronounce an English r at the beginning."
+  },
+  "Roraima": {
+    spokenText: "Roraima",
+    instructions: "Pronounce this Brazilian state name in Brazilian Portuguese. Use an h-like initial R, not an English r. Say it naturally as Brazilian Portuguese: hoh-RYE-ma."
   }
 };
 

@@ -692,6 +692,68 @@ export class MapLibreActivityRunner {
     });
   }
 
+  fitTargets(targets = [], options = {}) {
+    if (!this.map || !Array.isArray(targets) || targets.length === 0) {
+      return false;
+    }
+
+    const bounds = targets.reduce((combinedBounds, target) => {
+      const camera = this.getTargetFocusCamera(target);
+      const targetBounds = camera?.bounds || (
+        Array.isArray(camera?.center)
+          ? [[camera.center[0] - 0.35, camera.center[1] - 0.35], [camera.center[0] + 0.35, camera.center[1] + 0.35]]
+          : null
+      );
+
+      if (!this.hasValidBounds(targetBounds)) {
+        return combinedBounds;
+      }
+
+      if (!combinedBounds) {
+        return [
+          [targetBounds[0][0], targetBounds[0][1]],
+          [targetBounds[1][0], targetBounds[1][1]]
+        ];
+      }
+
+      combinedBounds[0][0] = Math.min(combinedBounds[0][0], targetBounds[0][0]);
+      combinedBounds[0][1] = Math.min(combinedBounds[0][1], targetBounds[0][1]);
+      combinedBounds[1][0] = Math.max(combinedBounds[1][0], targetBounds[1][0]);
+      combinedBounds[1][1] = Math.max(combinedBounds[1][1], targetBounds[1][1]);
+      return combinedBounds;
+    }, null);
+
+    if (!this.hasValidBounds(bounds)) {
+      return false;
+    }
+
+    this.map.stop();
+    this.map.fitBounds(bounds, {
+      padding: this.normalizePadding(options.padding || {
+        top: 118,
+        right: 64,
+        bottom: 198,
+        left: 64
+      }),
+      maxZoom: Number.isFinite(options.maxZoom) ? options.maxZoom : 5.35,
+      retainPadding: false,
+      duration: Number.isFinite(options.duration) ? options.duration : 850,
+      essential: true
+    });
+
+    return true;
+  }
+
+  getMapInteractionState() {
+    return {
+      currentView: this.currentView,
+      isMoving: Boolean(this.map?.isMoving?.()),
+      isEasing: Boolean(this.map?.isEasing?.()),
+      isZooming: Boolean(this.map?.isZooming?.()),
+      placementInteractionState: { ...this.placementInteractionState }
+    };
+  }
+
   getTargetFocusCamera(target) {
     const padding = this.getTargetFocusPadding(target);
     const duration = Number.isFinite(target.focusDuration) ? target.focusDuration : 650;

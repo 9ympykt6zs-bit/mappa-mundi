@@ -19,7 +19,7 @@ const difficultyModes = Object.freeze({
 });
 const studyModes = Object.freeze({
   cumulative: "cumulative",
-  sectionOnly: "section-only"
+  sectionOnly: "sectionOnly"
 });
 const activityDataPaths = [
   "assets/maps/data/continents-oceans.json",
@@ -218,7 +218,10 @@ const mapLayerPresets = [
 const defaultAppSettings = Object.freeze({
   version: 1,
   mapLayers: defaultMapLayerSettings,
-  targetSettings: {}
+  targetSettings: {},
+  audio: {
+    speakMemoryTrailInstructions: false
+  }
 });
 const canadianTerritoryNames = new Set(["Northwest Territories", "Nunavut", "Yukon"]);
 const classicalMemoryProofSheetTargetNames = new Set(`
@@ -2659,25 +2662,46 @@ let launchStartEventsBound = false;
 let launchScreenEventsBound = false;
 let audioInstructionState = createAudioInstructionState("app");
 let audioInstructionHideTimer = null;
+let memoryTrailInstructionBannerTimer = null;
+let lastMemoryTrailInstructionKey = "";
+let lastSpokenMemoryTrailInstructionKey = "";
 let journeyGameplayInstructionKeys = new Set();
 let atlasProgress = loadProgress();
 let mapLayerSettings = loadMapLayerSettings();
 let studyTargetSettings = loadStudyTargetSettings();
+let audioSettings = loadAudioSettings();
 let currentPresentationSettings = {};
 let isCurrentActivityProgressDisabled = false;
 
 const incorrectRevealThreshold = 3;
 const activityRetryThreshold = 5;
 const incorrectRevealDurationMs = 1700;
-const memoryTrailPostSpeechHoldMs = 1000;
-const memoryTrailGapDurationMs = 240;
+const ENABLE_MEMORY_TRAIL_DEBUG = false;
+const DEFAULT_SESSION_SECONDS = 300;
+const SHORT_SESSION_SECONDS = 180;
+const LONG_SESSION_SECONDS = 600;
+const ACTIVE_CHUNK_SIZE = 4;
+const MIN_ACTIVE_CHUNK_SIZE = 3;
+const MAX_ACTIVE_CHUNK_SIZE = 5;
+const MIN_NEW_TARGETS_PER_SESSION = 4;
+const MAX_NEW_TARGETS_PER_SESSION = 6;
+const MIN_TOTAL_TARGET_POOL = 12;
+const MAX_TOTAL_TARGET_POOL = 20;
+const TARGET_SUCCESS_RATE = 0.85;
+const SESSION_PROMPT_CAP = 45;
+const BASE_SESSION_CORRECT_TARGET = 4;
+const WEAK_SESSION_CORRECT_TARGET = 6;
+const SESSION_LEARNED_MIN_CORRECT = 3;
+const MIN_GAP_AFTER_CORRECT = 3;
+const MIN_GAP_AFTER_MISS = 1;
+const MEMORY_TRAIL_ANSWER_CHOICE_COUNT = 4;
+const MEMORY_TRAIL_INSTRUCTION_BANNER_MS = 2200;
 const memoryTrailCorrectPauseMs = 520;
 const memoryTrailReplayPauseMs = 900;
 const audioInstructionVisibleDurationMs = 5200;
 const audioInstructionPhrases = {
   chooseLabel: "Choose a label.",
   tapMatchingPlace: "Tap the matching place on the map.",
-  matchPattern: "Match the pattern and say the names.",
   studyPreview: "Study the places, then try the challenge."
 };
 
@@ -2912,10 +2936,13 @@ function showAudioInstructionText(message) {
 function hideAudioInstructionBanner() {
   window.clearTimeout(audioInstructionHideTimer);
   audioInstructionHideTimer = null;
+  window.clearTimeout(memoryTrailInstructionBannerTimer);
+  memoryTrailInstructionBannerTimer = null;
 
   if (audioInstructionBanner) {
     audioInstructionBanner.hidden = true;
     audioInstructionBanner.textContent = "";
+    audioInstructionBanner.classList.remove("memory-trail-instruction-banner");
   }
 }
 
@@ -5734,13 +5761,13 @@ function showJourneyMemoryTrailRecommendation(context) {
     journey_id: journey?.id || "",
     journey_title: journey?.title || "",
     difficulty: normalizeJourneyDifficultyId(context?.difficultyId),
-    sequence_length: activity?.targets?.length || 0,
-    round_count: activity?.targets?.length || 0
+    sequence_length: Math.min(ACTIVE_CHUNK_SIZE, activity?.targets?.length || 0),
+    round_count: 0
   });
   configureMemoryTrailOverlay({
     mode: "journey-recommendation",
     titleText: "Learn this set first?",
-    messageText: "Memory Trail shows each place, says its name, and helps you repeat the map pattern before playing.",
+    messageText: "Memory Trail gives you a short adaptive practice session before playing.",
     primaryText: "Start Memory Trail",
     secondaryText: "Play Now",
     showInfo: false
@@ -6244,7 +6271,7 @@ function showMemoryTrailOfferOverlay() {
   configureMemoryTrailOverlay({
     mode: "offer",
     titleText: "Try Memory Trail?",
-    messageText: "Watch and listen as places are shown in order, then tap them back in the same pattern.",
+    messageText: "First, learn a small group of places. Then practice finding them and naming them from memory.",
     primaryText: "Start Memory Trail",
     secondaryText: "Study Normally",
     showInfo: true
@@ -6355,21 +6382,463 @@ function getActiveMemoryTrail() {
   return isMemoryTrailActive() ? activeStudySession.memoryTrail : null;
 }
 
-function createMemoryTrailState() {
-  return {
+function createMemoryTrailSession(activity = session.currentActivity, options = {}) {
+  const targets = (activity?.targets || []).filter((target) => target?.id);
+  const targetPool = chooseMemoryTrailTargetPool(targets);
+  const practiceWindows = buildPracticeWindows(targetPool);
+  const currentPracticeWindow = chooseInitialPracticeWindow(practiceWindows);
+  const targetStats = Object.fromEntries(targetPool.map((target) => [target.id, createMemoryTrailTargetStats(target)]));
+  const sessionSeconds = options.sessionSeconds || DEFAULT_SESSION_SECONDS;
+  const memoryTrail = {
     active: true,
-    order: session.currentActivity.targets.map((target) => target.id),
-    roundIndex: 0,
-    expectedIndex: 0,
-    nearMissCount: 0,
-    nearMissTargetId: null,
+    adaptive: true,
+    activityId: activity?.id || "",
+    sessionSeconds,
+    startedAt: Date.now(),
+    sessionPhase: "learn",
     phase: "idle",
-    message: "Watch the trail, then tap the places in the same order.",
+    message: "First, learn a small group of places. Then practice from memory.",
     promptName: "",
     responseChipTargetId: null,
+    currentPromptTargetId: null,
+    currentPromptType: "guided",
+    currentPromptMode: "introducing",
+    currentPromptReason: "",
+    instructionLabel: "Tap the highlighted place.",
+    currentInstructionKey: "",
+    answerChoices: [],
+    trayFeedback: null,
+    targetPool,
+    targetPoolIds: targetPool.map((target) => target.id),
+    practiceWindows,
+    currentWindowIndex: 0,
+    currentPracticeWindow,
+    introducedTargetIds: [],
+    targetStats,
+    promptCount: 0,
+    retrievalPromptCount: 0,
+    correctCount: 0,
+    incorrectCount: 0,
+    recentResults: [],
+    recentRetrievalResults: [],
+    promptHistory: [],
+    lastPromptedTargetId: null,
+    lastCameraWindowKey: "",
     timers: [],
     previousRevealedTargetIds: [...(activeStudySession?.revealedTargetIds || [])]
   };
+
+  introducePracticeWindow(memoryTrail, currentPracticeWindow);
+  updateMemoryTrailDebugObject(memoryTrail);
+  return memoryTrail;
+}
+
+function createMemoryTrailTargetStats(target) {
+  return {
+    targetId: target.id,
+    displayName: target.completedLabelName || target.name || target.id,
+    exposedCount: 0,
+    guidedTapCount: 0,
+    nameToPlaceAttempts: 0,
+    nameToPlaceCorrect: 0,
+    nameToPlaceIncorrect: 0,
+    placeToNameAttempts: 0,
+    placeToNameCorrect: 0,
+    placeToNameIncorrect: 0,
+    totalRetrievalAttempts: 0,
+    totalRetrievalCorrect: 0,
+    totalRetrievalIncorrect: 0,
+    currentCorrectStreak: 0,
+    currentWrongStreak: 0,
+    recentMisses: 0,
+    introducedAtPrompt: null,
+    lastPromptedAt: null,
+    lastResult: null,
+    isWeak: false,
+    isIntroduced: false,
+    isSessionLearned: false,
+    nextDuePrompt: 0,
+    lastMissPrompt: null
+  };
+}
+
+function chooseMemoryTrailTargetPool(targets = []) {
+  if (targets.length <= MAX_TOTAL_TARGET_POOL) {
+    return [...targets];
+  }
+
+  return [...targets].slice(0, Math.max(MIN_TOTAL_TARGET_POOL, Math.min(MAX_TOTAL_TARGET_POOL, targets.length)));
+}
+
+function buildPracticeWindows(targets = []) {
+  if (targets.length === 0) {
+    return [];
+  }
+
+  const remaining = [...targets];
+  const windows = [];
+
+  while (remaining.length > 0) {
+    const seed = remaining.shift();
+    const chunkSize = Math.min(MAX_ACTIVE_CHUNK_SIZE, Math.max(MIN_ACTIVE_CHUNK_SIZE, Math.min(ACTIVE_CHUNK_SIZE, remaining.length + 1)));
+    const seedCentroid = getTargetCentroid(seed);
+    const chunk = [seed];
+
+    remaining
+      .map((target) => ({
+        target,
+        distance: seedCentroid ? getTargetDistance(seedCentroid, getTargetCentroid(target)) : Number.POSITIVE_INFINITY
+      }))
+      .sort((left, right) => left.distance - right.distance)
+      .slice(0, chunkSize - 1)
+      .forEach(({ target }) => {
+        const index = remaining.findIndex((item) => item.id === target.id);
+        if (index >= 0) {
+          chunk.push(...remaining.splice(index, 1));
+        }
+      });
+
+    windows.push(chunk);
+  }
+
+  while (
+    windows.length > 1
+    && windows.at(-1).length < MIN_ACTIVE_CHUNK_SIZE
+    && windows.at(-2).length > MIN_ACTIVE_CHUNK_SIZE
+  ) {
+    windows.at(-1).unshift(windows.at(-2).pop());
+  }
+
+  return windows;
+}
+
+function getTargetCentroid(target = {}) {
+  if (Number.isFinite(target.lon) && Number.isFinite(target.lat)) {
+    return { x: target.lon, y: target.lat, type: "lonlat" };
+  }
+
+  if (Array.isArray(target.labelAnchor) && target.labelAnchor.length >= 2) {
+    const [lon, lat] = target.labelAnchor;
+    if (Number.isFinite(lon) && Number.isFinite(lat)) {
+      return { x: lon, y: lat, type: "lonlat" };
+    }
+  }
+
+  if (Number.isFinite(target.focusLon) && Number.isFinite(target.focusLat)) {
+    return { x: target.focusLon, y: target.focusLat, type: "lonlat" };
+  }
+
+  if (target.labelPosition && Number.isFinite(target.labelPosition.x) && Number.isFinite(target.labelPosition.y)) {
+    return { x: target.labelPosition.x, y: target.labelPosition.y, type: "screen" };
+  }
+
+  return null;
+}
+
+function getTargetDistance(left, right) {
+  if (!left || !right) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  const scaleX = left.type === "lonlat" && right.type === "lonlat"
+    ? Math.cos(((left.y + right.y) / 2) * Math.PI / 180)
+    : 1;
+  return Math.hypot((left.x - right.x) * scaleX, left.y - right.y);
+}
+
+function chooseInitialPracticeWindow(practiceWindows = []) {
+  return practiceWindows[0] || [];
+}
+
+function introducePracticeWindow(memoryTrail, practiceWindow = [], newTargets = practiceWindow) {
+  memoryTrail.currentPracticeWindow = practiceWindow;
+  newTargets.forEach((target) => {
+    const stats = memoryTrail.targetStats[target.id];
+    if (!stats?.isIntroduced) {
+      stats.isIntroduced = true;
+      stats.introducedAtPrompt = memoryTrail.promptCount;
+      memoryTrail.introducedTargetIds.push(target.id);
+    }
+  });
+}
+
+function getMaxNewTargetsForSession(memoryTrail) {
+  return Math.min(MAX_NEW_TARGETS_PER_SESSION, memoryTrail?.targetPoolIds?.length || 0);
+}
+
+function getTargetById(memoryTrail, targetId) {
+  return memoryTrail?.targetPool?.find((target) => target.id === targetId) || session.getFeature(targetId);
+}
+
+function composeNextPracticeWindow(memoryTrail, nextWindow = []) {
+  const maxNewTargets = getMaxNewTargetsForSession(memoryTrail);
+  const availableNewSlots = Math.max(0, maxNewTargets - memoryTrail.introducedTargetIds.length);
+  const nextNewTargets = nextWindow
+    .filter((target) => target?.id && !memoryTrail.targetStats[target.id]?.isIntroduced)
+    .slice(0, availableNewSlots);
+  const reviewTargets = getIntroducedMemoryTrailStats(memoryTrail)
+    .sort((left, right) => left.lastPromptedAt - right.lastPromptedAt || left.totalRetrievalCorrect - right.totalRetrievalCorrect)
+    .map((stats) => getTargetById(memoryTrail, stats.targetId))
+    .filter(Boolean);
+  const byId = new Map();
+
+  [...nextNewTargets, ...reviewTargets, ...memoryTrail.currentPracticeWindow].forEach((target) => {
+    if (target?.id && !byId.has(target.id) && byId.size < MAX_ACTIVE_CHUNK_SIZE) {
+      byId.set(target.id, target);
+    }
+  });
+
+  return {
+    practiceWindow: [...byId.values()],
+    newTargets: nextNewTargets
+  };
+}
+
+function isGuidedMemoryTrailPrompt(memoryTrail) {
+  return memoryTrail?.currentPromptType === "guided";
+}
+
+function isNameToPlaceMemoryTrailPrompt(memoryTrail) {
+  return memoryTrail?.currentPromptType === "name_to_place";
+}
+
+function isPlaceToNameMemoryTrailPrompt(memoryTrail) {
+  return memoryTrail?.currentPromptType === "place_to_name";
+}
+
+function hasTargetCompletedGuidedExposure(stats) {
+  return Boolean(stats?.exposedCount > 0 && stats.guidedTapCount > 0);
+}
+
+function hasTargetMetSessionLearnedRule(stats) {
+  return Boolean(
+    stats
+    && stats.totalRetrievalCorrect >= SESSION_LEARNED_MIN_CORRECT
+    && stats.nameToPlaceCorrect >= 1
+    && stats.placeToNameCorrect >= 1
+    && stats.recentMisses < 2
+  );
+}
+
+function getStatsRetrievalCorrectTarget(stats) {
+  return stats?.isWeak || stats?.totalRetrievalIncorrect > 1
+    ? WEAK_SESSION_CORRECT_TARGET
+    : BASE_SESSION_CORRECT_TARGET;
+}
+
+function getMemoryTrailTargetLabel(targetOrId) {
+  const target = typeof targetOrId === "string"
+    ? session.getFeature(targetOrId)
+    : targetOrId;
+
+  return target?.completedLabelName || target?.name || "";
+}
+
+function shuffleMemoryTrailChoices(items = []) {
+  const shuffled = [...items];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+  return shuffled;
+}
+
+function buildMemoryTrailAnswerChoices(memoryTrail, correctTargetId) {
+  const correctTarget = getTargetById(memoryTrail, correctTargetId);
+  if (!correctTarget) {
+    return [];
+  }
+
+  const byId = new Map([[correctTarget.id, correctTarget]]);
+  const currentWindowDistractors = memoryTrail.currentPracticeWindow
+    .filter((target) => target.id !== correctTargetId);
+  const introducedDistractors = getIntroducedMemoryTrailStats(memoryTrail)
+    .map((stats) => getTargetById(memoryTrail, stats.targetId))
+    .filter((target) => target?.id && target.id !== correctTargetId);
+  const poolDistractors = memoryTrail.targetPool
+    .filter((target) => target?.id && target.id !== correctTargetId)
+    .map((target) => ({
+      target,
+      distance: getTargetDistance(getTargetCentroid(correctTarget), getTargetCentroid(target))
+    }))
+    .sort((left, right) => left.distance - right.distance)
+    .map(({ target }) => target);
+
+  [...currentWindowDistractors, ...introducedDistractors, ...poolDistractors].forEach((target) => {
+    if (target?.id && !byId.has(target.id) && byId.size < MEMORY_TRAIL_ANSWER_CHOICE_COUNT) {
+      byId.set(target.id, target);
+    }
+  });
+
+  return shuffleMemoryTrailChoices([...byId.values()])
+    .slice(0, Math.max(2, Math.min(MEMORY_TRAIL_ANSWER_CHOICE_COUNT, byId.size)))
+    .map((target) => ({
+      id: target.id,
+      label: getMemoryTrailTargetLabel(target) || target.name || target.id
+    }));
+}
+
+function getMemoryTrailInstructionText(promptType, phase, mode = "") {
+  if (promptType === "guided" || phase === "learn") {
+    return {
+      banner: "Learn these places first.",
+      label: "Tap the highlighted place."
+    };
+  }
+
+  if (promptType === "place_to_name") {
+    return {
+      banner: "Name the highlighted country.",
+      label: "Choose the name of the highlighted country."
+    };
+  }
+
+  if (promptType === "drag_match") {
+    return {
+      banner: "Match each name to its place.",
+      label: "Drag each label to the matching place."
+    };
+  }
+
+  return {
+    banner: "Find the named country.",
+    label: "Tap the country named below."
+  };
+}
+
+function getMemoryTrailInstructionKey(promptType, phase) {
+  return `${phase}:${promptType}`;
+}
+
+function showMemoryTrailInstructionBanner(text) {
+  const message = String(text || "").trim();
+
+  if (!audioInstructionBanner || !message) {
+    return;
+  }
+
+  window.clearTimeout(memoryTrailInstructionBannerTimer);
+  audioInstructionBanner.textContent = message;
+  audioInstructionBanner.hidden = false;
+  audioInstructionBanner.classList.add("memory-trail-instruction-banner");
+
+  memoryTrailInstructionBannerTimer = window.setTimeout(() => {
+    audioInstructionBanner.classList.remove("memory-trail-instruction-banner");
+    hideAudioInstructionBanner();
+  }, MEMORY_TRAIL_INSTRUCTION_BANNER_MS);
+}
+
+function isMemoryTrailInstructionSpeechEnabled() {
+  return audioSettings.speakMemoryTrailInstructions === true;
+}
+
+function maybeSpeakMemoryTrailInstruction(text, promptType, phase, instructionKey) {
+  const message = String(text || "").trim();
+  const key = instructionKey || getMemoryTrailInstructionKey(promptType, phase);
+  const skipped = (reason) => {
+    debugMemoryTrail("instruction speech skipped", {
+      phase,
+      promptType,
+      instructionText: message,
+      speechAttempted: false,
+      speechSuppressed: true,
+      reason
+    });
+    return Promise.resolve(false);
+  };
+
+  if (!message || !isMemoryTrailInstructionSpeechEnabled()) {
+    return skipped("setting disabled");
+  }
+
+  if (lastSpokenMemoryTrailInstructionKey === key) {
+    return skipped("recently spoken");
+  }
+
+  if (window.GeographyChipSpeech?.getAudioMuted?.()) {
+    return skipped("audio muted");
+  }
+
+  lastSpokenMemoryTrailInstructionKey = key;
+  debugMemoryTrail("instruction speech", {
+    phase,
+    promptType,
+    instructionText: message,
+    speechAttempted: true,
+    speechSuppressed: false
+  });
+
+  if (window.GeographyChipSpeech?.speakLabelAndWait) {
+    return window.GeographyChipSpeech.speakLabelAndWait(message, {
+      queue: true,
+      warnOnAudioFailure: false
+    }).then(Boolean).catch((error) => {
+      debugMemoryTrail("instruction speech failed", {
+        phase,
+        promptType,
+        instructionText: message,
+        speechAttempted: true,
+        speechSuppressed: true,
+        reason: error?.message || "speech failed"
+      });
+      return false;
+    });
+  }
+
+  return Promise.resolve(window.GeographyChipSpeech?.speakLabel?.(message) || false);
+}
+
+function setMemoryTrailInstruction({ memoryTrail, phase, promptType, mode = "", text = null, speakKey = "" } = {}) {
+  if (!memoryTrail) {
+    return Promise.resolve(false);
+  }
+
+  const instruction = text
+    ? { banner: text, label: text }
+    : getMemoryTrailInstructionText(promptType, phase, mode);
+  const instructionKey = speakKey || getMemoryTrailInstructionKey(promptType, phase, mode);
+  const isModeChange = lastMemoryTrailInstructionKey !== instructionKey;
+  let speechPromise = Promise.resolve(false);
+
+  memoryTrail.instructionLabel = instruction.label;
+  memoryTrail.currentInstructionKey = instructionKey;
+
+  if (isModeChange) {
+    showMemoryTrailInstructionBanner(instruction.banner);
+    speechPromise = maybeSpeakMemoryTrailInstruction(instruction.banner, promptType, phase, instructionKey);
+    lastMemoryTrailInstructionKey = instructionKey;
+  }
+
+  debugMemoryTrail("instruction cue", {
+    phase,
+    promptType,
+    instructionText: instruction.banner,
+    persistentLabel: instruction.label,
+    bannerShown: isModeChange,
+    speechAttempted: isModeChange && isMemoryTrailInstructionSpeechEnabled() && !window.GeographyChipSpeech?.getAudioMuted?.(),
+    speechSuppressed: !isModeChange || !isMemoryTrailInstructionSpeechEnabled() || window.GeographyChipSpeech?.getAudioMuted?.(),
+    suppressReason: !isModeChange
+      ? "same mode"
+      : !isMemoryTrailInstructionSpeechEnabled()
+        ? "setting disabled"
+        : window.GeographyChipSpeech?.getAudioMuted?.()
+          ? "audio muted"
+          : ""
+  });
+
+  return speechPromise;
+}
+
+function updateMemoryTrailInstructionCue(memoryTrail, selection) {
+  const promptType = selection?.promptType || memoryTrail.currentPromptType;
+  const phase = promptType === "guided" ? "learn" : "practice";
+  const mode = selection?.mode || memoryTrail.currentPromptMode;
+  return setMemoryTrailInstruction({
+    memoryTrail,
+    phase,
+    promptType,
+    mode
+  });
 }
 
 function isCurrentMemoryTrailState(memoryTrail) {
@@ -6447,9 +6916,11 @@ function startMemoryTrail() {
 
   hideMemoryTrailOverlay();
   clearMemoryTrailState({ restoreReveals: false });
+  lastMemoryTrailInstructionKey = "";
+  lastSpokenMemoryTrailInstructionKey = "";
   resetAudioInstructionState(`memory-trail:${activeStudySession.activityId}:${Date.now()}`);
   window.GeographyChipSpeech?.primeLocalAudio?.();
-  activeStudySession.memoryTrail = createMemoryTrailState();
+  activeStudySession.memoryTrail = createMemoryTrailSession(session.currentActivity);
   currentMemoryTrailAnalyticsKey = [
     activeStudySession.journeyId,
     activeStudySession.stepId,
@@ -6460,14 +6931,10 @@ function startMemoryTrail() {
   trackEvent("memory_trail_started", getMemoryTrailAnalyticsContext());
   activeStudySession.revealedTargetIds = [];
   runner.setCompletedTargets([]);
-  instruction.textContent = "Watch the Memory Trail, then tap the targets in order.";
+  instruction.textContent = "First learn the small group, then practice from memory.";
+  fitMapToPracticeWindow(activeStudySession.memoryTrail.currentPracticeWindow, "start");
   renderStudyExplorePanel();
-  playInstructionOnce("match-pattern", audioInstructionPhrases.matchPattern, {
-    awaitCompletion: true,
-    warnOnAudioFailure: true
-  }).then(() => {
-    playMemoryTrailRound(activeStudySession?.memoryTrail);
-  });
+  promptNextMemoryTrailTarget(activeStudySession?.memoryTrail);
 }
 
 function restartMemoryTrail() {
@@ -6484,9 +6951,11 @@ function restartMemoryTrail() {
   hideMemoryTrailOverlay();
   const previousRevealedTargetIds = [...(activeStudySession.memoryTrail?.previousRevealedTargetIds || activeStudySession.revealedTargetIds || [])];
   clearMemoryTrailState({ restoreReveals: false });
+  lastMemoryTrailInstructionKey = "";
+  lastSpokenMemoryTrailInstructionKey = "";
   resetAudioInstructionState(`memory-trail:${activeStudySession.activityId}:${Date.now()}`);
   window.GeographyChipSpeech?.primeLocalAudio?.();
-  activeStudySession.memoryTrail = createMemoryTrailState();
+  activeStudySession.memoryTrail = createMemoryTrailSession(session.currentActivity);
   activeStudySession.memoryTrail.previousRevealedTargetIds = previousRevealedTargetIds;
   currentMemoryTrailAnalyticsKey = [
     activeStudySession.journeyId,
@@ -6498,13 +6967,10 @@ function restartMemoryTrail() {
   trackEvent("memory_trail_started", getMemoryTrailAnalyticsContext());
   activeStudySession.revealedTargetIds = [];
   runner.setCompletedTargets([]);
+  instruction.textContent = "First learn the small group, then practice from memory.";
+  fitMapToPracticeWindow(activeStudySession.memoryTrail.currentPracticeWindow, "restart");
   renderStudyExplorePanel();
-  playInstructionOnce("match-pattern", audioInstructionPhrases.matchPattern, {
-    awaitCompletion: true,
-    warnOnAudioFailure: true
-  }).then(() => {
-    playMemoryTrailRound(activeStudySession?.memoryTrail);
-  });
+  promptNextMemoryTrailTarget(activeStudySession?.memoryTrail);
 }
 
 function exitMemoryTrail() {
@@ -6523,69 +6989,119 @@ function trackMemoryTrailAbandoned() {
   trackEvent("memory_trail_abandoned", getMemoryTrailAnalyticsContext());
 }
 
-function playMemoryTrailRound(memoryTrail = getActiveMemoryTrail()) {
+function promptNextMemoryTrailTarget(memoryTrail = getActiveMemoryTrail()) {
   if (!isCurrentMemoryTrailState(memoryTrail)) {
+    return;
+  }
+
+  if (shouldEndMemoryTrailSession(memoryTrail)) {
+    completeMemoryTrailSession(memoryTrail);
     return;
   }
 
   clearMemoryTrailTimers(memoryTrail);
-  runner.setMemoryTrailHighlight([]);
+  advancePracticeWindow(memoryTrail);
+  const selection = chooseNextPrompt(memoryTrail);
+
+  if (!selection?.targetId) {
+    completeMemoryTrailSession(memoryTrail);
+    return;
+  }
+
+  const target = session.getFeature(selection.targetId);
+  const stats = memoryTrail.targetStats[selection.targetId];
+  const speechLabel = getMemoryTrailTargetLabel(target);
   memoryTrail.phase = "playing";
-  memoryTrail.expectedIndex = 0;
-  resetMemoryTrailNearMiss(memoryTrail);
-  memoryTrail.promptName = "";
+  memoryTrail.currentPromptTargetId = selection.targetId;
+  memoryTrail.currentPromptType = selection.promptType || "name_to_place";
+  memoryTrail.currentPromptMode = selection.mode;
+  memoryTrail.currentPromptReason = selection.reason;
+  memoryTrail.sessionPhase = selection.promptType === "guided" ? "learn" : "practice";
+  memoryTrail.promptName = selection.promptType === "place_to_name" ? "" : speechLabel || target?.name || "";
   memoryTrail.responseChipTargetId = null;
-  memoryTrail.message = `Round ${memoryTrail.roundIndex + 1}: watch the trail.`;
-  renderStudyExplorePanel();
-
-  const roundTargetIds = getMemoryTrailRoundTargetIds(memoryTrail);
-  scheduleMemoryTrailStep(memoryTrail, () => {
-    playMemoryTrailPlaybackItem(memoryTrail, roundTargetIds, 0);
-  }, 250);
-}
-
-function getMemoryTrailRoundTargetIds(memoryTrail = getActiveMemoryTrail()) {
-  if (!memoryTrail) {
-    return [];
-  }
-
-  return memoryTrail.order.slice(0, memoryTrail.roundIndex + 1);
-}
-
-function playMemoryTrailPlaybackItem(memoryTrail, roundTargetIds, targetIndex) {
-  if (!isCurrentMemoryTrailState(memoryTrail)) {
-    return;
-  }
-
-  if (targetIndex >= roundTargetIds.length) {
-    memoryTrail.phase = "answering";
-    memoryTrail.expectedIndex = 0;
-    resetMemoryTrailNearMiss(memoryTrail);
-    memoryTrail.promptName = "";
-    memoryTrail.message = `Now tap the trail in order: 1 of ${roundTargetIds.length}.`;
-    runner.setMemoryTrailHighlight([]);
-    renderStudyExplorePanel();
-    return;
-  }
-
-  const targetId = roundTargetIds[targetIndex];
-  const target = session.getFeature(targetId);
-  const speechLabel = getStudyPreviewSpeechLabel(target);
-  memoryTrail.promptName = speechLabel || target?.name || "";
-  memoryTrail.message = memoryTrail.promptName ? `Watch: ${memoryTrail.promptName}` : "Watch this target.";
-  runner.setMemoryTrailHighlight(targetId);
-  renderStudyExplorePanel();
-  speakMemoryTrailTarget(target, () => {
-    scheduleMemoryTrailStep(memoryTrail, () => {
-      memoryTrail.promptName = "";
-      runner.setMemoryTrailHighlight([]);
-      renderStudyExplorePanel();
-
-      scheduleMemoryTrailStep(memoryTrail, () => {
-        playMemoryTrailPlaybackItem(memoryTrail, roundTargetIds, targetIndex + 1);
-      }, memoryTrailGapDurationMs);
-    }, memoryTrailPostSpeechHoldMs);
+  memoryTrail.answerChoices = selection.promptType === "place_to_name"
+    ? buildMemoryTrailAnswerChoices(memoryTrail, selection.targetId)
+    : [];
+  memoryTrail.message = getMemoryTrailPromptMessage(memoryTrail, target, selection);
+  const instructionSpeechPromise = updateMemoryTrailInstructionCue(memoryTrail, selection);
+  stats.lastPromptedAt = memoryTrail.promptCount;
+  memoryTrail.lastPromptedTargetId = selection.targetId;
+  memoryTrail.promptHistory.push({
+    promptNumber: memoryTrail.promptCount + 1,
+    targetId: selection.targetId,
+    promptType: memoryTrail.currentPromptType,
+    sessionPhase: memoryTrail.sessionPhase,
+    mode: selection.mode,
+    reason: selection.reason
   });
+  if (selection.promptType === "guided") {
+    stats.exposedCount += 1;
+  }
+  memoryTrail.phase = "answering";
+  memoryTrail.message = getMemoryTrailAnsweringMessage(memoryTrail);
+  if (memoryTrail.trayFeedback) {
+    debugMemoryTrail("tray feedback retained", {
+      reason: "next prompt prepared",
+      feedback: memoryTrail.trayFeedback
+    });
+  }
+  debugMemoryTrail("selected prompt", {
+    targetId: selection.targetId,
+    phase: memoryTrail.sessionPhase,
+    promptType: memoryTrail.currentPromptType,
+    mode: selection.mode,
+    reason: selection.reason,
+    answerChoices: memoryTrail.answerChoices,
+    stats
+  });
+  runner.setMemoryTrailHighlight(selection.promptType === "guided" || selection.promptType === "place_to_name"
+    ? selection.targetId
+    : []);
+  renderStudyExplorePanel();
+
+  if (selection.promptType === "place_to_name") {
+    return;
+  }
+
+  instructionSpeechPromise.finally(() => {
+    if (isCurrentMemoryTrailState(memoryTrail) && memoryTrail.currentPromptTargetId === selection.targetId) {
+      speakMemoryTrailTarget(target);
+    }
+  });
+}
+
+function getMemoryTrailPromptMessage(memoryTrail, target, selection) {
+  const label = getMemoryTrailTargetLabel(target);
+
+  if (selection.promptType === "guided") {
+    return label ? `Learn: ${label}.` : "Learn this place.";
+  }
+
+  if (selection.promptType === "place_to_name") {
+    return "Practice: what country is this?";
+  }
+
+  if (selection.mode === "weak-review") {
+    return label ? `Practice: let's review ${label}.` : "Practice: let's review this one.";
+  }
+
+  return label ? `Practice: find ${label}.` : "Practice: find the matching place.";
+}
+
+function getMemoryTrailAnsweringMessage(memoryTrail) {
+  if (isGuidedMemoryTrailPrompt(memoryTrail)) {
+    return memoryTrail.promptName
+      ? `Tap the highlighted place: ${memoryTrail.promptName}.`
+      : "Tap the highlighted place.";
+  }
+
+  if (isPlaceToNameMemoryTrailPrompt(memoryTrail)) {
+    return "What country is this?";
+  }
+
+  return memoryTrail.promptName
+    ? `Find ${memoryTrail.promptName}.`
+    : "Find the matching place.";
 }
 
 function getMemoryTrailFallbackSpeechDurationMs(labelText) {
@@ -6629,134 +7145,648 @@ function speakMemoryTrailTarget(target, onComplete) {
   window.setTimeout(finish, getMemoryTrailFallbackSpeechDurationMs(labelText));
 }
 
-function resetMemoryTrailNearMiss(memoryTrail) {
-  if (!memoryTrail) {
+function chooseNextPrompt(memoryTrail) {
+  const introducedStats = getIntroducedMemoryTrailStats(memoryTrail);
+  const avoidLast = (stats) => stats.targetId !== memoryTrail.lastPromptedTargetId || introducedStats.length === 1;
+  const due = (stats) => stats.nextDuePrompt <= memoryTrail.promptCount;
+  const dueIntroduced = introducedStats.filter((stats) => due(stats) && avoidLast(stats));
+  const unguidedCurrentTarget = memoryTrail.currentPracticeWindow
+    .map((target) => memoryTrail.targetStats[target.id])
+    .find((stats) => stats && !hasTargetCompletedGuidedExposure(stats) && avoidLast(stats));
+
+  if (unguidedCurrentTarget) {
+    return {
+      targetId: unguidedCurrentTarget.targetId,
+      promptType: "guided",
+      mode: "learn",
+      reason: "new chunk target needs guided exposure"
+    };
+  }
+
+  if (shouldReduceDifficulty(memoryTrail)) {
+    const easier = dueIntroduced
+      .filter((stats) => stats.totalRetrievalCorrect > 0 && !stats.isWeak)
+      .sort((left, right) => left.totalRetrievalCorrect - right.totalRetrievalCorrect || left.totalRetrievalAttempts - right.totalRetrievalAttempts)[0];
+
+    if (easier) {
+      return {
+        targetId: easier.targetId,
+        promptType: "name_to_place",
+        mode: "reducing-difficulty",
+        reason: "recent retrieval misses were high"
+      };
+    }
+  }
+
+  const weak = getWeakTargets(memoryTrail)
+    .filter((stats) => due(stats) && avoidLast(stats))
+    .sort((left, right) => right.totalRetrievalIncorrect - left.totalRetrievalIncorrect || left.lastPromptedAt - right.lastPromptedAt)[0];
+
+  if (weak) {
+    const needsGuidedReset = weak.totalRetrievalIncorrect >= 3 && weak.currentWrongStreak >= 2;
+    return {
+      targetId: weak.targetId,
+      promptType: needsGuidedReset ? "guided" : chooseRetrievalPromptType(memoryTrail, weak, { preferEasier: weak.totalRetrievalIncorrect >= 2 }),
+      mode: "weak-review",
+      reason: needsGuidedReset ? "weak target needs guided reset" : "weak target is due"
+    };
+  }
+
+  const currentWindowNeed = memoryTrail.currentPracticeWindow
+    .map((target) => memoryTrail.targetStats[target.id])
+    .filter((stats) => stats && due(stats) && avoidLast(stats) && stats.totalRetrievalCorrect < 2)
+    .sort((left, right) => left.totalRetrievalCorrect - right.totalRetrievalCorrect || left.totalRetrievalAttempts - right.totalRetrievalAttempts)[0];
+
+  if (currentWindowNeed) {
+    return {
+      targetId: currentWindowNeed.targetId,
+      promptType: chooseRetrievalPromptType(memoryTrail, currentWindowNeed, { earlyChunk: true }),
+      mode: "practice",
+      reason: "current chunk needs retrieval practice"
+    };
+  }
+
+  const review = getReviewTargets(memoryTrail)
+    .filter((stats) => due(stats) && avoidLast(stats))
+    .sort((left, right) => left.totalRetrievalCorrect - right.totalRetrievalCorrect || left.lastPromptedAt - right.lastPromptedAt)[0];
+
+  if (review && memoryTrail.promptCount % 4 === 3) {
+    return {
+      targetId: review.targetId,
+      promptType: chooseRetrievalPromptType(memoryTrail, review),
+      mode: "review",
+      reason: "spaced review from earlier chunk"
+    };
+  }
+
+  const learningTarget = dueIntroduced
+    .filter((stats) => stats.totalRetrievalCorrect < getStatsRetrievalCorrectTarget(stats))
+    .sort((left, right) => left.totalRetrievalCorrect - right.totalRetrievalCorrect || left.totalRetrievalAttempts - right.totalRetrievalAttempts)[0];
+
+  if (learningTarget) {
+    return {
+      targetId: learningTarget.targetId,
+      promptType: chooseRetrievalPromptType(memoryTrail, learningTarget),
+      mode: "practice",
+      reason: "target still needs retrieval practice"
+    };
+  }
+
+  const fallback = dueIntroduced.sort((left, right) => left.lastPromptedAt - right.lastPromptedAt)[0]
+    || introducedStats.filter(avoidLast).sort((left, right) => left.nextDuePrompt - right.nextDuePrompt)[0]
+    || introducedStats[0];
+
+  return fallback ? {
+    targetId: fallback.targetId,
+    promptType: chooseRetrievalPromptType(memoryTrail, fallback),
+    mode: "review",
+    reason: "fallback due review"
+  } : null;
+}
+
+function chooseRetrievalPromptType(memoryTrail, stats, options = {}) {
+  if (options.preferEasier || stats.placeToNameIncorrect > stats.nameToPlaceIncorrect + 1) {
+    return "name_to_place";
+  }
+
+  if (stats.nameToPlaceCorrect < 1) {
+    return "name_to_place";
+  }
+
+  if (stats.placeToNameCorrect < 1) {
+    return "place_to_name";
+  }
+
+  const retrievalCount = Math.max(1, memoryTrail.retrievalPromptCount);
+  const placeToNameCount = getIntroducedMemoryTrailStats(memoryTrail)
+    .reduce((count, item) => count + item.placeToNameAttempts, 0);
+  const placeToNameRatio = placeToNameCount / retrievalCount;
+
+  if (options.earlyChunk) {
+    return placeToNameRatio < 0.3 ? "place_to_name" : "name_to_place";
+  }
+
+  return placeToNameRatio < 0.5 ? "place_to_name" : "name_to_place";
+}
+
+function updateMemoryTrailStats(memoryTrail, targetId, result, options = {}) {
+  const stats = memoryTrail.targetStats[targetId];
+  if (!stats) {
     return;
   }
 
-  memoryTrail.nearMissCount = 0;
-  memoryTrail.nearMissTargetId = null;
+  const isCorrect = result === "correct";
+  const promptType = options.promptType || memoryTrail.currentPromptType || "name_to_place";
+  const isGuided = promptType === "guided";
+  stats.lastResult = result;
+  stats.lastPromptedAt = memoryTrail.promptCount;
+  memoryTrail.promptCount += 1;
+
+  if (isGuided) {
+    if (isCorrect) {
+      stats.guidedTapCount += 1;
+      stats.currentWrongStreak = 0;
+      stats.recentMisses = Math.max(0, stats.recentMisses - 1);
+    }
+    stats.nextDuePrompt = memoryTrail.promptCount + 1;
+    const lastHistory = memoryTrail.promptHistory.at(-1);
+    if (lastHistory) {
+      lastHistory.result = result;
+      lastHistory.guided = true;
+    }
+    debugMemoryTrail("updated guided stats", {
+      targetId,
+      result,
+      stats
+    });
+    updateMemoryTrailDebugObject(memoryTrail);
+    return;
+  }
+
+  stats.totalRetrievalAttempts += 1;
+  memoryTrail.retrievalPromptCount += 1;
+
+  if (promptType === "place_to_name") {
+    stats.placeToNameAttempts += 1;
+  } else {
+    stats.nameToPlaceAttempts += 1;
+  }
+
+  if (isCorrect) {
+    stats.totalRetrievalCorrect += 1;
+    if (promptType === "place_to_name") {
+      stats.placeToNameCorrect += 1;
+    } else {
+      stats.nameToPlaceCorrect += 1;
+    }
+    stats.currentCorrectStreak += 1;
+    stats.currentWrongStreak = 0;
+    stats.recentMisses = Math.max(0, stats.recentMisses - 1);
+    stats.nextDuePrompt = memoryTrail.promptCount + MIN_GAP_AFTER_CORRECT;
+    stats.isSessionLearned = hasTargetMetSessionLearnedRule(stats);
+    if (stats.currentCorrectStreak >= 2 && stats.totalRetrievalIncorrect <= 1) {
+      stats.isWeak = false;
+    }
+    memoryTrail.correctCount += 1;
+    memoryTrail.recentResults.push("correct");
+    memoryTrail.recentRetrievalResults.push("correct");
+  } else {
+    stats.totalRetrievalIncorrect += 1;
+    if (promptType === "place_to_name") {
+      stats.placeToNameIncorrect += 1;
+    } else {
+      stats.nameToPlaceIncorrect += 1;
+    }
+    stats.currentWrongStreak += 1;
+    stats.currentCorrectStreak = 0;
+    stats.recentMisses += 1;
+    stats.lastMissPrompt = memoryTrail.promptCount;
+    stats.isWeak = true;
+    stats.nextDuePrompt = memoryTrail.promptCount + MIN_GAP_AFTER_MISS;
+    memoryTrail.incorrectCount += 1;
+    memoryTrail.recentResults.push("incorrect");
+    memoryTrail.recentRetrievalResults.push("incorrect");
+  }
+
+  memoryTrail.recentResults = memoryTrail.recentResults.slice(-8);
+  memoryTrail.recentRetrievalResults = memoryTrail.recentRetrievalResults.slice(-8);
+  const lastHistory = memoryTrail.promptHistory.at(-1);
+  if (lastHistory) {
+    lastHistory.result = result;
+    lastHistory.guided = false;
+  }
+  debugMemoryTrail("updated stats", {
+    targetId,
+    result,
+    promptType,
+    stats,
+    accuracy: getMemoryTrailAccuracySummary(memoryTrail),
+    successRate: getMemoryTrailSuccessRate(memoryTrail)
+  });
+  updateMemoryTrailDebugObject(memoryTrail);
+}
+
+function getMemoryTrailAccuracySummary(memoryTrail) {
+  const stats = getIntroducedMemoryTrailStats(memoryTrail);
+  const totals = stats.reduce((summary, item) => {
+    summary.nameToPlaceAttempts += item.nameToPlaceAttempts;
+    summary.nameToPlaceCorrect += item.nameToPlaceCorrect;
+    summary.placeToNameAttempts += item.placeToNameAttempts;
+    summary.placeToNameCorrect += item.placeToNameCorrect;
+    return summary;
+  }, {
+    nameToPlaceAttempts: 0,
+    nameToPlaceCorrect: 0,
+    placeToNameAttempts: 0,
+    placeToNameCorrect: 0
+  });
+
+  return {
+    ...totals,
+    nameToPlaceAccuracy: totals.nameToPlaceAttempts > 0 ? totals.nameToPlaceCorrect / totals.nameToPlaceAttempts : null,
+    placeToNameAccuracy: totals.placeToNameAttempts > 0 ? totals.placeToNameCorrect / totals.placeToNameAttempts : null
+  };
+}
+
+function getIntroducedMemoryTrailStats(memoryTrail) {
+  return memoryTrail.introducedTargetIds
+    .map((targetId) => memoryTrail.targetStats[targetId])
+    .filter(Boolean);
+}
+
+function getWeakTargets(memoryTrail) {
+  return getIntroducedMemoryTrailStats(memoryTrail)
+    .filter((stats) => stats.isWeak || stats.totalRetrievalIncorrect > 0);
+}
+
+function getReviewTargets(memoryTrail) {
+  const currentIds = new Set(memoryTrail.currentPracticeWindow.map((target) => target.id));
+  return getIntroducedMemoryTrailStats(memoryTrail)
+    .filter((stats) => !currentIds.has(stats.targetId));
+}
+
+function shouldIntroduceNewTarget(memoryTrail) {
+  if (memoryTrail.currentWindowIndex >= memoryTrail.practiceWindows.length - 1) {
+    return false;
+  }
+
+  if (memoryTrail.introducedTargetIds.length >= getMaxNewTargetsForSession(memoryTrail)) {
+    return false;
+  }
+
+  if (memoryTrail.recentRetrievalResults.slice(-6).filter((result) => result === "incorrect").length >= 3) {
+    return false;
+  }
+
+  const currentStats = memoryTrail.currentPracticeWindow.map((target) => memoryTrail.targetStats[target.id]).filter(Boolean);
+  const currentWindowReady = currentStats.length > 0 && currentStats.every((stats) => (
+    hasTargetCompletedGuidedExposure(stats)
+    && (stats.totalRetrievalCorrect >= 2 || stats.totalRetrievalAttempts >= 4 || stats.isSessionLearned)
+  ));
+  const fiveCorrect = memoryTrail.recentRetrievalResults.slice(-5).length === 5
+    && memoryTrail.recentRetrievalResults.slice(-5).every((result) => result === "correct");
+
+  return currentWindowReady || fiveCorrect;
+}
+
+function shouldReduceDifficulty(memoryTrail) {
+  const lastFour = memoryTrail.recentRetrievalResults.slice(-4);
+  const lastSix = memoryTrail.recentRetrievalResults.slice(-6);
+  return lastFour.filter((result) => result === "incorrect").length >= 2
+    || lastSix.filter((result) => result === "incorrect").length >= 3
+    || (memoryTrail.retrievalPromptCount >= 4 && getMemoryTrailSuccessRate(memoryTrail) < TARGET_SUCCESS_RATE - 0.18);
+}
+
+function advancePracticeWindow(memoryTrail) {
+  if (!shouldIntroduceNewTarget(memoryTrail)) {
+    return false;
+  }
+
+  memoryTrail.currentWindowIndex += 1;
+  const nextWindow = memoryTrail.practiceWindows[memoryTrail.currentWindowIndex] || [];
+  const { practiceWindow, newTargets } = composeNextPracticeWindow(memoryTrail, nextWindow);
+
+  if (newTargets.length === 0 || practiceWindow.length === 0) {
+    memoryTrail.currentWindowIndex -= 1;
+    return false;
+  }
+
+  introducePracticeWindow(memoryTrail, practiceWindow, newTargets);
+  fitMapToPracticeWindow(practiceWindow, "advance");
+  debugMemoryTrail("advanced practice window", {
+    currentWindowIndex: memoryTrail.currentWindowIndex,
+    currentPracticeWindow: practiceWindow.map((target) => target.id),
+    newTargets: newTargets.map((target) => target.id)
+  });
+  return true;
+}
+
+function shouldEndMemoryTrailSession(memoryTrail) {
+  if (getMemoryTrailElapsedSeconds(memoryTrail) >= memoryTrail.sessionSeconds) {
+    return true;
+  }
+
+  if (memoryTrail.promptCount >= SESSION_PROMPT_CAP) {
+    return true;
+  }
+
+  const introducedStats = getIntroducedMemoryTrailStats(memoryTrail);
+  return introducedStats.length >= Math.min(MIN_NEW_TARGETS_PER_SESSION, memoryTrail.targetPoolIds.length)
+    && introducedStats.every((stats) => stats.isSessionLearned || stats.totalRetrievalCorrect >= getStatsRetrievalCorrectTarget(stats))
+    && getWeakTargets(memoryTrail).every((stats) => stats.currentCorrectStreak > 0);
+}
+
+function completeMemoryTrailSession(memoryTrail) {
+  memoryTrail.phase = "complete";
+  memoryTrail.sessionPhase = "practice";
+  memoryTrail.promptName = "";
+  memoryTrail.responseChipTargetId = null;
+  memoryTrail.currentPromptTargetId = null;
+  memoryTrail.answerChoices = [];
+  memoryTrail.message = `Great session: ${memoryTrail.correctCount} retrieval correct, ${memoryTrail.incorrectCount} to review.`;
+  runner.setMemoryTrailHighlight([]);
+  renderStudyExplorePanel();
+  if (completedMemoryTrailAnalyticsKey !== currentMemoryTrailAnalyticsKey) {
+    completedMemoryTrailAnalyticsKey = currentMemoryTrailAnalyticsKey;
+    trackEvent("memory_trail_completed", getMemoryTrailAnalyticsContext());
+  }
+  showMemoryTrailCompletionOverlay();
+}
+
+function getMemoryTrailElapsedSeconds(memoryTrail) {
+  return Math.max(0, Math.floor((Date.now() - memoryTrail.startedAt) / 1000));
+}
+
+function getMemoryTrailSuccessRate(memoryTrail) {
+  return memoryTrail.retrievalPromptCount > 0 ? memoryTrail.correctCount / memoryTrail.retrievalPromptCount : 1;
+}
+
+function getMemoryTrailSessionStats(memoryTrail = getActiveMemoryTrail()) {
+  if (!memoryTrail) {
+    return null;
+  }
+
+  return {
+    startedAt: memoryTrail.startedAt,
+    elapsedSeconds: getMemoryTrailElapsedSeconds(memoryTrail),
+    sessionPhase: memoryTrail.sessionPhase,
+    currentPromptType: memoryTrail.currentPromptType,
+    promptCount: memoryTrail.promptCount,
+    retrievalPromptCount: memoryTrail.retrievalPromptCount,
+    correctCount: memoryTrail.correctCount,
+    incorrectCount: memoryTrail.incorrectCount,
+    recentResults: [...memoryTrail.recentResults],
+    recentRetrievalResults: [...memoryTrail.recentRetrievalResults],
+    currentPracticeWindow: memoryTrail.currentPracticeWindow.map((target) => target.id),
+    introducedTargets: [...memoryTrail.introducedTargetIds],
+    weakTargets: getWeakTargets(memoryTrail).map((stats) => stats.targetId),
+    sessionLearnedTargets: getIntroducedMemoryTrailStats(memoryTrail)
+      .filter((stats) => stats.isSessionLearned)
+      .map((stats) => stats.targetId),
+    sessionSuccessRate: getMemoryTrailSuccessRate(memoryTrail),
+    accuracy: getMemoryTrailAccuracySummary(memoryTrail),
+    targetStats: memoryTrail.targetStats
+  };
+}
+
+function fitMapToPracticeWindow(targets = [], reason = "practice-window") {
+  if (!targets.length || !runner?.fitTargets) {
+    return false;
+  }
+
+  const memoryTrail = getActiveMemoryTrail();
+  const windowKey = targets.map((target) => target.id).join("|");
+  if (memoryTrail && memoryTrail.lastCameraWindowKey === windowKey) {
+    return false;
+  }
+
+  const didFit = runner.fitTargets(targets, {
+    duration: 850,
+    maxZoom: targets.length <= 3 ? 5.75 : 5.35
+  });
+
+  if (didFit && memoryTrail) {
+    memoryTrail.lastCameraWindowKey = windowKey;
+  }
+
+  debugMemoryTrail("fit practice window", {
+    reason,
+    targetIds: targets.map((target) => target.id),
+    didFit
+  });
+  return didFit;
+}
+
+function debugMemoryTrail(label, details = {}) {
+  if (!ENABLE_MEMORY_TRAIL_DEBUG) {
+    return;
+  }
+
+  console.debug("[memory-trail]", label, details);
+}
+
+function updateMemoryTrailDebugObject(memoryTrail = getActiveMemoryTrail()) {
+  if (!ENABLE_MEMORY_TRAIL_DEBUG || typeof window === "undefined") {
+    return;
+  }
+
+  window.mappaMemoryTrailDebug = {
+    getStats: () => getMemoryTrailSessionStats(memoryTrail),
+    forceNextPracticeWindow: () => {
+      if (!memoryTrail || memoryTrail.currentWindowIndex >= memoryTrail.practiceWindows.length - 1) {
+        return null;
+      }
+      memoryTrail.currentWindowIndex += 1;
+      introducePracticeWindow(memoryTrail, memoryTrail.practiceWindows[memoryTrail.currentWindowIndex]);
+      fitMapToPracticeWindow(memoryTrail.currentPracticeWindow, "debug-force");
+      return memoryTrail.currentPracticeWindow.map((target) => target.id);
+    },
+    clearSessionStats: () => {
+      if (!memoryTrail) {
+        return null;
+      }
+      Object.values(memoryTrail.targetStats).forEach((stats) => {
+        Object.assign(stats, createMemoryTrailTargetStats({ id: stats.targetId, name: stats.displayName }));
+      });
+      memoryTrail.promptCount = 0;
+      memoryTrail.retrievalPromptCount = 0;
+      memoryTrail.correctCount = 0;
+      memoryTrail.incorrectCount = 0;
+      memoryTrail.recentResults = [];
+      memoryTrail.recentRetrievalResults = [];
+      memoryTrail.promptHistory = [];
+      return getMemoryTrailSessionStats(memoryTrail);
+    },
+    printWeakTargets: () => getWeakTargets(memoryTrail).map((stats) => ({ ...stats })),
+    printPromptHistory: () => [...(memoryTrail?.promptHistory || [])]
+  };
+}
+
+function getMemoryTrailClickDebugContext(memoryTrail, clickedTargetIds = [], extra = {}) {
+  return {
+    promptType: memoryTrail?.currentPromptType || "",
+    phase: memoryTrail?.sessionPhase || "",
+    interactionPhase: memoryTrail?.phase || "",
+    clickedTargetIds,
+    expectedTargetId: memoryTrail?.currentPromptTargetId || "",
+    selectedTargetId: session?.selectedId || "",
+    highlightedTargetId: memoryTrail?.responseChipTargetId || memoryTrail?.currentPromptTargetId || "",
+    mapState: runner?.getMapInteractionState?.() || null,
+    ...extra
+  };
 }
 
 function handleMemoryTrailTargetTap(targetIds, mapPoint = null) {
   const memoryTrail = getActiveMemoryTrail();
+  const candidateIds = Array.isArray(targetIds)
+    ? targetIds
+    : [targetIds].filter(Boolean);
 
   if (!memoryTrail) {
+    debugMemoryTrail("map click ignored", {
+      clickedTargetIds: candidateIds,
+      reason: "no active memory trail",
+      mapState: runner?.getMapInteractionState?.() || null
+    });
     return;
   }
 
+  if (candidateIds.length > 0 || mapPoint) {
+    clearMemoryTrailTrayFeedback(memoryTrail, "map selection");
+  }
+
   if (memoryTrail.phase === "playing") {
+    debugMemoryTrail("map click ignored", getMemoryTrailClickDebugContext(memoryTrail, candidateIds, {
+      reason: "prompt is not accepting answers yet"
+    }));
     return;
   }
 
   if (memoryTrail.phase !== "answering") {
+    debugMemoryTrail("map click ignored", getMemoryTrailClickDebugContext(memoryTrail, candidateIds, {
+      reason: "memory trail is not in answering state"
+    }));
     return;
   }
 
-  const candidateIds = Array.isArray(targetIds)
-    ? targetIds
-    : [targetIds].filter(Boolean);
-  const roundTargetIds = getMemoryTrailRoundTargetIds(memoryTrail);
-  const expectedTargetId = roundTargetIds[memoryTrail.expectedIndex];
+  if (isPlaceToNameMemoryTrailPrompt(memoryTrail)) {
+    memoryTrail.message = "Choose the country name from the chips.";
+    debugMemoryTrail("map click ignored", getMemoryTrailClickDebugContext(memoryTrail, candidateIds, {
+      reason: "place-to-name prompt expects an answer chip"
+    }));
+    renderStudyExplorePanel();
+    return;
+  }
+
+  const expectedTargetId = memoryTrail.currentPromptTargetId;
 
   if (candidateIds.includes(expectedTargetId)) {
-    handleCorrectMemoryTrailTap(memoryTrail, expectedTargetId, roundTargetIds);
+    debugMemoryTrail("map click accepted", getMemoryTrailClickDebugContext(memoryTrail, candidateIds, {
+      result: "correct"
+    }));
+    handleCorrectMemoryTrailAnswer(memoryTrail, expectedTargetId);
   } else if (runner?.isTargetNearMapPoint?.(expectedTargetId, mapPoint)) {
-    handleNearMissMemoryTrailTap(memoryTrail, expectedTargetId);
+    debugMemoryTrail("map click accepted", getMemoryTrailClickDebugContext(memoryTrail, candidateIds, {
+      result: "near-miss"
+    }));
+    handleIncorrectMemoryTrailAnswer(memoryTrail, expectedTargetId, {
+      nearMiss: true,
+      selectedTargetId: candidateIds[0] || ""
+    });
   } else {
-    handleIncorrectMemoryTrailTap(memoryTrail);
+    debugMemoryTrail("map click accepted", getMemoryTrailClickDebugContext(memoryTrail, candidateIds, {
+      result: "incorrect"
+    }));
+    handleIncorrectMemoryTrailAnswer(memoryTrail, expectedTargetId, {
+      selectedTargetId: candidateIds[0] || ""
+    });
   }
 }
 
-function handleCorrectMemoryTrailTap(memoryTrail, targetId, roundTargetIds) {
-  resetMemoryTrailNearMiss(memoryTrail);
+function handleMemoryTrailNameChoice(targetId) {
+  const memoryTrail = getActiveMemoryTrail();
+
+  if (!memoryTrail || memoryTrail.phase !== "answering" || !isPlaceToNameMemoryTrailPrompt(memoryTrail)) {
+    return;
+  }
+
+  clearMemoryTrailTrayFeedback(memoryTrail, "answer chip selection");
+
+  if (targetId === memoryTrail.currentPromptTargetId) {
+    handleCorrectMemoryTrailAnswer(memoryTrail, targetId);
+  } else {
+    handleIncorrectMemoryTrailAnswer(memoryTrail, memoryTrail.currentPromptTargetId, { selectedTargetId: targetId });
+  }
+}
+
+function handleCorrectMemoryTrailAnswer(memoryTrail, targetId) {
+  clearMemoryTrailTrayFeedback(memoryTrail, "correct answer");
   memoryTrail.responseChipTargetId = targetId;
-  memoryTrail.expectedIndex += 1;
   runner.setMemoryTrailHighlight(targetId);
+  updateMemoryTrailStats(memoryTrail, targetId, "correct", { promptType: memoryTrail.currentPromptType });
   showFeedback("Yes.", true);
 
-  const roundComplete = memoryTrail.expectedIndex >= roundTargetIds.length;
-  const trailComplete = roundComplete && memoryTrail.roundIndex >= memoryTrail.order.length - 1;
-
   memoryTrail.phase = "feedback";
-  memoryTrail.message = trailComplete
-    ? "Memory Trail complete."
-    : roundComplete
-      ? "Good. Get ready for the next round."
-      : `Good. Next tap ${memoryTrail.expectedIndex + 1} of ${roundTargetIds.length}.`;
+  memoryTrail.answerChoices = [];
+  memoryTrail.promptName = getMemoryTrailTargetLabel(targetId);
+  memoryTrail.message = isGuidedMemoryTrailPrompt(memoryTrail)
+    ? "Good. Now you have seen this one."
+    : "Nice. Keep going.";
   renderStudyExplorePanel();
 
   scheduleMemoryTrailStep(memoryTrail, () => {
     runner.setMemoryTrailHighlight([]);
-
-    if (trailComplete) {
-      memoryTrail.phase = "complete";
-      memoryTrail.promptName = "";
-      memoryTrail.responseChipTargetId = null;
-      memoryTrail.message = "You completed the Memory Trail.";
-      renderStudyExplorePanel();
-      if (completedMemoryTrailAnalyticsKey !== currentMemoryTrailAnalyticsKey) {
-        completedMemoryTrailAnalyticsKey = currentMemoryTrailAnalyticsKey;
-        trackEvent("memory_trail_completed", getMemoryTrailAnalyticsContext());
-      }
-      showMemoryTrailCompletionOverlay();
-      return;
-    }
-
-    if (roundComplete) {
-      memoryTrail.roundIndex += 1;
-      playMemoryTrailRound(memoryTrail);
-      return;
-    }
-
-    memoryTrail.phase = "answering";
-    resetMemoryTrailNearMiss(memoryTrail);
-    renderStudyExplorePanel();
+    promptNextMemoryTrailTarget(memoryTrail);
   }, memoryTrailCorrectPauseMs);
 }
 
-function handleNearMissMemoryTrailTap(memoryTrail, expectedTargetId) {
-  if (memoryTrail.nearMissTargetId !== expectedTargetId) {
-    memoryTrail.nearMissTargetId = expectedTargetId;
-    memoryTrail.nearMissCount = 0;
-  }
-
-  memoryTrail.nearMissCount += 1;
-
-  if (memoryTrail.nearMissCount < 2) {
-    memoryTrail.message = "Close - try again.";
-    showFeedback("Close - try again.");
-    renderStudyExplorePanel();
-    return;
-  }
-
+function handleIncorrectMemoryTrailAnswer(memoryTrail, expectedTargetId, options = {}) {
+  updateMemoryTrailStats(memoryTrail, expectedTargetId, "incorrect", { promptType: memoryTrail.currentPromptType });
   memoryTrail.phase = "feedback";
-  memoryTrail.promptName = "";
-  memoryTrail.responseChipTargetId = null;
-  memoryTrail.message = "Let's watch that round again.";
-  runner.setMemoryTrailHighlight([]);
-  showFeedback("Let's watch that round again.");
+  memoryTrail.promptName = getMemoryTrailTargetLabel(expectedTargetId);
+  memoryTrail.responseChipTargetId = expectedTargetId;
+  memoryTrail.answerChoices = [];
+  memoryTrail.message = isGuidedMemoryTrailPrompt(memoryTrail)
+    ? "This is the highlighted place."
+    : options.nearMiss
+      ? "Close. Here's the place."
+      : "Not quite. Here's the answer.";
+  setMemoryTrailTrayFeedback(memoryTrail, createMemoryTrailMissFeedback(memoryTrail, expectedTargetId, options));
+  runner.setMemoryTrailHighlight(expectedTargetId);
+  showFeedback(memoryTrail.message);
   renderStudyExplorePanel();
-  resetMemoryTrailNearMiss(memoryTrail);
 
   scheduleMemoryTrailStep(memoryTrail, () => {
-    playMemoryTrailRound(memoryTrail);
+    runner.setMemoryTrailHighlight([]);
+    promptNextMemoryTrailTarget(memoryTrail);
   }, memoryTrailReplayPauseMs);
 }
 
-function handleIncorrectMemoryTrailTap(memoryTrail) {
-  memoryTrail.phase = "feedback";
-  memoryTrail.promptName = "";
-  memoryTrail.responseChipTargetId = null;
-  memoryTrail.message = "Not quite. Watch this round again.";
-  runner.setMemoryTrailHighlight([]);
-  showFeedback("Not quite - watch it again.");
-  renderStudyExplorePanel();
-  resetMemoryTrailNearMiss(memoryTrail);
+function createMemoryTrailMissFeedback(memoryTrail, expectedTargetId, options = {}) {
+  const expectedName = getMemoryTrailTargetLabel(expectedTargetId) || "the answer";
+  const selectedTargetId = options.selectedTargetId || "";
+  const selectedName = selectedTargetId ? getMemoryTrailTargetLabel(selectedTargetId) : "";
+  let message;
 
-  scheduleMemoryTrailStep(memoryTrail, () => {
-    playMemoryTrailRound(memoryTrail);
-  }, memoryTrailReplayPauseMs);
+  if (isPlaceToNameMemoryTrailPrompt(memoryTrail)) {
+    message = selectedName
+      ? `Not quite - this is ${expectedName}, not ${selectedName}. We'll review it again.`
+      : `Not quite - this is ${expectedName}. We'll review it again.`;
+  } else if (selectedName) {
+    message = `Not quite - that was ${selectedName}. ${expectedName} is here. We'll review it again.`;
+  } else {
+    message = `Not quite - ${expectedName} is here. We'll review it again.`;
+  }
+
+  return {
+    type: "incorrect",
+    message,
+    expectedTargetId,
+    selectedTargetId,
+    createdAt: Date.now(),
+    persistUntilNextAction: true
+  };
+}
+
+function setMemoryTrailTrayFeedback(memoryTrail, feedback) {
+  if (!memoryTrail || !feedback) {
+    return;
+  }
+
+  memoryTrail.trayFeedback = feedback;
+  debugMemoryTrail("tray feedback created", feedback);
+}
+
+function clearMemoryTrailTrayFeedback(memoryTrail, action = "unknown") {
+  if (!memoryTrail?.trayFeedback) {
+    return;
+  }
+
+  debugMemoryTrail("tray feedback cleared", {
+    action,
+    feedback: memoryTrail.trayFeedback
+  });
+  memoryTrail.trayFeedback = null;
 }
 
 function renderMemoryTrailPanel() {
@@ -6777,9 +7807,10 @@ function renderMemoryTrailPanel() {
   kicker.textContent = "Memory Trail";
 
   const title = document.createElement("strong");
+  const phaseLabel = memoryTrail.sessionPhase === "learn" ? "Learn" : "Practice";
   title.textContent = memoryTrail.phase === "complete"
-    ? "Trail complete"
-    : `Round ${memoryTrail.roundIndex + 1} of ${memoryTrail.order.length}`;
+    ? "Session complete"
+    : `${phaseLabel} | Prompt ${memoryTrail.promptCount + 1} of ${SESSION_PROMPT_CAP}`;
 
   const message = document.createElement("p");
   message.textContent = memoryTrail.message;
@@ -6793,9 +7824,31 @@ function renderMemoryTrailPanel() {
     status.appendChild(prompt);
   }
 
+  if (memoryTrail.instructionLabel && memoryTrail.phase !== "complete") {
+    const instructionLabel = document.createElement("p");
+    instructionLabel.className = "memory-trail-instruction-label";
+    instructionLabel.textContent = memoryTrail.instructionLabel;
+    status.appendChild(instructionLabel);
+  }
+
+  const trayFeedback = createMemoryTrailTrayFeedback(memoryTrail);
+  if (trayFeedback) {
+    status.appendChild(trayFeedback);
+  }
+
+  const stats = document.createElement("p");
+  stats.className = "memory-trail-session-stats";
+  stats.textContent = `${memoryTrail.correctCount} retrieval correct | ${getWeakTargets(memoryTrail).length} review`;
+  status.appendChild(stats);
+
   const responseChip = createMemoryTrailResponseChip(memoryTrail);
   if (responseChip) {
     status.appendChild(responseChip);
+  }
+
+  const choiceList = createMemoryTrailAnswerChoiceList(memoryTrail);
+  if (choiceList) {
+    status.appendChild(choiceList);
   }
 
   const controls = document.createElement("div");
@@ -6807,6 +7860,48 @@ function renderMemoryTrailPanel() {
 
   panel.append(status, controls);
   answerBank.appendChild(panel);
+}
+
+function createMemoryTrailTrayFeedback(memoryTrail) {
+  const feedback = memoryTrail?.trayFeedback;
+  if (!feedback?.message) {
+    return null;
+  }
+
+  debugMemoryTrail("tray feedback rendered", feedback);
+
+  const feedbackElement = document.createElement("p");
+  feedbackElement.className = `memory-trail-tray-feedback memory-trail-tray-feedback-${feedback.type || "info"}`;
+  feedbackElement.setAttribute("role", "status");
+  feedbackElement.textContent = feedback.message;
+  return feedbackElement;
+}
+
+function createMemoryTrailAnswerChoiceList(memoryTrail) {
+  if (
+    !memoryTrail
+    || memoryTrail.phase !== "answering"
+    || !isPlaceToNameMemoryTrailPrompt(memoryTrail)
+    || !memoryTrail.answerChoices?.length
+  ) {
+    return null;
+  }
+
+  const list = document.createElement("div");
+  list.className = "memory-trail-choice-list";
+
+  memoryTrail.answerChoices.forEach((choice) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "label-chip memory-trail-choice-chip";
+    button.dataset.id = choice.id;
+    button.setAttribute("aria-label", choice.label);
+    button.appendChild(createChipLabelText(choice.label));
+    button.addEventListener("click", () => handleMemoryTrailNameChoice(choice.id));
+    list.appendChild(button);
+  });
+
+  return list;
 }
 
 function createMemoryTrailResponseChip(memoryTrail) {
@@ -6824,7 +7919,7 @@ function createMemoryTrailResponseChip(memoryTrail) {
   const chip = document.createElement("div");
   chip.className = "label-chip memory-trail-response-chip";
   chip.setAttribute("role", "status");
-  chip.setAttribute("aria-label", `Last correct: ${labelText}`);
+  chip.setAttribute("aria-label", `Memory Trail target: ${labelText}`);
   chip.appendChild(createChipLabelText(labelText));
 
   const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(labelText);
@@ -7301,7 +8396,7 @@ function renderJourneyDetail(journey) {
           title: "Learn with Memory Trail",
           description: "Study a section with guided map memory before playing.",
           buttonLabel: "Learn with Memory Trail",
-          infoText: "Memory Trail shows each place, then asks you to repeat the map pattern. It does not change journey progress."
+          infoText: "Learn a few places, then practice finding and naming them from memory. Missed places come back for review, and the session adjusts as you play."
         }
       : {
           title: "Study This Journey",
@@ -7793,13 +8888,16 @@ function renderSettingsScreen() {
   const mapLayersSection = createSettingsMenuSection("Map Layers", "Control which supported map details are shown. Presets also update saved study-target preferences.", true, "settings-menu-section", "map-layers");
   mapLayersSection.content.append(renderStudyPresetControl(), renderMapLayerSettings());
 
+  const audioSection = createSettingsMenuSection("Audio", "Control optional spoken directions separately from place-name pronunciation.", false, "settings-menu-section", "audio");
+  audioSection.content.appendChild(renderAudioSettings());
+
   const studyTargetsSection = createSettingsMenuSection("Study Targets", "Saved preferences for planning study sets. Gameplay filtering is not fully wired yet.", false, "settings-menu-section", "study-targets");
   studyTargetsSection.content.appendChild(renderStudyTargetHierarchy());
 
   const resetSection = createSettingsMenuSection("Reset / Defaults", "Restore the default map layer and study-target preferences.", false, "settings-menu-section", "reset-defaults");
   resetSection.content.appendChild(renderSettingsDefaultsControl());
 
-  panel.append(mapLayersSection.details, studyTargetsSection.details, resetSection.details);
+  panel.append(mapLayersSection.details, audioSection.details, studyTargetsSection.details, resetSection.details);
 
   journeyShellContent.appendChild(panel);
 }
@@ -7940,6 +9038,54 @@ function renderMapLayerSettings() {
 
   layerGroup.append(heading, layerGrid);
   return layerGroup;
+}
+
+function renderAudioSettings() {
+  const audioGroup = document.createElement("section");
+  audioGroup.className = "settings-layer-group";
+
+  const heading = document.createElement("h3");
+  heading.textContent = "Memory Trail";
+
+  const audioGrid = document.createElement("div");
+  audioGrid.className = "settings-layer-grid";
+  audioGrid.appendChild(createMemoryTrailInstructionSpeechToggle());
+
+  audioGroup.append(heading, audioGrid);
+  return audioGroup;
+}
+
+function createMemoryTrailInstructionSpeechToggle() {
+  const option = document.createElement("label");
+  option.className = "settings-layer-toggle";
+
+  const copy = document.createElement("span");
+  copy.className = "settings-layer-copy";
+
+  const labelText = document.createElement("strong");
+  labelText.textContent = "Speak Memory Trail Instructions";
+
+  const helper = document.createElement("span");
+  helper.textContent = "Speak task directions when Memory Trail changes phase or prompt type.";
+
+  copy.append(labelText, helper);
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = audioSettings.speakMemoryTrailInstructions === true;
+  checkbox.dataset.settingsControl = "audio-memory-trail-instructions";
+  checkbox.addEventListener("change", () => {
+    setAudioSettings({
+      speakMemoryTrailInstructions: checkbox.checked
+    }, checkbox.dataset.settingsControl);
+  });
+
+  const switchTrack = document.createElement("span");
+  switchTrack.className = "settings-switch";
+  switchTrack.setAttribute("aria-hidden", "true");
+
+  option.append(copy, checkbox, switchTrack);
+  return option;
 }
 
 function getMapLayerOptions() {
@@ -9829,8 +10975,8 @@ function getMemoryTrailAnalyticsContext() {
     activity_title: activity?.title || "",
     ...getJourneyAnalyticsContext(activeStudySession?.journeyId),
     difficulty: getEffectiveDifficulty(activity),
-    sequence_length: memoryTrail?.order?.length || activity?.targets?.length || 0,
-    round_count: memoryTrail?.order?.length || activity?.targets?.length || 0
+    sequence_length: memoryTrail?.currentPracticeWindow?.length || activity?.targets?.length || 0,
+    round_count: memoryTrail?.retrievalPromptCount || memoryTrail?.promptCount || 0
   };
 }
 
@@ -11264,6 +12410,20 @@ function loadStudyTargetSettings() {
   }
 }
 
+function normalizeAudioSettings(settings = {}) {
+  return {
+    speakMemoryTrailInstructions: settings?.speakMemoryTrailInstructions === true
+  };
+}
+
+function loadAudioSettings() {
+  try {
+    return normalizeAudioSettings(loadStoredAppSettings()?.audio);
+  } catch {
+    return normalizeAudioSettings();
+  }
+}
+
 function loadStoredAppSettings() {
   try {
     return JSON.parse(localStorage.getItem(appSettingsStorageKey) || "{}");
@@ -11277,7 +12437,8 @@ function saveAppSettings() {
     localStorage.setItem(appSettingsStorageKey, JSON.stringify({
       version: defaultAppSettings.version,
       mapLayers: normalizeMapLayerSettings(mapLayerSettings),
-      targetSettings: normalizeStudyTargetSettings(studyTargetSettings)
+      targetSettings: normalizeStudyTargetSettings(studyTargetSettings),
+      audio: normalizeAudioSettings(audioSettings)
     }));
   } catch {
     // Ignore localStorage write failures and keep the session going.
@@ -11295,6 +12456,18 @@ function setMapLayerSettings(nextSettings = {}, focusControl = "") {
   });
   saveMapLayerSettings();
   refreshCurrentActivityLayerPresentation();
+  if (currentAppScreen === "settings") {
+    rerenderSettingsPreservingUiState(focusControl);
+  }
+}
+
+function setAudioSettings(nextSettings = {}, focusControl = "") {
+  audioSettings = normalizeAudioSettings({
+    ...audioSettings,
+    ...nextSettings
+  });
+  saveAppSettings();
+
   if (currentAppScreen === "settings") {
     rerenderSettingsPreservingUiState(focusControl);
   }
