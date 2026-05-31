@@ -1,5 +1,5 @@
-import { journeyPresets } from "./journey-presets.js?v=20260531-menu-cards";
-import { trackEvent } from "./analytics.js?v=20260531-menu-cards";
+import { journeyPresets } from "./journey-presets.js?v=20260531-us-journey-available";
+import { trackEvent } from "./analytics.js?v=20260531-us-journey-available";
 import {
   clearActiveJourney,
   getJourneyProgress,
@@ -7,7 +7,7 @@ import {
   markStepComplete,
   resetJourneyDifficulty,
   setActiveJourney
-} from "./progress-store.js?v=20260531-menu-cards";
+} from "./progress-store.js?v=20260531-us-journey-available";
 
 const APP_NAME = "Mappa Mundi";
 const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
@@ -2635,6 +2635,8 @@ let currentDifficulty = loadDifficultyMode();
 let currentAppScreen = "launch";
 let appScreenHistory = [];
 let selectedJourneyId = null;
+let journeyPickerIntent = "neutral";
+let selectedJourneyDetailIntent = "neutral";
 let selectedJourneyPlayState = {
   journeyId: null,
   difficultyId: "medium"
@@ -3085,12 +3087,13 @@ const defaultQuickStartJourneyId = "world-geography-core";
 const defaultQuickStartDifficulty = difficultyModes.easy;
 
 function createActivityShellCatalog() {
-  return activityDataPaths.map((path, index) => {
+  const shellActivities = activityDataPaths.map((path, index) => {
     const id = path.split("/").pop().replace(/\.json$/i, "");
     const node = getHierarchyNode(findHierarchyNodeForActivity(id));
 
     return {
       id,
+      sequence: Number(id.match(/-(\d+)$/)?.[1]) || index + 1,
       title: node?.activityLabel || formatActivityShellTitle(id),
       targets: [],
       itemCount: 0,
@@ -3099,6 +3102,8 @@ function createActivityShellCatalog() {
       category: node?.category || ""
     };
   });
+
+  return expandDerivedActivityData(shellActivities);
 }
 
 function formatActivityShellTitle(activityId = "") {
@@ -3192,10 +3197,10 @@ async function ensureMapRuntimeLoaded() {
     mapRuntimePromise = Promise.all([
       loadStylesheetOnce(mapLibreStylesheetUrl),
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
-      import("./map-engines/activity-normalizer.js?v=20260531-menu-cards"),
-      import("./maplibre/activity-session.js?v=20260531-menu-cards"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260531-menu-cards"),
-      import("./chip-speech.js?v=20260531-menu-cards")
+      import("./map-engines/activity-normalizer.js?v=20260531-us-journey-available"),
+      import("./maplibre/activity-session.js?v=20260531-us-journey-available"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260531-us-journey-available"),
+      import("./chip-speech.js?v=20260531-us-journey-available")
     ]).then(([
       ,
       ,
@@ -4767,9 +4772,11 @@ function bindLaunchScreenEvents() {
   });
   mainMenuQuickStartButton?.addEventListener("click", startQuickStartJourney);
   mainMenuChooseButton?.addEventListener("click", () => {
+    journeyPickerIntent = "learn";
     showAppScreen("choose-journey");
   });
   challengeMenuChooseButton?.addEventListener("click", () => {
+    journeyPickerIntent = "challenge";
     showAppScreen("choose-journey");
   });
   mainMenuSettingsButton?.addEventListener("click", () => {
@@ -4789,6 +4796,10 @@ function handleLaunchStart() {
   }
 
   showAppScreen("onboarding");
+}
+
+function normalizeJourneyDetailIntent(intent) {
+  return intent === "learn" || intent === "challenge" ? intent : "neutral";
 }
 
 function showSettingsScreen(options = {}) {
@@ -4840,6 +4851,11 @@ function popAppScreenHistory() {
 function showAppScreen(screenId, options = {}) {
   const normalizedScreenId = normalizeAppShellScreenId(screenId);
   const pushHistory = options.pushHistory !== false && currentAppScreen !== normalizedScreenId;
+
+  if (normalizedScreenId === "main-menu" || normalizedScreenId === "learn-menu" || normalizedScreenId === "challenge-menu") {
+    journeyPickerIntent = "neutral";
+    selectedJourneyDetailIntent = "neutral";
+  }
 
   if (pushHistory) {
     pushAppScreenHistory(currentAppScreen);
@@ -5441,6 +5457,7 @@ function selectJourney(journeyId) {
     });
   }
   selectedJourneyId = journeyId;
+  selectedJourneyDetailIntent = normalizeJourneyDetailIntent(journeyPickerIntent);
   selectedJourneyPlayState = {
     journeyId,
     difficultyId: selectedJourneyPlayState.journeyId === journeyId
@@ -5499,6 +5516,7 @@ function startWorldFoundationsFromOnboarding() {
 
 function chooseJourneyFromOnboarding() {
   markOnboardingSeen();
+  journeyPickerIntent = "neutral";
   showAppScreen("choose-journey");
 }
 
@@ -5512,6 +5530,7 @@ function startQuickStartJourney() {
   const target = getQuickStartTarget(atlasProgress);
 
   if (!target || target.isChooseJourney) {
+    journeyPickerIntent = "challenge";
     showAppScreen("choose-journey");
     return;
   }
@@ -5780,6 +5799,15 @@ function getJourneyMemoryTrailEligibleSteps(journey) {
 }
 
 function getJourneyDetailSubtitle(journey) {
+  const detailIntent = normalizeJourneyDetailIntent(selectedJourneyDetailIntent);
+  if (detailIntent === "learn") {
+    return "Learn each section with Memory Trail, then play when you are ready.";
+  }
+
+  if (detailIntent === "challenge") {
+    return "Choose your difficulty, then start the journey.";
+  }
+
   const validSteps = getValidJourneySteps(journey);
   const eligibleCount = getJourneyMemoryTrailEligibleSteps(journey).length;
 
@@ -8500,6 +8528,9 @@ function renderJourneyDetail(journey) {
   const isAvailable = isJourneyAvailable(journey);
   const status = getEffectiveJourneyStatus(journey);
   const hasMemoryTrailEligibleStep = getJourneyMemoryTrailEligibleSteps(journey).length > 0;
+  const detailIntent = normalizeJourneyDetailIntent(selectedJourneyDetailIntent);
+  const isLearnIntent = detailIntent === "learn";
+  const isChallengeIntent = detailIntent === "challenge";
   const summary = document.createElement("section");
   summary.className = "journey-detail-summary";
 
@@ -8514,6 +8545,15 @@ function renderJourneyDetail(journey) {
   meta.textContent = formatJourneyStepCount(getValidJourneySteps(journey).length);
 
   summary.append(heading, description, meta);
+
+  if (isLearnIntent || isChallengeIntent) {
+    const pathMessage = document.createElement("p");
+    pathMessage.className = "journey-detail-progress";
+    pathMessage.textContent = isLearnIntent
+      ? "Learn each section with Memory Trail, then play when you are ready."
+      : "Choose your difficulty, then start the journey.";
+    summary.appendChild(pathMessage);
+  }
 
   if (!isAvailable) {
     const statusMessage = document.createElement("p");
@@ -8554,6 +8594,8 @@ function renderJourneyDetail(journey) {
   actions.className = "journey-path-actions";
 
   if (isAvailable) {
+    const showStudyAction = !isChallengeIntent;
+    const showPlayAction = !isLearnIntent;
     const playState = getSelectedJourneyProgressState(journey);
     const difficultyLabel = getJourneyDifficultyLabel(playState.difficultyId);
     const playAction = playState.isComplete
@@ -8593,16 +8635,19 @@ function renderJourneyDetail(journey) {
           infoText: ""
         };
 
-    actions.append(
-      createJourneyPathCard({
+    if (showStudyAction) {
+      actions.appendChild(createJourneyPathCard({
         title: studyAction.title,
         description: studyAction.description,
         buttonLabel: studyAction.buttonLabel,
         variant: "study",
         onClick: () => showAppScreen("study"),
         infoText: studyAction.infoText
-      }),
-      createJourneyPathCard({
+      }));
+    }
+
+    if (showPlayAction) {
+      actions.appendChild(createJourneyPathCard({
         title: playAction.title,
         description: playAction.description,
         buttonLabel: playAction.buttonLabel,
@@ -8612,8 +8657,8 @@ function renderJourneyDetail(journey) {
         onSecondaryClick: playAction.onSecondaryClick,
         tertiaryButtonLabel: "Choose Difficulty",
         onTertiaryClick: () => showAppScreen("choose-difficulty")
-      })
-    );
+      }));
+    }
   } else {
     actions.append(createJourneyPathCard({
       title: status === "locked" ? "Locked" : "Coming Soon",
@@ -8640,9 +8685,12 @@ function renderJourneyDetail(journey) {
   backButton.type = "button";
   backButton.className = "journey-restart-button journey-back-button";
   backButton.textContent = "Back to Journeys";
-  backButton.addEventListener("click", () => showAppScreen("choose-journey"));
+  backButton.addEventListener("click", () => {
+    journeyPickerIntent = detailIntent;
+    showAppScreen("choose-journey");
+  });
 
-  if (isAvailable) {
+  if (isAvailable && !isLearnIntent) {
     secondaryActions.appendChild(restartButton);
   }
 
