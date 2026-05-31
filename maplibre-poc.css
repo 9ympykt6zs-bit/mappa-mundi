@@ -368,8 +368,15 @@ select,
   min-width: 0;
   overflow: hidden;
   padding: 0 22px 22px;
+  pointer-events: auto;
+  position: relative;
   text-align: left;
   touch-action: manipulation;
+  z-index: 1;
+}
+
+.main-menu-choice-card > * {
+  pointer-events: none;
 }
 
 .main-menu-choice-art {
