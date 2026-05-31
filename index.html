@@ -30,7 +30,6 @@
     <link rel="icon" type="image/png" href="/assets/icons/atlas-quest-icon-192.png" />
     <link rel="apple-touch-icon" href="/assets/icons/atlas-quest-icon-180.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css" />
     <link rel="stylesheet" href="maplibre-poc.css?v=mvp-rc" />
   </head>
   <body class="overview-mode launch-mode">
@@ -234,9 +233,40 @@
 
     <script>
       (() => {
+        let appModulePromise = null;
+
+        window.__mappaMundiLoadApp = () => {
+          if (!appModulePromise) {
+            appModulePromise = import("./src/maplibre-poc.js?v=cwv-lazy-startup");
+          }
+
+          return appModulePromise;
+        };
+
+        const scheduleAppLoad = () => {
+          if (typeof window.requestIdleCallback === "function") {
+            window.requestIdleCallback(() => window.__mappaMundiLoadApp(), { timeout: 5000 });
+            return;
+          }
+
+          window.setTimeout(() => window.__mappaMundiLoadApp(), 3000);
+        };
+
+        if (document.readyState === "complete") {
+          scheduleAppLoad();
+        } else {
+          window.addEventListener("load", scheduleAppLoad, { once: true });
+        }
+      })();
+    </script>
+    <script>
+      (() => {
         const launchScreen = document.querySelector("#launch-screen");
         const startButton = document.querySelector("#launch-start-button");
+        const settingsButton = document.querySelector("#launch-settings-gear");
         const appShellScreen = document.querySelector("#app-shell-screen");
+        const appShellTitle = document.querySelector("#app-shell-title");
+        const appShellSubtitle = document.querySelector("#app-shell-subtitle");
 
         if (!launchScreen || !startButton || !appShellScreen) {
           return;
@@ -255,6 +285,7 @@
           document.body.classList.add("app-shell-mode");
           launchScreen.hidden = true;
           appShellScreen.hidden = false;
+          window.__mappaMundiLoadApp?.();
         };
 
         startButton.addEventListener("click", showMainMenu);
@@ -269,9 +300,21 @@
             showMainMenu();
           }
         });
+        settingsButton?.addEventListener("click", () => {
+          window.__mappaMundiSettingsRequested = true;
+          document.body.classList.remove("launch-mode");
+          document.body.classList.add("app-shell-mode");
+          launchScreen.hidden = true;
+          appShellScreen.hidden = false;
+          if (appShellTitle) {
+            appShellTitle.textContent = "Customize";
+          }
+          if (appShellSubtitle) {
+            appShellSubtitle.textContent = "Adjust how Mappa Mundi presents the map.";
+          }
+          window.__mappaMundiLoadApp?.();
+        });
       })();
     </script>
-    <script src="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js"></script>
-    <script type="module" src="src/maplibre-poc.js?v=launch-start-fix"></script>
   </body>
 </html>

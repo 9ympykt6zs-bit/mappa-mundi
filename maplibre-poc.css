@@ -750,6 +750,7 @@ select,
 }
 
 .journey-preset-card-thumbnail {
+  aspect-ratio: 16 / 9;
   bottom: 0;
   overflow: hidden;
   pointer-events: none;
@@ -758,6 +759,12 @@ select,
   top: 0;
   left: 0;
   z-index: 0;
+}
+
+.journey-preset-card-thumbnail picture {
+  display: block;
+  height: 100%;
+  width: 100%;
 }
 
 .journey-preset-card-thumbnail img {

@@ -1,9 +1,5 @@
-import { normalizeActivity } from "./map-engines/activity-normalizer.js";
-import { ActivitySession, studyModes } from "./maplibre/activity-session.js?v=progress-state";
-import "./chip-speech.js?v=local-tts-desktop";
-import { difficultyModes, MapLibreActivityRunner } from "./maplibre/maplibre-activity-runner.js?v=memory-trail";
 import { journeyPresets } from "./journey-presets.js?v=us-capitals-journey";
-import { trackEvent } from "./analytics.js";
+import { trackEvent } from "./analytics.js?v=analytics-events";
 import {
   clearActiveJourney,
   getJourneyProgress,
@@ -14,6 +10,17 @@ import {
 } from "./progress-store.js";
 
 const APP_NAME = "Mappa Mundi";
+const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
+const mapLibreStylesheetUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css";
+const difficultyModes = Object.freeze({
+  easy: "easy",
+  medium: "medium",
+  hard: "hard"
+});
+const studyModes = Object.freeze({
+  cumulative: "cumulative",
+  sectionOnly: "section-only"
+});
 const activityDataPaths = [
   "assets/maps/data/continents-oceans.json",
   "assets/maps/data/world-core-americas-countries.json",
@@ -2590,10 +2597,18 @@ const stateLabelAnchors = {
   alaska: [-150, 64]
 };
 
-let activities = [];
+let activities = createActivityShellCatalog();
 let selectedActivityId = defaultActivityId;
 let session;
 let runner;
+let ActivitySessionClass = null;
+let normalizeActivityData = null;
+let MapLibreActivityRunnerClass = null;
+let mapRuntimePromise = null;
+let activityDataPromise = null;
+let mapReadyPromise = null;
+let mapRuntimeReady = false;
+let activityDataReady = false;
 let feedbackTimer;
 let activeMapSet = defaultMapSet;
 let activeMenuRoot = defaultMenuRoot;
@@ -3032,6 +3047,263 @@ const journeyDifficultyOptions = [
 const defaultQuickStartJourneyId = "world-geography-core";
 const defaultQuickStartDifficulty = difficultyModes.easy;
 
+function createActivityShellCatalog() {
+  return activityDataPaths.map((path, index) => {
+    const id = path.split("/").pop().replace(/\.json$/i, "");
+    const node = getHierarchyNode(findHierarchyNodeForActivity(id));
+
+    return {
+      id,
+      title: node?.activityLabel || formatActivityShellTitle(id),
+      targets: [],
+      itemCount: 0,
+      mapSet: getHierarchyMenuRoot(node?.id)?.id || defaultMapSet,
+      sortOrder: index + 1,
+      category: node?.category || ""
+    };
+  });
+}
+
+function formatActivityShellTitle(activityId = "") {
+  return activityId
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function getPerformanceDebugEnabled() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.has("perfDebug") || localStorage.getItem("mappa-mundi-perf-debug") === "true";
+  } catch {
+    return false;
+  }
+}
+
+function markPerf(name) {
+  if (!getPerformanceDebugEnabled()) {
+    return;
+  }
+
+  try {
+    performance.mark(name);
+  } catch {
+    // Performance marks are optional diagnostics.
+  }
+}
+
+function logPerfMeasure(label, startMark, endMark) {
+  if (!getPerformanceDebugEnabled()) {
+    return;
+  }
+
+  try {
+    performance.measure(label, startMark, endMark);
+    const measure = performance.getEntriesByName(label).at(-1);
+    console.info(`[mappa-perf] ${label}: ${Math.round(measure.duration)}ms`);
+  } catch {
+    // Keep debug logging best-effort only.
+  }
+}
+
+function loadStylesheetOnce(href) {
+  if (document.querySelector(`link[href="${href}"]`)) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    link.onload = () => resolve();
+    link.onerror = () => reject(new Error(`Could not load stylesheet: ${href}`));
+    document.head.appendChild(link);
+  });
+}
+
+function loadScriptOnce(src, globalName) {
+  if (globalName && window[globalName]) {
+    return Promise.resolve(window[globalName]);
+  }
+
+  const existing = document.querySelector(`script[src="${src}"]`);
+  if (existing) {
+    return new Promise((resolve, reject) => {
+      existing.addEventListener("load", () => resolve(globalName ? window[globalName] : undefined), { once: true });
+      existing.addEventListener("error", () => reject(new Error(`Could not load script: ${src}`)), { once: true });
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = () => resolve(globalName ? window[globalName] : undefined);
+    script.onerror = () => reject(new Error(`Could not load script: ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+async function ensureMapRuntimeLoaded() {
+  if (mapRuntimeReady) {
+    return;
+  }
+
+  if (!mapRuntimePromise) {
+    markPerf("mappa-map-runtime-start");
+    mapRuntimePromise = Promise.all([
+      loadStylesheetOnce(mapLibreStylesheetUrl),
+      loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
+      import("./map-engines/activity-normalizer.js"),
+      import("./maplibre/activity-session.js?v=progress-state"),
+      import("./maplibre/maplibre-activity-runner.js?v=memory-trail"),
+      import("./chip-speech.js?v=local-tts-desktop")
+    ]).then(([
+      ,
+      ,
+      normalizerModule,
+      sessionModule,
+      runnerModule
+    ]) => {
+      normalizeActivityData = normalizerModule.normalizeActivity;
+      ActivitySessionClass = sessionModule.ActivitySession;
+      MapLibreActivityRunnerClass = runnerModule.MapLibreActivityRunner;
+      mapRuntimeReady = true;
+      markPerf("mappa-map-runtime-end");
+      logPerfMeasure("initial JS load time", "mappa-map-runtime-start", "mappa-map-runtime-end");
+    });
+  }
+
+  await mapRuntimePromise;
+}
+
+async function ensureActivityDataLoaded() {
+  if (activityDataReady) {
+    return;
+  }
+
+  if (!activityDataPromise) {
+    markPerf("mappa-activity-data-start");
+    activityDataPromise = Promise.all(activityDataPaths.map((path) => fetchJson(path)))
+      .then((loadedActivities) => {
+        activities = expandDerivedActivityData(loadedActivities).map((activity) => normalizeMapLibrePocActivity(activity));
+        activityDataReady = true;
+        markPerf("mappa-activity-data-end");
+        logPerfMeasure("activity data load time", "mappa-activity-data-start", "mappa-activity-data-end");
+      });
+  }
+
+  await activityDataPromise;
+}
+
+async function ensureMapReady() {
+  if (runner && session) {
+    return;
+  }
+
+  if (!mapReadyPromise) {
+    markPerf("mappa-map-init-start");
+    mapReadyPromise = (async () => {
+      await ensureMapRuntimeLoaded();
+      await ensureActivityDataLoaded();
+
+      const [worldCountries, supplementalWorldCountries, oceanZones, inlandWaters, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
+        fetchJson(worldCountriesPath),
+        Promise.all(worldCountrySupplements.map((path) => fetchJson(path))),
+        fetchJson(oceanZonesPath),
+        fetchJson(inlandWatersPath),
+        fetchJson(usStatesAtlasPath),
+        fetchJson(stateGeoJsonPath),
+        fetchJson(northAmericaAdmin1Path),
+        fetchJson(australiaAdmin1Path),
+        fetchJson(chinaAdmin1Path),
+        fetchJson(russiaAdmin1Path),
+        fetchJson(indiaAdmin1Path),
+        fetchJson(brazilAdmin1Path),
+        fetchJson(japanAdmin1Path),
+        fetchJson(germanyAdmin1Path),
+        fetchJson(franceAdmin1Path),
+        fetchJson(spainAdmin1Path),
+        fetchJson(italyAdmin1Path),
+        fetchJson(unitedKingdomAdmin1Path)
+      ]);
+      const mergedWorldCountries = mergeFeatureCollections(worldCountries, supplementalWorldCountries);
+
+      session = new ActivitySessionClass(getSelectedActivity(), {
+        activityCatalog: activities,
+        studyMode: studyModes.cumulative
+      });
+      runner = new MapLibreActivityRunnerClass({
+        maplibregl: window.maplibregl,
+        container: "map"
+      });
+
+      runner.onRegionSelect(handleRunnerRegionSelect);
+      runner.onTargetClick(handleTargetClick);
+      await runner.load({
+        activity: session.activity,
+        worldCountries: mergedWorldCountries,
+        oceanZones,
+        inlandWaters,
+        usStatesAtlas,
+        stateTargets,
+        northAmericaAdmin1,
+        australiaAdmin1,
+        chinaAdmin1,
+        russiaAdmin1,
+        indiaAdmin1,
+        brazilAdmin1,
+        japanAdmin1,
+        germanyAdmin1,
+        franceAdmin1,
+        spainAdmin1,
+        italyAdmin1,
+        unitedKingdomAdmin1
+      });
+      runner.setDifficulty(getEffectiveDifficulty(session.currentActivity));
+      markPerf("mappa-map-init-end");
+      logPerfMeasure("map initialization time", "mappa-map-init-start", "mappa-map-init-end");
+    })();
+  }
+
+  await mapReadyPromise;
+}
+
+function handleRunnerRegionSelect(activityId) {
+  if (!activityId) {
+    return;
+  }
+
+  if (getHierarchyNode(activityId)) {
+    drillToHierarchyNode(activityId);
+    return;
+  }
+
+  const supplementalEntry = supplementalOverviewEntries.find((entry) => entry.id === activityId);
+
+  if (supplementalEntry?.launch?.type === "legacy") {
+    openLegacyActivity(supplementalEntry.launch.activityId);
+    return;
+  }
+
+  const hierarchyNodeId = findHierarchyNodeForActivity(activityId);
+  if (hierarchyNodeId) {
+    drillToHierarchyNode(hierarchyNodeId);
+  } else {
+    selectActivity(activityId);
+  }
+}
+
+function scheduleIdleWork(callback) {
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(callback, { timeout: 2500 });
+    return;
+  }
+
+  window.setTimeout(callback, 500);
+}
+
 async function init() {
   document.title = APP_NAME;
   if (launchTitle) {
@@ -3040,95 +3312,6 @@ async function init() {
 
   bindLaunchStartEvents();
 
-  const [loadedActivities, worldCountries, supplementalWorldCountries, oceanZones, inlandWaters, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
-    Promise.all(activityDataPaths.map((path) => fetchJson(path))),
-    fetchJson(worldCountriesPath),
-    Promise.all(worldCountrySupplements.map((path) => fetchJson(path))),
-    fetchJson(oceanZonesPath),
-    fetchJson(inlandWatersPath),
-    fetchJson(usStatesAtlasPath),
-    fetchJson(stateGeoJsonPath),
-    fetchJson(northAmericaAdmin1Path),
-    fetchJson(australiaAdmin1Path),
-    fetchJson(chinaAdmin1Path),
-    fetchJson(russiaAdmin1Path),
-    fetchJson(indiaAdmin1Path),
-    fetchJson(brazilAdmin1Path),
-    fetchJson(japanAdmin1Path),
-    fetchJson(germanyAdmin1Path),
-    fetchJson(franceAdmin1Path),
-    fetchJson(spainAdmin1Path),
-    fetchJson(italyAdmin1Path),
-    fetchJson(unitedKingdomAdmin1Path)
-  ]);
-
-  const mergedWorldCountries = mergeFeatureCollections(worldCountries, supplementalWorldCountries);
-
-  activities = expandDerivedActivityData(loadedActivities).map((activity) => normalizeMapLibrePocActivity(activity));
-  session = new ActivitySession(getSelectedActivity(), {
-    activityCatalog: activities,
-    studyMode: studyModes.cumulative
-  });
-  runner = new MapLibreActivityRunner({
-    maplibregl: window.maplibregl,
-    container: "map"
-  });
-
-  runner.onRegionSelect((activityId) => {
-    if (activityId) {
-      if (getHierarchyNode(activityId)) {
-        drillToHierarchyNode(activityId);
-        return;
-      }
-
-      const supplementalEntry = supplementalOverviewEntries.find((entry) => entry.id === activityId);
-
-      if (supplementalEntry?.launch?.type === "legacy") {
-        openLegacyActivity(supplementalEntry.launch.activityId);
-        return;
-      }
-
-      const hierarchyNodeId = findHierarchyNodeForActivity(activityId);
-      if (hierarchyNodeId) {
-        drillToHierarchyNode(hierarchyNodeId);
-      } else {
-        selectActivity(activityId);
-      }
-    }
-  });
-  runner.onTargetClick(handleTargetClick);
-
-  await runner.load({
-    activity: session.activity,
-    worldCountries: mergedWorldCountries,
-    oceanZones,
-    inlandWaters,
-    usStatesAtlas,
-    stateTargets,
-    northAmericaAdmin1,
-    australiaAdmin1,
-    chinaAdmin1,
-    russiaAdmin1,
-    indiaAdmin1,
-    brazilAdmin1,
-    japanAdmin1,
-    germanyAdmin1,
-    franceAdmin1,
-    spainAdmin1,
-    italyAdmin1,
-    unitedKingdomAdmin1
-  });
-  runner.setDifficulty(getEffectiveDifficulty(session.currentActivity));
-
-  renderAnswerBank();
-  updateProgress();
-  updateStudyModeButtons();
-  updateDifficultyControls();
-  updateResetControlVisibility();
-  studyCard.hidden = true;
-  runner.setOverviewMapSet(activeMenuRoot, getMenuOverviewView(activeMenuRoot));
-  renderOverviewLibrary();
-  updateOverviewPreview();
   bindLaunchScreenEvents();
   bindUiEvents();
   bindZoomControls();
@@ -3140,12 +3323,14 @@ async function init() {
   const initialActivityId = getInitialActivityFromUrl();
 
   if (initialActivityId) {
-    openActivity(initialActivityId, { forceGameplayVisible: true });
+    void openActivity(initialActivityId, { forceGameplayVisible: true });
+  } else if (window.__mappaMundiSettingsRequested) {
+    showSettingsScreen({ track: false });
   } else if (window.__mappaMundiLaunchRequested) {
     trackEvent("launch_start_pressed");
     showAppScreen("main-menu", { pushHistory: false });
   } else {
-    openHome();
+    showAppScreen("launch", { pushHistory: false });
   }
 }
 
@@ -3227,7 +3412,7 @@ function normalizeMapLibrePocActivity(rawActivity) {
   const region = rawActivity.map?.region || inferActivityRegion(rawActivity.id);
   const mapDefaults = getMapDefaults(rawActivity, region);
   const metadata = getActivityMetadata(rawActivity, region, mapDefaults);
-  const normalized = normalizeActivity(rawActivity, {
+  const normalized = normalizeActivityData(rawActivity, {
     schemaVersion: 2,
     engine: "maplibre",
     map: {
@@ -4560,10 +4745,12 @@ function handleLaunchStart() {
   showAppScreen("onboarding");
 }
 
-function showSettingsScreen() {
-  trackEvent("settings_opened", {
-    source_screen: currentAppScreen
-  });
+function showSettingsScreen(options = {}) {
+  if (options.track !== false) {
+    trackEvent("settings_opened", {
+      source_screen: currentAppScreen
+    });
+  }
   showAppScreen("settings");
 }
 
@@ -5244,7 +5431,7 @@ function startQuickStartJourney() {
   };
   trackJourneyStarted(target.journey, target.difficultyId, target.stepIndex);
   atlasProgress = setActiveJourney(target.journey.id, target.stepIndex, target.difficultyId, atlasProgress);
-  openJourneyStep(target.stepIndex, { preserveProgress: target.preserveProgress });
+  void openJourneyStep(target.stepIndex, { preserveProgress: target.preserveProgress });
 }
 
 function getSelectedJourneyDifficultyId() {
@@ -5318,7 +5505,7 @@ function startPendingFreePlayActivity() {
   const difficultyId = getSelectedFreePlayDifficultyId();
   pendingFreePlayActivityId = null;
   pendingFreePlayHierarchyNodeId = null;
-  openActivity(activityId, { hierarchyNodeId, difficultyId });
+  void openActivity(activityId, { hierarchyNodeId, difficultyId });
 }
 
 function getValidJourneySteps(journey) {
@@ -5402,10 +5589,11 @@ function beginSelectedJourneyAtStep(stepIndex, options = {}) {
   trackJourneyStarted(journey, activeJourneySession.difficulty, safeStepIndex);
   resetJourneyGameplayInstructionSession();
   atlasProgress = setActiveJourney(journey.id, safeStepIndex, activeJourneySession.difficulty, atlasProgress);
-  openJourneyStep(safeStepIndex, { preserveProgress: Boolean(options.preserveProgress) });
+  void openJourneyStep(safeStepIndex, { preserveProgress: Boolean(options.preserveProgress) });
 }
 
-function openJourneyStep(stepIndex, options = {}) {
+async function openJourneyStep(stepIndex, options = {}) {
+  await ensureMapReady();
   const journey = journeyPresets.find((preset) => preset.id === activeJourneySession?.journeyId);
   const validSteps = getValidJourneySteps(journey);
   const step = validSteps[stepIndex];
@@ -5437,7 +5625,7 @@ function openJourneyStep(stepIndex, options = {}) {
     setActivityProgress(step.activityId, [], stepDifficulty);
     setActivityCompletedState(step.activityId, false);
   }
-  openActivity(step.activityId, {
+  await openActivity(step.activityId, {
     appScreen: "journey-gameplay",
     difficultyId: stepDifficulty,
     forceGameplayVisible: true,
@@ -5578,7 +5766,7 @@ function startJourneyGameplayFromLaunchContext(context) {
   resetJourneyGameplayInstructionSession();
   trackJourneyStarted(journey, context.difficultyId, stepIndex);
   atlasProgress = setActiveJourney(journey.id, stepIndex, context.difficultyId, atlasProgress);
-  openJourneyStep(stepIndex, {
+  void openJourneyStep(stepIndex, {
     preserveProgress: Boolean(context.preserveProgress),
     skipMemoryTrailRecommendation: true
   });
@@ -5593,7 +5781,7 @@ function startJourneyMemoryTrailFromRecommendation(context) {
   }
 
   if (!isMemoryTrailEligible(activity)) {
-    openStudyExploreActivity(journey, step, activity, {
+    void openStudyExploreActivity(journey, step, activity, {
       journeyPlayReturn: { ...context, preserveProgress: false }
     });
     return;
@@ -5603,7 +5791,7 @@ function startJourneyMemoryTrailFromRecommendation(context) {
   resetJourneyGameplayInstructionSession();
   atlasProgress = clearActiveJourney(atlasProgress);
   selectedJourneyId = journey.id;
-  openStudyExploreActivity(journey, step, activity, {
+  void openStudyExploreActivity(journey, step, activity, {
     autoStartMemoryTrail: true,
     journeyPlayReturn: { ...context, preserveProgress: false }
   });
@@ -5656,7 +5844,7 @@ function startMemoryTrailFromJourneyGameplay() {
   });
 }
 
-function returnToJourneyActivityFromStudy(returnState = activeStudySession?.journeyActivityReturnState || null) {
+async function returnToJourneyActivityFromStudy(returnState = activeStudySession?.journeyActivityReturnState || null) {
   if (!returnState?.journeyId || !returnState?.activityId) {
     showAppScreen(selectedJourneyId ? "journey-detail" : "choose-journey", { pushHistory: false });
     return;
@@ -5696,7 +5884,7 @@ function returnToJourneyActivityFromStudy(returnState = activeStudySession?.jour
     incorrectPlacements: returnState.incorrectPlacements || 0
   };
   atlasProgress = setActiveJourney(journey.id, stepIndex, difficultyId, atlasProgress);
-  openActivity(activity.id, {
+  await openActivity(activity.id, {
     appScreen: "journey-gameplay",
     difficultyId,
     forceGameplayVisible: true,
@@ -5726,7 +5914,8 @@ function getStudyStepContext(journeyId, stepId) {
   return { journey, step, activity };
 }
 
-function startStudyPreviewActivity(journeyId, stepId) {
+async function startStudyPreviewActivity(journeyId, stepId) {
+  await ensureMapReady();
   const { journey, step, activity } = getStudyStepContext(journeyId, stepId);
 
   if (!journey || !step || !activity) {
@@ -5735,10 +5924,11 @@ function startStudyPreviewActivity(journeyId, stepId) {
   }
 
   selectedJourneyId = journey.id;
-  openStudyExploreActivity(journey, step, activity);
+  await openStudyExploreActivity(journey, step, activity);
 }
 
-function startStudyPracticeActivity(journeyId, stepId) {
+async function startStudyPracticeActivity(journeyId, stepId) {
+  await ensureMapReady();
   const { journey, step, activity } = getStudyStepContext(journeyId, stepId);
 
   if (!journey || !step || !activity) {
@@ -5761,7 +5951,7 @@ function startStudyPracticeActivity(journeyId, stepId) {
     activityId: activity.id
   };
 
-  openActivity(activity.id, {
+  await openActivity(activity.id, {
     appScreen: "study-practice",
     difficultyId: difficultyModes.easy,
     disableActivityProgress: true,
@@ -5777,7 +5967,9 @@ function showStudyStepNotReady() {
   showFeedback("This study section is not ready yet.");
 }
 
-function openStudyExploreActivity(journey, step, activity, options = {}) {
+async function openStudyExploreActivity(journey, step, activity, options = {}) {
+  await ensureMapReady();
+  activity = getActivityById(activity?.id) || activity;
   saveCurrentActivityProgress();
   trackEvent("study_preview_opened", {
     activity_id: activity.id,
@@ -5889,7 +6081,7 @@ function launchPracticeForStudySet() {
   activeStudySession = null;
   runner.setStudyPreviewMode(false);
   runner.setMemoryTrailHighlight([]);
-  startStudyPracticeActivity(journeyId, stepId);
+  void startStudyPracticeActivity(journeyId, stepId);
 }
 
 function startJourneyFromStudyRecommendation() {
@@ -5917,7 +6109,7 @@ function exitStudyExplore() {
   const retryReturnState = activeStudySession?.retryReturnState || null;
 
   if (journeyActivityReturnState) {
-    returnToJourneyActivityFromStudy(journeyActivityReturnState);
+    void returnToJourneyActivityFromStudy(journeyActivityReturnState);
     return;
   }
 
@@ -5951,7 +6143,7 @@ function renderStudyExplorePanel() {
   const controlDefinitions = activeStudySession?.retryReturnState
     ? [["Exit Study", exitStudyExplore, "Exit"]]
     : activeStudySession?.journeyActivityReturnState
-      ? [["Return to Activity", () => returnToJourneyActivityFromStudy(), "Return"]]
+      ? [["Return to Activity", () => { void returnToJourneyActivityFromStudy(); }, "Return"]]
     : activeStudySession?.journeyPlayReturn
       ? [
           ["Play Journey", startJourneyFromStudyRecommendation, "Play"],
@@ -6127,7 +6319,7 @@ function handleMemoryTrailOverlaySecondary() {
   if (memoryTrailOverlayMode === "complete") {
     if (activeStudySession?.journeyActivityReturnState) {
       hideMemoryTrailOverlay();
-      returnToJourneyActivityFromStudy();
+      void returnToJourneyActivityFromStudy();
       return;
     }
 
@@ -6832,13 +7024,24 @@ function createJourneyPresetCard(journey) {
     thumbnail.className = "journey-preset-card-thumbnail";
     thumbnail.setAttribute("aria-hidden", "true");
 
+    const picture = document.createElement("picture");
+    if (journey.thumbnailSrcWebp) {
+      const webpSource = document.createElement("source");
+      webpSource.srcset = journey.thumbnailSrcWebp;
+      webpSource.type = "image/webp";
+      picture.appendChild(webpSource);
+    }
+
     const thumbnailImage = document.createElement("img");
     thumbnailImage.src = journey.thumbnailSrc;
     thumbnailImage.alt = "";
     thumbnailImage.loading = "lazy";
     thumbnailImage.decoding = "async";
+    thumbnailImage.width = 960;
+    thumbnailImage.height = 540;
 
-    thumbnail.append(thumbnailImage);
+    picture.appendChild(thumbnailImage);
+    thumbnail.append(picture);
     card.append(thumbnail);
   }
 
@@ -7423,7 +7626,7 @@ function renderStudySelectionScreen(journey) {
     previewButton.textContent = "Learn";
     previewButton.disabled = !activity;
     previewButton.addEventListener("click", () => {
-      startStudyPreviewActivity(journey.id, step.id);
+      void startStudyPreviewActivity(journey.id, step.id);
     });
 
     actions.append(previewButton);
@@ -9226,7 +9429,7 @@ function drillToHierarchyNode(nodeId) {
       return;
     }
 
-    openActivity(node.activityId, { hierarchyNodeId: node.id });
+    void openActivity(node.activityId, { hierarchyNodeId: node.id });
     return;
   }
 
@@ -9631,7 +9834,9 @@ function getMemoryTrailAnalyticsContext() {
   };
 }
 
-function openActivity(activityId, options = {}) {
+async function openActivity(activityId, options = {}) {
+  markPerf("mappa-first-activity-start");
+  await ensureMapReady();
   saveCurrentActivityProgress();
   cancelGrabbedAnswer();
   closeBrowseDrawer();
@@ -9695,6 +9900,9 @@ function openActivity(activityId, options = {}) {
   if (isActiveGameplayScreen()) {
     playGameplayInstructionOnce("choose-label", audioInstructionPhrases.chooseLabel);
   }
+
+  markPerf("mappa-first-activity-ready");
+  logPerfMeasure("first activity-ready time", "mappa-first-activity-start", "mappa-first-activity-ready");
 }
 
 function getPresentedActivity(activity, presentationSettings = {}) {
@@ -9724,7 +9932,7 @@ function selectActivity(activityId, options = {}) {
     return;
   }
 
-  openActivity(activityId, options);
+  void openActivity(activityId, options);
 }
 
 function enterStudy() {
@@ -10547,7 +10755,7 @@ function openStudyExploreForRetryReview(retryState) {
     return;
   }
 
-  openStudyExploreActivity(journey, step, activity, {
+  void openStudyExploreActivity(journey, step, activity, {
     retryReturnState: retryState
   });
 }
@@ -10568,7 +10776,7 @@ function returnToRetryReviewActivity(retryState) {
       incorrectPlacements: 0
     };
     activeStudyPracticeSession = null;
-    openActivity(retryState.activityId, {
+    void openActivity(retryState.activityId, {
       appScreen: "journey-gameplay",
       difficultyId: retryState.difficultyId,
       forceGameplayVisible: true,
@@ -10582,7 +10790,7 @@ function returnToRetryReviewActivity(retryState) {
   if (retryState.sourceScreen === "study-practice" && retryState.studyPracticeSession) {
     activeJourneySession = null;
     activeStudyPracticeSession = { ...retryState.studyPracticeSession };
-    openActivity(retryState.activityId, {
+    void openActivity(retryState.activityId, {
       appScreen: "study-practice",
       difficultyId: retryState.difficultyId,
       disableActivityProgress: true,
@@ -10596,7 +10804,7 @@ function returnToRetryReviewActivity(retryState) {
 
   activeJourneySession = null;
   activeStudyPracticeSession = null;
-  openActivity(retryState.activityId, {
+  void openActivity(retryState.activityId, {
     appScreen: "free-play",
     difficultyId: retryState.difficultyId,
     disableActivityProgress: retryState.isProgressDisabled,
@@ -11271,7 +11479,7 @@ function handleStudyPracticePrimary() {
   }
 
   hideStudyPracticeCompletionCard();
-  startStudyPracticeActivity(sessionToRepeat.journeyId, sessionToRepeat.stepId);
+  void startStudyPracticeActivity(sessionToRepeat.journeyId, sessionToRepeat.stepId);
 }
 
 function handleStudyPracticeSecondary() {
@@ -11522,7 +11730,7 @@ async function advanceToJourneyStep(nextStepIndex) {
 
   hideJourneyCompletionCard();
   isJourneyTransitioning = false;
-  openJourneyStep(nextStepIndex);
+  await openJourneyStep(nextStepIndex);
 }
 
 function playJourneyTransitionSound() {
@@ -11588,7 +11796,7 @@ function handleJourneyCompletionSecondary() {
     activeJourneySession.currentStepIndex = 0;
     activeJourneySession.incorrectPlacements = 0;
     atlasProgress = setActiveJourney(activeJourneySession.journeyId, 0, activeJourneySession.difficulty, atlasProgress);
-    openJourneyStep(0);
+    void openJourneyStep(0);
     return;
   }
 
@@ -11653,7 +11861,7 @@ function openPreviousActivity() {
     return;
   }
 
-  openActivity(activitySequence[currentIndex - 1].id);
+  void openActivity(activitySequence[currentIndex - 1].id);
 }
 
 function openNextIncompleteActivity() {
@@ -11676,7 +11884,7 @@ function openNextIncompleteActivity() {
     const nextActivity = activitySequence[nextIndex];
 
     if (!completedActivityIds.has(nextActivity.id)) {
-      openActivity(nextActivity.id);
+      void openActivity(nextActivity.id);
       return;
     }
   }
