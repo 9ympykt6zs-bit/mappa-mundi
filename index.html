@@ -71,30 +71,65 @@
         <p class="launch-kicker">Mappa Mundi</p>
         <h1 id="app-shell-title">Main Menu</h1>
         <p id="app-shell-subtitle">Know the world by heart.</p>
-        <div id="main-menu-quick-start-row" class="quick-start-row info-anchor">
-          <button id="main-menu-quick-start-button" class="quick-start-card" type="button">
-            <span id="quick-start-kicker" class="quick-start-kicker">Start Learning</span>
-            <span id="quick-start-title" class="quick-start-title">World Foundations</span>
-            <span id="quick-start-detail" class="quick-start-detail">Continents and Oceans</span>
-            <span id="quick-start-meta" class="quick-start-meta">Difficulty: Easy</span>
-            <span id="quick-start-action" class="quick-start-action">Start</span>
+        <section id="main-menu-fork-section" class="main-menu-fork-section" aria-label="Main menu choices">
+          <button id="main-menu-learn-button" class="main-menu-choice-card main-menu-choice-learn" type="button">
+            <img class="main-menu-choice-art" src="assets/menu/learn-your-world.png" alt="" aria-hidden="true" loading="lazy" decoding="async">
+            <span class="main-menu-choice-title">Learn Your World</span>
+            <small>Practice places, build memory, and study at your own pace.</small>
           </button>
-          <button class="info-button" type="button" data-info-text="Resume your most recent saved journey." aria-label="More info about Continue Journey">i</button>
-        </div>
-        <div id="main-menu-actions" class="main-menu-actions">
-          <div class="main-menu-action-row info-anchor">
-            <button id="main-menu-choose-button" class="main-menu-button main-menu-button-purple" type="button">Choose Journey</button>
-            <button class="info-button" type="button" data-info-text="Pick a guided path, study sections with Memory Trail, and progress through activities in order." aria-label="More info about Choose Journey">i</button>
+          <button id="main-menu-challenge-button" class="main-menu-choice-card main-menu-choice-challenge" type="button">
+            <img class="main-menu-choice-art" src="assets/menu/challenge-yourself.png" alt="" aria-hidden="true" loading="lazy" decoding="async">
+            <span class="main-menu-choice-title">Challenge Yourself</span>
+            <small>Follow journeys, test your progress, and earn achievements.</small>
+          </button>
+        </section>
+        <section id="main-menu-learn-section" class="main-menu-section main-menu-learn-section" aria-labelledby="main-menu-learn-heading" hidden>
+          <div class="main-menu-section-copy">
+            <h2 id="main-menu-learn-heading">Learn Your World</h2>
+            <p>Practice places, build memory, and study at your own pace.</p>
           </div>
-          <div class="main-menu-action-row info-anchor">
-            <button id="main-menu-settings-button" class="main-menu-button main-menu-button-teal" type="button">Customize</button>
-            <button class="info-button" type="button" data-info-text="Adjust map display and study options." aria-label="More info about Customize">i</button>
+          <div id="main-menu-actions" class="main-menu-actions main-menu-learn-actions">
+            <div class="main-menu-action-row info-anchor">
+              <button id="main-menu-choose-button" class="main-menu-button main-menu-button-purple" type="button">Choose Journey</button>
+              <button class="info-button" type="button" data-info-text="Pick a guided path, study sections with Memory Trail, and progress through activities in order." aria-label="More info about Choose Journey">i</button>
+            </div>
           </div>
-          <button id="main-menu-launch-button" class="main-menu-button main-menu-button-quiet" type="button">Back to Title</button>
-        </div>
-        <section id="main-menu-feedback" class="main-menu-feedback" hidden>
-          <p>Thanks for trying Mappa Mundi. I’m still improving it, and your feedback would help a lot — especially what felt useful, confusing, or missing.</p>
-          <a id="main-menu-feedback-link" class="feedback-action-link" href="#" target="_blank" rel="noopener noreferrer">Send Feedback</a>
+          <p class="main-menu-section-note">After choosing a journey, you can pick Study or Memory Trail before you play.</p>
+        </section>
+        <section id="main-menu-challenge-section" class="main-menu-section main-menu-challenge-section" aria-labelledby="main-menu-challenge-heading" hidden>
+          <div class="main-menu-section-copy">
+            <h2 id="main-menu-challenge-heading">Challenge Yourself</h2>
+            <p>Follow journeys, test your progress, and earn achievements.</p>
+          </div>
+          <div class="main-menu-actions main-menu-challenge-actions">
+            <div class="main-menu-action-row info-anchor">
+              <button id="challenge-menu-choose-button" class="main-menu-button main-menu-button-purple" type="button">Choose Journey</button>
+              <button class="info-button" type="button" data-info-text="Pick a journey path, review its activities, and play through the challenge sequence." aria-label="More info about choosing a challenge journey">i</button>
+            </div>
+          </div>
+          <div id="main-menu-quick-start-row" class="quick-start-row info-anchor">
+            <button id="main-menu-quick-start-button" class="quick-start-card" type="button">
+              <span id="quick-start-kicker" class="quick-start-kicker">Start Learning</span>
+              <span id="quick-start-title" class="quick-start-title">World Foundations</span>
+              <span id="quick-start-detail" class="quick-start-detail">Continents and Oceans</span>
+              <span id="quick-start-meta" class="quick-start-meta">Difficulty: Easy</span>
+              <span id="quick-start-action" class="quick-start-action">Start</span>
+            </button>
+            <button class="info-button" type="button" data-info-text="Resume your most recent saved journey." aria-label="More info about Continue Journey">i</button>
+          </div>
+        </section>
+        <section id="main-menu-utility-area" class="main-menu-utility-area" aria-label="Menu utilities">
+          <div class="main-menu-utility-actions">
+            <div class="main-menu-action-row info-anchor">
+              <button id="main-menu-settings-button" class="main-menu-button main-menu-button-teal" type="button">Customize</button>
+              <button class="info-button" type="button" data-info-text="Adjust map display and study options." aria-label="More info about Customize">i</button>
+            </div>
+            <button id="main-menu-launch-button" class="main-menu-button main-menu-button-quiet" type="button">Back to Title</button>
+          </div>
+          <section id="main-menu-feedback" class="main-menu-feedback" hidden>
+            <p>Still improving Mappa Mundi - feedback appreciated.</p>
+            <a id="main-menu-feedback-link" class="feedback-action-link" href="#" target="_blank" rel="noopener noreferrer">Send Feedback</a>
+          </section>
         </section>
         <div id="app-shell-placeholder-card" class="app-shell-placeholder-card" role="status" aria-live="polite" hidden>
           <strong id="app-shell-placeholder-title">Coming Soon</strong>
@@ -136,6 +171,7 @@
       <section class="map-shell" aria-label="Interactive MapLibre map">
         <div id="map"></div>
         <div id="audio-instruction-banner" class="audio-instruction-banner" role="status" aria-live="polite" hidden></div>
+        <div id="memory-trail-correction-callout" class="memory-trail-correction-callout" role="status" aria-live="polite" hidden></div>
         <div class="zoom-panel" aria-label="Map controls">
           <button id="zoom-in-button" type="button" title="Zoom in" aria-label="Zoom in">+</button>
           <button id="zoom-out-button" type="button" title="Zoom out" aria-label="Zoom out">-</button>

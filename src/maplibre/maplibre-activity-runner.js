@@ -23,6 +23,10 @@ const colors = {
   studyTargetLine: "#2563eb",
   memoryTrailFill: "#f5c542",
   memoryTrailLine: "#9a5f05",
+  memoryTrailCorrectFill: "#22c55e",
+  memoryTrailCorrectLine: "#166534",
+  memoryTrailWrongFill: "#ef4444",
+  memoryTrailWrongLine: "#991b1b",
   hardContinentChallengeFill: "#4f7f5f",
   neutralMarker: "#ffffff",
   neutralMarkerStroke: "#172033",
@@ -251,6 +255,8 @@ export class MapLibreActivityRunner {
     this.presentationSettings = {};
     this.studyPreviewMode = false;
     this.memoryTrailHighlightIds = [];
+    this.memoryTrailCorrectHighlightIds = [];
+    this.memoryTrailWrongHighlightIds = [];
     this.placementInteractionState = {
       active: false,
       dragging: false
@@ -420,6 +426,8 @@ export class MapLibreActivityRunner {
     this.studyPreviewMode = Boolean(isActive);
     if (!this.studyPreviewMode) {
       this.memoryTrailHighlightIds = [];
+      this.memoryTrailCorrectHighlightIds = [];
+      this.memoryTrailWrongHighlightIds = [];
     }
     this.refreshDifficultyVisuals();
   }
@@ -428,7 +436,24 @@ export class MapLibreActivityRunner {
     this.memoryTrailHighlightIds = Array.isArray(targetIds)
       ? targetIds.filter(Boolean)
       : [targetIds].filter(Boolean);
+    this.memoryTrailCorrectHighlightIds = [];
+    this.memoryTrailWrongHighlightIds = [];
     this.refreshDifficultyVisuals();
+  }
+
+  setMemoryTrailCorrectionHighlight({ correctTargetId = "", wrongTargetId = "" } = {}) {
+    this.memoryTrailHighlightIds = [];
+    this.memoryTrailCorrectHighlightIds = [correctTargetId].filter(Boolean);
+    this.memoryTrailWrongHighlightIds = [wrongTargetId].filter(Boolean);
+    this.refreshDifficultyVisuals();
+  }
+
+  getMemoryTrailActiveHighlightIds() {
+    return [...new Set([
+      ...this.memoryTrailHighlightIds,
+      ...this.memoryTrailCorrectHighlightIds,
+      ...this.memoryTrailWrongHighlightIds
+    ])];
   }
 
   setDifficulty(difficulty) {
@@ -1990,6 +2015,10 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode && this.isContinentsOceansActivity()) {
       return [
         "case",
+        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.memoryTrailWrongHighlightIds]],
+        colors.memoryTrailWrongFill,
+        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.memoryTrailCorrectHighlightIds]],
+        colors.memoryTrailCorrectFill,
         ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.memoryTrailHighlightIds]],
         colors.memoryTrailFill,
         ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.completedIds]],
@@ -2014,7 +2043,7 @@ export class MapLibreActivityRunner {
     if (this.isContinentsOceansActivity()) {
       return [
         "case",
-        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.memoryTrailHighlightIds]],
+        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.getMemoryTrailActiveHighlightIds()]],
         0.72,
         ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.completedIds]],
         0.64,
@@ -2629,6 +2658,10 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode && this.isContinentsOceansActivity()) {
       return [
         "case",
+        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.memoryTrailWrongHighlightIds]],
+        colors.memoryTrailWrongLine,
+        ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.memoryTrailCorrectHighlightIds]],
+        colors.memoryTrailCorrectLine,
         ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.memoryTrailHighlightIds]],
         colors.memoryTrailLine,
         ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.completedIds]],
@@ -2762,6 +2795,10 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode) {
       return [
         "case",
+        ["in", ["get", "id"], ["literal", this.memoryTrailWrongHighlightIds]],
+        colors.memoryTrailWrongFill,
+        ["in", ["get", "id"], ["literal", this.memoryTrailCorrectHighlightIds]],
+        colors.memoryTrailCorrectFill,
         ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
         colors.memoryTrailFill,
         ["in", ["get", "id"], ["literal", this.completedIds]],
@@ -2793,6 +2830,10 @@ export class MapLibreActivityRunner {
         "case",
         ["boolean", ["get", "isOceanZone"], false],
         ["match", ["get", "id"], ...this.getColorMatchStops(), colors.ocean],
+        ["in", ["get", "id"], ["literal", this.memoryTrailWrongHighlightIds]],
+        colors.memoryTrailWrongFill,
+        ["in", ["get", "id"], ["literal", this.memoryTrailCorrectHighlightIds]],
+        colors.memoryTrailCorrectFill,
         ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
         colors.memoryTrailFill,
         ["in", ["get", "id"], ["literal", this.completedIds]],
@@ -2824,7 +2865,7 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode) {
       return [
         "case",
-        ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
+        ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
         0.98,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         0.96,
@@ -2862,7 +2903,7 @@ export class MapLibreActivityRunner {
         "case",
         ["boolean", ["get", "isOceanZone"], false],
         0,
-        ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
+        ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
         0.98,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         0.96,
@@ -2902,6 +2943,10 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode) {
       return [
         "case",
+        ["in", ["get", "id"], ["literal", this.memoryTrailWrongHighlightIds]],
+        colors.memoryTrailWrongLine,
+        ["in", ["get", "id"], ["literal", this.memoryTrailCorrectHighlightIds]],
+        colors.memoryTrailCorrectLine,
         ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
         colors.memoryTrailLine,
         ["in", ["get", "id"], ["literal", this.completedIds]],
@@ -2921,7 +2966,7 @@ export class MapLibreActivityRunner {
         0,
         ["boolean", ["get", "suppressInternalTargetLines"], false],
         0,
-        ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
+        ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
         1,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         1,
@@ -2967,7 +3012,7 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode) {
       return [
         "case",
-        ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
+        ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
         3,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         2.15,
@@ -3041,6 +3086,10 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode) {
       return [
         "case",
+        ["in", ["get", "id"], ["literal", this.memoryTrailWrongHighlightIds]],
+        colors.memoryTrailWrongFill,
+        ["in", ["get", "id"], ["literal", this.memoryTrailCorrectHighlightIds]],
+        colors.memoryTrailCorrectFill,
         ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
         colors.memoryTrailFill,
         ["in", ["get", "id"], ["literal", this.completedIds]],
@@ -3064,7 +3113,7 @@ export class MapLibreActivityRunner {
   getCapitalRadiusExpression() {
     return [
       "case",
-      ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
+      ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
       8,
       ["in", ["get", "id"], ["literal", this.completedIds]],
       7,
@@ -3117,7 +3166,7 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode) {
       return [
         "case",
-        ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
+        ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
         0.28,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         0.18,

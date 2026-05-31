@@ -164,6 +164,8 @@ const feedbackFormUrl = "https://docs.google.com/forms/d/e/1FAIpQLSf3w51Tbeetre-
 const appShellScreenIds = new Set([
   "launch",
   "main-menu",
+  "learn-menu",
+  "challenge-menu",
   "onboarding",
   "choose-journey",
   "journey-detail",
@@ -2719,6 +2721,7 @@ const browseCloseButton = document.querySelector("#browse-close-button");
 const settingsButton = document.querySelector("#settings-button");
 const audioMuteButton = document.querySelector("#audio-mute-button");
 const audioInstructionBanner = document.querySelector("#audio-instruction-banner");
+const memoryTrailCorrectionCallout = document.querySelector("#memory-trail-correction-callout");
 const previousActivityButton = document.querySelector("#previous-activity-button");
 const nextIncompleteButton = document.querySelector("#next-incomplete-button");
 const activityNavControls = document.querySelector("#activity-nav-controls");
@@ -2745,6 +2748,12 @@ const appShellTitle = document.querySelector("#app-shell-title");
 const appShellSubtitle = document.querySelector("#app-shell-subtitle");
 const appShellBackButton = document.querySelector("#app-shell-back-button");
 const appShellSettingsGear = document.querySelector("#app-shell-settings-gear");
+const mainMenuForkSection = document.querySelector("#main-menu-fork-section");
+const mainMenuLearnButton = document.querySelector("#main-menu-learn-button");
+const mainMenuChallengeButton = document.querySelector("#main-menu-challenge-button");
+const mainMenuLearnSection = document.querySelector("#main-menu-learn-section");
+const mainMenuChallengeSection = document.querySelector("#main-menu-challenge-section");
+const mainMenuUtilityArea = document.querySelector("#main-menu-utility-area");
 const mainMenuQuickStartRow = document.querySelector("#main-menu-quick-start-row");
 const mainMenuQuickStartButton = document.querySelector("#main-menu-quick-start-button");
 const quickStartKicker = document.querySelector("#quick-start-kicker");
@@ -2756,6 +2765,7 @@ const mainMenuActions = document.querySelector("#main-menu-actions");
 const mainMenuActionsAnchor = document.createComment("main-menu-actions");
 mainMenuActions?.parentNode?.insertBefore(mainMenuActionsAnchor, mainMenuActions);
 const mainMenuChooseButton = document.querySelector("#main-menu-choose-button");
+const challengeMenuChooseButton = document.querySelector("#challenge-menu-choose-button");
 const mainMenuSettingsButton = document.querySelector("#main-menu-settings-button");
 const mainMenuFeedback = document.querySelector("#main-menu-feedback");
 const mainMenuFeedbackLink = document.querySelector("#main-menu-feedback-link");
@@ -4749,8 +4759,17 @@ function bindLaunchScreenEvents() {
   appShellSettingsGear?.addEventListener("click", () => {
     showSettingsScreen();
   });
+  mainMenuLearnButton?.addEventListener("click", () => {
+    showAppScreen("learn-menu");
+  });
+  mainMenuChallengeButton?.addEventListener("click", () => {
+    showAppScreen("challenge-menu");
+  });
   mainMenuQuickStartButton?.addEventListener("click", startQuickStartJourney);
   mainMenuChooseButton?.addEventListener("click", () => {
+    showAppScreen("choose-journey");
+  });
+  challengeMenuChooseButton?.addEventListener("click", () => {
     showAppScreen("choose-journey");
   });
   mainMenuSettingsButton?.addEventListener("click", () => {
@@ -4904,9 +4923,22 @@ function openFreePlay(options = {}) {
   setBrowseDrawerOpen(!isCompactTouchLayout());
 }
 
+function toggleMenuSection(section, isVisible) {
+  if (!section) {
+    return;
+  }
+
+  section.hidden = !isVisible;
+  section.style.display = isVisible ? "" : "none";
+  section.setAttribute("aria-hidden", String(!isVisible));
+}
+
 function renderAppShellScreen(screenId) {
   const normalizedScreenId = normalizeAppShellScreenId(screenId);
   const isMainMenu = normalizedScreenId === "main-menu";
+  const isLearnMenu = normalizedScreenId === "learn-menu";
+  const isChallengeMenu = normalizedScreenId === "challenge-menu";
+  const isMenuHub = isMainMenu || isLearnMenu || isChallengeMenu;
   const isChooseJourney = normalizedScreenId === "choose-journey";
   const hasJourneyShellContent = isJourneyShellScreen(normalizedScreenId);
   const content = getAppShellScreenContent(normalizedScreenId);
@@ -4923,39 +4955,72 @@ function renderAppShellScreen(screenId) {
     appShellSubtitle.textContent = content.subtitle;
   }
 
+  if (appShellSettingsGear) {
+    appShellSettingsGear.hidden = isMenuHub;
+    appShellSettingsGear.tabIndex = isMenuHub ? -1 : 0;
+  }
+
+  toggleMenuSection(mainMenuForkSection, isMainMenu);
+  toggleMenuSection(mainMenuLearnSection, isLearnMenu);
+  toggleMenuSection(mainMenuChallengeSection, isChallengeMenu);
+  toggleMenuSection(mainMenuUtilityArea, isMenuHub);
+
+  [mainMenuLearnButton, mainMenuChallengeButton].forEach((button) => {
+    if (!button) {
+      return;
+    }
+
+    button.disabled = !isMainMenu;
+    button.tabIndex = isMainMenu ? 0 : -1;
+  });
+
+  if (mainMenuUtilityArea) {
+    mainMenuUtilityArea.querySelectorAll("button, a").forEach((control) => {
+      control.tabIndex = isMenuHub ? 0 : -1;
+      if (control.tagName === "BUTTON") {
+        control.disabled = !isMenuHub;
+      }
+    });
+  }
+
   if (mainMenuActions) {
-    if (isMainMenu && !mainMenuActions.isConnected && mainMenuActionsAnchor.parentNode) {
+    if (isLearnMenu && !mainMenuActions.isConnected && mainMenuActionsAnchor.parentNode) {
       mainMenuActionsAnchor.parentNode.insertBefore(mainMenuActions, mainMenuActionsAnchor.nextSibling);
     }
 
     mainMenuActions.querySelectorAll("button").forEach((button) => {
-      button.disabled = !isMainMenu;
-      button.tabIndex = isMainMenu ? 0 : -1;
+      button.disabled = !isLearnMenu;
+      button.tabIndex = isLearnMenu ? 0 : -1;
     });
 
-    mainMenuActions.hidden = !isMainMenu;
-    mainMenuActions.style.display = isMainMenu ? "" : "none";
-    mainMenuActions.setAttribute("aria-hidden", String(!isMainMenu));
+    mainMenuActions.hidden = !isLearnMenu;
+    mainMenuActions.style.display = isLearnMenu ? "" : "none";
+    mainMenuActions.setAttribute("aria-hidden", String(!isLearnMenu));
 
-    if (!isMainMenu && mainMenuActions.isConnected) {
+    if (!isLearnMenu && mainMenuActions.isConnected) {
       mainMenuActions.remove();
     }
   }
 
+  if (challengeMenuChooseButton) {
+    challengeMenuChooseButton.disabled = !isChallengeMenu;
+    challengeMenuChooseButton.tabIndex = isChallengeMenu ? 0 : -1;
+  }
+
   if (mainMenuFeedback) {
-    mainMenuFeedback.hidden = !isMainMenu;
-    mainMenuFeedback.style.display = isMainMenu ? "" : "none";
-    mainMenuFeedback.setAttribute("aria-hidden", String(!isMainMenu));
+    mainMenuFeedback.hidden = !isMenuHub;
+    mainMenuFeedback.style.display = isMenuHub ? "" : "none";
+    mainMenuFeedback.setAttribute("aria-hidden", String(!isMenuHub));
   }
 
   if (mainMenuFeedbackLink) {
-    mainMenuFeedbackLink.tabIndex = isMainMenu ? 0 : -1;
+    mainMenuFeedbackLink.tabIndex = isMenuHub ? 0 : -1;
   }
 
-  renderQuickStartCard(isMainMenu);
+  renderQuickStartCard(isChallengeMenu);
 
   if (appShellPlaceholderCard) {
-    appShellPlaceholderCard.hidden = isMainMenu || isChooseJourney || hasJourneyShellContent;
+    appShellPlaceholderCard.hidden = isMenuHub || isChooseJourney || hasJourneyShellContent;
   }
 
   if (appShellPlaceholderTitle) {
@@ -4977,6 +5042,14 @@ function getAppShellScreenContent(screenId) {
     "main-menu": {
       title: "Main Menu",
       subtitle: "Know the world by heart."
+    },
+    "learn-menu": {
+      title: "Learn Your World",
+      subtitle: "Practice places, build memory, and study at your own pace."
+    },
+    "challenge-menu": {
+      title: "Challenge Yourself",
+      subtitle: "Follow journeys, test your progress, and earn achievements."
     },
     "choose-journey": {
       title: "Choose Journey",
@@ -6159,6 +6232,7 @@ function exitStudyExplore() {
 function renderStudyExplorePanel() {
   setAnswerPanelMode("study-explore");
   answerBank.innerHTML = "";
+  updateMemoryTrailCorrectionCallout();
 
   if (isMemoryTrailActive()) {
     renderMemoryTrailPanel();
@@ -6400,6 +6474,7 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     message: "First, learn a small group of places. Then practice from memory.",
     promptName: "",
     responseChipTargetId: null,
+    correction: null,
     currentPromptTargetId: null,
     currentPromptType: "guided",
     currentPromptMode: "introducing",
@@ -6891,6 +6966,8 @@ function clearMemoryTrailState({ restoreReveals = true, render = false } = {}) {
     activeStudySession.memoryTrail = null;
   }
 
+  updateMemoryTrailCorrectionCallout(null);
+
   if (render) {
     instruction.textContent = "Tap a target or name to show it. Tap it again to hide it.";
     renderStudyExplorePanel();
@@ -7017,6 +7094,7 @@ function promptNextMemoryTrailTarget(memoryTrail = getActiveMemoryTrail()) {
   memoryTrail.currentPromptMode = selection.mode;
   memoryTrail.currentPromptReason = selection.reason;
   memoryTrail.sessionPhase = selection.promptType === "guided" ? "learn" : "practice";
+  memoryTrail.correction = null;
   memoryTrail.promptName = selection.promptType === "place_to_name" ? "" : speechLabel || target?.name || "";
   memoryTrail.responseChipTargetId = null;
   memoryTrail.answerChoices = selection.promptType === "place_to_name"
@@ -7481,6 +7559,7 @@ function completeMemoryTrailSession(memoryTrail) {
   memoryTrail.sessionPhase = "practice";
   memoryTrail.promptName = "";
   memoryTrail.responseChipTargetId = null;
+  memoryTrail.correction = null;
   memoryTrail.currentPromptTargetId = null;
   memoryTrail.answerChoices = [];
   memoryTrail.message = `Great session: ${memoryTrail.correctCount} retrieval correct, ${memoryTrail.incorrectCount} to review.`;
@@ -7607,6 +7686,7 @@ function getMemoryTrailClickDebugContext(memoryTrail, clickedTargetIds = [], ext
     promptType: memoryTrail?.currentPromptType || "",
     phase: memoryTrail?.sessionPhase || "",
     interactionPhase: memoryTrail?.phase || "",
+    correction: memoryTrail?.correction || null,
     clickedTargetIds,
     expectedTargetId: memoryTrail?.currentPromptTargetId || "",
     selectedTargetId: session?.selectedId || "",
@@ -7628,6 +7708,11 @@ function handleMemoryTrailTargetTap(targetIds, mapPoint = null) {
       reason: "no active memory trail",
       mapState: runner?.getMapInteractionState?.() || null
     });
+    return;
+  }
+
+  if (memoryTrail.phase === "correction") {
+    handleMemoryTrailCorrectionTap(memoryTrail, candidateIds, mapPoint);
     return;
   }
 
@@ -7699,6 +7784,62 @@ function handleMemoryTrailNameChoice(targetId) {
   }
 }
 
+function handleMemoryTrailCorrectionTap(memoryTrail, candidateIds = [], mapPoint = null) {
+  const expectedTargetId = memoryTrail?.correction?.expectedTargetId || memoryTrail?.currentPromptTargetId;
+  if (!expectedTargetId) {
+    return;
+  }
+
+  if (candidateIds.includes(expectedTargetId)) {
+    debugMemoryTrail("correction tap accepted", getMemoryTrailClickDebugContext(memoryTrail, candidateIds, {
+      result: "correction-complete"
+    }));
+    completeMemoryTrailCorrection(memoryTrail, expectedTargetId);
+    return;
+  }
+
+  const selectedTargetId = candidateIds[0] || memoryTrail.correction?.selectedTargetId || "";
+  memoryTrail.correction = {
+    ...(memoryTrail.correction || {}),
+    expectedTargetId,
+    selectedTargetId,
+    updatedAt: Date.now()
+  };
+  memoryTrail.message = "Not quite. Tap the correct place to continue.";
+  memoryTrail.responseChipTargetId = expectedTargetId;
+  setMemoryTrailTrayFeedback(memoryTrail, createMemoryTrailCorrectionFeedback(memoryTrail, expectedTargetId, { selectedTargetId }));
+  runner.setMemoryTrailCorrectionHighlight({
+    correctTargetId: expectedTargetId,
+    wrongTargetId: selectedTargetId
+  });
+  debugMemoryTrail("correction tap rejected", getMemoryTrailClickDebugContext(memoryTrail, candidateIds, {
+    reason: "still waiting for correct target",
+    mapPoint
+  }));
+  renderStudyExplorePanel();
+}
+
+function completeMemoryTrailCorrection(memoryTrail, expectedTargetId) {
+  clearMemoryTrailTrayFeedback(memoryTrail, "correction complete");
+  memoryTrail.phase = "feedback";
+  memoryTrail.correction = null;
+  memoryTrail.responseChipTargetId = expectedTargetId;
+  memoryTrail.answerChoices = [];
+  memoryTrail.promptName = getMemoryTrailTargetLabel(expectedTargetId);
+  memoryTrail.message = "Good. That's the correct place.";
+  runner.setMemoryTrailCorrectionHighlight({
+    correctTargetId: expectedTargetId,
+    wrongTargetId: ""
+  });
+  showFeedback(memoryTrail.message, true);
+  renderStudyExplorePanel();
+
+  scheduleMemoryTrailStep(memoryTrail, () => {
+    runner.setMemoryTrailHighlight([]);
+    promptNextMemoryTrailTarget(memoryTrail);
+  }, memoryTrailCorrectPauseMs);
+}
+
 function handleCorrectMemoryTrailAnswer(memoryTrail, targetId) {
   clearMemoryTrailTrayFeedback(memoryTrail, "correct answer");
   memoryTrail.responseChipTargetId = targetId;
@@ -7722,24 +7863,51 @@ function handleCorrectMemoryTrailAnswer(memoryTrail, targetId) {
 
 function handleIncorrectMemoryTrailAnswer(memoryTrail, expectedTargetId, options = {}) {
   updateMemoryTrailStats(memoryTrail, expectedTargetId, "incorrect", { promptType: memoryTrail.currentPromptType });
-  memoryTrail.phase = "feedback";
+  const selectedTargetId = options.selectedTargetId || "";
+  memoryTrail.phase = "correction";
   memoryTrail.promptName = getMemoryTrailTargetLabel(expectedTargetId);
   memoryTrail.responseChipTargetId = expectedTargetId;
   memoryTrail.answerChoices = [];
-  memoryTrail.message = isGuidedMemoryTrailPrompt(memoryTrail)
-    ? "This is the highlighted place."
-    : options.nearMiss
-      ? "Close. Here's the place."
-      : "Not quite. Here's the answer.";
-  setMemoryTrailTrayFeedback(memoryTrail, createMemoryTrailMissFeedback(memoryTrail, expectedTargetId, options));
-  runner.setMemoryTrailHighlight(expectedTargetId);
+  memoryTrail.message = "Not quite. Tap the correct place to continue.";
+  memoryTrail.correction = {
+    expectedTargetId,
+    selectedTargetId,
+    nearMiss: Boolean(options.nearMiss),
+    promptType: memoryTrail.currentPromptType,
+    startedAt: Date.now()
+  };
+  setMemoryTrailTrayFeedback(memoryTrail, createMemoryTrailCorrectionFeedback(memoryTrail, expectedTargetId, {
+    ...options,
+    selectedTargetId
+  }));
+  runner.setMemoryTrailCorrectionHighlight({
+    correctTargetId: expectedTargetId,
+    wrongTargetId: selectedTargetId
+  });
   showFeedback(memoryTrail.message);
   renderStudyExplorePanel();
+  debugMemoryTrail("correction step started", getMemoryTrailClickDebugContext(memoryTrail, [selectedTargetId].filter(Boolean), {
+    reason: "missed answer"
+  }));
+}
 
-  scheduleMemoryTrailStep(memoryTrail, () => {
-    runner.setMemoryTrailHighlight([]);
-    promptNextMemoryTrailTarget(memoryTrail);
-  }, memoryTrailReplayPauseMs);
+function createMemoryTrailCorrectionFeedback(memoryTrail, expectedTargetId, options = {}) {
+  const selectedTargetId = options.selectedTargetId || "";
+  const expectedName = getMemoryTrailTargetLabel(expectedTargetId);
+  const selectedName = selectedTargetId ? getMemoryTrailTargetLabel(selectedTargetId) : "";
+  const message = selectedName
+    ? `Not quite - that was ${selectedName}. Tap ${expectedName} to continue.`
+    : `Not quite. Tap ${expectedName} to continue.`;
+
+  return {
+    type: "incorrect",
+    message,
+    expectedTargetId,
+    selectedTargetId,
+    createdAt: Date.now(),
+    persistUntilNextAction: false,
+    correction: true
+  };
 }
 
 function createMemoryTrailMissFeedback(memoryTrail, expectedTargetId, options = {}) {
@@ -7787,6 +7955,26 @@ function clearMemoryTrailTrayFeedback(memoryTrail, action = "unknown") {
     feedback: memoryTrail.trayFeedback
   });
   memoryTrail.trayFeedback = null;
+}
+
+function updateMemoryTrailCorrectionCallout(memoryTrail = getActiveMemoryTrail()) {
+  if (!memoryTrailCorrectionCallout) {
+    return;
+  }
+
+  const isCorrectionActive = Boolean(memoryTrail?.active && memoryTrail.phase === "correction");
+  memoryTrailCorrectionCallout.hidden = !isCorrectionActive;
+  memoryTrailCorrectionCallout.setAttribute("aria-hidden", String(!isCorrectionActive));
+
+  if (!isCorrectionActive) {
+    memoryTrailCorrectionCallout.textContent = "";
+    return;
+  }
+
+  const prefersTouchCopy = window.matchMedia?.("(pointer: coarse)")?.matches;
+  memoryTrailCorrectionCallout.textContent = prefersTouchCopy
+    ? "Tap the correct answer to continue"
+    : "Click the correct answer to continue";
 }
 
 function renderMemoryTrailPanel() {
@@ -7905,7 +8093,7 @@ function createMemoryTrailAnswerChoiceList(memoryTrail) {
 }
 
 function createMemoryTrailResponseChip(memoryTrail) {
-  if (!memoryTrail || (memoryTrail.phase !== "answering" && memoryTrail.phase !== "feedback")) {
+  if (!memoryTrail || (memoryTrail.phase !== "answering" && memoryTrail.phase !== "feedback" && memoryTrail.phase !== "correction")) {
     return null;
   }
 
