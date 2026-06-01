@@ -7,7 +7,7 @@ Atlas Quest MVP can ship when all release gates below are satisfied.
 - [ ] Normal user flow has no visible developer, debug, POC, or legacy SVG links.
 - [ ] Root URL opens the app through `index.html`.
 - [ ] Main navigation is not broken.
-- [ ] Journey Mode works start-to-finish for World Foundations.
+- [ ] Journey Mode works start-to-finish for Continents and Oceans.
 - [ ] Journey Mode works start-to-finish for at least the first United States activity.
 - [ ] Auto-advance or manual continue between Journey steps works reliably.
 - [ ] Continue/resume Journey behavior is clear and not misleading.

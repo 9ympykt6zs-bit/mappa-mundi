@@ -626,7 +626,7 @@ Common regressions:
 
 Confidence levels below are based on code/data presence and known manual-test history, not exhaustive automated QA.
 
-World foundations:
+Continents and Oceans:
 
 - `continents-oceans` - working, high confidence.
   - 12 targets.
@@ -1040,7 +1040,7 @@ Chronological summary:
 
 4. Added journey preset model.
    - `src/journey-presets.js` centralizes built-in journeys and ordered steps.
-   - Includes World Foundations, United States, North/South America, The Americas, Europe, country-specific political-division journeys, Russia, Africa, Asia, India, Japan, Oceania, World Tour.
+   - Includes Continents and Oceans, United States, North/South America, The Americas, Europe, country-specific political-division journeys, Russia, Africa, Asia, India, Japan, Oceania, World Tour.
    - World Tour locked by default with unlock requirements.
    - Lesson: only real activity IDs should be used; invalid IDs must not launch gameplay.
 

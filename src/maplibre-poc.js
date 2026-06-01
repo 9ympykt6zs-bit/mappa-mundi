@@ -1,5 +1,5 @@
-import { journeyPresets } from "./journey-presets.js?v=20260531-back-stack";
-import { trackEvent } from "./analytics.js?v=20260531-back-stack";
+import { journeyPresets } from "./journey-presets.js?v=20260531-continents-oceans-rename";
+import { trackEvent } from "./analytics.js?v=20260531-continents-oceans-rename";
 import {
   clearActiveJourney,
   getJourneyProgress,
@@ -7,7 +7,7 @@ import {
   markStepComplete,
   resetJourneyDifficulty,
   setActiveJourney
-} from "./progress-store.js?v=20260531-back-stack";
+} from "./progress-store.js?v=20260531-continents-oceans-rename";
 
 const APP_NAME = "Mappa Mundi";
 const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
@@ -2958,7 +2958,7 @@ function ensureChipSpeechLoaded() {
     return Promise.resolve(window.GeographyChipSpeech);
   }
 
-  return import("./chip-speech.js?v=20260531-back-stack")
+  return import("./chip-speech.js?v=20260531-continents-oceans-rename")
     .then(() => window.GeographyChipSpeech || null);
 }
 
@@ -3251,10 +3251,10 @@ async function ensureMapRuntimeLoaded() {
     mapRuntimePromise = Promise.all([
       loadStylesheetOnce(mapLibreStylesheetUrl),
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
-      import("./map-engines/activity-normalizer.js?v=20260531-back-stack"),
-      import("./maplibre/activity-session.js?v=20260531-back-stack"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260531-back-stack"),
-      import("./chip-speech.js?v=20260531-back-stack")
+      import("./map-engines/activity-normalizer.js?v=20260531-continents-oceans-rename"),
+      import("./maplibre/activity-session.js?v=20260531-continents-oceans-rename"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260531-continents-oceans-rename"),
+      import("./chip-speech.js?v=20260531-continents-oceans-rename")
     ]).then(([
       ,
       ,
@@ -8609,7 +8609,7 @@ function renderOnboardingScreen() {
   cards.className = "onboarding-card-grid";
 
   [
-    ["1.", "Pick a Journey", "Choose a guided path like World Foundations."],
+    ["1.", "Pick a Journey", "Choose a guided path like Continents and Oceans."],
     ["2.", "Select a Label", "Tap one of the answer chips at the bottom of the screen."],
     ["3.", "Tap the Map", "Tap the matching place on the globe. Correct answers stay on the map."],
     ["4.", "Study When Needed", "Use Study to preview or practice without changing journey progress."]
@@ -8637,7 +8637,7 @@ function renderOnboardingScreen() {
   const startButton = document.createElement("button");
   startButton.type = "button";
   startButton.className = "onboarding-primary-button";
-  startButton.textContent = "Start World Foundations";
+  startButton.textContent = "Start Continents and Oceans";
   startButton.addEventListener("click", startWorldFoundationsFromOnboarding);
 
   const chooseButton = document.createElement("button");

@@ -111,7 +111,7 @@ export const journeyPresets = [
   },
   {
     id: "world-foundations",
-    title: "World Foundations",
+    title: "Continents and Oceans",
     description: "Start with continents, oceans, and the big picture of the world.",
     status: "available",
     steps: [
