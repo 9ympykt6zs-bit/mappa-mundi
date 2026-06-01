@@ -1,5 +1,5 @@
-import { journeyPresets } from "./journey-presets.js?v=20260531-challenge-picker-flow";
-import { trackEvent } from "./analytics.js?v=20260531-challenge-picker-flow";
+import { journeyPresets } from "./journey-presets.js?v=20260531-journey-detail-art";
+import { trackEvent } from "./analytics.js?v=20260531-journey-detail-art";
 import {
   clearActiveJourney,
   getJourneyProgress,
@@ -7,7 +7,7 @@ import {
   markStepComplete,
   resetJourneyDifficulty,
   setActiveJourney
-} from "./progress-store.js?v=20260531-challenge-picker-flow";
+} from "./progress-store.js?v=20260531-journey-detail-art";
 
 const APP_NAME = "Mappa Mundi";
 const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
@@ -2958,7 +2958,7 @@ function ensureChipSpeechLoaded() {
     return Promise.resolve(window.GeographyChipSpeech);
   }
 
-  return import("./chip-speech.js?v=20260531-challenge-picker-flow")
+  return import("./chip-speech.js?v=20260531-journey-detail-art")
     .then(() => window.GeographyChipSpeech || null);
 }
 
@@ -3251,10 +3251,10 @@ async function ensureMapRuntimeLoaded() {
     mapRuntimePromise = Promise.all([
       loadStylesheetOnce(mapLibreStylesheetUrl),
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
-      import("./map-engines/activity-normalizer.js?v=20260531-challenge-picker-flow"),
-      import("./maplibre/activity-session.js?v=20260531-challenge-picker-flow"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260531-challenge-picker-flow"),
-      import("./chip-speech.js?v=20260531-challenge-picker-flow")
+      import("./map-engines/activity-normalizer.js?v=20260531-journey-detail-art"),
+      import("./maplibre/activity-session.js?v=20260531-journey-detail-art"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260531-journey-detail-art"),
+      import("./chip-speech.js?v=20260531-journey-detail-art")
     ]).then(([
       ,
       ,
@@ -8459,15 +8459,32 @@ function createJourneyPresetCard(journey) {
   const isAvailable = isJourneyAvailable(journey);
   const status = getEffectiveJourneyStatus(journey);
   const thumbnailSrc = getJourneyThumbnailSrc(journey);
+  const activateJourneyCard = () => selectJourney(journey.id);
   const card = document.createElement("article");
   card.className = [
     "journey-preset-card",
+    isAvailable ? "journey-preset-card-clickable" : "",
     thumbnailSrc ? "journey-preset-card-with-thumbnail" : "",
     thumbnailSrc ? `journey-preset-card-${journey.id}` : "",
     isAvailable ? "" : `journey-preset-card-${status}`,
     journey.recommended ? "journey-preset-card-recommended" : ""
   ].filter(Boolean).join(" ");
   card.dataset.journeyId = journey.id;
+
+  if (isAvailable) {
+    card.setAttribute("role", "button");
+    card.tabIndex = 0;
+    card.setAttribute("aria-label", `${journey.recommended ? "Start" : "Select"} ${journey.title}`);
+    card.addEventListener("click", activateJourneyCard);
+    card.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+
+      event.preventDefault();
+      activateJourneyCard();
+    });
+  }
 
   const header = document.createElement("div");
   header.className = "journey-preset-card-header";
@@ -8499,14 +8516,16 @@ function createJourneyPresetCard(journey) {
   const actions = document.createElement("div");
   actions.className = "journey-card-actions";
 
-  const selectButton = document.createElement("button");
-  selectButton.type = "button";
-  selectButton.textContent = journey.recommended && isAvailable ? "Start Learning" : isAvailable ? "Select Journey" : "View Details";
-  selectButton.addEventListener("click", () => {
-    selectJourney(journey.id);
-  });
+  const actionControl = document.createElement(isAvailable ? "span" : "button");
+  actionControl.className = "journey-card-action-control";
+  actionControl.textContent = journey.recommended && isAvailable ? "Start Learning" : isAvailable ? "Select Journey" : "View Details";
 
-  actions.append(selectButton);
+  if (!isAvailable) {
+    actionControl.type = "button";
+    actionControl.addEventListener("click", activateJourneyCard);
+  }
+
+  actions.append(actionControl);
 
   card.append(header, description);
   if (journey.note) {
@@ -8726,6 +8745,7 @@ function renderJourneyDetail(journey) {
   const detailIntent = normalizeJourneyDetailIntent(selectedJourneyDetailIntent);
   const isLearnIntent = detailIntent === "learn";
   const isChallengeIntent = detailIntent === "challenge";
+  const thumbnailSrc = getJourneyThumbnailSrc(journey);
   const summary = document.createElement("section");
   summary.className = "journey-detail-summary";
 
@@ -8865,7 +8885,28 @@ function renderJourneyDetail(journey) {
     }));
   }
 
-  journeyShellContent.append(actions, summary);
+  if (thumbnailSrc) {
+    const hero = document.createElement("section");
+    hero.className = "journey-detail-hero";
+
+    const art = document.createElement("div");
+    art.className = "journey-detail-art";
+    art.setAttribute("aria-hidden", "true");
+
+    const image = document.createElement("img");
+    image.src = thumbnailSrc;
+    image.alt = "";
+    image.loading = "lazy";
+    image.decoding = "async";
+    image.width = 960;
+    image.height = 540;
+    art.appendChild(image);
+
+    hero.append(art, actions);
+    journeyShellContent.append(hero, summary);
+  } else {
+    journeyShellContent.append(actions, summary);
+  }
 
   const secondaryActions = document.createElement("div");
   secondaryActions.className = "journey-secondary-actions";

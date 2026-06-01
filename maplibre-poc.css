@@ -940,6 +940,18 @@ select,
   box-shadow: 0 12px 24px rgba(22, 101, 52, 0.14);
 }
 
+.journey-preset-card-clickable {
+  cursor: pointer;
+}
+
+.journey-preset-card-clickable:hover,
+.journey-preset-card-clickable:focus-visible {
+  border-color: rgba(37, 99, 235, 0.48);
+  box-shadow: 0 16px 30px rgba(24, 38, 64, 0.18);
+  outline: none;
+  transform: translateY(-1px);
+}
+
 /* Journey thumbnail artwork is decorative; the overlay preserves text and button readability. */
 .journey-preset-card-with-thumbnail {
   background: #efe1c4;
@@ -1039,7 +1051,7 @@ select,
   margin-top: 4px;
 }
 
-.journey-card-actions button:only-child {
+.journey-card-action-control:only-child {
   grid-column: 1 / -1;
 }
 
@@ -1076,31 +1088,43 @@ select,
   color: #8a5a0a;
 }
 
-.journey-card-actions button {
+.journey-card-action-control {
+  align-items: center;
   background: linear-gradient(180deg, #37a8f2, #1260b5);
   border: 0;
   border-radius: var(--radius-control);
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.2), inset 0 -3px 0 rgba(0, 0, 0, 0.16), 0 8px 16px rgba(24, 38, 64, 0.14);
   color: #ffffff;
-  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
   font-weight: 900;
+  justify-content: center;
   min-height: 48px;
   padding: 10px 12px;
+  text-align: center;
   touch-action: manipulation;
 }
 
-.journey-card-actions button:nth-child(2) {
+.journey-preset-card-clickable .journey-card-action-control {
+  pointer-events: none;
+}
+
+button.journey-card-action-control {
+  cursor: pointer;
+}
+
+.journey-card-action-control:nth-child(2) {
   background: linear-gradient(180deg, #74d82f, #279012);
 }
 
-.journey-card-actions button:hover:not(:disabled),
-.journey-card-actions button:focus-visible:not(:disabled) {
+button.journey-card-action-control:hover:not(:disabled),
+button.journey-card-action-control:focus-visible:not(:disabled) {
   filter: brightness(1.06);
   outline: none;
   transform: translateY(-1px);
 }
 
-.journey-card-actions button:disabled {
+button.journey-card-action-control:disabled {
   background: var(--disabled-bg);
   border: 1px solid var(--panel-border);
   box-shadow: none;
@@ -1610,6 +1634,52 @@ select,
   font-size: 0.92rem;
   font-weight: 750;
   line-height: 1.25;
+}
+
+.journey-detail-hero {
+  align-items: stretch;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+  width: 100%;
+}
+
+/* Journey detail art reuses the same thumbnail mapping as the Choose Journey cards. */
+.journey-detail-art {
+  background: linear-gradient(180deg, #eaf4ff, #d7e8f8);
+  border: 1px solid rgba(188, 211, 237, 0.95);
+  border-radius: 14px;
+  box-shadow: 0 10px 22px rgba(24, 38, 64, 0.12);
+  min-height: 220px;
+  overflow: hidden;
+  position: relative;
+}
+
+.journey-detail-art::after {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(20, 42, 76, 0.18)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0));
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.journey-detail-art img {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  width: 100%;
+}
+
+.journey-detail-hero .journey-path-actions {
+  grid-template-columns: 1fr;
+  margin: 0;
+}
+
+.journey-detail-hero .journey-path-card {
+  min-height: 100%;
 }
 
 .journey-path-actions {
@@ -3679,6 +3749,14 @@ body.browse-mode .answer-panel-title {
 
   .journey-card-actions {
     grid-template-columns: 1fr;
+  }
+
+  .journey-detail-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .journey-detail-art {
+    min-height: clamp(150px, 38vw, 190px);
   }
 
   .journey-path-actions,

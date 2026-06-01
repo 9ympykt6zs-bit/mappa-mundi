@@ -5,7 +5,7 @@ import {
   oceanRegionColors,
   oceanZoneMutedColor,
   oceanTextureSize
-} from "./ocean-textures.js?v=20260531-challenge-picker-flow";
+} from "./ocean-textures.js?v=20260531-journey-detail-art";
 
 const colors = {
   ink: "#172033",
