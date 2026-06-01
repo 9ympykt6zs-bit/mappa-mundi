@@ -1,5 +1,5 @@
-import { journeyPresets } from "./journey-presets.js?v=20260531-settings-hub";
-import { trackEvent } from "./analytics.js?v=20260531-settings-hub";
+import { journeyPresets } from "./journey-presets.js?v=20260531-back-stack";
+import { trackEvent } from "./analytics.js?v=20260531-back-stack";
 import {
   clearActiveJourney,
   getJourneyProgress,
@@ -7,7 +7,7 @@ import {
   markStepComplete,
   resetJourneyDifficulty,
   setActiveJourney
-} from "./progress-store.js?v=20260531-settings-hub";
+} from "./progress-store.js?v=20260531-back-stack";
 
 const APP_NAME = "Mappa Mundi";
 const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
@@ -2958,7 +2958,7 @@ function ensureChipSpeechLoaded() {
     return Promise.resolve(window.GeographyChipSpeech);
   }
 
-  return import("./chip-speech.js?v=20260531-settings-hub")
+  return import("./chip-speech.js?v=20260531-back-stack")
     .then(() => window.GeographyChipSpeech || null);
 }
 
@@ -3251,10 +3251,10 @@ async function ensureMapRuntimeLoaded() {
     mapRuntimePromise = Promise.all([
       loadStylesheetOnce(mapLibreStylesheetUrl),
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
-      import("./map-engines/activity-normalizer.js?v=20260531-settings-hub"),
-      import("./maplibre/activity-session.js?v=20260531-settings-hub"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260531-settings-hub"),
-      import("./chip-speech.js?v=20260531-settings-hub")
+      import("./map-engines/activity-normalizer.js?v=20260531-back-stack"),
+      import("./maplibre/activity-session.js?v=20260531-back-stack"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260531-back-stack"),
+      import("./chip-speech.js?v=20260531-back-stack")
     ]).then(([
       ,
       ,
@@ -4838,6 +4838,7 @@ function bindLaunchScreenEvents() {
     showCustomizeScreen();
   });
   mainMenuLaunchButton?.addEventListener("click", () => {
+    appScreenHistory = [];
     showAppScreen("launch", { pushHistory: false });
   });
 }
@@ -4880,37 +4881,79 @@ function normalizeAppShellScreenId(screenId) {
   return appShellScreenIds.has(screenId) ? screenId : "main-menu";
 }
 
-function pushAppScreenHistory(screenId) {
-  const normalizedScreenId = normalizeAppShellScreenId(screenId);
+function getAppScreenSnapshotScreenId(snapshot) {
+  const screenId = typeof snapshot === "string" ? snapshot : snapshot?.screenId;
+  return appShellScreenIds.has(screenId) ? screenId : null;
+}
 
-  if (!normalizedScreenId || normalizedScreenId === currentAppScreen) {
+function cloneSelectedJourneyPlayState() {
+  return {
+    journeyId: selectedJourneyPlayState?.journeyId || null,
+    difficultyId: normalizeJourneyDifficultyId(selectedJourneyPlayState?.difficultyId)
+  };
+}
+
+function createAppScreenSnapshot(screenId = currentAppScreen) {
+  return {
+    screenId: normalizeAppShellScreenId(screenId),
+    selectedJourneyId,
+    journeyPickerIntent: normalizeJourneyDetailIntent(journeyPickerIntent),
+    selectedJourneyDetailIntent: normalizeJourneyDetailIntent(selectedJourneyDetailIntent),
+    selectedJourneyPlayState: cloneSelectedJourneyPlayState(),
+    pendingFreePlayActivityId,
+    pendingFreePlayHierarchyNodeId
+  };
+}
+
+function restoreAppScreenSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot === "string") {
     return;
   }
 
-  const lastScreenId = appScreenHistory[appScreenHistory.length - 1];
+  selectedJourneyId = snapshot.selectedJourneyId || null;
+  journeyPickerIntent = normalizeJourneyDetailIntent(snapshot.journeyPickerIntent);
+  selectedJourneyDetailIntent = normalizeJourneyDetailIntent(snapshot.selectedJourneyDetailIntent);
+  selectedJourneyPlayState = {
+    journeyId: snapshot.selectedJourneyPlayState?.journeyId || null,
+    difficultyId: normalizeJourneyDifficultyId(snapshot.selectedJourneyPlayState?.difficultyId)
+  };
+  pendingFreePlayActivityId = snapshot.pendingFreePlayActivityId || null;
+  pendingFreePlayHierarchyNodeId = snapshot.pendingFreePlayHierarchyNodeId || null;
+}
+
+function pushAppScreenHistory(screenId) {
+  const snapshot = createAppScreenSnapshot(screenId);
+  const normalizedScreenId = getAppScreenSnapshotScreenId(snapshot);
+
+  if (!normalizedScreenId) {
+    return;
+  }
+
+  const lastScreenId = getAppScreenSnapshotScreenId(appScreenHistory[appScreenHistory.length - 1]);
   if (lastScreenId === normalizedScreenId) {
     return;
   }
 
-  appScreenHistory.push(normalizedScreenId);
+  appScreenHistory.push(snapshot);
 }
 
 function popAppScreenHistory() {
   while (appScreenHistory.length > 0) {
-    const screenId = normalizeAppShellScreenId(appScreenHistory.pop());
+    const snapshot = appScreenHistory.pop();
+    const screenId = getAppScreenSnapshotScreenId(snapshot);
 
     if (!screenId) {
       continue;
     }
 
-    if (screenId === "main-menu" && appScreenHistory[appScreenHistory.length - 1] === "main-menu") {
+    if (screenId === "main-menu" && getAppScreenSnapshotScreenId(appScreenHistory[appScreenHistory.length - 1]) === "main-menu") {
       continue;
     }
 
-    return screenId;
+    return snapshot;
   }
 
-  return "launch";
+  return createAppScreenSnapshot("launch");
 }
 
 function showAppScreen(screenId, options = {}) {
@@ -4961,7 +5004,11 @@ function trackAppScreenShown(screenId) {
 }
 
 function goBackAppScreen() {
-  const previousScreen = popAppScreenHistory();
+  const previousSnapshot = popAppScreenHistory();
+  const previousScreen = getAppScreenSnapshotScreenId(previousSnapshot);
+
+  restoreAppScreenSnapshot(previousSnapshot);
+
   if (previousScreen === "free-play") {
     openFreePlay({
       pushHistory: false,
@@ -4976,7 +5023,7 @@ function goBackAppScreen() {
 function openFreePlay(options = {}) {
   const pushHistory = options.pushHistory !== false;
   if (pushHistory && currentAppScreen !== "free-play") {
-    appScreenHistory.push(currentAppScreen);
+    pushAppScreenHistory(currentAppScreen);
   }
 
   saveCurrentActivityProgress();
@@ -13393,7 +13440,7 @@ function exitJourney() {
   atlasProgress = clearActiveJourney(atlasProgress);
   activeJourneySession = null;
   resetJourneyGameplayInstructionSession();
-  showAppScreen(selectedJourneyId ? "journey-detail" : "main-menu");
+  showAppScreen(selectedJourneyId ? "journey-detail" : "main-menu", { pushHistory: false });
 }
 
 function getCurrentActivitySequence(mapSet = activeMapSet) {
