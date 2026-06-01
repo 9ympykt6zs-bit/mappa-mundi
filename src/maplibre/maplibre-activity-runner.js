@@ -5,7 +5,7 @@ import {
   oceanRegionColors,
   oceanZoneMutedColor,
   oceanTextureSize
-} from "./ocean-textures.js?v=20260531-journey-detail-art";
+} from "./ocean-textures.js?v=20260531-geography-core-card-refresh";
 
 const colors = {
   ink: "#172033",

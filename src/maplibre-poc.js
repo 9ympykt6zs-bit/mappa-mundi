@@ -1,5 +1,5 @@
-import { journeyPresets } from "./journey-presets.js?v=20260531-journey-detail-art";
-import { trackEvent } from "./analytics.js?v=20260531-journey-detail-art";
+import { journeyPresets } from "./journey-presets.js?v=20260531-geography-core-card-refresh";
+import { trackEvent } from "./analytics.js?v=20260531-geography-core-card-refresh";
 import {
   clearActiveJourney,
   getJourneyProgress,
@@ -7,7 +7,7 @@ import {
   markStepComplete,
   resetJourneyDifficulty,
   setActiveJourney
-} from "./progress-store.js?v=20260531-journey-detail-art";
+} from "./progress-store.js?v=20260531-geography-core-card-refresh";
 
 const APP_NAME = "Mappa Mundi";
 const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
@@ -2958,7 +2958,7 @@ function ensureChipSpeechLoaded() {
     return Promise.resolve(window.GeographyChipSpeech);
   }
 
-  return import("./chip-speech.js?v=20260531-journey-detail-art")
+  return import("./chip-speech.js?v=20260531-geography-core-card-refresh")
     .then(() => window.GeographyChipSpeech || null);
 }
 
@@ -3251,10 +3251,10 @@ async function ensureMapRuntimeLoaded() {
     mapRuntimePromise = Promise.all([
       loadStylesheetOnce(mapLibreStylesheetUrl),
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
-      import("./map-engines/activity-normalizer.js?v=20260531-journey-detail-art"),
-      import("./maplibre/activity-session.js?v=20260531-journey-detail-art"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260531-journey-detail-art"),
-      import("./chip-speech.js?v=20260531-journey-detail-art")
+      import("./map-engines/activity-normalizer.js?v=20260531-geography-core-card-refresh"),
+      import("./maplibre/activity-session.js?v=20260531-geography-core-card-refresh"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260531-geography-core-card-refresh"),
+      import("./chip-speech.js?v=20260531-geography-core-card-refresh")
     ]).then(([
       ,
       ,
@@ -8451,8 +8451,20 @@ const JOURNEY_THUMBNAILS = {
   "World Tour": "assets/journey-thumbnails/world-tour-card.png"
 };
 
+const JOURNEY_THUMBNAIL_ASSET_VERSION = "20260531-journey-thumbnail-refresh";
+
+function versionJourneyThumbnailSrc(src) {
+  if (!src || src.includes("?")) {
+    return src || "";
+  }
+
+  return `${src}?v=${JOURNEY_THUMBNAIL_ASSET_VERSION}`;
+}
+
 function getJourneyThumbnailSrc(journey) {
-  return JOURNEY_THUMBNAILS[journey?.id] || JOURNEY_THUMBNAILS[journey?.title] || journey?.thumbnailSrc || "";
+  return versionJourneyThumbnailSrc(
+    JOURNEY_THUMBNAILS[journey?.id] || JOURNEY_THUMBNAILS[journey?.title] || journey?.thumbnailSrc || ""
+  );
 }
 
 function createJourneyPresetCard(journey) {
