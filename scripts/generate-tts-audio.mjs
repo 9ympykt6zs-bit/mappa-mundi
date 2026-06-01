@@ -301,17 +301,53 @@ function getActivitySourceContexts(file, data) {
 }
 
 function collectTargetLabels(target) {
+  const spokenPlaceName = getSpokenPlaceNameForTarget(target);
   const labels = [
-    target?.name,
-    target?.city,
-    target?.completedLabelName,
-    typeof target?.label === "string" ? target.label : null,
-    typeof target?.feature?.name === "string" ? target.feature.name : null
+    spokenPlaceName || target?.name,
+    cleanTargetLabelForSpeech(target, target?.completedLabelName),
+    typeof target?.label === "string" ? cleanTargetLabelForSpeech(target, target.label) : null,
+    typeof target?.feature?.name === "string" ? cleanTargetLabelForSpeech(target, target.feature.name) : null
   ];
 
   return labels
     .map(normalizeSpokenText)
     .filter(Boolean);
+}
+
+function cleanTargetLabelForSpeech(target, label) {
+  if (!label) {
+    return "";
+  }
+
+  return isCapitalOrCityTarget(target)
+    ? stripStateSuffixForSpeech(label)
+    : normalizeSpokenText(label);
+}
+
+function getSpokenPlaceNameForTarget(target) {
+  if (!target) {
+    return "";
+  }
+
+  if (target.city) {
+    return normalizeSpokenText(target.city);
+  }
+
+  if (isCapitalOrCityTarget(target)) {
+    return stripStateSuffixForSpeech(target.name);
+  }
+
+  return normalizeSpokenText(target.name);
+}
+
+function isCapitalOrCityTarget(target) {
+  return target?.type === "capital" || target?.type === "city" || target?.kind === "point" || target?.shape === "circle";
+}
+
+function stripStateSuffixForSpeech(labelText) {
+  const text = normalizeSpokenText(labelText);
+  const match = text.match(/^(.+?)(?:,?\s+[A-Z]{2})$/);
+  return match ? match[1].trim() : text;
 }
 
 function normalizeSpokenText(value) {

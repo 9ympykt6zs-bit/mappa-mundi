@@ -1,5 +1,5 @@
-import { journeyPresets } from "./journey-presets.js?v=20260531-geography-core-card-refresh";
-import { trackEvent } from "./analytics.js?v=20260531-geography-core-card-refresh";
+import { journeyPresets } from "./journey-presets.js?v=20260601-spoken-city-labels";
+import { trackEvent } from "./analytics.js?v=20260601-spoken-city-labels";
 import {
   clearActiveJourney,
   getJourneyProgress,
@@ -7,7 +7,7 @@ import {
   markStepComplete,
   resetJourneyDifficulty,
   setActiveJourney
-} from "./progress-store.js?v=20260531-geography-core-card-refresh";
+} from "./progress-store.js?v=20260601-spoken-city-labels";
 
 const APP_NAME = "Mappa Mundi";
 const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
@@ -2958,7 +2958,7 @@ function ensureChipSpeechLoaded() {
     return Promise.resolve(window.GeographyChipSpeech);
   }
 
-  return import("./chip-speech.js?v=20260531-geography-core-card-refresh")
+  return import("./chip-speech.js?v=20260601-spoken-city-labels")
     .then(() => window.GeographyChipSpeech || null);
 }
 
@@ -3251,10 +3251,10 @@ async function ensureMapRuntimeLoaded() {
     mapRuntimePromise = Promise.all([
       loadStylesheetOnce(mapLibreStylesheetUrl),
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
-      import("./map-engines/activity-normalizer.js?v=20260531-geography-core-card-refresh"),
-      import("./maplibre/activity-session.js?v=20260531-geography-core-card-refresh"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260531-geography-core-card-refresh"),
-      import("./chip-speech.js?v=20260531-geography-core-card-refresh")
+      import("./map-engines/activity-normalizer.js?v=20260601-spoken-city-labels"),
+      import("./maplibre/activity-session.js?v=20260601-spoken-city-labels"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260601-spoken-city-labels"),
+      import("./chip-speech.js?v=20260601-spoken-city-labels")
     ]).then(([
       ,
       ,
@@ -6451,6 +6451,35 @@ function getStudyPreviewSpeechLabel(targetOrId) {
   return target.completedLabelName || target.name || "";
 }
 
+function getTargetChipLabel(targetOrId) {
+  const target = typeof targetOrId === "string"
+    ? session.getFeature(targetOrId)
+    : targetOrId;
+
+  if (!target) {
+    return "";
+  }
+
+  if (target.city) {
+    return target.city;
+  }
+
+  const label = target.name || target.completedLabelName || target.id || "";
+  const state = target.state || "";
+  if (
+    label
+    && state
+    && /^[A-Z]{2}$/.test(state)
+    && (target.type === "capital" || target.type === "city" || target.kind === "point" || target.shape === "circle")
+  ) {
+    return label
+      .replace(new RegExp(`,?\\s+${state}$`), "")
+      .trim();
+  }
+
+  return label;
+}
+
 function speakStudyPreviewTarget(targetOrId) {
   const text = getStudyPreviewSpeechLabel(targetOrId);
 
@@ -6667,7 +6696,7 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
 function createMemoryTrailTargetStats(target) {
   return {
     targetId: target.id,
-    displayName: target.completedLabelName || target.name || target.id,
+    displayName: getTargetChipLabel(target) || target.completedLabelName || target.name || target.id,
     exposedCount: 0,
     guidedTapCount: 0,
     nameToPlaceAttempts: 0,
@@ -6862,7 +6891,7 @@ function getMemoryTrailTargetLabel(targetOrId) {
     ? session.getFeature(targetOrId)
     : targetOrId;
 
-  return target?.completedLabelName || target?.name || "";
+  return getTargetChipLabel(target) || target?.completedLabelName || target?.name || "";
 }
 
 function shuffleMemoryTrailChoices(items = []) {
@@ -8254,7 +8283,7 @@ function createMemoryTrailResponseChip(memoryTrail) {
   }
 
   const target = session.getFeature(memoryTrail.responseChipTargetId);
-  const labelText = target?.name || "";
+  const labelText = getTargetChipLabel(target) || target?.name || "";
 
   if (!labelText) {
     return null;
@@ -11209,13 +11238,14 @@ function renderAnswerBank() {
   answerBank.innerHTML = "";
 
   getCurrentAnswerItems().forEach((feature) => {
+    const chipLabel = getTargetChipLabel(feature) || feature.name;
     const chip = document.createElement("button");
     chip.className = "label-chip";
     chip.type = "button";
     chip.dataset.id = feature.id;
-    chip.setAttribute("aria-label", feature.name);
-    chip.appendChild(createChipLabelText(feature.name));
-    const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(feature.name);
+    chip.setAttribute("aria-label", chipLabel);
+    chip.appendChild(createChipLabelText(chipLabel));
+    const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(chipLabel);
     if (speaker) {
       chip.appendChild(speaker);
     }
@@ -12235,7 +12265,7 @@ function placeGrabbedAnswer(targetIds, options = {}) {
     handleJourneyActivityCompletion();
     handleStudyPracticeCompletion();
     ensureActivityNavControls();
-    showFeedback(`Correct: ${result.feature.name}`, true);
+    showFeedback(`Correct: ${getTargetChipLabel(result.feature) || result.feature.name}`, true);
   }
 }
 
@@ -12711,7 +12741,7 @@ function showFloatingChip(id, clientX, clientY) {
     document.body.appendChild(floatingChip);
   }
 
-  floatingChip.textContent = feature?.name || "";
+  floatingChip.textContent = getTargetChipLabel(feature) || feature?.name || "";
   floatingChip.hidden = false;
   updateFloatingChipPosition(clientX, clientY);
 }

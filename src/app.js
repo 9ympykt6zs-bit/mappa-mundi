@@ -1518,12 +1518,13 @@ function prepareTargetElement(targetElement, feature) {
 }
 
 function createChip(feature) {
+  const chipLabel = getTargetChipLabel(feature) || feature.name;
   const chip = document.createElement("button");
   chip.type = "button";
   chip.className = "label-chip";
-  chip.setAttribute("aria-label", feature.name);
-  chip.appendChild(createChipLabelText(feature.name));
-  const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(feature.name);
+  chip.setAttribute("aria-label", chipLabel);
+  chip.appendChild(createChipLabelText(chipLabel));
+  const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(chipLabel);
   if (speaker) {
     chip.appendChild(speaker);
   }
@@ -1546,6 +1547,31 @@ function createChip(feature) {
   });
 
   answerBank.appendChild(chip);
+}
+
+function getTargetChipLabel(feature) {
+  if (!feature) {
+    return "";
+  }
+
+  if (feature.city) {
+    return feature.city;
+  }
+
+  const label = feature.name || "";
+  const state = feature.state || "";
+  if (
+    label
+    && state
+    && /^[A-Z]{2}$/.test(state)
+    && (feature.type === "capital" || feature.type === "city" || feature.shape === "circle")
+  ) {
+    return label
+      .replace(new RegExp(`,?\\s+${state}$`), "")
+      .trim();
+  }
+
+  return label;
 }
 
 function createChipLabelText(labelText) {

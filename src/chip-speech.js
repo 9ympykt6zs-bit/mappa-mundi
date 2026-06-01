@@ -1,5 +1,5 @@
 (function attachChipSpeech(global) {
-  const audioManifestUrl = "assets/audio/audio-manifest.json?v=local-tts-desktop";
+  const audioManifestUrl = "assets/audio/audio-manifest.json?v=20260601-spoken-city-labels";
   const audioMutedStorageKey = "atlasQuestAudioMuted";
   let audioManifestPromise = null;
   let audioManifestLookup = null;
@@ -104,13 +104,23 @@
       .trim();
   }
 
+  function stripStateSuffixForSpeech(labelText) {
+    const text = normalizeSpokenText(labelText);
+    const match = text.match(/^(.+?)(?:,?\s+[A-Z]{2})$/);
+    return match ? match[1].trim() : text;
+  }
+
+  function getSpokenPlaceName(labelText) {
+    return stripStateSuffixForSpeech(labelText);
+  }
+
   function getPronunciationOverride(labelText) {
-    const key = sanitizeAudioLookupKey(normalizeSpokenText(labelText));
+    const key = sanitizeAudioLookupKey(getSpokenPlaceName(labelText));
     return key ? pronunciationOverrides[key] || null : null;
   }
 
   function resolveSpeechText(labelText) {
-    const text = normalizeSpokenText(labelText);
+    const text = getSpokenPlaceName(labelText);
     const override = getPronunciationOverride(text);
 
     return {
@@ -398,7 +408,7 @@
   }
 
   function speakLabelWithCompletion(labelText, onComplete) {
-    const text = normalizeSpokenText(labelText);
+    const text = getSpokenPlaceName(labelText);
 
     if (!text || !isAudioOutputSupported()) {
       return false;
@@ -634,6 +644,7 @@
   global.GeographyChipSpeech = {
     getAudioManifest,
     getAudioMuted,
+    getSpokenPlaceName,
     isSpeechSupported,
     isLocalAudioSupported,
     primeLocalAudio,
