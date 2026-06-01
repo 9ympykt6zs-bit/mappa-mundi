@@ -1,5 +1,5 @@
-import { journeyPresets } from "./journey-presets.js?v=20260531-continents-oceans-rename";
-import { trackEvent } from "./analytics.js?v=20260531-continents-oceans-rename";
+import { journeyPresets } from "./journey-presets.js?v=20260531-challenge-picker-flow";
+import { trackEvent } from "./analytics.js?v=20260531-challenge-picker-flow";
 import {
   clearActiveJourney,
   getJourneyProgress,
@@ -7,7 +7,7 @@ import {
   markStepComplete,
   resetJourneyDifficulty,
   setActiveJourney
-} from "./progress-store.js?v=20260531-continents-oceans-rename";
+} from "./progress-store.js?v=20260531-challenge-picker-flow";
 
 const APP_NAME = "Mappa Mundi";
 const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
@@ -2958,7 +2958,7 @@ function ensureChipSpeechLoaded() {
     return Promise.resolve(window.GeographyChipSpeech);
   }
 
-  return import("./chip-speech.js?v=20260531-continents-oceans-rename")
+  return import("./chip-speech.js?v=20260531-challenge-picker-flow")
     .then(() => window.GeographyChipSpeech || null);
 }
 
@@ -3251,10 +3251,10 @@ async function ensureMapRuntimeLoaded() {
     mapRuntimePromise = Promise.all([
       loadStylesheetOnce(mapLibreStylesheetUrl),
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
-      import("./map-engines/activity-normalizer.js?v=20260531-continents-oceans-rename"),
-      import("./maplibre/activity-session.js?v=20260531-continents-oceans-rename"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260531-continents-oceans-rename"),
-      import("./chip-speech.js?v=20260531-continents-oceans-rename")
+      import("./map-engines/activity-normalizer.js?v=20260531-challenge-picker-flow"),
+      import("./maplibre/activity-session.js?v=20260531-challenge-picker-flow"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260531-challenge-picker-flow"),
+      import("./chip-speech.js?v=20260531-challenge-picker-flow")
     ]).then(([
       ,
       ,
@@ -4823,7 +4823,8 @@ function bindLaunchScreenEvents() {
     showAppScreen("choose-journey");
   });
   mainMenuChallengeButton?.addEventListener("click", () => {
-    showAppScreen("challenge-menu");
+    journeyPickerIntent = "challenge";
+    showAppScreen("choose-journey");
   });
   mainMenuQuickStartButton?.addEventListener("click", startQuickStartJourney);
   mainMenuChooseButton?.addEventListener("click", () => {
@@ -8398,14 +8399,71 @@ const journeyPresetSections = [
   }
 ];
 
+// Choose Journey card artwork is decorative and mapped separately from journey
+// ids so display-name changes do not break saved progress or activity data.
+const JOURNEY_THUMBNAILS = {
+  "world-geography-core": "assets/journey-thumbnails/world-geography-core-card.png",
+  "World Geography Core": "assets/journey-thumbnails/world-geography-core-card.png",
+  "world-foundations": "assets/journey-thumbnails/continents-and oceans-card.png",
+  "Continents and Oceans": "assets/journey-thumbnails/continents-and oceans-card.png",
+  "World Foundations": "assets/journey-thumbnails/continents-and oceans-card.png",
+  "united-states": "assets/journey-thumbnails/united-states-card.png",
+  "United States": "assets/journey-thumbnails/united-states-card.png",
+  "us-capitals": "assets/journey-thumbnails/united-states-capitals-card.png",
+  "U.S. Capitals": "assets/journey-thumbnails/united-states-capitals-card.png",
+  "north-america": "assets/journey-thumbnails/north-america-card.png",
+  "North America": "assets/journey-thumbnails/north-america-card.png",
+  "the-americas": "assets/journey-thumbnails/the-americas-card.png",
+  "The Americas": "assets/journey-thumbnails/the-americas-card.png",
+  "the-caribbean": "assets/journey-thumbnails/the-caribbean-card.png",
+  "The Caribbean": "assets/journey-thumbnails/the-caribbean-card.png",
+  Caribbean: "assets/journey-thumbnails/the-caribbean-card.png",
+  "south-america": "assets/journey-thumbnails/south-america-card.png",
+  "South America": "assets/journey-thumbnails/south-america-card.png",
+  brazil: "assets/journey-thumbnails/brazil-card.png",
+  Brazil: "assets/journey-thumbnails/brazil-card.png",
+  europe: "assets/journey-thumbnails/europe-card.png",
+  Europe: "assets/journey-thumbnails/europe-card.png",
+  germany: "assets/journey-thumbnails/germany-card.png",
+  Germany: "assets/journey-thumbnails/germany-card.png",
+  france: "assets/journey-thumbnails/france-card.png",
+  France: "assets/journey-thumbnails/france-card.png",
+  spain: "assets/journey-thumbnails/spain-card.png",
+  Spain: "assets/journey-thumbnails/spain-card.png",
+  italy: "assets/journey-thumbnails/italy-card.png",
+  Italy: "assets/journey-thumbnails/italy-card.png",
+  "united-kingdom": "assets/journey-thumbnails/united-kingdom-card.png",
+  "United Kingdom": "assets/journey-thumbnails/united-kingdom-card.png",
+  UK: "assets/journey-thumbnails/united-kingdom-card.png",
+  russia: "assets/journey-thumbnails/russia-card.png",
+  Russia: "assets/journey-thumbnails/russia-card.png",
+  africa: "assets/journey-thumbnails/africa-card.png",
+  Africa: "assets/journey-thumbnails/africa-card.png",
+  asia: "assets/journey-thumbnails/asia-card.png",
+  Asia: "assets/journey-thumbnails/asia-card.png",
+  india: "assets/journey-thumbnails/india-card.png",
+  India: "assets/journey-thumbnails/india-card.png",
+  japan: "assets/journey-thumbnails/japan-card.png",
+  Japan: "assets/journey-thumbnails/japan-card.png",
+  oceania: "assets/journey-thumbnails/oceania-card.png",
+  Oceania: "assets/journey-thumbnails/oceania-card.png",
+  "world-tour": "assets/journey-thumbnails/world-tour-card.png",
+  "World Tour": "assets/journey-thumbnails/world-tour-card.png"
+};
+
+function getJourneyThumbnailSrc(journey) {
+  return JOURNEY_THUMBNAILS[journey?.id] || JOURNEY_THUMBNAILS[journey?.title] || journey?.thumbnailSrc || "";
+}
+
 function createJourneyPresetCard(journey) {
   const isAvailable = isJourneyAvailable(journey);
   const status = getEffectiveJourneyStatus(journey);
+  const thumbnailSrc = getJourneyThumbnailSrc(journey);
   const card = document.createElement("article");
   card.className = [
     "journey-preset-card",
-    journey.thumbnailSrc ? "journey-preset-card-with-thumbnail" : "",
-    journey.thumbnailSrc ? `journey-preset-card-${journey.id}` : "",
+    thumbnailSrc ? "journey-preset-card-with-thumbnail" : "",
+    thumbnailSrc ? `journey-preset-card-${journey.id}` : "",
     isAvailable ? "" : `journey-preset-card-${status}`,
     journey.recommended ? "journey-preset-card-recommended" : ""
   ].filter(Boolean).join(" ");
@@ -8456,22 +8514,15 @@ function createJourneyPresetCard(journey) {
   }
   card.append(meta, actions);
 
-  if (journey.thumbnailSrc) {
+  if (thumbnailSrc) {
     // Decorative journey thumbnail; card text and actions remain the interactive surface.
     const thumbnail = document.createElement("div");
     thumbnail.className = "journey-preset-card-thumbnail";
     thumbnail.setAttribute("aria-hidden", "true");
 
     const picture = document.createElement("picture");
-    if (journey.thumbnailSrcWebp) {
-      const webpSource = document.createElement("source");
-      webpSource.srcset = journey.thumbnailSrcWebp;
-      webpSource.type = "image/webp";
-      picture.appendChild(webpSource);
-    }
-
     const thumbnailImage = document.createElement("img");
-    thumbnailImage.src = journey.thumbnailSrc;
+    thumbnailImage.src = thumbnailSrc;
     thumbnailImage.alt = "";
     thumbnailImage.loading = "lazy";
     thumbnailImage.decoding = "async";
@@ -8499,6 +8550,18 @@ function renderJourneyPresetList(isVisible) {
   }
 
   journeyPresetList.innerHTML = "";
+
+  const pickerToolbar = document.createElement("div");
+  pickerToolbar.className = "journey-picker-toolbar";
+
+  const customizeButton = document.createElement("button");
+  customizeButton.type = "button";
+  customizeButton.className = "journey-picker-customize-button";
+  customizeButton.textContent = "Customize";
+  customizeButton.addEventListener("click", () => showCustomizeScreen());
+
+  pickerToolbar.appendChild(customizeButton);
+  journeyPresetList.appendChild(pickerToolbar);
 
   const journeysById = new Map(journeyPresets.map((journey) => [journey.id, journey]));
 

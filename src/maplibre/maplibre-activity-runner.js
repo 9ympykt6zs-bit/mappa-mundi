@@ -5,7 +5,7 @@ import {
   oceanRegionColors,
   oceanZoneMutedColor,
   oceanTextureSize
-} from "./ocean-textures.js?v=20260531-continents-oceans-rename";
+} from "./ocean-textures.js?v=20260531-challenge-picker-flow";
 
 const colors = {
   ink: "#172033",
@@ -1631,7 +1631,7 @@ export class MapLibreActivityRunner {
       }
     }
 
-    return targetIds;
+    return this.filterContinentsOceansOceanHitsAtPoint(targetIds, queryPoint);
   }
 
   isTargetNearMapPoint(targetId, point) {
@@ -1648,6 +1648,10 @@ export class MapLibreActivityRunner {
     const target = this.activity?.targets?.find((item) => item.id === targetId);
 
     if (!target) {
+      return false;
+    }
+
+    if (this.shouldRejectOceanHitOverLand(target.id, queryPoint)) {
       return false;
     }
 
@@ -1701,10 +1705,53 @@ export class MapLibreActivityRunner {
 
     return shapeTargets
       .filter((target) => {
+        if (this.shouldRejectOceanHitOverLand(target.id, queryPoint)) {
+          return false;
+        }
+
         const sourceFeature = this.getTargetShapeFeature(target);
         return this.isPointInGeoJsonGeometry(point, sourceFeature?.geometry);
       })
       .map((target) => target.id);
+  }
+
+  filterContinentsOceansOceanHitsAtPoint(targetIds, queryPoint) {
+    if (
+      !this.isContinentsOceansActivity()
+      || !targetIds.some((targetId) => this.isOceanTargetId(targetId))
+    ) {
+      return targetIds;
+    }
+
+    if (!this.isMapPointOverWorldLand(queryPoint)) {
+      return targetIds;
+    }
+
+    return targetIds.filter((targetId) => !this.isOceanTargetId(targetId));
+  }
+
+  shouldRejectOceanHitOverLand(targetId, queryPoint) {
+    return this.isContinentsOceansActivity()
+      && this.isOceanTargetId(targetId)
+      && this.isMapPointOverWorldLand(queryPoint);
+  }
+
+  isOceanTargetId(targetId) {
+    const target = this.activity?.targets?.find((item) => item.id === targetId)
+      || this.shapeTargets.find((item) => item.id === targetId);
+
+    return this.isOceanTarget(target);
+  }
+
+  isMapPointOverWorldLand(queryPoint) {
+    if (!this.map || !this.worldCountries?.features?.length) {
+      return false;
+    }
+
+    const lngLat = this.map.unproject(queryPoint);
+    const point = [lngLat.lng, lngLat.lat];
+
+    return this.worldCountries.features.some((feature) => this.isPointInGeoJsonGeometry(point, feature.geometry));
   }
 
   isPointInGeoJsonGeometry(point, geometry) {
