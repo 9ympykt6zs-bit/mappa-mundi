@@ -1307,6 +1307,25 @@ select,
   outline: none;
 }
 
+.settings-hub-panel {
+  max-width: min(420px, 100%);
+  width: 100%;
+}
+
+.settings-hub-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.settings-hub-button {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.settings-audio-toggle {
+  background: rgba(255, 255, 255, 0.78);
+}
+
 .settings-layer-group {
   display: grid;
   gap: 10px;

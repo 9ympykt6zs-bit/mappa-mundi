@@ -5,7 +5,7 @@ import {
   oceanRegionColors,
   oceanZoneMutedColor,
   oceanTextureSize
-} from "./ocean-textures.js?v=20260531-us-journey-available";
+} from "./ocean-textures.js?v=20260531-settings-hub";
 
 const colors = {
   ink: "#172033",

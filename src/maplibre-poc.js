@@ -1,5 +1,5 @@
-import { journeyPresets } from "./journey-presets.js?v=20260531-us-journey-available";
-import { trackEvent } from "./analytics.js?v=20260531-us-journey-available";
+import { journeyPresets } from "./journey-presets.js?v=20260531-settings-hub";
+import { trackEvent } from "./analytics.js?v=20260531-settings-hub";
 import {
   clearActiveJourney,
   getJourneyProgress,
@@ -7,7 +7,7 @@ import {
   markStepComplete,
   resetJourneyDifficulty,
   setActiveJourney
-} from "./progress-store.js?v=20260531-us-journey-available";
+} from "./progress-store.js?v=20260531-settings-hub";
 
 const APP_NAME = "Mappa Mundi";
 const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
@@ -174,6 +174,7 @@ const appShellScreenIds = new Set([
   "begin-journey-placeholder",
   "free-play-difficulty",
   "settings",
+  "customize",
   "free-play",
   "journey-gameplay",
   "study-practice",
@@ -2909,10 +2910,11 @@ function playGameplayInstructionOnce(instructionKey, phrase, options = {}) {
 
 function updateAudioMuteControl() {
   if (!audioMuteButton) {
+    updateSettingsAudioToggleControl();
     return;
   }
 
-  const isMuted = window.GeographyChipSpeech?.getAudioMuted?.() === true;
+  const isMuted = getAudioMutedSetting();
   audioMuteButton.classList.toggle("muted", isMuted);
   audioMuteButton.setAttribute("aria-pressed", String(isMuted));
   audioMuteButton.setAttribute("aria-label", isMuted ? "Unmute audio" : "Mute audio");
@@ -2922,10 +2924,62 @@ function updateAudioMuteControl() {
   if (label) {
     label.textContent = isMuted ? "Muted" : "Audio";
   }
+
+  updateSettingsAudioToggleControl();
+}
+
+function getAudioMutedSetting() {
+  if (window.GeographyChipSpeech?.getAudioMuted) {
+    return window.GeographyChipSpeech.getAudioMuted() === true;
+  }
+
+  try {
+    return localStorage.getItem("atlasQuestAudioMuted") === "true";
+  } catch {
+    return false;
+  }
+}
+
+function updateSettingsAudioToggleControl() {
+  const checkbox = document.querySelector("[data-settings-control=\"audio-muted\"]");
+  if (!checkbox) {
+    return;
+  }
+
+  checkbox.checked = !getAudioMutedSetting();
+  const label = document.querySelector("[data-settings-audio-state]");
+  if (label) {
+    label.textContent = checkbox.checked ? "On" : "Off";
+  }
+}
+
+function ensureChipSpeechLoaded() {
+  if (window.GeographyChipSpeech?.setAudioMuted) {
+    return Promise.resolve(window.GeographyChipSpeech);
+  }
+
+  return import("./chip-speech.js?v=20260531-settings-hub")
+    .then(() => window.GeographyChipSpeech || null);
+}
+
+function setAudioMutedSetting(isMuted) {
+  return ensureChipSpeechLoaded()
+    .then((chipSpeech) => {
+      if (chipSpeech?.setAudioMuted) {
+        chipSpeech.setAudioMuted(isMuted);
+      } else {
+        try {
+          localStorage.setItem("atlasQuestAudioMuted", String(Boolean(isMuted)));
+        } catch {
+          // Keep the visible control in sync even if storage is unavailable.
+        }
+      }
+      updateAudioMuteControl();
+    });
 }
 
 function toggleAudioMute() {
-  window.GeographyChipSpeech?.toggleAudioMuted?.();
+  void setAudioMutedSetting(!getAudioMutedSetting());
   updateAudioMuteControl();
 }
 
@@ -3197,10 +3251,10 @@ async function ensureMapRuntimeLoaded() {
     mapRuntimePromise = Promise.all([
       loadStylesheetOnce(mapLibreStylesheetUrl),
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
-      import("./map-engines/activity-normalizer.js?v=20260531-us-journey-available"),
-      import("./maplibre/activity-session.js?v=20260531-us-journey-available"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260531-us-journey-available"),
-      import("./chip-speech.js?v=20260531-us-journey-available")
+      import("./map-engines/activity-normalizer.js?v=20260531-settings-hub"),
+      import("./maplibre/activity-session.js?v=20260531-settings-hub"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260531-settings-hub"),
+      import("./chip-speech.js?v=20260531-settings-hub")
     ]).then(([
       ,
       ,
@@ -4765,7 +4819,8 @@ function bindLaunchScreenEvents() {
     showSettingsScreen();
   });
   mainMenuLearnButton?.addEventListener("click", () => {
-    showAppScreen("learn-menu");
+    journeyPickerIntent = "learn";
+    showAppScreen("choose-journey");
   });
   mainMenuChallengeButton?.addEventListener("click", () => {
     showAppScreen("challenge-menu");
@@ -4780,7 +4835,7 @@ function bindLaunchScreenEvents() {
     showAppScreen("choose-journey");
   });
   mainMenuSettingsButton?.addEventListener("click", () => {
-    showSettingsScreen();
+    showCustomizeScreen();
   });
   mainMenuLaunchButton?.addEventListener("click", () => {
     showAppScreen("launch", { pushHistory: false });
@@ -4809,6 +4864,16 @@ function showSettingsScreen(options = {}) {
     });
   }
   showAppScreen("settings");
+}
+
+function showCustomizeScreen(options = {}) {
+  if (options.track !== false) {
+    trackEvent("settings_opened", {
+      source_screen: currentAppScreen,
+      settings_area: "customize"
+    });
+  }
+  showAppScreen("customize");
 }
 
 function normalizeAppShellScreenId(screenId) {
@@ -5054,6 +5119,8 @@ function renderAppShellScreen(screenId) {
 function getAppShellScreenContent(screenId) {
   const selectedJourney = getSelectedJourney();
   const selectedJourneyTitle = selectedJourney?.title || "Journey";
+  const detailIntent = normalizeJourneyDetailIntent(selectedJourneyDetailIntent);
+  const pickerIntent = normalizeJourneyDetailIntent(journeyPickerIntent);
   const contentByScreen = {
     "main-menu": {
       title: "Main Menu",
@@ -5069,7 +5136,11 @@ function getAppShellScreenContent(screenId) {
     },
     "choose-journey": {
       title: "Choose Journey",
-      subtitle: "Pick a journey to learn, study, and play."
+      subtitle: pickerIntent === "learn"
+        ? "Pick a journey to learn."
+        : pickerIntent === "challenge"
+          ? "Pick a journey to challenge yourself."
+          : "Pick a journey to learn, study, and play."
     },
     onboarding: {
       title: "How Mappa Mundi Works",
@@ -5081,7 +5152,7 @@ function getAppShellScreenContent(screenId) {
     },
     study: {
       title: `Study: ${selectedJourneyTitle}`,
-      subtitle: getJourneyStudySubtitle(selectedJourney)
+      subtitle: getJourneyStudySubtitle(selectedJourney, detailIntent)
     },
     "choose-difficulty": {
       title: "Choose Difficulty",
@@ -5098,6 +5169,10 @@ function getAppShellScreenContent(screenId) {
       subtitle: "Choose how much help you want for this activity."
     },
     settings: {
+      title: "Settings",
+      subtitle: "Quick controls for Mappa Mundi."
+    },
+    customize: {
       title: "Customize",
       subtitle: "Adjust how Mappa Mundi presents the map."
     }
@@ -5136,7 +5211,8 @@ function isJourneyShellScreen(screenId) {
     "choose-difficulty",
     "begin-journey-placeholder",
     "free-play-difficulty",
-    "settings"
+    "settings",
+    "customize"
   ].includes(screenId);
 }
 
@@ -5464,7 +5540,7 @@ function selectJourney(journeyId) {
       ? selectedJourneyPlayState.difficultyId
       : getPreferredJourneyDifficultyId(journey, atlasProgress)
   };
-  showAppScreen("journey-detail");
+  showAppScreen(selectedJourneyDetailIntent === "learn" ? "study" : "journey-detail");
 }
 
 function trackJourneyStarted(journey, difficultyId, stepIndex = 0) {
@@ -5822,7 +5898,11 @@ function getJourneyDetailSubtitle(journey) {
   return "Use Memory Trail for focused sections, then play when you are ready.";
 }
 
-function getJourneyStudySubtitle(journey) {
+function getJourneyStudySubtitle(journey, intent = normalizeJourneyDetailIntent(selectedJourneyDetailIntent)) {
+  if (intent === "learn") {
+    return "Choose a section to learn with Memory Trail.";
+  }
+
   return getJourneyMemoryTrailEligibleSteps(journey).length > 0
     ? "Memory Trail is available for focused regional sets."
     : "Study the places before playing.";
@@ -8428,6 +8508,11 @@ function renderJourneyShellContent(screenId) {
     return;
   }
 
+  if (screenId === "customize") {
+    renderCustomizeScreen();
+    return;
+  }
+
   if (screenId === "onboarding") {
     renderOnboardingScreen();
     return;
@@ -8927,10 +9012,13 @@ function renderStudySelectionScreen(journey) {
   panel.className = "journey-mode-panel study-selection-panel";
   const validSteps = getValidJourneySteps(journey);
   const eligibleMemoryTrailCount = getJourneyMemoryTrailEligibleSteps(journey).length;
+  const isLearnIntent = normalizeJourneyDetailIntent(selectedJourneyDetailIntent) === "learn";
 
   const message = document.createElement("p");
   message.className = "journey-mode-message";
-  message.textContent = eligibleMemoryTrailCount > 0
+  message.textContent = isLearnIntent
+    ? "Choose a section to learn with Memory Trail."
+    : eligibleMemoryTrailCount > 0
     ? "Study a section, then practice it when you're ready. Memory Trail is available for focused regional sets."
     : "Study the places, then practice when you're ready.";
 
@@ -8946,15 +9034,19 @@ function renderStudySelectionScreen(journey) {
     titleNode.textContent = step.title;
 
     const meta = document.createElement("span");
-    const targetCount = activity?.targets?.length || 0;
-    meta.textContent = `Section ${index + 1} | ${targetCount} target${targetCount === 1 ? "" : "s"}`;
+    const targetCount = activity?.targets?.length || activity?.itemCount || 0;
+    meta.textContent = targetCount > 0
+      ? `Section ${index + 1} | ${targetCount} target${targetCount === 1 ? "" : "s"}`
+      : `Section ${index + 1}`;
 
     const actions = document.createElement("div");
     actions.className = "study-step-actions";
 
     const previewButton = document.createElement("button");
     previewButton.type = "button";
-    previewButton.textContent = "Learn";
+    previewButton.textContent = isLearnIntent && isMemoryTrailEligible(activity)
+      ? "Memory Trail"
+      : "Learn";
     previewButton.disabled = !activity;
     previewButton.addEventListener("click", () => {
       void startStudyPreviewActivity(journey.id, step.id);
@@ -8968,8 +9060,16 @@ function renderStudySelectionScreen(journey) {
   const backButton = document.createElement("button");
   backButton.type = "button";
   backButton.className = "journey-begin-button";
-  backButton.textContent = "Back to Journey";
-  backButton.addEventListener("click", () => showAppScreen("journey-detail"));
+  backButton.textContent = isLearnIntent ? "Back to Journeys" : "Back to Journey";
+  backButton.addEventListener("click", () => {
+    if (isLearnIntent) {
+      journeyPickerIntent = "learn";
+      showAppScreen("choose-journey");
+      return;
+    }
+
+    showAppScreen("journey-detail");
+  });
 
   panel.append(message, stepList, backButton);
   journeyShellContent.appendChild(panel);
@@ -9098,6 +9198,37 @@ function renderFreePlayDifficultyScreen() {
 
 function renderSettingsScreen() {
   const panel = document.createElement("section");
+  panel.className = "settings-panel settings-hub-panel";
+
+  const heading = document.createElement("h2");
+  heading.textContent = "Settings";
+
+  const description = document.createElement("p");
+  description.className = "settings-panel-copy";
+  description.textContent = "Quick controls for Mappa Mundi.";
+
+  const controls = document.createElement("div");
+  controls.className = "settings-hub-actions";
+
+  const customizeButton = document.createElement("button");
+  customizeButton.type = "button";
+  customizeButton.className = "settings-reset-button settings-hub-button";
+  customizeButton.textContent = "Customize";
+  customizeButton.addEventListener("click", () => showCustomizeScreen({ track: false }));
+
+  const audioToggle = createSettingsAudioMuteToggle();
+
+  const feedbackLink = createSettingsFeedbackLink();
+  feedbackLink.classList.add("settings-hub-button");
+
+  controls.append(customizeButton, audioToggle, feedbackLink);
+  panel.append(heading, description, controls);
+  journeyShellContent.appendChild(panel);
+  updateSettingsAudioToggleControl();
+}
+
+function renderCustomizeScreen() {
+  const panel = document.createElement("section");
   panel.className = "settings-panel";
 
   const heading = document.createElement("h2");
@@ -9107,17 +9238,7 @@ function renderSettingsScreen() {
   description.className = "settings-panel-copy";
   description.textContent = "Choose map detail and save study-target preferences. Required activity targets stay available during gameplay.";
 
-  const feedbackLink = document.createElement("a");
-  feedbackLink.className = "settings-feedback-link";
-  feedbackLink.href = feedbackFormUrl;
-  feedbackLink.target = "_blank";
-  feedbackLink.rel = "noopener noreferrer";
-  feedbackLink.textContent = "Send Feedback";
-  feedbackLink.addEventListener("click", () => {
-    trackEvent("feedback_clicked", {
-      source_screen: currentAppScreen
-    });
-  });
+  const feedbackLink = createSettingsFeedbackLink();
 
   panel.append(heading, description, feedbackLink);
 
@@ -9138,6 +9259,56 @@ function renderSettingsScreen() {
   journeyShellContent.appendChild(panel);
 }
 
+function createSettingsFeedbackLink() {
+  const feedbackLink = document.createElement("a");
+  feedbackLink.className = "settings-feedback-link";
+  feedbackLink.href = feedbackFormUrl;
+  feedbackLink.target = "_blank";
+  feedbackLink.rel = "noopener noreferrer";
+  feedbackLink.textContent = "Feedback";
+  feedbackLink.addEventListener("click", () => {
+    trackEvent("feedback_clicked", {
+      source_screen: currentAppScreen
+    });
+  });
+  return feedbackLink;
+}
+
+function createSettingsAudioMuteToggle() {
+  const option = document.createElement("label");
+  option.className = "settings-layer-toggle settings-audio-toggle";
+
+  const copy = document.createElement("span");
+  copy.className = "settings-layer-copy";
+
+  const labelText = document.createElement("strong");
+  labelText.textContent = "Audio";
+
+  const helper = document.createElement("span");
+  helper.textContent = "Sound and spoken prompts are ";
+  const stateText = document.createElement("strong");
+  stateText.dataset.settingsAudioState = "true";
+  stateText.textContent = getAudioMutedSetting() ? "Off" : "On";
+  helper.appendChild(stateText);
+
+  copy.append(labelText, helper);
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = !getAudioMutedSetting();
+  checkbox.dataset.settingsControl = "audio-muted";
+  checkbox.addEventListener("change", () => {
+    void setAudioMutedSetting(!checkbox.checked);
+  });
+
+  const switchTrack = document.createElement("span");
+  switchTrack.className = "settings-switch";
+  switchTrack.setAttribute("aria-hidden", "true");
+
+  option.append(copy, checkbox, switchTrack);
+  return option;
+}
+
 function getSettingsUiState() {
   const panel = document.querySelector(".settings-panel");
   const shell = document.querySelector("#app-shell-screen");
@@ -9156,7 +9327,7 @@ function getSettingsUiState() {
 }
 
 function restoreSettingsUiState(state = {}) {
-  if (!state || currentAppScreen !== "settings") {
+  if (!state || currentAppScreen !== "customize") {
     return;
   }
 
@@ -9192,7 +9363,7 @@ function restoreSettingsUiState(state = {}) {
 function rerenderSettingsPreservingUiState(focusControl = "") {
   const settingsState = getSettingsUiState();
   settingsState.activeControl = focusControl || settingsState.activeControl;
-  renderJourneyShellContent("settings");
+  renderJourneyShellContent("customize");
   restoreSettingsUiState(settingsState);
 }
 
@@ -10031,7 +10202,7 @@ function getOrCreateStudyGroup(groups, groupId, factory) {
 }
 
 function addStudyTargets(targetList, targets, activity, predicate) {
-  targets
+  (targets || [])
     .filter(predicate)
     .forEach((target) => {
       const option = toStudyTargetOption(target, activity);
@@ -12692,7 +12863,7 @@ function setMapLayerSettings(nextSettings = {}, focusControl = "") {
   });
   saveMapLayerSettings();
   refreshCurrentActivityLayerPresentation();
-  if (currentAppScreen === "settings") {
+  if (currentAppScreen === "customize") {
     rerenderSettingsPreservingUiState(focusControl);
   }
 }
@@ -12704,7 +12875,7 @@ function setAudioSettings(nextSettings = {}, focusControl = "") {
   });
   saveAppSettings();
 
-  if (currentAppScreen === "settings") {
+  if (currentAppScreen === "customize") {
     rerenderSettingsPreservingUiState(focusControl);
   }
 }

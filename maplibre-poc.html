@@ -31,11 +31,11 @@
     <link rel="apple-touch-icon" href="/assets/icons/atlas-quest-icon-180.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css" />
-    <link rel="stylesheet" href="maplibre-poc.css?v=20260531-us-journey-available" />
+    <link rel="stylesheet" href="maplibre-poc.css?v=20260531-settings-hub" />
   </head>
   <body class="overview-mode launch-mode">
     <section id="launch-screen" class="launch-screen" aria-labelledby="launch-title">
-      <button id="launch-settings-gear" class="launch-gear-button" type="button" aria-label="Customize" title="Customize"></button>
+      <button id="launch-settings-gear" class="launch-gear-button" type="button" aria-label="Settings" title="Settings"></button>
       <div class="launch-content">
         <svg class="launch-compass" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
           <circle cx="100" cy="100" r="78" fill="none" stroke="rgba(245, 221, 163, 0.65)" stroke-width="2"/>
@@ -67,7 +67,7 @@
     </section>
     <section id="app-shell-screen" class="app-shell-screen" aria-labelledby="app-shell-title" hidden>
       <button id="app-shell-back-button" class="app-shell-corner-button app-shell-back-button" type="button">Back</button>
-      <button id="app-shell-settings-gear" class="launch-gear-button" type="button" aria-label="Customize" title="Customize"></button>
+      <button id="app-shell-settings-gear" class="launch-gear-button" type="button" aria-label="Settings" title="Settings"></button>
       <div class="app-shell-panel">
         <p class="launch-kicker">Mappa Mundi</p>
         <h1 id="app-shell-title">Main Menu</h1>
@@ -159,7 +159,7 @@
             <span class="audio-mute-icon" aria-hidden="true"></span>
             <span class="audio-mute-label">Audio</span>
           </button>
-          <button id="settings-button" class="top-bar-button settings-button" type="button" aria-label="Customize" title="Customize"></button>
+          <button id="settings-button" class="top-bar-button settings-button" type="button" aria-label="Settings" title="Settings"></button>
         </div>
       </div>
       <div id="activity-nav-controls" class="activity-nav-controls" hidden>
@@ -268,19 +268,38 @@
       </section>
     </div>
     <script src="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js"></script>
-    <script type="module" src="src/maplibre-poc.js?v=20260531-us-journey-available"></script>
+    <script type="module" src="src/maplibre-poc.js?v=20260531-settings-hub"></script>
       
     <script>
       window.addEventListener('DOMContentLoaded', function () {
         const startButton = document.getElementById('launch-start-button');
         const launchScreen = document.getElementById('launch-screen');
         const appShell = document.getElementById('app-shell-screen');
+        const appShellTitle = document.getElementById('app-shell-title');
+        const appShellSubtitle = document.getElementById('app-shell-subtitle');
 
         if (startButton) {
           startButton.addEventListener('click', () => {
             launchScreen?.setAttribute('hidden', '');
             appShell?.removeAttribute('hidden');
             document.body.classList.remove('launch-mode');
+          });
+        }
+
+        const settingsButton = document.getElementById('launch-settings-gear');
+        if (settingsButton) {
+          settingsButton.addEventListener('click', () => {
+            window.__mappaMundiSettingsRequested = true;
+            launchScreen?.setAttribute('hidden', '');
+            appShell?.removeAttribute('hidden');
+            document.body.classList.remove('launch-mode');
+            document.body.classList.add('app-shell-mode');
+            if (appShellTitle) {
+              appShellTitle.textContent = 'Settings';
+            }
+            if (appShellSubtitle) {
+              appShellSubtitle.textContent = 'Quick controls for Mappa Mundi.';
+            }
           });
         }
       });
