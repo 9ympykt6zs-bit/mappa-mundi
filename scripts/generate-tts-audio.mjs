@@ -33,7 +33,7 @@ const chipAudioDir = path.join(repoRoot, "assets", "audio", "chips");
 const instructionAudioDir = path.join(repoRoot, "assets", "audio", "instructions");
 const manifestPath = path.join(repoRoot, "assets", "audio", "audio-manifest.json");
 
-const instructionPhrases = [
+const baseInstructionPhrases = [
   "Match the pattern and say the names.",
   "Choose a label.",
   "Tap the matching place on the map.",
@@ -43,9 +43,38 @@ const instructionPhrases = [
   "Activity complete.",
   "Study the places, then try the challenge.",
   "Learn these places first.",
-  "Find the named country.",
-  "Name the highlighted country.",
   "Match each name to its place."
+];
+
+const memoryTrailInstructionNouns = [
+  "country",
+  "state",
+  "capital",
+  "capital city",
+  "city",
+  "province",
+  "territory",
+  "continent",
+  "ocean",
+  "region",
+  "prefecture",
+  "federal subject",
+  "political division",
+  "state or capital",
+  "state or territory",
+  "province or territory",
+  "state or federal district",
+  "state or federal entity",
+  "state or union territory",
+  "state, capital, or location",
+  "autonomous community or city",
+  "continent or ocean",
+  "place"
+];
+
+const instructionPhrases = [
+  ...baseInstructionPhrases,
+  ...createMemoryTrailInstructionPhrases(memoryTrailInstructionNouns)
 ];
 
 const defaultPronunciationInstruction = "Pronounce each place name as a well-educated American English speaker would in an English-language geography lesson. Use standard English geography pronunciations. Avoid obvious spelling-based mispronunciations. Do not use a strong native-language accent. Say the place name naturally and at normal speed.";
@@ -312,6 +341,79 @@ function collectTargetLabels(target) {
   return labels
     .map(normalizeSpokenText)
     .filter(Boolean);
+}
+
+function createMemoryTrailInstructionPhrases(nounPhrases) {
+  const phrases = new Set();
+
+  nounPhrases.forEach((nounPhrase) => {
+    const singularNoun = normalizeSpokenText(nounPhrase);
+
+    if (!singularNoun) {
+      return;
+    }
+
+    phrases.add(`Find the named ${singularNoun}.`);
+    phrases.add(`Name the highlighted ${pluralizeInstructionNounPhrase(singularNoun)}.`);
+  });
+
+  return Array.from(phrases).sort((first, second) => first.localeCompare(second));
+}
+
+function pluralizeInstructionNounPhrase(nounPhrase = "place") {
+  const parts = String(nounPhrase || "place")
+    .split(/\s*,\s*|\s+or\s+/i)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length > 1) {
+    const pluralParts = parts.map(pluralizeInstructionNoun);
+    return pluralParts.length === 2
+      ? `${pluralParts[0]} or ${pluralParts[1]}`
+      : `${pluralParts.slice(0, -1).join(", ")}, or ${pluralParts.at(-1)}`;
+  }
+
+  return pluralizeInstructionNoun(nounPhrase);
+}
+
+function pluralizeInstructionNoun(noun = "place") {
+  const normalized = String(noun || "place").trim();
+  const lower = normalized.toLowerCase();
+  const overrides = {
+    country: "countries",
+    city: "cities",
+    "capital city": "capital cities",
+    capital: "capitals",
+    state: "states",
+    province: "provinces",
+    territory: "territories",
+    continent: "continents",
+    ocean: "oceans",
+    place: "places",
+    region: "regions",
+    prefecture: "prefectures",
+    "federal subject": "federal subjects",
+    "political division": "political divisions",
+    "federal entity": "federal entities",
+    "federal district": "federal districts",
+    "union territory": "union territories",
+    "autonomous community": "autonomous communities",
+    location: "locations"
+  };
+
+  if (overrides[lower]) {
+    return overrides[lower];
+  }
+
+  if (lower.endsWith("y") && !/[aeiou]y$/i.test(lower)) {
+    return `${normalized.slice(0, -1)}ies`;
+  }
+
+  if (/(s|x|z|ch|sh)$/i.test(lower)) {
+    return `${normalized}es`;
+  }
+
+  return `${normalized}s`;
 }
 
 function cleanTargetLabelForSpeech(target, label) {

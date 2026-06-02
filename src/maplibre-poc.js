@@ -1,5 +1,5 @@
-import { journeyPresets } from "./journey-presets.js?v=20260601-spoken-city-labels";
-import { trackEvent } from "./analytics.js?v=20260601-spoken-city-labels";
+import { journeyPresets } from "./journey-presets.js?v=20260601-instruction-target-nouns";
+import { trackEvent } from "./analytics.js?v=20260601-instruction-target-nouns";
 import {
   clearActiveJourney,
   getJourneyProgress,
@@ -7,7 +7,7 @@ import {
   markStepComplete,
   resetJourneyDifficulty,
   setActiveJourney
-} from "./progress-store.js?v=20260601-spoken-city-labels";
+} from "./progress-store.js?v=20260601-instruction-target-nouns";
 
 const APP_NAME = "Mappa Mundi";
 const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
@@ -135,6 +135,8 @@ const worldCountrySupplements = [
   "assets/maps/world/guam-map-unit.geojson"
 ];
 const oceanZonesPath = "assets/maps/data/ocean-zones.geojson";
+const coContinentOverridesPath = "assets/data/co-continent-overrides.json";
+const coContinentLandPath = "assets/maps/data/continents-oceans-land.geojson";
 const inlandWatersPath = "assets/maps/data/inland-waters.geojson";
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
@@ -2958,7 +2960,7 @@ function ensureChipSpeechLoaded() {
     return Promise.resolve(window.GeographyChipSpeech);
   }
 
-  return import("./chip-speech.js?v=20260601-spoken-city-labels")
+  return import("./chip-speech.js?v=20260601-instruction-target-nouns")
     .then(() => window.GeographyChipSpeech || null);
 }
 
@@ -3251,10 +3253,10 @@ async function ensureMapRuntimeLoaded() {
     mapRuntimePromise = Promise.all([
       loadStylesheetOnce(mapLibreStylesheetUrl),
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
-      import("./map-engines/activity-normalizer.js?v=20260601-spoken-city-labels"),
-      import("./maplibre/activity-session.js?v=20260601-spoken-city-labels"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260601-spoken-city-labels"),
-      import("./chip-speech.js?v=20260601-spoken-city-labels")
+      import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
+      import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260601-co-study-preview-color-fix"),
+      import("./chip-speech.js?v=20260601-instruction-target-nouns")
     ]).then(([
       ,
       ,
@@ -3304,10 +3306,12 @@ async function ensureMapReady() {
       await ensureMapRuntimeLoaded();
       await ensureActivityDataLoaded();
 
-      const [worldCountries, supplementalWorldCountries, oceanZones, inlandWaters, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
+      const [worldCountries, supplementalWorldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
         fetchJson(worldCountriesPath),
         Promise.all(worldCountrySupplements.map((path) => fetchJson(path))),
         fetchJson(oceanZonesPath),
+        fetchOptionalJson(coContinentOverridesPath, { overrides: [] }),
+        fetchOptionalJson(coContinentLandPath, null),
         fetchJson(inlandWatersPath),
         fetchJson(usStatesAtlasPath),
         fetchJson(stateGeoJsonPath),
@@ -3341,6 +3345,8 @@ async function ensureMapReady() {
         activity: session.activity,
         worldCountries: mergedWorldCountries,
         oceanZones,
+        coContinentOverrides,
+        coContinentLand,
         inlandWaters,
         usStatesAtlas,
         stateTargets,
@@ -4581,6 +4587,20 @@ async function fetchJson(path) {
   }
 
   return response.json();
+}
+
+async function fetchOptionalJson(path, fallback = null) {
+  try {
+    const response = await fetch(path);
+
+    if (!response.ok) {
+      return fallback;
+    }
+
+    return response.json();
+  } catch (error) {
+    return fallback;
+  }
 }
 
 function getInitialActivityFromUrl() {
@@ -6480,6 +6500,99 @@ function getTargetChipLabel(targetOrId) {
   return label;
 }
 
+function getInstructionNoun(activity = session.currentActivity) {
+  if (activity?.id === "continents-oceans") {
+    return "continent or ocean";
+  }
+
+  const noun = String(activity?.targetNoun || "").trim();
+  if (noun) {
+    return noun;
+  }
+
+  const targets = activity?.targets || activity?.features || [];
+  if (targets.length > 0 && targets.every((target) => target?.type === "capital")) {
+    return "capital";
+  }
+
+  if (targets.length > 0 && targets.every((target) => target?.type === "city" || target?.shape === "circle")) {
+    return "city";
+  }
+
+  if (targets.length > 0 && targets.every((target) => target?.type === "zone" || /ocean/i.test(target?.name || ""))) {
+    return "ocean";
+  }
+
+  if (targets.length > 0 && targets.every((target) => target?.type === "region")) {
+    return "continent";
+  }
+
+  return "place";
+}
+
+function getInstructionNounPlural(activity = session.currentActivity) {
+  return pluralizeInstructionNounPhrase(getInstructionNoun(activity));
+}
+
+function pluralizeInstructionNounPhrase(nounPhrase = "place") {
+  const parts = String(nounPhrase || "place")
+    .split(/\s*,\s*|\s+or\s+/i)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length > 1) {
+    const pluralParts = parts.map(pluralizeInstructionNoun);
+    return pluralParts.length === 2
+      ? `${pluralParts[0]} or ${pluralParts[1]}`
+      : `${pluralParts.slice(0, -1).join(", ")}, or ${pluralParts.at(-1)}`;
+  }
+
+  return pluralizeInstructionNoun(nounPhrase);
+}
+
+function pluralizeInstructionNoun(noun = "place") {
+  const normalized = String(noun || "place").trim();
+  const lower = normalized.toLowerCase();
+  const overrides = {
+    country: "countries",
+    city: "cities",
+    "capital city": "capital cities",
+    capital: "capitals",
+    state: "states",
+    province: "provinces",
+    territory: "territories",
+    continent: "continents",
+    ocean: "oceans",
+    place: "places",
+    region: "regions",
+    prefecture: "prefectures",
+    "federal subject": "federal subjects",
+    "political division": "political divisions",
+    "federal entity": "federal entities",
+    "federal district": "federal districts",
+    "union territory": "union territories",
+    "autonomous community": "autonomous communities"
+  };
+
+  if (overrides[lower]) {
+    return overrides[lower];
+  }
+
+  if (lower.endsWith("y") && !/[aeiou]y$/i.test(lower)) {
+    return `${normalized.slice(0, -1)}ies`;
+  }
+
+  if (/(s|x|z|ch|sh)$/i.test(lower)) {
+    return `${normalized}es`;
+  }
+
+  return `${normalized}s`;
+}
+
+function getIndefiniteArticle(nounPhrase = "place") {
+  return /^[aeiou]/i.test(String(nounPhrase).trim()) ? "an" : "a";
+}
+
 function speakStudyPreviewTarget(targetOrId) {
   const text = getStudyPreviewSpeechLabel(targetOrId);
 
@@ -6938,7 +7051,9 @@ function buildMemoryTrailAnswerChoices(memoryTrail, correctTargetId) {
     }));
 }
 
-function getMemoryTrailInstructionText(promptType, phase, mode = "") {
+function getMemoryTrailInstructionText(promptType, phase, mode = "", activity = session.currentActivity) {
+  const singularNoun = getInstructionNoun(activity);
+  const pluralNoun = getInstructionNounPlural(activity);
   if (promptType === "guided" || phase === "learn") {
     return {
       banner: "Learn these places first.",
@@ -6948,8 +7063,8 @@ function getMemoryTrailInstructionText(promptType, phase, mode = "") {
 
   if (promptType === "place_to_name") {
     return {
-      banner: "Name the highlighted country.",
-      label: "Choose the name of the highlighted country."
+      banner: `Name the highlighted ${pluralNoun}.`,
+      label: `Choose the matching ${singularNoun}.`
     };
   }
 
@@ -6961,8 +7076,8 @@ function getMemoryTrailInstructionText(promptType, phase, mode = "") {
   }
 
   return {
-    banner: "Find the named country.",
-    label: "Tap the country named below."
+    banner: `Find the named ${singularNoun}.`,
+    label: `Tap the ${singularNoun} named below.`
   };
 }
 
@@ -7335,13 +7450,14 @@ function promptNextMemoryTrailTarget(memoryTrail = getActiveMemoryTrail()) {
 
 function getMemoryTrailPromptMessage(memoryTrail, target, selection) {
   const label = getMemoryTrailTargetLabel(target);
+  const singularNoun = getInstructionNoun();
 
   if (selection.promptType === "guided") {
     return label ? `Learn: ${label}.` : "Learn this place.";
   }
 
   if (selection.promptType === "place_to_name") {
-    return "Practice: what country is this?";
+    return `Practice: what ${singularNoun} is this?`;
   }
 
   if (selection.mode === "weak-review") {
@@ -7352,6 +7468,8 @@ function getMemoryTrailPromptMessage(memoryTrail, target, selection) {
 }
 
 function getMemoryTrailAnsweringMessage(memoryTrail) {
+  const singularNoun = getInstructionNoun();
+
   if (isGuidedMemoryTrailPrompt(memoryTrail)) {
     return memoryTrail.promptName
       ? `Tap the highlighted place: ${memoryTrail.promptName}.`
@@ -7359,7 +7477,7 @@ function getMemoryTrailAnsweringMessage(memoryTrail) {
   }
 
   if (isPlaceToNameMemoryTrailPrompt(memoryTrail)) {
-    return "What country is this?";
+    return `What ${singularNoun} is this?`;
   }
 
   return memoryTrail.promptName
@@ -7920,7 +8038,7 @@ function handleMemoryTrailTargetTap(targetIds, mapPoint = null) {
   }
 
   if (isPlaceToNameMemoryTrailPrompt(memoryTrail)) {
-    memoryTrail.message = "Choose the country name from the chips.";
+    memoryTrail.message = `Choose the matching ${getInstructionNoun()} from the chips.`;
     debugMemoryTrail("map click ignored", getMemoryTrailClickDebugContext(memoryTrail, candidateIds, {
       reason: "place-to-name prompt expects an answer chip"
     }));
@@ -11708,9 +11826,10 @@ function updateStudyInstruction() {
   }
 
   const node = getHierarchyNode(activeHierarchyNodeId);
+  const targetNoun = getInstructionNoun();
   instruction.textContent = node?.id === "world"
     ? "Place a label, or click a continent with no label selected to explore."
-    : `Select a ${session.currentActivity.targetNoun} label, then click its target on the map.`;
+    : `Select ${getIndefiniteArticle(targetNoun)} ${targetNoun} label, then click its target on the map.`;
 }
 
 function showLaunchScreen() {

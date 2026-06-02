@@ -1,5 +1,5 @@
 (function attachChipSpeech(global) {
-  const audioManifestUrl = "assets/audio/audio-manifest.json?v=20260601-spoken-city-labels";
+  const audioManifestUrl = "assets/audio/audio-manifest.json?v=20260601-instruction-target-nouns";
   const audioMutedStorageKey = "atlasQuestAudioMuted";
   let audioManifestPromise = null;
   let audioManifestLookup = null;

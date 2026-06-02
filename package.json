@@ -1,0 +1,11 @@
+{
+  "name": "mappa-mundi-static-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate:co-land": "node scripts/generate-co-continent-land.mjs"
+  },
+  "devDependencies": {
+    "polygon-clipping": "^0.15.7"
+  }
+}

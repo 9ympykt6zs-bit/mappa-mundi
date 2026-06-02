@@ -5,7 +5,7 @@ import {
   oceanRegionColors,
   oceanZoneMutedColor,
   oceanTextureSize
-} from "./ocean-textures.js?v=20260601-spoken-city-labels";
+} from "./ocean-textures.js?v=20260601-instruction-target-nouns";
 
 const colors = {
   ink: "#172033",
@@ -95,6 +95,16 @@ const europeanRegionalActivityRegions = new Set([
   "central-europe",
   "more-central-europe"
 ]);
+const coContinentOverrideStorageKey = "mappa-co-continent-overrides";
+const coContinentOverrideChoices = [
+  { id: "north-america", label: "North America" },
+  { id: "south-america", label: "South America" },
+  { id: "europe", label: "Europe" },
+  { id: "africa", label: "Africa" },
+  { id: "asia", label: "Asia" },
+  { id: "australia", label: "Australia" },
+  { id: "antarctica", label: "Antarctica" }
+];
 const admin1SourceParentCountryIsoA3 = Object.freeze({
   "australia-admin1": "AUS",
   "brazil-admin1": "BRA",
@@ -257,6 +267,12 @@ export class MapLibreActivityRunner {
     this.memoryTrailHighlightIds = [];
     this.memoryTrailCorrectHighlightIds = [];
     this.memoryTrailWrongHighlightIds = [];
+    this.coContinentOverrides = [];
+    this.coContinentLand = emptyFeatureCollection;
+    this.coContinentOverrideDebugEnabled = false;
+    this.coContinentOverrideDebugPanel = null;
+    this.coContinentOverrideDebugSelection = null;
+    this.coContinentOverrideDebugCurrentOverrideId = null;
     this.placementInteractionState = {
       active: false,
       dragging: false
@@ -271,10 +287,13 @@ export class MapLibreActivityRunner {
     this.regionSelectHandler = handler;
   }
 
-  async load({ activity, worldCountries, oceanZones, inlandWaters, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1 }) {
+  async load({ activity, worldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1 }) {
     this.activity = activity;
     this.worldCountries = worldCountries;
     this.oceanZones = oceanZones || emptyFeatureCollection;
+    this.coContinentOverrides = this.getInitialCoContinentOverrides(coContinentOverrides);
+    this.coContinentLand = coContinentLand || emptyFeatureCollection;
+    this.coContinentOverrideDebugEnabled = this.shouldEnableCoContinentOverrideDebug();
     this.inlandWaters = inlandWaters || emptyFeatureCollection;
     this.usStatesAtlas = usStatesAtlas;
     this.stateTargets = stateTargets;
@@ -333,6 +352,55 @@ export class MapLibreActivityRunner {
     this.addOverviewLayers();
     this.addStudyLayers();
     this.setOverviewPreview(null);
+    this.updateCoContinentOverrideDebugTool();
+  }
+
+  shouldEnableCoContinentOverrideDebug() {
+    try {
+      return new URLSearchParams(window.location.search).get("debugMap") === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  getInitialCoContinentOverrides(fileData) {
+    const fileOverrides = Array.isArray(fileData)
+      ? fileData
+      : fileData?.overrides;
+    const overrides = Array.isArray(fileOverrides) ? [...fileOverrides] : [];
+
+    if (!this.shouldEnableCoContinentOverrideDebug()) {
+      return overrides;
+    }
+
+    return [
+      ...overrides,
+      ...this.readLocalCoContinentOverrides()
+    ];
+  }
+
+  readLocalCoContinentOverrides() {
+    try {
+      const parsed = JSON.parse(window.localStorage?.getItem(coContinentOverrideStorageKey) || "[]");
+      return Array.isArray(parsed) ? parsed : parsed?.overrides || [];
+    } catch {
+      return [];
+    }
+  }
+
+  writeLocalCoContinentOverrides() {
+    if (!this.coContinentOverrideDebugEnabled) {
+      return;
+    }
+
+    try {
+      window.localStorage?.setItem(
+        coContinentOverrideStorageKey,
+        JSON.stringify(this.coContinentOverrides, null, 2)
+      );
+    } catch {
+      // Debug persistence is best-effort only.
+    }
   }
 
   enterStudyView() {
@@ -625,6 +693,7 @@ export class MapLibreActivityRunner {
     this.updateParentCountryOutline();
     this.refreshOceanHighlightImages();
     this.updateOceanRegionVisibility();
+    this.updateCoContinentOverrideDebugTool();
     this.refreshDifficultyVisuals();
   }
 
@@ -1454,6 +1523,10 @@ export class MapLibreActivityRunner {
   }
 
   handleMapClick(event) {
+    if (this.handleCoContinentOverrideDebugMapClick(event)) {
+      return;
+    }
+
     if (this.isNavigationDebugEnabled()) {
       console.log("[map-click-handler]", {
         currentView: this.currentView,
@@ -1468,6 +1541,486 @@ export class MapLibreActivityRunner {
     }
 
     this.targetClickHandler?.(event.point);
+  }
+
+  updateCoContinentOverrideDebugTool() {
+    if (!this.coContinentOverrideDebugEnabled) {
+      this.destroyCoContinentOverrideDebugTool();
+      return;
+    }
+
+    if (!this.isContinentsOceansActivity()) {
+      this.destroyCoContinentOverrideDebugTool();
+      return;
+    }
+
+    this.ensureCoContinentOverrideDebugPanel();
+    this.renderCoContinentOverrideDebugPanel();
+  }
+
+  destroyCoContinentOverrideDebugTool() {
+    this.coContinentOverrideDebugPanel?.remove();
+    this.coContinentOverrideDebugPanel = null;
+    this.coContinentOverrideDebugSelection = null;
+    this.coContinentOverrideDebugCurrentOverrideId = null;
+  }
+
+  ensureCoContinentOverrideDebugPanel() {
+    if (this.coContinentOverrideDebugPanel) {
+      return;
+    }
+
+    const panel = document.createElement("section");
+    panel.className = "co-continent-override-debug";
+    panel.style.cssText = [
+      "position:fixed",
+      "right:12px",
+      "top:92px",
+      "z-index:9999",
+      "width:min(360px,calc(100vw - 24px))",
+      "max-height:calc(100vh - 120px)",
+      "overflow:auto",
+      "padding:12px",
+      "border:1px solid rgba(23,32,51,.22)",
+      "border-radius:10px",
+      "background:rgba(255,255,255,.96)",
+      "box-shadow:0 18px 44px rgba(15,23,42,.2)",
+      "font:13px/1.35 system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+      "color:#172033"
+    ].join(";");
+    document.body.appendChild(panel);
+    this.coContinentOverrideDebugPanel = panel;
+  }
+
+  renderCoContinentOverrideDebugPanel(message = "") {
+    if (!this.coContinentOverrideDebugPanel) {
+      return;
+    }
+
+    const panel = this.coContinentOverrideDebugPanel;
+    panel.replaceChildren();
+
+    const title = document.createElement("h2");
+    title.textContent = "C&O Continent Overrides";
+    title.style.cssText = "margin:0 0 6px;font-size:15px;";
+    panel.appendChild(title);
+
+    const summary = document.createElement("p");
+    summary.textContent = message || "Click a rendered land feature, choose the matching row, then assign a continent.";
+    summary.style.cssText = "margin:0 0 10px;color:#475569;";
+    panel.appendChild(summary);
+
+    if (this.coContinentOverrideDebugSelection?.features?.length) {
+      const list = document.createElement("div");
+      list.style.cssText = "display:grid;gap:6px;margin-bottom:10px;";
+      this.coContinentOverrideDebugSelection.features.forEach((feature, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = this.getCoDebugFeatureLabel(feature, index);
+        button.style.cssText = this.getCoDebugButtonStyle(index === this.coContinentOverrideDebugSelection.selectedIndex);
+        button.addEventListener("click", () => {
+          this.coContinentOverrideDebugSelection.selectedIndex = index;
+          this.renderCoContinentOverrideDebugPanel();
+        });
+        list.appendChild(button);
+      });
+      panel.appendChild(list);
+
+      const continentRow = document.createElement("div");
+      continentRow.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;";
+      coContinentOverrideChoices.forEach((continent) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = continent.label;
+        button.style.cssText = this.getCoDebugButtonStyle(false);
+        button.addEventListener("click", () => this.applyCoContinentOverride(continent));
+        continentRow.appendChild(button);
+      });
+      panel.appendChild(continentRow);
+    }
+
+    const actions = document.createElement("div");
+    actions.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid rgba(148,163,184,.35);padding-top:10px;";
+
+    [
+      ["Copy Overrides JSON", () => this.copyCoContinentOverridesJson()],
+      ["Clear Override", () => this.clearCurrentCoContinentOverride()],
+      ["Clear All Overrides", () => this.clearAllCoContinentOverrides()]
+    ].forEach(([label, handler]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.style.cssText = this.getCoDebugButtonStyle(false);
+      button.addEventListener("click", handler);
+      actions.appendChild(button);
+    });
+    panel.appendChild(actions);
+
+    const count = document.createElement("p");
+    count.textContent = `${this.coContinentOverrides.length} override${this.coContinentOverrides.length === 1 ? "" : "s"} loaded.`;
+    count.style.cssText = "margin:10px 0 0;color:#64748b;font-size:12px;";
+    panel.appendChild(count);
+  }
+
+  getCoDebugButtonStyle(active) {
+    return [
+      "appearance:none",
+      "border:1px solid rgba(71,85,105,.3)",
+      "border-radius:7px",
+      "padding:7px 9px",
+      "font:inherit",
+      "text-align:left",
+      "cursor:pointer",
+      active ? "background:#dbeafe" : "background:#fff",
+      active ? "color:#0f172a" : "color:#172033"
+    ].join(";");
+  }
+
+  getCoDebugFeatureLabel(feature, index) {
+    const properties = feature.properties || {};
+    const layerId = feature.layerId || feature.layer?.id || "unknown-layer";
+    const name = properties.name || properties.NAME || properties.NAME_LONG || properties.ADMIN || properties.id || feature.id || "unnamed";
+    const continent = properties.CONTINENT || properties.id || "n/a";
+
+    return `${index + 1}. ${layerId} - ${name} (${continent})`;
+  }
+
+  getCoDebugFeaturePriority(feature) {
+    const layerId = feature.layerId || "";
+
+    if (layerId === "state-fill") {
+      return 0;
+    }
+
+    if (layerId === "state-line") {
+      return 1;
+    }
+
+    if (layerId === "target-hit-fill") {
+      return 2;
+    }
+
+    if (layerId === "country-borders") {
+      return 3;
+    }
+
+    if (layerId === "world-land") {
+      return 8;
+    }
+
+    return 9;
+  }
+
+  handleCoContinentOverrideDebugMapClick(event) {
+    if (!this.coContinentOverrideDebugEnabled || !this.isContinentsOceansActivity() || !this.map) {
+      return false;
+    }
+
+    const point = event.point || { x: 0, y: 0 };
+    const box = [
+      [point.x - 5, point.y - 5],
+      [point.x + 5, point.y + 5]
+    ];
+    const rendered = this.map.queryRenderedFeatures(box)
+      .filter((feature) => this.isCoDebugInspectableFeature(feature))
+      .map((feature) => this.toCoDebugRenderedFeature(feature))
+      .sort((left, right) => this.getCoDebugFeaturePriority(left) - this.getCoDebugFeaturePriority(right));
+
+    this.coContinentOverrideDebugSelection = {
+      clickedLngLat: [event.lngLat.lng, event.lngLat.lat],
+      features: rendered,
+      selectedIndex: 0
+    };
+    this.renderCoContinentOverrideDebugPanel(
+      rendered.length
+        ? `${rendered.length} rendered feature${rendered.length === 1 ? "" : "s"} under click.`
+        : "No inspectable land/fill features under that click."
+    );
+
+    return true;
+  }
+
+  isCoDebugInspectableLayer(layerId = "") {
+    return /(land|fill|target|state|country|continent)/i.test(layerId)
+      && !/ocean|water|capital|label/i.test(layerId);
+  }
+
+  isCoDebugInspectableFeature(feature) {
+    const properties = feature?.properties || {};
+    const label = [
+      properties.id,
+      properties.name,
+      properties.NAME,
+      properties.NAME_LONG,
+      properties.ocean
+    ].join(" ");
+
+    return this.isCoDebugInspectableLayer(feature?.layer?.id)
+      && properties.isOceanZone !== true
+      && properties.isOceanZone !== "true"
+      && !/ocean/i.test(label);
+  }
+
+  toCoDebugRenderedFeature(feature) {
+    const properties = feature.properties || {};
+
+    return {
+      layerId: feature.layer?.id || null,
+      sourceId: feature.layer?.source || feature.source || null,
+      sourceLayer: feature.sourceLayer || feature.layer?.["source-layer"] || null,
+      featureId: feature.id ?? properties.id ?? null,
+      properties: this.pickCoDebugProperties(properties)
+    };
+  }
+
+  pickCoDebugProperties(properties = {}) {
+    const picked = {};
+    [
+      "id",
+      "name",
+      "NAME",
+      "NAME_LONG",
+      "ADMIN",
+      "GEOUNIT",
+      "SUBUNIT",
+      "ISO_A3",
+      "ADM0_A3",
+      "SOV_A3",
+      "CONTINENT",
+      "TYPE"
+    ].forEach((key) => {
+      if (properties[key] !== undefined && properties[key] !== null && properties[key] !== "") {
+        picked[key] = properties[key];
+      }
+    });
+    return picked;
+  }
+
+  applyCoContinentOverride(continent) {
+    const selection = this.coContinentOverrideDebugSelection;
+    const selectedFeature = selection?.features?.[selection.selectedIndex || 0];
+    const sourceMatch = selection
+      ? this.findCoSourcePolygonAtLngLat(selection.clickedLngLat, selectedFeature)
+      : null;
+
+    if (!selection || !selectedFeature || !sourceMatch) {
+      this.renderCoContinentOverrideDebugPanel("No source land polygon found for that click.");
+      return;
+    }
+
+    const override = {
+      id: `co-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+      assignedContinent: continent.label,
+      assignedContinentId: continent.id,
+      clickedLngLat: selection.clickedLngLat.map((value) => Number(value.toFixed(5))),
+      layerId: selectedFeature.layerId,
+      sourceId: selectedFeature.sourceId,
+      sourceLayer: selectedFeature.sourceLayer,
+      featureId: selectedFeature.featureId,
+      polygonBounds: sourceMatch.bounds,
+      match: {
+        properties: this.pickCoDebugProperties(sourceMatch.feature.properties || {})
+      },
+      renderedFeature: selectedFeature
+    };
+
+    this.coContinentOverrides = [
+      ...this.coContinentOverrides.filter((candidate) => !this.areRoundedBoundsEqual(candidate.polygonBounds, override.polygonBounds)),
+      override
+    ];
+    this.coContinentOverrideDebugCurrentOverrideId = override.id;
+    this.writeLocalCoContinentOverrides();
+    this.refreshCoContinentOverridePreview();
+    this.renderCoContinentOverrideDebugPanel(`Assigned selected polygon to ${continent.label}.`);
+  }
+
+  findCoSourcePolygonAtLngLat(clickedLngLat, renderedFeature = null) {
+    const point = [clickedLngLat[0], clickedLngLat[1]];
+    const renderedProperties = renderedFeature?.properties || {};
+    const candidates = [];
+    const generatedMatch = this.findCoGeneratedLandPolygonAtLngLat(point, renderedFeature);
+
+    if (generatedMatch) {
+      return generatedMatch;
+    }
+
+    this.worldCountries.features.forEach((feature) => {
+      const properties = feature.properties || {};
+      const propertyScore = this.getCoDebugPropertyScore(properties, renderedProperties);
+      const polygons = this.getGeometryPolygons(feature.geometry);
+
+      polygons.forEach((polygon) => {
+        const bounds = this.getRoundedBounds(polygon);
+
+        if (!this.isPointInPolygon(point, polygon) && !this.isPointInBounds(point, bounds, 0.5)) {
+          return;
+        }
+
+        candidates.push({
+          feature,
+          polygon,
+          bounds,
+          score: propertyScore,
+          area: this.getBoundsArea(bounds)
+        });
+      });
+    });
+
+    candidates.sort((left, right) => right.score - left.score || left.area - right.area);
+    return candidates[0] || this.findCoSourcePolygonByRenderedFeature(renderedFeature);
+  }
+
+  findCoGeneratedLandPolygonAtLngLat(point, renderedFeature = null) {
+    if (!this.coContinentLand?.features?.length) {
+      return null;
+    }
+
+    const renderedProperties = renderedFeature?.properties || {};
+    const candidates = [];
+
+    this.coContinentLand.features.forEach((feature) => {
+      const properties = feature.properties || {};
+      const propertyScore = this.getCoDebugPropertyScore(properties, renderedProperties);
+
+      this.getGeometryPolygons(feature.geometry).forEach((polygon) => {
+        const bounds = this.getRoundedBounds(polygon);
+
+        if (!this.isPointInPolygon(point, polygon) && !this.isPointInBounds(point, bounds, 0.5)) {
+          return;
+        }
+
+        candidates.push({
+          feature,
+          polygon,
+          bounds,
+          score: propertyScore + 10,
+          area: this.getBoundsArea(bounds)
+        });
+      });
+    });
+
+    candidates.sort((left, right) => right.score - left.score || left.area - right.area);
+    return candidates[0] || null;
+  }
+
+  findCoSourcePolygonByRenderedFeature(renderedFeature) {
+    const renderedProperties = renderedFeature?.properties || {};
+    const candidates = [];
+
+    this.worldCountries.features.forEach((feature) => {
+      const score = this.getCoDebugPropertyScore(feature.properties || {}, renderedProperties);
+
+      if (score <= 0) {
+        return;
+      }
+
+      this.getGeometryPolygons(feature.geometry).forEach((polygon) => {
+        const bounds = this.getRoundedBounds(polygon);
+        candidates.push({
+          feature,
+          polygon,
+          bounds,
+          score,
+          area: this.getBoundsArea(bounds)
+        });
+      });
+    });
+
+    candidates.sort((left, right) => right.score - left.score || left.area - right.area);
+    return candidates[0] || null;
+  }
+
+  getCoDebugPropertyScore(properties, renderedProperties) {
+    return [
+      "id",
+      "NAME",
+      "NAME_LONG",
+      "ADMIN",
+      "GEOUNIT",
+      "SUBUNIT",
+      "ISO_A3",
+      "ADM0_A3",
+      "CONTINENT"
+    ].reduce((score, key) => (
+      renderedProperties[key] && properties[key] === renderedProperties[key] ? score + 1 : score
+    ), 0);
+  }
+
+  getBoundsArea(bounds) {
+    return Math.abs((bounds[2] - bounds[0]) * (bounds[3] - bounds[1]));
+  }
+
+  isPointInBounds([longitude, latitude], bounds, padding = 0) {
+    return longitude >= bounds[0] - padding
+      && longitude <= bounds[2] + padding
+      && latitude >= bounds[1] - padding
+      && latitude <= bounds[3] + padding;
+  }
+
+  isPointInPolygon(point, polygon) {
+    if (!polygon?.length || !this.isPointInRing(point, polygon[0])) {
+      return false;
+    }
+
+    return !polygon.slice(1).some((ring) => this.isPointInRing(point, ring));
+  }
+
+  isPointInRing([x, y], ring) {
+    let inside = false;
+
+    for (let index = 0, previous = ring.length - 1; index < ring.length; previous = index++) {
+      const [xi, yi] = ring[index];
+      const [xj, yj] = ring[previous];
+      const intersects = ((yi > y) !== (yj > y))
+        && (x < ((xj - xi) * (y - yi)) / ((yj - yi) || Number.EPSILON) + xi);
+
+      if (intersects) {
+        inside = !inside;
+      }
+    }
+
+    return inside;
+  }
+
+  refreshCoContinentOverridePreview() {
+    const shapeSource = this.map?.getSource("target-shapes");
+
+    if (shapeSource) {
+      shapeSource.setData(this.getTargetShapeGeoJson());
+    }
+
+    this.refreshDifficultyVisuals();
+    this.refreshMapRender();
+  }
+
+  copyCoContinentOverridesJson() {
+    const text = JSON.stringify({ overrides: this.coContinentOverrides }, null, 2);
+    navigator.clipboard?.writeText(text)
+      .then(() => this.renderCoContinentOverrideDebugPanel("Overrides JSON copied."))
+      .catch(() => this.renderCoContinentOverrideDebugPanel(text));
+  }
+
+  clearCurrentCoContinentOverride() {
+    const id = this.coContinentOverrideDebugCurrentOverrideId;
+
+    if (!id) {
+      this.renderCoContinentOverrideDebugPanel("No current override selected.");
+      return;
+    }
+
+    this.coContinentOverrides = this.coContinentOverrides.filter((override) => override.id !== id);
+    this.coContinentOverrideDebugCurrentOverrideId = null;
+    this.writeLocalCoContinentOverrides();
+    this.refreshCoContinentOverridePreview();
+    this.renderCoContinentOverrideDebugPanel("Cleared the current override.");
+  }
+
+  clearAllCoContinentOverrides() {
+    this.coContinentOverrides = [];
+    this.coContinentOverrideDebugCurrentOverrideId = null;
+    this.writeLocalCoContinentOverrides();
+    this.refreshCoContinentOverridePreview();
+    this.renderCoContinentOverrideDebugPanel("Cleared all local and loaded overrides for this debug session.");
   }
 
   getOverviewPreviewGeoJson() {
@@ -2478,9 +3031,16 @@ export class MapLibreActivityRunner {
       return this.getOceanZoneFeature(target.id);
     }
 
+    const generatedLandFeature = this.getGeneratedContinentsOceanLandFeature(target);
+
+    if (generatedLandFeature) {
+      return generatedLandFeature;
+    }
+
     const continentName = target.id === "australia" ? "Oceania" : target.name;
-    const features = this.worldCountries.features.filter((feature) => feature.properties?.CONTINENT === continentName);
-    const coordinates = features.flatMap((feature) => this.getContinentFeaturePolygons(feature, target));
+    const coordinates = this.worldCountries.features.flatMap((feature) => (
+      this.getContinentsOceanFeaturePolygons(feature, target, continentName)
+    ));
 
     if (coordinates.length === 0) {
       return null;
@@ -2499,6 +3059,91 @@ export class MapLibreActivityRunner {
     };
   }
 
+  getGeneratedContinentsOceanLandFeature(target) {
+    const coordinates = [];
+    const targetId = target.id;
+
+    this.coContinentLand?.features?.forEach((feature) => {
+      const properties = feature?.properties || {};
+      const sourceId = [feature?.id, properties.id, properties.name]
+        .map((value) => normalizeTargetId(value))
+        .find(Boolean);
+
+      this.getGeometryPolygons(feature?.geometry).forEach((polygon) => {
+        const overrideContinentId = this.getCoContinentOverrideForPolygon(feature, polygon);
+
+        if (overrideContinentId) {
+          if (overrideContinentId === targetId) {
+            coordinates.push(polygon);
+          }
+          return;
+        }
+
+        if (sourceId === targetId) {
+          coordinates.push(polygon);
+        }
+      });
+    });
+
+    if (!coordinates.length) {
+      return null;
+    }
+
+    return {
+      type: "Feature",
+      properties: {
+        id: target.id,
+        name: target.name
+      },
+      geometry: {
+        type: "MultiPolygon",
+        coordinates
+      }
+    };
+  }
+
+  getContinentsOceanFeaturePolygons(feature, target, continentName) {
+    const polygons = this.getGeometryPolygons(feature.geometry);
+    const autoPolygons = [];
+    const overridePolygons = [];
+
+    polygons.forEach((polygon) => {
+      const overrideContinentId = this.getCoContinentOverrideForPolygon(feature, polygon);
+
+      if (overrideContinentId) {
+        if (overrideContinentId === target.id) {
+          overridePolygons.push(polygon);
+        }
+        return;
+      }
+
+      autoPolygons.push(polygon);
+    });
+
+    if (feature.properties?.CONTINENT === continentName) {
+      return [
+        ...overridePolygons,
+        ...this.getContinentFeaturePolygons(feature, target, autoPolygons)
+      ];
+    }
+
+    if (target.id === "asia" && this.isRussiaFeature(feature)) {
+      return [
+        ...overridePolygons,
+        ...autoPolygons.filter((polygon) => this.getRussiaContinentsOceansPolygonAssignment(polygon) === "asia")
+      ];
+    }
+
+    if (target.id === "antarctica" && this.isFrenchSouthernAntarcticLandsFeature(feature)) {
+      return [
+        ...overridePolygons,
+        ...autoPolygons
+      ];
+    }
+
+    return overridePolygons;
+  }
+
   getOceanZoneFeature(id) {
     const targetId = normalizeTargetId(id);
     const feature = this.oceanZones?.features?.find((candidate) => {
@@ -2515,16 +3160,172 @@ export class MapLibreActivityRunner {
     return feature || getFallbackOceanZoneFeature(id);
   }
 
-  getContinentFeaturePolygons(feature, target) {
-    const polygons = feature.geometry.type === "Polygon"
-      ? [feature.geometry.coordinates]
-      : feature.geometry.coordinates;
-
+  getContinentFeaturePolygons(feature, target, polygons = this.getGeometryPolygons(feature.geometry)) {
     if (target.id !== "europe") {
       return polygons;
     }
 
-    return this.filterPolygonsToExtent(polygons, europeGeographicExtent);
+    if (this.isNorwayFeature(feature)) {
+      return polygons;
+    }
+
+    return polygons.filter((polygon) => {
+      const russianAssignment = this.getRussiaContinentsOceansPolygonAssignment(polygon, feature);
+
+      if (russianAssignment) {
+        return russianAssignment === "europe";
+      }
+
+      return this.isPolygonInExtent(polygon, europeGeographicExtent);
+    });
+  }
+
+  isNorwayFeature(feature) {
+    return this.getFeatureIdentityValues(feature).some((value) => value === "norway");
+  }
+
+  isRussiaFeature(feature) {
+    return this.getFeatureIdentityValues(feature).some((value) => value === "russia");
+  }
+
+  isFrenchSouthernAntarcticLandsFeature(feature) {
+    return this.getFeatureIdentityValues(feature).some((value) => (
+      value === "fr. s. antarctic lands"
+      || value === "french southern and antarctic lands"
+    ));
+  }
+
+  getFeatureIdentityValues(feature) {
+    const properties = feature?.properties || {};
+
+    return [
+      properties.NAME,
+      properties.NAME_LONG,
+      properties.ADMIN,
+      properties.GEOUNIT,
+      properties.SUBUNIT,
+      properties.BRK_NAME
+    ]
+      .map((value) => String(value || "").trim().toLowerCase())
+      .filter(Boolean);
+  }
+
+  getCoContinentOverrideForPolygon(feature, polygon) {
+    if (!this.isContinentsOceansActivity() || !this.coContinentOverrides.length) {
+      return null;
+    }
+
+    const bounds = this.getRoundedBounds(polygon);
+    const properties = feature?.properties || {};
+
+    const override = this.coContinentOverrides.find((candidate) => {
+      if (!candidate?.assignedContinent) {
+        return false;
+      }
+
+      if (candidate.polygonBounds && this.areRoundedBoundsEqual(candidate.polygonBounds, bounds)) {
+        return this.doesCoOverrideMatchFeature(candidate, properties);
+      }
+
+      return false;
+    });
+
+    return override ? this.getContinentIdFromOverride(override.assignedContinentId || override.assignedContinent) : null;
+  }
+
+  doesCoOverrideMatchFeature(override, properties) {
+    const match = override.match || {};
+
+    if (!match.properties) {
+      return true;
+    }
+
+    return [
+      "NAME",
+      "NAME_LONG",
+      "ADMIN",
+      "GEOUNIT",
+      "SUBUNIT",
+      "ISO_A3",
+      "ADM0_A3",
+      "CONTINENT"
+    ].some((key) => {
+      const expected = match.properties[key];
+      return expected && properties[key] === expected;
+    });
+  }
+
+  getContinentIdFromOverride(value) {
+    const normalized = normalizeTargetId(value);
+    return normalized === "oceania" ? "australia" : normalized;
+  }
+
+  getRoundedBounds(polygon) {
+    return this.getCoordinateBounds(polygon).map((value) => Number(value.toFixed(5)));
+  }
+
+  areRoundedBoundsEqual(left, right) {
+    return Array.isArray(left)
+      && Array.isArray(right)
+      && left.length === 4
+      && right.length === 4
+      && left.every((value, index) => Math.abs(Number(value) - Number(right[index])) < 0.00002);
+  }
+
+  getRussiaContinentsOceansPolygonAssignment(polygon, feature = null) {
+    if (feature && !this.isRussiaFeature(feature)) {
+      return null;
+    }
+
+    const [west, south, east, north] = this.getCoordinateBounds(polygon);
+
+    // Continents & Oceans uses simplified continent membership for Arctic island groups.
+    if (this.isBoundsInRange({ west, south, east, north }, { west: 44, south: 79, east: 53, north: 82 })) {
+      // Franz Josef Land
+      return "europe";
+    }
+
+    if (this.isBoundsInRange({ west, south, east, north }, { west: 47, south: 68, east: 70, north: 78 })) {
+      // Novaya Zemlya, Vaygach Island, and Kolguyev Island
+      return "europe";
+    }
+
+    if (this.isBoundsInRange({ west, south, east, north }, { west: 90, south: 77, east: 106, north: 82 })) {
+      // Severnaya Zemlya
+      return "asia";
+    }
+
+    if (this.isBoundsInRange({ west, south, east, north }, { west: 135, south: 72, east: 152, north: 77 })) {
+      // New Siberian Islands
+      return "asia";
+    }
+
+    if (
+      this.isBoundsInRange({ west, south, east, north }, { west: 177, south: 69, east: 180, north: 73 })
+      || this.isBoundsInRange({ west, south, east, north }, { west: -180, south: 63, east: -169, north: 73 })
+    ) {
+      // Wrangel Island and nearby antimeridian polygons
+      return "asia";
+    }
+
+    if (this.isBoundsInRange({ west, south, east, north }, { west: 140, south: 45, east: 146, north: 55 })) {
+      // Sakhalin
+      return "asia";
+    }
+
+    if (this.isBoundsInRange({ west, south, east, north }, { west: 35, south: 66, east: 90, north: 82 })) {
+      // Remaining small western Russian Arctic polygons belong with Europe in this simplified map.
+      return "europe";
+    }
+
+    return null;
+  }
+
+  isBoundsInRange(bounds, range) {
+    return bounds.west >= range.west
+      && bounds.east <= range.east
+      && bounds.south >= range.south
+      && bounds.north <= range.north;
   }
 
   getRegionalWorldSourceFeature(feature, activity) {
@@ -2885,12 +3686,9 @@ export class MapLibreActivityRunner {
         colors.memoryTrailFill,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         ["match", ["get", "id"], ...this.getColorMatchStops(), colors.targetFill],
-        colors.studyTargetFill
+        ["match", ["get", "id"], ...this.getMutedTargetColorStops(), colors.targetFill]
       ];
     }
-
-    const isHard = this.getDifficultyVisualState().isHard;
-    const shouldRevealContinents = !isHard || this.areAllContinentTargetsCompleted();
 
     return [
       "case",
@@ -2898,9 +3696,7 @@ export class MapLibreActivityRunner {
       oceanZoneMutedColor,
       ["in", ["get", "id"], ["literal", this.completedIds]],
       ["match", ["get", "id"], ...this.getColorMatchStops(), colors.targetFill],
-      shouldRevealContinents,
-      ["match", ["get", "id"], ...this.getMutedTargetColorStops(), colors.targetFill],
-      colors.hardContinentChallengeFill
+      ["match", ["get", "id"], ...this.getMutedTargetColorStops(), colors.targetFill]
     ];
   }
 
@@ -2951,10 +3747,10 @@ export class MapLibreActivityRunner {
         ["boolean", ["get", "isOceanZone"], false],
         0,
         ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
-        0.98,
+        1,
         ["in", ["get", "id"], ["literal", this.completedIds]],
-        0.96,
-        0.52
+        1,
+        1
       ];
     }
 
@@ -2964,10 +3760,10 @@ export class MapLibreActivityRunner {
         ["boolean", ["get", "isOceanZone"], false],
         0,
         ["in", ["get", "id"], ["literal", this.completedIds]],
-        0.96,
+        1,
         this.areAllContinentTargetsCompleted(),
-        0.96,
-        0.9
+        1,
+        1
       ];
     }
 
@@ -2981,8 +3777,8 @@ export class MapLibreActivityRunner {
         0.01
       ],
       ["in", ["get", "id"], ["literal", this.completedIds]],
-      0.96,
-      0.8
+      1,
+      1
     ];
   }
 
