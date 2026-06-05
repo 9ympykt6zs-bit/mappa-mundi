@@ -165,6 +165,13 @@ const italyAdmin1Path = "assets/maps/data/maplibre-italy-admin1.geojson";
 const unitedKingdomAdmin1Path = "assets/maps/data/maplibre-united-kingdom-admin1.geojson";
 const continentsOceansActivityId = "continents-oceans";
 const defaultActivityId = continentsOceansActivityId;
+const continentsOceansLearnFocusProfiles = Object.freeze({
+  "north-america": { delayMs: 920, forceOnPromptStart: true },
+  asia: { forceOnPromptStart: true },
+  "atlantic-ocean": { forceOnPromptStart: true },
+  "indian-ocean": { forceOnPromptStart: true },
+  "southern-ocean": { forceOnPromptStart: true }
+});
 const defaultMenuRoot = "world";
 const defaultMapSet = "world-europe";
 const completedActivitiesStorageKey = "geography-memory-completed-activities";
@@ -4865,6 +4872,22 @@ function bindUiEvents() {
   document.addEventListener("click", handleDocumentInfoClick);
   document.addEventListener("pointermove", handleDocumentPointerMove);
   document.addEventListener("pointerup", handleDocumentPointerUp);
+
+  if (isContinentsOceansLearnCameraDebugEnabled()) {
+    window.mappaDebugCoLearnCamera = {
+      openDailyTrailIntro,
+      startDailyTrailSession,
+      getState: () => ({
+        currentAppScreen,
+        activityId: session?.currentActivity?.id || "",
+        activeDailyTrailActivityId: activeDailyTrailSession?.activityId || "",
+        memoryTrail: activeStudySession?.memoryTrail
+          ? getMemoryTrailSessionStats(activeStudySession.memoryTrail)
+          : null
+      })
+    };
+  }
+
   document.addEventListener("pointercancel", cancelGrabbedAnswer);
   window.addEventListener("resize", refreshHeaderTitleForLayout);
   window.addEventListener("orientationchange", refreshHeaderTitleForLayout);
@@ -7453,6 +7476,9 @@ function startMemoryTrail(options = {}) {
   trackEvent("memory_trail_started", getMemoryTrailAnalyticsContext());
   activeStudySession.revealedTargetIds = [];
   runner.setStudyPreviewMode(true);
+  if (session.currentActivity?.id === continentsOceansActivityId) {
+    runner.suppressStudyIntroCameraOnce?.("c&o-learn-target-focus", 5000);
+  }
   runner.setCompletedTargets([]);
   instruction.textContent = "First learn the small group, then practice from memory.";
   fitMapToPracticeWindow(activeStudySession.memoryTrail.currentPracticeWindow, "start");
@@ -7501,6 +7527,9 @@ function restartMemoryTrail() {
   completedMemoryTrailAnalyticsKey = "";
   trackEvent("memory_trail_started", getMemoryTrailAnalyticsContext());
   activeStudySession.revealedTargetIds = [];
+  if (session.currentActivity?.id === continentsOceansActivityId) {
+    runner.suppressStudyIntroCameraOnce?.("c&o-learn-target-focus", 5000);
+  }
   runner.setCompletedTargets([]);
   instruction.textContent = "First learn the small group, then practice from memory.";
   fitMapToPracticeWindow(activeStudySession.memoryTrail.currentPracticeWindow, "restart");
@@ -7596,6 +7625,7 @@ function promptNextMemoryTrailTarget(memoryTrail = getActiveMemoryTrail()) {
   runner.setMemoryTrailHighlight(selection.promptType === "guided" || selection.promptType === "place_to_name"
     ? selection.targetId
     : []);
+  scheduleContinentsOceansLearnFocusCheck(memoryTrail, selection, target);
   maybeFocusContinentsOceansNamePrompt(selection, target);
   renderStudyExplorePanel();
 
@@ -7705,10 +7735,182 @@ function shouldUseMemoryTrailTargetSpeechFallback(memoryTrail, selection = {}) {
   );
 }
 
+function isContinentsOceansLearnCameraDebugEnabled() {
+  try {
+    return typeof window !== "undefined"
+      && new URLSearchParams(window.location.search).has("debugCoLearnCamera");
+  } catch {
+    return false;
+  }
+}
+
+function getContinentsOceansLearnCameraDebugContext(memoryTrail = getActiveMemoryTrail()) {
+  const activeTargetId = memoryTrail?.currentPromptTargetId || "";
+  const activeTarget = activeTargetId ? getTargetById(memoryTrail, activeTargetId) : null;
+  return {
+    timestamp: typeof performance !== "undefined" ? Math.round(performance.now()) : Date.now(),
+    activityId: session.currentActivity?.id || "",
+    memoryTrailSource: memoryTrail?.source || "",
+    phase: memoryTrail?.sessionPhase || "",
+    promptType: memoryTrail?.currentPromptType || "",
+    promptKey: memoryTrail?.currentPromptKey || "",
+    activeTargetId,
+    activeTargetLabel: activeTarget?.name || activeTarget?.label || activeTarget?.completedLabelName || ""
+  };
+}
+
+function debugContinentsOceansLearnCamera(label, details = {}, memoryTrail = getActiveMemoryTrail()) {
+  if (
+    !isContinentsOceansLearnCameraDebugEnabled()
+    || session.currentActivity?.id !== continentsOceansActivityId
+  ) {
+    return;
+  }
+
+  const payload = {
+    ...getContinentsOceansLearnCameraDebugContext(memoryTrail),
+    ...details
+  };
+  console.warn("[C&O Learn camera]", label, JSON.stringify(payload));
+}
+
+function scheduleContinentsOceansLearnFocusCheck(memoryTrail, selection, target) {
+  if (
+    session.currentActivity?.id !== continentsOceansActivityId
+    || selection?.promptType !== "guided"
+    || memoryTrail?.activityId !== continentsOceansActivityId
+    || memoryTrail.sessionPhase !== "learn"
+    || memoryTrail.currentPromptTargetId !== selection?.targetId
+    || !target
+    || typeof runner?.focusTargetIfNeeded !== "function"
+  ) {
+    return false;
+  }
+
+  const focusProfile = getContinentsOceansLearnFocusProfile(target, memoryTrail);
+  const promptKey = memoryTrail.currentPromptKey;
+  debugContinentsOceansLearnCamera("target focus scheduled", {
+    source: "c&o-learn-target-focus",
+    requestType: "focusTargetIfNeeded",
+    targetId: target.id,
+    targetLabel: target.name,
+    targetFocus: {
+      center: Number.isFinite(target.focusLon) && Number.isFinite(target.focusLat)
+        ? [target.focusLon, target.focusLat]
+        : null,
+      zoom: Number.isFinite(target.focusZoom) ? target.focusZoom : null,
+      bounds: target.focusBounds || null
+    },
+    delayMs: focusProfile.delayMs,
+    force: focusProfile.forceOnPromptStart
+  }, memoryTrail);
+  const timeoutId = window.setTimeout(() => {
+    if (
+      !isCurrentMemoryTrailState(memoryTrail)
+      || memoryTrail.currentPromptKey !== promptKey
+      || memoryTrail.currentPromptTargetId !== selection.targetId
+    ) {
+      debugContinentsOceansLearnCamera("target focus canceled", {
+        source: "c&o-learn-target-focus",
+        requestType: "focusTargetIfNeeded",
+        targetId: target.id,
+        targetLabel: target.name,
+        expectedPromptKey: promptKey,
+        reason: "prompt changed before deferred focus"
+      }, memoryTrail);
+      return;
+    }
+
+    maybeFocusContinentsOceansLearnPrompt(memoryTrail, target, focusProfile);
+  }, focusProfile.delayMs);
+  memoryTrail.timers.push(timeoutId);
+  return true;
+}
+
+function getContinentsOceansLearnFocusProfile(target, memoryTrail) {
+  const profile = continentsOceansLearnFocusProfiles[target?.id] || {};
+  const stats = target?.id ? memoryTrail?.targetStats?.[target.id] : null;
+  const isFirstPrompt = memoryTrail?.promptHistory?.length === 1 && memoryTrail.promptCount === 0;
+  const isFirstPromptInLearnSection = Boolean(
+    stats
+    && stats.introducedAtPrompt === memoryTrail?.promptCount
+    && stats.exposedCount <= 1
+    && stats.guidedTapCount === 0
+  );
+  return {
+    delayMs: Number.isFinite(profile.delayMs)
+      ? profile.delayMs
+      : ((isFirstPrompt || isFirstPromptInLearnSection) ? 980 : 80),
+    forceOnPromptStart: Boolean(profile.forceOnPromptStart || isFirstPrompt || isFirstPromptInLearnSection)
+  };
+}
+
+function maybeFocusContinentsOceansLearnPrompt(memoryTrail, target, focusProfile = {}) {
+  if (
+    session.currentActivity?.id !== continentsOceansActivityId
+    || memoryTrail?.activityId !== continentsOceansActivityId
+    || memoryTrail.sessionPhase !== "learn"
+    || memoryTrail.currentPromptType !== "guided"
+    || memoryTrail.currentPromptTargetId !== target?.id
+    || !target
+    || typeof runner?.focusTargetIfNeeded !== "function"
+  ) {
+    return false;
+  }
+
+  const isOcean = target.type === "zone";
+  debugContinentsOceansLearnCamera("target focus requested", {
+    source: "c&o-learn-target-focus",
+    requestType: "focusTargetIfNeeded",
+    targetId: target.id,
+    targetLabel: target.name,
+    requestedCamera: {
+      center: Number.isFinite(target.focusLon) && Number.isFinite(target.focusLat)
+        ? [target.focusLon, target.focusLat]
+        : null,
+      zoom: Number.isFinite(target.focusZoom) ? target.focusZoom : null,
+      bounds: target.focusBounds || null
+    },
+    force: Boolean(focusProfile.forceOnPromptStart)
+  }, memoryTrail);
+  const didFocus = runner.focusTargetIfNeeded(target, {
+    duration: 700,
+    force: Boolean(focusProfile.forceOnPromptStart),
+    zoomTolerance: isOcean ? 0.35 : 0.7,
+    comfortPadding: {
+      top: isOcean ? 130 : 110,
+      right: isOcean ? 120 : 48,
+      bottom: isOcean ? 235 : 220,
+      left: isOcean ? 120 : 48
+    }
+  });
+  debugContinentsOceansLearnCamera("target focus result", {
+    source: "c&o-learn-target-focus",
+    requestType: "focusTargetIfNeeded",
+    targetId: target.id,
+    targetLabel: target.name,
+    didFocus
+  }, memoryTrail);
+
+  debugMemoryTrail("C&O learn focus", {
+    targetId: target.id,
+    targetName: target.name,
+    targetType: target.type,
+    didFocus
+  });
+
+  return didFocus;
+}
+
 function maybeFocusContinentsOceansNamePrompt(selection, target) {
+  const memoryTrail = getActiveMemoryTrail();
   if (
     session.currentActivity?.id !== continentsOceansActivityId
     || selection?.promptType !== "place_to_name"
+    || memoryTrail?.activityId !== continentsOceansActivityId
+    || memoryTrail.source !== "memory-trail"
+    || memoryTrail.sessionPhase !== "practice"
+    || activeDailyTrailSession
     || !target
     || typeof runner?.focusTargetIfNeeded !== "function"
   ) {
@@ -8323,6 +8525,16 @@ function fitMapToPracticeWindow(targets = [], reason = "practice-window") {
     return false;
   }
 
+  if (shouldSuppressContinentsOceansLearnWindowFit(memoryTrail, reason)) {
+    debugContinentsOceansLearnCamera("section window fit suppressed", {
+      source: "fitMapToPracticeWindow",
+      requestType: "fitBounds",
+      reason,
+      targetIds: targets.map((target) => target.id)
+    }, memoryTrail);
+    return false;
+  }
+
   const didFit = runner.fitTargets(targets, {
     duration: 850,
     maxZoom: targets.length <= 3 ? 5.75 : 5.35
@@ -8338,6 +8550,13 @@ function fitMapToPracticeWindow(targets = [], reason = "practice-window") {
     didFit
   });
   return didFit;
+}
+
+function shouldSuppressContinentsOceansLearnWindowFit(memoryTrail, reason = "") {
+  return Boolean(
+    memoryTrail?.activityId === continentsOceansActivityId
+    && (reason === "start" || reason === "advance")
+  );
 }
 
 function debugMemoryTrail(label, details = {}) {

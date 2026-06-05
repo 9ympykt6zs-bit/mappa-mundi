@@ -138,6 +138,26 @@ const parentCountryOutlineLayerIds = [
   "parent-country-outline"
 ];
 
+function isContinentsOceansLearnCameraDebugEnabled() {
+  try {
+    return typeof window !== "undefined"
+      && new URLSearchParams(window.location.search).has("debugCoLearnCamera");
+  } catch {
+    return false;
+  }
+}
+
+function debugContinentsOceansRunnerCamera(label, details = {}) {
+  if (!isContinentsOceansLearnCameraDebugEnabled()) {
+    return;
+  }
+
+  console.warn("[C&O Learn camera][runner]", label, JSON.stringify({
+    timestamp: typeof performance !== "undefined" ? Math.round(performance.now()) : Date.now(),
+    ...details
+  }));
+}
+
 // Difficulty rules are intentionally renderer-level: Easy shows all visual
 // aids, Medium hides point hints until placement, and Hard keeps accepted
 // answers out of the bank without revealing extra map clues.
@@ -264,6 +284,8 @@ export class MapLibreActivityRunner {
     this.pendingDifficultyVisualRefresh = false;
     this.presentationSettings = {};
     this.studyPreviewMode = false;
+    this.suppressStudyIntroCameraReason = "";
+    this.suppressStudyIntroCameraUntil = 0;
     this.memoryTrailHighlightIds = [];
     this.memoryTrailCorrectHighlightIds = [];
     this.memoryTrailWrongHighlightIds = [];
@@ -277,6 +299,27 @@ export class MapLibreActivityRunner {
       active: false,
       dragging: false
     };
+  }
+
+  suppressStudyIntroCameraOnce(reason = "external target focus", ttlMs = 5000) {
+    this.suppressStudyIntroCameraReason = reason;
+    this.suppressStudyIntroCameraUntil = (
+      typeof performance !== "undefined" ? performance.now() : Date.now()
+    ) + Math.max(0, ttlMs);
+  }
+
+  consumeStudyIntroCameraSuppression() {
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    if (!this.suppressStudyIntroCameraReason || now > this.suppressStudyIntroCameraUntil) {
+      this.suppressStudyIntroCameraReason = "";
+      this.suppressStudyIntroCameraUntil = 0;
+      return "";
+    }
+
+    const reason = this.suppressStudyIntroCameraReason;
+    this.suppressStudyIntroCameraReason = "";
+    this.suppressStudyIntroCameraUntil = 0;
+    return reason;
   }
 
   onTargetClick(handler) {
@@ -428,9 +471,30 @@ export class MapLibreActivityRunner {
     this.updateParentCountryOutline();
     this.refreshDifficultyVisuals();
 
+    const suppressedIntroCameraReason = this.consumeStudyIntroCameraSuppression();
+    if (suppressedIntroCameraReason) {
+      debugContinentsOceansRunnerCamera("enterStudyView intro camera suppressed", {
+        requestType: "suppressed",
+        source: "enterStudyView",
+        activityId: this.activity?.id,
+        reason: suppressedIntroCameraReason
+      });
+      return;
+    }
+
     const regionFlyDuration = 1100;
     const activityId = this.activity?.id;
 
+    debugContinentsOceansRunnerCamera("enterStudyView region fly requested", {
+      requestType: "flyTo",
+      source: "enterStudyView:regionView",
+      activityId,
+      camera: {
+        center: this.activity.map?.regionView?.center || [-98, 39],
+        zoom: this.activity.map?.regionView?.zoom || 3.1,
+        duration: regionFlyDuration
+      }
+    });
     this.map.flyTo({
       center: this.activity.map?.regionView?.center || [-98, 39],
       zoom: this.activity.map?.regionView?.zoom || 3.1,
@@ -443,6 +507,16 @@ export class MapLibreActivityRunner {
     window.setTimeout(() => {
       if (this.currentView === "study" && this.activity?.id === activityId) {
         const studyView = this.activity.map?.studyView || {};
+        debugContinentsOceansRunnerCamera("enterStudyView study fit requested", {
+          requestType: "fitBounds",
+          source: "enterStudyView:studyView",
+          activityId,
+          camera: {
+            bounds: studyView.bounds || [[-74.35, 40.85], [-66.75, 47.55]],
+            padding: studyView.padding || { top: 55, right: 46, bottom: 78, left: 46 },
+            duration: studyView.duration || 1200
+          }
+        });
         this.map.fitBounds(studyView.bounds || [[-74.35, 40.85], [-66.75, 47.55]], {
           padding: studyView.padding || { top: 55, right: 46, bottom: 78, left: 46 },
           duration: studyView.duration || 1200,
@@ -759,9 +833,22 @@ export class MapLibreActivityRunner {
     const camera = this.getTargetFocusCamera(target);
 
     if (!camera) {
+      debugContinentsOceansRunnerCamera("focusTarget skipped", {
+        requestType: "focusTarget",
+        reason: "missing camera",
+        targetId: target.id,
+        targetLabel: target.name
+      });
       return;
     }
 
+    debugContinentsOceansRunnerCamera("focusTarget requested", {
+      requestType: camera.bounds ? "fitBounds" : "easeTo",
+      source: "focusTarget",
+      targetId: target.id,
+      targetLabel: target.name,
+      camera
+    });
     this.map.stop();
 
     if (camera.bounds) {
@@ -800,13 +887,34 @@ export class MapLibreActivityRunner {
     const camera = this.getTargetFocusCamera(focusTarget);
 
     if (!camera) {
+      debugContinentsOceansRunnerCamera("focusTargetIfNeeded skipped", {
+        requestType: "focusTargetIfNeeded",
+        reason: "missing camera",
+        targetId: target.id,
+        targetLabel: target.name
+      });
       return false;
     }
 
     if (!options.force && this.isTargetFocusComfortablyVisible(focusTarget, camera, options)) {
+      debugContinentsOceansRunnerCamera("focusTargetIfNeeded skipped", {
+        requestType: "focusTargetIfNeeded",
+        reason: "comfortably visible",
+        targetId: target.id,
+        targetLabel: target.name,
+        camera
+      });
       return false;
     }
 
+    debugContinentsOceansRunnerCamera("focusTargetIfNeeded accepted", {
+      requestType: "focusTargetIfNeeded",
+      source: "focusTargetIfNeeded",
+      targetId: target.id,
+      targetLabel: target.name,
+      force: Boolean(options.force),
+      camera
+    });
     this.focusTarget(focusTarget);
     return true;
   }
@@ -896,9 +1004,23 @@ export class MapLibreActivityRunner {
     }, null);
 
     if (!this.hasValidBounds(bounds)) {
+      debugContinentsOceansRunnerCamera("fitTargets skipped", {
+        requestType: "fitBounds",
+        source: "fitTargets",
+        reason: "missing bounds",
+        targetIds: targets.map((target) => target.id).filter(Boolean)
+      });
       return false;
     }
 
+    debugContinentsOceansRunnerCamera("fitTargets requested", {
+      requestType: "fitBounds",
+      source: "fitTargets",
+      targetIds: targets.map((target) => target.id).filter(Boolean),
+      targetLabels: targets.map((target) => target.name).filter(Boolean),
+      bounds,
+      options
+    });
     this.map.stop();
     this.map.fitBounds(bounds, {
       padding: this.normalizePadding(options.padding || {
