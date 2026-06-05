@@ -73,6 +73,8 @@ const memoryTrailInstructionNouns = [
 
 const instructionPhrases = [
   ...baseInstructionPhrases,
+  "Learn these continents and oceans",
+  "Say the name, then tap the highlighted place.",
   ...createMemoryTrailInstructionPhrases(memoryTrailInstructionNouns)
 ];
 
@@ -589,7 +591,11 @@ async function writeManifest({ chips, instructions }) {
 }
 
 function mapItemsByText(items) {
-  return Object.fromEntries(items.map((item) => [item.text, item.relativePath]));
+  return Object.fromEntries(
+    items
+      .filter((item) => item.exists)
+      .map((item) => [item.text, item.relativePath])
+  );
 }
 
 function fileExistsSync(filePath) {

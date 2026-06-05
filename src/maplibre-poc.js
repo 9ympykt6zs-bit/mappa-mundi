@@ -7203,6 +7203,13 @@ function getMemoryTrailInstructionText(promptType, phase, mode = "", activity = 
   const singularNoun = getInstructionNoun(activity);
   const pluralNoun = getInstructionNounPlural(activity);
   if (promptType === "guided" || phase === "learn") {
+    if (activity?.id === continentsOceansActivityId) {
+      return {
+        banner: "Say the name, then tap the highlighted place.",
+        label: "Say the name, then tap the highlighted place."
+      };
+    }
+
     const learnCount = getMemoryTrailLearnPromptCount(memoryTrail);
     return {
       banner: learnCount === 1
