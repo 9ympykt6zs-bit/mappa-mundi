@@ -2723,7 +2723,7 @@ const TARGET_SUCCESS_RATE = 0.85;
 const SESSION_PROMPT_CAP = 45;
 const BASE_SESSION_CORRECT_TARGET = 4;
 const WEAK_SESSION_CORRECT_TARGET = 6;
-const DAILY_TRAIL_SESSION_CORRECT_TARGET = 1;
+const DAILY_TRAIL_SESSION_CORRECT_TARGET = 3;
 const DAILY_TRAIL_WEAK_CORRECT_TARGET = 2;
 const SESSION_LEARNED_MIN_CORRECT = 3;
 const MIN_GAP_AFTER_CORRECT = 3;
@@ -7136,14 +7136,40 @@ function isDailyTrailMemoryTrail(memoryTrail) {
 
 function getStatsRetrievalCorrectTarget(stats, memoryTrail = null) {
   if (isDailyTrailMemoryTrail(memoryTrail)) {
-    return stats?.isWeak || stats?.totalRetrievalIncorrect > 0
-      ? DAILY_TRAIL_WEAK_CORRECT_TARGET
-      : DAILY_TRAIL_SESSION_CORRECT_TARGET;
+    return getDailyTrailRetrievalCorrectTarget(stats);
   }
 
   return stats?.isWeak || stats?.totalRetrievalIncorrect > 1
     ? WEAK_SESSION_CORRECT_TARGET
     : BASE_SESSION_CORRECT_TARGET;
+}
+
+function getDailyTrailRetrievalCorrectTarget(stats) {
+  if (!stats) {
+    return DAILY_TRAIL_SESSION_CORRECT_TARGET;
+  }
+
+  if (stats.isWeak || stats.totalRetrievalIncorrect > 0) {
+    const remainingPostMissCorrect = Math.max(0, DAILY_TRAIL_WEAK_CORRECT_TARGET - stats.currentCorrectStreak);
+    return Math.max(DAILY_TRAIL_WEAK_CORRECT_TARGET, stats.totalRetrievalCorrect + remainingPostMissCorrect);
+  }
+
+  return DAILY_TRAIL_SESSION_CORRECT_TARGET;
+}
+
+function hasDailyTrailStatsMetRecallRequirement(stats) {
+  if (!stats || !hasTargetCompletedGuidedExposure(stats)) {
+    return false;
+  }
+
+  if (stats.isWeak || stats.totalRetrievalIncorrect > 0) {
+    return stats.currentCorrectStreak >= DAILY_TRAIL_WEAK_CORRECT_TARGET
+      && stats.totalRetrievalCorrect >= DAILY_TRAIL_WEAK_CORRECT_TARGET;
+  }
+
+  return stats.totalRetrievalCorrect >= DAILY_TRAIL_SESSION_CORRECT_TARGET
+    && stats.nameToPlaceCorrect >= 1
+    && stats.placeToNameCorrect >= 1;
 }
 
 function getMemoryTrailTargetLabel(targetOrId, memoryTrail = getActiveMemoryTrail()) {
@@ -8319,16 +8345,24 @@ function shouldIntroduceNewTarget(memoryTrail) {
   }
 
   const currentStats = memoryTrail.currentPracticeWindow.map((target) => memoryTrail.targetStats[target.id]).filter(Boolean);
-  const currentWindowReady = currentStats.length > 0 && currentStats.every((stats) => (
-    hasTargetCompletedGuidedExposure(stats)
-    && (
-      stats.totalRetrievalCorrect >= getStatsRetrievalCorrectTarget(stats, memoryTrail)
-      || stats.totalRetrievalAttempts >= 4
-      || stats.isSessionLearned
-    )
-  ));
+  const currentWindowReady = currentStats.length > 0 && currentStats.every((stats) => {
+    if (isDailyTrailMemoryTrail(memoryTrail)) {
+      return hasDailyTrailStatsMetRecallRequirement(stats);
+    }
+
+    return hasTargetCompletedGuidedExposure(stats)
+      && (
+        stats.totalRetrievalCorrect >= getStatsRetrievalCorrectTarget(stats, memoryTrail)
+        || stats.totalRetrievalAttempts >= 4
+        || stats.isSessionLearned
+      );
+  });
   const fiveCorrect = memoryTrail.recentRetrievalResults.slice(-5).length === 5
     && memoryTrail.recentRetrievalResults.slice(-5).every((result) => result === "correct");
+
+  if (isDailyTrailMemoryTrail(memoryTrail)) {
+    return currentWindowReady;
+  }
 
   return currentWindowReady || fiveCorrect;
 }
@@ -8392,8 +8426,8 @@ function shouldEndDailyTrailMemoryTrailSession(memoryTrail) {
   }
 
   const allRequiredItemsTaught = requiredStats.every(hasTargetCompletedGuidedExposure);
-  const allRequiredItemsRecalled = requiredStats.every((stats) => stats.totalRetrievalCorrect >= DAILY_TRAIL_SESSION_CORRECT_TARGET);
-  const weakItemsSettled = getWeakTargets(memoryTrail).every((stats) => stats.currentCorrectStreak > 0);
+  const allRequiredItemsRecalled = requiredStats.every(hasDailyTrailStatsMetRecallRequirement);
+  const weakItemsSettled = getWeakTargets(memoryTrail).every((stats) => stats.currentCorrectStreak >= DAILY_TRAIL_WEAK_CORRECT_TARGET);
 
   return allRequiredItemsTaught
     && allRequiredItemsRecalled
