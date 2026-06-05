@@ -6924,6 +6924,9 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     currentPracticeWindow,
     introducedTargetIds: initiallyIntroducedTargetIds,
     dailyTrailNewTargetIds: [...newTargetIdSet],
+    dailyTrailSessionNumber: Number(options.dailyTrailSessionNumber) || 0,
+    dailyTrailPracticeRoundOrders: {},
+    lastDailyTrailPracticeRoundOrder: [],
     targetStats,
     promptCount: 0,
     retrievalPromptCount: 0,
@@ -7498,7 +7501,8 @@ function startMemoryTrail(options = {}) {
   activeStudySession.memoryTrail = createMemoryTrailSession(session.currentActivity, {
     newTargetIds: options.newTargetIds,
     source: options.source,
-    targetIds: options.targetIds
+    targetIds: options.targetIds,
+    dailyTrailSessionNumber: isDailyTrail ? activeDailyTrailSession?.state?.currentSessionNumber : 0
   });
   currentMemoryTrailAnalyticsKey = [
     activeStudySession.journeyId,
@@ -7694,20 +7698,19 @@ function shouldSpeakMemoryTrailTargetAtPromptStart(memoryTrail, target, selectio
     return skip("missing target label");
   }
 
+  if (promptType === "guided") {
+    return true;
+  }
+
   if (promptType !== "place_to_name") {
     return true;
   }
 
-  const isDailyTrailContinentsOceansLearn = memoryTrail.source === "daily-trail"
+  const isDailyTrailContinentsOceansGuidedLearn = memoryTrail.source === "daily-trail"
     && memoryTrail.activityId === continentsOceansActivityId
-    && activeDailyTrailSession?.plan?.activeActivityId === continentsOceansActivityId
-    && (
-      activeDailyTrailSession?.plan?.continentsOceansReviewType === "foundation"
-      || activeDailyTrailSession?.plan?.sessionType === "learning-session"
-      || (activeDailyTrailSession?.plan?.newItems || []).some((item) => item.targetId === selection?.targetId)
-    );
+    && selection?.mode === "learn";
 
-  return isDailyTrailContinentsOceansLearn
+  return isDailyTrailContinentsOceansGuidedLearn
     ? true
     : skip("place-to-name answer would be revealed outside C&O learn");
 }
@@ -8106,7 +8109,11 @@ function chooseNextPrompt(memoryTrail) {
 
   const weak = getWeakTargets(memoryTrail)
     .filter((stats) => due(stats) && avoidLast(stats))
-    .sort((left, right) => right.totalRetrievalIncorrect - left.totalRetrievalIncorrect || left.lastPromptedAt - right.lastPromptedAt)[0];
+    .sort((left, right) => (
+      right.totalRetrievalIncorrect - left.totalRetrievalIncorrect
+      || left.lastPromptedAt - right.lastPromptedAt
+      || compareDailyTrailPracticeOrder(left, right, memoryTrail)
+    ))[0];
 
   if (weak) {
     const needsGuidedReset = weak.totalRetrievalIncorrect >= 3 && weak.currentWrongStreak >= 2;
@@ -8121,7 +8128,11 @@ function chooseNextPrompt(memoryTrail) {
   const currentWindowNeed = memoryTrail.currentPracticeWindow
     .map((target) => memoryTrail.targetStats[target.id])
     .filter((stats) => stats && due(stats) && avoidLast(stats) && stats.totalRetrievalCorrect < getStatsRetrievalCorrectTarget(stats, memoryTrail))
-    .sort((left, right) => left.totalRetrievalCorrect - right.totalRetrievalCorrect || left.totalRetrievalAttempts - right.totalRetrievalAttempts)[0];
+    .sort((left, right) => (
+      left.totalRetrievalCorrect - right.totalRetrievalCorrect
+      || left.totalRetrievalAttempts - right.totalRetrievalAttempts
+      || compareDailyTrailPracticeOrder(left, right, memoryTrail)
+    ))[0];
 
   if (currentWindowNeed) {
     return {
@@ -8147,7 +8158,11 @@ function chooseNextPrompt(memoryTrail) {
 
   const learningTarget = dueIntroduced
     .filter((stats) => stats.totalRetrievalCorrect < getStatsRetrievalCorrectTarget(stats, memoryTrail))
-    .sort((left, right) => left.totalRetrievalCorrect - right.totalRetrievalCorrect || left.totalRetrievalAttempts - right.totalRetrievalAttempts)[0];
+    .sort((left, right) => (
+      left.totalRetrievalCorrect - right.totalRetrievalCorrect
+      || left.totalRetrievalAttempts - right.totalRetrievalAttempts
+      || compareDailyTrailPracticeOrder(left, right, memoryTrail)
+    ))[0];
 
   if (learningTarget) {
     return {
@@ -8193,6 +8208,106 @@ function chooseRetrievalPromptType(memoryTrail, stats, options = {}) {
   }
 
   return placeToNameRatio < 0.5 ? "place_to_name" : "name_to_place";
+}
+
+function hashMemoryTrailString(value) {
+  return String(value || "").split("").reduce((hash, char) => (
+    ((hash << 5) - hash + char.charCodeAt(0)) | 0
+  ), 0);
+}
+
+function areTargetOrdersEqual(left = [], right = []) {
+  return left.length === right.length && left.every((targetId, index) => targetId === right[index]);
+}
+
+function rotateTargetOrder(targetIds = []) {
+  return targetIds.length > 1 ? [...targetIds.slice(1), targetIds[0]] : [...targetIds];
+}
+
+function countMatchingTargetOrderPositions(left = [], right = []) {
+  return left.reduce((count, targetId, index) => count + (targetId === right[index] ? 1 : 0), 0);
+}
+
+function reduceMatchingTargetOrderPositions(targetIds = [], referenceOrder = []) {
+  if (targetIds.length <= 1 || referenceOrder.length <= 1) {
+    return [...targetIds];
+  }
+
+  let bestOrder = [...targetIds];
+  let bestMatchCount = countMatchingTargetOrderPositions(bestOrder, referenceOrder);
+  for (let offset = 1; offset < targetIds.length; offset += 1) {
+    const candidate = [...targetIds.slice(offset), ...targetIds.slice(0, offset)];
+    const candidateMatchCount = countMatchingTargetOrderPositions(candidate, referenceOrder);
+    if (candidateMatchCount < bestMatchCount) {
+      bestOrder = candidate;
+      bestMatchCount = candidateMatchCount;
+    }
+    if (bestMatchCount === 0) {
+      break;
+    }
+  }
+
+  return bestOrder;
+}
+
+function getDailyTrailPracticeRoundKey(stats) {
+  if (stats?.isWeak || stats?.totalRetrievalIncorrect > 0) {
+    return `weak:${stats.currentCorrectStreak || 0}`;
+  }
+
+  return `recall:${stats?.totalRetrievalCorrect || 0}`;
+}
+
+function getDailyTrailPracticeRoundOrder(memoryTrail, roundKey) {
+  if (!isDailyTrailMemoryTrail(memoryTrail)) {
+    return [];
+  }
+
+  memoryTrail.dailyTrailPracticeRoundOrders ||= {};
+  if (memoryTrail.dailyTrailPracticeRoundOrders[roundKey]) {
+    return memoryTrail.dailyTrailPracticeRoundOrders[roundKey];
+  }
+
+  const learnOrder = memoryTrail.currentPracticeWindow
+    .map((target) => target?.id)
+    .filter(Boolean);
+  const seed = [
+    memoryTrail.source,
+    memoryTrail.activityId,
+    memoryTrail.dailyTrailSessionNumber,
+    roundKey
+  ].join(":");
+  let ordered = [...learnOrder].sort((left, right) => (
+    Math.abs(hashMemoryTrailString(`${seed}:${left}`)) - Math.abs(hashMemoryTrailString(`${seed}:${right}`))
+    || left.localeCompare(right)
+  ));
+
+  if (ordered.length > 1 && areTargetOrdersEqual(ordered, learnOrder)) {
+    ordered = rotateTargetOrder(ordered);
+  }
+  ordered = reduceMatchingTargetOrderPositions(ordered, learnOrder);
+
+  if (ordered.length > 1 && areTargetOrdersEqual(ordered, memoryTrail.lastDailyTrailPracticeRoundOrder)) {
+    ordered = rotateTargetOrder(ordered);
+  }
+
+  memoryTrail.dailyTrailPracticeRoundOrders[roundKey] = ordered;
+  memoryTrail.lastDailyTrailPracticeRoundOrder = ordered;
+  return ordered;
+}
+
+function compareDailyTrailPracticeOrder(left, right, memoryTrail) {
+  if (!isDailyTrailMemoryTrail(memoryTrail)) {
+    return 0;
+  }
+
+  const leftOrder = getDailyTrailPracticeRoundOrder(memoryTrail, getDailyTrailPracticeRoundKey(left));
+  const rightOrder = getDailyTrailPracticeRoundOrder(memoryTrail, getDailyTrailPracticeRoundKey(right));
+  const leftIndex = leftOrder.indexOf(left.targetId);
+  const rightIndex = rightOrder.indexOf(right.targetId);
+  const safeLeftIndex = leftIndex >= 0 ? leftIndex : Number.MAX_SAFE_INTEGER;
+  const safeRightIndex = rightIndex >= 0 ? rightIndex : Number.MAX_SAFE_INTEGER;
+  return safeLeftIndex - safeRightIndex || left.targetId.localeCompare(right.targetId);
 }
 
 function updateMemoryTrailStats(memoryTrail, targetId, result, options = {}) {
@@ -8891,6 +9006,7 @@ function maybeSpeakPlaceToNameFeedbackTarget(memoryTrail, targetId, options = {}
     || !memoryTrail
     || memoryTrail.activityId !== continentsOceansActivityId
     || !isPlaceToNameMemoryTrailPrompt(memoryTrail)
+    || memoryTrail.currentPromptMode !== "learn"
     || memoryTrail.lastSpokenTargetPromptKey === memoryTrail.currentPromptKey
   ) {
     return;

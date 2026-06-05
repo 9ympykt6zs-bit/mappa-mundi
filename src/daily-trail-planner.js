@@ -6,6 +6,8 @@ export const dailyTrailNewItemCount = 4;
 export const dailyTrailReviewItemCount = 10;
 
 const ENABLE_DAILY_TRAIL_DEBUG = false;
+const dailyTrailMinNewItemBatchCount = 3;
+const dailyTrailMaxNewItemBatchCount = 6;
 const reviewCooldownSessions = 2;
 const continentsOceansActivityId = "continents-oceans";
 const continentsOceansStatuses = new Set(["unseen", "weak", "developing", "strong", "mastered"]);
@@ -296,12 +298,18 @@ export function applyDailyTrailSessionResults(state, plan, result = {}) {
 
 function buildLearningPlan(state, items) {
   const availableItems = getNormalDailyTrailItems(state, items);
-  const activeActivityId = getNextLearningActivityId(state, availableItems);
-  const playableItems = activeActivityId
-    ? availableItems.filter((item) => item.homeActivityId === activeActivityId)
+  const initialActivityId = getNextLearningActivityId(state, availableItems);
+  const initialPlayableItems = initialActivityId
+    ? availableItems.filter((item) => item.homeActivityId === initialActivityId)
     : availableItems;
-  const unseenItems = playableItems.filter((item) => getItemStatus(state, item) === "unseen");
-  const newItems = unseenItems.slice(0, dailyTrailNewItemCount);
+  const batchSelection = selectDailyTrailNewItemBatch(state, {
+    activeActivityId: initialActivityId,
+    playableItems: initialPlayableItems,
+    availableItems
+  });
+  const activeActivityId = batchSelection.activeActivityId || initialActivityId;
+  const playableItems = batchSelection.playableItems || initialPlayableItems;
+  const newItems = batchSelection.newItems;
   const newItemIds = new Set(newItems.map((item) => item.id));
   const reviewItems = selectDailyTrailReviewItems(state, playableItems, {
     excludeIds: newItemIds,
@@ -323,6 +331,101 @@ function buildLearningPlan(state, items) {
     allItems: items,
     activeActivityId
   });
+}
+
+function selectDailyTrailNewItemBatch(state, { activeActivityId = "", playableItems = [], availableItems = [] } = {}) {
+  const currentUnseenItems = playableItems.filter((item) => isItemUnseenForDailyTrail(state, item));
+  const currentBatch = chooseDailyTrailNewItemBatchSize(currentUnseenItems.length);
+
+  if (currentBatch.count > 0 && currentBatch.count !== 1) {
+    return {
+      activeActivityId,
+      playableItems,
+      newItems: currentUnseenItems.slice(0, currentBatch.count)
+    };
+  }
+
+  if (currentUnseenItems.length === 0) {
+    return {
+      activeActivityId,
+      playableItems,
+      newItems: []
+    };
+  }
+
+  if (currentUnseenItems.length === 1) {
+    const carryForwardBatch = findCarryForwardNewItemBatch(state, {
+      activeActivityId,
+      availableItems
+    });
+    if (carryForwardBatch) {
+      return carryForwardBatch;
+    }
+  }
+
+  return {
+    activeActivityId,
+    playableItems,
+    newItems: currentUnseenItems.slice(0, currentUnseenItems.length)
+  };
+}
+
+function chooseDailyTrailNewItemBatchSize(unseenCount) {
+  if (unseenCount <= 0) {
+    return { count: 0 };
+  }
+
+  if (unseenCount <= dailyTrailMaxNewItemBatchCount) {
+    return { count: unseenCount };
+  }
+
+  const preferredCount = Math.min(dailyTrailNewItemCount, dailyTrailMaxNewItemBatchCount);
+  const remainingAfterPreferred = unseenCount - preferredCount;
+  if (remainingAfterPreferred === 1 && preferredCount < dailyTrailMaxNewItemBatchCount) {
+    return { count: preferredCount + 1 };
+  }
+
+  if (remainingAfterPreferred > 0 && remainingAfterPreferred < dailyTrailMinNewItemBatchCount) {
+    return { count: Math.max(dailyTrailMinNewItemBatchCount, preferredCount - (dailyTrailMinNewItemBatchCount - remainingAfterPreferred)) };
+  }
+
+  return { count: preferredCount };
+}
+
+function findCarryForwardNewItemBatch(state, { activeActivityId = "", availableItems = [] } = {}) {
+  const candidateActivities = groupUnseenItemsByActivity(state, availableItems)
+    .filter((group) => group.homeActivityId !== activeActivityId)
+    .sort((left, right) => left.earliestOrder - right.earliestOrder);
+  const candidate = candidateActivities.find((group) => group.items.length >= dailyTrailMinNewItemBatchCount)
+    || candidateActivities.find((group) => group.items.length >= 2);
+
+  if (!candidate) {
+    return null;
+  }
+
+  return {
+    activeActivityId: candidate.homeActivityId,
+    playableItems: availableItems.filter((item) => item.homeActivityId === candidate.homeActivityId),
+    newItems: candidate.items.slice(0, chooseDailyTrailNewItemBatchSize(candidate.items.length).count)
+  };
+}
+
+function groupUnseenItemsByActivity(state, items = []) {
+  const groups = new Map();
+  items
+    .filter((item) => isItemUnseenForDailyTrail(state, item))
+    .forEach((item) => {
+      const current = groups.get(item.homeActivityId) || {
+        homeActivityId: item.homeActivityId,
+        items: [],
+        earliestOrder: item.order
+      };
+      current.items.push(item);
+      current.earliestOrder = Math.min(current.earliestOrder, item.order);
+      groups.set(item.homeActivityId, current);
+    });
+
+  return Array.from(groups.values());
 }
 
 function buildRemediationPlan(state, items) {
