@@ -2172,6 +2172,17 @@ body.study-explore-mode .answer-panel {
   margin: 0;
 }
 
+.memory-trail-active-prompt {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.memory-trail-message {
+  font-weight: 850;
+  line-height: 1.25;
+}
+
 .memory-trail-prompt {
   background: #fff7cf;
   border: 1px solid rgba(215, 157, 36, 0.4);
@@ -4253,6 +4264,10 @@ body.browse-mode .answer-panel-title {
     width: auto;
   }
 
+  .answer-panel:has(.memory-trail-panel) {
+    max-height: min(32svh, 260px);
+  }
+
   .answer-bank {
     flex-wrap: nowrap;
     min-height: 44px;
@@ -4270,7 +4285,8 @@ body.browse-mode .answer-panel-title {
     gap: 8px;
     max-height: calc(var(--mobile-chip-tray-max-height) - 20px);
     min-height: 0;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     padding-bottom: 0;
     scroll-snap-type: none;
     touch-action: auto;
@@ -4282,6 +4298,20 @@ body.browse-mode .answer-panel-title {
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 0 2px 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .answer-panel:has(.memory-trail-panel) .answer-bank {
+    display: grid;
+    gap: 8px;
+    max-height: calc(min(32svh, 260px) - 20px);
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 2px 2px;
+    scroll-snap-type: none;
+    touch-action: auto;
     -webkit-overflow-scrolling: touch;
   }
 

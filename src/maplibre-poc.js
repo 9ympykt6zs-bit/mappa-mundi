@@ -6573,7 +6573,8 @@ function renderStudyExplorePanel() {
     list.appendChild(item);
   });
 
-  answerBank.append(controls, list);
+  answerBank.append(list, controls);
+  ensureActiveTrayContentVisible();
 }
 
 function getStudyPreviewSpeechLabel(targetOrId) {
@@ -8981,23 +8982,28 @@ function renderMemoryTrailPanel() {
     : `${phaseLabel} | Prompt ${memoryTrail.promptCount + 1} of ${SESSION_PROMPT_CAP}`;
 
   const message = document.createElement("p");
+  message.className = "memory-trail-message";
   message.textContent = memoryTrail.message;
 
-  status.append(kicker, title, message);
+  const promptGroup = document.createElement("div");
+  promptGroup.className = "memory-trail-active-prompt";
+  promptGroup.appendChild(message);
 
   if (memoryTrail.promptName) {
     const prompt = document.createElement("p");
     prompt.className = "memory-trail-prompt";
     prompt.textContent = memoryTrail.promptName;
-    status.appendChild(prompt);
+    promptGroup.appendChild(prompt);
   }
 
   if (memoryTrail.instructionLabel && memoryTrail.phase !== "complete") {
     const instructionLabel = document.createElement("p");
     instructionLabel.className = "memory-trail-instruction-label";
     instructionLabel.textContent = memoryTrail.instructionLabel;
-    status.appendChild(instructionLabel);
+    promptGroup.appendChild(instructionLabel);
   }
+
+  status.append(kicker, title, promptGroup);
 
   const choiceList = createMemoryTrailAnswerChoiceList(memoryTrail);
   if (choiceList && isAnswerChoicePrompt) {
@@ -9032,31 +9038,34 @@ function renderMemoryTrailPanel() {
 
   panel.append(status, controls);
   answerBank.appendChild(panel);
-  ensureMemoryTrailAnswerChoicesVisible(memoryTrail);
+  ensureActiveTrayContentVisible(memoryTrail);
 }
 
-function ensureMemoryTrailAnswerChoicesVisible(memoryTrail) {
-  if (!isPlaceToNameMemoryTrailPrompt(memoryTrail)) {
-    return;
-  }
-
+function ensureActiveTrayContentVisible(memoryTrail = getActiveMemoryTrail()) {
   requestAnimationFrame(() => {
-    const choiceList = answerBank?.querySelector(".memory-trail-choice-list");
-    if (!choiceList) {
+    if (!answerBank) {
       return;
     }
 
+    const activeContent = answerBank.querySelector(".memory-trail-active-prompt")
+      || answerBank.querySelector(".memory-trail-choice-list")
+      || answerBank.querySelector(".study-target-list")
+      || answerBank.querySelector(".label-chip");
     const scrollContainer = answerBank.scrollHeight > answerBank.clientHeight
       ? answerBank
-      : choiceList.closest(".answer-panel") || answerBank;
-    const containerBounds = scrollContainer.getBoundingClientRect?.();
-    const choiceBounds = choiceList.getBoundingClientRect?.();
-    const targetTop = containerBounds && choiceBounds
-      ? Math.max(0, scrollContainer.scrollTop + choiceBounds.top - containerBounds.top - 8)
-      : Math.max(0, choiceList.offsetTop - 8);
-    if (scrollContainer && "scrollTop" in scrollContainer) {
-      scrollContainer.scrollTop = targetTop;
+      : answerBank.closest(".answer-panel") || answerBank;
+
+    if (!activeContent || !scrollContainer || !("scrollTop" in scrollContainer)) {
+      return;
     }
+
+    const containerBounds = scrollContainer.getBoundingClientRect?.();
+    const contentBounds = activeContent.getBoundingClientRect?.();
+    const targetTop = containerBounds && contentBounds
+      ? Math.max(0, scrollContainer.scrollTop + contentBounds.top - containerBounds.top - 8)
+      : Math.max(0, activeContent.offsetTop - 8);
+    scrollContainer.scrollTop = targetTop;
+    answerBank.scrollLeft = 0;
   });
 }
 
@@ -12510,6 +12519,7 @@ function renderAnswerBank() {
     });
     answerBank.appendChild(chip);
   });
+  ensureActiveTrayContentVisible();
 }
 
 function getCurrentAnswerItems() {
