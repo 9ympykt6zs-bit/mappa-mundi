@@ -8,6 +8,17 @@ import {
   resetJourneyDifficulty,
   setActiveJourney
 } from "./progress-store.js?v=20260601-instruction-target-nouns";
+import {
+  applyDailyTrailSessionResults,
+  applyDailyTrailSessionStart,
+  applyDailyTrailTeachingProgress,
+  buildWorldCoreDailyTrailItems,
+  dailyTrailJourneyId,
+  dailyTrailStorageKey,
+  hasDailyTrailProgress,
+  loadDailyTrailState,
+  planDailyTrailSession
+} from "./daily-trail-planner.js?v=20260604-fsrs-ready-scheduler";
 
 const APP_NAME = "Mappa Mundi";
 const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
@@ -152,7 +163,8 @@ const franceAdmin1Path = "assets/maps/data/maplibre-france-admin1.geojson";
 const spainAdmin1Path = "assets/maps/data/maplibre-spain-admin1.geojson";
 const italyAdmin1Path = "assets/maps/data/maplibre-italy-admin1.geojson";
 const unitedKingdomAdmin1Path = "assets/maps/data/maplibre-united-kingdom-admin1.geojson";
-const defaultActivityId = "continents-oceans";
+const continentsOceansActivityId = "continents-oceans";
+const defaultActivityId = continentsOceansActivityId;
 const defaultMenuRoot = "world";
 const defaultMapSet = "world-europe";
 const completedActivitiesStorageKey = "geography-memory-completed-activities";
@@ -173,6 +185,8 @@ const appShellScreenIds = new Set([
   "journey-detail",
   "study",
   "choose-difficulty",
+  "daily-trail-intro",
+  "daily-trail-summary",
   "begin-journey-placeholder",
   "free-play-difficulty",
   "settings",
@@ -2648,6 +2662,10 @@ let pendingFreePlayActivityId = null;
 let pendingFreePlayHierarchyNodeId = null;
 let selectedFreePlayDifficultyId = difficultyModes.easy;
 let activeJourneySession = null;
+let activeDailyTrailSession = null;
+let pendingDailyTrailPlan = null;
+let lastDailyTrailSummary = null;
+let dailyTrailResetConfirmationVisible = false;
 let activeStudySession = null;
 let activeStudyPracticeSession = null;
 let journeyCompletionState = null;
@@ -2698,6 +2716,8 @@ const TARGET_SUCCESS_RATE = 0.85;
 const SESSION_PROMPT_CAP = 45;
 const BASE_SESSION_CORRECT_TARGET = 4;
 const WEAK_SESSION_CORRECT_TARGET = 6;
+const DAILY_TRAIL_SESSION_CORRECT_TARGET = 1;
+const DAILY_TRAIL_WEAK_CORRECT_TARGET = 2;
 const SESSION_LEARNED_MIN_CORRECT = 3;
 const MIN_GAP_AFTER_CORRECT = 3;
 const MIN_GAP_AFTER_MISS = 1;
@@ -2756,6 +2776,7 @@ const appShellSettingsGear = document.querySelector("#app-shell-settings-gear");
 const mainMenuForkSection = document.querySelector("#main-menu-fork-section");
 const mainMenuLearnButton = document.querySelector("#main-menu-learn-button");
 const mainMenuChallengeButton = document.querySelector("#main-menu-challenge-button");
+const mainMenuDailyTrailButton = document.querySelector("#main-menu-daily-trail-button");
 const mainMenuLearnSection = document.querySelector("#main-menu-learn-section");
 const mainMenuChallengeSection = document.querySelector("#main-menu-challenge-section");
 const mainMenuUtilityArea = document.querySelector("#main-menu-utility-area");
@@ -2784,6 +2805,7 @@ function isCompactTouchLayout() {
 
 function isActiveGameplayScreen() {
   return currentAppScreen === "journey-gameplay"
+    || currentAppScreen === "daily-trail-gameplay"
     || currentAppScreen === "study-practice"
     || (currentAppScreen === "free-play" && isStudyModeActive());
 }
@@ -2960,7 +2982,7 @@ function ensureChipSpeechLoaded() {
     return Promise.resolve(window.GeographyChipSpeech);
   }
 
-  return import("./chip-speech.js?v=20260601-instruction-target-nouns")
+  return import("./chip-speech.js?v=20260602-daily-trail-review-chips")
     .then(() => window.GeographyChipSpeech || null);
 }
 
@@ -3079,6 +3101,40 @@ function refreshHeaderTitleForLayout() {
     updateProgress();
   }
 }
+
+function setActiveActivityHeaderTitle(activity = session?.currentActivity, options = {}) {
+  const activityTitle = getActivityHeaderDisplayName(activity);
+  setHeaderTitle(activityTitle, {
+    shortTitle: activityTitle,
+    ...options
+  });
+}
+
+function getActivityHeaderDisplayName(activity = session?.currentActivity) {
+  const hierarchyNode = getHierarchyNode(activeHierarchyNodeId);
+  const hierarchyActivityLabel = hierarchyNode?.activityId === activity?.id
+    ? hierarchyNode.activityLabel || hierarchyNode.label
+    : "";
+  const title = hierarchyActivityLabel
+    || getActivitySectionDisplayName(activity)
+    || activity?.title
+    || selectedActivityId
+    || "Activity";
+
+  return String(title).trim() || "Activity";
+}
+
+function getActivitySectionDisplayName(activity = session?.currentActivity) {
+  const id = String(activity?.id || "");
+  const usCombinedMatch = id.match(/^us-states-capitals-(\d{2})$/);
+  if (usCombinedMatch) {
+    const section = US_STATE_CAPITAL_SECTIONS.find((item) => item.id === usCombinedMatch[1]);
+    return section ? `${section.label} States` : "";
+  }
+
+  return "";
+}
+
 const mainMenuLaunchButton = document.querySelector("#main-menu-launch-button");
 const appShellPlaceholderCard = document.querySelector("#app-shell-placeholder-card");
 const appShellPlaceholderTitle = document.querySelector("#app-shell-placeholder-title");
@@ -3255,8 +3311,8 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260601-co-study-preview-color-fix"),
-      import("./chip-speech.js?v=20260601-instruction-target-nouns")
+      import("./maplibre/maplibre-activity-runner.js?v=20260604-co-name-highlight-focus"),
+      import("./chip-speech.js?v=20260602-daily-trail-review-chips")
     ]).then(([
       ,
       ,
@@ -4733,6 +4789,11 @@ function bindUiEvents() {
   });
 
   homeButton?.addEventListener("click", () => {
+    if (currentAppScreen === "daily-trail-gameplay") {
+      exitDailyTrailGameplay();
+      return;
+    }
+
     if (currentAppScreen === "study-explore") {
       exitStudyExplore();
       return;
@@ -4765,6 +4826,11 @@ function bindUiEvents() {
       return;
     }
 
+    if (currentAppScreen === "daily-trail-gameplay") {
+      exitDailyTrailGameplay();
+      return;
+    }
+
     if (currentAppScreen === "free-play" && activeHierarchyNodeId === "world") {
       goBackAppScreen();
       return;
@@ -4775,6 +4841,7 @@ function bindUiEvents() {
   browseButton?.addEventListener("click", toggleBrowseDrawer);
   browseCloseButton?.addEventListener("click", closeBrowseDrawer);
   journeyMemoryTrailButton?.addEventListener("click", startMemoryTrailFromJourneyGameplay);
+  mainMenuDailyTrailButton?.addEventListener("click", openDailyTrailIntro);
   audioMuteButton?.addEventListener("click", toggleAudioMute);
   window.addEventListener("atlas-quest-audio-muted-change", updateAudioMuteControl);
   settingsButton?.addEventListener("click", () => {
@@ -5123,6 +5190,8 @@ function renderAppShellScreen(screenId) {
     button.tabIndex = isMainMenu ? 0 : -1;
   });
 
+  updateDailyTrailMainMenuButton(isMainMenu);
+
   if (mainMenuUtilityArea) {
     mainMenuUtilityArea.querySelectorAll("button, a").forEach((control) => {
       control.tabIndex = isMenuHub ? 0 : -1;
@@ -5226,6 +5295,14 @@ function getAppShellScreenContent(screenId) {
       title: "Choose Difficulty",
       subtitle: "Choose how much help you want during this journey."
     },
+    "daily-trail-intro": {
+      title: "Daily Trail",
+      subtitle: "A short guided path through World Core."
+    },
+    "daily-trail-summary": {
+      title: "Daily Trail",
+      subtitle: "Today's trail is complete."
+    },
     "begin-journey-placeholder": {
       title: `Play: ${selectedJourneyTitle}`,
       subtitle: "Journey gameplay is coming next.",
@@ -5277,6 +5354,8 @@ function isJourneyShellScreen(screenId) {
     "onboarding",
     "study",
     "choose-difficulty",
+    "daily-trail-intro",
+    "daily-trail-summary",
     "begin-journey-placeholder",
     "free-play-difficulty",
     "settings",
@@ -6004,6 +6083,7 @@ function dismissJourneyMemoryTrailRecommendation(context) {
 function showJourneyMemoryTrailRecommendation(context) {
   pendingJourneyMemoryTrailRecommendation = { ...context };
   const { journey, activity } = getJourneyLaunchContextParts(context);
+  setJourneyPreviewHeader(activity);
   trackEvent("memory_trail_prompt_shown", {
     activity_id: activity?.id || "",
     activity_title: activity?.title || "",
@@ -6021,6 +6101,20 @@ function showJourneyMemoryTrailRecommendation(context) {
     secondaryText: "Play Now",
     showInfo: false
   });
+}
+
+function setJourneyPreviewHeader(activity) {
+  if (!activity) {
+    return;
+  }
+
+  const hierarchyNode = getHierarchyNode(findHierarchyNodeForActivity(activity.id));
+  if (hierarchyNode) {
+    activeHierarchyNodeId = hierarchyNode.id;
+    activeMenuRoot = getHierarchyMenuRoot(activeHierarchyNodeId) || activeMenuRoot;
+  }
+
+  setActiveActivityHeaderTitle(activity);
 }
 
 function startJourneyGameplayFromLaunchContext(context) {
@@ -6305,7 +6399,7 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
   runner.setStudyPreviewMode(true);
   runner.setMemoryTrailHighlight([]);
   runner.setCompletedTargets(activeStudySession.revealedTargetIds);
-  setHeaderTitle(`Study: ${step.title}`, { shortTitle: step.title });
+  setActiveActivityHeaderTitle(presentedActivity);
   instruction.textContent = "Tap a target or name to show it. Tap it again to hide it.";
   studyCard.hidden = false;
   studyCard.querySelector("strong").textContent = step.title;
@@ -6755,15 +6849,31 @@ function getActiveMemoryTrail() {
 }
 
 function createMemoryTrailSession(activity = session.currentActivity, options = {}) {
-  const targets = (activity?.targets || []).filter((target) => target?.id);
+  const targetIdSet = new Set(Array.isArray(options.targetIds) ? options.targetIds.filter(Boolean) : []);
+  const hasExplicitNewTargetIds = Array.isArray(options.newTargetIds);
+  const newTargetIdSet = new Set(Array.isArray(options.newTargetIds) ? options.newTargetIds.filter(Boolean) : []);
+  const targets = (activity?.targets || [])
+    .filter((target) => target?.id)
+    .filter((target) => targetIdSet.size === 0 || targetIdSet.has(target.id));
   const targetPool = chooseMemoryTrailTargetPool(targets);
   const practiceWindows = buildPracticeWindows(targetPool);
   const currentPracticeWindow = chooseInitialPracticeWindow(practiceWindows);
   const targetStats = Object.fromEntries(targetPool.map((target) => [target.id, createMemoryTrailTargetStats(target)]));
+  const initiallyIntroducedTargetIds = [];
+  targetPool.forEach((target) => {
+    if (hasExplicitNewTargetIds && !newTargetIdSet.has(target.id) && targetStats[target.id]) {
+      targetStats[target.id].exposedCount = 1;
+      targetStats[target.id].guidedTapCount = 1;
+      targetStats[target.id].isIntroduced = true;
+      targetStats[target.id].introducedAtPrompt = 0;
+      initiallyIntroducedTargetIds.push(target.id);
+    }
+  });
   const sessionSeconds = options.sessionSeconds || DEFAULT_SESSION_SECONDS;
   const memoryTrail = {
     active: true,
     adaptive: true,
+    source: options.source || "memory-trail",
     activityId: activity?.id || "",
     sessionSeconds,
     startedAt: Date.now(),
@@ -6774,11 +6884,13 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     responseChipTargetId: null,
     correction: null,
     currentPromptTargetId: null,
+    currentPromptKey: "",
     currentPromptType: "guided",
     currentPromptMode: "introducing",
     currentPromptReason: "",
     instructionLabel: "Tap the highlighted place.",
     currentInstructionKey: "",
+    lastSpokenTargetPromptKey: "",
     answerChoices: [],
     trayFeedback: null,
     targetPool,
@@ -6786,7 +6898,8 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     practiceWindows,
     currentWindowIndex: 0,
     currentPracticeWindow,
-    introducedTargetIds: [],
+    introducedTargetIds: initiallyIntroducedTargetIds,
+    dailyTrailNewTargetIds: [...newTargetIdSet],
     targetStats,
     promptCount: 0,
     retrievalPromptCount: 0,
@@ -6993,15 +7106,25 @@ function hasTargetMetSessionLearnedRule(stats) {
   );
 }
 
-function getStatsRetrievalCorrectTarget(stats) {
+function isDailyTrailMemoryTrail(memoryTrail) {
+  return memoryTrail?.source === "daily-trail";
+}
+
+function getStatsRetrievalCorrectTarget(stats, memoryTrail = null) {
+  if (isDailyTrailMemoryTrail(memoryTrail)) {
+    return stats?.isWeak || stats?.totalRetrievalIncorrect > 0
+      ? DAILY_TRAIL_WEAK_CORRECT_TARGET
+      : DAILY_TRAIL_SESSION_CORRECT_TARGET;
+  }
+
   return stats?.isWeak || stats?.totalRetrievalIncorrect > 1
     ? WEAK_SESSION_CORRECT_TARGET
     : BASE_SESSION_CORRECT_TARGET;
 }
 
-function getMemoryTrailTargetLabel(targetOrId) {
+function getMemoryTrailTargetLabel(targetOrId, memoryTrail = getActiveMemoryTrail()) {
   const target = typeof targetOrId === "string"
-    ? session.getFeature(targetOrId)
+    ? getTargetById(memoryTrail, targetOrId)
     : targetOrId;
 
   return getTargetChipLabel(target) || target?.completedLabelName || target?.name || "";
@@ -7016,7 +7139,7 @@ function shuffleMemoryTrailChoices(items = []) {
   return shuffled;
 }
 
-function buildMemoryTrailAnswerChoices(memoryTrail, correctTargetId) {
+function buildMemoryTrailAnswerChoices(memoryTrail, correctTargetId, promptKey = memoryTrail?.currentPromptKey || "") {
   const correctTarget = getTargetById(memoryTrail, correctTargetId);
   if (!correctTarget) {
     return [];
@@ -7047,16 +7170,21 @@ function buildMemoryTrailAnswerChoices(memoryTrail, correctTargetId) {
     .slice(0, Math.max(2, Math.min(MEMORY_TRAIL_ANSWER_CHOICE_COUNT, byId.size)))
     .map((target) => ({
       id: target.id,
-      label: getMemoryTrailTargetLabel(target) || target.name || target.id
+      label: getMemoryTrailTargetLabel(target, memoryTrail) || target.name || target.id,
+      promptTargetId: correctTargetId,
+      promptKey
     }));
 }
 
-function getMemoryTrailInstructionText(promptType, phase, mode = "", activity = session.currentActivity) {
+function getMemoryTrailInstructionText(promptType, phase, mode = "", activity = session.currentActivity, memoryTrail = getActiveMemoryTrail()) {
   const singularNoun = getInstructionNoun(activity);
   const pluralNoun = getInstructionNounPlural(activity);
   if (promptType === "guided" || phase === "learn") {
+    const learnCount = getMemoryTrailLearnPromptCount(memoryTrail);
     return {
-      banner: "Learn these places first.",
+      banner: learnCount === 1
+        ? `Learn this ${singularNoun || "place"}`
+        : `Learn these ${pluralNoun || "places"}`,
       label: "Tap the highlighted place."
     };
   }
@@ -7083,6 +7211,17 @@ function getMemoryTrailInstructionText(promptType, phase, mode = "", activity = 
 
 function getMemoryTrailInstructionKey(promptType, phase) {
   return `${phase}:${promptType}`;
+}
+
+function getMemoryTrailLearnPromptCount(memoryTrail) {
+  if (!memoryTrail?.targetStats) {
+    return 0;
+  }
+
+  const unintroducedCount = Object.values(memoryTrail.targetStats)
+    .filter((stats) => !stats.isIntroduced)
+    .length;
+  return unintroducedCount || memoryTrail.currentPracticeWindow?.length || 0;
 }
 
 function showMemoryTrailInstructionBanner(text) {
@@ -7170,7 +7309,7 @@ function setMemoryTrailInstruction({ memoryTrail, phase, promptType, mode = "", 
 
   const instruction = text
     ? { banner: text, label: text }
-    : getMemoryTrailInstructionText(promptType, phase, mode);
+    : getMemoryTrailInstructionText(promptType, phase, mode, session.currentActivity, memoryTrail);
   const instructionKey = speakKey || getMemoryTrailInstructionKey(promptType, phase, mode);
   const isModeChange = lastMemoryTrailInstructionKey !== instructionKey;
   let speechPromise = Promise.resolve(false);
@@ -7274,21 +7413,23 @@ function clearMemoryTrailState({ restoreReveals = true, render = false } = {}) {
   }
 }
 
-function startMemoryTrail() {
+function startMemoryTrail(options = {}) {
+  const isDailyTrail = options.source === "daily-trail";
   if (
     !activeStudySession
-    || currentAppScreen !== "study-explore"
+    || (!isDailyTrail && currentAppScreen !== "study-explore")
+    || (isDailyTrail && currentAppScreen !== "daily-trail-gameplay")
     || !session.currentActivity.targets.length
   ) {
-    return;
+    return false;
   }
 
-  if (!isMemoryTrailEligible(session.currentActivity)) {
+  if (!isDailyTrail && !isMemoryTrailEligible(session.currentActivity)) {
     hideMemoryTrailOverlay();
     clearMemoryTrailState({ restoreReveals: true });
     instruction.textContent = "Tap a target or name to show it. Tap it again to hide it.";
     renderStudyExplorePanel();
-    return;
+    return false;
   }
 
   hideMemoryTrailOverlay();
@@ -7297,7 +7438,11 @@ function startMemoryTrail() {
   lastSpokenMemoryTrailInstructionKey = "";
   resetAudioInstructionState(`memory-trail:${activeStudySession.activityId}:${Date.now()}`);
   window.GeographyChipSpeech?.primeLocalAudio?.();
-  activeStudySession.memoryTrail = createMemoryTrailSession(session.currentActivity);
+  activeStudySession.memoryTrail = createMemoryTrailSession(session.currentActivity, {
+    newTargetIds: options.newTargetIds,
+    source: options.source,
+    targetIds: options.targetIds
+  });
   currentMemoryTrailAnalyticsKey = [
     activeStudySession.journeyId,
     activeStudySession.stepId,
@@ -7307,11 +7452,24 @@ function startMemoryTrail() {
   completedMemoryTrailAnalyticsKey = "";
   trackEvent("memory_trail_started", getMemoryTrailAnalyticsContext());
   activeStudySession.revealedTargetIds = [];
+  runner.setStudyPreviewMode(true);
   runner.setCompletedTargets([]);
   instruction.textContent = "First learn the small group, then practice from memory.";
   fitMapToPracticeWindow(activeStudySession.memoryTrail.currentPracticeWindow, "start");
   renderStudyExplorePanel();
   promptNextMemoryTrailTarget(activeStudySession?.memoryTrail);
+  return true;
+}
+
+function updateDailyTrailMainMenuButton(isMainMenu = currentAppScreen === "main-menu") {
+  if (!mainMenuDailyTrailButton) {
+    return;
+  }
+
+  const hasProgress = hasDailyTrailProgress(loadDailyTrailState());
+  mainMenuDailyTrailButton.textContent = hasProgress ? "Continue Daily Trail" : "Start Daily Trail";
+  mainMenuDailyTrailButton.disabled = !isMainMenu;
+  mainMenuDailyTrailButton.tabIndex = isMainMenu ? 0 : -1;
 }
 
 function restartMemoryTrail() {
@@ -7385,11 +7543,13 @@ function promptNextMemoryTrailTarget(memoryTrail = getActiveMemoryTrail()) {
     return;
   }
 
-  const target = session.getFeature(selection.targetId);
+  const target = getTargetById(memoryTrail, selection.targetId);
   const stats = memoryTrail.targetStats[selection.targetId];
   const speechLabel = getMemoryTrailTargetLabel(target);
+  const promptKey = `${memoryTrail.promptCount + 1}:${selection.promptType || "name_to_place"}:${selection.targetId}:${memoryTrail.promptHistory.length}`;
   memoryTrail.phase = "playing";
   memoryTrail.currentPromptTargetId = selection.targetId;
+  memoryTrail.currentPromptKey = promptKey;
   memoryTrail.currentPromptType = selection.promptType || "name_to_place";
   memoryTrail.currentPromptMode = selection.mode;
   memoryTrail.currentPromptReason = selection.reason;
@@ -7398,7 +7558,7 @@ function promptNextMemoryTrailTarget(memoryTrail = getActiveMemoryTrail()) {
   memoryTrail.promptName = selection.promptType === "place_to_name" ? "" : speechLabel || target?.name || "";
   memoryTrail.responseChipTargetId = null;
   memoryTrail.answerChoices = selection.promptType === "place_to_name"
-    ? buildMemoryTrailAnswerChoices(memoryTrail, selection.targetId)
+    ? buildMemoryTrailAnswerChoices(memoryTrail, selection.targetId, promptKey)
     : [];
   memoryTrail.message = getMemoryTrailPromptMessage(memoryTrail, target, selection);
   const instructionSpeechPromise = updateMemoryTrailInstructionCue(memoryTrail, selection);
@@ -7406,6 +7566,7 @@ function promptNextMemoryTrailTarget(memoryTrail = getActiveMemoryTrail()) {
   memoryTrail.lastPromptedTargetId = selection.targetId;
   memoryTrail.promptHistory.push({
     promptNumber: memoryTrail.promptCount + 1,
+    promptKey,
     targetId: selection.targetId,
     promptType: memoryTrail.currentPromptType,
     sessionPhase: memoryTrail.sessionPhase,
@@ -7435,17 +7596,145 @@ function promptNextMemoryTrailTarget(memoryTrail = getActiveMemoryTrail()) {
   runner.setMemoryTrailHighlight(selection.promptType === "guided" || selection.promptType === "place_to_name"
     ? selection.targetId
     : []);
+  maybeFocusContinentsOceansNamePrompt(selection, target);
   renderStudyExplorePanel();
 
-  if (selection.promptType === "place_to_name") {
-    return;
+  if (shouldSpeakMemoryTrailTargetAtPromptStart(memoryTrail, target, selection)) {
+    speakMemoryTrailPromptTargetAfterInstruction(memoryTrail, target, selection, instructionSpeechPromise);
+  }
+}
+
+function shouldSpeakMemoryTrailTargetAtPromptStart(memoryTrail, target, selection = {}) {
+  const promptType = selection?.promptType || memoryTrail?.currentPromptType || "";
+  const targetLabel = getStudyPreviewSpeechLabel(target);
+  const skip = (reason) => {
+    debugMemoryTrail("target label speech skipped", {
+      reason,
+      promptType,
+      activeTargetId: selection?.targetId || memoryTrail?.currentPromptTargetId || "",
+      activeTargetLabel: targetLabel,
+      instructionText: getMemoryTrailInstructionText(promptType, promptType === "guided" ? "learn" : "practice", selection?.mode, session.currentActivity, memoryTrail)?.banner || "",
+      source: memoryTrail?.source || "",
+      activityId: memoryTrail?.activityId || "",
+      sessionType: activeDailyTrailSession?.plan?.sessionType || "",
+      continentsOceansReviewType: activeDailyTrailSession?.plan?.continentsOceansReviewType || ""
+    });
+    return false;
+  };
+
+  if (!memoryTrail || !target) {
+    return skip("missing memory trail or target");
   }
 
-  instructionSpeechPromise.finally(() => {
-    if (isCurrentMemoryTrailState(memoryTrail) && memoryTrail.currentPromptTargetId === selection.targetId) {
-      speakMemoryTrailTarget(target);
+  if (!targetLabel) {
+    return skip("missing target label");
+  }
+
+  if (promptType !== "place_to_name") {
+    return true;
+  }
+
+  const isDailyTrailContinentsOceansLearn = memoryTrail.source === "daily-trail"
+    && memoryTrail.activityId === continentsOceansActivityId
+    && activeDailyTrailSession?.plan?.activeActivityId === continentsOceansActivityId
+    && (
+      activeDailyTrailSession?.plan?.continentsOceansReviewType === "foundation"
+      || activeDailyTrailSession?.plan?.sessionType === "learning-session"
+      || (activeDailyTrailSession?.plan?.newItems || []).some((item) => item.targetId === selection?.targetId)
+    );
+
+  return isDailyTrailContinentsOceansLearn
+    ? true
+    : skip("place-to-name answer would be revealed outside C&O learn");
+}
+
+function speakMemoryTrailPromptTargetAfterInstruction(memoryTrail, target, selection, instructionSpeechPromise = Promise.resolve(false)) {
+  const promptKey = memoryTrail?.currentPromptKey || "";
+  let didAttempt = false;
+  const attempt = (trigger) => {
+    if (didAttempt) {
+      return;
+    }
+
+    didAttempt = true;
+
+    if (
+      isCurrentMemoryTrailState(memoryTrail)
+      && memoryTrail.currentPromptTargetId === selection?.targetId
+      && memoryTrail.currentPromptKey === promptKey
+    ) {
+      const targetLabel = getStudyPreviewSpeechLabel(target);
+      const attempted = speakMemoryTrailTargetOnce(memoryTrail, target, promptKey);
+      debugMemoryTrail("target label speech attempt", {
+        trigger,
+        promptType: selection?.promptType || memoryTrail.currentPromptType || "",
+        activeTargetId: selection?.targetId || "",
+        activeTargetLabel: targetLabel,
+        targetLabelText: targetLabel,
+        instructionText: getMemoryTrailInstructionText(selection?.promptType || memoryTrail.currentPromptType, memoryTrail.sessionPhase, selection?.mode, session.currentActivity, memoryTrail)?.banner || "",
+        speechAttempted: attempted,
+        speechSkipped: !attempted,
+        skipReason: attempted ? "" : "already spoken or missing prompt key"
+      });
+      return;
+    }
+
+    debugMemoryTrail("target label speech skipped", {
+      trigger,
+      reason: "prompt changed before speech",
+      promptType: selection?.promptType || "",
+      activeTargetId: selection?.targetId || "",
+      activeTargetLabel: getStudyPreviewSpeechLabel(target),
+      currentPromptTargetId: memoryTrail?.currentPromptTargetId || "",
+      currentPromptKey: memoryTrail?.currentPromptKey || "",
+      expectedPromptKey: promptKey
+    });
+  };
+
+  instructionSpeechPromise.finally(() => attempt("instruction-complete"));
+  if (shouldUseMemoryTrailTargetSpeechFallback(memoryTrail, selection)) {
+    window.setTimeout(() => attempt("instruction-fallback-timeout"), 1800);
+  }
+}
+
+function shouldUseMemoryTrailTargetSpeechFallback(memoryTrail, selection = {}) {
+  return Boolean(
+    memoryTrail?.source === "daily-trail"
+    && memoryTrail.activityId === continentsOceansActivityId
+    && selection?.promptType === "place_to_name"
+  );
+}
+
+function maybeFocusContinentsOceansNamePrompt(selection, target) {
+  if (
+    session.currentActivity?.id !== continentsOceansActivityId
+    || selection?.promptType !== "place_to_name"
+    || !target
+    || typeof runner?.focusTargetIfNeeded !== "function"
+  ) {
+    return false;
+  }
+
+  const isOcean = target.type === "zone";
+  const didFocus = runner.focusTargetIfNeeded(target, {
+    duration: 700,
+    zoomTolerance: isOcean ? 0.55 : 0.75,
+    comfortPadding: {
+      top: 110,
+      right: 48,
+      bottom: 220,
+      left: 48
     }
   });
+
+  debugMemoryTrail("C&O place-to-name focus", {
+    targetId: target.id,
+    targetName: target.name,
+    targetType: target.type,
+    didFocus
+  });
+
+  return didFocus;
 }
 
 function getMemoryTrailPromptMessage(memoryTrail, target, selection) {
@@ -7490,8 +7779,18 @@ function getMemoryTrailFallbackSpeechDurationMs(labelText) {
   return Math.max(1200, Math.min(4200, 650 + text.length * 85));
 }
 
+function speakMemoryTrailTargetOnce(memoryTrail, target, promptKey = memoryTrail?.currentPromptKey || "") {
+  if (!memoryTrail || !target || !promptKey || memoryTrail.lastSpokenTargetPromptKey === promptKey) {
+    return false;
+  }
+
+  memoryTrail.lastSpokenTargetPromptKey = promptKey;
+  speakMemoryTrailTarget(target);
+  return true;
+}
+
 function speakMemoryTrailTarget(target, onComplete) {
-  const labelText = getStudyPreviewSpeechLabel(target);
+  let labelText = "";
   let didFinish = false;
   const finish = () => {
     if (didFinish) {
@@ -7503,6 +7802,12 @@ function speakMemoryTrailTarget(target, onComplete) {
   };
 
   try {
+    labelText = getStudyPreviewSpeechLabel(target);
+    if (!labelText) {
+      finish();
+      return;
+    }
+
     if (window.GeographyChipSpeech?.speakLabelAndWait) {
       window.GeographyChipSpeech.speakLabelAndWait(labelText, {
         queue: true,
@@ -7519,7 +7824,11 @@ function speakMemoryTrailTarget(target, onComplete) {
     if (didSpeak) {
       return;
     }
-  } catch {
+  } catch (error) {
+    debugMemoryTrail("target speech failed before playback", {
+      targetId: target?.id || "",
+      error: error?.message || String(error)
+    });
     // Speech is an enhancement; the visible prompt carries the exercise.
   }
 
@@ -7575,7 +7884,7 @@ function chooseNextPrompt(memoryTrail) {
 
   const currentWindowNeed = memoryTrail.currentPracticeWindow
     .map((target) => memoryTrail.targetStats[target.id])
-    .filter((stats) => stats && due(stats) && avoidLast(stats) && stats.totalRetrievalCorrect < 2)
+    .filter((stats) => stats && due(stats) && avoidLast(stats) && stats.totalRetrievalCorrect < getStatsRetrievalCorrectTarget(stats, memoryTrail))
     .sort((left, right) => left.totalRetrievalCorrect - right.totalRetrievalCorrect || left.totalRetrievalAttempts - right.totalRetrievalAttempts)[0];
 
   if (currentWindowNeed) {
@@ -7601,7 +7910,7 @@ function chooseNextPrompt(memoryTrail) {
   }
 
   const learningTarget = dueIntroduced
-    .filter((stats) => stats.totalRetrievalCorrect < getStatsRetrievalCorrectTarget(stats))
+    .filter((stats) => stats.totalRetrievalCorrect < getStatsRetrievalCorrectTarget(stats, memoryTrail))
     .sort((left, right) => left.totalRetrievalCorrect - right.totalRetrievalCorrect || left.totalRetrievalAttempts - right.totalRetrievalAttempts)[0];
 
   if (learningTarget) {
@@ -7802,7 +8111,11 @@ function shouldIntroduceNewTarget(memoryTrail) {
   const currentStats = memoryTrail.currentPracticeWindow.map((target) => memoryTrail.targetStats[target.id]).filter(Boolean);
   const currentWindowReady = currentStats.length > 0 && currentStats.every((stats) => (
     hasTargetCompletedGuidedExposure(stats)
-    && (stats.totalRetrievalCorrect >= 2 || stats.totalRetrievalAttempts >= 4 || stats.isSessionLearned)
+    && (
+      stats.totalRetrievalCorrect >= getStatsRetrievalCorrectTarget(stats, memoryTrail)
+      || stats.totalRetrievalAttempts >= 4
+      || stats.isSessionLearned
+    )
   ));
   const fiveCorrect = memoryTrail.recentRetrievalResults.slice(-5).length === 5
     && memoryTrail.recentRetrievalResults.slice(-5).every((result) => result === "correct");
@@ -7851,10 +8164,47 @@ function shouldEndMemoryTrailSession(memoryTrail) {
     return true;
   }
 
+  if (isDailyTrailMemoryTrail(memoryTrail)) {
+    return shouldEndDailyTrailMemoryTrailSession(memoryTrail);
+  }
+
   const introducedStats = getIntroducedMemoryTrailStats(memoryTrail);
   return introducedStats.length >= Math.min(MIN_NEW_TARGETS_PER_SESSION, memoryTrail.targetPoolIds.length)
-    && introducedStats.every((stats) => stats.isSessionLearned || stats.totalRetrievalCorrect >= getStatsRetrievalCorrectTarget(stats))
+    && introducedStats.every((stats) => stats.isSessionLearned || stats.totalRetrievalCorrect >= getStatsRetrievalCorrectTarget(stats, memoryTrail))
     && getWeakTargets(memoryTrail).every((stats) => stats.currentCorrectStreak > 0);
+}
+
+function shouldEndDailyTrailMemoryTrailSession(memoryTrail) {
+  const requiredStats = getDailyTrailRequiredMemoryTrailStats(memoryTrail);
+
+  if (requiredStats.length === 0) {
+    return memoryTrail.retrievalPromptCount > 0;
+  }
+
+  const allRequiredItemsTaught = requiredStats.every(hasTargetCompletedGuidedExposure);
+  const allRequiredItemsRecalled = requiredStats.every((stats) => stats.totalRetrievalCorrect >= DAILY_TRAIL_SESSION_CORRECT_TARGET);
+  const weakItemsSettled = getWeakTargets(memoryTrail).every((stats) => stats.currentCorrectStreak > 0);
+
+  return allRequiredItemsTaught
+    && allRequiredItemsRecalled
+    && memoryTrail.retrievalPromptCount >= requiredStats.length
+    && getMemoryTrailSuccessRate(memoryTrail) >= TARGET_SUCCESS_RATE
+    && weakItemsSettled;
+}
+
+function getDailyTrailRequiredMemoryTrailStats(memoryTrail) {
+  const introducedStats = getIntroducedMemoryTrailStats(memoryTrail);
+  const newTargetIds = new Set(memoryTrail.dailyTrailNewTargetIds || []);
+
+  if (newTargetIds.size > 0) {
+    const requiredNewStats = [...newTargetIds]
+      .map((targetId) => memoryTrail.targetStats[targetId])
+      .filter(Boolean);
+    const weakReviewStats = getWeakTargets(memoryTrail).filter((stats) => !newTargetIds.has(stats.targetId));
+    return [...requiredNewStats, ...weakReviewStats];
+  }
+
+  return introducedStats;
 }
 
 function completeMemoryTrailSession(memoryTrail) {
@@ -7864,6 +8214,7 @@ function completeMemoryTrailSession(memoryTrail) {
   memoryTrail.responseChipTargetId = null;
   memoryTrail.correction = null;
   memoryTrail.currentPromptTargetId = null;
+  memoryTrail.currentPromptKey = "";
   memoryTrail.answerChoices = [];
   memoryTrail.message = `Great session: ${memoryTrail.correctCount} retrieval correct, ${memoryTrail.incorrectCount} to review.`;
   runner.setMemoryTrailHighlight([]);
@@ -7872,7 +8223,57 @@ function completeMemoryTrailSession(memoryTrail) {
     completedMemoryTrailAnalyticsKey = currentMemoryTrailAnalyticsKey;
     trackEvent("memory_trail_completed", getMemoryTrailAnalyticsContext());
   }
+  if (activeDailyTrailSession && currentAppScreen === "daily-trail-gameplay") {
+    completeDailyTrailMemoryTrailSession(memoryTrail);
+    return;
+  }
   showMemoryTrailCompletionOverlay();
+}
+
+function completeDailyTrailMemoryTrailSession(memoryTrail) {
+  if (!activeDailyTrailSession) {
+    return;
+  }
+
+  const targetStats = Object.values(memoryTrail?.targetStats || {});
+  let nextState = activeDailyTrailSession.state;
+  const completedTargetIds = [...new Set((memoryTrail?.promptHistory || [])
+    .filter((entry) => entry.result === "correct" && entry.guided !== true)
+    .map((entry) => entry.targetId)
+    .filter(Boolean))];
+  const taughtTargetIds = [...new Set([
+    ...(memoryTrail?.introducedTargetIds || []),
+    ...completedTargetIds
+  ].filter(Boolean))];
+  const missedTargetIds = new Set((memoryTrail?.promptHistory || [])
+    .filter((entry) => entry.result === "incorrect")
+    .map((entry) => entry.targetId)
+    .filter(Boolean));
+  const missesByTargetId = Object.fromEntries(
+    targetStats
+      .filter((stats) => missedTargetIds.has(stats.targetId) && (stats.totalRetrievalIncorrect || 0) > 0)
+      .map((stats) => [stats.targetId, stats.totalRetrievalIncorrect])
+  );
+
+  taughtTargetIds.forEach((targetId) => {
+    nextState = applyDailyTrailTeachingProgress(nextState, activeDailyTrailSession.plan, targetId);
+  });
+
+  nextState = applyDailyTrailSessionResults(nextState, activeDailyTrailSession.plan, {
+    completedTargetIds,
+    correctCount: memoryTrail.correctCount,
+    incorrectCount: memoryTrail.incorrectCount,
+    missesByTargetId
+  });
+
+  lastDailyTrailSummary = nextState.lastSessionSummary;
+  activeDailyTrailSession = null;
+  activeStudySession = null;
+  runner.setStudyPreviewMode(false);
+  runner.setMemoryTrailHighlight([]);
+  runner.setCompletedTargets([]);
+  hideMemoryTrailOverlay();
+  showAppScreen("daily-trail-summary", { pushHistory: false });
 }
 
 function getMemoryTrailElapsedSeconds(memoryTrail) {
@@ -8071,19 +8472,40 @@ function handleMemoryTrailTargetTap(targetIds, mapPoint = null) {
   }
 }
 
-function handleMemoryTrailNameChoice(targetId) {
+function handleMemoryTrailNameChoice(targetId, options = {}) {
   const memoryTrail = getActiveMemoryTrail();
 
   if (!memoryTrail || memoryTrail.phase !== "answering" || !isPlaceToNameMemoryTrailPrompt(memoryTrail)) {
     return;
   }
 
+  if (
+    (options.promptKey && options.promptKey !== memoryTrail.currentPromptKey)
+    || (options.promptTargetId && options.promptTargetId !== memoryTrail.currentPromptTargetId)
+  ) {
+    debugMemoryTrail("stale answer chip ignored", {
+      selectedTargetId: targetId,
+      chipPromptKey: options.promptKey || "",
+      activePromptKey: memoryTrail.currentPromptKey || "",
+      chipPromptTargetId: options.promptTargetId || "",
+      activePromptTargetId: memoryTrail.currentPromptTargetId || ""
+    });
+    renderStudyExplorePanel();
+    return;
+  }
+
   clearMemoryTrailTrayFeedback(memoryTrail, "answer chip selection");
 
+  const answerCameFromSpeaker = options.fromSpeaker === true;
+
   if (targetId === memoryTrail.currentPromptTargetId) {
-    handleCorrectMemoryTrailAnswer(memoryTrail, targetId);
+    handleCorrectMemoryTrailAnswer(memoryTrail, targetId, {
+      suppressTargetSpeech: answerCameFromSpeaker
+    });
   } else {
-    handleIncorrectMemoryTrailAnswer(memoryTrail, memoryTrail.currentPromptTargetId, { selectedTargetId: targetId });
+    handleIncorrectMemoryTrailAnswer(memoryTrail, memoryTrail.currentPromptTargetId, {
+      selectedTargetId: targetId
+    });
   }
 }
 
@@ -8124,6 +8546,11 @@ function handleMemoryTrailCorrectionTap(memoryTrail, candidateIds = [], mapPoint
 
 function completeMemoryTrailCorrection(memoryTrail, expectedTargetId) {
   clearMemoryTrailTrayFeedback(memoryTrail, "correction complete");
+  const stats = memoryTrail.targetStats?.[expectedTargetId];
+  if (stats) {
+    stats.lastPromptedAt = memoryTrail.promptCount;
+    stats.nextDuePrompt = Math.max(stats.nextDuePrompt || 0, memoryTrail.promptCount + MIN_GAP_AFTER_MISS);
+  }
   memoryTrail.phase = "feedback";
   memoryTrail.correction = null;
   memoryTrail.responseChipTargetId = expectedTargetId;
@@ -8143,7 +8570,7 @@ function completeMemoryTrailCorrection(memoryTrail, expectedTargetId) {
   }, memoryTrailCorrectPauseMs);
 }
 
-function handleCorrectMemoryTrailAnswer(memoryTrail, targetId) {
+function handleCorrectMemoryTrailAnswer(memoryTrail, targetId, options = {}) {
   clearMemoryTrailTrayFeedback(memoryTrail, "correct answer");
   memoryTrail.responseChipTargetId = targetId;
   runner.setMemoryTrailHighlight(targetId);
@@ -8162,6 +8589,8 @@ function handleCorrectMemoryTrailAnswer(memoryTrail, targetId) {
     runner.setMemoryTrailHighlight([]);
     promptNextMemoryTrailTarget(memoryTrail);
   }, memoryTrailCorrectPauseMs);
+
+  maybeSpeakPlaceToNameFeedbackTarget(memoryTrail, targetId, options);
 }
 
 function handleIncorrectMemoryTrailAnswer(memoryTrail, expectedTargetId, options = {}) {
@@ -8192,6 +8621,24 @@ function handleIncorrectMemoryTrailAnswer(memoryTrail, expectedTargetId, options
   debugMemoryTrail("correction step started", getMemoryTrailClickDebugContext(memoryTrail, [selectedTargetId].filter(Boolean), {
     reason: "missed answer"
   }));
+  maybeSpeakPlaceToNameFeedbackTarget(memoryTrail, expectedTargetId);
+}
+
+function maybeSpeakPlaceToNameFeedbackTarget(memoryTrail, targetId, options = {}) {
+  if (
+    options.suppressTargetSpeech
+    || !memoryTrail
+    || memoryTrail.activityId !== continentsOceansActivityId
+    || !isPlaceToNameMemoryTrailPrompt(memoryTrail)
+    || memoryTrail.lastSpokenTargetPromptKey === memoryTrail.currentPromptKey
+  ) {
+    return;
+  }
+
+  const target = getTargetById(memoryTrail, targetId);
+  if (target) {
+    speakMemoryTrailTarget(target);
+  }
 }
 
 function createMemoryTrailCorrectionFeedback(memoryTrail, expectedTargetId, options = {}) {
@@ -8292,6 +8739,10 @@ function renderMemoryTrailPanel() {
 
   const status = document.createElement("div");
   status.className = "memory-trail-status";
+  const isAnswerChoicePrompt = isPlaceToNameMemoryTrailPrompt(memoryTrail);
+  if (isAnswerChoicePrompt) {
+    status.classList.add("memory-trail-status-choice-prompt");
+  }
 
   const kicker = document.createElement("span");
   kicker.className = "memory-trail-kicker";
@@ -8322,25 +8773,29 @@ function renderMemoryTrailPanel() {
     status.appendChild(instructionLabel);
   }
 
+  const choiceList = createMemoryTrailAnswerChoiceList(memoryTrail);
+  if (choiceList && isAnswerChoicePrompt) {
+    status.appendChild(choiceList);
+  }
+
   const trayFeedback = createMemoryTrailTrayFeedback(memoryTrail);
   if (trayFeedback) {
     status.appendChild(trayFeedback);
   }
-
-  const stats = document.createElement("p");
-  stats.className = "memory-trail-session-stats";
-  stats.textContent = `${memoryTrail.correctCount} retrieval correct | ${getWeakTargets(memoryTrail).length} review`;
-  status.appendChild(stats);
 
   const responseChip = createMemoryTrailResponseChip(memoryTrail);
   if (responseChip) {
     status.appendChild(responseChip);
   }
 
-  const choiceList = createMemoryTrailAnswerChoiceList(memoryTrail);
-  if (choiceList) {
+  if (choiceList && !isAnswerChoicePrompt) {
     status.appendChild(choiceList);
   }
+
+  const stats = document.createElement("p");
+  stats.className = "memory-trail-session-stats";
+  stats.textContent = `${memoryTrail.correctCount} retrieval correct | ${getWeakTargets(memoryTrail).length} review`;
+  status.appendChild(stats);
 
   const controls = document.createElement("div");
   controls.className = "study-explore-controls memory-trail-controls";
@@ -8351,6 +8806,32 @@ function renderMemoryTrailPanel() {
 
   panel.append(status, controls);
   answerBank.appendChild(panel);
+  ensureMemoryTrailAnswerChoicesVisible(memoryTrail);
+}
+
+function ensureMemoryTrailAnswerChoicesVisible(memoryTrail) {
+  if (!isPlaceToNameMemoryTrailPrompt(memoryTrail)) {
+    return;
+  }
+
+  requestAnimationFrame(() => {
+    const choiceList = answerBank?.querySelector(".memory-trail-choice-list");
+    if (!choiceList) {
+      return;
+    }
+
+    const scrollContainer = answerBank.scrollHeight > answerBank.clientHeight
+      ? answerBank
+      : choiceList.closest(".answer-panel") || answerBank;
+    const containerBounds = scrollContainer.getBoundingClientRect?.();
+    const choiceBounds = choiceList.getBoundingClientRect?.();
+    const targetTop = containerBounds && choiceBounds
+      ? Math.max(0, scrollContainer.scrollTop + choiceBounds.top - containerBounds.top - 8)
+      : Math.max(0, choiceList.offsetTop - 8);
+    if (scrollContainer && "scrollTop" in scrollContainer) {
+      scrollContainer.scrollTop = targetTop;
+    }
+  });
 }
 
 function createMemoryTrailTrayFeedback(memoryTrail) {
@@ -8386,9 +8867,22 @@ function createMemoryTrailAnswerChoiceList(memoryTrail) {
     button.type = "button";
     button.className = "label-chip memory-trail-choice-chip";
     button.dataset.id = choice.id;
+    button.dataset.promptTargetId = choice.promptTargetId || "";
+    button.dataset.promptKey = choice.promptKey || "";
     button.setAttribute("aria-label", choice.label);
     button.appendChild(createChipLabelText(choice.label));
-    button.addEventListener("click", () => handleMemoryTrailNameChoice(choice.id));
+    const choose = (event = null) => handleMemoryTrailNameChoice(choice.id, {
+      promptTargetId: choice.promptTargetId,
+      promptKey: choice.promptKey,
+      fromSpeaker: Boolean(event?.currentTarget?.classList?.contains("chip-speaker-button"))
+    });
+    const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(choice.label, {
+      onActivate: choose
+    });
+    if (speaker) {
+      button.appendChild(speaker);
+    }
+    button.addEventListener("click", choose);
     list.appendChild(button);
   });
 
@@ -8400,7 +8894,7 @@ function createMemoryTrailResponseChip(memoryTrail) {
     return null;
   }
 
-  const target = session.getFeature(memoryTrail.responseChipTargetId);
+  const target = getTargetById(memoryTrail, memoryTrail.responseChipTargetId);
   const labelText = getTargetChipLabel(target) || target?.name || "";
 
   if (!labelText) {
@@ -8806,6 +9300,16 @@ function renderJourneyShellContent(screenId) {
     return;
   }
 
+  if (screenId === "daily-trail-intro") {
+    renderDailyTrailIntroScreen();
+    return;
+  }
+
+  if (screenId === "daily-trail-summary") {
+    renderDailyTrailSummaryScreen();
+    return;
+  }
+
   if (!selectedJourney) {
     const missingCard = document.createElement("div");
     missingCard.className = "app-shell-placeholder-card";
@@ -8894,6 +9398,333 @@ function renderOnboardingScreen() {
 
   actions.append(startButton, chooseButton, skipButton);
   panel.append(cards, actions);
+  journeyShellContent.appendChild(panel);
+}
+
+async function openDailyTrailIntro() {
+  await ensureMapRuntimeLoaded();
+  await ensureActivityDataLoaded();
+
+  const state = loadDailyTrailState();
+  const journey = journeyPresets.find((candidate) => candidate.id === dailyTrailJourneyId);
+  const items = buildWorldCoreDailyTrailItems(journey, activities);
+
+  pendingDailyTrailPlan = planDailyTrailSession(state, items);
+  showAppScreen("daily-trail-intro");
+}
+
+function renderDailyTrailIntroScreen() {
+  const state = loadDailyTrailState();
+  const journey = journeyPresets.find((candidate) => candidate.id === dailyTrailJourneyId);
+  const items = buildWorldCoreDailyTrailItems(journey, activities);
+  const plan = pendingDailyTrailPlan || planDailyTrailSession(state, items);
+  pendingDailyTrailPlan = plan;
+
+  const panel = document.createElement("section");
+  panel.className = "daily-trail-panel";
+
+  const heading = document.createElement("h2");
+  heading.textContent = plan.title || "Daily Trail";
+
+  const stats = document.createElement("div");
+  stats.className = "daily-trail-stat-grid";
+
+  [
+    ["New today", plan.intro.newCount],
+    ["Review", plan.intro.reviewCount],
+    ["Next checkpoint", `${plan.intro.sessionsUntilNextCheckpoint} sessions`]
+  ].forEach(([label, value]) => {
+    const stat = document.createElement("p");
+    stat.className = "daily-trail-stat";
+    stat.textContent = `${label}: ${value}`;
+    stats.appendChild(stat);
+  });
+
+  const copy = document.createElement("p");
+  copy.textContent = getDailyTrailIntroCopy(plan);
+
+  const focus = document.createElement("p");
+  focus.className = "daily-trail-focus";
+  focus.textContent = getDailyTrailFocusText(plan);
+
+  const actions = document.createElement("div");
+  actions.className = "daily-trail-actions";
+
+  const beginButton = document.createElement("button");
+  beginButton.type = "button";
+  beginButton.className = "main-menu-button main-menu-button-green";
+  beginButton.textContent = plan.sessionType === "checkpoint"
+    ? "Start Checkpoint"
+    : plan.sessionType === "remediationCheckpoint"
+      ? "Start Quick Check"
+      : "Begin Daily Trail";
+  beginButton.addEventListener("click", startDailyTrailSession);
+
+  const backButton = document.createElement("button");
+  backButton.type = "button";
+  backButton.className = "main-menu-button main-menu-button-quiet";
+  backButton.textContent = "Back";
+  backButton.addEventListener("click", () => showAppScreen("main-menu"));
+
+  actions.append(beginButton, backButton);
+  panel.append(heading, stats, copy, focus, actions);
+  journeyShellContent.appendChild(panel);
+}
+
+function getDailyTrailIntroCopy(plan) {
+  if (plan.continentsOceansReviewType === "small") {
+    return "A quick Continents and Oceans review will keep the world map fresh.";
+  }
+
+  if (plan.continentsOceansReviewType === "full") {
+    return "Today revisits Continents and Oceans because it needs more practice.";
+  }
+
+  if (plan.sessionType === "checkpoint") {
+    return "A short checkpoint will check what you have learned recently.";
+  }
+
+  if (plan.sessionType === "remediation-session") {
+    return "Today focuses on places that need a little more practice.";
+  }
+
+  if (plan.sessionType === "remediationCheckpoint") {
+    return "A quick check will revisit the places from your review.";
+  }
+
+  return "Warm up with review, learn a few new places, then mix them into practice.";
+}
+
+function getDailyTrailFocusText(plan) {
+  const group = plan.cameraGroups?.[0];
+  const activityTitle = plan.playItems?.find((item) => item.homeActivityId === plan.activeActivityId)?.activityTitle;
+
+  if (!group && !activityTitle) {
+    return "World Core";
+  }
+
+  return `Today starts in ${activityTitle || group.cameraGroupId}.`;
+}
+
+async function startDailyTrailSession() {
+  await ensureMapReady();
+
+  const state = loadDailyTrailState();
+  const journey = journeyPresets.find((candidate) => candidate.id === dailyTrailJourneyId);
+  const items = buildWorldCoreDailyTrailItems(journey, activities);
+  const plan = pendingDailyTrailPlan || planDailyTrailSession(state, items);
+  const activity = getActivityById(plan.activeActivityId);
+
+  if (!journey || !activity) {
+    showFeedback("Daily Trail is not ready yet.");
+    return;
+  }
+
+  const startedState = applyDailyTrailSessionStart(state, plan);
+  const plannedTargetIds = plan.playItems
+    .filter((item) => item.homeActivityId === activity.id)
+    .map((item) => item.targetId);
+  activeDailyTrailSession = {
+    trailId: "world-core",
+    journeyId: journey.id,
+    state: startedState,
+    plan,
+    activityId: activity.id
+  };
+  pendingDailyTrailPlan = null;
+  selectedJourneyId = journey.id;
+  currentPresentationSettings = getEffectivePresentationSettings(activity, {
+    presentationSettings: {
+      reviewMode: studyModes.sectionOnly,
+      dailyTrailTargetIds: plannedTargetIds
+    }
+  });
+
+  await openActivity(activity.id, {
+    appScreen: "daily-trail-gameplay",
+    difficultyId: difficultyModes.easy,
+    disableActivityProgress: true,
+    forceGameplayVisible: true,
+    hierarchyNodeId: findHierarchyNodeForActivity(activity.id),
+    presentationSettings: currentPresentationSettings
+  });
+
+  startDailyTrailMemoryTrailStepIfNeeded();
+}
+
+function handleDailyTrailActivityCompletion() {
+  if (!activeDailyTrailSession || currentAppScreen !== "daily-trail-gameplay") {
+    return;
+  }
+
+  const { completedCount, targetCount } = getSessionCompletionSummary();
+  if (targetCount <= 0 || completedCount !== targetCount) {
+    return;
+  }
+
+  trackActivityEnd({
+    mode: "daily-trail"
+  });
+
+  const nextState = applyDailyTrailSessionResults(activeDailyTrailSession.state, activeDailyTrailSession.plan, {
+    completedTargetIds: session.completedIds,
+    correctCount: session.completedIds.length,
+    incorrectCount: Object.values(activityAttemptState.missesByTargetId || {}).reduce((sum, count) => sum + Number(count || 0), 0),
+    missesByTargetId: activityAttemptState.missesByTargetId || {}
+  });
+
+  lastDailyTrailSummary = nextState.lastSessionSummary;
+  activeDailyTrailSession = null;
+  showAppScreen("daily-trail-summary", { pushHistory: false });
+}
+
+function exitDailyTrailGameplay() {
+  trackMemoryTrailAbandoned();
+  activeStudySession = null;
+  activeDailyTrailSession = null;
+  runner?.setStudyPreviewMode(false);
+  runner?.setMemoryTrailHighlight([]);
+  resetActivityAttemptState();
+  showAppScreen("main-menu", { pushHistory: false });
+}
+
+function resetDailyTrailProgress() {
+  try {
+    localStorage.removeItem(dailyTrailStorageKey);
+  } catch (error) {
+    // localStorage can be unavailable in private or embedded contexts.
+  }
+
+  activeDailyTrailSession = null;
+  pendingDailyTrailPlan = null;
+  lastDailyTrailSummary = null;
+  updateDailyTrailMainMenuButton();
+}
+
+async function continueDailyTrailFromSummary() {
+  pendingDailyTrailPlan = null;
+  lastDailyTrailSummary = null;
+  await startDailyTrailSession();
+}
+
+function startDailyTrailMemoryTrailStepIfNeeded() {
+  if (!activeDailyTrailSession || currentAppScreen !== "daily-trail-gameplay") {
+    return false;
+  }
+
+  const activity = getActivityById(activeDailyTrailSession.activityId);
+  const latestState = loadDailyTrailState();
+
+  if (!activity) {
+    return false;
+  }
+
+  const plannedItemsForActivity = activeDailyTrailSession.plan.playItems
+    .filter((item) => item.homeActivityId === activity.id);
+  const targetIds = plannedItemsForActivity
+    .map((item) => item.targetId)
+    .filter(Boolean);
+  const newTargetIds = plannedItemsForActivity
+    .filter((item) => isDailyTrailItemUnseen(latestState, item))
+    .map((item) => item.targetId)
+    .filter(Boolean);
+
+  if (targetIds.length === 0) {
+    return false;
+  }
+
+  activeStudySession = {
+    journeyId: activeDailyTrailSession.journeyId,
+    stepId: "daily-trail",
+    activityId: activity.id,
+    revealedTargetIds: [],
+    memoryTrail: null,
+    dailyTrail: true,
+    retryReturnState: null,
+    journeyPlayReturn: null,
+    journeyActivityReturnState: null
+  };
+  setActiveActivityHeaderTitle(activity);
+  studyCard.hidden = false;
+  studyCard.querySelector("strong").textContent = activity.title;
+  studyCard.querySelector("span").textContent = "Daily Trail";
+  return startMemoryTrail({
+    newTargetIds,
+    source: "daily-trail",
+    targetIds
+  });
+}
+
+function isDailyTrailItemUnseen(state, item) {
+  if (!item?.id) {
+    return false;
+  }
+
+  const progress = state?.itemProgress?.[item.id];
+  if (progress?.status) {
+    return progress.status === "unseen";
+  }
+
+  return !state?.introducedItemIds?.includes(item.id);
+}
+
+function renderDailyTrailSummaryScreen() {
+  const summary = lastDailyTrailSummary || loadDailyTrailState().lastSessionSummary || {
+    practicedCount: 0,
+    newCount: 0,
+    reviewCount: 0,
+    weakItems: [],
+    sessionsUntilNextCheckpoint: 3
+  };
+
+  const panel = document.createElement("section");
+  panel.className = "daily-trail-panel";
+
+  const heading = document.createElement("h2");
+  heading.textContent = summary.sessionType === "checkpoint" && summary.checkpointPassed === false
+    ? "Checkpoint Needs Review"
+    : "Daily Trail Complete";
+
+  const practiced = document.createElement("p");
+  practiced.textContent = `Today you practiced ${summary.practicedCount} places.`;
+
+  const stats = document.createElement("div");
+  stats.className = "daily-trail-stat-grid";
+
+  [
+    ["New", summary.newCount],
+    ["Review", summary.reviewCount],
+    ["Next checkpoint", `${summary.sessionsUntilNextCheckpoint} sessions`]
+  ].forEach(([label, value]) => {
+    const stat = document.createElement("p");
+    stat.className = "daily-trail-stat";
+    stat.textContent = `${label}: ${value}`;
+    stats.appendChild(stat);
+  });
+
+  const weak = document.createElement("p");
+  const weakLabels = (summary.weakItems || []).map((item) => item.label).filter(Boolean);
+  weak.textContent = weakLabels.length
+    ? `Needs practice: ${weakLabels.join(", ")}`
+    : "Needs practice: none today";
+
+  const actions = document.createElement("div");
+  actions.className = "daily-trail-actions";
+
+  const continueButton = document.createElement("button");
+  continueButton.type = "button";
+  continueButton.className = "main-menu-button main-menu-button-green";
+  continueButton.textContent = "Continue Trail";
+  continueButton.addEventListener("click", continueDailyTrailFromSummary);
+
+  const mainMenuButton = document.createElement("button");
+  mainMenuButton.type = "button";
+  mainMenuButton.className = "main-menu-button main-menu-button-quiet";
+  mainMenuButton.textContent = "Main Menu";
+  mainMenuButton.addEventListener("click", () => showAppScreen("main-menu"));
+
+  actions.append(continueButton, mainMenuButton);
+  panel.append(heading, practiced, stats, weak, actions);
   journeyShellContent.appendChild(panel);
 }
 
@@ -9562,7 +10393,7 @@ function renderCustomizeScreen() {
   studyTargetsSection.content.appendChild(renderStudyTargetHierarchy());
 
   const resetSection = createSettingsMenuSection("Reset / Defaults", "Restore the default map layer and study-target preferences.", false, "settings-menu-section", "reset-defaults");
-  resetSection.content.appendChild(renderSettingsDefaultsControl());
+  resetSection.content.append(renderSettingsDefaultsControl(), renderDailyTrailResetControl());
 
   panel.append(mapLayersSection.details, audioSection.details, studyTargetsSection.details, resetSection.details);
 
@@ -10121,6 +10952,78 @@ function renderSettingsDefaultsControl() {
 
   wrapper.append(copy, resetButton);
   return wrapper;
+}
+
+function renderDailyTrailResetControl() {
+  const wrapper = document.createElement("div");
+  wrapper.className = "settings-defaults-control settings-daily-trail-reset-control";
+
+  const copy = document.createElement("p");
+  copy.className = "settings-panel-copy";
+  copy.textContent = "Erase only your Daily Trail learning history. Journeys, settings, and preferences stay as they are.";
+
+  const resetButton = document.createElement("button");
+  resetButton.type = "button";
+  resetButton.className = "settings-reset-button";
+  resetButton.textContent = "Reset Daily Trail Progress";
+  resetButton.dataset.settingsControl = "reset-daily-trail-progress";
+  resetButton.addEventListener("click", () => {
+    dailyTrailResetConfirmationVisible = true;
+    rerenderSettingsPreservingUiState("reset-daily-trail-cancel");
+  });
+
+  wrapper.append(copy, resetButton);
+
+  if (dailyTrailResetConfirmationVisible) {
+    wrapper.appendChild(renderDailyTrailResetConfirmation());
+  }
+
+  return wrapper;
+}
+
+function renderDailyTrailResetConfirmation() {
+  const confirmation = document.createElement("section");
+  confirmation.className = "settings-reset-confirmation";
+  confirmation.setAttribute("role", "alertdialog");
+  confirmation.setAttribute("aria-labelledby", "daily-trail-reset-title");
+  confirmation.setAttribute("aria-describedby", "daily-trail-reset-copy");
+
+  const title = document.createElement("h3");
+  title.id = "daily-trail-reset-title";
+  title.textContent = "Reset Daily Trail progress?";
+
+  const body = document.createElement("p");
+  body.id = "daily-trail-reset-copy";
+  body.textContent = "This will erase your Daily Trail learning history and start you over from the beginning. Your regular journey progress will not be affected.";
+
+  const actions = document.createElement("div");
+  actions.className = "settings-reset-confirmation-actions";
+
+  const cancelButton = document.createElement("button");
+  cancelButton.type = "button";
+  cancelButton.className = "settings-reset-button";
+  cancelButton.textContent = "Cancel";
+  cancelButton.dataset.settingsControl = "reset-daily-trail-cancel";
+  cancelButton.addEventListener("click", () => {
+    dailyTrailResetConfirmationVisible = false;
+    rerenderSettingsPreservingUiState("reset-daily-trail-progress");
+  });
+
+  const confirmButton = document.createElement("button");
+  confirmButton.type = "button";
+  confirmButton.className = "settings-reset-button settings-reset-button-danger";
+  confirmButton.textContent = "Reset Daily Trail";
+  confirmButton.dataset.settingsControl = "reset-daily-trail-confirm";
+  confirmButton.addEventListener("click", () => {
+    resetDailyTrailProgress();
+    dailyTrailResetConfirmationVisible = false;
+    rerenderSettingsPreservingUiState("reset-daily-trail-progress");
+    showFeedback("Daily Trail progress reset.", true);
+  });
+
+  actions.append(cancelButton, confirmButton);
+  confirmation.append(title, body, actions);
+  return confirmation;
 }
 
 function renderStudyTargetGroup(group) {
@@ -11363,7 +12266,9 @@ function renderAnswerBank() {
     chip.dataset.id = feature.id;
     chip.setAttribute("aria-label", chipLabel);
     chip.appendChild(createChipLabelText(chipLabel));
-    const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(chipLabel);
+    const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(chipLabel, {
+      onActivate: () => selectAnswerChipFromSpeaker(feature)
+    });
     if (speaker) {
       chip.appendChild(speaker);
     }
@@ -11761,7 +12666,7 @@ async function openActivity(activityId, options = {}) {
     difficulty: getEffectiveDifficulty(session.currentActivity)
   });
 
-  if (isActiveGameplayScreen()) {
+  if (isActiveGameplayScreen() && options.appScreen !== "daily-trail-gameplay") {
     playGameplayInstructionOnce("choose-label", audioInstructionPhrases.chooseLabel);
   }
 
@@ -11770,20 +12675,62 @@ async function openActivity(activityId, options = {}) {
 }
 
 function getPresentedActivity(activity, presentationSettings = {}) {
-  if (!activity || shouldShowPointMarkers(activity, currentAppScreen, presentationSettings)) {
+  if (!activity) {
     return activity;
   }
 
-  const shapeTargets = activity.targets.filter((target) => target.kind !== "point");
-  if (shapeTargets.length === 0) {
+  let presentedActivity = activity;
+
+  if (!shouldShowPointMarkers(activity, currentAppScreen, presentationSettings)) {
+    const shapeTargets = activity.targets.filter((target) => target.kind !== "point");
+    if (shapeTargets.length > 0) {
+      presentedActivity = {
+        ...activity,
+        targetNoun: activity.targetNoun?.replace(/\s+or\s+capital/i, "") || activity.targetNoun,
+        targets: shapeTargets,
+        answerBankItems: shapeTargets.map((target) => ({
+          id: target.id,
+          name: target.name
+        }))
+      };
+    }
+  }
+
+  return getDailyTrailPresentedActivity(presentedActivity, presentationSettings);
+}
+
+function selectAnswerChipFromSpeaker(feature) {
+  if (!feature?.id || isActivityInputLocked()) {
+    return;
+  }
+
+  if (session.selectedId !== feature.id) {
+    cancelGrabbedAnswer({ clearSelection: false });
+    session.toggleAnswer(feature.id);
+    syncAnswerBank();
+  }
+}
+
+function getDailyTrailPresentedActivity(activity, presentationSettings = {}) {
+  const targetIds = Array.isArray(presentationSettings.dailyTrailTargetIds)
+    ? presentationSettings.dailyTrailTargetIds.filter(Boolean)
+    : [];
+
+  if (!activity || targetIds.length === 0) {
+    return activity;
+  }
+
+  const allowedTargetIds = new Set(targetIds);
+  const targets = activity.targets.filter((target) => allowedTargetIds.has(target.id));
+
+  if (targets.length === 0) {
     return activity;
   }
 
   return {
     ...activity,
-    targetNoun: activity.targetNoun?.replace(/\s+or\s+capital/i, "") || activity.targetNoun,
-    targets: shapeTargets,
-    answerBankItems: shapeTargets.map((target) => ({
+    targets,
+    answerBankItems: targets.map((target) => ({
       id: target.id,
       name: target.name
     }))
@@ -11803,12 +12750,7 @@ function enterStudy() {
   document.body.classList.remove("browse-mode");
   document.body.classList.remove("overview-mode");
   document.body.classList.add("study-mode");
-  const node = getHierarchyNode(activeHierarchyNodeId);
-  const activityTitle = node?.activityLabel || session.currentActivity.title;
-  setHeaderTitle(
-    node ? getHierarchyBreadcrumb(node.id, { activityLabel: activityTitle }) : session.currentActivity.title,
-    { shortTitle: activityTitle }
-  );
+  setActiveActivityHeaderTitle();
   updateStudyInstruction();
   updateStudyCardDetails();
   updateProgress();
@@ -11847,6 +12789,18 @@ function openLegacyActivity(activityId) {
 }
 
 function handleTargetClick(targetIds) {
+  if (currentAppScreen === "daily-trail-gameplay" && isMemoryTrailActive()) {
+    const memoryTrailMapPoint = targetIds && !Array.isArray(targetIds) && typeof targetIds.x === "number"
+      ? targetIds
+      : null;
+    const resolvedMemoryTrailTargetIds = memoryTrailMapPoint
+      ? runner.getTargetIdsAtMapPoint(targetIds)
+      : targetIds;
+
+    handleMemoryTrailTargetTap(resolvedMemoryTrailTargetIds, memoryTrailMapPoint);
+    return;
+  }
+
   if (isActivityInputLocked()) {
     return;
   }
@@ -12383,6 +13337,7 @@ function placeGrabbedAnswer(targetIds, options = {}) {
     updateCompletedActivityState();
     handleJourneyActivityCompletion();
     handleStudyPracticeCompletion();
+    handleDailyTrailActivityCompletion();
     ensureActivityNavControls();
     showFeedback(`Correct: ${getTargetChipLabel(result.feature) || result.feature.name}`, true);
   }
@@ -13894,7 +14849,7 @@ function updateDifficultyControls() {
 }
 
 function updateStudyCardDetails() {
-  studyCard.querySelector("strong").textContent = session.currentActivity.title;
+  studyCard.querySelector("strong").textContent = getActivityHeaderDisplayName(session.currentActivity);
   const difficultyLabel = isDifficultyApplicable(session.currentActivity)
     ? ` - ${getEffectiveDifficulty(session.currentActivity)[0].toUpperCase()}${getEffectiveDifficulty(session.currentActivity).slice(1)}`
     : "";

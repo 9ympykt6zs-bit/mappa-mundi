@@ -689,6 +689,7 @@ export class MapLibreActivityRunner {
       capitalSource.setData(this.getCapitalGeoJson());
     }
 
+    this.refreshOceanRegionSource();
     this.refreshStudyFilters();
     this.updateParentCountryOutline();
     this.refreshOceanHighlightImages();
@@ -784,6 +785,83 @@ export class MapLibreActivityRunner {
       duration: camera.duration,
       essential: true
     });
+  }
+
+  focusTargetIfNeeded(target, options = {}) {
+    if (!this.map || !target) {
+      return false;
+    }
+
+    const focusTarget = {
+      ...target,
+      focusDuration: Number.isFinite(options.duration) ? options.duration : target.focusDuration,
+      focusPadding: options.padding || target.focusPadding
+    };
+    const camera = this.getTargetFocusCamera(focusTarget);
+
+    if (!camera) {
+      return false;
+    }
+
+    if (!options.force && this.isTargetFocusComfortablyVisible(focusTarget, camera, options)) {
+      return false;
+    }
+
+    this.focusTarget(focusTarget);
+    return true;
+  }
+
+  isTargetFocusComfortablyVisible(target, camera, options = {}) {
+    if (!this.map || !camera) {
+      return false;
+    }
+
+    const center = Array.isArray(camera.center)
+      ? camera.center
+      : this.getBoundsCenter(camera.bounds);
+
+    if (!Array.isArray(center)) {
+      return false;
+    }
+
+    const point = this.map.project(center);
+    const canvas = this.map.getCanvas();
+    const width = canvas?.clientWidth || 0;
+    const height = canvas?.clientHeight || 0;
+
+    if (!width || !height || !point) {
+      return false;
+    }
+
+    const padding = this.normalizePadding(options.comfortPadding || camera.padding || this.getTargetFocusPadding(target));
+    const inComfortableFrame = point.x >= padding.left
+      && point.x <= width - padding.right
+      && point.y >= padding.top
+      && point.y <= height - padding.bottom;
+
+    if (!inComfortableFrame) {
+      return false;
+    }
+
+    const targetZoom = Number.isFinite(camera.zoom) ? camera.zoom : null;
+
+    if (targetZoom === null) {
+      return true;
+    }
+
+    const zoomTolerance = Number.isFinite(options.zoomTolerance) ? options.zoomTolerance : 0.8;
+    return Math.abs((this.map.getZoom?.() || 0) - targetZoom) <= zoomTolerance;
+  }
+
+  getBoundsCenter(bounds) {
+    if (!this.hasValidBounds(bounds)) {
+      return null;
+    }
+
+    return [
+      (bounds[0][0] + bounds[1][0]) / 2,
+      (bounds[0][1] + bounds[1][1]) / 2
+    ];
   }
 
   fitTargets(targets = [], options = {}) {
@@ -1169,7 +1247,7 @@ export class MapLibreActivityRunner {
   addOceanRegionLayer() {
     this.map.addSource("ocean-regions", {
       type: "geojson",
-      data: this.oceanZones || emptyFeatureCollection
+      data: this.getOceanRegionRenderGeoJson()
     });
 
     this.map.addLayer({
@@ -1182,7 +1260,7 @@ export class MapLibreActivityRunner {
       paint: {
         "fill-color": this.getOceanRegionColorExpression(),
         "fill-opacity": this.getOceanRegionFillOpacityExpression(),
-        "fill-antialias": true
+        "fill-antialias": false
       }
     }, "world-land");
 
@@ -2605,6 +2683,103 @@ export class MapLibreActivityRunner {
       },
       geometry: sourceFeature.geometry
     };
+  }
+
+  getOceanRegionRenderGeoJson() {
+    if (!this.isContinentsOceansActivity()) {
+      return this.oceanZones || emptyFeatureCollection;
+    }
+
+    return {
+      type: "FeatureCollection",
+      features: (this.oceanZones?.features || []).map((feature) => this.getContinentsOceansOceanRenderFeature(feature))
+    };
+  }
+
+  getContinentsOceansOceanRenderFeature(feature) {
+    const id = normalizeTargetId(feature?.properties?.id || feature?.id || feature?.properties?.name);
+    const clone = JSON.parse(JSON.stringify(feature));
+
+    if (id === "southern-ocean") {
+      clone.geometry = {
+        type: "Polygon",
+        coordinates: [[
+          [-180, -60.35],
+          [-120, -60.35],
+          [-60, -60.35],
+          [0, -60.35],
+          [60, -60.35],
+          [120, -60.35],
+          [180, -60.35],
+          [180, -89.5],
+          [120, -89.5],
+          [60, -89.5],
+          [0, -89.5],
+          [-60, -89.5],
+          [-120, -89.5],
+          [-180, -89.5],
+          [-180, -60.35]
+        ]]
+      };
+    }
+
+    if (["atlantic-ocean", "pacific-ocean", "indian-ocean"].includes(id)) {
+      this.snapOceanRenderSouthernBoundary(clone.geometry);
+    }
+
+    if (id === "pacific-ocean") {
+      this.snapOceanRenderAntimeridian(clone.geometry);
+    }
+
+    return clone;
+  }
+
+  snapOceanRenderAntimeridian(geometry) {
+    const snapCoordinate = (coordinate) => {
+      if (!Array.isArray(coordinate)) {
+        return;
+      }
+
+      if (typeof coordinate[0] === "number" && typeof coordinate[1] === "number") {
+        if (coordinate[0] > 179) {
+          coordinate[0] = 180;
+        } else if (coordinate[0] < -179) {
+          coordinate[0] = -180;
+        }
+        return;
+      }
+
+      coordinate.forEach(snapCoordinate);
+    };
+
+    snapCoordinate(geometry?.coordinates);
+  }
+
+  snapOceanRenderSouthernBoundary(geometry) {
+    const snapCoordinate = (coordinate) => {
+      if (!Array.isArray(coordinate)) {
+        return;
+      }
+
+      if (typeof coordinate[0] === "number" && typeof coordinate[1] === "number") {
+        if (coordinate[1] < -59.8) {
+          coordinate[1] = -60.35;
+        }
+        return;
+      }
+
+      coordinate.forEach(snapCoordinate);
+    };
+
+    snapCoordinate(geometry?.coordinates);
+  }
+
+  refreshOceanRegionSource() {
+    const source = this.map?.getSource("ocean-regions");
+
+    if (source?.setData) {
+      source.setData(this.getOceanRegionRenderGeoJson());
+    }
   }
 
   shouldSuppressInternalTargetLines(target) {
@@ -4122,7 +4297,7 @@ export class MapLibreActivityRunner {
     }
 
     if (this.map.getLayer("ocean-target-raster")) {
-      this.map.setLayoutProperty("ocean-target-raster", "visibility", showGuidedTargets ? "visible" : "none");
+      this.map.setLayoutProperty("ocean-target-raster", "visibility", showGuidedTargets && !this.isContinentsOceansActivity() ? "visible" : "none");
     }
 
     if (this.map.getLayer("state-line")) {

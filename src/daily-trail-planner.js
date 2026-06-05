@@ -1,0 +1,1307 @@
+export const dailyTrailStorageKey = "mappaDailyTrailProgress";
+export const dailyTrailId = "world-core";
+export const dailyTrailJourneyId = "world-geography-core";
+export const dailyTrailCheckpointInterval = 4;
+export const dailyTrailNewItemCount = 4;
+export const dailyTrailReviewItemCount = 10;
+
+const ENABLE_DAILY_TRAIL_DEBUG = false;
+const reviewCooldownSessions = 2;
+const continentsOceansActivityId = "continents-oceans";
+const continentsOceansStatuses = new Set(["unseen", "weak", "developing", "strong", "mastered"]);
+const continentsOceansSmallReviewSessionCooldown = 2;
+const continentsOceansFullReviewSessionCooldown = 4;
+const continentsOceansFullReviewDayCooldown = 7;
+const continentsOceansStrongReviewSessionInterval = 6;
+const continentsOceansFoundationBatchSize = 6;
+const validStatuses = new Set(["unseen", "introduced", "learning", "review", "mastered"]);
+const validMemoryStates = new Set(["new", "learning", "review", "relearning"]);
+const practiceEligibleStatuses = new Set(["introduced", "learning", "review", "mastered"]);
+const defaultMemoryDifficulty = 5;
+const maxMemoryDifficulty = 10;
+const minMemoryDifficulty = 1;
+const maxRetrievability = 1;
+const minRetrievability = 0;
+
+export function createDailyTrailState(value = {}) {
+  const source = value && typeof value === "object" ? value : {};
+  const currentSessionNumber = Math.max(1, Number(source.currentSessionNumber) || 1);
+  const sessionsSinceLastCheckpoint = Math.max(0, Number(source.sessionsSinceLastCheckpoint) || 0);
+  const lastDailyTrailSessionDate = normalizeLocalDateString(source.lastDailyTrailSessionDate);
+
+  return {
+    trailId: dailyTrailId,
+    hasStarted: Boolean(source.hasStarted),
+    currentSessionNumber,
+    sessionsSinceLastCheckpoint,
+    sessionsUntilNextCheckpoint: getSessionsUntilNextCheckpoint(sessionsSinceLastCheckpoint),
+    activeGoalJourneyIds: [dailyTrailId],
+    introducedItemIds: Array.isArray(source.introducedItemIds) ? source.introducedItemIds.filter(Boolean) : [],
+    newSinceLastCheckpoint: Array.isArray(source.newSinceLastCheckpoint) ? source.newSinceLastCheckpoint.filter(Boolean) : [],
+    lastDailyTrailSessionDate,
+    lastContinentsOceansSmallReviewDate: normalizeLocalDateString(source.lastContinentsOceansSmallReviewDate),
+    lastContinentsOceansFullReviewDate: normalizeLocalDateString(source.lastContinentsOceansFullReviewDate),
+    continentsOceansProgress: normalizeContinentsOceansProgress(source.continentsOceansProgress),
+    pendingRemediation: Boolean(source.pendingRemediation),
+    pendingCheckpointRetry: Boolean(source.pendingCheckpointRetry),
+    lastSessionSummary: source.lastSessionSummary && typeof source.lastSessionSummary === "object"
+      ? source.lastSessionSummary
+      : null,
+    itemProgress: normalizeItemProgress(source.itemProgress, {
+      currentSessionNumber,
+      lastDailyTrailSessionDate
+    })
+  };
+}
+
+export function loadDailyTrailState() {
+  try {
+    return createDailyTrailState(JSON.parse(localStorage.getItem(dailyTrailStorageKey) || "null"));
+  } catch {
+    return createDailyTrailState();
+  }
+}
+
+export function saveDailyTrailState(state) {
+  const normalized = createDailyTrailState(state);
+
+  try {
+    localStorage.setItem(dailyTrailStorageKey, JSON.stringify(normalized));
+  } catch {
+    // Daily Trail remains playable for this session if storage is unavailable.
+  }
+
+  return normalized;
+}
+
+export function hasDailyTrailProgress(state = loadDailyTrailState()) {
+  return Boolean(state?.hasStarted || Object.keys(state?.itemProgress || {}).length > 0);
+}
+
+export function buildWorldCoreDailyTrailItems(journey, activities) {
+  const steps = Array.isArray(journey?.steps) ? journey.steps : [];
+
+  return steps.flatMap((step, stepIndex) => {
+    const activity = activities.find((candidate) => candidate.id === step.activityId);
+
+    if (!activity?.targets?.length) {
+      return [];
+    }
+
+    const cameraGroupId = activity.map?.region || step.kind || activity.id;
+
+    return activity.targets.map((target, targetIndex) => {
+      const type = getDailyTrailItemType(activity, target);
+
+      return {
+        id: `${type}:${target.id}`,
+        targetId: target.id,
+        label: target.name,
+        type,
+        homeActivityId: activity.id,
+        homeJourneyId: dailyTrailJourneyId,
+        homeStepId: step.id,
+        homeStepIndex: stepIndex,
+        activityTitle: activity.title,
+        cameraGroupId,
+        order: (stepIndex * 1000) + targetIndex
+      };
+    });
+  });
+}
+
+export function planDailyTrailSession(state, items) {
+  const normalized = createDailyTrailState(state);
+  const safeItems = Array.isArray(items) ? items : [];
+  const continentsOceansDecision = getContinentsOceansReviewDecision(normalized, safeItems);
+  let plan;
+
+  if (continentsOceansDecision?.type === "foundation") {
+    plan = buildContinentsOceansPlan(normalized, safeItems, continentsOceansDecision);
+  } else if (normalized.pendingRemediation) {
+    plan = buildRemediationPlan(normalized, safeItems);
+  } else if (normalized.pendingCheckpointRetry) {
+    plan = buildCheckpointPlan(normalized, safeItems, {
+      sessionType: "remediationCheckpoint",
+      title: "Quick Check",
+      maxItems: 10
+    });
+  } else if (normalized.sessionsSinceLastCheckpoint >= dailyTrailCheckpointInterval - 1
+    && normalized.hasStarted
+    && continentsOceansDecision?.type === "full") {
+    plan = buildContinentsOceansPlan(normalized, safeItems, continentsOceansDecision);
+  } else if (normalized.sessionsSinceLastCheckpoint >= dailyTrailCheckpointInterval - 1 && normalized.hasStarted) {
+    plan = buildCheckpointPlan(normalized, safeItems, {
+      sessionType: "checkpoint",
+      title: "Checkpoint",
+      maxItems: 22
+    });
+  } else if (continentsOceansDecision) {
+    plan = buildContinentsOceansPlan(normalized, safeItems, continentsOceansDecision);
+  } else {
+    plan = buildLearningPlan(normalized, safeItems);
+  }
+
+  logDailyTrailPlan(normalized, safeItems, plan);
+  return plan;
+}
+
+export function applyDailyTrailSessionStart(state, plan) {
+  const next = createDailyTrailState({
+    ...state,
+    hasStarted: true
+  });
+
+  return saveDailyTrailState(next);
+}
+
+export function applyDailyTrailTeachingProgress(state, plan, taughtTargetId) {
+  const next = createDailyTrailState(state);
+  const taughtItem = (plan?.newItems || []).find((item) => item.targetId === taughtTargetId);
+
+  if (taughtItem) {
+    markDailyTrailItemIntroduced(next, taughtItem);
+  }
+
+  return saveDailyTrailState(next);
+}
+
+function markDailyTrailItemIntroduced(state, item) {
+  const progress = getOrCreateItemProgress(state, item);
+
+  if (progress.status === "unseen") {
+    progress.status = "introduced";
+    progress.introducedSession = state.currentSessionNumber;
+    progress.memoryState = "learning";
+    progress.stability = Math.max(0.5, Number(progress.stability) || 0);
+    progress.retrievability = Math.max(0.35, Number(progress.retrievability) || 0);
+    progress.dueSession = state.currentSessionNumber;
+    progress.dueDate = getLocalDateString();
+    state.introducedItemIds = addUnique(state.introducedItemIds, item.id);
+    state.newSinceLastCheckpoint = addUnique(state.newSinceLastCheckpoint, item.id);
+  }
+
+  if (isContinentsOceansItem(item)) {
+    state.continentsOceansProgress.introducedItemIds = addUnique(state.continentsOceansProgress.introducedItemIds, item.id);
+  }
+}
+
+export function applyDailyTrailSessionResults(state, plan, result = {}) {
+  const next = createDailyTrailState(state);
+  const itemsByTargetId = new Map((plan?.playItems || []).map((item) => [item.targetId, item]));
+  const completedTargetIds = new Set(result.completedTargetIds || []);
+  const missesByTargetId = result.missesByTargetId || {};
+  const practicedItems = [];
+  const weakItems = [];
+  const completedDate = getLocalDateString();
+
+  completedTargetIds.forEach((targetId) => {
+    if (!itemsByTargetId.has(targetId)) {
+      const fallback = (plan?.allItems || []).find((item) => item.targetId === targetId);
+      if (fallback) {
+        itemsByTargetId.set(targetId, fallback);
+      }
+    }
+  });
+
+  Object.keys(missesByTargetId).forEach((targetId) => {
+    if (!itemsByTargetId.has(targetId)) {
+      const fallback = (plan?.allItems || []).find((item) => item.targetId === targetId);
+      if (fallback) {
+        itemsByTargetId.set(targetId, fallback);
+      }
+    }
+  });
+
+  itemsByTargetId.forEach((item, targetId) => {
+    const progress = getOrCreateItemProgress(next, item);
+    const missCount = Number(missesByTargetId[targetId]) || 0;
+    const wasSeen = completedTargetIds.has(targetId) || missCount > 0;
+
+    if (!wasSeen) {
+      return;
+    }
+
+    progress.timesSeen += 1;
+    progress.lastSeenSession = next.currentSessionNumber;
+
+    if (completedTargetIds.has(targetId)) {
+      progress.correctCount += 1;
+      progress.correctStreak += 1;
+    }
+
+    if (missCount > 0) {
+      progress.missCount += missCount;
+      progress.correctStreak = 0;
+    }
+
+    progress.status = getNextItemStatus(progress, missCount);
+    updateMemorySchedulingAfterAttempt(progress, {
+      isCorrect: completedTargetIds.has(targetId),
+      missCount
+    }, next, completedDate);
+    practicedItems.push(item);
+
+    if (isCurrentlyWeakProgress(progress) || progress.status === "introduced") {
+      weakItems.push(item);
+    }
+  });
+
+  const isCheckpoint = plan?.sessionType === "checkpoint" || plan?.sessionType === "remediationCheckpoint";
+  const totalMisses = Number.isFinite(result.incorrectCount)
+    ? Math.max(0, Number(result.incorrectCount))
+    : Object.values(missesByTargetId).reduce((sum, count) => sum + Number(count || 0), 0);
+  const totalCorrect = Number.isFinite(result.correctCount)
+    ? Math.max(0, Number(result.correctCount))
+    : completedTargetIds.size;
+  const totalAttempts = Math.max(1, totalCorrect + totalMisses);
+  const accuracy = Math.max(0, totalCorrect / totalAttempts);
+  const newMissLimitPassed = (plan?.newItems || []).every((item) => (missesByTargetId[item.targetId] || 0) <= 1);
+  const passedCheckpoint = !isCheckpoint || (accuracy >= 0.85 && newMissLimitPassed);
+  updateContinentsOceansProgress(next, plan, practicedItems, missesByTargetId, completedDate);
+
+  next.currentSessionNumber += 1;
+  next.lastDailyTrailSessionDate = completedDate;
+
+  if (isCheckpoint) {
+    if (passedCheckpoint) {
+      next.sessionsSinceLastCheckpoint = 0;
+      next.newSinceLastCheckpoint = [];
+      next.pendingRemediation = false;
+      next.pendingCheckpointRetry = false;
+    } else {
+      next.pendingRemediation = true;
+      next.pendingCheckpointRetry = false;
+    }
+  } else if (plan?.sessionType === "remediation-session") {
+    next.pendingRemediation = false;
+    next.pendingCheckpointRetry = true;
+  } else {
+    next.sessionsSinceLastCheckpoint += 1;
+  }
+
+  next.sessionsUntilNextCheckpoint = getSessionsUntilNextCheckpoint(next.sessionsSinceLastCheckpoint);
+  next.lastSessionSummary = {
+    sessionType: plan?.sessionType || "learning-session",
+    practicedCount: practicedItems.length,
+    newCount: (plan?.newItems || []).length,
+    reviewCount: Math.max(0, practicedItems.length - (plan?.newItems || []).length),
+    weakItems: dedupeItems(weakItems).map((item) => ({ id: item.id, label: item.label })),
+    sessionsUntilNextCheckpoint: next.sessionsUntilNextCheckpoint,
+    checkpointPassed: isCheckpoint ? passedCheckpoint : null
+  };
+
+  return saveDailyTrailState(next);
+}
+
+function buildLearningPlan(state, items) {
+  const availableItems = getNormalDailyTrailItems(state, items);
+  const activeActivityId = getNextLearningActivityId(state, availableItems);
+  const playableItems = activeActivityId
+    ? availableItems.filter((item) => item.homeActivityId === activeActivityId)
+    : availableItems;
+  const unseenItems = playableItems.filter((item) => getItemStatus(state, item) === "unseen");
+  const newItems = unseenItems.slice(0, dailyTrailNewItemCount);
+  const newItemIds = new Set(newItems.map((item) => item.id));
+  const reviewItems = selectDailyTrailReviewItems(state, playableItems, {
+    excludeIds: newItemIds,
+    limit: dailyTrailReviewItemCount,
+    requireDue: newItems.length > 0
+  });
+  const playItems = dedupeItems([
+    ...newItems,
+    ...reviewItems
+  ]);
+
+  return createPlan({
+    state,
+    sessionType: "learning-session",
+    title: "Daily Trail",
+    newItems,
+    reviewItems,
+    playItems,
+    allItems: items,
+    activeActivityId
+  });
+}
+
+function buildRemediationPlan(state, items) {
+  const availableItems = getNormalDailyTrailItems(state, items);
+  const activeActivityId = getReviewActivityId(state, getWeakItems(state, availableItems), availableItems);
+  const playableItems = activeActivityId
+    ? availableItems.filter((item) => item.homeActivityId === activeActivityId)
+    : availableItems;
+  const weakItems = getWeakItems(state, playableItems).slice(0, 10);
+  const fallbackLearning = playableItems.filter((item) => ["introduced", "learning"].includes(getItemStatus(state, item))).slice(0, 8);
+  const playItems = dedupeItems([...weakItems, ...fallbackLearning]).slice(0, 10);
+
+  return createPlan({
+    state,
+    sessionType: "remediation-session",
+    title: "Daily Trail Review",
+    newItems: [],
+    reviewItems: playItems,
+    playItems,
+    allItems: items,
+    activeActivityId
+  });
+}
+
+function buildCheckpointPlan(state, items, options = {}) {
+  const availableItems = getNormalDailyTrailItems(state, items);
+  const newSinceCheckpoint = state.newSinceLastCheckpoint
+    .map((id) => availableItems.find((item) => item.id === id))
+    .filter(Boolean);
+  const recentIds = new Set(newSinceCheckpoint.map((item) => item.id));
+  const weakRecentItems = getWeakItems(state, newSinceCheckpoint);
+  const activeActivityId = getCheckpointActivityId(state, newSinceCheckpoint, weakRecentItems, availableItems);
+  const sameActivityItems = activeActivityId
+    ? availableItems.filter((item) => item.homeActivityId === activeActivityId)
+    : availableItems;
+  const olderReviewItems = selectDailyTrailReviewItems(state, sameActivityItems, {
+    excludeIds: recentIds,
+    limit: Math.max(2, Math.min(6, Math.floor((options.maxItems || 22) * 0.28)))
+  });
+  const playItems = dedupeItems([
+    ...newSinceCheckpoint,
+    ...weakRecentItems,
+    ...olderReviewItems
+  ]).slice(0, options.maxItems || 22);
+  const playableItems = activeActivityId
+    ? playItems.filter((item) => item.homeActivityId === activeActivityId)
+    : playItems;
+
+  return createPlan({
+    state,
+    sessionType: options.sessionType || "checkpoint",
+    title: options.title || "Checkpoint",
+    newItems: [],
+    reviewItems: playableItems,
+    playItems: playableItems,
+    allItems: items,
+    activeActivityId
+  });
+}
+
+function buildContinentsOceansPlan(state, items, decision) {
+  const continentsOceansItems = getContinentsOceansItems(items);
+  const isFoundation = decision.type === "foundation";
+  const playItems = isFoundation
+    ? getNextContinentsOceansFoundationBatch(state, continentsOceansItems)
+    : decision.items?.length ? decision.items : continentsOceansItems;
+
+  return createPlan({
+    state,
+    sessionType: isFoundation ? "learning-session" : "continents-oceans-review",
+    title: isFoundation ? "Daily Trail" : "Continents and Oceans Review",
+    newItems: isFoundation ? playItems : [],
+    reviewItems: isFoundation ? [] : playItems,
+    playItems,
+    allItems: items,
+    activeActivityId: continentsOceansActivityId,
+    continentsOceansReviewType: decision.type
+  });
+}
+
+function createPlan({
+  state,
+  sessionType,
+  title,
+  newItems,
+  reviewItems,
+  playItems,
+  allItems,
+  activeActivityId,
+  continentsOceansReviewType = null
+}) {
+  const originalReviewItems = Array.isArray(reviewItems) ? reviewItems : [];
+  const originalPlayItems = Array.isArray(playItems) ? playItems : [];
+  const defensiveNewItems = dedupeItems([
+    ...(Array.isArray(newItems) ? newItems : []),
+    ...originalPlayItems.filter((item) => isItemUnseenForDailyTrail(state, item))
+  ].filter((item) => isItemUnseenForDailyTrail(state, item)));
+  const defensiveReviewItems = dedupeItems(originalReviewItems.filter((item) => isItemPracticeEligible(state, item)));
+  const defensivePracticeItems = originalPlayItems.filter((item) => isItemPracticeEligible(state, item));
+  const defensivePlayItems = dedupeItems([
+    ...defensiveNewItems,
+    ...defensivePracticeItems
+  ]);
+  warnIfUnseenPracticeItems(state, {
+    sessionType,
+    reviewItems: originalReviewItems,
+    playItems: originalPlayItems,
+    defensiveNewItems
+  });
+
+  const groupedItems = groupItemsByCamera(defensivePlayItems);
+  const firstGroup = activeActivityId
+    ? groupedItems.find((group) => group.homeActivityId === activeActivityId) || groupedItems[0] || null
+    : groupedItems[0] || null;
+  const resolvedActivityId = activeActivityId || firstGroup?.items?.[0]?.homeActivityId || defensivePlayItems[0]?.homeActivityId || allItems[0]?.homeActivityId || "";
+
+  return {
+    sessionType,
+    title,
+    activeActivityId: resolvedActivityId,
+    activeCameraGroupId: firstGroup?.cameraGroupId || "",
+    newItems: defensiveNewItems,
+    reviewItems: defensiveReviewItems,
+    playItems: defensivePlayItems,
+    allItems,
+    continentsOceansReviewType,
+    cameraGroups: groupedItems,
+    intro: {
+      newCount: defensiveNewItems.length,
+      reviewCount: defensiveReviewItems.length,
+      sessionsUntilNextCheckpoint: state.sessionsUntilNextCheckpoint
+    },
+    steps: [
+      { type: "review", items: defensiveReviewItems.slice(0, Math.ceil(defensiveReviewItems.length * 0.25)) },
+      { type: "study-new", items: defensiveNewItems },
+      { type: "guided-practice", items: dedupeItems([...defensiveNewItems, ...defensiveReviewItems]).slice(0, Math.max(4, defensiveNewItems.length + 2)) },
+      { type: "mixed-practice", items: defensivePlayItems }
+    ]
+  };
+}
+
+function getNextLearningActivityId(state, items) {
+  const nextUnseen = items.find((item) => getItemStatus(state, item) === "unseen");
+
+  if (nextUnseen) {
+    return nextUnseen.homeActivityId;
+  }
+
+  return getReviewActivityId(state, getWeakItems(state, items), items);
+}
+
+function getReviewActivityId(state, candidateItems, allItems) {
+  const candidates = candidateItems.length > 0
+    ? candidateItems
+    : allItems.filter((item) => isItemPracticeEligible(state, item));
+
+  if (candidates.length === 0) {
+    return allItems[0]?.homeActivityId || "";
+  }
+
+  const groups = new Map();
+  candidates.forEach((item) => {
+    const current = groups.get(item.homeActivityId) || {
+      homeActivityId: item.homeActivityId,
+      count: 0,
+      latestSeen: 0,
+      weakestMissCount: 0,
+      earliestOrder: item.order
+    };
+    const progress = state.itemProgress[item.id] || {};
+    current.count += 1;
+    current.latestSeen = Math.max(current.latestSeen, progress.lastSeenSession || 0);
+    current.weakestMissCount = Math.max(current.weakestMissCount, progress.missCount || 0);
+    current.earliestOrder = Math.min(current.earliestOrder, item.order);
+    groups.set(item.homeActivityId, current);
+  });
+
+  return Array.from(groups.values())
+    .sort((left, right) => (
+      right.weakestMissCount - left.weakestMissCount
+      || left.latestSeen - right.latestSeen
+      || right.count - left.count
+      || left.earliestOrder - right.earliestOrder
+    ))[0]?.homeActivityId || "";
+}
+
+function getCheckpointActivityId(state, recentItems, weakItems, allItems) {
+  const candidates = recentItems.length > 0
+    ? recentItems
+    : weakItems.length > 0
+      ? weakItems
+      : allItems.filter((item) => isItemPracticeEligible(state, item));
+
+  return candidates[0]?.homeActivityId || allItems[0]?.homeActivityId || "";
+}
+
+function selectDailyTrailReviewItems(state, items, options = {}) {
+  const excludeIds = options.excludeIds || new Set();
+  const limit = Math.max(0, Number(options.limit) || dailyTrailReviewItemCount);
+  const eligibleItems = items
+    .filter((item) => !excludeIds.has(item.id))
+    .filter((item) => isItemPracticeEligible(state, item));
+
+  if (limit <= 0 || eligibleItems.length === 0) {
+    return [];
+  }
+
+  const dueItems = eligibleItems.filter((item) => isReviewItemDue(state, item));
+  if (options.requireDue && dueItems.length === 0) {
+    return [];
+  }
+
+  const selectionPool = dueItems.length > 0 ? dueItems : eligibleItems;
+  const weakItems = selectionPool.filter((item) => {
+    const progress = state.itemProgress[item.id] || {};
+    return isCurrentlyWeakProgress(progress)
+      || progress.status === "introduced"
+      || (progress.status === "learning" && (progress.correctStreak || 0) <= 0);
+  });
+  const olderItems = selectionPool.filter((item) => !weakItems.includes(item));
+  const weakLimit = Math.min(weakItems.length, Math.ceil(limit * 0.45));
+  const olderLimit = Math.max(0, limit - weakLimit);
+
+  return dedupeItems([
+    ...sortItemsForReviewVariety(state, weakItems).slice(0, weakLimit),
+    ...sortItemsForReviewVariety(state, olderItems).slice(0, olderLimit)
+  ]).slice(0, limit);
+}
+
+function isReviewItemDue(state, item) {
+  return isDailyTrailItemDue(state, item);
+}
+
+function sortItemsForReviewVariety(state, items) {
+  return [...items].sort((left, right) => {
+    const leftProgress = state.itemProgress[left.id] || {};
+    const rightProgress = state.itemProgress[right.id] || {};
+    const leftPriority = getReviewPriority(state, left);
+    const rightPriority = getReviewPriority(state, right);
+    return rightPriority.isDue - leftPriority.isDue
+      || rightPriority.overdueScore - leftPriority.overdueScore
+      || rightPriority.isRelearning - leftPriority.isRelearning
+      || rightPriority.isWeak - leftPriority.isWeak
+      || leftPriority.retrievability - rightPriority.retrievability
+      || (leftProgress.lastReviewedSession || leftProgress.lastSeenSession || 0) - (rightProgress.lastReviewedSession || rightProgress.lastSeenSession || 0)
+      || (rightProgress.missCount || 0) - (leftProgress.missCount || 0)
+      || (leftProgress.timesSeen || 0) - (rightProgress.timesSeen || 0)
+      || getRotatingOrder(left, state.currentSessionNumber) - getRotatingOrder(right, state.currentSessionNumber);
+  });
+}
+
+function isDailyTrailItemDue(state, item) {
+  if (!isItemPracticeEligible(state, item)) {
+    return false;
+  }
+
+  const progress = state.itemProgress[item.id] || {};
+  if (isCurrentlyWeakProgress(progress) || progress.status === "introduced" || progress.memoryState === "relearning") {
+    return true;
+  }
+
+  if (progress.status === "learning" && (progress.correctStreak || 0) <= 0) {
+    return true;
+  }
+
+  const currentSessionNumber = Math.max(1, Number(state.currentSessionNumber) || 1);
+  const sessionDue = Number.isFinite(Number(progress.dueSession)) && Number(progress.dueSession) <= currentSessionNumber;
+  const dateDue = Boolean(progress.dueDate) && getDateGapInDays(progress.dueDate, getLocalDateString()) >= 0;
+
+  if (sessionDue || dateDue) {
+    return true;
+  }
+
+  if (!Number.isFinite(Number(progress.dueSession)) && !progress.dueDate) {
+    return getSessionGap(currentSessionNumber, progress.lastSeenSession || 0) >= reviewCooldownSessions;
+  }
+
+  return false;
+}
+
+function getReviewPriority(state, item) {
+  const progress = state.itemProgress[item.id] || {};
+  const currentSessionNumber = Math.max(1, Number(state.currentSessionNumber) || 1);
+  const dueSession = Number.isFinite(Number(progress.dueSession)) ? Number(progress.dueSession) : null;
+  const sessionOverdue = dueSession === null ? 0 : Math.max(0, currentSessionNumber - dueSession);
+  const dateOverdue = progress.dueDate ? Math.max(0, getDateGapInDays(progress.dueDate, getLocalDateString())) : 0;
+
+  return {
+    isDue: isDailyTrailItemDue(state, item) ? 1 : 0,
+    overdueScore: sessionOverdue + dateOverdue,
+    isRelearning: progress.memoryState === "relearning" ? 1 : 0,
+    isWeak: isCurrentlyWeakProgress(progress) ? 1 : 0,
+    retrievability: clampNumber(progress.retrievability, minRetrievability, maxRetrievability, 0.5)
+  };
+}
+
+function getRotatingOrder(item, sessionNumber) {
+  const stable = Math.abs(hashString(item.id));
+  return (stable + Math.max(0, Number(sessionNumber) || 0) * 37) % 997;
+}
+
+function hashString(value) {
+  return String(value || "").split("").reduce((hash, char) => (
+    ((hash << 5) - hash + char.charCodeAt(0)) | 0
+  ), 0);
+}
+
+function getNormalDailyTrailItems(state, items) {
+  if (!state.continentsOceansProgress.completedOnce) {
+    return items;
+  }
+
+  return items.filter((item) => !isContinentsOceansItem(item));
+}
+
+function getContinentsOceansReviewDecision(state, items) {
+  const continentsOceansItems = getContinentsOceansItems(items);
+
+  if (continentsOceansItems.length === 0) {
+    return null;
+  }
+
+  const progress = state.continentsOceansProgress;
+
+  if (!isContinentsOceansFoundationComplete(state, continentsOceansItems)) {
+    return {
+      type: "foundation",
+      items: getNextContinentsOceansFoundationBatch(state, continentsOceansItems)
+    };
+  }
+
+  if (isContinentsOceansFullReviewEligible(state)) {
+    return {
+      type: "full",
+      items: continentsOceansItems
+    };
+  }
+
+  if (!isContinentsOceansSmallReviewEligible(state)) {
+    return null;
+  }
+
+  const count = progress.masteryStatus === "strong" || progress.masteryStatus === "mastered"
+    ? Math.min(2, continentsOceansItems.length)
+    : Math.min(4, continentsOceansItems.length);
+
+  return {
+    type: "small",
+    items: selectContinentsOceansReviewItems(state, continentsOceansItems, count)
+  };
+}
+
+function isContinentsOceansSmallReviewEligible(state) {
+  const progress = state.continentsOceansProgress;
+  const sessionGap = getSessionGap(state.currentSessionNumber, progress.lastReviewedSession);
+  const requiredSessionGap = progress.masteryStatus === "strong" || progress.masteryStatus === "mastered"
+    ? continentsOceansStrongReviewSessionInterval
+    : continentsOceansSmallReviewSessionCooldown;
+
+  return sessionGap >= requiredSessionGap
+    && isDateCooldownReady(state.lastContinentsOceansSmallReviewDate, 1);
+}
+
+function isContinentsOceansFullReviewEligible(state) {
+  const progress = state.continentsOceansProgress;
+
+  if (!["weak", "developing"].includes(progress.masteryStatus)) {
+    return false;
+  }
+
+  if (progress.recentMisses < 2) {
+    return false;
+  }
+
+  return getSessionGap(state.currentSessionNumber, progress.lastFullReviewSession) >= continentsOceansFullReviewSessionCooldown
+    && isDateCooldownReady(state.lastContinentsOceansFullReviewDate, continentsOceansFullReviewDayCooldown);
+}
+
+function selectContinentsOceansReviewItems(state, items, count) {
+  return items
+    .filter((item) => isItemPracticeEligible(state, item))
+    .map((item) => ({
+      item,
+      progress: state.itemProgress[item.id] || {}
+    }))
+    .sort((left, right) => (
+      getReviewPriority(state, right.item).isDue - getReviewPriority(state, left.item).isDue
+      || getReviewPriority(state, right.item).overdueScore - getReviewPriority(state, left.item).overdueScore
+      || (right.progress.missCount || 0) - (left.progress.missCount || 0)
+      || (left.progress.lastReviewedSession || left.progress.lastSeenSession || 0) - (right.progress.lastReviewedSession || right.progress.lastSeenSession || 0)
+      || left.item.order - right.item.order
+    ))
+    .slice(0, count)
+    .map(({ item }) => item);
+}
+
+function getContinentsOceansItems(items) {
+  return items.filter(isContinentsOceansItem);
+}
+
+function isContinentsOceansItem(item) {
+  return item?.homeActivityId === continentsOceansActivityId;
+}
+
+function getRemainingContinentsOceansFoundationItems(state, items) {
+  const coveredIds = new Set([
+    ...(state.continentsOceansProgress.quizCoveredItemIds || []),
+    ...items
+      .filter((item) => {
+        const progress = state.itemProgress[item.id];
+        return progress && progress.timesSeen > 0 && progress.status !== "unseen";
+      })
+      .map((item) => item.id)
+  ]);
+  const remainingItems = items.filter((item) => !coveredIds.has(item.id));
+
+  return remainingItems.length > 0 ? remainingItems : items;
+}
+
+function getNextContinentsOceansFoundationBatch(state, items) {
+  return getRemainingContinentsOceansFoundationItems(state, items)
+    .slice(0, continentsOceansFoundationBatchSize);
+}
+
+function isContinentsOceansFoundationComplete(state, items) {
+  if (!items.length) {
+    return false;
+  }
+
+  const itemIds = new Set(items.map((item) => item.id));
+  const introducedIds = new Set([
+    ...(state.continentsOceansProgress.introducedItemIds || []),
+    ...state.introducedItemIds.filter((id) => itemIds.has(id)),
+    ...items
+      .filter((item) => practiceEligibleStatuses.has(getItemStatus(state, item)))
+      .map((item) => item.id)
+  ]);
+  const quizCoveredIds = new Set([
+    ...(state.continentsOceansProgress.quizCoveredItemIds || []),
+    ...items
+      .filter((item) => {
+        const progress = state.itemProgress[item.id];
+        return progress && progress.timesSeen > 0;
+      })
+      .map((item) => item.id)
+  ]);
+
+  return items.every((item) => introducedIds.has(item.id) && quizCoveredIds.has(item.id));
+}
+
+function normalizeItemProgress(value, stateContext = {}) {
+  const entries = value && typeof value === "object" ? Object.entries(value) : [];
+
+  return Object.fromEntries(entries.map(([itemId, progress]) => {
+    const normalizedProgress = {
+      status: validStatuses.has(progress?.status) ? progress.status : "unseen",
+      timesSeen: Math.max(0, Number(progress?.timesSeen) || 0),
+      correctCount: Math.max(0, Number(progress?.correctCount) || 0),
+      missCount: Math.max(0, Number(progress?.missCount) || 0),
+      correctStreak: Math.max(0, Number(progress?.correctStreak) || 0),
+      lastSeenSession: Math.max(0, Number(progress?.lastSeenSession) || 0),
+      introducedSession: Math.max(0, Number(progress?.introducedSession) || 0)
+    };
+    const memoryFields = getDefaultMemoryFields({
+      ...progress,
+      ...normalizedProgress
+    }, stateContext);
+
+    return [
+      itemId,
+      {
+        ...normalizedProgress,
+        memoryState: normalizeMemoryState(progress, normalizedProgress, stateContext),
+        difficulty: clampNumber(progress?.difficulty, minMemoryDifficulty, maxMemoryDifficulty, memoryFields.difficulty),
+        stability: Math.max(0, Number.isFinite(Number(progress?.stability)) ? Number(progress.stability) : memoryFields.stability),
+        retrievability: clampNumber(progress?.retrievability, minRetrievability, maxRetrievability, memoryFields.retrievability),
+        dueSession: normalizeOptionalDueSession(progress?.dueSession, memoryFields.dueSession),
+        dueDate: normalizeLocalDateString(progress?.dueDate) || memoryFields.dueDate,
+        lastReviewedSession: normalizeOptionalDueSession(progress?.lastReviewedSession, memoryFields.lastReviewedSession) || 0,
+        lastReviewedDate: normalizeLocalDateString(progress?.lastReviewedDate) || memoryFields.lastReviewedDate,
+        lapseCount: Math.max(0, Number(progress?.lapseCount) || memoryFields.lapseCount)
+      }
+    ];
+  }));
+}
+
+function normalizeMemoryState(progress = {}, normalizedProgress = {}, stateContext = {}) {
+  if (normalizedProgress.status === "unseen") {
+    return "new";
+  }
+
+  if (isCurrentlyWeakProgress(normalizedProgress)) {
+    return "relearning";
+  }
+
+  if (validMemoryStates.has(progress?.memoryState) && progress.memoryState !== "new") {
+    return progress.memoryState;
+  }
+
+  return getDefaultMemoryFields(normalizedProgress, stateContext).memoryState;
+}
+
+function getDefaultMemoryFields(progress = {}, stateContext = {}) {
+  const currentSessionNumber = Math.max(1, Number(stateContext.currentSessionNumber) || 1);
+  const reviewedSession = Math.max(0, Number(progress.lastReviewedSession || progress.lastSeenSession) || 0);
+  const reviewedDate = normalizeLocalDateString(progress.lastReviewedDate)
+    || normalizeLocalDateString(stateContext.lastDailyTrailSessionDate);
+
+  if (progress.status === "unseen") {
+    return {
+      memoryState: "new",
+      difficulty: defaultMemoryDifficulty,
+      stability: 0,
+      retrievability: 0,
+      dueSession: null,
+      dueDate: null,
+      lastReviewedSession: 0,
+      lastReviewedDate: null,
+      lapseCount: 0
+    };
+  }
+
+  if (progress.status === "introduced") {
+    return {
+      memoryState: "learning",
+      difficulty: defaultMemoryDifficulty,
+      stability: 0.5,
+      retrievability: 0.35,
+      dueSession: currentSessionNumber,
+      dueDate: getLocalDateString(),
+      lastReviewedSession: reviewedSession,
+      lastReviewedDate: reviewedDate,
+      lapseCount: Math.max(0, Number(progress.lapseCount) || 0)
+    };
+  }
+
+  if (progress.status === "learning" && isCurrentlyWeakProgress(progress)) {
+    return {
+      memoryState: "relearning",
+      difficulty: Math.min(maxMemoryDifficulty, defaultMemoryDifficulty + 1),
+      stability: 0.5,
+      retrievability: 0.25,
+      dueSession: currentSessionNumber,
+      dueDate: getLocalDateString(),
+      lastReviewedSession: reviewedSession,
+      lastReviewedDate: reviewedDate,
+      lapseCount: Math.max(0, Number(progress.lapseCount) || 0)
+    };
+  }
+
+  const stability = getDefaultStability(progress);
+  return {
+    memoryState: progress.status === "review" || progress.status === "mastered" ? "review" : "learning",
+    difficulty: defaultMemoryDifficulty,
+    stability,
+    retrievability: progress.status === "mastered" ? 0.9 : progress.status === "review" ? 0.82 : 0.65,
+    dueSession: reviewedSession > 0 ? reviewedSession + Math.max(1, Math.round(stability)) : currentSessionNumber + 1,
+    dueDate: reviewedDate ? addDaysToLocalDate(reviewedDate, Math.max(1, Math.round(stability))) : null,
+    lastReviewedSession: reviewedSession,
+    lastReviewedDate: reviewedDate,
+    lapseCount: Math.max(0, Number(progress.lapseCount) || 0)
+  };
+}
+
+function getDefaultStability(progress = {}) {
+  if (progress.status === "mastered") {
+    return Math.max(7, Number(progress.correctStreak) || 0);
+  }
+
+  if (progress.status === "review") {
+    return Math.max(3, Number(progress.correctStreak) || 0);
+  }
+
+  if ((progress.correctStreak || 0) > 0) {
+    return 1;
+  }
+
+  return 0.5;
+}
+
+function normalizeContinentsOceansProgress(value = {}) {
+  const masteryStatus = continentsOceansStatuses.has(value?.masteryStatus)
+    ? value.masteryStatus
+    : "unseen";
+
+  return {
+    completedOnce: Boolean(value?.completedOnce),
+    masteryStatus,
+    lastReviewedSession: normalizeOptionalSessionNumber(value?.lastReviewedSession),
+    lastFullReviewSession: normalizeOptionalSessionNumber(value?.lastFullReviewSession),
+    recentMisses: Math.max(0, Number(value?.recentMisses) || 0),
+    fullReviewPasses: Math.max(0, Number(value?.fullReviewPasses) || 0),
+    introducedItemIds: Array.isArray(value?.introducedItemIds) ? value.introducedItemIds.filter(Boolean) : [],
+    quizCoveredItemIds: Array.isArray(value?.quizCoveredItemIds) ? value.quizCoveredItemIds.filter(Boolean) : []
+  };
+}
+
+function normalizeOptionalSessionNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? Math.floor(number) : null;
+}
+
+function normalizeOptionalDueSession(value, fallback = null) {
+  const number = Number(value);
+  if (Number.isFinite(number) && number >= 0) {
+    return Math.floor(number);
+  }
+
+  return fallback;
+}
+
+function clampNumber(value, min, max, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    return fallback;
+  }
+
+  return Math.min(max, Math.max(min, number));
+}
+
+function getDailyTrailItemType(activity, target) {
+  if (target.type === "zone") {
+    return "ocean";
+  }
+
+  if (target.type === "region") {
+    return "continent";
+  }
+
+  if (target.type === "capital") {
+    return "capital";
+  }
+
+  if (target.type === "city") {
+    return "city";
+  }
+
+  if (/state/i.test(activity?.targetNoun || "")) {
+    return "state";
+  }
+
+  return "country";
+}
+
+function getOrCreateItemProgress(state, item) {
+  if (!state.itemProgress[item.id]) {
+    state.itemProgress[item.id] = {
+      status: "unseen",
+      timesSeen: 0,
+      correctCount: 0,
+      missCount: 0,
+      correctStreak: 0,
+      lastSeenSession: 0,
+      introducedSession: 0,
+      memoryState: "new",
+      difficulty: defaultMemoryDifficulty,
+      stability: 0,
+      retrievability: 0,
+      dueSession: null,
+      dueDate: null,
+      lastReviewedSession: 0,
+      lastReviewedDate: null,
+      lapseCount: 0
+    };
+  }
+
+  return state.itemProgress[item.id];
+}
+
+function getItemStatus(state, item) {
+  return state.itemProgress[item.id]?.status
+    || (state.introducedItemIds.includes(item.id) ? "introduced" : "unseen");
+}
+
+function isItemUnseenForDailyTrail(state, item) {
+  return getItemStatus(state, item) === "unseen";
+}
+
+function isItemPracticeEligible(state, item) {
+  return practiceEligibleStatuses.has(getItemStatus(state, item));
+}
+
+function warnIfUnseenPracticeItems(state, { sessionType, reviewItems = [], playItems = [], defensiveNewItems = [] } = {}) {
+  if (!ENABLE_DAILY_TRAIL_DEBUG || typeof console === "undefined") {
+    return;
+  }
+
+  const newIds = new Set(defensiveNewItems.map((item) => item.id));
+  const unseenReviewItems = reviewItems.filter((item) => isItemUnseenForDailyTrail(state, item));
+  const unseenPracticeItems = playItems.filter((item) => isItemUnseenForDailyTrail(state, item) && !newIds.has(item.id));
+
+  if (unseenReviewItems.length === 0 && unseenPracticeItems.length === 0) {
+    return;
+  }
+
+  console.warn("[Daily Trail planner] moved unseen items out of practice/review", {
+    sessionType,
+    unseenReviewItems: unseenReviewItems.map((item) => ({ id: item.id, label: item.label, homeActivityId: item.homeActivityId })),
+    unseenPracticeItems: unseenPracticeItems.map((item) => ({ id: item.id, label: item.label, homeActivityId: item.homeActivityId }))
+  });
+}
+
+function getLastSeenSession(state, item) {
+  return state.itemProgress[item.id]?.lastSeenSession || 0;
+}
+
+function getWeakItems(state, items) {
+  return items
+    .filter((item) => {
+      const progress = state.itemProgress[item.id];
+      return progress && (
+        isCurrentlyWeakProgress(progress)
+        || progress.status === "introduced"
+        || (progress.status === "learning" && (progress.correctStreak || 0) <= 0)
+      );
+    })
+    .sort((left, right) => {
+      const leftProgress = state.itemProgress[left.id] || {};
+      const rightProgress = state.itemProgress[right.id] || {};
+      return (rightProgress.missCount || 0) - (leftProgress.missCount || 0)
+        || (leftProgress.lastSeenSession || 0) - (rightProgress.lastSeenSession || 0);
+    });
+}
+
+function isCurrentlyWeakProgress(progress = {}) {
+  return (progress.missCount || 0) > 0 && (progress.correctStreak || 0) <= 0;
+}
+
+function getNextItemStatus(progress, missCount) {
+  if (missCount > 0) {
+    return progress.missCount >= 2 ? "learning" : progress.status === "mastered" ? "review" : "learning";
+  }
+
+  if (progress.status === "introduced") {
+    return "learning";
+  }
+
+  if (progress.correctCount >= 7 && progress.correctStreak >= 4 && progress.timesSeen >= 4) {
+    return "mastered";
+  }
+
+  if (progress.correctCount >= 3 && progress.correctStreak >= 2 && progress.timesSeen >= 2) {
+    return "review";
+  }
+
+  return "learning";
+}
+
+function updateMemorySchedulingAfterAttempt(progress, result, state, completedDate) {
+  const isCorrect = Boolean(result?.isCorrect);
+  const missCount = Math.max(0, Number(result?.missCount) || 0);
+  const currentSessionNumber = Math.max(1, Number(state.currentSessionNumber) || 1);
+
+  progress.lastReviewedSession = currentSessionNumber;
+  progress.lastReviewedDate = completedDate;
+
+  if (missCount > 0) {
+    progress.lapseCount = Math.max(0, Number(progress.lapseCount) || 0) + missCount;
+    progress.memoryState = "relearning";
+    progress.difficulty = clampNumber((Number(progress.difficulty) || defaultMemoryDifficulty) + 0.6, minMemoryDifficulty, maxMemoryDifficulty, defaultMemoryDifficulty);
+    progress.stability = Math.max(0.5, (Number(progress.stability) || 1) * 0.45);
+    progress.retrievability = clampNumber((Number(progress.retrievability) || 0.5) * 0.45, minRetrievability, maxRetrievability, 0.25);
+    progress.dueSession = currentSessionNumber;
+    progress.dueDate = completedDate;
+    return;
+  }
+
+  if (!isCorrect) {
+    return;
+  }
+
+  const previousStability = Math.max(0, Number(progress.stability) || 0);
+  const growth = progress.status === "review" || progress.status === "mastered"
+    ? 1.8
+    : progress.status === "learning"
+      ? 1.25
+      : 1;
+  const streakBonus = Math.min(2, Math.max(0, Number(progress.correctStreak) || 0) * 0.25);
+
+  progress.memoryState = progress.status === "review" || progress.status === "mastered" ? "review" : "learning";
+  progress.difficulty = clampNumber((Number(progress.difficulty) || defaultMemoryDifficulty) - 0.15, minMemoryDifficulty, maxMemoryDifficulty, defaultMemoryDifficulty);
+  progress.stability = Math.max(1, previousStability + growth + streakBonus);
+  progress.retrievability = clampNumber((Number(progress.retrievability) || 0.55) + 0.18, minRetrievability, 0.97, 0.73);
+
+  const interval = Math.max(1, Math.round(progress.stability));
+  progress.dueSession = currentSessionNumber + interval;
+  progress.dueDate = addDaysToLocalDate(completedDate, interval);
+}
+
+function updateContinentsOceansProgress(state, plan, practicedItems, missesByTargetId, completedDate) {
+  const practicedContinentsOceansItems = practicedItems.filter(isContinentsOceansItem);
+
+  if (practicedContinentsOceansItems.length === 0 && !plan?.continentsOceansReviewType) {
+    return;
+  }
+
+  const progress = state.continentsOceansProgress;
+  const reviewType = plan?.continentsOceansReviewType || "small";
+  const missCount = practicedContinentsOceansItems.reduce((sum, item) => (
+    sum + (Number(missesByTargetId[item.targetId]) || 0)
+  ), 0);
+  const promptCount = Math.max(1, practicedContinentsOceansItems.length);
+  const accuracy = Math.max(0, (promptCount - Math.min(promptCount, missCount)) / promptCount);
+  const isFullReview = reviewType === "foundation" || reviewType === "full";
+  const strongPerformance = accuracy >= 0.9 && missCount <= 1;
+  const weakPerformance = missCount >= 3 || accuracy < 0.75;
+  const allContinentsOceansItems = getContinentsOceansItems(plan?.allItems || []);
+  const allContinentsOceansItemIds = new Set(allContinentsOceansItems.map((item) => item.id));
+
+  practicedContinentsOceansItems.forEach((item) => {
+    progress.quizCoveredItemIds = addUnique(progress.quizCoveredItemIds, item.id);
+    if (isItemPracticeEligible(state, item)) {
+      progress.introducedItemIds = addUnique(progress.introducedItemIds, item.id);
+    }
+  });
+
+  const introducedCount = progress.introducedItemIds.filter((id) => allContinentsOceansItemIds.has(id)).length;
+  const quizCoveredCount = progress.quizCoveredItemIds.filter((id) => allContinentsOceansItemIds.has(id)).length;
+  progress.completedOnce = allContinentsOceansItems.length > 0
+    && introducedCount >= allContinentsOceansItems.length
+    && quizCoveredCount >= allContinentsOceansItems.length;
+  progress.lastReviewedSession = state.currentSessionNumber;
+  progress.recentMisses = missCount;
+
+  if (reviewType === "small") {
+    state.lastContinentsOceansSmallReviewDate = completedDate;
+  }
+
+  if (isFullReview) {
+    progress.lastFullReviewSession = state.currentSessionNumber;
+    state.lastContinentsOceansFullReviewDate = completedDate;
+  }
+
+  if (strongPerformance) {
+    progress.fullReviewPasses += 1;
+    progress.masteryStatus = progress.fullReviewPasses >= 2 ? "mastered" : "strong";
+  } else if (weakPerformance) {
+    progress.masteryStatus = "weak";
+  } else {
+    progress.masteryStatus = progress.masteryStatus === "unseen" ? "developing" : "developing";
+  }
+}
+
+function groupItemsByCamera(items) {
+  const groups = new Map();
+
+  items.forEach((item) => {
+    const key = item.cameraGroupId || item.homeActivityId || "world";
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key).push(item);
+  });
+
+  return Array.from(groups.entries()).map(([cameraGroupId, groupItems]) => ({
+    cameraGroupId,
+    homeActivityId: groupItems[0]?.homeActivityId || "",
+    items: groupItems
+  }));
+}
+
+function dedupeItems(items) {
+  const byId = new Map();
+  items.filter(Boolean).forEach((item) => {
+    if (!byId.has(item.id)) {
+      byId.set(item.id, item);
+    }
+  });
+  return Array.from(byId.values()).sort((left, right) => left.order - right.order);
+}
+
+function addUnique(items, item) {
+  return items.includes(item) ? items : [...items, item];
+}
+
+function getSessionsUntilNextCheckpoint(sessionsSinceLastCheckpoint) {
+  return Math.max(0, dailyTrailCheckpointInterval - 1 - sessionsSinceLastCheckpoint);
+}
+
+function getSessionGap(currentSessionNumber, previousSessionNumber) {
+  if (!previousSessionNumber) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  return Math.max(0, currentSessionNumber - previousSessionNumber);
+}
+
+function isDateCooldownReady(lastDate, requiredDays) {
+  if (!lastDate) {
+    return true;
+  }
+
+  return getDateGapInDays(lastDate, getLocalDateString()) >= requiredDays;
+}
+
+function getLocalDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function addDaysToLocalDate(value, days) {
+  const date = parseLocalDate(value);
+  if (!date) {
+    return null;
+  }
+
+  date.setDate(date.getDate() + Math.max(0, Math.floor(Number(days) || 0)));
+  return getLocalDateString(date);
+}
+
+function normalizeLocalDateString(value) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
+}
+
+function getDateGapInDays(fromDate, toDate) {
+  const from = parseLocalDate(fromDate);
+  const to = parseLocalDate(toDate);
+
+  if (!from || !to) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  return Math.floor((to.getTime() - from.getTime()) / 86400000);
+}
+
+function parseLocalDate(value) {
+  if (!normalizeLocalDateString(value)) {
+    return null;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function logDailyTrailPlan(state, items, plan) {
+  if (!ENABLE_DAILY_TRAIL_DEBUG || typeof console === "undefined") {
+    return;
+  }
+
+  const unseenCount = items.filter((item) => getItemStatus(state, item) === "unseen").length;
+  const introducedCount = items.filter((item) => state.introducedItemIds.includes(item.id)).length;
+  const continentsOceansItems = getContinentsOceansItems(items);
+  const continentsOceansRemainingItems = getRemainingContinentsOceansFoundationItems(state, continentsOceansItems);
+
+  console.log("[Daily Trail planner]", {
+    itemCount: items.length,
+    unseenCount,
+    introducedCount,
+    continentsOceans: {
+      totalCount: continentsOceansItems.length,
+      introducedCount: continentsOceansItems.filter((item) => (
+        state.continentsOceansProgress.introducedItemIds.includes(item.id)
+        || practiceEligibleStatuses.has(getItemStatus(state, item))
+      )).length,
+      quizCoveredCount: continentsOceansItems.filter((item) => (
+        state.continentsOceansProgress.quizCoveredItemIds.includes(item.id)
+        || (state.itemProgress[item.id]?.timesSeen || 0) > 0
+      )).length,
+      remainingLabels: continentsOceansRemainingItems.map((item) => item.label),
+      foundationComplete: isContinentsOceansFoundationComplete(state, continentsOceansItems),
+      advanceAllowed: plan.activeActivityId !== continentsOceansActivityId
+    },
+    currentSessionNumber: state.currentSessionNumber,
+    sessionsUntilNextCheckpoint: state.sessionsUntilNextCheckpoint,
+    sessionType: plan.sessionType,
+    activeActivityId: plan.activeActivityId,
+    newItems: plan.newItems.map((item) => ({
+      id: item.id,
+      label: item.label,
+      homeActivityId: item.homeActivityId,
+      cameraGroupId: item.cameraGroupId
+    })),
+    reviewItems: plan.reviewItems.map((item) => ({
+      id: item.id,
+      label: item.label,
+      homeActivityId: item.homeActivityId,
+      cameraGroupId: item.cameraGroupId
+    }))
+  });
+}

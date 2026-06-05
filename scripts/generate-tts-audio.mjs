@@ -42,7 +42,6 @@ const baseInstructionPhrases = [
   "Great job.",
   "Activity complete.",
   "Study the places, then try the challenge.",
-  "Learn these places first.",
   "Match each name to its place."
 ];
 
@@ -354,6 +353,8 @@ function createMemoryTrailInstructionPhrases(nounPhrases) {
     }
 
     phrases.add(`Find the named ${singularNoun}.`);
+    phrases.add(`Learn this ${singularNoun}`);
+    phrases.add(`Learn these ${pluralizeInstructionNounPhrase(singularNoun)}`);
     phrases.add(`Name the highlighted ${pluralizeInstructionNounPhrase(singularNoun)}.`);
   });
 

@@ -578,7 +578,7 @@
     return svg;
   }
 
-  function createChipSpeakerControl(labelText) {
+  function createChipSpeakerControl(labelText, options = {}) {
     if (!isAudioOutputSupported()) {
       return null;
     }
@@ -595,6 +595,7 @@
     const speakFromGesture = (event) => {
       stopChipInteraction(event);
       lastSpeechGestureAt = Date.now();
+      options.onActivate?.(event);
       debugChipSpeech(labelText, event.type);
       primeLocalAudio();
       getAudioManifest();
@@ -609,6 +610,7 @@
       }
 
       lastSpeechGestureAt = Date.now();
+      options.onActivate?.(event);
       debugChipSpeech(labelText, event.type);
       speakLabel(labelText);
     };
