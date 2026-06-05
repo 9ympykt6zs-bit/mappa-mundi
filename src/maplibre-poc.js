@@ -172,6 +172,13 @@ const continentsOceansLearnFocusProfiles = Object.freeze({
   "indian-ocean": { forceOnPromptStart: true },
   "southern-ocean": { forceOnPromptStart: true }
 });
+const continentsOceansNamePromptFocusProfiles = Object.freeze({
+  africa: { forceOnPromptStart: true },
+  asia: { forceOnPromptStart: true },
+  australia: { forceOnPromptStart: true },
+  oceania: { forceOnPromptStart: true },
+  "southern-ocean": { forceOnPromptStart: true }
+});
 const defaultMenuRoot = "world";
 const defaultMapSet = "world-europe";
 const completedActivitiesStorageKey = "geography-memory-completed-activities";
@@ -7945,31 +7952,77 @@ function maybeFocusContinentsOceansNamePrompt(selection, target) {
     session.currentActivity?.id !== continentsOceansActivityId
     || selection?.promptType !== "place_to_name"
     || memoryTrail?.activityId !== continentsOceansActivityId
-    || memoryTrail.source !== "memory-trail"
     || memoryTrail.sessionPhase !== "practice"
-    || activeDailyTrailSession
+    || selection?.mode === "learn"
     || !target
     || typeof runner?.focusTargetIfNeeded !== "function"
   ) {
     return false;
   }
 
+  const promptKey = memoryTrail.currentPromptKey;
+  const delayMs = memoryTrail.promptHistory?.length <= 1 ? 220 : 80;
+  const timeoutId = window.setTimeout(() => {
+    if (
+      !isCurrentMemoryTrailState(memoryTrail)
+      || memoryTrail.currentPromptKey !== promptKey
+      || memoryTrail.currentPromptTargetId !== selection.targetId
+      || memoryTrail.currentPromptType !== "place_to_name"
+      || memoryTrail.currentPromptMode === "learn"
+    ) {
+      debugMemoryTrail("C&O place-to-name focus canceled", {
+        targetId: target.id,
+        targetName: target.name,
+        reason: "prompt changed before deferred focus"
+      });
+      return;
+    }
+
+    focusContinentsOceansNamePromptTarget(memoryTrail, target);
+  }, delayMs);
+  memoryTrail.timers.push(timeoutId);
+  return true;
+}
+
+function getContinentsOceansNamePromptFocusProfile(target) {
+  return continentsOceansNamePromptFocusProfiles[target?.id] || {};
+}
+
+function shouldForceContinentsOceansNamePromptFocus(memoryTrail, target, focusProfile = {}) {
+  if (focusProfile.forceOnPromptStart) {
+    return true;
+  }
+
+  const stats = target?.id ? memoryTrail?.targetStats?.[target.id] : null;
+  return Boolean(
+    target?.type === "zone"
+    && stats
+    && stats.placeToNameAttempts > 0
+  );
+}
+
+function focusContinentsOceansNamePromptTarget(memoryTrail, target) {
+  const focusProfile = getContinentsOceansNamePromptFocusProfile(target);
   const isOcean = target.type === "zone";
+  const forceFocus = shouldForceContinentsOceansNamePromptFocus(memoryTrail, target, focusProfile);
   const didFocus = runner.focusTargetIfNeeded(target, {
     duration: 700,
+    force: forceFocus,
     zoomTolerance: isOcean ? 0.55 : 0.75,
     comfortPadding: {
-      top: 110,
-      right: 48,
-      bottom: 220,
-      left: 48
+      top: isOcean ? 130 : 110,
+      right: isOcean ? 120 : 48,
+      bottom: isOcean ? 235 : 220,
+      left: isOcean ? 120 : 48
     }
   });
 
   debugMemoryTrail("C&O place-to-name focus", {
+    source: memoryTrail?.source || "",
     targetId: target.id,
     targetName: target.name,
     targetType: target.type,
+    force: forceFocus,
     didFocus
   });
 
