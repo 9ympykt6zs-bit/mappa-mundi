@@ -7205,8 +7205,8 @@ function getMemoryTrailInstructionText(promptType, phase, mode = "", activity = 
   if (promptType === "guided" || phase === "learn") {
     if (activity?.id === continentsOceansActivityId) {
       return {
-        banner: "Say the name, then tap the highlighted place.",
-        label: "Say the name, then tap the highlighted place."
+        banner: "Tap the highlighted place. Then repeat its name.",
+        label: "Tap the highlighted place. Then repeat its name."
       };
     }
 

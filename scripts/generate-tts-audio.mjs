@@ -74,7 +74,7 @@ const memoryTrailInstructionNouns = [
 const instructionPhrases = [
   ...baseInstructionPhrases,
   "Learn these continents and oceans",
-  "Say the name, then tap the highlighted place.",
+  "Tap the highlighted place. Then repeat its name.",
   ...createMemoryTrailInstructionPhrases(memoryTrailInstructionNouns)
 ];
 
