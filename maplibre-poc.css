@@ -320,6 +320,14 @@ select,
   width: 100%;
 }
 
+.launch-media-card:nth-of-type(1) .launch-media-card-shot img {
+  object-position: center 28%;
+}
+
+.launch-media-card:nth-of-type(2) .launch-media-card-shot img {
+  object-position: center 22%;
+}
+
 .launch-card-grid {
   display: grid;
   gap: 18px;
@@ -3964,7 +3972,8 @@ body.browse-mode .answer-panel-title {
   }
 
   body.launch-mode {
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   body.app-shell-mode {
@@ -3973,7 +3982,11 @@ body.browse-mode .answer-panel-title {
 
   .launch-screen {
     align-content: start;
+    inset: auto;
+    min-height: 100dvh;
+    overflow: visible;
     padding: 16px;
+    position: relative;
   }
 
   .app-shell-screen {
@@ -4243,11 +4256,14 @@ body.browse-mode .answer-panel-title {
   .launch-content {
     gap: 16px;
     max-width: 100%;
+    min-width: 0;
     padding: 0;
+    width: 100%;
   }
 
   .launch-topbar {
     padding: 10px 12px;
+    width: 100%;
   }
 
   .launch-title-lockup h1 {
@@ -4298,20 +4314,37 @@ body.browse-mode .answer-panel-title {
   .launch-hero {
     gap: 18px;
     grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+    width: 100%;
   }
 
   .launch-hero-shot {
     aspect-ratio: 4 / 3;
+    width: 100%;
+  }
+
+  .launch-hero-shot img,
+  .launch-media-card-shot img {
+    max-width: 100%;
+    width: 100%;
   }
 
   .launch-card-grid {
     gap: 14px;
     grid-template-columns: 1fr;
+    min-width: 0;
+    width: 100%;
   }
 
   .launch-media-card {
     gap: 12px;
     padding: 12px;
+    width: 100%;
+  }
+
+  .launch-media-card-shot {
+    aspect-ratio: 16 / 10;
+    width: 100%;
   }
 
   .launch-media-card-copy h3 {
@@ -4340,7 +4373,13 @@ body.browse-mode .answer-panel-title {
   }
 
   .launch-button-bottom {
-    width: min(100%, 100%);
+    max-width: 360px;
+    width: 100%;
+  }
+
+  .launch-screen .poc-header,
+  .launch-screen .poc-main {
+    display: none;
   }
 
   .poc-header {
@@ -4998,5 +5037,99 @@ body.browse-mode .answer-panel-title {
 
   .region-panel {
     max-height: calc(100svh - var(--mobile-header-height));
+  }
+}
+
+@media (max-width: 480px) {
+  .launch-screen {
+    padding: 12px;
+  }
+
+  .launch-content {
+    gap: 14px;
+  }
+
+  .launch-topbar {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .launch-brand {
+    font-size: 0.92rem;
+  }
+
+  .launch-nav-button {
+    font-size: 0.84rem;
+    min-height: 38px;
+    padding: 8px 12px;
+  }
+
+  .launch-title-lockup h1 {
+    font-size: clamp(2.55rem, 14.5vw, 3.05rem);
+  }
+
+  .launch-subtitle {
+    font-size: 0.98rem;
+  }
+
+  .seo-landing-copy {
+    font-size: 0.92rem;
+  }
+
+  .launch-button-primary {
+    font-size: 1rem;
+    min-height: 58px;
+    max-width: 360px;
+  }
+
+  .launch-button-icon {
+    height: 32px;
+    width: 32px;
+  }
+
+  .launch-button-icon::before {
+    border-bottom-width: 8px;
+    border-left-width: 14px;
+    border-top-width: 8px;
+    left: 11px;
+    top: 8px;
+  }
+
+  .launch-hero {
+    gap: 14px;
+  }
+
+  .launch-hero-shot {
+    aspect-ratio: 4 / 3;
+  }
+
+  .launch-media-card-shot {
+    aspect-ratio: 4 / 3;
+  }
+
+  .launch-media-card-shot img {
+    transform: scale(1.08);
+    transform-origin: center top;
+  }
+
+  .launch-media-card:nth-of-type(1) .launch-media-card-shot img {
+    transform: scale(1.16);
+  }
+
+  .launch-media-card:nth-of-type(2) .launch-media-card-shot img {
+    transform: scale(1.08);
+    transform-origin: center center;
+  }
+
+  .launch-media-card-copy h3 {
+    font-size: 1.08rem;
+  }
+
+  .launch-section h2 {
+    font-size: 1.5rem;
+  }
+
+  .launch-section p {
+    font-size: 0.92rem;
   }
 }
