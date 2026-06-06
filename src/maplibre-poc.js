@@ -605,7 +605,7 @@ Uruguay
 Uzbekistan
 Venezuela
 Volga River
-Washington, DC
+Washington, D.C.
 Western Sahara
 White Mountains
 White Sea
@@ -2552,7 +2552,7 @@ const supplementalOverviewEntries = [];
 const usSectionDescriptions = {
   1: "Maine, New Hampshire, Massachusetts, Rhode Island, Connecticut, and their capitals.",
   2: "Vermont, New York, New Jersey, Pennsylvania, Delaware, and their capitals.",
-  3: "Maryland, Virginia, West Virginia, North Carolina, South Carolina, and Washington, DC.",
+  3: "Maryland, Virginia, West Virginia, North Carolina, South Carolina, and Washington, D.C.",
   4: "Georgia, Florida, Alabama, Mississippi, Louisiana, and their capitals.",
   5: "Michigan, Ohio, Indiana, Kentucky, Tennessee, and their capitals.",
   6: "Wisconsin, Illinois, Iowa, Missouri, Arkansas, and their capitals.",
@@ -2569,7 +2569,7 @@ function getUsSectionDescription(sectionNumber, activityId = "") {
     return baseDescription
       .replace(/, and their capitals\.?$/i, ".")
       .replace(/, their capitals\.?$/i, ".")
-      .replace(/, and Washington, DC\.?$/i, ".")
+      .replace(/, and Washington, D\.?C\.?$/i, ".")
       .replace(/\band their capitals\b/gi, "states")
       .replace(/\bstate, capital, or location\b/gi, "state");
   }
@@ -2578,7 +2578,7 @@ function getUsSectionDescription(sectionNumber, activityId = "") {
     return baseDescription
       .replace(/^(.+?), and their capitals\.?$/i, "Capital cities for $1.")
       .replace(/^(.+?), their capitals\.?$/i, "Capital cities for $1.")
-      .replace(/^(.+?), and Washington, DC\.?$/i, "Capital cities for $1.");
+      .replace(/^(.+?), and Washington, D\.?C\.?$/i, "Capital cities for $1.");
   }
 
   return baseDescription;
@@ -3558,7 +3558,9 @@ function createDerivedUsStateCapitalActivities(activity) {
   const sectionId = activity.id.replace("us-states-capitals-", "");
   const section = US_STATE_CAPITAL_SECTIONS.find((candidate) => candidate.id === sectionId);
   const sectionLabel = section?.label || `Section ${Number(activity.sequence) || sectionId}`;
-  const stateTargets = (activity.features || activity.targets || []).filter((target) => target.type === "state");
+  const stateTargets = (activity.features || activity.targets || []).filter((target) => (
+    target.type === "state" || target.type === "federal-district"
+  ));
   const stateTargetsByAbbreviation = new Map(stateTargets.map((target) => [target.state, target]));
   const capitalTargets = (activity.features || activity.targets || [])
     .filter((target) => target.type === "capital")
@@ -3582,7 +3584,9 @@ function createDerivedUsStateCapitalActivities(activity) {
       id: `us-states-${sectionId}`,
       title: `${sectionLabel} States`,
       cumulativeGroup: "us-states",
-      targetNoun: "state",
+      targetNoun: stateTargets.some((target) => target.type === "federal-district")
+        ? "state or federal district"
+        : "state",
       features: stateTargets,
       targets: undefined
     },
@@ -6660,7 +6664,7 @@ function getTargetChipLabel(targetOrId) {
     return "";
   }
 
-  if (target.city) {
+  if (target.city && target.type !== "federal-district") {
     return target.city;
   }
 

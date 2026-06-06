@@ -1047,6 +1047,10 @@ function clampNumber(value, min, max, fallback) {
 }
 
 function getDailyTrailItemType(activity, target) {
+  if (target.type === "federal-district") {
+    return "federal-district";
+  }
+
   if (target.type === "zone") {
     return "ocean";
   }

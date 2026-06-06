@@ -9,7 +9,7 @@
     "translateX": 487.5,
     "translateY": 305
   },
-  "targetNoun": "state",
+  "targetNoun": "state or federal district",
   "defaultMode": "click-reveal",
   "hideAnswerBank": true,
   "features": [
@@ -120,7 +120,7 @@
     {
       "id": "district-of-columbia",
       "name": "District of Columbia",
-      "type": "state",
+      "type": "federal-district",
       "color": "#dbeafe",
       "labelPosition": {
         "x": 828,
@@ -678,8 +678,8 @@
     },
     {
       "id": "washington-dc",
-      "name": "Washington, DC",
-      "type": "city",
+      "name": "Washington, D.C.",
+      "type": "federal-district",
       "shape": "circle",
       "lon": -77.0369,
       "lat": 38.9072,

@@ -180,7 +180,7 @@ const fallbackActivityData = {
     projection: {
       type: "albers-usa"
     },
-    targetNoun: "state",
+    targetNoun: "state or federal district",
     defaultMode: "click-reveal",
     hideAnswerBank: true,
     features: []
@@ -523,6 +523,10 @@ function getTargetNoun() {
 
 function isPointFeature(feature) {
   return feature?.type === "city" || feature?.type === "capital" || feature?.shape === "circle";
+}
+
+function isStateShapeFeature(feature) {
+  return feature?.type === "state" || feature?.type === "federal-district";
 }
 
 function getActiveProjection() {
@@ -1056,7 +1060,7 @@ function applyFeatureSettings(feature, settings) {
       x: Math.round(feature.labelDx),
       y: Math.round(feature.labelDy)
     };
-  } else if (feature.type === "state") {
+  } else if (isStateShapeFeature(feature)) {
     if (settings.labelPosition) {
       feature.labelPosition = { ...settings.labelPosition };
     }
@@ -1554,7 +1558,7 @@ function getTargetChipLabel(feature) {
     return "";
   }
 
-  if (feature.city) {
+  if (feature.city && feature.type !== "federal-district") {
     return feature.city;
   }
 
@@ -1620,7 +1624,7 @@ function resolveTargetIdForAnswer(targetId, answerId, event) {
 
   const answerElement = countryLayer.querySelector(`#${CSS.escape(answerFeature.id)}`);
 
-  if (answerFeature.type === "state" && isPointFeature(clickedFeature) && answerElement && isEventInsideSvgShape(event, answerElement)) {
+  if (isStateShapeFeature(answerFeature) && isPointFeature(clickedFeature) && answerElement && isEventInsideSvgShape(event, answerElement)) {
     return answerFeature.id;
   }
 
@@ -1835,7 +1839,7 @@ function createAdornmentElement(feature) {
     return createLandmarkIcon(feature);
   }
 
-  if (feature.type === "state") {
+  if (isStateShapeFeature(feature)) {
     return null;
   }
 
@@ -1843,7 +1847,7 @@ function createAdornmentElement(feature) {
 }
 
 function getAdornmentName(feature) {
-  if (feature.type === "state") {
+  if (isStateShapeFeature(feature)) {
     return "Label";
   }
 
@@ -1851,7 +1855,7 @@ function getAdornmentName(feature) {
 }
 
 function getAdornmentOffset(feature) {
-  if (feature.type === "state") {
+  if (isStateShapeFeature(feature)) {
     return { x: 0, y: 0 };
   }
 
@@ -1859,7 +1863,7 @@ function getAdornmentOffset(feature) {
 }
 
 function setAdornmentOffset(feature, offset) {
-  if (feature.type === "state") {
+  if (isStateShapeFeature(feature)) {
     return;
   }
 
@@ -1872,7 +1876,7 @@ function setAdornmentOffset(feature, offset) {
 }
 
 function getAdornmentSize(feature) {
-  if (feature.type === "state") {
+  if (isStateShapeFeature(feature)) {
     return 1;
   }
 
@@ -1880,7 +1884,7 @@ function getAdornmentSize(feature) {
 }
 
 function setAdornmentSize(feature, size) {
-  if (feature.type === "state") {
+  if (isStateShapeFeature(feature)) {
     return;
   }
 
@@ -2219,7 +2223,7 @@ function renderTuningControls() {
         <button type="button" data-rotate="-5">Rotate left</button>
         <button type="button" data-rotate="5">Rotate right</button>
       </div>
-    ` : feature.type === "state" ? `
+    ` : isStateShapeFeature(feature) ? `
       <h4>${feature.name}</h4>
       <div class="tuning-coordinates"></div>
       <label>Label X<input type="number" step="1" data-field="label-x" /></label>
@@ -2295,7 +2299,7 @@ function updateTuningControlValues() {
       return;
     }
 
-    if (feature.type === "state") {
+    if (isStateShapeFeature(feature)) {
       const position = feature.labelPosition || { x: 0, y: 0 };
       card.querySelector(".tuning-coordinates").textContent =
         `label ${position.x},${position.y} | rotate ${rotation}deg`;
@@ -2621,7 +2625,7 @@ function getFeatureSettings(feature) {
       x: feature.labelDx,
       y: feature.labelDy
     };
-  } else if (feature.type === "state") {
+  } else if (isStateShapeFeature(feature)) {
     settings.labelPosition = { ...(feature.labelPosition || { x: 0, y: 0 }) };
   } else {
     settings.labelPosition = { ...feature.labelPosition };
