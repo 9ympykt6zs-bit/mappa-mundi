@@ -24,6 +24,6 @@
     { "id": "charleston-wv", "name": "Charleston, WV", "city": "Charleston", "state": "WV", "type": "capital", "shape": "circle", "lon": -81.6326, "lat": 38.3498, "hitRadius": 14, "color": "#eab308", "labelOffset": { "x": -38, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
     { "id": "raleigh-nc", "name": "Raleigh, NC", "city": "Raleigh", "state": "NC", "type": "capital", "shape": "circle", "lon": -78.6382, "lat": 35.7796, "hitRadius": 14, "color": "#22c55e", "labelOffset": { "x": -30, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
     { "id": "columbia-sc", "name": "Columbia, SC", "city": "Columbia", "state": "SC", "type": "capital", "shape": "circle", "lon": -81.0348, "lat": 34.0007, "hitRadius": 14, "color": "#06b6d4", "labelOffset": { "x": -34, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
-    { "id": "washington-dc", "name": "Washington, D.C.", "city": "Washington", "state": "DC", "type": "federal-district", "shape": "circle", "lon": -77.0369, "lat": 38.9072, "hitRadius": 14, "color": "#8b5cf6", "labelOffset": { "x": -42, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 }
+    { "id": "washington-dc", "name": "Washington, D.C.", "city": "Washington", "state": "DC", "type": "federal-district", "capitalType": "national", "shape": "circle", "lon": -77.0369, "lat": 38.9072, "hitRadius": 14, "color": "#8b5cf6", "labelOffset": { "x": -42, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 }
   ]
 }

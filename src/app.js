@@ -529,6 +529,22 @@ function isStateShapeFeature(feature) {
   return feature?.type === "state" || feature?.type === "federal-district";
 }
 
+function getPointMarkerType(feature) {
+  if (feature?.capitalType === "national" || feature?.icon === "national-capital") {
+    return "national-capital";
+  }
+
+  if (feature?.type === "federal-district" && feature?.id === "washington-dc") {
+    return "national-capital";
+  }
+
+  if (feature?.capitalType === "state" || feature?.icon === "state-capital" || feature?.type === "capital") {
+    return "state-capital";
+  }
+
+  return "city";
+}
+
 function getActiveProjection() {
   if (mapData?.projection) {
     return mapData.projection;
@@ -2039,6 +2055,18 @@ function createUnitedKingdomFlag(offset, flagSize) {
 function createLandmarkIcon(feature) {
   const icon = document.createElementNS(svgNamespace, "g");
   icon.classList.add("landmark-icon");
+  icon.dataset.markerType = getPointMarkerType(feature);
+
+  const markerType = getPointMarkerType(feature);
+  if (markerType === "national-capital") {
+    drawNationalCapitalIcon(icon);
+    return icon;
+  }
+
+  if (markerType === "state-capital") {
+    drawStateCapitalIcon(icon);
+    return icon;
+  }
 
   const iconDrawers = {
     "big-ben": drawBigBenIcon,
@@ -2046,10 +2074,11 @@ function createLandmarkIcon(feature) {
     colosseum: drawColosseumIcon,
     "sagrada-familia": drawSagradaFamiliaIcon,
     cathedral: drawCathedralIcon,
-    capitol: drawCapitolIcon
+    capitol: drawCapitolIcon,
+    city: drawCityDotIcon
   };
 
-  const drawIcon = iconDrawers[feature.icon] || drawCathedralIcon;
+  const drawIcon = iconDrawers[feature.icon] || drawCityDotIcon;
   drawIcon(icon);
 
   return icon;
@@ -2107,12 +2136,37 @@ function drawCathedralIcon(icon) {
   appendIconShape(icon, "path", { class: "landmark-line", d: "M 14 1 L 14 6 M 11 4 L 17 4", stroke: "#4c1d95" });
 }
 
+function drawCityDotIcon(icon) {
+  appendIconShape(icon, "circle", { cx: 14, cy: 15, r: 5.5, fill: "#ffffff", stroke: "#172033", "stroke-width": 2 });
+}
+
 function drawCapitolIcon(icon) {
   appendIconShape(icon, "rect", { x: 6, y: 18, width: 16, height: 10, rx: 1, fill: "#cbd5e1", stroke: "#475569" });
   appendIconShape(icon, "ellipse", { cx: 14, cy: 16, rx: 6, ry: 4.5, fill: "#f8fafc", stroke: "#475569" });
   appendIconShape(icon, "rect", { x: 10, y: 12, width: 8, height: 4, rx: 1, fill: "#e2e8f0", stroke: "#475569" });
   appendIconShape(icon, "rect", { x: 12.8, y: 8, width: 2.4, height: 6, rx: 1, fill: "#64748b", stroke: "#334155" });
   appendIconShape(icon, "path", { class: "landmark-line", d: "M 7 28 L 21 28", stroke: "#475569" });
+}
+
+function drawStateCapitalIcon(icon) {
+  appendIconShape(icon, "polygon", {
+    points: "14,4 16.7,11 24,11.2 18.2,15.8 20.2,23 14,18.8 7.8,23 9.8,15.8 4,11.2 11.3,11",
+    fill: "#ffffff",
+    stroke: "#172033",
+    "stroke-width": 2,
+    "stroke-linejoin": "round"
+  });
+}
+
+function drawNationalCapitalIcon(icon) {
+  appendIconShape(icon, "circle", { cx: 14, cy: 15, r: 10.5, fill: "#ffffff", stroke: "#172033", "stroke-width": 2 });
+  appendIconShape(icon, "polygon", {
+    points: "14,7 16.1,12.2 21.7,12.5 17.3,16 18.8,21.4 14,18.3 9.2,21.4 10.7,16 6.3,12.5 11.9,12.2",
+    fill: "#172033",
+    stroke: "#172033",
+    "stroke-width": 1,
+    "stroke-linejoin": "round"
+  });
 }
 
 function createLabelText(feature) {

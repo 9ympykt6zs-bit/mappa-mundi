@@ -1640,6 +1640,7 @@ export class MapLibreActivityRunner {
       id: "capital-marker-halo",
       type: "circle",
       source: "study-capitals",
+      filter: ["==", ["get", "capitalMarkerType"], "city"],
       layout: {
         visibility: "none"
       },
@@ -1658,10 +1659,13 @@ export class MapLibreActivityRunner {
       }
     });
 
+    this.ensureCapitalMarkerImages();
+
     this.map.addLayer({
       id: "capital-marker",
       type: "circle",
       source: "study-capitals",
+      filter: ["==", ["get", "capitalMarkerType"], "city"],
       layout: {
         visibility: "none"
       },
@@ -1670,6 +1674,81 @@ export class MapLibreActivityRunner {
         "circle-color": this.getCapitalFillExpression(),
         "circle-stroke-color": colors.neutralMarkerStroke,
         "circle-stroke-width": 2
+      }
+    });
+
+    this.map.addLayer({
+      id: "national-capital-ring",
+      type: "circle",
+      source: "study-capitals",
+      filter: ["==", ["get", "capitalMarkerType"], "national-capital"],
+      layout: {
+        visibility: "none"
+      },
+      paint: {
+        "circle-radius": [
+          "case",
+          ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
+          9,
+          ["in", ["get", "id"], ["literal", this.completedIds]],
+          8,
+          7
+        ],
+        "circle-color": colors.neutralMarker,
+        "circle-stroke-color": colors.neutralMarkerStroke,
+        "circle-stroke-width": 2,
+        "circle-opacity": this.getCapitalOpacityExpression(),
+        "circle-stroke-opacity": this.getCapitalStrokeOpacityExpression()
+      }
+    });
+
+    this.map.addLayer({
+      id: "state-capital-star",
+      type: "symbol",
+      source: "study-capitals",
+      filter: ["==", ["get", "capitalMarkerType"], "state-capital"],
+      layout: {
+        visibility: "none",
+        "icon-image": "mappa-state-capital-star",
+        "icon-size": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          4,
+          0.82,
+          7,
+          1
+        ],
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true
+      },
+      paint: {
+        "icon-opacity": this.getCapitalOpacityExpression()
+      }
+    });
+
+    this.map.addLayer({
+      id: "national-capital-star",
+      type: "symbol",
+      source: "study-capitals",
+      filter: ["==", ["get", "capitalMarkerType"], "national-capital"],
+      layout: {
+        visibility: "none",
+        "icon-image": "mappa-national-capital-star-ring",
+        "icon-size": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          4,
+          0.82,
+          7,
+          1
+        ],
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true
+      },
+      paint: {
+        "icon-opacity": this.getCapitalOpacityExpression()
       }
     });
 
@@ -1710,7 +1789,7 @@ export class MapLibreActivityRunner {
       }
     });
 
-    ["state-fill", "target-hit-fill", "capital-hit", "capital-marker", "capital-marker-halo"].forEach((layerId) => {
+    ["state-fill", "target-hit-fill", "capital-hit", "capital-marker", "capital-marker-halo", "state-capital-star", "national-capital-ring", "national-capital-star"].forEach((layerId) => {
       this.map.on("mouseenter", layerId, () => {
         if (this.canUseTargetHoverCursor()) {
           this.map.getCanvas().style.cursor = "pointer";
@@ -2771,7 +2850,8 @@ export class MapLibreActivityRunner {
             easyHitRadius: feature.easyHitRadius || Math.max(feature.hitRadius || 14, 24),
             mediumHitRadius: feature.mediumHitRadius || Math.max(feature.hitRadius || 14, 20),
             hardHitRadius: feature.hardHitRadius || Math.max(feature.hitRadius || 14, 16),
-            labelFontSize: feature.label?.fontSize || feature.labelFontSize || 11
+            labelFontSize: feature.label?.fontSize || feature.labelFontSize || 11,
+            capitalMarkerType: this.getPointMarkerType(feature)
           },
           geometry: {
             type: "Point",
@@ -3773,6 +3853,19 @@ export class MapLibreActivityRunner {
       this.map.setPaintProperty("capital-marker", "circle-stroke-opacity", this.getCapitalStrokeOpacityExpression());
     }
 
+    if (this.map.getLayer("national-capital-ring")) {
+      this.map.setPaintProperty("national-capital-ring", "circle-opacity", this.getCapitalOpacityExpression());
+      this.map.setPaintProperty("national-capital-ring", "circle-stroke-opacity", this.getCapitalStrokeOpacityExpression());
+    }
+
+    if (this.map.getLayer("state-capital-star")) {
+      this.map.setPaintProperty("state-capital-star", "icon-opacity", this.getCapitalOpacityExpression());
+    }
+
+    if (this.map.getLayer("national-capital-star")) {
+      this.map.setPaintProperty("national-capital-star", "icon-opacity", this.getCapitalOpacityExpression());
+    }
+
     if (this.map.getLayer("capital-marker-halo")) {
       this.map.setPaintProperty("capital-marker-halo", "circle-opacity", this.getCapitalHaloOpacityExpression());
     }
@@ -4254,6 +4347,86 @@ export class MapLibreActivityRunner {
     ];
   }
 
+  getPointMarkerType(feature) {
+    if (feature?.capitalType === "national" || feature?.icon === "national-capital") {
+      return "national-capital";
+    }
+
+    if (feature?.type === "federal-district" && feature?.id === "washington-dc") {
+      return "national-capital";
+    }
+
+    if (feature?.capitalType === "state" || feature?.icon === "state-capital" || feature?.type === "capital") {
+      return "state-capital";
+    }
+
+    return "city";
+  }
+
+  ensureCapitalMarkerImages() {
+    this.addCapitalMarkerImage("mappa-state-capital-star", "state");
+    this.addCapitalMarkerImage("mappa-national-capital-star-ring", "national");
+  }
+
+  addCapitalMarkerImage(id, markerType) {
+    if (this.map.hasImage(id)) {
+      return;
+    }
+
+    const size = 48;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      return;
+    }
+
+    context.clearRect(0, 0, size, size);
+    context.lineJoin = "round";
+    context.lineCap = "round";
+
+    if (markerType === "national") {
+      context.beginPath();
+      context.arc(24, 24, 16, 0, Math.PI * 2);
+      context.fillStyle = colors.neutralMarker;
+      context.strokeStyle = colors.neutralMarkerStroke;
+      context.lineWidth = 4;
+      context.fill();
+      context.stroke();
+      this.drawCapitalStar(context, 24, 24, 10, 4.4, colors.neutralMarkerStroke, colors.neutralMarkerStroke, 1.8);
+    } else {
+      this.drawCapitalStar(context, 24, 24, 15, 6.5, colors.neutralMarker, colors.neutralMarkerStroke, 4);
+    }
+
+    this.map.addImage(id, context.getImageData(0, 0, size, size), { pixelRatio: 2 });
+  }
+
+  drawCapitalStar(context, centerX, centerY, outerRadius, innerRadius, fill, stroke, strokeWidth) {
+    context.beginPath();
+
+    for (let point = 0; point < 10; point += 1) {
+      const angle = -Math.PI / 2 + point * Math.PI / 5;
+      const radius = point % 2 === 0 ? outerRadius : innerRadius;
+      const x = centerX + Math.cos(angle) * radius;
+      const y = centerY + Math.sin(angle) * radius;
+
+      if (point === 0) {
+        context.moveTo(x, y);
+      } else {
+        context.lineTo(x, y);
+      }
+    }
+
+    context.closePath();
+    context.fillStyle = fill;
+    context.strokeStyle = stroke;
+    context.lineWidth = strokeWidth;
+    context.fill();
+    context.stroke();
+  }
+
   getCapitalRadiusExpression() {
     return [
       "case",
@@ -4404,7 +4577,7 @@ export class MapLibreActivityRunner {
 
   updateDifficultyLayerVisibility() {
     if (!this.map || this.currentView !== "study") {
-      ["ocean-target-raster", "state-fill", "state-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "capital-hit", "completed-label"].forEach((layerId) => {
+      ["ocean-target-raster", "state-fill", "state-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
         if (this.map?.getLayer(layerId)) {
           this.map.setLayoutProperty(layerId, "visibility", "none");
         }
@@ -4434,7 +4607,6 @@ export class MapLibreActivityRunner {
       this.map.setLayoutProperty("target-hit-fill", "visibility", "visible");
     }
 
-    // Cities and capitals share this point-marker layer until they are split.
     const shouldShowPointMarkers = this.presentationSettings.showCities !== false
       || this.presentationSettings.showCapitals !== false;
 
@@ -4444,6 +4616,18 @@ export class MapLibreActivityRunner {
 
     if (this.map.getLayer("capital-marker")) {
       this.map.setLayoutProperty("capital-marker", "visibility", shouldShowPointMarkers ? "visible" : "none");
+    }
+
+    if (this.map.getLayer("state-capital-star")) {
+      this.map.setLayoutProperty("state-capital-star", "visibility", shouldShowPointMarkers ? "visible" : "none");
+    }
+
+    if (this.map.getLayer("national-capital-ring")) {
+      this.map.setLayoutProperty("national-capital-ring", "visibility", shouldShowPointMarkers ? "visible" : "none");
+    }
+
+    if (this.map.getLayer("national-capital-star")) {
+      this.map.setLayoutProperty("national-capital-star", "visibility", shouldShowPointMarkers ? "visible" : "none");
     }
 
     if (this.map.getLayer("capital-hit")) {
@@ -4456,7 +4640,7 @@ export class MapLibreActivityRunner {
   }
 
   setStudyVisibility(visibility) {
-    ["ocean-target-raster", "state-fill", "state-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "capital-hit", "completed-label"].forEach((layerId) => {
+    ["ocean-target-raster", "state-fill", "state-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
       if (this.map.getLayer(layerId)) {
         this.map.setLayoutProperty(layerId, "visibility", visibility);
       }
