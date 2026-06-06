@@ -1188,7 +1188,7 @@ function updateMemorySchedulingAfterAttempt(progress, result, state, completedDa
     progress.difficulty = clampNumber((Number(progress.difficulty) || defaultMemoryDifficulty) + 0.6, minMemoryDifficulty, maxMemoryDifficulty, defaultMemoryDifficulty);
     progress.stability = Math.max(0.5, (Number(progress.stability) || 1) * 0.45);
     progress.retrievability = clampNumber((Number(progress.retrievability) || 0.5) * 0.45, minRetrievability, maxRetrievability, 0.25);
-    progress.dueSession = currentSessionNumber;
+    progress.dueSession = currentSessionNumber + 1;
     progress.dueDate = completedDate;
     return;
   }

@@ -2734,8 +2734,11 @@ const TARGET_SUCCESS_RATE = 0.85;
 const SESSION_PROMPT_CAP = 45;
 const BASE_SESSION_CORRECT_TARGET = 4;
 const WEAK_SESSION_CORRECT_TARGET = 6;
-const DAILY_TRAIL_SESSION_CORRECT_TARGET = 3;
-const DAILY_TRAIL_WEAK_CORRECT_TARGET = 2;
+const DAILY_TRAIL_SESSION_CORRECT_TARGET = 2;
+const DAILY_TRAIL_WEAK_CORRECT_TARGET = 1;
+const DAILY_TRAIL_SECTION_MAX_CORRECT_REPEATS = 2;
+const DAILY_TRAIL_SECTION_MAX_REMEDIATION_PROMPTS = 5;
+const DAILY_TRAIL_TARGET_MAX_REMEDIATION_PROMPTS = 2;
 const SESSION_LEARNED_MIN_CORRECT = 3;
 const MIN_GAP_AFTER_CORRECT = 3;
 const MIN_GAP_AFTER_MISS = 1;
@@ -7029,6 +7032,7 @@ function createMemoryTrailTargetStats(target) {
     currentCorrectStreak: 0,
     currentWrongStreak: 0,
     recentMisses: 0,
+    immediateRemediationAttempts: 0,
     introducedAtPrompt: null,
     lastPromptedAt: null,
     lastResult: null,
@@ -8347,7 +8351,7 @@ function chooseNextPrompt(memoryTrail) {
   }
 
   const weak = getWeakTargets(memoryTrail)
-    .filter((stats) => due(stats) && avoidLast(stats))
+    .filter((stats) => due(stats) && avoidLast(stats) && shouldPromptDailyTrailWeakStats(memoryTrail, stats))
     .sort((left, right) => (
       right.totalRetrievalIncorrect - left.totalRetrievalIncorrect
       || left.lastPromptedAt - right.lastPromptedAt
@@ -8366,7 +8370,13 @@ function chooseNextPrompt(memoryTrail) {
 
   const currentWindowNeed = memoryTrail.currentPracticeWindow
     .map((target) => memoryTrail.targetStats[target.id])
-    .filter((stats) => stats && due(stats) && avoidLast(stats) && stats.totalRetrievalCorrect < getStatsRetrievalCorrectTarget(stats, memoryTrail))
+    .filter((stats) => (
+      stats
+      && due(stats)
+      && avoidLast(stats)
+      && stats.totalRetrievalCorrect < getStatsRetrievalCorrectTarget(stats, memoryTrail)
+      && (!isDailyTrailPacingCapEnabled(memoryTrail) || !hasDailyTrailStatsSettledForCurrentSection(memoryTrail, stats))
+    ))
     .sort((left, right) => (
       left.totalRetrievalCorrect - right.totalRetrievalCorrect
       || left.totalRetrievalAttempts - right.totalRetrievalAttempts
@@ -8396,7 +8406,10 @@ function chooseNextPrompt(memoryTrail) {
   }
 
   const learningTarget = dueIntroduced
-    .filter((stats) => stats.totalRetrievalCorrect < getStatsRetrievalCorrectTarget(stats, memoryTrail))
+    .filter((stats) => (
+      stats.totalRetrievalCorrect < getStatsRetrievalCorrectTarget(stats, memoryTrail)
+      && (!isDailyTrailPacingCapEnabled(memoryTrail) || !hasDailyTrailStatsSettledForCurrentSection(memoryTrail, stats))
+    ))
     .sort((left, right) => (
       left.totalRetrievalCorrect - right.totalRetrievalCorrect
       || left.totalRetrievalAttempts - right.totalRetrievalAttempts
@@ -8558,6 +8571,7 @@ function updateMemoryTrailStats(memoryTrail, targetId, result, options = {}) {
   const isCorrect = result === "correct";
   const promptType = options.promptType || memoryTrail.currentPromptType || "name_to_place";
   const isGuided = promptType === "guided";
+  const hadRetrievalMissBeforeAttempt = !isGuided && (stats.totalRetrievalIncorrect || 0) > 0;
   stats.lastResult = result;
   stats.lastPromptedAt = memoryTrail.promptCount;
   memoryTrail.promptCount += 1;
@@ -8585,6 +8599,9 @@ function updateMemoryTrailStats(memoryTrail, targetId, result, options = {}) {
 
   stats.totalRetrievalAttempts += 1;
   memoryTrail.retrievalPromptCount += 1;
+  if (isDailyTrailPacingCapEnabled(memoryTrail) && hadRetrievalMissBeforeAttempt) {
+    stats.immediateRemediationAttempts = (stats.immediateRemediationAttempts || 0) + 1;
+  }
 
   if (promptType === "place_to_name") {
     stats.placeToNameAttempts += 1;
@@ -8685,6 +8702,111 @@ function getReviewTargets(memoryTrail) {
     .filter((stats) => !currentIds.has(stats.targetId));
 }
 
+function isDailyTrailPacingCapEnabled(memoryTrail) {
+  return isDailyTrailMemoryTrail(memoryTrail) && memoryTrail?.activityId !== continentsOceansActivityId;
+}
+
+function getCurrentPracticeWindowStats(memoryTrail) {
+  return (memoryTrail?.currentPracticeWindow || [])
+    .map((target) => memoryTrail?.targetStats?.[target.id])
+    .filter(Boolean);
+}
+
+function getDailyTrailCurrentSectionRetrievalPromptCount(memoryTrail) {
+  return getCurrentPracticeWindowStats(memoryTrail)
+    .reduce((count, stats) => count + (stats.totalRetrievalAttempts || 0), 0);
+}
+
+function getDailyTrailCurrentSectionRemediationPromptCount(memoryTrail) {
+  return getCurrentPracticeWindowStats(memoryTrail)
+    .reduce((count, stats) => count + (stats.immediateRemediationAttempts || 0), 0);
+}
+
+function getDailyTrailSectionSoftPromptCap(memoryTrail) {
+  const targetCount = Math.max(1, memoryTrail?.currentPracticeWindow?.length || 0);
+  return Math.max(targetCount, targetCount * DAILY_TRAIL_SECTION_MAX_CORRECT_REPEATS);
+}
+
+function getDailyTrailSectionHardPromptCap(memoryTrail) {
+  const targetCount = Math.max(1, memoryTrail?.currentPracticeWindow?.length || 0);
+  return Math.min(16, Math.max(14, targetCount * 3));
+}
+
+function getDailyTrailSectionRemediationCap(memoryTrail) {
+  const targetCount = Math.max(1, memoryTrail?.currentPracticeWindow?.length || 0);
+  return Math.min(DAILY_TRAIL_SECTION_MAX_REMEDIATION_PROMPTS, Math.max(3, Math.ceil(targetCount * 0.8)));
+}
+
+function hasDailyTrailSectionRemediationCapReached(memoryTrail) {
+  return getDailyTrailCurrentSectionRemediationPromptCount(memoryTrail) >= getDailyTrailSectionRemediationCap(memoryTrail);
+}
+
+function hasDailyTrailWeakStatsSettledForNow(stats, memoryTrail) {
+  if (!stats || (stats.totalRetrievalIncorrect || 0) <= 0) {
+    return true;
+  }
+
+  return stats.currentCorrectStreak >= DAILY_TRAIL_WEAK_CORRECT_TARGET
+    || (stats.immediateRemediationAttempts || 0) >= DAILY_TRAIL_TARGET_MAX_REMEDIATION_PROMPTS
+    || hasDailyTrailSectionRemediationCapReached(memoryTrail);
+}
+
+function shouldPromptDailyTrailWeakStats(memoryTrail, stats) {
+  if (!isDailyTrailPacingCapEnabled(memoryTrail)) {
+    return true;
+  }
+
+  return !hasDailyTrailWeakStatsSettledForNow(stats, memoryTrail);
+}
+
+function hasDailyTrailStatsSettledForCurrentSection(memoryTrail, stats) {
+  if (!stats || !hasTargetCompletedGuidedExposure(stats) || (stats.totalRetrievalAttempts || 0) < 1) {
+    return false;
+  }
+
+  if ((stats.totalRetrievalIncorrect || 0) > 0 || stats.isWeak) {
+    return hasDailyTrailWeakStatsSettledForNow(stats, memoryTrail);
+  }
+
+  return hasDailyTrailStatsMetRecallRequirement(stats)
+    || (
+      hasDailyTrailCurrentSectionHitSoftCap(memoryTrail)
+      && (stats.totalRetrievalCorrect || 0) >= 1
+    )
+    || hasDailyTrailCurrentSectionHitHardCap(memoryTrail);
+}
+
+function hasDailyTrailCurrentSectionHitSoftCap(memoryTrail) {
+  return getDailyTrailCurrentSectionRetrievalPromptCount(memoryTrail) >= getDailyTrailSectionSoftPromptCap(memoryTrail);
+}
+
+function hasDailyTrailCurrentSectionHitHardCap(memoryTrail) {
+  return getDailyTrailCurrentSectionRetrievalPromptCount(memoryTrail) >= getDailyTrailSectionHardPromptCap(memoryTrail);
+}
+
+function hasDailyTrailCurrentSectionMetExitRule(memoryTrail) {
+  if (!isDailyTrailPacingCapEnabled(memoryTrail)) {
+    return false;
+  }
+
+  const currentStats = getCurrentPracticeWindowStats(memoryTrail);
+  if (currentStats.length === 0) {
+    return false;
+  }
+
+  const allTaughtAndPracticed = currentStats.every((stats) => (
+    hasTargetCompletedGuidedExposure(stats) && (stats.totalRetrievalAttempts || 0) >= 1
+  ));
+  const allSettled = currentStats.every((stats) => hasDailyTrailStatsSettledForCurrentSection(memoryTrail, stats));
+  const sectionStableEnough = getMemoryTrailSuccessRate(memoryTrail) >= TARGET_SUCCESS_RATE
+    || hasDailyTrailCurrentSectionHitSoftCap(memoryTrail)
+    || getWeakTargets(memoryTrail).every((stats) => hasDailyTrailWeakStatsSettledForNow(stats, memoryTrail));
+
+  return allTaughtAndPracticed
+    && allSettled
+    && sectionStableEnough;
+}
+
 function shouldIntroduceNewTarget(memoryTrail) {
   if (memoryTrail.currentWindowIndex >= memoryTrail.practiceWindows.length - 1) {
     return false;
@@ -8701,7 +8823,8 @@ function shouldIntroduceNewTarget(memoryTrail) {
   const currentStats = memoryTrail.currentPracticeWindow.map((target) => memoryTrail.targetStats[target.id]).filter(Boolean);
   const currentWindowReady = currentStats.length > 0 && currentStats.every((stats) => {
     if (isDailyTrailMemoryTrail(memoryTrail)) {
-      return hasDailyTrailStatsMetRecallRequirement(stats);
+      return hasDailyTrailStatsMetRecallRequirement(stats)
+        || (isDailyTrailPacingCapEnabled(memoryTrail) && hasDailyTrailStatsSettledForCurrentSection(memoryTrail, stats));
     }
 
     return hasTargetCompletedGuidedExposure(stats)
@@ -8715,7 +8838,7 @@ function shouldIntroduceNewTarget(memoryTrail) {
     && memoryTrail.recentRetrievalResults.slice(-5).every((result) => result === "correct");
 
   if (isDailyTrailMemoryTrail(memoryTrail)) {
-    return currentWindowReady;
+    return currentWindowReady || hasDailyTrailCurrentSectionMetExitRule(memoryTrail);
   }
 
   return currentWindowReady || fiveCorrect;
@@ -8777,6 +8900,13 @@ function shouldEndDailyTrailMemoryTrailSession(memoryTrail) {
 
   if (requiredStats.length === 0) {
     return memoryTrail.retrievalPromptCount > 0;
+  }
+
+  if (
+    isDailyTrailPacingCapEnabled(memoryTrail)
+    && (hasDailyTrailCurrentSectionMetExitRule(memoryTrail) || hasDailyTrailCurrentSectionHitHardCap(memoryTrail))
+  ) {
+    return !shouldIntroduceNewTarget(memoryTrail);
   }
 
   const allRequiredItemsTaught = requiredStats.every(hasTargetCompletedGuidedExposure);
