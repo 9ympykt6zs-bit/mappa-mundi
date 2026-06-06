@@ -140,8 +140,12 @@ const parentCountryOutlineLayerIds = [
 
 function isContinentsOceansLearnCameraDebugEnabled() {
   try {
-    return typeof window !== "undefined"
-      && new URLSearchParams(window.location.search).has("debugCoLearnCamera");
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    return params.has("debugCoLearnCamera") || params.has("debugCoNameCamera");
   } catch {
     return false;
   }
@@ -152,7 +156,7 @@ function debugContinentsOceansRunnerCamera(label, details = {}) {
     return;
   }
 
-  console.warn("[C&O Learn camera][runner]", label, JSON.stringify({
+  console.warn("[C&O camera][runner]", label, JSON.stringify({
     timestamp: typeof performance !== "undefined" ? Math.round(performance.now()) : Date.now(),
     ...details
   }));

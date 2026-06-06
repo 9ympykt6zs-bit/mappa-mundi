@@ -8011,6 +8011,13 @@ function maybeFocusContinentsOceansLearnPrompt(memoryTrail, target, focusProfile
 
 function maybeFocusContinentsOceansNamePrompt(selection, target) {
   const memoryTrail = getActiveMemoryTrail();
+  debugContinentsOceansNamePromptFocus("prompt-start hook entered", {
+    selection,
+    target,
+    promptInstanceId: memoryTrail?.currentPromptKey || "",
+    autoFlyHelperReached: true
+  }, memoryTrail);
+
   if (
     session.currentActivity?.id !== continentsOceansActivityId
     || selection?.promptType !== "place_to_name"
@@ -8033,7 +8040,8 @@ function maybeFocusContinentsOceansNamePrompt(selection, target) {
   debugContinentsOceansNamePromptFocus("scheduled", {
     selection,
     target,
-    delayMs
+    delayMs,
+    promptInstanceId: promptKey
   }, memoryTrail);
   const timeoutId = window.setTimeout(() => {
     if (
@@ -8057,6 +8065,12 @@ function maybeFocusContinentsOceansNamePrompt(selection, target) {
       return;
     }
 
+    debugContinentsOceansNamePromptFocus("deferred request fired", {
+      selection,
+      target,
+      promptInstanceId: promptKey,
+      cameraBeforeRequest: getMapCameraDebugState()
+    }, memoryTrail);
     focusContinentsOceansNamePromptTarget(memoryTrail, target);
   }, delayMs);
   memoryTrail.timers.push(timeoutId);
@@ -8100,12 +8114,63 @@ function isContinentsOceansNamePromptFocusDebugEnabled() {
 function getMapCameraDebugState() {
   try {
     const center = runner?.map?.getCenter?.();
+    const canvas = runner?.map?.getCanvas?.();
     return {
       center: center ? [Number(center.lng.toFixed(4)), Number(center.lat.toFixed(4))] : null,
-      zoom: Number.isFinite(runner?.map?.getZoom?.()) ? Number(runner.map.getZoom().toFixed(3)) : null
+      zoom: Number.isFinite(runner?.map?.getZoom?.()) ? Number(runner.map.getZoom().toFixed(3)) : null,
+      isMoving: Boolean(runner?.map?.isMoving?.()),
+      isEasing: Boolean(runner?.map?.isEasing?.()),
+      canvas: canvas
+        ? { width: canvas.clientWidth || 0, height: canvas.clientHeight || 0 }
+        : null
     };
   } catch {
-    return { center: null, zoom: null };
+    return { center: null, zoom: null, isMoving: false, isEasing: false, canvas: null };
+  }
+}
+
+function isMapCameraTransitioning() {
+  return Boolean(runner?.map?.isMoving?.() || runner?.map?.isEasing?.());
+}
+
+function getTargetCameraDebugSummary(camera = null) {
+  if (!camera) {
+    return null;
+  }
+
+  return {
+    center: Array.isArray(camera.center) ? camera.center : null,
+    zoom: Number.isFinite(camera.zoom) ? camera.zoom : null,
+    bounds: camera.bounds || null,
+    maxZoom: Number.isFinite(camera.maxZoom) ? camera.maxZoom : null,
+    padding: camera.padding || null,
+    duration: Number.isFinite(camera.duration) ? camera.duration : null
+  };
+}
+
+function getContinentsOceansNamePromptVisibilityDebug(target, focusOptions = {}) {
+  try {
+    const focusTarget = {
+      ...target,
+      focusDuration: Number.isFinite(focusOptions.duration) ? focusOptions.duration : target?.focusDuration,
+      focusPadding: focusOptions.padding || target?.focusPadding
+    };
+    const camera = runner?.getTargetFocusCamera?.(focusTarget) || null;
+    const comfortablyVisible = camera
+      ? Boolean(runner?.isTargetFocusComfortablyVisible?.(focusTarget, camera, focusOptions))
+      : false;
+
+    return {
+      hasCamera: Boolean(camera),
+      comfortablyVisible,
+      camera: getTargetCameraDebugSummary(camera)
+    };
+  } catch (error) {
+    return {
+      hasCamera: false,
+      comfortablyVisible: false,
+      error: error?.message || String(error)
+    };
   }
 }
 
@@ -8149,6 +8214,60 @@ function debugContinentsOceansNamePromptFocus(label, details = {}, memoryTrail =
   console.warn("[C&O Name camera]", label, JSON.stringify(payload));
 }
 
+function scheduleContinentsOceansNamePromptFocusFollowUp(memoryTrail, target, focusOptions, requestId) {
+  if (!isContinentsOceansNamePromptFocusDebugEnabled() || !runner?.map || !memoryTrail || !target) {
+    return;
+  }
+
+  const promptKey = memoryTrail.currentPromptKey || "";
+  const targetId = target.id || "";
+  let sawMoveEnd = false;
+  const onMoveEnd = () => {
+    sawMoveEnd = true;
+    debugContinentsOceansNamePromptFocus("camera moveend", {
+      requestId,
+      target,
+      expectedPromptKey: promptKey,
+      promptStillCurrent: memoryTrail.currentPromptKey === promptKey,
+      targetStillCurrent: memoryTrail.currentPromptTargetId === targetId,
+      visibilityCheckResult: getContinentsOceansNamePromptVisibilityDebug(target, focusOptions),
+      cameraAfterMoveEnd: getMapCameraDebugState()
+    }, memoryTrail);
+  };
+
+  runner.map.once("moveend", onMoveEnd);
+
+  const duration = Number.isFinite(focusOptions?.duration) ? focusOptions.duration : 700;
+  const expectedCheckId = window.setTimeout(() => {
+    debugContinentsOceansNamePromptFocus("camera expected-complete check", {
+      requestId,
+      target,
+      expectedPromptKey: promptKey,
+      sawMoveEnd,
+      promptStillCurrent: memoryTrail.currentPromptKey === promptKey,
+      targetStillCurrent: memoryTrail.currentPromptTargetId === targetId,
+      visibilityCheckResult: getContinentsOceansNamePromptVisibilityDebug(target, focusOptions),
+      cameraAfterExpectedDuration: getMapCameraDebugState()
+    }, memoryTrail);
+  }, duration + 180);
+
+  const followUpCheckId = window.setTimeout(() => {
+    runner?.map?.off?.("moveend", onMoveEnd);
+    debugContinentsOceansNamePromptFocus("camera follow-up check", {
+      requestId,
+      target,
+      expectedPromptKey: promptKey,
+      sawMoveEnd,
+      promptStillCurrent: memoryTrail.currentPromptKey === promptKey,
+      targetStillCurrent: memoryTrail.currentPromptTargetId === targetId,
+      visibilityCheckResult: getContinentsOceansNamePromptVisibilityDebug(target, focusOptions),
+      cameraAfterFollowUp: getMapCameraDebugState()
+    }, memoryTrail);
+  }, duration + 1250);
+
+  memoryTrail.timers.push(expectedCheckId, followUpCheckId);
+}
+
 function getContinentsOceansNamePromptFocusProfile(target) {
   return continentsOceansNamePromptFocusProfiles[target?.id] || {};
 }
@@ -8169,19 +8288,10 @@ function shouldForceContinentsOceansNamePromptFocus(memoryTrail, target, focusPr
 function focusContinentsOceansNamePromptTarget(memoryTrail, target) {
   const focusProfile = getContinentsOceansNamePromptFocusProfile(target);
   const isOcean = target.type === "zone";
-  const forceFocus = shouldForceContinentsOceansNamePromptFocus(memoryTrail, target, focusProfile);
-  debugContinentsOceansNamePromptFocus("requesting focus", {
-    target,
-    force: forceFocus,
-    requestedCamera: {
-      center: Number.isFinite(target.focusLon) && Number.isFinite(target.focusLat)
-        ? [target.focusLon, target.focusLat]
-        : null,
-      zoom: Number.isFinite(target.focusZoom) ? target.focusZoom : null,
-      bounds: target.focusBounds || null
-    }
-  }, memoryTrail);
-  const didFocus = runner.focusTargetIfNeeded(target, {
+  const cameraWasTransitioning = isMapCameraTransitioning();
+  const forceFocus = shouldForceContinentsOceansNamePromptFocus(memoryTrail, target, focusProfile)
+    || cameraWasTransitioning;
+  const focusOptions = {
     duration: 700,
     force: forceFocus,
     zoomTolerance: isOcean ? 0.55 : 0.75,
@@ -8191,7 +8301,27 @@ function focusContinentsOceansNamePromptTarget(memoryTrail, target) {
       bottom: isOcean ? 235 : 220,
       left: isOcean ? 120 : 48
     }
-  });
+  };
+  const promptInstanceId = memoryTrail?.currentPromptKey || "";
+  const requestId = `${promptInstanceId}:${target?.id || "target"}:${Math.round(typeof performance !== "undefined" ? performance.now() : Date.now())}`;
+  const visibilityCheckResult = getContinentsOceansNamePromptVisibilityDebug(target, focusOptions);
+  debugContinentsOceansNamePromptFocus("requesting focus", {
+    target,
+    requestId,
+    promptInstanceId,
+    force: forceFocus,
+    forceReason: cameraWasTransitioning ? "camera transition in progress" : "",
+    visibilityCheckResult,
+    skippedByAlreadyFocusedGuard: false,
+    requestedCamera: {
+      center: Number.isFinite(target.focusLon) && Number.isFinite(target.focusLat)
+        ? [target.focusLon, target.focusLat]
+        : null,
+      zoom: Number.isFinite(target.focusZoom) ? target.focusZoom : null,
+      bounds: target.focusBounds || null
+    }
+  }, memoryTrail);
+  const didFocus = runner.focusTargetIfNeeded(target, focusOptions);
 
   debugMemoryTrail("C&O place-to-name focus", {
     source: memoryTrail?.source || "",
@@ -8205,10 +8335,19 @@ function focusContinentsOceansNamePromptTarget(memoryTrail, target) {
   memoryTrail.lastContinentsOceansNameFocusTargetId = target.id;
   debugContinentsOceansNamePromptFocus("focus result", {
     target,
+    requestId,
+    promptInstanceId,
     force: forceFocus,
+    forceReason: cameraWasTransitioning ? "camera transition in progress" : "",
     didFocus,
+    skipReason: didFocus
+      ? ""
+      : (visibilityCheckResult.hasCamera && visibilityCheckResult.comfortablyVisible ? "comfortably visible" : "missing camera or runner skipped"),
     cameraAfterDecision: getMapCameraDebugState()
   }, memoryTrail);
+  if (didFocus) {
+    scheduleContinentsOceansNamePromptFocusFollowUp(memoryTrail, target, focusOptions, requestId);
+  }
 
   return didFocus;
 }
