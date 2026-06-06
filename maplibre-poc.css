@@ -417,30 +417,160 @@ select,
   background: linear-gradient(180deg, #207bc9, #0d4d98);
 }
 
-.main-menu-daily-trail-button {
-  align-items: center;
-  background: linear-gradient(135deg, #0f766e, #2563eb);
-  border: 1px solid rgba(255, 255, 255, 0.36);
-  border-radius: 14px;
-  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.18);
-  color: #ffffff;
-  cursor: pointer;
-  display: inline-flex;
-  font: inherit;
-  font-size: 1.08rem;
-  font-weight: 900;
-  grid-column: 1 / -1;
-  justify-content: center;
-  min-height: 58px;
-  padding: 14px 20px;
-  touch-action: manipulation;
+.main-menu-daily-trail-section {
+  display: grid;
+  gap: 14px;
+  margin: 8px 0 2px;
+  min-width: 0;
+  width: min(700px, 100%);
 }
 
-.main-menu-daily-trail-button:hover,
-.main-menu-daily-trail-button:focus-visible {
-  filter: brightness(1.06);
+.main-menu-daily-trail-card {
+  align-items: stretch;
+  background: linear-gradient(180deg, rgba(10, 29, 60, 0.96), rgba(6, 19, 42, 0.98));
+  border: 1px solid rgba(161, 202, 255, 0.72);
+  border-radius: 28px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.16), inset 0 -6px 0 rgba(0, 0, 0, 0.18), 0 18px 36px rgba(12, 28, 55, 0.26);
+  color: #ffffff;
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  gap: 0;
+  justify-items: stretch;
+  min-height: clamp(338px, 42vw, 470px);
+  overflow: hidden;
+  padding: 0;
+  pointer-events: auto;
+  position: relative;
+  text-align: left;
+  touch-action: manipulation;
+  width: 100%;
+}
+
+.main-menu-daily-trail-card::before {
+  background: linear-gradient(180deg, rgba(9, 22, 41, 0.08) 0%, rgba(9, 22, 41, 0.12) 34%, rgba(9, 22, 41, 0.38) 60%, rgba(8, 23, 49, 0.78) 100%);
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.main-menu-daily-trail-card::after {
+  background: linear-gradient(180deg, rgba(35, 118, 222, 0.98) 0%, rgba(12, 58, 128, 0.98) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  bottom: 0;
+  content: "";
+  height: 42%;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  z-index: 1;
+}
+
+.main-menu-daily-trail-card > * {
+  pointer-events: none;
+}
+
+.main-menu-daily-trail-art {
+  height: 100%;
+  inset: 0;
+  object-fit: cover;
+  position: absolute;
+  width: 100%;
+  z-index: 0;
+}
+
+.main-menu-daily-trail-badge {
+  align-self: start;
+  background: rgba(255, 248, 228, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  border-radius: 999px;
+  color: #9a5d00;
+  font-size: 0.76rem;
+  font-weight: 1000;
+  justify-self: start;
+  letter-spacing: 0.08em;
+  margin: 16px 0 0 16px;
+  padding: 7px 12px;
+  position: absolute;
+  text-transform: uppercase;
+  z-index: 2;
+}
+
+.main-menu-daily-trail-panel {
+  align-content: end;
+  display: grid;
+  gap: 8px;
+  min-height: 100%;
+  padding: 18px 20px 20px;
+  position: relative;
+  z-index: 2;
+}
+
+.main-menu-daily-trail-kicker {
+  color: rgba(234, 243, 255, 0.84);
+  font-size: 0.78rem;
+  font-weight: 1000;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.main-menu-daily-trail-title {
+  color: #ffffff;
+  font-size: clamp(1.75rem, 4.4vw, 2.6rem);
+  font-weight: 1000;
+  line-height: 0.98;
+}
+
+.main-menu-daily-trail-description {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.98rem;
+  font-weight: 760;
+  line-height: 1.42;
+  max-width: 34rem;
+}
+
+.main-menu-daily-trail-action {
+  align-self: start;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 999px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 0.94rem;
+  font-weight: 950;
+  justify-self: start;
+  letter-spacing: 0;
+  min-height: 44px;
+  padding: 10px 18px;
+  text-transform: none;
+}
+
+.main-menu-daily-trail-card:hover,
+.main-menu-daily-trail-card:focus-visible {
+  filter: brightness(1.04);
   outline: none;
   transform: translateY(-1px);
+}
+
+.main-menu-more-ways-copy {
+  color: #5d6c80;
+  font-size: 0.93rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.main-menu-more-ways-button {
+  align-self: center;
+  font-size: 0.94rem;
+  justify-self: center;
+  min-height: 52px;
+  min-width: min(280px, 100%);
+  padding: 12px 18px;
+  text-transform: none;
+  width: auto;
 }
 
 .main-menu-section {
@@ -3751,11 +3881,33 @@ body.browse-mode .answer-panel-title {
   }
 
   .main-menu-fork-section,
+  .main-menu-daily-trail-section,
   .main-menu-section,
   .main-menu-utility-area {
     max-width: none;
     min-width: 0;
     width: 100%;
+  }
+
+  .main-menu-daily-trail-card {
+    border-radius: 24px;
+    min-height: 300px;
+  }
+
+  .main-menu-daily-trail-badge {
+    margin: 14px 0 0 14px;
+  }
+
+  .main-menu-daily-trail-panel {
+    padding: 16px 16px 18px;
+  }
+
+  .main-menu-daily-trail-title {
+    font-size: 1.9rem;
+  }
+
+  .main-menu-daily-trail-description {
+    font-size: 0.92rem;
   }
 
   .main-menu-fork-section {

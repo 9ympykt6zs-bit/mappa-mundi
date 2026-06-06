@@ -177,6 +177,8 @@ const continentsOceansNamePromptFocusProfiles = Object.freeze({
   asia: { forceOnPromptStart: true },
   australia: { forceOnPromptStart: true },
   oceania: { forceOnPromptStart: true },
+  "arctic-ocean": { forceOnPromptStart: true },
+  "pacific-ocean": { forceOnPromptStart: true },
   "southern-ocean": { forceOnPromptStart: true }
 });
 const defaultMenuRoot = "world";
@@ -192,6 +194,7 @@ const feedbackFormUrl = "https://docs.google.com/forms/d/e/1FAIpQLSf3w51Tbeetre-
 const appShellScreenIds = new Set([
   "launch",
   "main-menu",
+  "main-menu-more-ways",
   "learn-menu",
   "challenge-menu",
   "onboarding",
@@ -253,7 +256,8 @@ const defaultAppSettings = Object.freeze({
   mapLayers: defaultMapLayerSettings,
   targetSettings: {},
   audio: {
-    speakMemoryTrailInstructions: false
+    speakMemoryTrailInstructions: true,
+    speakMemoryTrailInstructionsUserSet: false
   }
 });
 const canadianTerritoryNames = new Set(["Northwest Territories", "Nunavut", "Yukon"]);
@@ -2787,10 +2791,13 @@ const appShellTitle = document.querySelector("#app-shell-title");
 const appShellSubtitle = document.querySelector("#app-shell-subtitle");
 const appShellBackButton = document.querySelector("#app-shell-back-button");
 const appShellSettingsGear = document.querySelector("#app-shell-settings-gear");
+const mainMenuDailyTrailSection = document.querySelector("#main-menu-daily-trail-section");
 const mainMenuForkSection = document.querySelector("#main-menu-fork-section");
 const mainMenuLearnButton = document.querySelector("#main-menu-learn-button");
 const mainMenuChallengeButton = document.querySelector("#main-menu-challenge-button");
 const mainMenuDailyTrailButton = document.querySelector("#main-menu-daily-trail-button");
+const mainMenuMoreWaysButton = document.querySelector("#main-menu-more-ways-button");
+const mainMenuDailyTrailAction = document.querySelector("#main-menu-daily-trail-action");
 const mainMenuLearnSection = document.querySelector("#main-menu-learn-section");
 const mainMenuChallengeSection = document.querySelector("#main-menu-challenge-section");
 const mainMenuUtilityArea = document.querySelector("#main-menu-utility-area");
@@ -3058,24 +3065,32 @@ function playInstructionOnce(instructionKey, phrase, options = {}) {
   audioInstructionState.playedKeys.add(instructionKey);
   showAudioInstructionText(phrase);
 
-  if (window.GeographyChipSpeech?.getAudioMuted?.()) {
-    return Promise.resolve(false);
-  }
+  return ensureChipSpeechLoaded().then((chipSpeech) => {
+    const speech = chipSpeech || window.GeographyChipSpeech;
 
-  if (options.awaitCompletion && window.GeographyChipSpeech?.speakLabelAndWait) {
-    return window.GeographyChipSpeech.speakLabelAndWait(phrase, {
-      queue: true,
-      warnOnAudioFailure: options.warnOnAudioFailure === true
-    }).catch((error) => {
-      if (options.warnOnAudioFailure) {
-        console.warn("[atlas-quest-instruction-audio] Instruction playback failed.", error);
-      }
+    if (speech?.getAudioMuted?.()) {
       return false;
-    });
-  }
+    }
 
-  const didSpeak = window.GeographyChipSpeech?.speakLabel?.(phrase) || false;
-  return Promise.resolve(didSpeak);
+    if (options.awaitCompletion && speech?.speakLabelAndWait) {
+      return speech.speakLabelAndWait(phrase, {
+        queue: true,
+        warnOnAudioFailure: options.warnOnAudioFailure === true
+      }).catch((error) => {
+        if (options.warnOnAudioFailure) {
+          console.warn("[atlas-quest-instruction-audio] Instruction playback failed.", error);
+        }
+        return false;
+      });
+    }
+
+    return speech?.speakLabel?.(phrase) || false;
+  }).catch((error) => {
+    if (options.warnOnAudioFailure) {
+      console.warn("[atlas-quest-instruction-audio] Instruction playback failed.", error);
+    }
+    return false;
+  });
 }
 
 function playFirstChipInstructionIfNeeded() {
@@ -4856,6 +4871,7 @@ function bindUiEvents() {
   browseCloseButton?.addEventListener("click", closeBrowseDrawer);
   journeyMemoryTrailButton?.addEventListener("click", startMemoryTrailFromJourneyGameplay);
   mainMenuDailyTrailButton?.addEventListener("click", openDailyTrailIntro);
+  mainMenuMoreWaysButton?.addEventListener("click", () => showAppScreen("main-menu-more-ways"));
   audioMuteButton?.addEventListener("click", toggleAudioMute);
   window.addEventListener("atlas-quest-audio-muted-change", updateAudioMuteControl);
   settingsButton?.addEventListener("click", () => {
@@ -5182,9 +5198,10 @@ function toggleMenuSection(section, isVisible) {
 function renderAppShellScreen(screenId) {
   const normalizedScreenId = normalizeAppShellScreenId(screenId);
   const isMainMenu = normalizedScreenId === "main-menu";
+  const isMoreWaysMenu = normalizedScreenId === "main-menu-more-ways";
   const isLearnMenu = normalizedScreenId === "learn-menu";
   const isChallengeMenu = normalizedScreenId === "challenge-menu";
-  const isMenuHub = isMainMenu || isLearnMenu || isChallengeMenu;
+  const isMenuHub = isMainMenu || isMoreWaysMenu || isLearnMenu || isChallengeMenu;
   const isChooseJourney = normalizedScreenId === "choose-journey";
   const hasJourneyShellContent = isJourneyShellScreen(normalizedScreenId);
   const content = getAppShellScreenContent(normalizedScreenId);
@@ -5206,7 +5223,8 @@ function renderAppShellScreen(screenId) {
     appShellSettingsGear.tabIndex = isMenuHub ? -1 : 0;
   }
 
-  toggleMenuSection(mainMenuForkSection, isMainMenu);
+  toggleMenuSection(mainMenuDailyTrailSection, isMainMenu);
+  toggleMenuSection(mainMenuForkSection, isMoreWaysMenu);
   toggleMenuSection(mainMenuLearnSection, isLearnMenu);
   toggleMenuSection(mainMenuChallengeSection, isChallengeMenu);
   toggleMenuSection(mainMenuUtilityArea, isMenuHub);
@@ -5216,11 +5234,17 @@ function renderAppShellScreen(screenId) {
       return;
     }
 
-    button.disabled = !isMainMenu;
-    button.tabIndex = isMainMenu ? 0 : -1;
+    button.disabled = !isMoreWaysMenu;
+    button.tabIndex = isMoreWaysMenu ? 0 : -1;
   });
 
   updateDailyTrailMainMenuButton(isMainMenu);
+
+  if (mainMenuMoreWaysButton) {
+    mainMenuMoreWaysButton.disabled = !isMainMenu;
+    mainMenuMoreWaysButton.tabIndex = isMainMenu ? 0 : -1;
+    mainMenuMoreWaysButton.setAttribute("aria-hidden", String(!isMainMenu));
+  }
 
   if (mainMenuUtilityArea) {
     mainMenuUtilityArea.querySelectorAll("button, a").forEach((control) => {
@@ -5265,6 +5289,7 @@ function renderAppShellScreen(screenId) {
     mainMenuFeedbackLink.tabIndex = isMenuHub ? 0 : -1;
   }
 
+  renderMainMenuDailyTrailHero(isMainMenu);
   renderQuickStartCard(isChallengeMenu);
 
   if (appShellPlaceholderCard) {
@@ -5292,6 +5317,10 @@ function getAppShellScreenContent(screenId) {
     "main-menu": {
       title: "Main Menu",
       subtitle: "Know the world by heart."
+    },
+    "main-menu-more-ways": {
+      title: "More Ways to Learn",
+      subtitle: "Choose another path when you want a different starting point."
     },
     "learn-menu": {
       title: "Learn Your World",
@@ -5653,6 +5682,35 @@ function getQuickStartTarget(progress = loadProgress()) {
     difficultyId: defaultQuickStartDifficulty,
     preserveProgress: false
   };
+}
+
+function renderMainMenuDailyTrailHero(isMainMenu) {
+  if (!mainMenuDailyTrailButton) {
+    return;
+  }
+
+  if (mainMenuDailyTrailSection) {
+    mainMenuDailyTrailSection.hidden = !isMainMenu;
+    mainMenuDailyTrailSection.setAttribute("aria-hidden", String(!isMainMenu));
+  }
+
+  mainMenuDailyTrailButton.hidden = !isMainMenu;
+  mainMenuDailyTrailButton.disabled = !isMainMenu;
+  mainMenuDailyTrailButton.tabIndex = isMainMenu ? 0 : -1;
+  mainMenuDailyTrailButton.setAttribute("aria-hidden", String(!isMainMenu));
+
+  if (!isMainMenu) {
+    return;
+  }
+
+  const dailyTrailTitle = mainMenuDailyTrailButton.querySelector(".main-menu-daily-trail-title");
+  const dailyTrailDescription = mainMenuDailyTrailButton.querySelector(".main-menu-daily-trail-description");
+  if (dailyTrailTitle) {
+    dailyTrailTitle.textContent = "Daily Trail";
+  }
+  if (dailyTrailDescription) {
+    dailyTrailDescription.textContent = "A short daily path that teaches, reviews, and keeps your memory fresh.";
+  }
 }
 
 function renderQuickStartCard(isMainMenu) {
@@ -7336,10 +7394,6 @@ function maybeSpeakMemoryTrailInstruction(text, promptType, phase, instructionKe
     return skipped("recently spoken");
   }
 
-  if (window.GeographyChipSpeech?.getAudioMuted?.()) {
-    return skipped("audio muted");
-  }
-
   lastSpokenMemoryTrailInstructionKey = key;
   debugMemoryTrail("instruction speech", {
     phase,
@@ -7349,11 +7403,22 @@ function maybeSpeakMemoryTrailInstruction(text, promptType, phase, instructionKe
     speechSuppressed: false
   });
 
-  if (window.GeographyChipSpeech?.speakLabelAndWait) {
-    return window.GeographyChipSpeech.speakLabelAndWait(message, {
-      queue: true,
-      warnOnAudioFailure: false
-    }).then(Boolean).catch((error) => {
+  return ensureChipSpeechLoaded().then((chipSpeech) => {
+    const speech = chipSpeech || window.GeographyChipSpeech;
+
+    if (speech?.getAudioMuted?.()) {
+      return skipped("audio muted");
+    }
+
+    if (speech?.speakLabelAndWait) {
+      return speech.speakLabelAndWait(message, {
+        queue: true,
+        warnOnAudioFailure: false
+      }).then(Boolean);
+    }
+
+    return Boolean(speech?.speakLabel?.(message));
+  }).catch((error) => {
       debugMemoryTrail("instruction speech failed", {
         phase,
         promptType,
@@ -7363,10 +7428,7 @@ function maybeSpeakMemoryTrailInstruction(text, promptType, phase, instructionKe
         reason: error?.message || "speech failed"
       });
       return false;
-    });
-  }
-
-  return Promise.resolve(window.GeographyChipSpeech?.speakLabel?.(message) || false);
+  });
 }
 
 function setMemoryTrailInstruction({ memoryTrail, phase, promptType, mode = "", text = null, speakKey = "" } = {}) {
@@ -7538,9 +7600,12 @@ function updateDailyTrailMainMenuButton(isMainMenu = currentAppScreen === "main-
   }
 
   const hasProgress = hasDailyTrailProgress(loadDailyTrailState());
-  mainMenuDailyTrailButton.textContent = hasProgress ? "Continue Daily Trail" : "Start Daily Trail";
+  if (mainMenuDailyTrailAction) {
+    mainMenuDailyTrailAction.textContent = hasProgress ? "Continue Daily Trail" : "Start Daily Trail";
+  }
   mainMenuDailyTrailButton.disabled = !isMainMenu;
   mainMenuDailyTrailButton.tabIndex = isMainMenu ? 0 : -1;
+  mainMenuDailyTrailButton.setAttribute("aria-hidden", String(!isMainMenu));
 }
 
 function restartMemoryTrail() {
@@ -7957,11 +8022,21 @@ function maybeFocusContinentsOceansNamePrompt(selection, target) {
     || !target
     || typeof runner?.focusTargetIfNeeded !== "function"
   ) {
+    debugContinentsOceansNamePromptFocus("skipped before scheduling", {
+      selection,
+      target,
+      reason: getContinentsOceansNamePromptFocusSkipReason(selection, target, memoryTrail)
+    }, memoryTrail);
     return false;
   }
 
   const promptKey = memoryTrail.currentPromptKey;
   const delayMs = memoryTrail.promptHistory?.length <= 1 ? 220 : 80;
+  debugContinentsOceansNamePromptFocus("scheduled", {
+    selection,
+    target,
+    delayMs
+  }, memoryTrail);
   const timeoutId = window.setTimeout(() => {
     if (
       !isCurrentMemoryTrailState(memoryTrail)
@@ -7975,6 +8050,12 @@ function maybeFocusContinentsOceansNamePrompt(selection, target) {
         targetName: target.name,
         reason: "prompt changed before deferred focus"
       });
+      debugContinentsOceansNamePromptFocus("canceled before request", {
+        selection,
+        target,
+        expectedPromptKey: promptKey,
+        reason: "prompt changed before deferred focus"
+      }, memoryTrail);
       return;
     }
 
@@ -7982,6 +8063,92 @@ function maybeFocusContinentsOceansNamePrompt(selection, target) {
   }, delayMs);
   memoryTrail.timers.push(timeoutId);
   return true;
+}
+
+function getContinentsOceansNamePromptFocusSkipReason(selection, target, memoryTrail) {
+  if (session.currentActivity?.id !== continentsOceansActivityId) {
+    return "not C&O activity";
+  }
+  if (selection?.promptType !== "place_to_name") {
+    return "not place_to_name";
+  }
+  if (memoryTrail?.activityId !== continentsOceansActivityId) {
+    return "memory trail is not C&O";
+  }
+  if (memoryTrail.sessionPhase !== "practice") {
+    return "not practice phase";
+  }
+  if (selection?.mode === "learn") {
+    return "learn mode excluded";
+  }
+  if (!target) {
+    return "missing target";
+  }
+  if (typeof runner?.focusTargetIfNeeded !== "function") {
+    return "missing focusTargetIfNeeded";
+  }
+  return "";
+}
+
+function isContinentsOceansNamePromptFocusDebugEnabled() {
+  try {
+    return typeof window !== "undefined"
+      && new URLSearchParams(window.location.search).has("debugCoNameCamera");
+  } catch {
+    return false;
+  }
+}
+
+function getMapCameraDebugState() {
+  try {
+    const center = runner?.map?.getCenter?.();
+    return {
+      center: center ? [Number(center.lng.toFixed(4)), Number(center.lat.toFixed(4))] : null,
+      zoom: Number.isFinite(runner?.map?.getZoom?.()) ? Number(runner.map.getZoom().toFixed(3)) : null
+    };
+  } catch {
+    return { center: null, zoom: null };
+  }
+}
+
+function getContinentsOceansNamePromptFocusDebugContext(selection = {}, target = null, memoryTrail = getActiveMemoryTrail()) {
+  const stats = target?.id ? memoryTrail?.targetStats?.[target.id] : null;
+  const profile = getContinentsOceansNamePromptFocusProfile(target);
+  const currentPromptKey = memoryTrail?.currentPromptKey || "";
+  return {
+    timestamp: typeof performance !== "undefined" ? Math.round(performance.now()) : Date.now(),
+    promptKey: currentPromptKey,
+    promptNumber: memoryTrail?.promptHistory?.length || 0,
+    source: memoryTrail?.source || "",
+    sessionPhase: memoryTrail?.sessionPhase || "",
+    promptType: selection?.promptType || memoryTrail?.currentPromptType || "",
+    promptMode: selection?.mode || memoryTrail?.currentPromptMode || "",
+    promptReason: selection?.reason || memoryTrail?.currentPromptReason || "",
+    targetId: target?.id || selection?.targetId || memoryTrail?.currentPromptTargetId || "",
+    targetLabel: target?.name || target?.label || "",
+    targetType: target?.type || "",
+    appearedEarlier: Boolean(stats && (stats.placeToNameAttempts > 0 || stats.totalRetrievalAttempts > 0)),
+    placeToNameAttempts: stats?.placeToNameAttempts || 0,
+    totalRetrievalAttempts: stats?.totalRetrievalAttempts || 0,
+    lastFocusedPromptKey: memoryTrail?.lastContinentsOceansNameFocusPromptKey || "",
+    lastFocusedTargetId: memoryTrail?.lastContinentsOceansNameFocusTargetId || "",
+    forceProfile: Boolean(profile.forceOnPromptStart),
+    cameraBefore: getMapCameraDebugState()
+  };
+}
+
+function debugContinentsOceansNamePromptFocus(label, details = {}, memoryTrail = getActiveMemoryTrail()) {
+  if (!isContinentsOceansNamePromptFocusDebugEnabled()) {
+    return;
+  }
+
+  const payload = {
+    ...getContinentsOceansNamePromptFocusDebugContext(details.selection, details.target, memoryTrail),
+    ...details
+  };
+  delete payload.selection;
+  delete payload.target;
+  console.warn("[C&O Name camera]", label, JSON.stringify(payload));
 }
 
 function getContinentsOceansNamePromptFocusProfile(target) {
@@ -8005,6 +8172,17 @@ function focusContinentsOceansNamePromptTarget(memoryTrail, target) {
   const focusProfile = getContinentsOceansNamePromptFocusProfile(target);
   const isOcean = target.type === "zone";
   const forceFocus = shouldForceContinentsOceansNamePromptFocus(memoryTrail, target, focusProfile);
+  debugContinentsOceansNamePromptFocus("requesting focus", {
+    target,
+    force: forceFocus,
+    requestedCamera: {
+      center: Number.isFinite(target.focusLon) && Number.isFinite(target.focusLat)
+        ? [target.focusLon, target.focusLat]
+        : null,
+      zoom: Number.isFinite(target.focusZoom) ? target.focusZoom : null,
+      bounds: target.focusBounds || null
+    }
+  }, memoryTrail);
   const didFocus = runner.focusTargetIfNeeded(target, {
     duration: 700,
     force: forceFocus,
@@ -8025,6 +8203,14 @@ function focusContinentsOceansNamePromptTarget(memoryTrail, target) {
     force: forceFocus,
     didFocus
   });
+  memoryTrail.lastContinentsOceansNameFocusPromptKey = memoryTrail.currentPromptKey;
+  memoryTrail.lastContinentsOceansNameFocusTargetId = target.id;
+  debugContinentsOceansNamePromptFocus("focus result", {
+    target,
+    force: forceFocus,
+    didFocus,
+    cameraAfterDecision: getMapCameraDebugState()
+  }, memoryTrail);
 
   return didFocus;
 }
@@ -14524,8 +14710,13 @@ function loadStudyTargetSettings() {
 }
 
 function normalizeAudioSettings(settings = {}) {
+  const hasExplicitInstructionChoice = settings?.speakMemoryTrailInstructionsUserSet === true;
+
   return {
-    speakMemoryTrailInstructions: settings?.speakMemoryTrailInstructions === true
+    speakMemoryTrailInstructions: hasExplicitInstructionChoice
+      ? settings?.speakMemoryTrailInstructions !== false
+      : true,
+    speakMemoryTrailInstructionsUserSet: hasExplicitInstructionChoice
   };
 }
 
@@ -14577,7 +14768,10 @@ function setMapLayerSettings(nextSettings = {}, focusControl = "") {
 function setAudioSettings(nextSettings = {}, focusControl = "") {
   audioSettings = normalizeAudioSettings({
     ...audioSettings,
-    ...nextSettings
+    ...nextSettings,
+    speakMemoryTrailInstructionsUserSet: Object.prototype.hasOwnProperty.call(nextSettings, "speakMemoryTrailInstructions")
+      ? true
+      : audioSettings.speakMemoryTrailInstructionsUserSet === true
   });
   saveAppSettings();
 
