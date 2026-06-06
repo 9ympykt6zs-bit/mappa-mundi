@@ -50,6 +50,10 @@ body.app-shell-mode {
   overflow: hidden;
 }
 
+body.launch-mode .poc-header {
+  display: none;
+}
+
 button,
 a {
   font: inherit;
@@ -81,7 +85,9 @@ select,
 
 .launch-screen {
   align-items: center;
-  background: var(--atlas-space-background);
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.68), transparent 32%),
+    linear-gradient(180deg, rgba(255, 252, 246, 0.72), rgba(242, 232, 218, 0.88));
   color: #ffffff;
   display: grid;
   inset: 0;
@@ -89,13 +95,17 @@ select,
   min-height: 100svh;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: clamp(22px, 3.4vw, 46px);
+  padding: clamp(16px, 2.2vw, 34px);
   position: fixed;
-  text-align: center;
+  text-align: left;
   z-index: 100;
 }
 
 .launch-screen[hidden] {
+  display: none;
+}
+
+.launch-screen #launch-settings-gear {
   display: none;
 }
 
@@ -107,82 +117,119 @@ select,
 }
 
 .launch-content {
-  align-self: center;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
+  align-self: start;
+  background: rgba(255, 252, 247, 0.82);
+  border: 1px solid rgba(140, 156, 175, 0.22);
+  border-radius: 24px;
+  box-shadow: 0 20px 54px rgba(33, 43, 58, 0.12);
   display: grid;
-  gap: clamp(18px, 3vh, 30px);
-  justify-items: center;
-  max-width: min(820px, 100%);
-  padding: clamp(18px, 3vw, 34px);
+  gap: clamp(24px, 3vw, 36px);
+  justify-items: stretch;
+  max-width: min(1260px, 100%);
+  padding: clamp(16px, 2.4vw, 26px);
   position: relative;
-  text-shadow: 0 3px 14px rgba(0, 0, 0, 0.54);
+  text-shadow: none;
   width: 100%;
   z-index: 2;
+}
+
+.launch-topbar {
+  align-items: center;
+  background: rgba(255, 251, 244, 0.74);
+  border: 1px solid rgba(140, 156, 175, 0.18);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(33, 43, 58, 0.08);
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 12px 16px;
+}
+
+.launch-brand {
+  color: var(--ink);
+  font-size: 0.98rem;
+  font-weight: 850;
+  letter-spacing: 0;
+  text-decoration: none;
+}
+
+.launch-brand:hover,
+.launch-brand:focus-visible {
+  color: var(--brand-strong);
+  outline: none;
+}
+
+.launch-nav-button {
+  background: linear-gradient(180deg, #2c83c8 0%, #155a9e 52%, #0b356f 100%);
+  border: 2px solid rgba(151, 211, 255, 0.78);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.26),
+    inset 0 -4px 0 rgba(0, 0, 0, 0.22),
+    0 12px 28px rgba(0, 0, 0, 0.18);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 850;
+  min-height: 42px;
+  padding: 10px 16px;
+  touch-action: manipulation;
+}
+
+.launch-nav-button:hover,
+.launch-nav-button:focus-visible {
+  filter: brightness(1.05);
+  outline: none;
+  transform: translateY(-1px);
 }
 
 .launch-title-lockup {
   display: grid;
   gap: 12px;
-  justify-items: center;
-}
-
-.launch-kicker {
-  border: 1px solid rgba(152, 201, 255, 0.5);
-  border-radius: 999px;
-  color: #8dc7ff;
-  font-size: 0.95rem;
-  font-weight: 900;
-  letter-spacing: 0;
-  margin: 0;
-  padding: 7px 16px;
-  text-transform: uppercase;
+  justify-items: start;
+  max-width: 620px;
 }
 
 .launch-title-lockup h1 {
-  color: #fff4d8;
+  color: #1f2b43;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(4.2rem, 9.4vw, 7.8rem);
+  font-size: clamp(3.5rem, 7.6vw, 5.45rem);
   font-weight: 700;
   letter-spacing: 0;
   line-height: 0.95;
   margin: 0;
-  text-shadow: 0 3px 0 rgba(4, 15, 31, 0.95), 0 14px 26px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
 .launch-subtitle {
-  color: #f0c987;
-  font-size: clamp(1.2rem, 2.4vw, 1.72rem);
+  color: #c36d16;
+  font-size: clamp(1.14rem, 2.1vw, 1.48rem);
   font-weight: 650;
   margin: 0;
   max-width: 760px;
-  text-shadow: 0 3px 12px rgba(0, 0, 0, 0.72);
 }
 
 .seo-landing-copy {
-  color: rgba(238, 244, 255, 0.92);
-  font-size: 1rem;
+  color: #334155;
+  font-size: 0.98rem;
   font-weight: 650;
   line-height: 1.55;
   margin: 0;
   max-width: 760px;
   text-wrap: balance;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
 .launch-actions {
   display: grid;
   gap: clamp(16px, 2.8vh, 26px);
-  justify-items: center;
+  justify-items: start;
   width: 100%;
 }
 
 .launch-button {
   align-items: center;
   border: 0;
-  border-radius: 22px;
+  border-radius: 18px;
   color: #ffffff;
   cursor: pointer;
   display: inline-flex;
@@ -191,7 +238,7 @@ select,
   letter-spacing: 0;
   min-height: 72px;
   padding: 18px 24px;
-  text-transform: uppercase;
+  text-transform: none;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.38);
   touch-action: manipulation;
   transition: transform 140ms ease, filter 140ms ease, box-shadow 140ms ease;
@@ -211,66 +258,155 @@ select,
     inset 0 -4px 0 rgba(0, 0, 0, 0.22),
     0 16px 32px rgba(0, 0, 0, 0.36);
   border: 2px solid rgba(151, 211, 255, 0.78);
-  font-size: clamp(2rem, 4vw, 2.85rem);
+  font-size: clamp(1.5rem, 2.7vw, 2.05rem);
   gap: 16px;
-  min-height: clamp(74px, 8vw, 92px);
-  width: min(470px, 90vw);
+  min-height: clamp(62px, 6.2vw, 76px);
+  width: min(420px, 90vw);
+}
+
+.launch-button-bottom {
+  font-size: 1.12rem;
+  line-height: 1.12;
+  width: min(540px, 100%);
 }
 
 .launch-button-icon {
-  border: 4px solid rgba(255, 255, 255, 0.92);
+  border: 3px solid rgba(255, 255, 255, 0.92);
   border-radius: 50%;
   display: inline-block;
-  height: 52px;
+  height: 36px;
   position: relative;
-  width: 52px;
+  width: 36px;
 }
 
 .launch-button-icon::before {
-  border-bottom: 13px solid transparent;
-  border-left: 22px solid rgba(255, 255, 255, 0.95);
-  border-top: 13px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-left: 16px solid rgba(255, 255, 255, 0.95);
+  border-top: 9px solid transparent;
   content: "";
-  left: 18px;
+  left: 12px;
   position: absolute;
-  top: 10px;
+  top: 8px;
 }
 
-.launch-gear-button {
-  align-items: center;
-  background: rgba(255, 255, 255, 0.14);
-  border: 2px solid rgba(180, 215, 255, 0.46);
-  border-radius: 50%;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
-  color: #ffffff;
-  cursor: pointer;
-  display: inline-flex;
-  height: 64px;
-  justify-content: center;
-  position: absolute;
-  right: clamp(16px, 3vw, 44px);
-  top: clamp(16px, 3vw, 34px);
-  width: 64px;
-  z-index: 3;
+.launch-hero {
+  align-items: start;
+  display: grid;
+  gap: clamp(22px, 3vw, 36px);
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  width: 100%;
 }
 
-.launch-gear-button::before {
-  content: "\2699";
+.launch-hero-shot,
+.launch-media-card-shot {
+  background: #f7f2ea;
+  border: 1px solid rgba(140, 156, 175, 0.26);
+  border-radius: 20px;
+  box-shadow: 0 16px 38px rgba(33, 43, 58, 0.12);
+  margin: 0;
+  overflow: hidden;
+}
+
+.launch-hero-shot {
+  aspect-ratio: 4 / 3;
+  min-width: 0;
+}
+
+.launch-hero-shot img,
+.launch-media-card-shot img {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.launch-card-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.launch-media-card {
+  background: linear-gradient(180deg, #fffdf8 0%, #f5efe6 100%);
+  border: 1px solid rgba(140, 156, 175, 0.22);
+  border-radius: 20px;
+  box-shadow: 0 18px 42px rgba(33, 43, 58, 0.09);
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+}
+
+.launch-media-card-shot {
+  aspect-ratio: 16 / 10;
+}
+
+.launch-media-card-copy {
+  display: grid;
+  gap: 8px;
+  padding: 2px 2px 6px;
+}
+
+.launch-media-card-copy h3 {
+  color: #1f2b43;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.08;
+  margin: 0;
+}
+
+.launch-media-card-copy p {
+  color: #455468;
+  font-size: 0.98rem;
+  font-weight: 650;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.launch-section {
+  border-top: 1px solid rgba(140, 156, 175, 0.2);
+  display: grid;
+  gap: 18px;
+  padding-top: 26px;
+}
+
+.launch-section-copy {
+  display: grid;
+  gap: 12px;
+  max-width: 840px;
+}
+
+.launch-section-copy-wide {
+  max-width: 760px;
+}
+
+.launch-section h2 {
+  color: #1f2b43;
+  font-family: Georgia, "Times New Roman", serif;
   font-size: 2rem;
-  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.05;
+  margin: 0;
 }
 
-.launch-gear-button:hover,
-.launch-gear-button:focus-visible {
-  background: rgba(255, 255, 255, 0.24);
-  outline: none;
+.launch-section p {
+  color: #405066;
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 780px;
 }
 
-.launch-compass {
-  aspect-ratio: 1;
-  filter: drop-shadow(0 0 22px rgba(238, 201, 138, 0.18));
-  opacity: 0.95;
-  width: clamp(150px, 18vw, 230px);
+.launch-section-explore {
+  gap: 22px;
+}
+
+.launch-bottom-actions {
+  display: grid;
+  justify-items: start;
+  padding-top: 6px;
 }
 
 .app-shell-screen {
@@ -3836,7 +3972,7 @@ body.browse-mode .answer-panel-title {
   }
 
   .launch-screen {
-    align-content: center;
+    align-content: start;
     padding: 16px;
   }
 
@@ -4106,38 +4242,33 @@ body.browse-mode .answer-panel-title {
 
   .launch-content {
     gap: 16px;
-    max-width: 420px;
-    padding: 12px 8px;
+    max-width: 100%;
+    padding: 0;
   }
 
-  .launch-kicker {
-    font-size: 0.72rem;
-    padding: 6px 12px;
-  }
-
-  .launch-compass {
-    width: clamp(118px, 34vw, 154px);
+  .launch-topbar {
+    padding: 10px 12px;
   }
 
   .launch-title-lockup h1 {
-    font-size: clamp(3.25rem, 14vw, 4.35rem);
+    font-size: clamp(2.9rem, 11vw, 3.6rem);
   }
 
   .launch-subtitle {
     font-size: 1rem;
-    max-width: 340px;
+    max-width: 100%;
   }
 
   .seo-landing-copy {
     font-size: 0.93rem;
-    max-width: 340px;
+    max-width: 100%;
   }
 
   .launch-button-primary {
     border-radius: 18px;
-    font-size: 1.75rem;
-    min-height: 74px;
-    width: min(360px, 94vw);
+    font-size: 1.08rem;
+    min-height: 60px;
+    width: min(100%, 360px);
   }
 
   .launch-button-icon {
@@ -4162,6 +4293,54 @@ body.browse-mode .answer-panel-title {
 
   .launch-gear-button::before {
     font-size: 1.5rem;
+  }
+
+  .launch-hero {
+    gap: 18px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .launch-hero-shot {
+    aspect-ratio: 4 / 3;
+  }
+
+  .launch-card-grid {
+    gap: 14px;
+    grid-template-columns: 1fr;
+  }
+
+  .launch-media-card {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .launch-media-card-copy h3 {
+    font-size: 1.2rem;
+  }
+
+  .launch-media-card-copy p {
+    font-size: 0.94rem;
+  }
+
+  .launch-section {
+    gap: 14px;
+    padding-top: 20px;
+  }
+
+  .launch-section h2 {
+    font-size: 1.7rem;
+  }
+
+  .launch-section p {
+    font-size: 0.95rem;
+  }
+
+  .launch-bottom-actions {
+    padding-top: 0;
+  }
+
+  .launch-button-bottom {
+    width: min(100%, 100%);
   }
 
   .poc-header {

@@ -1,0 +1,90 @@
+warning: in the working copy of 'index.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'maplibre-poc.css', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/index.html b/index.html[m
+[1mindex 54488a7..a047c41 100644[m
+[1m--- a/index.html[m
+[1m+++ b/index.html[m
+[36m@@ -13,18 +13,18 @@[m
+     <meta charset="utf-8" />[m
+     <meta name="viewport" content="width=device-width, initial-scale=1" />[m
+     <meta name="theme-color" content="#071528" />[m
+[31m-    <meta name="description" content="Mappa Mundi is a geography game and learning app for the world map. Practice countries, continents, oceans, states, and capitals with daily practice that keeps geography fresh." />[m
+[32m+[m[32m    <meta name="description" content="Mappa Mundi is an interactive geography game for learning the world map through short, focused practice. Practice countries, continents, oceans, states, capitals, and world regions with daily practice that keeps geography fresh." />[m
+     <meta name="apple-mobile-web-app-title" content="Mappa Mundi" />[m
+     <meta name="application-name" content="Mappa Mundi" />[m
+     <meta name="robots" content="index,follow" />[m
+     <meta property="og:title" content="Mappa Mundi &ndash; Geography Game for Learning the World" />[m
+[31m-    <meta property="og:description" content="Mappa Mundi is a geography game and learning app for the world map. Practice countries, continents, oceans, states, and capitals with daily practice that keeps geography fresh." />[m
+[32m+[m[32m    <meta property="og:description" content="Mappa Mundi is an interactive geography game for learning the world map through short, focused practice. Practice countries, continents, oceans, states, capitals, and world regions with daily practice that keeps geography fresh." />[m
+     <meta property="og:type" content="website" />[m
+     <meta property="og:url" content="https://mappamundi.earth/" />[m
+     <meta property="og:image" content="https://mappamundi.earth/assets/icons/atlas-quest-icon-512.png" />[m
+     <meta name="twitter:card" content="summary" />[m
+     <meta name="twitter:title" content="Mappa Mundi &ndash; Geography Game for Learning the World" />[m
+[31m-    <meta name="twitter:description" content="Mappa Mundi is a geography game and learning app for the world map. Practice countries, continents, oceans, states, and capitals with daily practice that keeps geography fresh." />[m
+[32m+[m[32m    <meta name="twitter:description" content="Mappa Mundi is an interactive geography game for learning the world map through short, focused practice. Practice countries, continents, oceans, states, capitals, and world regions with daily practice that keeps geography fresh." />[m
+     <meta name="twitter:image" content="https://mappamundi.earth/assets/icons/atlas-quest-icon-512.png" />[m
+     <title>Mappa Mundi &ndash; Geography Game for Learning the World</title>[m
+     <link rel="canonical" href="https://mappamundi.earth/" />[m
+[36m@@ -50,35 +50,103 @@[m
+   </head>[m
+   <body class="overview-mode launch-mode">[m
+     <section id="launch-screen" class="launch-screen" aria-labelledby="launch-title">[m
+[31m-      <button id="launch-settings-gear" class="launch-gear-button" type="button" aria-label="Settings" title="Settings"></button>[m
+       <div class="launch-content">[m
+[31m-        <svg class="launch-compass" viewBox="0 0 200 200" aria-hidden="true" focusable="false">[m
+[31m-          <circle cx="100" cy="100" r="78" fill="none" stroke="rgba(245, 221, 163, 0.65)" stroke-width="2"/>[m
+[31m-          <circle cx="100" cy="100" r="56" fill="none" stroke="rgba(245, 221, 163, 0.35)" stroke-width="1"/>[m
+[31m-          <polygon points="100,18 112,88 100,100 88,88" fill="#f5dda3"/>[m
+[31m-          <polygon points="100,182 88,112 100,100 112,112" fill="#c9a85f"/>[m
+[31m-          <polygon points="18,100 88,88 100,100 88,112" fill="#f5dda3"/>[m
+[31m-          <polygon points="182,100 112,112 100,100 112,88" fill="#c9a85f"/>[m
+[31m-          <polygon points="100,42 107,91 100,100 93,91" fill="#fff7d6"/>[m
+[31m-          <polygon points="100,158 93,109 100,100 107,109" fill="#8f733d"/>[m
+[31m-          <polygon points="42,100 91,93 100,100 91,107" fill="#fff7d6"/>[m
+[31m-          <polygon points="158,100 109,107 100,100 109,93" fill="#8f733d"/>[m
+[31m-          <text x="100" y="14" text-anchor="middle" fill="#f5dda3" font-size="16" font-family="serif">N</text>[m
+[31m-          <text x="100" y="195" text-anchor="middle" fill="#f5dda3" font-size="16" font-family="serif">S</text>[m
+[31m-          <text x="12" y="106" text-anchor="middle" fill="#f5dda3" font-size="16" font-family="serif">W</text>[m
+[31m-          <text x="188" y="106" text-anchor="middle" fill="#f5dda3" font-size="16" font-family="serif">E</text>[m
+[31m-        </svg>[m
+[31m-        <div class="launch-title-lockup">[m
+[31m-          <h1 id="launch-title">Mappa Mundi</h1>[m
+[31m-          <p class="launch-subtitle">Know the world by heart.</p>[m
+[31m-          <p class="seo-landing-copy">Mappa Mundi is a geography game and learning app for the world map. Practice countries, continents, oceans, states, and capitals with daily practice that keeps geography fresh.</p>[m
+[31m-        </div>[m
+[31m-        <div class="launch-actions" aria-label="Launch actions">[m
+[31m-          <button id="launch-start-button" class="launch-button launch-button-primary" type="button">[m
+[31m-            <span class="launch-button-icon" aria-hidden="true"></span>[m
+[31m-            <span>Start</span>[m
+[31m-          </button>[m
+[32m+[m[32m        <header class="launch-topbar" aria-label="Mappa Mundi landing navigation">[m
+[32m+[m[32m          <a class="launch-brand" href="#launch-title">Mappa Mundi</a>[m
+[32m+[m[32m          <button class="launch-nav-button" type="button" data-launch-action="start">Start Playing</button>[m
+[32m+[m[32m        </header>[m
+[32m+[m[32m        <div class="launch-hero">[m
+[32m+[m[32m          <div class="launch-title-lockup">[m
+[32m+[m[32m            <h1 id="launch-title">Mappa Mundi</h1>[m
+[32m+[m[32m            <p class="launch-subtitle">Learn the world by heart.</p>[m
+[32m+[m[32m            <p class="seo-landing-copy">Mappa Mundi is an interactive geography game for learning the world map through short, focused practice. Students build map knowledge by working directly with countries, continents, oceans, U.S. states, capitals, and world regions.</p>[m
+[32m+[m[32m            <p class="seo-landing-copy">Instead of memorizing places from a list, students see them on the map, hear the names, place labels, review mistakes, and gradually build a stronger mental picture of the world.</p>[m
+[32m+[m[32m            <div class="launch-actions" aria-label="Launch actions">[m
+[32m+[m[32m              <button id="launch-start-button" class="launch-button launch-button-primary" type="button" data-launch-action="start">[m
+[32m+[m[32m                <span class="launch-button-icon" aria-hidden="true"></span>[m
+[32m+[m[32m                <span>Start Playing</span>[m
+[32m+[m[32m              </button>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m          </div>[m
+[32m+[m[32m          <figure class="launch-hero-shot" aria-label="Mappa Mundi interactive world map practice screenshot">[m
+[32m+[m[32m            <img[m
+[32m+[m[32m              src="assets/screenshots/mappa-mundi-world-map-practice.webp"[m
+[32m+[m[32m              alt="Mappa Mundi interactive world map practice with continents and oceans"[m
+[32m+[m[32m              loading="eager"[m
+[32m+[m[32m              decoding="async"[m
+[32m+[m[32m            />[m
+[32m+[m[32m          </figure>[m
+         </div>[m
+[32m+[m
+[32m+[m[32m        <section class="launch-section launch-section-journeys" aria-labelledby="launch-journeys-heading">[m
+[32m+[m[32m          <div class="launch-section-copy launch-section-copy-wide">[m
+[32m+[m[32m            <h2 id="launch-journeys-heading">Over 20 learning
