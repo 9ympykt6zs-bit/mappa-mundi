@@ -4982,13 +4982,7 @@ function bindLaunchScreenEvents() {
 
 function handleLaunchStart() {
   trackEvent("launch_start_pressed");
-
-  if (hasSeenOnboarding()) {
-    showAppScreen("main-menu");
-    return;
-  }
-
-  showAppScreen("onboarding");
+  showAppScreen("main-menu");
 }
 
 function normalizeJourneyDetailIntent(intent) {
