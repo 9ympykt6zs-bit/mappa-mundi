@@ -161,6 +161,17 @@ select,
   text-shadow: 0 3px 12px rgba(0, 0, 0, 0.72);
 }
 
+.seo-landing-copy {
+  color: rgba(238, 244, 255, 0.92);
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.55;
+  margin: 0;
+  max-width: 760px;
+  text-wrap: balance;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
 .launch-actions {
   display: grid;
   gap: clamp(16px, 2.8vh, 26px);
@@ -4114,6 +4125,11 @@ body.browse-mode .answer-panel-title {
 
   .launch-subtitle {
     font-size: 1rem;
+    max-width: 340px;
+  }
+
+  .seo-landing-copy {
+    font-size: 0.93rem;
     max-width: 340px;
   }
 
