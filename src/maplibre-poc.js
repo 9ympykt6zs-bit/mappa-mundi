@@ -12,15 +12,22 @@ import {
   applyDailyTrailSessionResults,
   applyDailyTrailSessionStart,
   applyDailyTrailTeachingProgress,
+  buildDailyTrailGoalItems,
   buildWorldCoreDailyTrailItems,
-  dailyTrailJourneyId,
+  dailyTrailGoals,
   dailyTrailStorageKey,
+  getDailyTrailGoal,
+  getDailyTrailGoalOptions,
   hasDailyTrailProgress,
   loadDailyTrailState,
-  planDailyTrailSession
-} from "./daily-trail-planner.js?v=20260604-fsrs-ready-scheduler";
+  planDailyTrailSession,
+  selectDailyTrailGoal,
+  shouldShowDailyTrailGoalChoice,
+  syncCompletedDailyTrailGoals
+} from "./daily-trail-planner.js?v=20260606-daily-trail-goals";
 
 const APP_NAME = "Mappa Mundi";
+const LANDING_PAGE_TITLE = "Mappa Mundi \u2013 Geography Game for Learning the World";
 const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
 const mapLibreStylesheetUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css";
 const difficultyModes = Object.freeze({
@@ -202,6 +209,7 @@ const appShellScreenIds = new Set([
   "journey-detail",
   "study",
   "choose-difficulty",
+  "daily-trail-goal-choice",
   "daily-trail-intro",
   "daily-trail-summary",
   "begin-journey-placeholder",
@@ -3495,7 +3503,7 @@ function scheduleIdleWork(callback) {
 }
 
 async function init() {
-  document.title = APP_NAME;
+  document.title = document.body.classList.contains("launch-mode") ? LANDING_PAGE_TITLE : APP_NAME;
   if (launchTitle) {
     launchTitle.textContent = APP_NAME;
   }
@@ -5114,6 +5122,7 @@ function showAppScreen(screenId, options = {}) {
   cancelGrabbedAnswer();
   document.body.classList.toggle("launch-mode", normalizedScreenId === "launch");
   document.body.classList.toggle("app-shell-mode", normalizedScreenId !== "launch" && normalizedScreenId !== "free-play");
+  document.title = normalizedScreenId === "launch" ? LANDING_PAGE_TITLE : APP_NAME;
 
   if (launchScreen) {
     launchScreen.hidden = normalizedScreenId !== "launch";
@@ -5355,9 +5364,13 @@ function getAppShellScreenContent(screenId) {
       title: "Choose Difficulty",
       subtitle: "Choose how much help you want during this journey."
     },
+    "daily-trail-goal-choice": {
+      title: "Daily Trail",
+      subtitle: "Choose your next goal."
+    },
     "daily-trail-intro": {
       title: "Daily Trail",
-      subtitle: "A short guided path through World Core."
+      subtitle: getDailyTrailIntroSubtitle()
     },
     "daily-trail-summary": {
       title: "Daily Trail",
@@ -5414,6 +5427,7 @@ function isJourneyShellScreen(screenId) {
     "onboarding",
     "study",
     "choose-difficulty",
+    "daily-trail-goal-choice",
     "daily-trail-intro",
     "daily-trail-summary",
     "begin-journey-placeholder",
@@ -10196,6 +10210,11 @@ function renderJourneyShellContent(screenId) {
     return;
   }
 
+  if (screenId === "daily-trail-goal-choice") {
+    renderDailyTrailGoalChoiceScreen();
+    return;
+  }
+
   if (screenId === "daily-trail-summary") {
     renderDailyTrailSummaryScreen();
     return;
@@ -10296,18 +10315,52 @@ async function openDailyTrailIntro() {
   await ensureMapRuntimeLoaded();
   await ensureActivityDataLoaded();
 
-  const state = loadDailyTrailState();
-  const journey = journeyPresets.find((candidate) => candidate.id === dailyTrailJourneyId);
-  const items = buildWorldCoreDailyTrailItems(journey, activities);
+  const items = getDailyTrailItems();
+  const state = syncCompletedDailyTrailGoals(loadDailyTrailState(), items);
+
+  if (shouldShowDailyTrailGoalChoice(state, items)) {
+    pendingDailyTrailPlan = null;
+    showAppScreen("daily-trail-goal-choice");
+    return;
+  }
 
   pendingDailyTrailPlan = planDailyTrailSession(state, items);
   showAppScreen("daily-trail-intro");
 }
 
+function getDailyTrailItems() {
+  const items = [];
+
+  dailyTrailGoals.forEach((goal) => {
+    const journey = journeyPresets.find((candidate) => candidate.id === goal.journeyId);
+
+    if (!journey) {
+      return;
+    }
+
+    if (goal.id === "world-core") {
+      items.push(...buildWorldCoreDailyTrailItems(journey, activities));
+      return;
+    }
+
+    items.push(...buildDailyTrailGoalItems(journey, activities, {
+      goalId: goal.id,
+      homeJourneyId: journey.id
+    }));
+  });
+
+  return items;
+}
+
 function renderDailyTrailIntroScreen() {
-  const state = loadDailyTrailState();
-  const journey = journeyPresets.find((candidate) => candidate.id === dailyTrailJourneyId);
-  const items = buildWorldCoreDailyTrailItems(journey, activities);
+  const items = getDailyTrailItems();
+  const state = syncCompletedDailyTrailGoals(loadDailyTrailState(), items);
+
+  if (shouldShowDailyTrailGoalChoice(state, items)) {
+    renderDailyTrailGoalChoiceScreen();
+    return;
+  }
+
   const plan = pendingDailyTrailPlan || planDailyTrailSession(state, items);
   pendingDailyTrailPlan = plan;
 
@@ -10362,6 +10415,61 @@ function renderDailyTrailIntroScreen() {
   journeyShellContent.appendChild(panel);
 }
 
+function renderDailyTrailGoalChoiceScreen() {
+  const items = getDailyTrailItems();
+  const state = syncCompletedDailyTrailGoals(loadDailyTrailState(), items);
+  const options = getDailyTrailGoalOptions(state, items);
+
+  const panel = document.createElement("section");
+  panel.className = "daily-trail-panel daily-trail-goal-choice-panel";
+
+  const heading = document.createElement("h2");
+  heading.textContent = "Choose your next Daily Trail";
+
+  const copy = document.createElement("p");
+  copy.textContent = "You finished World Core. Pick where to explore next.";
+
+  const optionList = document.createElement("div");
+  optionList.className = "daily-trail-goal-options";
+
+  options.forEach((goal) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "daily-trail-goal-option";
+    button.dataset.dailyTrailGoal = goal.id;
+
+    const label = document.createElement("span");
+    label.className = "daily-trail-goal-option-title";
+    label.textContent = goal.recommended ? `Recommended: ${goal.title}` : goal.title;
+
+    const description = document.createElement("span");
+    description.className = "daily-trail-goal-option-copy";
+    description.textContent = goal.description;
+
+    button.append(label, description);
+    button.addEventListener("click", async () => {
+      selectDailyTrailGoal(state, goal.id, items);
+      pendingDailyTrailPlan = null;
+      await openDailyTrailIntro();
+    });
+
+    optionList.appendChild(button);
+  });
+
+  const actions = document.createElement("div");
+  actions.className = "daily-trail-actions";
+
+  const mainMenuButton = document.createElement("button");
+  mainMenuButton.type = "button";
+  mainMenuButton.className = "main-menu-button main-menu-button-quiet";
+  mainMenuButton.textContent = "Main Menu";
+  mainMenuButton.addEventListener("click", () => showAppScreen("main-menu"));
+
+  actions.appendChild(mainMenuButton);
+  panel.append(heading, copy, optionList, actions);
+  journeyShellContent.appendChild(panel);
+}
+
 function getDailyTrailIntroCopy(plan) {
   if (plan.continentsOceansReviewType === "small") {
     return "A quick Continents and Oceans review will keep the world map fresh.";
@@ -10397,13 +10505,20 @@ function getDailyTrailFocusText(plan) {
   return `Today starts in ${activityTitle || group.cameraGroupId}.`;
 }
 
+function getDailyTrailIntroSubtitle() {
+  const state = loadDailyTrailState();
+  const goal = getDailyTrailGoal(state.activeTrailGoal);
+  return `A short guided path through ${goal.title}.`;
+}
+
 async function startDailyTrailSession() {
   await ensureMapReady();
 
-  const state = loadDailyTrailState();
-  const journey = journeyPresets.find((candidate) => candidate.id === dailyTrailJourneyId);
-  const items = buildWorldCoreDailyTrailItems(journey, activities);
+  const items = getDailyTrailItems();
+  const state = syncCompletedDailyTrailGoals(loadDailyTrailState(), items);
   const plan = pendingDailyTrailPlan || planDailyTrailSession(state, items);
+  const goal = getDailyTrailGoal(plan.trailGoalId || state.activeTrailGoal);
+  const journey = journeyPresets.find((candidate) => candidate.id === goal.journeyId);
   const activity = getActivityById(plan.activeActivityId);
 
   if (!journey || !activity) {
@@ -10416,7 +10531,7 @@ async function startDailyTrailSession() {
     .filter((item) => item.homeActivityId === activity.id)
     .map((item) => item.targetId);
   activeDailyTrailSession = {
-    trailId: "world-core",
+    trailId: plan.trailGoalId || goal.id,
     journeyId: journey.id,
     state: startedState,
     plan,
@@ -10495,7 +10610,7 @@ function resetDailyTrailProgress() {
 async function continueDailyTrailFromSummary() {
   pendingDailyTrailPlan = null;
   lastDailyTrailSummary = null;
-  await startDailyTrailSession();
+  await openDailyTrailIntro();
 }
 
 function startDailyTrailMemoryTrailStepIfNeeded() {

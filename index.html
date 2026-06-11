@@ -31,7 +31,7 @@
     <link rel="icon" type="image/png" href="/assets/icons/atlas-quest-icon-192.png" />
     <link rel="apple-touch-icon" href="/assets/icons/atlas-quest-icon-180.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="stylesheet" href="maplibre-poc.css?v=20260604-co-foundation-coverage" />
+    <link rel="stylesheet" href="maplibre-poc.css?v=20260611-title-screen" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -52,101 +52,52 @@
     <section id="launch-screen" class="launch-screen" aria-labelledby="launch-title">
       <div class="launch-content">
         <header class="launch-topbar" aria-label="Mappa Mundi landing navigation">
-          <a class="launch-brand" href="#launch-title">Mappa Mundi</a>
+          <a class="launch-brand" href="#launch-title">
+            <img src="assets/brand/compass-mark.svg" alt="" aria-hidden="true" />
+            <span>Mappa Mundi</span>
+          </a>
           <button class="launch-nav-button" type="button" data-launch-action="start">Start Playing</button>
         </header>
-        <div class="launch-hero">
-          <div class="launch-title-lockup">
+
+        <div class="title-screen-hero">
+          <div class="launch-title-lockup title-screen-copy">
             <h1 id="launch-title">Mappa Mundi</h1>
-            <p class="launch-subtitle">Learn the world by heart.</p>
-            <p class="seo-landing-copy">Mappa Mundi is an interactive geography game for learning the world map through short, focused practice. Students build map knowledge by working directly with countries, continents, oceans, U.S. states, capitals, and world regions.</p>
-            <p class="seo-landing-copy">Instead of memorizing places from a list, students see them on the map, hear the names, place labels, review mistakes, and gradually build a stronger mental picture of the world.</p>
+            <p class="launch-subtitle">Know the world by heart.</p>
             <div class="launch-actions" aria-label="Launch actions">
               <button id="launch-start-button" class="launch-button launch-button-primary" type="button" data-launch-action="start">
                 <span class="launch-button-icon" aria-hidden="true"></span>
                 <span>Start Playing</span>
               </button>
+              <a class="launch-learn-more" href="/about">Learn More</a>
             </div>
+            <dl class="launch-proof-row" aria-label="Mappa Mundi highlights">
+              <div>
+                <dt>Over 20</dt>
+                <dd>journeys</dd>
+              </div>
+              <div>
+                <dt>122</dt>
+                <dd>countries</dd>
+              </div>
+              <div>
+                <dt>Updated</dt>
+                <dd>once a week or more</dd>
+              </div>
+            </dl>
           </div>
-          <figure class="launch-hero-shot" aria-label="Mappa Mundi interactive world map practice screenshot">
-            <img
-              src="assets/screenshots/mappa-mundi-world-map-practice.webp"
-              alt="Mappa Mundi interactive world map practice with continents and oceans"
-              loading="eager"
-              decoding="async"
-            />
+
+          <figure class="title-screen-globe" aria-label="Illustrated globe for Mappa Mundi">
+            <picture>
+              <source srcset="assets/landing/hero-globe-mobile.webp" media="(max-width: 640px)" />
+              <img
+                src="assets/landing/hero-globe.webp"
+                alt="An explorer-style globe floating over a star map"
+                loading="eager"
+                decoding="async"
+              />
+            </picture>
           </figure>
         </div>
-
-        <section class="launch-section launch-section-journeys" aria-labelledby="launch-journeys-heading">
-          <div class="launch-section-copy launch-section-copy-wide">
-            <h2 id="launch-journeys-heading">Over 20 learning journeys</h2>
-            <p>Mappa Mundi includes over 20 unique journeys, with guided practice for continents and oceans, U.S. states, capitals, world regions, and countries around the globe.</p>
-            <p>The app currently covers 122 countries, with new features and new content added once a week or more.</p>
-            <p>Each journey is broken into short activities so students can make steady progress without being overwhelmed by the whole map at once.</p>
-          </div>
-        </section>
-
-        <section class="launch-section launch-section-explore" aria-labelledby="launch-explore-heading">
-          <div class="launch-section-copy launch-section-copy-wide">
-            <h2 id="launch-explore-heading">Explore learning journeys</h2>
-            <p>Use the menu to jump into a focused path, then work through map-based practice with clear feedback and steady review.</p>
-          </div>
-
-          <div class="launch-card-grid" aria-label="Learning journey screenshots">
-            <article class="launch-media-card">
-              <figure class="launch-media-card-shot">
-                <img
-                  src="assets/screenshots/mappa-mundi-choose-journey-menu.webp"
-                  alt="Mappa Mundi journey selection screen with world geography activities"
-                  loading="eager"
-                  decoding="async"
-                />
-              </figure>
-              <div class="launch-media-card-copy">
-                <h3>Choose a journey</h3>
-                <p>Pick a region or topic and move through short, focused activities in a guided sequence.</p>
-              </div>
-            </article>
-
-            <article class="launch-media-card">
-              <figure class="launch-media-card-shot">
-                <img
-                  src="assets/screenshots/mappa-mundi-us-states-practice.webp"
-                  alt="Mappa Mundi U.S. states practice activity showing a map question and answer choices"
-                  loading="eager"
-                  decoding="async"
-                />
-              </figure>
-              <div class="launch-media-card-copy">
-                <h3>Practice on the map</h3>
-                <p>Study the geography on screen, then retrieve it with map questions that keep success rates high.</p>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section class="launch-section launch-section-flow" aria-labelledby="launch-flow-heading">
-          <div class="launch-section-copy launch-section-copy-wide">
-            <h2 id="launch-flow-heading">Study first, then challenge yourself</h2>
-            <p>Mappa Mundi is built around a simple learning flow: study the map, practice the places, then test what you remember.</p>
-            <p>Students can use study mode, challenge mode, Memory Trail, and Daily Trail to build lasting recall over time. The goal is not just to get one quiz right. The goal is to know the world by heart.</p>
-          </div>
-        </section>
-
-        <section class="launch-section launch-section-audience" aria-labelledby="launch-audience-heading">
-          <div class="launch-section-copy launch-section-copy-wide">
-            <h2 id="launch-audience-heading">Built for families, classrooms, and curious learners</h2>
-            <p>Mappa Mundi works well for homeschool families, classrooms, and independent learners who want geography practice that feels more active than a worksheet and more thoughtful than a basic multiple-choice quiz.</p>
-            <p>It is simple enough for kids to start quickly, but broad enough to support steady geography learning as new regions and activities are added.</p>
-          </div>
-          <div class="launch-bottom-actions">
-            <button class="launch-button launch-button-primary launch-button-bottom" type="button" data-launch-action="start">
-              <span class="launch-button-icon" aria-hidden="true"></span>
-              <span>Start Learning with Mappa Mundi</span>
-            </button>
-          </div>
-        </section>
       </div>
     </section>
     <section id="app-shell-screen" class="app-shell-screen" aria-labelledby="app-shell-title" hidden>
@@ -373,7 +324,7 @@
 
         window.__mappaMundiLoadApp = () => {
           if (!appModulePromise) {
-            appModulePromise = import("./src/maplibre-poc.js?v=20260606-capital-icons-2");
+            appModulePromise = import("./src/maplibre-poc.js?v=20260611-title-screen");
           }
 
           return appModulePromise;
