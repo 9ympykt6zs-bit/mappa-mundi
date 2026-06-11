@@ -5408,6 +5408,12 @@ body.launch-mode {
   text-shadow: 0 3px 14px rgba(0, 0, 0, 0.72);
 }
 
+.launch-cta-stack {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
 .title-screen-copy .launch-actions {
   align-items: center;
   display: flex;
@@ -5791,6 +5797,11 @@ body.about-page {
     margin-top: 2px;
   }
 
+  .launch-cta-stack {
+    gap: 6px;
+    margin-top: clamp(22px, 4.8vh, 42px);
+  }
+
   .title-screen-copy .launch-button-primary {
     font-size: 1.02rem;
     min-height: 52px;
@@ -5890,11 +5901,16 @@ body.about-page {
 
   .title-screen-copy .launch-actions {
     gap: 9px;
+    margin-top: 0;
   }
 
   .title-screen-copy .launch-button-primary,
   .launch-learn-more {
     width: min(100%, 320px);
+  }
+
+  .launch-cta-stack {
+    margin-top: clamp(24px, 5.6vh, 46px);
   }
 
   .title-screen-globe {
