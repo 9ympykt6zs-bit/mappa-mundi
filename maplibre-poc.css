@@ -839,6 +839,79 @@ select,
   gap: 10px;
 }
 
+.daily-trail-dev-panel {
+  width: min(980px, 100%);
+}
+
+.daily-trail-dev-status {
+  background: rgba(221, 239, 249, 0.72);
+  border: 1px solid rgba(143, 189, 226, 0.64);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.daily-trail-dev-status-active {
+  background: rgba(254, 243, 199, 0.82);
+  border-color: rgba(217, 119, 6, 0.36);
+  color: #6b3d08;
+}
+
+.daily-trail-dev-field {
+  color: var(--ink);
+  display: grid;
+  font-weight: 900;
+  gap: 8px;
+}
+
+.daily-trail-dev-field input,
+.daily-trail-dev-field select {
+  background: #ffffff;
+  border: 1px solid rgba(143, 189, 226, 0.8);
+  border-radius: 12px;
+  color: var(--ink);
+  font: inherit;
+  min-width: 0;
+  padding: 11px 12px;
+}
+
+.daily-trail-dev-section-list,
+.daily-trail-dev-search-results {
+  display: grid;
+  gap: 12px;
+}
+
+.daily-trail-dev-section-list {
+  max-height: min(48vh, 520px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.daily-trail-dev-card {
+  background: #ffffff;
+  border: 1px solid rgba(143, 189, 226, 0.78);
+  border-radius: 14px;
+  box-shadow: 0 10px 22px rgba(24, 38, 64, 0.08);
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.daily-trail-dev-card h3 {
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.daily-trail-dev-card p {
+  font-size: 0.92rem;
+}
+
+.daily-trail-dev-sample {
+  color: #5b6a82;
+  font-weight: 700;
+}
+
 .main-menu-section[hidden],
 .main-menu-utility-area[hidden] {
   display: none;

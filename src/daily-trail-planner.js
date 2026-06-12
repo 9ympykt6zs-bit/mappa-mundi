@@ -192,6 +192,48 @@ export function planDailyTrailSession(state, items) {
   return plan;
 }
 
+export function planDailyTrailDevSession(state, items, override = {}) {
+  const normalized = createDailyTrailState(state);
+  const safeItems = Array.isArray(items) ? items : [];
+  const itemIds = new Set(
+    Array.isArray(override.dailyTrailDevOverrideItemIds)
+      ? override.dailyTrailDevOverrideItemIds.filter(Boolean)
+      : []
+  );
+  const mode = override.dailyTrailDevMode === "item" ? "item" : "section";
+  const activeActivityId = override.dailyTrailDevOverrideActivityId || "";
+  const selectedItems = itemIds.size > 0
+    ? safeItems.filter((item) => itemIds.has(item.id))
+    : safeItems.filter((item) => item.homeActivityId === activeActivityId);
+  const playItems = selectedItems.length > 0
+    ? selectedItems
+    : activeActivityId
+      ? safeItems.filter((item) => item.homeActivityId === activeActivityId)
+      : safeItems;
+  const firstItem = playItems[0] || null;
+  const titleLabel = mode === "item"
+    ? firstItem?.label || "Item"
+    : firstItem?.activityTitle || "Section";
+
+  return createPlan({
+    state: normalized,
+    sessionType: mode === "item" ? "daily-trail-dev-item" : "daily-trail-dev-section",
+    title: mode === "item" ? `Daily Trail Test: ${titleLabel}` : `Daily Trail Dev: ${titleLabel}`,
+    newItems: playItems,
+    reviewItems: playItems,
+    playItems,
+    allItems: safeItems,
+    activeActivityId: activeActivityId || firstItem?.homeActivityId || "",
+    trailGoalId: override.dailyTrailDevOverrideGoalId || normalized.activeTrailGoal,
+    devOverride: {
+      mode,
+      goalId: override.dailyTrailDevOverrideGoalId || normalized.activeTrailGoal,
+      activityId: activeActivityId || firstItem?.homeActivityId || "",
+      itemIds: Array.from(itemIds)
+    }
+  });
+}
+
 export function applyDailyTrailSessionStart(state, plan) {
   const next = createDailyTrailState({
     ...state,
@@ -559,7 +601,9 @@ function createPlan({
   playItems,
   allItems,
   activeActivityId,
-  continentsOceansReviewType = null
+  continentsOceansReviewType = null,
+  trailGoalId = state?.activeTrailGoal || dailyTrailId,
+  devOverride = null
 }) {
   const originalReviewItems = Array.isArray(reviewItems) ? reviewItems : [];
   const originalPlayItems = Array.isArray(playItems) ? playItems : [];
@@ -589,6 +633,7 @@ function createPlan({
   return {
     sessionType,
     title,
+    trailGoalId,
     activeActivityId: resolvedActivityId,
     activeCameraGroupId: firstGroup?.cameraGroupId || "",
     newItems: defensiveNewItems,
@@ -596,6 +641,7 @@ function createPlan({
     playItems: defensivePlayItems,
     allItems,
     continentsOceansReviewType,
+    devOverride,
     cameraGroups: groupedItems,
     intro: {
       newCount: defensiveNewItems.length,

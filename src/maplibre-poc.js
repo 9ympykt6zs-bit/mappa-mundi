@@ -20,6 +20,7 @@ import {
   getDailyTrailGoalOptions,
   hasDailyTrailProgress,
   loadDailyTrailState,
+  planDailyTrailDevSession,
   planDailyTrailSession,
   selectDailyTrailGoal,
   shouldShowDailyTrailGoalChoice,
@@ -197,6 +198,8 @@ const appSettingsStorageKey = "atlasQuestSettings";
 const legacyLayerSettingsStorageKey = "atlas-quest-layer-settings";
 const onboardingSeenStorageKey = "atlasQuestOnboardingSeen";
 const gameplayIntroSpeechSessionKey = "atlasQuestGameplayIntroSpokenThisSession";
+const dailyTrailDevOverrideStorageKey = "mappaDailyTrailDevOverride";
+const dailyTrailDevCheatCode = "dailytraildev";
 const feedbackFormUrl = "https://docs.google.com/forms/d/e/1FAIpQLSf3w51Tbeetre-iS4maV8X0UDRBhvueuuAreQFoGObCG3VFKA/viewform?usp=header";
 const appShellScreenIds = new Set([
   "launch",
@@ -209,6 +212,7 @@ const appShellScreenIds = new Set([
   "journey-detail",
   "study",
   "choose-difficulty",
+  "daily-trail-dev",
   "daily-trail-goal-choice",
   "daily-trail-intro",
   "daily-trail-summary",
@@ -2692,6 +2696,10 @@ let activeDailyTrailSession = null;
 let pendingDailyTrailPlan = null;
 let lastDailyTrailSummary = null;
 let dailyTrailResetConfirmationVisible = false;
+let dailyTrailDevSelectedGoalId = "";
+let dailyTrailDevSearchQuery = "";
+let dailyTrailDevCheatBuffer = "";
+let dailyTrailDevCheatListenerBound = false;
 let activeStudySession = null;
 let activeStudyPracticeSession = null;
 let journeyCompletionState = null;
@@ -3511,6 +3519,7 @@ async function init() {
   bindLaunchStartEvents();
 
   bindLaunchScreenEvents();
+  bindDailyTrailDevCheatListener();
   bindUiEvents();
   bindZoomControls();
   configureFeedbackLinks();
@@ -5364,6 +5373,10 @@ function getAppShellScreenContent(screenId) {
       title: "Choose Difficulty",
       subtitle: "Choose how much help you want during this journey."
     },
+    "daily-trail-dev": {
+      title: "Daily Trail Dev",
+      subtitle: "Hidden testing tools for jumping to Daily Trail content."
+    },
     "daily-trail-goal-choice": {
       title: "Daily Trail",
       subtitle: "Choose your next goal."
@@ -5427,6 +5440,7 @@ function isJourneyShellScreen(screenId) {
     "onboarding",
     "study",
     "choose-difficulty",
+    "daily-trail-dev",
     "daily-trail-goal-choice",
     "daily-trail-intro",
     "daily-trail-summary",
@@ -10210,6 +10224,11 @@ function renderJourneyShellContent(screenId) {
     return;
   }
 
+  if (screenId === "daily-trail-dev") {
+    renderDailyTrailDevScreen();
+    return;
+  }
+
   if (screenId === "daily-trail-goal-choice") {
     renderDailyTrailGoalChoiceScreen();
     return;
@@ -10317,51 +10336,442 @@ async function openDailyTrailIntro() {
 
   const items = getDailyTrailItems();
   const state = syncCompletedDailyTrailGoals(loadDailyTrailState(), items);
+  const devOverride = getDailyTrailDevOverride();
 
-  if (shouldShowDailyTrailGoalChoice(state, items)) {
+  if (!devOverride && shouldShowDailyTrailGoalChoice(state, items)) {
     pendingDailyTrailPlan = null;
     showAppScreen("daily-trail-goal-choice");
     return;
   }
 
-  pendingDailyTrailPlan = planDailyTrailSession(state, items);
+  pendingDailyTrailPlan = getDailyTrailPlanForState(state, items, devOverride);
   showAppScreen("daily-trail-intro");
 }
 
 function getDailyTrailItems() {
-  const items = [];
-
-  dailyTrailGoals.forEach((goal) => {
+  return dailyTrailGoals.flatMap((goal) => {
     const journey = journeyPresets.find((candidate) => candidate.id === goal.journeyId);
+    return getDailyTrailGoalItems(goal, journey);
+  });
+}
 
-    if (!journey) {
+function getDailyTrailGoalItems(goal, journey) {
+  if (!goal || !journey) {
+    return [];
+  }
+
+  if (goal.id === "world-core") {
+    return buildWorldCoreDailyTrailItems(journey, activities);
+  }
+
+  return buildDailyTrailGoalItems(journey, activities, {
+    goalId: goal.id,
+    homeJourneyId: journey.id
+  });
+}
+
+function getDailyTrailPlanForState(state, items, devOverride = getDailyTrailDevOverride()) {
+  return devOverride
+    ? planDailyTrailDevSession(state, items, devOverride)
+    : planDailyTrailSession(state, items);
+}
+
+function isDailyTrailDevAccessAllowed() {
+  const hostname = window.location?.hostname || "";
+  return hostname === "localhost"
+    || hostname === "127.0.0.1"
+    || hostname === "::1"
+    || hostname === "";
+}
+
+function normalizeDailyTrailDevOverride(value) {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const mode = value.dailyTrailDevMode === "item" ? "item" : value.dailyTrailDevMode === "section" ? "section" : "";
+  const goalId = String(value.dailyTrailDevOverrideGoalId || "").trim();
+  const activityId = String(value.dailyTrailDevOverrideActivityId || "").trim();
+  const itemIds = Array.isArray(value.dailyTrailDevOverrideItemIds)
+    ? value.dailyTrailDevOverrideItemIds.map((itemId) => String(itemId || "").trim()).filter(Boolean)
+    : [];
+
+  if (!mode || !goalId || (!activityId && itemIds.length === 0)) {
+    return null;
+  }
+
+  return {
+    dailyTrailDevOverrideGoalId: goalId,
+    dailyTrailDevOverrideActivityId: activityId,
+    dailyTrailDevOverrideItemIds: itemIds,
+    dailyTrailDevMode: mode
+  };
+}
+
+function getDailyTrailDevOverride() {
+  if (!isDailyTrailDevAccessAllowed()) {
+    return null;
+  }
+
+  try {
+    return normalizeDailyTrailDevOverride(JSON.parse(localStorage.getItem(dailyTrailDevOverrideStorageKey) || "null"));
+  } catch {
+    return null;
+  }
+}
+
+function setDailyTrailDevOverride(override) {
+  const normalized = normalizeDailyTrailDevOverride(override);
+
+  if (!normalized || !isDailyTrailDevAccessAllowed()) {
+    return null;
+  }
+
+  try {
+    localStorage.setItem(dailyTrailDevOverrideStorageKey, JSON.stringify(normalized));
+  } catch {
+    // Dev override remains best-effort; normal Daily Trail is unaffected.
+  }
+
+  return normalized;
+}
+
+function clearDailyTrailDevOverride(options = {}) {
+  try {
+    localStorage.removeItem(dailyTrailDevOverrideStorageKey);
+  } catch {
+    // Nothing to clear if storage is unavailable.
+  }
+
+  pendingDailyTrailPlan = null;
+
+  if (!options.silent) {
+    showFeedback("Daily Trail dev override cleared.", true);
+  }
+}
+
+function getDailyTrailDevGoalModels() {
+  return dailyTrailGoals.map((goal) => {
+    const journey = journeyPresets.find((candidate) => candidate.id === goal.journeyId);
+    const goalItems = getDailyTrailGoalItems(goal, journey);
+    const sections = (journey?.steps || []).map((step, stepIndex) => {
+      const activity = getActivityById(step.activityId);
+      const items = goalItems.filter((item) => item.homeActivityId === step.activityId);
+
+      return {
+        id: `${goal.id}:${step.id || step.activityId}`,
+        goal,
+        journey,
+        step,
+        stepIndex,
+        activity,
+        activityId: step.activityId,
+        title: step.title || activity?.title || step.activityId,
+        subtitle: activity?.title && activity.title !== step.title ? activity.title : step.kind || "",
+        items
+      };
+    }).filter((section) => section.items.length > 0);
+
+    return {
+      goal,
+      journey,
+      sections
+    };
+  }).filter((model) => model.journey && model.sections.length > 0);
+}
+
+function getDailyTrailDevSearchResults(goalModels, query) {
+  const normalizedQuery = query.trim().toLowerCase();
+
+  if (!normalizedQuery) {
+    return [];
+  }
+
+  return goalModels.flatMap((model) => (
+    model.sections.flatMap((section) => (
+      section.items
+        .filter((item) => item.label.toLowerCase().includes(normalizedQuery) || item.id.toLowerCase().includes(normalizedQuery))
+        .map((item) => ({
+          goal: model.goal,
+          journey: model.journey,
+          section,
+          item
+        }))
+    ))
+  )).slice(0, 40);
+}
+
+async function openDailyTrailDevMenu() {
+  if (!isDailyTrailDevAccessAllowed()) {
+    console.warn("Daily Trail dev menu is only available on localhost.");
+    return false;
+  }
+
+  await ensureMapRuntimeLoaded();
+  await ensureActivityDataLoaded();
+
+  const goalModels = getDailyTrailDevGoalModels();
+  dailyTrailDevSelectedGoalId ||= goalModels[0]?.goal?.id || "";
+  showAppScreen("daily-trail-dev");
+  return true;
+}
+
+window.openDailyTrailDevMenu = openDailyTrailDevMenu;
+
+function bindDailyTrailDevCheatListener() {
+  if (dailyTrailDevCheatListenerBound) {
+    return;
+  }
+
+  dailyTrailDevCheatListenerBound = true;
+  window.addEventListener("keydown", handleDailyTrailDevCheatKeydown, true);
+}
+
+function isDailyTrailDevCheatEditableTarget(target) {
+  if (!target?.closest) {
+    return false;
+  }
+
+  return Boolean(target.closest("input, textarea, select, [contenteditable]:not([contenteditable='false'])"));
+}
+
+function handleDailyTrailDevCheatKeydown(event) {
+  if (
+    currentAppScreen !== "main-menu"
+    || !isDailyTrailDevAccessAllowed()
+    || event.ctrlKey
+    || event.metaKey
+    || event.altKey
+    || event.isComposing
+    || event.key.length !== 1
+  ) {
+    return;
+  }
+
+  if (isDailyTrailDevCheatEditableTarget(event.target)) {
+    return;
+  }
+
+  dailyTrailDevCheatBuffer = `${dailyTrailDevCheatBuffer}${event.key.toLowerCase()}`.slice(-dailyTrailDevCheatCode.length);
+
+  if (dailyTrailDevCheatBuffer === dailyTrailDevCheatCode) {
+    dailyTrailDevCheatBuffer = "";
+    openDailyTrailDevMenu();
+  }
+}
+
+function renderDailyTrailDevScreen() {
+  const goalModels = getDailyTrailDevGoalModels();
+  const activeOverride = getDailyTrailDevOverride();
+
+  if (!dailyTrailDevSelectedGoalId || !goalModels.some((model) => model.goal.id === dailyTrailDevSelectedGoalId)) {
+    dailyTrailDevSelectedGoalId = goalModels[0]?.goal?.id || "";
+  }
+
+  const selectedModel = goalModels.find((model) => model.goal.id === dailyTrailDevSelectedGoalId) || goalModels[0] || null;
+
+  const panel = document.createElement("section");
+  panel.className = "daily-trail-panel daily-trail-dev-panel";
+
+  const heading = document.createElement("h2");
+  heading.textContent = "Daily Trail Dev Menu";
+
+  const copy = document.createElement("p");
+  copy.textContent = "Hidden localhost-only controls for jumping into real Daily Trail sections and items without altering progress first.";
+
+  const status = document.createElement("p");
+  status.className = activeOverride ? "daily-trail-dev-status daily-trail-dev-status-active" : "daily-trail-dev-status";
+  status.textContent = activeOverride
+    ? `Active override: ${activeOverride.dailyTrailDevMode} | ${activeOverride.dailyTrailDevOverrideActivityId || "item"}`
+    : "No active dev override.";
+
+  const goalLabel = document.createElement("label");
+  goalLabel.className = "daily-trail-dev-field";
+  const goalText = document.createElement("span");
+  goalText.textContent = "Daily Trail goal";
+  const goalSelect = document.createElement("select");
+  goalSelect.value = dailyTrailDevSelectedGoalId;
+  goalModels.forEach((model) => {
+    const option = document.createElement("option");
+    option.value = model.goal.id;
+    option.textContent = model.goal.title;
+    goalSelect.appendChild(option);
+  });
+  goalSelect.addEventListener("change", () => {
+    dailyTrailDevSelectedGoalId = goalSelect.value;
+    showAppScreen("daily-trail-dev", { pushHistory: false });
+  });
+  goalLabel.append(goalText, goalSelect);
+
+  const sectionList = document.createElement("div");
+  sectionList.className = "daily-trail-dev-section-list";
+
+  if (selectedModel) {
+    selectedModel.sections.forEach((section) => {
+      sectionList.appendChild(createDailyTrailDevSectionCard(section));
+    });
+  }
+
+  const searchLabel = document.createElement("label");
+  searchLabel.className = "daily-trail-dev-field";
+  const searchText = document.createElement("span");
+  searchText.textContent = "Search item label or id";
+  const searchInput = document.createElement("input");
+  searchInput.type = "search";
+  searchInput.placeholder = "Cuba";
+  searchInput.value = dailyTrailDevSearchQuery;
+  searchLabel.append(searchText, searchInput);
+
+  const searchResults = document.createElement("div");
+  searchResults.className = "daily-trail-dev-search-results";
+  const renderSearchResults = () => {
+    dailyTrailDevSearchQuery = searchInput.value;
+    searchResults.innerHTML = "";
+    const results = getDailyTrailDevSearchResults(goalModels, dailyTrailDevSearchQuery);
+
+    if (!dailyTrailDevSearchQuery.trim()) {
+      searchResults.textContent = "Type a label, such as Cuba, to find a Daily Trail item.";
       return;
     }
 
-    if (goal.id === "world-core") {
-      items.push(...buildWorldCoreDailyTrailItems(journey, activities));
+    if (results.length === 0) {
+      searchResults.textContent = "No matching Daily Trail items found.";
       return;
     }
 
-    items.push(...buildDailyTrailGoalItems(journey, activities, {
-      goalId: goal.id,
-      homeJourneyId: journey.id
-    }));
+    results.forEach((result) => {
+      searchResults.appendChild(createDailyTrailDevSearchResult(result));
+    });
+  };
+  searchInput.addEventListener("input", renderSearchResults);
+  renderSearchResults();
+
+  const actions = document.createElement("div");
+  actions.className = "daily-trail-actions";
+
+  const resetButton = document.createElement("button");
+  resetButton.type = "button";
+  resetButton.className = "main-menu-button main-menu-button-quiet";
+  resetButton.textContent = "Reset Daily Trail Progress";
+  resetButton.addEventListener("click", () => {
+    resetDailyTrailProgress();
+    clearDailyTrailDevOverride({ silent: true });
+    showFeedback("Daily Trail progress reset.", true);
+    showAppScreen("daily-trail-dev", { pushHistory: false });
   });
 
-  return items;
+  const clearButton = document.createElement("button");
+  clearButton.type = "button";
+  clearButton.className = "main-menu-button main-menu-button-quiet";
+  clearButton.textContent = "Clear Dev Override";
+  clearButton.addEventListener("click", () => {
+    clearDailyTrailDevOverride();
+    showAppScreen("daily-trail-dev", { pushHistory: false });
+  });
+
+  const backButton = document.createElement("button");
+  backButton.type = "button";
+  backButton.className = "main-menu-button main-menu-button-quiet";
+  backButton.textContent = "Main Menu";
+  backButton.addEventListener("click", () => showAppScreen("main-menu"));
+
+  actions.append(resetButton, clearButton, backButton);
+  panel.append(heading, copy, status, goalLabel, sectionList, searchLabel, searchResults, actions);
+  journeyShellContent.appendChild(panel);
+}
+
+function createDailyTrailDevSectionCard(section) {
+  const card = document.createElement("article");
+  card.className = "daily-trail-dev-card";
+
+  const heading = document.createElement("h3");
+  heading.textContent = section.title;
+
+  const meta = document.createElement("p");
+  meta.textContent = `${section.goal.title} | ${section.activityId} | ${section.items.length} items`;
+
+  const sample = document.createElement("p");
+  sample.className = "daily-trail-dev-sample";
+  sample.textContent = section.items.slice(0, 8).map((item) => item.label).join(", ");
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "main-menu-button main-menu-button-green";
+  button.textContent = "Jump to Section";
+  button.addEventListener("click", async () => {
+    setDailyTrailDevOverride({
+      dailyTrailDevOverrideGoalId: section.goal.id,
+      dailyTrailDevOverrideActivityId: section.activityId,
+      dailyTrailDevOverrideItemIds: [],
+      dailyTrailDevMode: "section"
+    });
+    pendingDailyTrailPlan = null;
+    await openDailyTrailIntro();
+  });
+
+  card.append(heading, meta, sample, button);
+  return card;
+}
+
+function createDailyTrailDevSearchResult(result) {
+  const row = document.createElement("article");
+  row.className = "daily-trail-dev-card daily-trail-dev-result";
+
+  const heading = document.createElement("h3");
+  heading.textContent = result.item.label;
+
+  const meta = document.createElement("p");
+  meta.textContent = `${result.item.id} | ${result.goal.title} | ${result.section.title} (${result.section.activityId})`;
+
+  const actions = document.createElement("div");
+  actions.className = "daily-trail-actions";
+
+  const jumpButton = document.createElement("button");
+  jumpButton.type = "button";
+  jumpButton.className = "main-menu-button main-menu-button-quiet";
+  jumpButton.textContent = "Jump to Section";
+  jumpButton.addEventListener("click", async () => {
+    setDailyTrailDevOverride({
+      dailyTrailDevOverrideGoalId: result.goal.id,
+      dailyTrailDevOverrideActivityId: result.section.activityId,
+      dailyTrailDevOverrideItemIds: [],
+      dailyTrailDevMode: "section"
+    });
+    pendingDailyTrailPlan = null;
+    await openDailyTrailIntro();
+  });
+
+  const testButton = document.createElement("button");
+  testButton.type = "button";
+  testButton.className = "main-menu-button main-menu-button-green";
+  testButton.textContent = "Test Item";
+  testButton.addEventListener("click", async () => {
+    setDailyTrailDevOverride({
+      dailyTrailDevOverrideGoalId: result.goal.id,
+      dailyTrailDevOverrideActivityId: result.section.activityId,
+      dailyTrailDevOverrideItemIds: [result.item.id],
+      dailyTrailDevMode: "item"
+    });
+    pendingDailyTrailPlan = null;
+    await startDailyTrailSession();
+  });
+
+  actions.append(jumpButton, testButton);
+  row.append(heading, meta, actions);
+  return row;
 }
 
 function renderDailyTrailIntroScreen() {
   const items = getDailyTrailItems();
   const state = syncCompletedDailyTrailGoals(loadDailyTrailState(), items);
+  const devOverride = getDailyTrailDevOverride();
 
-  if (shouldShowDailyTrailGoalChoice(state, items)) {
+  if (!devOverride && shouldShowDailyTrailGoalChoice(state, items)) {
     renderDailyTrailGoalChoiceScreen();
     return;
   }
 
-  const plan = pendingDailyTrailPlan || planDailyTrailSession(state, items);
+  const plan = pendingDailyTrailPlan || getDailyTrailPlanForState(state, items, devOverride);
   pendingDailyTrailPlan = plan;
 
   const panel = document.createElement("section");
@@ -10491,6 +10901,14 @@ function getDailyTrailIntroCopy(plan) {
     return "A quick check will revisit the places from your review.";
   }
 
+  if (plan.sessionType === "daily-trail-dev-section") {
+    return "Dev jump: this one-time Daily Trail session starts at the selected section.";
+  }
+
+  if (plan.sessionType === "daily-trail-dev-item") {
+    return "Dev test: this one-time Daily Trail session starts with the selected item.";
+  }
+
   return "Warm up with review, learn a few new places, then mix them into practice.";
 }
 
@@ -10516,7 +10934,8 @@ async function startDailyTrailSession() {
 
   const items = getDailyTrailItems();
   const state = syncCompletedDailyTrailGoals(loadDailyTrailState(), items);
-  const plan = pendingDailyTrailPlan || planDailyTrailSession(state, items);
+  const devOverride = getDailyTrailDevOverride();
+  const plan = pendingDailyTrailPlan || getDailyTrailPlanForState(state, items, devOverride);
   const goal = getDailyTrailGoal(plan.trailGoalId || state.activeTrailGoal);
   const journey = journeyPresets.find((candidate) => candidate.id === goal.journeyId);
   const activity = getActivityById(plan.activeActivityId);
@@ -10527,6 +10946,10 @@ async function startDailyTrailSession() {
   }
 
   const startedState = applyDailyTrailSessionStart(state, plan);
+  if (devOverride || plan.devOverride) {
+    clearDailyTrailDevOverride({ silent: true });
+  }
+
   const plannedTargetIds = plan.playItems
     .filter((item) => item.homeActivityId === activity.id)
     .map((item) => item.targetId);
@@ -10602,6 +11025,18 @@ function resetDailyTrailProgress() {
   }
 
   activeDailyTrailSession = null;
+  if (activeStudySession?.dailyTrail) {
+    activeStudySession = null;
+    runner?.setStudyPreviewMode(false);
+    runner?.setMemoryTrailHighlight([]);
+    resetActivityAttemptState();
+    if (studyCard) {
+      studyCard.hidden = true;
+    }
+    if (answerBank) {
+      answerBank.innerHTML = "";
+    }
+  }
   pendingDailyTrailPlan = null;
   lastDailyTrailSummary = null;
   updateDailyTrailMainMenuButton();
