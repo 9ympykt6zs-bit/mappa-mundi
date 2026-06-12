@@ -1157,6 +1157,10 @@ function getDailyTrailItemType(activity, target) {
     return "city";
   }
 
+  if (target.type === "territory") {
+    return "territory";
+  }
+
   if (/state/i.test(activity?.targetNoun || "")) {
     return "state";
   }

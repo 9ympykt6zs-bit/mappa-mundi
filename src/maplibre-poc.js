@@ -10334,9 +10334,9 @@ async function openDailyTrailIntro() {
   await ensureMapRuntimeLoaded();
   await ensureActivityDataLoaded();
 
-  const items = getDailyTrailItems();
-  const state = syncCompletedDailyTrailGoals(loadDailyTrailState(), items);
   const devOverride = getDailyTrailDevOverride();
+  const items = getDailyTrailItems({ devOverride });
+  const state = syncCompletedDailyTrailGoals(loadDailyTrailState(), items);
 
   if (!devOverride && shouldShowDailyTrailGoalChoice(state, items)) {
     pendingDailyTrailPlan = null;
@@ -10348,11 +10348,15 @@ async function openDailyTrailIntro() {
   showAppScreen("daily-trail-intro");
 }
 
-function getDailyTrailItems() {
-  return dailyTrailGoals.flatMap((goal) => {
+function getDailyTrailItems(options = {}) {
+  const items = dailyTrailGoals.flatMap((goal) => {
     const journey = journeyPresets.find((candidate) => candidate.id === goal.journeyId);
     return getDailyTrailGoalItems(goal, journey);
   });
+
+  return options.devOverride
+    ? dedupeDailyTrailDevItems([...items, ...getDailyTrailDevOverrideItems(options.devOverride, items)])
+    : items;
 }
 
 function getDailyTrailGoalItems(goal, journey) {
@@ -10374,6 +10378,84 @@ function getDailyTrailPlanForState(state, items, devOverride = getDailyTrailDevO
   return devOverride
     ? planDailyTrailDevSession(state, items, devOverride)
     : planDailyTrailSession(state, items);
+}
+
+function getDailyTrailDevOverrideItems(devOverride, existingItems = []) {
+  const activity = getActivityById(devOverride?.dailyTrailDevOverrideActivityId);
+
+  if (!activity?.targets?.length) {
+    return [];
+  }
+
+  const existingIds = new Set(existingItems.map((item) => item.id));
+  const requestedIds = new Set(devOverride.dailyTrailDevOverrideItemIds || []);
+  return activity.targets
+    .map((target, targetIndex) => createDailyTrailDevItem(activity, target, targetIndex))
+    .filter((item) => item && !existingIds.has(item.id))
+    .filter((item) => requestedIds.size === 0 || requestedIds.has(item.id));
+}
+
+function createDailyTrailDevItem(activity, target, targetIndex = 0) {
+  if (!activity || !target) {
+    return null;
+  }
+
+  const type = getDailyTrailDevItemType(activity, target);
+  return {
+    id: `${type}:${target.id}`,
+    targetId: target.id,
+    label: target.name,
+    type,
+    homeActivityId: activity.id,
+    homeJourneyId: "daily-trail-dev",
+    homeStepId: activity.id,
+    homeStepIndex: 9999,
+    activityTitle: activity.title,
+    cameraGroupId: activity.map?.region || activity.id,
+    order: 9999000 + targetIndex
+  };
+}
+
+function getDailyTrailDevItemType(activity, target) {
+  if (target.type === "federal-district") {
+    return "federal-district";
+  }
+
+  if (target.type === "zone") {
+    return "ocean";
+  }
+
+  if (target.type === "region") {
+    return "continent";
+  }
+
+  if (target.type === "capital") {
+    return "capital";
+  }
+
+  if (target.type === "city") {
+    return "city";
+  }
+
+  if (target.type === "territory") {
+    return "territory";
+  }
+
+  if (/state/i.test(activity?.targetNoun || "")) {
+    return "state";
+  }
+
+  return "country";
+}
+
+function dedupeDailyTrailDevItems(items) {
+  const byId = new Map();
+  items.filter(Boolean).forEach((item) => {
+    if (!byId.has(item.id)) {
+      byId.set(item.id, item);
+    }
+  });
+  return Array.from(byId.values()).sort((left, right) => left.order - right.order);
 }
 
 function isDailyTrailDevAccessAllowed() {
@@ -10487,7 +10569,7 @@ function getDailyTrailDevSearchResults(goalModels, query) {
     return [];
   }
 
-  return goalModels.flatMap((model) => (
+  const dailyTrailResults = goalModels.flatMap((model) => (
     model.sections.flatMap((section) => (
       section.items
         .filter((item) => item.label.toLowerCase().includes(normalizedQuery) || item.id.toLowerCase().includes(normalizedQuery))
@@ -10498,7 +10580,50 @@ function getDailyTrailDevSearchResults(goalModels, query) {
           item
         }))
     ))
-  )).slice(0, 40);
+  ));
+
+  return [
+    ...dailyTrailResults,
+    ...getDailyTrailDevLoadedActivitySearchResults(goalModels, normalizedQuery)
+  ].slice(0, 40);
+}
+
+function getDailyTrailDevLoadedActivitySearchResults(goalModels, normalizedQuery) {
+  const dailyTrailItemIds = new Set(goalModels.flatMap((model) => (
+    model.sections.flatMap((section) => section.items.map((item) => item.id))
+  )));
+  const fallbackGoal = dailyTrailGoals[0] || { id: "world-core", title: "World Core" };
+  const fallbackJourney = journeyPresets.find((candidate) => candidate.id === fallbackGoal.journeyId) || null;
+  const loadedActivityGoal = {
+    id: "daily-trail-dev-loaded-activities",
+    title: "Loaded Activities",
+    description: "Dev-only access to loaded activity targets.",
+    journeyId: fallbackGoal.journeyId
+  };
+
+  return activities.flatMap((activity) => (
+    (activity.targets || [])
+      .map((target, targetIndex) => createDailyTrailDevItem(activity, target, targetIndex))
+      .filter((item) => item && !dailyTrailItemIds.has(item.id))
+      .filter((item) => item.label.toLowerCase().includes(normalizedQuery) || item.id.toLowerCase().includes(normalizedQuery))
+      .map((item) => ({
+        goal: loadedActivityGoal,
+        journey: fallbackJourney,
+        section: {
+          id: `loaded-activity:${activity.id}`,
+          goal: loadedActivityGoal,
+          journey: fallbackJourney,
+          step: null,
+          stepIndex: 9999,
+          activity,
+          activityId: activity.id,
+          title: activity.title || activity.id,
+          subtitle: "Loaded activity",
+          items: [item]
+        },
+        item
+      }))
+  ));
 }
 
 async function openDailyTrailDevMenu() {
@@ -10762,9 +10887,9 @@ function createDailyTrailDevSearchResult(result) {
 }
 
 function renderDailyTrailIntroScreen() {
-  const items = getDailyTrailItems();
-  const state = syncCompletedDailyTrailGoals(loadDailyTrailState(), items);
   const devOverride = getDailyTrailDevOverride();
+  const items = getDailyTrailItems({ devOverride });
+  const state = syncCompletedDailyTrailGoals(loadDailyTrailState(), items);
 
   if (!devOverride && shouldShowDailyTrailGoalChoice(state, items)) {
     renderDailyTrailGoalChoiceScreen();
@@ -10932,9 +11057,9 @@ function getDailyTrailIntroSubtitle() {
 async function startDailyTrailSession() {
   await ensureMapReady();
 
-  const items = getDailyTrailItems();
-  const state = syncCompletedDailyTrailGoals(loadDailyTrailState(), items);
   const devOverride = getDailyTrailDevOverride();
+  const items = getDailyTrailItems({ devOverride });
+  const state = syncCompletedDailyTrailGoals(loadDailyTrailState(), items);
   const plan = pendingDailyTrailPlan || getDailyTrailPlanForState(state, items, devOverride);
   const goal = getDailyTrailGoal(plan.trailGoalId || state.activeTrailGoal);
   const journey = journeyPresets.find((candidate) => candidate.id === goal.journeyId);

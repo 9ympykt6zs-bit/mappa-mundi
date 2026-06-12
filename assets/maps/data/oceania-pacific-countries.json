@@ -80,7 +80,7 @@
     {
       "id": "guam",
       "name": "Guam",
-      "type": "country",
+      "type": "territory",
       "shape": "path",
       "isoA3": "GUM",
       "politicalStatus": "country-like/territory",

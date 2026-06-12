@@ -59,7 +59,7 @@
     {
       "id": "puerto-rico",
       "name": "Puerto Rico",
-      "type": "country",
+      "type": "territory",
       "shape": "path",
       "isoA3": "PRI",
       "color": "#a855f7",
