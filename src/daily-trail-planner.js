@@ -4,6 +4,15 @@ export const dailyTrailJourneyId = "world-geography-core";
 export const dailyTrailCheckpointInterval = 4;
 export const dailyTrailNewItemCount = 4;
 export const dailyTrailReviewItemCount = 10;
+export const dailyTrailGoals = [
+  {
+    id: dailyTrailId,
+    title: "World Core",
+    description: "Build a steady foundation across the world map.",
+    journeyId: dailyTrailJourneyId,
+    recommended: true
+  }
+];
 
 const ENABLE_DAILY_TRAIL_DEBUG = false;
 const dailyTrailMinNewItemBatchCount = 3;
@@ -34,6 +43,7 @@ export function createDailyTrailState(value = {}) {
   return {
     trailId: dailyTrailId,
     hasStarted: Boolean(source.hasStarted),
+    activeTrailGoal: getDailyTrailGoal(source.activeTrailGoal).id,
     currentSessionNumber,
     sessionsSinceLastCheckpoint,
     sessionsUntilNextCheckpoint: getSessionsUntilNextCheckpoint(sessionsSinceLastCheckpoint),
@@ -80,6 +90,29 @@ export function hasDailyTrailProgress(state = loadDailyTrailState()) {
   return Boolean(state?.hasStarted || Object.keys(state?.itemProgress || {}).length > 0);
 }
 
+export function getDailyTrailGoal(goalId = dailyTrailId) {
+  return dailyTrailGoals.find((goal) => goal.id === goalId) || dailyTrailGoals[0];
+}
+
+export function getDailyTrailGoalOptions() {
+  return dailyTrailGoals.map((goal) => ({ ...goal }));
+}
+
+export function shouldShowDailyTrailGoalChoice() {
+  return false;
+}
+
+export function selectDailyTrailGoal(state, goalId = dailyTrailId) {
+  return saveDailyTrailState({
+    ...createDailyTrailState(state),
+    activeTrailGoal: getDailyTrailGoal(goalId).id
+  });
+}
+
+export function syncCompletedDailyTrailGoals(state) {
+  return createDailyTrailState(state);
+}
+
 export function buildWorldCoreDailyTrailItems(journey, activities) {
   const steps = Array.isArray(journey?.steps) ? journey.steps : [];
 
@@ -110,6 +143,17 @@ export function buildWorldCoreDailyTrailItems(journey, activities) {
       };
     });
   });
+}
+
+export function buildDailyTrailGoalItems(journey, activities, options = {}) {
+  const goalId = options.goalId || dailyTrailId;
+  const homeJourneyId = options.homeJourneyId || journey?.id || dailyTrailJourneyId;
+
+  return buildWorldCoreDailyTrailItems(journey, activities).map((item) => ({
+    ...item,
+    id: `${goalId}:${item.id}`,
+    homeJourneyId
+  }));
 }
 
 export function planDailyTrailSession(state, items) {

@@ -7252,8 +7252,7 @@ function hasDailyTrailStatsMetRecallRequirement(stats) {
   }
 
   return stats.totalRetrievalCorrect >= DAILY_TRAIL_SESSION_CORRECT_TARGET
-    && stats.nameToPlaceCorrect >= 1
-    && stats.placeToNameCorrect >= 1;
+    && stats.nameToPlaceCorrect >= 1;
 }
 
 function getMemoryTrailTargetLabel(targetOrId, memoryTrail = getActiveMemoryTrail()) {
@@ -8589,6 +8588,10 @@ function chooseNextPrompt(memoryTrail) {
 }
 
 function chooseRetrievalPromptType(memoryTrail, stats, options = {}) {
+  if (isDailyTrailMemoryTrail(memoryTrail)) {
+    return "name_to_place";
+  }
+
   if (options.preferEasier || stats.placeToNameIncorrect > stats.nameToPlaceIncorrect + 1) {
     return "name_to_place";
   }
@@ -9776,14 +9779,11 @@ function createMemoryTrailAnswerChoiceList(memoryTrail) {
     button.dataset.promptKey = choice.promptKey || "";
     button.setAttribute("aria-label", choice.label);
     button.appendChild(createChipLabelText(choice.label));
-    const choose = (event = null) => handleMemoryTrailNameChoice(choice.id, {
+    const choose = () => handleMemoryTrailNameChoice(choice.id, {
       promptTargetId: choice.promptTargetId,
-      promptKey: choice.promptKey,
-      fromSpeaker: Boolean(event?.currentTarget?.classList?.contains("chip-speaker-button"))
+      promptKey: choice.promptKey
     });
-    const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(choice.label, {
-      onActivate: choose
-    });
+    const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(choice.label);
     if (speaker) {
       button.appendChild(speaker);
     }
