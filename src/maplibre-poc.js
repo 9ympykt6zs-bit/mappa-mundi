@@ -201,6 +201,8 @@ const onboardingSeenStorageKey = "atlasQuestOnboardingSeen";
 const gameplayIntroSpeechSessionKey = "atlasQuestGameplayIntroSpokenThisSession";
 const dailyTrailDevOverrideStorageKey = "mappaDailyTrailDevOverride";
 const dailyTrailDevCheatCode = "dailytraildev";
+const cameraDevOverridesStorageKey = "mappaCameraDevOverrides";
+const cameraDevCheatCode = "cameradev";
 const feedbackFormUrl = "https://docs.google.com/forms/d/e/1FAIpQLSf3w51Tbeetre-iS4maV8X0UDRBhvueuuAreQFoGObCG3VFKA/viewform?usp=header";
 const appShellScreenIds = new Set([
   "launch",
@@ -2703,6 +2705,20 @@ let dailyTrailDevSelectedGoalId = "";
 let dailyTrailDevSearchQuery = "";
 let dailyTrailDevCheatBuffer = "";
 let dailyTrailDevCheatListenerBound = false;
+let cameraDevCheatBuffer = "";
+let cameraDevCheatListenerBound = false;
+let cameraDevPanel = null;
+let cameraDevSnapshotValues = null;
+let cameraDevStatusEl = null;
+let cameraDevZoomInput = null;
+let cameraDevLngInput = null;
+let cameraDevLatInput = null;
+let cameraDevBearingInput = null;
+let cameraDevPitchInput = null;
+let cameraDevScopeSelect = null;
+let cameraDevExportOutput = null;
+let cameraDevStylesInjected = false;
+let cameraDevMapEventSource = null;
 let activeStudySession = null;
 let activeStudyPracticeSession = null;
 let journeyCompletionState = null;
@@ -3446,6 +3462,10 @@ async function ensureMapReady() {
         container: "map"
       });
 
+      runner.setCameraDevOverrideProvider?.(getCameraDevOverrideForRequest);
+      runner.onCameraDevStateChange?.(() => {
+        updateCameraDevPanel();
+      });
       runner.onRegionSelect(handleRunnerRegionSelect);
       runner.onTargetClick(handleTargetClick);
       await runner.load({
@@ -3470,6 +3490,7 @@ async function ensureMapReady() {
         italyAdmin1,
         unitedKingdomAdmin1
       });
+      bindCameraDevMapEvents();
       runner.setDifficulty(getEffectiveDifficulty(session.currentActivity));
       markPerf("mappa-map-init-end");
       logPerfMeasure("map initialization time", "mappa-map-init-start", "mappa-map-init-end");
@@ -3523,6 +3544,7 @@ async function init() {
 
   bindLaunchScreenEvents();
   bindDailyTrailDevCheatListener();
+  bindCameraDevCheatListener();
   bindUiEvents();
   bindZoomControls();
   configureFeedbackLinks();
@@ -7996,6 +8018,8 @@ function scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target) {
         padding: { top: 98, right: 34, bottom: 214, left: 34 },
         comfortPadding: { top: 104, right: 34, bottom: 214, left: 34 }
       };
+    focusOptions.cameraContext = "small-target-focus";
+    focusOptions.source = "small-target-learn";
     const focusTarget = typeof runner.getSmallTargetLearnFocusTarget === "function"
       ? runner.getSmallTargetLearnFocusTarget(target)
       : target;
@@ -8120,7 +8144,9 @@ function maybeFocusContinentsOceansLearnPrompt(memoryTrail, target, focusProfile
       right: isOcean ? 120 : 48,
       bottom: isOcean ? 235 : 220,
       left: isOcean ? 120 : 48
-    }
+    },
+    cameraContext: "c&o-learn-focus",
+    source: "c&o-learn-target-focus"
   });
   debugContinentsOceansLearnCamera("target focus result", {
     source: "c&o-learn-target-focus",
@@ -8431,7 +8457,9 @@ function focusContinentsOceansNamePromptTarget(memoryTrail, target) {
       right: isOcean ? 120 : 48,
       bottom: isOcean ? 235 : 220,
       left: isOcean ? 120 : 48
-    }
+    },
+    cameraContext: "c&o-name-focus",
+    source: "c&o-name-target-focus"
   };
   const promptInstanceId = memoryTrail?.currentPromptKey || "";
   const requestId = `${promptInstanceId}:${target?.id || "target"}:${Math.round(typeof performance !== "undefined" ? performance.now() : Date.now())}`;
@@ -9331,7 +9359,9 @@ function fitMapToPracticeWindow(targets = [], reason = "practice-window") {
 
   const didFit = runner.fitTargets(targets, {
     duration: 850,
-    maxZoom: targets.length <= 3 ? 5.75 : 5.35
+    maxZoom: targets.length <= 3 ? 5.75 : 5.35,
+    cameraContext: reason,
+    source: "fitMapToPracticeWindow"
   });
 
   if (didFit && memoryTrail) {
@@ -10559,6 +10589,10 @@ function dedupeDailyTrailDevItems(items) {
 }
 
 function isDailyTrailDevAccessAllowed() {
+  return isLocalDevAccessAllowed();
+}
+
+function isLocalDevAccessAllowed() {
   const hostname = window.location?.hostname || "";
   return hostname === "localhost"
     || hostname === "127.0.0.1"
@@ -10781,6 +10815,665 @@ function handleDailyTrailDevCheatKeydown(event) {
   if (dailyTrailDevCheatBuffer === dailyTrailDevCheatCode) {
     dailyTrailDevCheatBuffer = "";
     openDailyTrailDevMenu();
+  }
+}
+
+function bindCameraDevCheatListener() {
+  if (cameraDevCheatListenerBound) {
+    return;
+  }
+
+  cameraDevCheatListenerBound = true;
+  window.addEventListener("keydown", handleCameraDevCheatKeydown, true);
+}
+
+function isCameraDevAccessAllowed() {
+  return isLocalDevAccessAllowed();
+}
+
+function handleCameraDevCheatKeydown(event) {
+  if (
+    !isCameraDevAccessAllowed()
+    || event.ctrlKey
+    || event.metaKey
+    || event.altKey
+    || event.isComposing
+    || event.key.length !== 1
+  ) {
+    return;
+  }
+
+  if (isDailyTrailDevCheatEditableTarget(event.target)) {
+    return;
+  }
+
+  cameraDevCheatBuffer = `${cameraDevCheatBuffer}${event.key.toLowerCase()}`.slice(-cameraDevCheatCode.length);
+
+  if (cameraDevCheatBuffer === cameraDevCheatCode) {
+    cameraDevCheatBuffer = "";
+    openCameraDevMenu();
+  }
+}
+
+async function openCameraDevMenu() {
+  if (!isCameraDevAccessAllowed()) {
+    console.warn("Camera dev menu is only available on localhost.");
+    return false;
+  }
+
+  await ensureMapReady();
+  bindCameraDevMapEvents();
+  ensureCameraDevPanel();
+  updateCameraDevPanel({ syncInputs: true });
+  return true;
+}
+
+window.openCameraDevMenu = openCameraDevMenu;
+
+function bindCameraDevMapEvents() {
+  const map = runner?.map;
+
+  if (!map || cameraDevMapEventSource === map) {
+    return;
+  }
+
+  if (cameraDevMapEventSource?.off) {
+    cameraDevMapEventSource.off("moveend", handleCameraDevMapMoveEnd);
+  }
+
+  cameraDevMapEventSource = map;
+  map.on("moveend", handleCameraDevMapMoveEnd);
+}
+
+function handleCameraDevMapMoveEnd() {
+  updateCameraDevPanel();
+}
+
+function ensureCameraDevPanel() {
+  ensureCameraDevStyles();
+
+  if (cameraDevPanel?.isConnected) {
+    cameraDevPanel.hidden = false;
+    return cameraDevPanel;
+  }
+
+  const panel = document.createElement("section");
+  panel.className = "camera-dev-panel";
+  panel.setAttribute("aria-label", "Camera dev tuning panel");
+
+  const header = document.createElement("div");
+  header.className = "camera-dev-header";
+
+  const title = document.createElement("h2");
+  title.textContent = "Camera Dev";
+
+  const closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.className = "camera-dev-close";
+  closeButton.textContent = "Close";
+  closeButton.addEventListener("click", () => {
+    panel.hidden = true;
+  });
+
+  header.append(title, closeButton);
+
+  const intro = document.createElement("p");
+  intro.className = "camera-dev-copy";
+  intro.textContent = "Local-only camera tuning for temporary auto-fly zoom/center overrides.";
+
+  cameraDevStatusEl = document.createElement("dl");
+  cameraDevStatusEl.className = "camera-dev-status";
+
+  const fieldGrid = document.createElement("div");
+  fieldGrid.className = "camera-dev-field-grid";
+
+  cameraDevZoomInput = createCameraDevNumberInput("Zoom", "camera-dev-zoom", 0.05);
+  cameraDevLngInput = createCameraDevNumberInput("Lng", "camera-dev-lng", 0.0001);
+  cameraDevLatInput = createCameraDevNumberInput("Lat", "camera-dev-lat", 0.0001);
+  cameraDevBearingInput = createCameraDevNumberInput("Bearing", "camera-dev-bearing", 0.1);
+  cameraDevPitchInput = createCameraDevNumberInput("Pitch", "camera-dev-pitch", 0.1);
+  fieldGrid.append(
+    cameraDevZoomInput.label,
+    cameraDevLngInput.label,
+    cameraDevLatInput.label,
+    cameraDevBearingInput.label,
+    cameraDevPitchInput.label
+  );
+
+  const scopeLabel = document.createElement("label");
+  scopeLabel.className = "camera-dev-field camera-dev-field-wide";
+  const scopeText = document.createElement("span");
+  scopeText.textContent = "Override scope";
+  cameraDevScopeSelect = document.createElement("select");
+  [
+    ["target-context", "Target + context"],
+    ["activity-context", "Activity + context"],
+    ["target", "Target"],
+    ["activity", "Activity"]
+  ].forEach(([value, label]) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    cameraDevScopeSelect.appendChild(option);
+  });
+  cameraDevScopeSelect.addEventListener("change", () => {
+    updateCameraDevExport();
+  });
+  scopeLabel.append(scopeText, cameraDevScopeSelect);
+  fieldGrid.append(scopeLabel);
+
+  const controls = document.createElement("div");
+  controls.className = "camera-dev-actions";
+
+  [
+    ["-1 zoom", -1],
+    ["-0.5 zoom", -0.5],
+    ["Zoom -", -0.1],
+    ["Zoom +", 0.1],
+    ["+0.5 zoom", 0.5],
+    ["+1 zoom", 1]
+  ].forEach(([label, delta]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+    button.addEventListener("click", () => {
+      adjustCameraDevZoom(delta);
+    });
+    controls.appendChild(button);
+  });
+
+  const primaryActions = document.createElement("div");
+  primaryActions.className = "camera-dev-actions";
+
+  const applyButton = createCameraDevButton("Apply Camera", () => applyCameraDevInputs());
+  const useCurrentButton = createCameraDevButton("Use Current Camera", () => updateCameraDevPanel({ syncInputs: true }));
+  const saveButton = createCameraDevButton("Save Temporary Override", () => saveCameraDevOverrideFromPanel());
+  const resetButton = createCameraDevButton("Reset Dev Camera Override", () => resetCameraDevOverrideForPanel());
+  const clearAllButton = createCameraDevButton("Clear All Overrides", () => clearAllCameraDevOverrides());
+  primaryActions.append(applyButton, useCurrentButton, saveButton, resetButton, clearAllButton);
+
+  const fitActions = document.createElement("div");
+  fitActions.className = "camera-dev-actions";
+  fitActions.append(
+    createCameraDevButton("Fit Current Target", () => {
+      const snapshot = getCameraDevSnapshot();
+      runner?.fitCameraDevCurrentTarget?.(snapshot.targetId);
+      window.setTimeout(() => updateCameraDevPanel({ syncInputs: true }), 300);
+    }),
+    createCameraDevButton("Fit Current Section", () => {
+      runner?.fitCameraDevCurrentActivity?.();
+      window.setTimeout(() => updateCameraDevPanel({ syncInputs: true }), 300);
+    })
+  );
+
+  const exportHeader = document.createElement("div");
+  exportHeader.className = "camera-dev-export-header";
+  const exportTitle = document.createElement("strong");
+  exportTitle.textContent = "Export";
+  const copyButton = createCameraDevButton("Copy JSON", () => copyCameraDevExport());
+  exportHeader.append(exportTitle, copyButton);
+
+  cameraDevExportOutput = document.createElement("textarea");
+  cameraDevExportOutput.className = "camera-dev-export";
+  cameraDevExportOutput.readOnly = true;
+  cameraDevExportOutput.rows = 9;
+
+  panel.append(header, intro, cameraDevStatusEl, fieldGrid, controls, primaryActions, fitActions, exportHeader, cameraDevExportOutput);
+  document.body.appendChild(panel);
+  cameraDevPanel = panel;
+  return panel;
+}
+
+function createCameraDevNumberInput(labelText, id, step) {
+  const label = document.createElement("label");
+  label.className = "camera-dev-field";
+  const text = document.createElement("span");
+  text.textContent = labelText;
+  const input = document.createElement("input");
+  input.id = id;
+  input.type = "number";
+  input.step = String(step);
+  input.addEventListener("input", updateCameraDevExport);
+  label.append(text, input);
+  return { label, input };
+}
+
+function createCameraDevButton(label, handler) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = label;
+  button.addEventListener("click", handler);
+  return button;
+}
+
+function ensureCameraDevStyles() {
+  if (cameraDevStylesInjected) {
+    return;
+  }
+
+  const style = document.createElement("style");
+  style.textContent = `
+    .camera-dev-panel {
+      position: fixed;
+      z-index: 10000;
+      right: 14px;
+      bottom: 14px;
+      width: min(420px, calc(100vw - 28px));
+      max-height: calc(100vh - 28px);
+      overflow: auto;
+      padding: 16px;
+      border: 1px solid rgba(23, 32, 51, 0.18);
+      border-radius: 18px;
+      background: rgba(252, 248, 239, 0.97);
+      box-shadow: 0 18px 45px rgba(23, 32, 51, 0.22);
+      color: #172033;
+      font-family: inherit;
+    }
+
+    .camera-dev-panel[hidden] {
+      display: none;
+    }
+
+    .camera-dev-header,
+    .camera-dev-export-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .camera-dev-header h2 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    .camera-dev-copy {
+      margin: 8px 0 12px;
+      font-size: 0.88rem;
+      line-height: 1.35;
+    }
+
+    .camera-dev-status {
+      display: grid;
+      grid-template-columns: minmax(96px, max-content) 1fr;
+      gap: 5px 10px;
+      margin: 0 0 12px;
+      font-size: 0.8rem;
+    }
+
+    .camera-dev-status dt {
+      font-weight: 700;
+    }
+
+    .camera-dev-status dd {
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .camera-dev-field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .camera-dev-field {
+      display: grid;
+      gap: 4px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .camera-dev-field-wide {
+      grid-column: 1 / -1;
+    }
+
+    .camera-dev-field input,
+    .camera-dev-field select,
+    .camera-dev-export {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid rgba(23, 32, 51, 0.22);
+      border-radius: 10px;
+      padding: 8px 9px;
+      background: #fffdf7;
+      color: #172033;
+      font: inherit;
+    }
+
+    .camera-dev-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 8px 0;
+    }
+
+    .camera-dev-actions button,
+    .camera-dev-close,
+    .camera-dev-export-header button {
+      border: 1px solid rgba(23, 32, 51, 0.2);
+      border-radius: 999px;
+      padding: 7px 11px;
+      background: #fff7d6;
+      color: #172033;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .camera-dev-actions button:hover,
+    .camera-dev-close:hover,
+    .camera-dev-export-header button:hover {
+      background: #f7eab5;
+    }
+
+    .camera-dev-export-header {
+      margin-top: 12px;
+    }
+
+    .camera-dev-export {
+      margin-top: 8px;
+      min-height: 150px;
+      font-family: Consolas, "Liberation Mono", monospace;
+      font-size: 0.76rem;
+      resize: vertical;
+    }
+  `;
+  document.head.appendChild(style);
+  cameraDevStylesInjected = true;
+}
+
+function getCameraDevSnapshot() {
+  const runnerSnapshot = runner?.getCameraDevSnapshot?.() || {};
+  const center = runnerSnapshot.center || getMapCameraDebugState()?.center || null;
+  const memoryTrail = activeStudySession?.memoryTrail || null;
+  const activeTargetId = memoryTrail?.currentPromptTargetId || runnerSnapshot.targetId || "";
+  const activeTarget = activeTargetId ? getTargetById(memoryTrail, activeTargetId) : null;
+
+  return {
+    ...runnerSnapshot,
+    screen: currentAppScreen,
+    mode: activeDailyTrailSession ? "daily-trail" : activeJourneySession ? "journey" : activeStudySession ? "study" : currentAppScreen,
+    activityId: session?.currentActivity?.id || runnerSnapshot.activityId || "",
+    activityTitle: session?.currentActivity?.title || runnerSnapshot.activityTitle || "",
+    targetId: activeTarget?.id || runnerSnapshot.targetId || "",
+    targetLabel: activeTarget?.name || activeTarget?.label || runnerSnapshot.targetLabel || "",
+    cameraContext: runnerSnapshot.cameraContext || "",
+    cameraSource: runnerSnapshot.cameraSource || "",
+    requestType: runnerSnapshot.requestType || "",
+    zoom: runnerSnapshot.zoom,
+    center,
+    bearing: runnerSnapshot.bearing,
+    pitch: runnerSnapshot.pitch
+  };
+}
+
+function updateCameraDevPanel(options = {}) {
+  if (!cameraDevPanel?.isConnected || cameraDevPanel.hidden) {
+    return;
+  }
+
+  const snapshot = getCameraDevSnapshot();
+  cameraDevSnapshotValues = snapshot;
+
+  renderCameraDevStatus(snapshot);
+
+  if (options.syncInputs) {
+    syncCameraDevInputs(snapshot);
+  }
+
+  if (!cameraDevScopeSelect.value) {
+    cameraDevScopeSelect.value = getDefaultCameraDevScope(snapshot);
+  }
+
+  updateCameraDevExport();
+}
+
+function renderCameraDevStatus(snapshot) {
+  if (!cameraDevStatusEl) {
+    return;
+  }
+
+  const rows = [
+    ["Screen/mode", `${snapshot.screen || "unknown"} / ${snapshot.mode || "unknown"}`],
+    ["Activity", `${snapshot.activityTitle || "unknown"} (${snapshot.activityId || "none"})`],
+    ["Target", snapshot.targetId ? `${snapshot.targetLabel || snapshot.targetId} (${snapshot.targetId})` : "none"],
+    ["Context", snapshot.cameraContext || "none"],
+    ["Source", snapshot.cameraSource || snapshot.requestType || "none"],
+    ["Zoom", formatCameraDevNumber(snapshot.zoom, 4)],
+    ["Center", Array.isArray(snapshot.center) ? `${formatCameraDevNumber(snapshot.center[0], 5)}, ${formatCameraDevNumber(snapshot.center[1], 5)}` : "none"],
+    ["Bearing", formatCameraDevNumber(snapshot.bearing, 2)],
+    ["Pitch", formatCameraDevNumber(snapshot.pitch, 2)]
+  ];
+
+  cameraDevStatusEl.innerHTML = "";
+  rows.forEach(([label, value]) => {
+    const term = document.createElement("dt");
+    term.textContent = label;
+    const detail = document.createElement("dd");
+    detail.textContent = String(value ?? "none");
+    cameraDevStatusEl.append(term, detail);
+  });
+}
+
+function syncCameraDevInputs(snapshot) {
+  const center = Array.isArray(snapshot.center) ? snapshot.center : [];
+  cameraDevZoomInput.input.value = Number.isFinite(snapshot.zoom) ? snapshot.zoom.toFixed(4) : "";
+  cameraDevLngInput.input.value = Number.isFinite(center[0]) ? center[0].toFixed(5) : "";
+  cameraDevLatInput.input.value = Number.isFinite(center[1]) ? center[1].toFixed(5) : "";
+  cameraDevBearingInput.input.value = Number.isFinite(snapshot.bearing) ? snapshot.bearing.toFixed(2) : "0";
+  cameraDevPitchInput.input.value = Number.isFinite(snapshot.pitch) ? snapshot.pitch.toFixed(2) : "0";
+  cameraDevScopeSelect.value = getDefaultCameraDevScope(snapshot);
+}
+
+function formatCameraDevNumber(value, digits) {
+  return Number.isFinite(value) ? value.toFixed(digits) : "none";
+}
+
+function getDefaultCameraDevScope(snapshot) {
+  if (snapshot.targetId && snapshot.cameraContext) {
+    return "target-context";
+  }
+
+  if (snapshot.activityId && snapshot.cameraContext) {
+    return "activity-context";
+  }
+
+  if (snapshot.targetId) {
+    return "target";
+  }
+
+  return "activity";
+}
+
+function getCameraDevInputCamera() {
+  const zoom = Number(cameraDevZoomInput?.input.value);
+  const lng = Number(cameraDevLngInput?.input.value);
+  const lat = Number(cameraDevLatInput?.input.value);
+  const bearing = Number(cameraDevBearingInput?.input.value);
+  const pitch = Number(cameraDevPitchInput?.input.value);
+
+  return {
+    zoom: Number.isFinite(zoom) ? zoom : undefined,
+    center: Number.isFinite(lng) && Number.isFinite(lat) ? [lng, lat] : undefined,
+    bearing: Number.isFinite(bearing) ? bearing : 0,
+    pitch: Number.isFinite(pitch) ? pitch : 0
+  };
+}
+
+function applyCameraDevInputs() {
+  runner?.applyCameraDevCamera?.(getCameraDevInputCamera());
+  window.setTimeout(() => updateCameraDevPanel({ syncInputs: true }), 300);
+}
+
+function adjustCameraDevZoom(delta) {
+  const currentZoom = Number(cameraDevZoomInput?.input.value);
+  const fallbackZoom = Number(cameraDevSnapshotValues?.zoom);
+  const nextZoom = (Number.isFinite(currentZoom) ? currentZoom : Number.isFinite(fallbackZoom) ? fallbackZoom : 0) + delta;
+  cameraDevZoomInput.input.value = nextZoom.toFixed(4);
+  applyCameraDevInputs();
+}
+
+function normalizeCameraDevOverridesStore(value) {
+  if (!value || typeof value !== "object") {
+    return { version: 1, overrides: {} };
+  }
+
+  return {
+    version: 1,
+    overrides: value.overrides && typeof value.overrides === "object" ? value.overrides : {}
+  };
+}
+
+function readCameraDevOverrides() {
+  if (!isCameraDevAccessAllowed()) {
+    return { version: 1, overrides: {} };
+  }
+
+  try {
+    return normalizeCameraDevOverridesStore(JSON.parse(localStorage.getItem(cameraDevOverridesStorageKey) || "null"));
+  } catch {
+    return { version: 1, overrides: {} };
+  }
+}
+
+function writeCameraDevOverrides(store) {
+  if (!isCameraDevAccessAllowed()) {
+    return;
+  }
+
+  try {
+    localStorage.setItem(cameraDevOverridesStorageKey, JSON.stringify(normalizeCameraDevOverridesStore(store), null, 2));
+  } catch {
+    showFeedback("Camera dev override could not be saved.");
+  }
+}
+
+function getCameraDevOverrideKey(snapshot, scope) {
+  const activityId = String(snapshot.activityId || "").trim();
+  const targetId = String(snapshot.targetId || "").trim();
+  const cameraContext = String(snapshot.cameraContext || "").trim();
+
+  if (scope === "target-context" && activityId && targetId && cameraContext) {
+    return `${activityId}::target:${targetId}::context:${cameraContext}`;
+  }
+
+  if (scope === "activity-context" && activityId && cameraContext) {
+    return `${activityId}::context:${cameraContext}`;
+  }
+
+  if (scope === "target" && activityId && targetId) {
+    return `${activityId}::target:${targetId}`;
+  }
+
+  if (scope === "activity" && activityId) {
+    return activityId;
+  }
+
+  return "";
+}
+
+function getCameraDevOverrideCandidateKeys(metadata = {}) {
+  return [
+    getCameraDevOverrideKey(metadata, "target-context"),
+    getCameraDevOverrideKey(metadata, "activity-context"),
+    getCameraDevOverrideKey(metadata, "target"),
+    getCameraDevOverrideKey(metadata, "activity")
+  ].filter(Boolean);
+}
+
+function getCameraDevOverrideForRequest(metadata = {}) {
+  if (!isCameraDevAccessAllowed()) {
+    return null;
+  }
+
+  const overrides = readCameraDevOverrides().overrides;
+  const key = getCameraDevOverrideCandidateKeys(metadata).find((candidateKey) => overrides[candidateKey]);
+  return key ? overrides[key] : null;
+}
+
+function buildCameraDevOverrideFromPanel() {
+  const snapshot = getCameraDevSnapshot();
+  const scope = cameraDevScopeSelect?.value || getDefaultCameraDevScope(snapshot);
+  const key = getCameraDevOverrideKey(snapshot, scope);
+  const camera = getCameraDevInputCamera();
+
+  return {
+    key,
+    scope,
+    override: {
+      activityId: snapshot.activityId || "",
+      targetId: snapshot.targetId || "",
+      label: snapshot.targetLabel || "",
+      cameraContext: snapshot.cameraContext || "",
+      scope,
+      zoom: camera.zoom,
+      center: camera.center,
+      bearing: camera.bearing,
+      pitch: camera.pitch,
+      updatedAt: new Date().toISOString()
+    }
+  };
+}
+
+function saveCameraDevOverrideFromPanel() {
+  const { key, override } = buildCameraDevOverrideFromPanel();
+
+  if (!key) {
+    showFeedback("Camera override needs an activity, target, or context.");
+    return;
+  }
+
+  const store = readCameraDevOverrides();
+  store.overrides[key] = override;
+  writeCameraDevOverrides(store);
+  updateCameraDevExport();
+  showFeedback("Temporary camera override saved.", true);
+}
+
+function resetCameraDevOverrideForPanel() {
+  const { key } = buildCameraDevOverrideFromPanel();
+
+  if (!key) {
+    showFeedback("No camera override scope is selected.");
+    return;
+  }
+
+  const store = readCameraDevOverrides();
+  delete store.overrides[key];
+  writeCameraDevOverrides(store);
+  updateCameraDevExport();
+  showFeedback("Camera dev override reset.", true);
+}
+
+function clearAllCameraDevOverrides() {
+  writeCameraDevOverrides({ version: 1, overrides: {} });
+  updateCameraDevExport();
+  showFeedback("All camera dev overrides cleared.", true);
+}
+
+function updateCameraDevExport() {
+  if (!cameraDevExportOutput) {
+    return;
+  }
+
+  const { key, override } = buildCameraDevOverrideFromPanel();
+  cameraDevExportOutput.value = JSON.stringify({
+    key,
+    ...override
+  }, null, 2);
+}
+
+async function copyCameraDevExport() {
+  updateCameraDevExport();
+  const text = cameraDevExportOutput?.value || "";
+
+  try {
+    await navigator.clipboard?.writeText(text);
+    showFeedback("Camera override JSON copied.", true);
+  } catch {
+    cameraDevExportOutput?.select();
+    showFeedback("Camera override JSON is selected.");
   }
 }
 

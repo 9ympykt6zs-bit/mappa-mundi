@@ -298,6 +298,9 @@ export class MapLibreActivityRunner {
     this.suppressStudyIntroCameraReason = "";
     this.suppressStudyIntroCameraUntil = 0;
     this.studyIntroCameraTimeoutId = null;
+    this.cameraDevOverrideProvider = null;
+    this.cameraDevStateChangeHandler = null;
+    this.lastCameraDevContext = null;
     this.memoryTrailHighlightIds = [];
     this.memoryTrailCorrectHighlightIds = [];
     this.memoryTrailWrongHighlightIds = [];
@@ -350,6 +353,14 @@ export class MapLibreActivityRunner {
 
   onRegionSelect(handler) {
     this.regionSelectHandler = handler;
+  }
+
+  setCameraDevOverrideProvider(provider) {
+    this.cameraDevOverrideProvider = typeof provider === "function" ? provider : null;
+  }
+
+  onCameraDevStateChange(handler) {
+    this.cameraDevStateChangeHandler = typeof handler === "function" ? handler : null;
   }
 
   async load({ activity, worldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1 }) {
@@ -517,14 +528,19 @@ export class MapLibreActivityRunner {
         duration: regionFlyDuration
       }
     });
-    this.map.flyTo({
+    this.moveCamera({
       center: this.activity.map?.regionView?.center || [-98, 39],
       zoom: this.activity.map?.regionView?.zoom || 3.1,
       pitch: 0,
       bearing: 0,
       duration: regionFlyDuration,
       essential: true
-    });
+    }, {
+      cameraContext: "section-overview",
+      source: "enterStudyView:regionView",
+      requestType: "flyTo",
+      activityId
+    }, "flyTo");
 
     this.clearStudyIntroCameraTimeout();
     this.studyIntroCameraTimeoutId = window.setTimeout(() => {
@@ -541,16 +557,22 @@ export class MapLibreActivityRunner {
             duration: studyView.duration || 1200
           }
         });
-        this.map.fitBounds(studyView.bounds || [[-74.35, 40.85], [-66.75, 47.55]], {
+        this.moveCamera({
+          bounds: studyView.bounds || [[-74.35, 40.85], [-66.75, 47.55]],
           padding: studyView.padding || { top: 55, right: 46, bottom: 78, left: 46 },
           duration: studyView.duration || 1200,
           essential: true
-        });
+        }, {
+          cameraContext: "study-view",
+          source: "enterStudyView:studyView",
+          requestType: "fitBounds",
+          activityId
+        }, "fitBounds");
       }
     }, regionFlyDuration + 100);
   }
 
-  enterOverview() {
+  enterOverview(options = {}) {
     this.currentView = "overview";
     this.setPlacementInteractionState({ active: false, dragging: false });
     this.resizeSoon();
@@ -567,14 +589,20 @@ export class MapLibreActivityRunner {
       zoom: this.activity.map?.initialView?.zoom || 1.25
     };
 
-    this.map.flyTo({
+    this.moveCamera({
       center: overviewView.center,
       zoom: overviewView.zoom,
       pitch: 0,
       bearing: 0,
       duration: 1000,
       essential: true
-    });
+    }, {
+      cameraContext: options.cameraContext || "overview",
+      source: "enterOverview",
+      requestType: "flyTo",
+      activityId: this.activity?.id,
+      skipCameraDevOverride: Boolean(options.skipCameraDevOverride)
+    }, "flyTo");
   }
 
   resizeSoon() {
@@ -725,14 +753,19 @@ export class MapLibreActivityRunner {
       return;
     }
 
-    this.map.flyTo({
+    this.moveCamera({
       center: view.center,
       zoom: view.zoom,
       pitch: 0,
       bearing: 0,
       duration: 700,
       essential: true
-    });
+    }, {
+      cameraContext: "overview-map-set",
+      source: "setOverviewMapSet",
+      requestType: "flyTo",
+      activityId: this.activity?.id
+    }, "flyTo");
   }
 
   setMapDragEnabled(isEnabled) {
@@ -808,6 +841,245 @@ export class MapLibreActivityRunner {
     });
   }
 
+  getCameraDevSnapshot(extra = {}) {
+    const center = this.map?.getCenter?.();
+    const lastContext = this.lastCameraDevContext || {};
+
+    return {
+      currentView: this.currentView,
+      activityId: extra.activityId || lastContext.activityId || this.activity?.id || "",
+      activityTitle: extra.activityTitle || lastContext.activityTitle || this.activity?.title || "",
+      targetId: extra.targetId || lastContext.targetId || "",
+      targetLabel: extra.targetLabel || lastContext.targetLabel || "",
+      cameraContext: extra.cameraContext || lastContext.cameraContext || "",
+      cameraSource: extra.source || lastContext.source || "",
+      requestType: extra.requestType || lastContext.requestType || "",
+      zoom: this.map?.getZoom?.() ?? null,
+      center: center?.toArray?.() || (center ? [center.lng, center.lat] : null),
+      bearing: this.map?.getBearing?.() ?? null,
+      pitch: this.map?.getPitch?.() ?? null
+    };
+  }
+
+  normalizeCameraDevMetadata(metadata = {}) {
+    return {
+      activityId: metadata.activityId || this.activity?.id || "",
+      activityTitle: metadata.activityTitle || this.activity?.title || "",
+      targetId: metadata.targetId || metadata.target?.id || "",
+      targetLabel: metadata.targetLabel || metadata.target?.name || metadata.target?.label || "",
+      cameraContext: metadata.cameraContext || metadata.context || "",
+      source: metadata.source || "",
+      requestType: metadata.requestType || "",
+      targetIds: Array.isArray(metadata.targetIds) ? metadata.targetIds.filter(Boolean) : [],
+      targetLabels: Array.isArray(metadata.targetLabels) ? metadata.targetLabels.filter(Boolean) : []
+    };
+  }
+
+  summarizeCameraDevCamera(camera = {}) {
+    return {
+      center: Array.isArray(camera.center) ? camera.center : null,
+      zoom: Number.isFinite(camera.zoom) ? camera.zoom : null,
+      bounds: this.hasValidBounds(camera.bounds) ? camera.bounds : null,
+      maxZoom: Number.isFinite(camera.maxZoom) ? camera.maxZoom : null,
+      bearing: Number.isFinite(camera.bearing) ? camera.bearing : null,
+      pitch: Number.isFinite(camera.pitch) ? camera.pitch : null,
+      duration: Number.isFinite(camera.duration) ? camera.duration : null
+    };
+  }
+
+  applyCameraDevOverride(camera = {}, metadata = {}) {
+    const normalizedMetadata = this.normalizeCameraDevMetadata(metadata);
+    this.lastCameraDevContext = {
+      ...normalizedMetadata,
+      camera: this.summarizeCameraDevCamera(camera),
+      timestamp: Date.now()
+    };
+
+    this.notifyCameraDevStateChange();
+
+    if (metadata.skipCameraDevOverride || typeof this.cameraDevOverrideProvider !== "function") {
+      return camera;
+    }
+
+    let override = null;
+
+    try {
+      override = this.cameraDevOverrideProvider(
+        normalizedMetadata,
+        this.getCameraDevSnapshot(normalizedMetadata)
+      );
+    } catch (error) {
+      console.warn("Camera dev override lookup failed.", error);
+      override = null;
+    }
+
+    if (!override) {
+      return camera;
+    }
+
+    return this.mergeCameraDevOverride(camera, override);
+  }
+
+  mergeCameraDevOverride(camera = {}, override = {}) {
+    const nextCamera = { ...camera };
+    const overrideCenter = Array.isArray(override.center) && override.center.length >= 2
+      ? [Number(override.center[0]), Number(override.center[1])]
+      : null;
+    const hasOverrideCenter = overrideCenter?.every(Number.isFinite);
+    const hasOverrideZoom = Number.isFinite(Number(override.zoom));
+    const hasOverrideBearing = Number.isFinite(Number(override.bearing));
+    const hasOverridePitch = Number.isFinite(Number(override.pitch));
+    const shouldConvertBoundsCamera = this.hasValidBounds(nextCamera.bounds)
+      && (hasOverrideCenter || hasOverrideZoom || hasOverrideBearing || hasOverridePitch);
+
+    if (shouldConvertBoundsCamera) {
+      const fallbackCenter = this.getBoundsCenter(nextCamera.bounds);
+
+      return {
+        center: hasOverrideCenter ? overrideCenter : fallbackCenter,
+        zoom: hasOverrideZoom
+          ? Number(override.zoom)
+          : (Number.isFinite(nextCamera.maxZoom) ? nextCamera.maxZoom : this.map?.getZoom?.()),
+        padding: nextCamera.padding,
+        bearing: hasOverrideBearing ? Number(override.bearing) : (Number.isFinite(nextCamera.bearing) ? nextCamera.bearing : 0),
+        pitch: hasOverridePitch ? Number(override.pitch) : (Number.isFinite(nextCamera.pitch) ? nextCamera.pitch : 0),
+        retainPadding: nextCamera.retainPadding,
+        duration: nextCamera.duration,
+        essential: nextCamera.essential
+      };
+    }
+
+    if (hasOverrideCenter) {
+      nextCamera.center = overrideCenter;
+    }
+
+    if (hasOverrideZoom) {
+      nextCamera.zoom = Number(override.zoom);
+    }
+
+    if (hasOverrideBearing) {
+      nextCamera.bearing = Number(override.bearing);
+    }
+
+    if (hasOverridePitch) {
+      nextCamera.pitch = Number(override.pitch);
+    }
+
+    if (Number.isFinite(Number(override.maxZoom))) {
+      nextCamera.maxZoom = Number(override.maxZoom);
+    }
+
+    return nextCamera;
+  }
+
+  notifyCameraDevStateChange() {
+    if (typeof this.cameraDevStateChangeHandler !== "function") {
+      return;
+    }
+
+    try {
+      this.cameraDevStateChangeHandler(this.getCameraDevSnapshot());
+    } catch {
+      // Dev-tool updates should never interrupt gameplay camera movement.
+    }
+  }
+
+  moveCamera(camera = {}, metadata = {}, preferredMethod = "easeTo") {
+    if (!this.map || !camera) {
+      return false;
+    }
+
+    const requestedCamera = this.applyCameraDevOverride(camera, metadata);
+    const duration = Number.isFinite(requestedCamera.duration) ? requestedCamera.duration : 650;
+
+    this.map.stop();
+
+    if (this.hasValidBounds(requestedCamera.bounds)) {
+      this.map.fitBounds(requestedCamera.bounds, {
+        padding: requestedCamera.padding,
+        maxZoom: requestedCamera.maxZoom,
+        retainPadding: requestedCamera.retainPadding ?? false,
+        duration,
+        essential: true
+      });
+      return true;
+    }
+
+    const currentCenter = this.map.getCenter?.();
+    const center = Array.isArray(requestedCamera.center)
+      ? requestedCamera.center
+      : (currentCenter?.toArray?.() || (currentCenter ? [currentCenter.lng, currentCenter.lat] : null));
+
+    if (!Array.isArray(center)) {
+      return false;
+    }
+
+    const cameraOptions = {
+      center,
+      zoom: Number.isFinite(requestedCamera.zoom) ? requestedCamera.zoom : this.map.getZoom?.(),
+      padding: requestedCamera.padding,
+      pitch: Number.isFinite(requestedCamera.pitch) ? requestedCamera.pitch : this.map.getPitch?.(),
+      bearing: Number.isFinite(requestedCamera.bearing) ? requestedCamera.bearing : this.map.getBearing?.(),
+      retainPadding: requestedCamera.retainPadding ?? false,
+      duration,
+      essential: true
+    };
+
+    if (preferredMethod === "flyTo") {
+      this.map.flyTo(cameraOptions);
+    } else {
+      this.map.easeTo(cameraOptions);
+    }
+
+    return true;
+  }
+
+  applyCameraDevCamera(camera = {}) {
+    return this.moveCamera(
+      {
+        center: camera.center,
+        zoom: Number.isFinite(Number(camera.zoom)) ? Number(camera.zoom) : undefined,
+        bearing: Number.isFinite(Number(camera.bearing)) ? Number(camera.bearing) : undefined,
+        pitch: Number.isFinite(Number(camera.pitch)) ? Number(camera.pitch) : undefined,
+        duration: Number.isFinite(Number(camera.duration)) ? Number(camera.duration) : 240
+      },
+      {
+        cameraContext: "camera-dev-manual",
+        source: "camera-dev-panel",
+        requestType: "easeTo",
+        skipCameraDevOverride: true
+      },
+      "easeTo"
+    );
+  }
+
+  fitCameraDevCurrentTarget(targetId = "") {
+    const target = this.activity?.targets?.find((candidate) => candidate.id === targetId)
+      || this.activity?.targets?.find((candidate) => candidate.id === this.lastCameraDevContext?.targetId);
+
+    if (!target) {
+      return false;
+    }
+
+    this.focusTarget(target, {
+      cameraContext: "camera-dev-fit-target",
+      source: "camera-dev-panel",
+      requestType: "focusTarget",
+      skipCameraDevOverride: true
+    });
+    return true;
+  }
+
+  fitCameraDevCurrentActivity() {
+    if (this.currentView === "study") {
+      this.fitStudyView({ skipCameraDevOverride: true, cameraContext: "camera-dev-fit-activity" });
+      return true;
+    }
+
+    this.enterOverview({ skipCameraDevOverride: true, cameraContext: "camera-dev-fit-activity" });
+    return true;
+  }
+
   flyToCameraTarget(target = {}) {
     if (!this.map || !Array.isArray(target.center) || typeof target.zoom !== "number") {
       return Promise.resolve(false);
@@ -817,25 +1089,38 @@ export class MapLibreActivityRunner {
       const duration = typeof target.duration === "number" ? target.duration : 900;
       const finish = () => resolve(true);
       window.setTimeout(finish, duration + 80);
-      this.map.stop();
-      this.map.flyTo({
+      this.moveCamera({
         center: target.center,
         zoom: target.zoom,
         pitch: 0,
         bearing: 0,
         duration,
         essential: true
-      });
+      }, {
+        cameraContext: target.cameraContext || "camera-target",
+        source: "flyToCameraTarget",
+        requestType: "flyTo",
+        activityId: this.activity?.id,
+        targetId: target.id || target.targetId || "",
+        targetLabel: target.name || target.label || ""
+      }, "flyTo");
     });
   }
 
-  fitStudyView() {
+  fitStudyView(options = {}) {
     const studyView = this.activity.map?.studyView || {};
-    this.map.fitBounds(studyView.bounds || [[-74.35, 40.85], [-66.75, 47.55]], {
+    this.moveCamera({
+      bounds: studyView.bounds || [[-74.35, 40.85], [-66.75, 47.55]],
       padding: studyView.padding || { top: 55, right: 46, bottom: 78, left: 46 },
       duration: 450,
       essential: true
-    });
+    }, {
+      cameraContext: options.cameraContext || "study-view",
+      source: "fitStudyView",
+      requestType: "fitBounds",
+      activityId: this.activity?.id,
+      skipCameraDevOverride: Boolean(options.skipCameraDevOverride)
+    }, "fitBounds");
   }
 
   fitCurrentView() {
@@ -849,7 +1134,7 @@ export class MapLibreActivityRunner {
     this.enterOverview();
   }
 
-  focusTarget(target) {
+  focusTarget(target, metadata = {}) {
     if (!this.map || !target) {
       return;
     }
@@ -868,34 +1153,26 @@ export class MapLibreActivityRunner {
 
     debugContinentsOceansRunnerCamera("focusTarget requested", {
       requestType: camera.bounds ? "fitBounds" : "easeTo",
-      source: "focusTarget",
+      source: metadata.source || "focusTarget",
       targetId: target.id,
       targetLabel: target.name,
       camera
     });
-    this.map.stop();
-
-    if (camera.bounds) {
-      this.map.fitBounds(camera.bounds, {
-        padding: camera.padding,
-        maxZoom: camera.maxZoom,
-        retainPadding: false,
-        duration: camera.duration,
-        essential: true
-      });
-      return;
-    }
-
-    this.map.easeTo({
-      center: camera.center,
-      zoom: camera.zoom,
-      padding: camera.padding,
-      pitch: 0,
-      bearing: 0,
+    this.moveCamera({
+      ...camera,
+      pitch: Number.isFinite(camera.pitch) ? camera.pitch : 0,
+      bearing: Number.isFinite(camera.bearing) ? camera.bearing : 0,
       retainPadding: false,
-      duration: camera.duration,
       essential: true
-    });
+    }, {
+      cameraContext: metadata.cameraContext || metadata.context || "target-focus",
+      source: metadata.source || "focusTarget",
+      requestType: camera.bounds ? "fitBounds" : "easeTo",
+      activityId: this.activity?.id,
+      targetId: target.id,
+      targetLabel: target.name,
+      skipCameraDevOverride: Boolean(metadata.skipCameraDevOverride)
+    }, camera.bounds ? "fitBounds" : "easeTo");
   }
 
   focusTargetIfNeeded(target, options = {}) {
@@ -940,7 +1217,12 @@ export class MapLibreActivityRunner {
       force: Boolean(options.force),
       camera
     });
-    this.focusTarget(focusTarget);
+    this.focusTarget(focusTarget, {
+      cameraContext: options.cameraContext || options.context || "target-focus-if-needed",
+      source: options.source || "focusTargetIfNeeded",
+      requestType: "focusTargetIfNeeded",
+      skipCameraDevOverride: Boolean(options.skipCameraDevOverride)
+    });
     return true;
   }
 
@@ -1046,8 +1328,8 @@ export class MapLibreActivityRunner {
       bounds,
       options
     });
-    this.map.stop();
-    this.map.fitBounds(bounds, {
+    this.moveCamera({
+      bounds,
       padding: this.normalizePadding(options.padding || {
         top: 118,
         right: 64,
@@ -1058,7 +1340,15 @@ export class MapLibreActivityRunner {
       retainPadding: false,
       duration: Number.isFinite(options.duration) ? options.duration : 850,
       essential: true
-    });
+    }, {
+      cameraContext: options.cameraContext || options.context || "fit-targets",
+      source: options.source || "fitTargets",
+      requestType: "fitBounds",
+      activityId: this.activity?.id,
+      targetIds: targets.map((target) => target.id).filter(Boolean),
+      targetLabels: targets.map((target) => target.name).filter(Boolean),
+      skipCameraDevOverride: Boolean(options.skipCameraDevOverride)
+    }, "fitBounds");
 
     return true;
   }
