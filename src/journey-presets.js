@@ -65,13 +65,19 @@ export const journeyPresets = [
       {
         id: "us-states-09",
         activityId: "us-states-09",
-        title: "Far West / Pacific States",
+        title: "Southwest / Pacific States",
         kind: "states"
       },
       {
         id: "us-states-10",
         activityId: "us-states-10",
-        title: "Northwest / Alaska States",
+        title: "Northwest States",
+        kind: "states"
+      },
+      {
+        id: "us-states-11",
+        activityId: "us-states-11",
+        title: "Alaska and Hawaii",
         kind: "states"
       },
       {
@@ -177,13 +183,19 @@ export const journeyPresets = [
       {
         id: "us-states-09",
         activityId: "us-states-09",
-        title: "Far West / Pacific States",
+        title: "Southwest / Pacific States",
         kind: "states"
       },
       {
         id: "us-states-10",
         activityId: "us-states-10",
-        title: "Northwest / Alaska States",
+        title: "Northwest States",
+        kind: "states"
+      },
+      {
+        id: "us-states-11",
+        activityId: "us-states-11",
+        title: "Alaska and Hawaii",
         kind: "states"
       }
       // TODO: Add U.S. physical feature activity IDs when those activities are playable in the MapLibre app.
@@ -246,13 +258,19 @@ export const journeyPresets = [
       {
         id: "us-capitals-09",
         activityId: "us-capitals-09",
-        title: "Far West / Pacific Capitals",
+        title: "Southwest / Pacific Capitals",
         kind: "capitals"
       },
       {
         id: "us-capitals-10",
         activityId: "us-capitals-10",
-        title: "Northwest / Alaska Capitals",
+        title: "Northwest Capitals",
+        kind: "capitals"
+      },
+      {
+        id: "us-capitals-11",
+        activityId: "us-capitals-11",
+        title: "Alaska and Hawaii Capitals",
         kind: "capitals"
       }
     ]

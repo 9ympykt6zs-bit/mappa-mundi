@@ -1,0 +1,22 @@
+{
+  "id": "us-states-capitals-11",
+  "title": "States and Capitals 11",
+  "baseMap": "usa-map",
+  "baseMapPath": "assets/maps/usa/usa-map.svg",
+  "projection": {
+    "type": "albers-usa-d3",
+    "scale": 1300,
+    "translateX": 487.5,
+    "translateY": 305
+  },
+  "cumulativeGroup": "us-states-capitals",
+  "sequence": 11,
+  "targetNoun": "state or capital",
+  "visibleAnswerLimit": 10,
+  "features": [
+    { "id": "alaska", "name": "Alaska", "type": "state", "state": "AK", "shape": "path", "mapShapeId": "alaska", "color": "#06b6d4", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "hawaii", "name": "Hawaii", "type": "state", "state": "HI", "shape": "path", "mapShapeId": "hawaii", "color": "#22c55e", "labelFontSize": 12, "labelRotation": 0 },
+    { "id": "juneau-ak", "name": "Juneau, AK", "city": "Juneau", "state": "AK", "type": "capital", "shape": "circle", "lon": -134.4197, "lat": 58.3019, "hitRadius": 14, "color": "#06b6d4", "labelOffset": { "x": -30, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
+    { "id": "honolulu-hi", "name": "Honolulu, HI", "city": "Honolulu", "state": "HI", "type": "capital", "shape": "circle", "lon": -157.8583, "lat": 21.3069, "hitRadius": 14, "color": "#22c55e", "labelOffset": { "x": -34, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 }
+  ]
+}

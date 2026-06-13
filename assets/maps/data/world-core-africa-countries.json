@@ -42,6 +42,17 @@
       "labelRotation": 0
     },
     {
+      "id": "lesotho",
+      "name": "Lesotho",
+      "type": "country",
+      "shape": "path",
+      "isoA3": "LSO",
+      "color": "#f59e0b",
+      "labelAnchor": [28.25, -29.48],
+      "labelFontSize": 10,
+      "labelRotation": 0
+    },
+    {
       "id": "ethiopia",
       "name": "Ethiopia",
       "type": "country",

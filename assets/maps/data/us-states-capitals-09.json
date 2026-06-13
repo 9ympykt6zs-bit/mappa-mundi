@@ -18,11 +18,9 @@
     { "id": "arizona", "name": "Arizona", "type": "state", "state": "AZ", "shape": "path", "mapShapeId": "arizona", "color": "#f97316", "labelFontSize": 12, "labelRotation": 0 },
     { "id": "nevada", "name": "Nevada", "type": "state", "state": "NV", "shape": "path", "mapShapeId": "nevada", "color": "#eab308", "labelFontSize": 12, "labelRotation": 0 },
     { "id": "california", "name": "California", "type": "state", "state": "CA", "shape": "path", "mapShapeId": "california", "color": "#22c55e", "labelFontSize": 12, "labelRotation": 0 },
-    { "id": "hawaii", "name": "Hawaii", "type": "state", "state": "HI", "shape": "path", "mapShapeId": "hawaii", "color": "#06b6d4", "labelFontSize": 12, "labelRotation": 0 },
     { "id": "salt-lake-city-ut", "name": "Salt Lake City, UT", "city": "Salt Lake City", "state": "UT", "type": "capital", "shape": "circle", "lon": -111.891, "lat": 40.7608, "hitRadius": 14, "color": "#ef4444", "labelOffset": { "x": -50, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
     { "id": "phoenix-az", "name": "Phoenix, AZ", "city": "Phoenix", "state": "AZ", "type": "capital", "shape": "circle", "lon": -112.074, "lat": 33.4484, "hitRadius": 14, "color": "#f97316", "labelOffset": { "x": -30, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
     { "id": "carson-city-nv", "name": "Carson City, NV", "city": "Carson City", "state": "NV", "type": "capital", "shape": "circle", "lon": -119.7674, "lat": 39.1638, "hitRadius": 14, "color": "#eab308", "labelOffset": { "x": -42, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
-    { "id": "sacramento-ca", "name": "Sacramento, CA", "city": "Sacramento", "state": "CA", "type": "capital", "shape": "circle", "lon": -121.4944, "lat": 38.5816, "hitRadius": 14, "color": "#22c55e", "labelOffset": { "x": -42, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
-    { "id": "honolulu-hi", "name": "Honolulu, HI", "city": "Honolulu", "state": "HI", "type": "capital", "shape": "circle", "lon": -157.8583, "lat": 21.3069, "hitRadius": 14, "color": "#06b6d4", "labelOffset": { "x": -34, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 }
+    { "id": "sacramento-ca", "name": "Sacramento, CA", "city": "Sacramento", "state": "CA", "type": "capital", "shape": "circle", "lon": -121.4944, "lat": 38.5816, "hitRadius": 14, "color": "#22c55e", "labelOffset": { "x": -42, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 }
   ]
 }

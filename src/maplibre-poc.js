@@ -144,7 +144,8 @@ const activityDataPaths = [
   "assets/maps/data/us-states-capitals-07.json",
   "assets/maps/data/us-states-capitals-08.json",
   "assets/maps/data/us-states-capitals-09.json",
-  "assets/maps/data/us-states-capitals-10.json"
+  "assets/maps/data/us-states-capitals-10.json",
+  "assets/maps/data/us-states-capitals-11.json"
 ];
 const worldCountriesPath = "assets/maps/data/maplibre-world-countries.geojson";
 // Natural Earth map-unit supplements fill territory paths that are absent from
@@ -641,8 +642,9 @@ const US_STATE_CAPITAL_SECTIONS = [
   { number: 6, id: "06", label: "Midwest / Mississippi Valley" },
   { number: 7, id: "07", label: "Northern Plains / Rockies" },
   { number: 8, id: "08", label: "Southern Plains / Southwest" },
-  { number: 9, id: "09", label: "Far West / Pacific" },
-  { number: 10, id: "10", label: "Northwest / Alaska" }
+  { number: 9, id: "09", label: "Southwest / Pacific" },
+  { number: 10, id: "10", label: "Northwest" },
+  { number: 11, id: "11", label: "Alaska and Hawaii" }
 ];
 const US_STATE_CAPITAL_MENU_ITEMS = US_STATE_CAPITAL_SECTIONS.flatMap((section) => [
   { label: `${section.label} States`, activityId: `us-states-${section.id}` },
@@ -2570,8 +2572,9 @@ const usSectionDescriptions = {
   6: "Wisconsin, Illinois, Iowa, Missouri, Arkansas, and their capitals.",
   7: "Minnesota, North Dakota, South Dakota, Wyoming, Nebraska, and their capitals.",
   8: "Kansas, Oklahoma, Texas, Colorado, New Mexico, and their capitals.",
-  9: "Utah, Arizona, Nevada, California, Hawaii, and their capitals.",
-  10: "Montana, Idaho, Washington, Oregon, Alaska, and their capitals."
+  9: "Utah, Arizona, Nevada, California, and their capitals.",
+  10: "Montana, Idaho, Washington, Oregon, and their capitals.",
+  11: "Alaska, Hawaii, and their capitals."
 };
 
 function getUsSectionDescription(sectionNumber, activityId = "") {
@@ -7571,6 +7574,20 @@ function clearMemoryTrailState({ restoreReveals = true, render = false } = {}) {
   }
 }
 
+function shouldSuppressStudyIntroCameraForSmallTargetLearn(memoryTrail = getActiveMemoryTrail()) {
+  if (
+    !memoryTrail?.currentPracticeWindow?.length
+    || typeof runner?.shouldFocusSmallTargetInLearnMode !== "function"
+  ) {
+    return false;
+  }
+
+  return memoryTrail.currentPracticeWindow.some((target) => (
+    target?.kind === "shape"
+    && runner.shouldFocusSmallTargetInLearnMode(target, { mobile: true })
+  ));
+}
+
 function startMemoryTrail(options = {}) {
   const isDailyTrail = options.source === "daily-trail";
   if (
@@ -7614,6 +7631,8 @@ function startMemoryTrail(options = {}) {
   runner.setStudyPreviewMode(true);
   if (session.currentActivity?.id === continentsOceansActivityId) {
     runner.suppressStudyIntroCameraOnce?.("c&o-learn-target-focus", 5000);
+  } else if (shouldSuppressStudyIntroCameraForSmallTargetLearn(activeStudySession.memoryTrail)) {
+    runner.suppressStudyIntroCameraOnce?.("small-target-learn-focus", 5000);
   }
   runner.setCompletedTargets([]);
   instruction.textContent = "First learn the small group, then practice from memory.";
@@ -7668,6 +7687,8 @@ function restartMemoryTrail() {
   activeStudySession.revealedTargetIds = [];
   if (session.currentActivity?.id === continentsOceansActivityId) {
     runner.suppressStudyIntroCameraOnce?.("c&o-learn-target-focus", 5000);
+  } else if (shouldSuppressStudyIntroCameraForSmallTargetLearn(activeStudySession.memoryTrail)) {
+    runner.suppressStudyIntroCameraOnce?.("small-target-learn-focus", 5000);
   }
   runner.setCompletedTargets([]);
   instruction.textContent = "First learn the small group, then practice from memory.";
@@ -7765,6 +7786,7 @@ function promptNextMemoryTrailTarget(memoryTrail = getActiveMemoryTrail()) {
     ? selection.targetId
     : []);
   scheduleContinentsOceansLearnFocusCheck(memoryTrail, selection, target);
+  scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target);
   maybeFocusContinentsOceansNamePrompt(selection, target);
   renderStudyExplorePanel();
 
@@ -7910,6 +7932,84 @@ function debugContinentsOceansLearnCamera(label, details = {}, memoryTrail = get
     ...details
   };
   console.warn("[C&O Learn camera]", label, JSON.stringify(payload));
+}
+
+function scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target) {
+  if (
+    session.currentActivity?.id === continentsOceansActivityId
+    || selection?.promptType !== "guided"
+    || memoryTrail?.sessionPhase !== "learn"
+    || memoryTrail.currentPromptTargetId !== selection?.targetId
+    || !target
+    || target.kind !== "shape"
+    || typeof runner?.shouldFocusSmallTargetInLearnMode !== "function"
+    || typeof runner?.focusTargetIfNeeded !== "function"
+  ) {
+    return false;
+  }
+
+  const promptKey = memoryTrail.currentPromptKey;
+  const isFirstPromptInChunk = memoryTrail.promptHistory?.length <= 1;
+  const mapState = runner.getMapInteractionState?.();
+  const needsFocusAtSchedule = runner.shouldFocusSmallTargetInLearnMode(target, { mobile: true });
+  const delayMs = (isFirstPromptInChunk || mapState?.isMoving || mapState?.isEasing) ? 980 : 120;
+  const attemptFocus = (remainingSettleChecks = 6) => {
+    if (
+      !isCurrentMemoryTrailState(memoryTrail)
+      || memoryTrail.currentPromptKey !== promptKey
+      || memoryTrail.currentPromptTargetId !== selection.targetId
+      || memoryTrail.currentPromptType !== "guided"
+      || memoryTrail.sessionPhase !== "learn"
+    ) {
+      debugMemoryTrail("small target learn focus canceled", {
+        targetId: target.id,
+        targetName: target.name,
+        reason: "prompt changed before deferred focus"
+      });
+      return;
+    }
+
+    const currentMapState = runner.getMapInteractionState?.();
+    if ((currentMapState?.isMoving || currentMapState?.isEasing) && remainingSettleChecks > 0) {
+      const settleTimeoutId = window.setTimeout(() => attemptFocus(remainingSettleChecks - 1), 180);
+      memoryTrail.timers.push(settleTimeoutId);
+      return;
+    }
+
+    const needsFocusNow = runner.shouldFocusSmallTargetInLearnMode(target, { mobile: true });
+    if (!needsFocusAtSchedule && !needsFocusNow) {
+      debugMemoryTrail("small target learn focus skipped", {
+        targetId: target.id,
+        targetName: target.name,
+        reason: "target is already comfortably playable"
+      });
+      return;
+    }
+
+    const focusOptions = typeof runner.getSmallTargetLearnFocusOptions === "function"
+      ? runner.getSmallTargetLearnFocusOptions(target)
+      : {
+        duration: 720,
+        force: true,
+        maxZoom: 7.8,
+        zoomTolerance: 0.35,
+        padding: { top: 98, right: 34, bottom: 214, left: 34 },
+        comfortPadding: { top: 104, right: 34, bottom: 214, left: 34 }
+      };
+    const focusTarget = typeof runner.getSmallTargetLearnFocusTarget === "function"
+      ? runner.getSmallTargetLearnFocusTarget(target)
+      : target;
+    const didFocus = runner.focusTargetIfNeeded(focusTarget, focusOptions);
+    debugMemoryTrail("small target learn focus", {
+      targetId: target.id,
+      targetName: target.name,
+      didFocus,
+      focusOptions
+    });
+  };
+  const timeoutId = window.setTimeout(() => attemptFocus(), delayMs);
+  memoryTrail.timers.push(timeoutId);
+  return true;
 }
 
 function scheduleContinentsOceansLearnFocusCheck(memoryTrail, selection, target) {
@@ -10662,8 +10762,7 @@ function isDailyTrailDevCheatEditableTarget(target) {
 
 function handleDailyTrailDevCheatKeydown(event) {
   if (
-    currentAppScreen !== "main-menu"
-    || !isDailyTrailDevAccessAllowed()
+    !isDailyTrailDevAccessAllowed()
     || event.ctrlKey
     || event.metaKey
     || event.altKey
@@ -14355,13 +14454,27 @@ function openLegacyActivity(activityId) {
   window.location.href = nextUrl.toString();
 }
 
+function getMemoryTrailMapTapPriorityTarget(memoryTrail = getActiveMemoryTrail()) {
+  if (
+    !memoryTrail
+    || isPlaceToNameMemoryTrailPrompt(memoryTrail)
+    || !["answering", "correction"].includes(memoryTrail.phase)
+  ) {
+    return null;
+  }
+
+  const targetId = memoryTrail.correction?.expectedTargetId || memoryTrail.currentPromptTargetId;
+  return targetId ? getTargetById(memoryTrail, targetId) : null;
+}
+
 function handleTargetClick(targetIds) {
   if (currentAppScreen === "daily-trail-gameplay" && isMemoryTrailActive()) {
     const memoryTrailMapPoint = targetIds && !Array.isArray(targetIds) && typeof targetIds.x === "number"
       ? targetIds
       : null;
+    const priorityTarget = memoryTrailMapPoint ? getMemoryTrailMapTapPriorityTarget() : null;
     const resolvedMemoryTrailTargetIds = memoryTrailMapPoint
-      ? runner.getTargetIdsAtMapPoint(targetIds)
+      ? runner.getTargetIdsAtMapPoint(targetIds, null, { priorityTarget })
       : targetIds;
 
     handleMemoryTrailTargetTap(resolvedMemoryTrailTargetIds, memoryTrailMapPoint);
@@ -14376,8 +14489,9 @@ function handleTargetClick(targetIds) {
     const studyMapPoint = targetIds && !Array.isArray(targetIds) && typeof targetIds.x === "number"
       ? targetIds
       : null;
+    const priorityTarget = studyMapPoint && isMemoryTrailActive() ? getMemoryTrailMapTapPriorityTarget() : null;
     const resolvedStudyTargetIds = targetIds && !Array.isArray(targetIds) && typeof targetIds.x === "number"
-      ? runner.getTargetIdsAtMapPoint(targetIds)
+      ? runner.getTargetIdsAtMapPoint(targetIds, null, { priorityTarget })
       : targetIds;
 
     if (isMemoryTrailActive()) {

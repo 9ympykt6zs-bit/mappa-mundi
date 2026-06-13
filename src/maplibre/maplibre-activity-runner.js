@@ -267,6 +267,13 @@ const emptyFeatureCollection = {
   features: []
 };
 
+const smallTargetMobileMinScreenSizePx = 44;
+const smallTargetDesktopMinScreenSizePx = 36;
+const smallTargetMobileHitPaddingMaxPx = 36;
+const smallTargetDesktopHitPaddingMaxPx = 28;
+const smallTargetLearnDesiredMinScreenSizePx = 72;
+const smallTargetLearnFocusMaxZoom = 7.8;
+
 export class MapLibreActivityRunner {
   constructor({ maplibregl, container }) {
     this.maplibregl = maplibregl;
@@ -290,6 +297,7 @@ export class MapLibreActivityRunner {
     this.studyPreviewMode = false;
     this.suppressStudyIntroCameraReason = "";
     this.suppressStudyIntroCameraUntil = 0;
+    this.studyIntroCameraTimeoutId = null;
     this.memoryTrailHighlightIds = [];
     this.memoryTrailCorrectHighlightIds = [];
     this.memoryTrailWrongHighlightIds = [];
@@ -310,6 +318,7 @@ export class MapLibreActivityRunner {
     this.suppressStudyIntroCameraUntil = (
       typeof performance !== "undefined" ? performance.now() : Date.now()
     ) + Math.max(0, ttlMs);
+    this.clearStudyIntroCameraTimeout();
   }
 
   consumeStudyIntroCameraSuppression() {
@@ -324,6 +333,15 @@ export class MapLibreActivityRunner {
     this.suppressStudyIntroCameraReason = "";
     this.suppressStudyIntroCameraUntil = 0;
     return reason;
+  }
+
+  clearStudyIntroCameraTimeout() {
+    if (!this.studyIntroCameraTimeoutId) {
+      return;
+    }
+
+    window.clearTimeout(this.studyIntroCameraTimeoutId);
+    this.studyIntroCameraTimeoutId = null;
   }
 
   onTargetClick(handler) {
@@ -508,7 +526,9 @@ export class MapLibreActivityRunner {
       essential: true
     });
 
-    window.setTimeout(() => {
+    this.clearStudyIntroCameraTimeout();
+    this.studyIntroCameraTimeoutId = window.setTimeout(() => {
+      this.studyIntroCameraTimeoutId = null;
       if (this.currentView === "study" && this.activity?.id === activityId) {
         const studyView = this.activity.map?.studyView || {};
         debugContinentsOceansRunnerCamera("enterStudyView study fit requested", {
@@ -886,7 +906,8 @@ export class MapLibreActivityRunner {
     const focusTarget = {
       ...target,
       focusDuration: Number.isFinite(options.duration) ? options.duration : target.focusDuration,
-      focusPadding: options.padding || target.focusPadding
+      focusPadding: options.padding || target.focusPadding,
+      focusMaxZoom: Number.isFinite(options.maxZoom) ? options.maxZoom : target.focusMaxZoom
     };
     const camera = this.getTargetFocusCamera(focusTarget);
 
@@ -1167,6 +1188,317 @@ export class MapLibreActivityRunner {
       bottom: 150,
       left: 90
     });
+  }
+
+  shouldFocusSmallTargetInLearnMode(target, context = {}) {
+    return Boolean(
+      target
+      && target.kind === "shape"
+      && !this.isOceanTarget(target)
+      && this.isSmallMapTarget(target, context)
+    );
+  }
+
+  getSmallTargetLearnFocusTarget(target, options = {}) {
+    const center = this.getSmallTargetFocusCenter(target);
+
+    if (!center) {
+      return target;
+    }
+
+    const focusZoom = this.getSmallTargetLearnFocusZoom(target, options);
+    return {
+      ...target,
+      focusCenter: center,
+      focusZoom,
+      focusMaxZoom: focusZoom
+    };
+  }
+
+  getSmallTargetFocusCenter(target) {
+    const explicitCenter = this.getExplicitTargetFocusCenter(target);
+
+    if (explicitCenter) {
+      return explicitCenter;
+    }
+
+    if (Array.isArray(target?.label?.anchor) && target.label.anchor.length >= 2) {
+      const [longitude, latitude] = target.label.anchor;
+
+      if (Number.isFinite(longitude) && Number.isFinite(latitude)) {
+        return [longitude, latitude];
+      }
+    }
+
+    if (Array.isArray(target?.labelAnchor) && target.labelAnchor.length >= 2) {
+      const [longitude, latitude] = target.labelAnchor;
+
+      if (Number.isFinite(longitude) && Number.isFinite(latitude)) {
+        return [longitude, latitude];
+      }
+    }
+
+    const feature = this.getTargetShapeFeature(target);
+    const bounds = this.getGeometryBounds(feature?.geometry);
+
+    return this.hasValidBounds(bounds) ? this.getBoundsCenter(bounds) : null;
+  }
+
+  getSmallTargetLearnFocusZoom(target, context = {}) {
+    if (!this.map) {
+      return smallTargetLearnFocusMaxZoom;
+    }
+
+    if (Number.isFinite(context.zoom)) {
+      return context.zoom;
+    }
+
+    const renderedBounds = this.getTargetRenderedScreenBounds(target);
+    const currentZoom = Number.isFinite(this.map.getZoom?.()) ? this.map.getZoom() : 4.8;
+    const minScreenSize = renderedBounds
+      ? Math.max(1, Math.min(renderedBounds.width, renderedBounds.height))
+      : 1;
+    const desiredMinSize = Number.isFinite(context.desiredMinScreenSizePx)
+      ? context.desiredMinScreenSizePx
+      : smallTargetLearnDesiredMinScreenSizePx;
+    const zoomDelta = Math.log2(Math.max(1, desiredMinSize) / minScreenSize);
+    const zoom = currentZoom + Math.max(0, zoomDelta);
+
+    return Math.max(4.6, Math.min(smallTargetLearnFocusMaxZoom, zoom));
+  }
+
+  getSmallTargetLearnFocusOptions(target, options = {}) {
+    const compact = this.isCompactFocusLayout();
+    return {
+      duration: Number.isFinite(options.duration) ? options.duration : 720,
+      force: options.force !== false,
+      maxZoom: Number.isFinite(options.maxZoom) ? options.maxZoom : smallTargetLearnFocusMaxZoom,
+      zoomTolerance: Number.isFinite(options.zoomTolerance) ? options.zoomTolerance : 0.35,
+      comfortPadding: options.comfortPadding || {
+        top: compact ? 104 : 104,
+        right: compact ? 34 : 72,
+        bottom: compact ? 214 : 174,
+        left: compact ? 34 : 72
+      },
+      padding: options.padding || {
+        top: compact ? 98 : 104,
+        right: compact ? 34 : 72,
+        bottom: compact ? 214 : 174,
+        left: compact ? 34 : 72
+      }
+    };
+  }
+
+  isSmallMapTarget(target, context = {}) {
+    if (!target || target.kind !== "shape" || this.isOceanTarget(target)) {
+      return false;
+    }
+
+    if (target.smallTarget === false || target.smallTargetAssist === false) {
+      return false;
+    }
+
+    if (this.hasSmallTargetMetadata(target)) {
+      return true;
+    }
+
+    const renderedBounds = context.renderedBounds || this.getTargetRenderedScreenBounds(target);
+
+    if (!renderedBounds) {
+      return false;
+    }
+
+    const minSizePx = this.getSmallTargetMinScreenSizePx(context);
+    return renderedBounds.width < minSizePx || renderedBounds.height < minSizePx;
+  }
+
+  hasSmallTargetMetadata(target = {}) {
+    return target.smallTarget === true
+      || target.smallTargetAssist === true
+      || target.playability?.smallTarget === true
+      || target.map?.smallTarget === true;
+  }
+
+  getSmallTargetMinScreenSizePx(context = {}) {
+    if (Number.isFinite(context.minScreenSizePx)) {
+      return context.minScreenSizePx;
+    }
+
+    return this.isMobileSmallTargetContext(context)
+      ? smallTargetMobileMinScreenSizePx
+      : smallTargetDesktopMinScreenSizePx;
+  }
+
+  isMobileSmallTargetContext(context = {}) {
+    if (typeof context.mobile === "boolean") {
+      return context.mobile;
+    }
+
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return Boolean(
+      window.matchMedia?.("(pointer: coarse)")?.matches
+      || window.innerWidth <= 760
+    );
+  }
+
+  getSmallTargetHitPadding(target, context = {}) {
+    const renderedBounds = context.renderedBounds || this.getTargetRenderedScreenBounds(target);
+
+    if (!this.isSmallMapTarget(target, { ...context, renderedBounds })) {
+      return 0;
+    }
+
+    const mobile = this.isMobileSmallTargetContext(context);
+    const maxPadding = mobile ? smallTargetMobileHitPaddingMaxPx : smallTargetDesktopHitPaddingMaxPx;
+
+    if (Number.isFinite(target.smallTargetHitPadding)) {
+      return Math.max(0, Math.min(maxPadding, target.smallTargetHitPadding));
+    }
+
+    if (!renderedBounds) {
+      return maxPadding;
+    }
+
+    const minScreenSize = Math.max(0, Math.min(renderedBounds.width, renderedBounds.height));
+    const missingPixels = Math.max(0, this.getSmallTargetMinScreenSizePx(context) - minScreenSize);
+    const basePadding = missingPixels / 2 + (mobile ? 10 : 8);
+    const minPadding = mobile ? 14 : 10;
+
+    return Math.max(minPadding, Math.min(maxPadding, basePadding));
+  }
+
+  getTargetRenderedScreenBounds(target) {
+    if (!this.map || !target) {
+      return null;
+    }
+
+    if (target.kind === "point" && Number.isFinite(target.lon) && Number.isFinite(target.lat)) {
+      const point = this.map.project([target.lon, target.lat]);
+      return this.createRenderedBounds(point.x, point.y, point.x, point.y);
+    }
+
+    const feature = this.getTargetShapeFeature(target);
+    return this.getGeometryRenderedScreenBounds(feature?.geometry);
+  }
+
+  getGeometryRenderedScreenBounds(geometry) {
+    if (!this.map || !geometry) {
+      return null;
+    }
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    this.getGeometryPolygons(geometry).forEach((polygon) => {
+      polygon.forEach((ring) => {
+        ring.forEach((coordinate) => {
+          const [longitude, latitude] = coordinate || [];
+
+          if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) {
+            return;
+          }
+
+          const point = this.map.project([longitude, latitude]);
+
+          if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) {
+            return;
+          }
+
+          minX = Math.min(minX, point.x);
+          minY = Math.min(minY, point.y);
+          maxX = Math.max(maxX, point.x);
+          maxY = Math.max(maxY, point.y);
+        });
+      });
+    });
+
+    if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+      return null;
+    }
+
+    return this.createRenderedBounds(minX, minY, maxX, maxY);
+  }
+
+  createRenderedBounds(minX, minY, maxX, maxY) {
+    return {
+      minX,
+      minY,
+      maxX,
+      maxY,
+      width: Math.max(0, maxX - minX),
+      height: Math.max(0, maxY - minY),
+      centerX: (minX + maxX) / 2,
+      centerY: (minY + maxY) / 2
+    };
+  }
+
+  isMapPointInSmallTargetPaddedHit(target, queryPoint, context = {}) {
+    if (!this.map || !target || target.kind !== "shape" || this.isOceanTarget(target)) {
+      return false;
+    }
+
+    if (!Number.isFinite(queryPoint?.[0]) || !Number.isFinite(queryPoint?.[1])) {
+      return false;
+    }
+
+    if (this.shouldRejectOceanHitOverLand(target.id, queryPoint)) {
+      return false;
+    }
+
+    const renderedBounds = this.getTargetRenderedScreenBounds(target);
+    const padding = this.getSmallTargetHitPadding(target, { ...context, renderedBounds });
+
+    if (!padding || !renderedBounds) {
+      return false;
+    }
+
+    return queryPoint[0] >= renderedBounds.minX - padding
+      && queryPoint[0] <= renderedBounds.maxX + padding
+      && queryPoint[1] >= renderedBounds.minY - padding
+      && queryPoint[1] <= renderedBounds.maxY + padding;
+  }
+
+  getSmallTargetPaddedHitIdsAtPoint(queryPoint, options = {}) {
+    if (!this.map || !this.shapeTargets?.length) {
+      return [];
+    }
+
+    const excludedTargetIds = options.excludeTargetIds || new Set();
+    return this.shapeTargets
+      .filter((target) => (
+        !excludedTargetIds.has(target.id)
+        && this.isMapPointInSmallTargetPaddedHit(target, queryPoint, options)
+      ))
+      .map((target) => {
+        const renderedBounds = this.getTargetRenderedScreenBounds(target);
+        return {
+          target,
+          distance: this.getDistanceToRenderedBounds(queryPoint, renderedBounds),
+          area: renderedBounds ? renderedBounds.width * renderedBounds.height : Infinity
+        };
+      })
+      .sort((left, right) => left.distance - right.distance || left.area - right.area)
+      .map(({ target }) => target.id);
+  }
+
+  getDistanceToRenderedBounds(queryPoint, renderedBounds) {
+    if (!renderedBounds) {
+      return Infinity;
+    }
+
+    const dx = queryPoint[0] < renderedBounds.minX
+      ? renderedBounds.minX - queryPoint[0]
+      : Math.max(0, queryPoint[0] - renderedBounds.maxX);
+    const dy = queryPoint[1] < renderedBounds.minY
+      ? renderedBounds.minY - queryPoint[1]
+      : Math.max(0, queryPoint[1] - renderedBounds.maxY);
+
+    return Math.hypot(dx, dy);
   }
 
   normalizePadding(padding = {}) {
@@ -2399,11 +2731,11 @@ export class MapLibreActivityRunner {
     ];
   }
 
-  getTargetIdAtMapPoint(point, selectedTarget = null) {
-    return this.getTargetIdsAtMapPoint(point, selectedTarget)[0] || null;
+  getTargetIdAtMapPoint(point, selectedTarget = null, options = {}) {
+    return this.getTargetIdsAtMapPoint(point, selectedTarget, options)[0] || null;
   }
 
-  getTargetIdsAtClientPoint(clientX, clientY, selectedTarget = null) {
+  getTargetIdsAtClientPoint(clientX, clientY, selectedTarget = null, options = {}) {
     if (!this.map || this.currentView !== "study") {
       return [];
     }
@@ -2414,11 +2746,20 @@ export class MapLibreActivityRunner {
       y: clientY - rect.top
     };
 
-    return this.getTargetIdsAtMapPoint(point, selectedTarget);
+    return this.getTargetIdsAtMapPoint(point, selectedTarget, options);
   }
 
-  getTargetIdsAtMapPoint(point, selectedTarget = null) {
+  getTargetIdsAtMapPoint(point, selectedTarget = null, options = {}) {
+    if (!this.map) {
+      return [];
+    }
+
     const queryPoint = Array.isArray(point) ? point : [point.x, point.y];
+
+    if (!Number.isFinite(queryPoint[0]) || !Number.isFinite(queryPoint[1])) {
+      return [];
+    }
+
     const targetIds = [];
 
     if (!selectedTarget || selectedTarget.kind === "point") {
@@ -2451,23 +2792,70 @@ export class MapLibreActivityRunner {
       const stateFeatures = this.map.queryRenderedFeatures(queryPoint, {
         layers: ["target-hit-fill"]
       });
+      const exactShapeTargetIds = [];
 
       stateFeatures.forEach((feature) => {
-        if (!targetIds.includes(feature.properties.id)) {
-          targetIds.push(feature.properties.id);
+        if (!exactShapeTargetIds.includes(feature.properties.id)) {
+          exactShapeTargetIds.push(feature.properties.id);
         }
       });
 
       if (stateFeatures.length === 0 && this.currentView === "study") {
         this.getFallbackShapeTargetIdsAtPoint(queryPoint, selectedTarget).forEach((targetId) => {
-          if (!targetIds.includes(targetId)) {
-            targetIds.push(targetId);
+          if (!exactShapeTargetIds.includes(targetId)) {
+            exactShapeTargetIds.push(targetId);
           }
         });
       }
+
+      const priorityTarget = options.priorityTarget?.kind === "shape"
+        ? options.priorityTarget
+        : (selectedTarget?.kind === "shape" ? selectedTarget : null);
+      const shapeTargetIds = this.getPrioritizedShapeTargetIdsAtPoint(queryPoint, exactShapeTargetIds, {
+        priorityTarget,
+        includeOtherSmallTargetHits: !selectedTarget || Boolean(options.priorityTarget)
+      });
+
+      shapeTargetIds.forEach((targetId) => {
+        if (!targetIds.includes(targetId)) {
+          targetIds.push(targetId);
+        }
+      });
     }
 
     return this.filterContinentsOceansOceanHitsAtPoint(targetIds, queryPoint);
+  }
+
+  getPrioritizedShapeTargetIdsAtPoint(queryPoint, exactTargetIds = [], options = {}) {
+    const orderedTargetIds = [];
+    const addTargetId = (targetId) => {
+      if (targetId && !orderedTargetIds.includes(targetId)) {
+        orderedTargetIds.push(targetId);
+      }
+    };
+    const priorityTarget = options.priorityTarget?.kind === "shape" ? options.priorityTarget : null;
+
+    if (priorityTarget && exactTargetIds.includes(priorityTarget.id)) {
+      addTargetId(priorityTarget.id);
+    }
+
+    if (
+      priorityTarget
+      && !orderedTargetIds.includes(priorityTarget.id)
+      && this.isMapPointInSmallTargetPaddedHit(priorityTarget, queryPoint, { priorityTarget: true })
+    ) {
+      addTargetId(priorityTarget.id);
+    }
+
+    exactTargetIds.forEach(addTargetId);
+
+    if (options.includeOtherSmallTargetHits !== false) {
+      this.getSmallTargetPaddedHitIdsAtPoint(queryPoint, {
+        excludeTargetIds: new Set(orderedTargetIds)
+      }).forEach(addTargetId);
+    }
+
+    return orderedTargetIds;
   }
 
   isTargetNearMapPoint(targetId, point) {
@@ -2500,6 +2888,10 @@ export class MapLibreActivityRunner {
       const dy = projected.y - queryPoint[1];
 
       return Math.hypot(dx, dy) <= nearMissRadius;
+    }
+
+    if (this.isMapPointInSmallTargetPaddedHit(target, queryPoint)) {
+      return true;
     }
 
     const nearMissBox = isCoarsePointer ? 46 : 32;
