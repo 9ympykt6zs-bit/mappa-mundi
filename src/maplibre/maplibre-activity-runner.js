@@ -3891,6 +3891,10 @@ export class MapLibreActivityRunner {
     const isoA3 = target.isoA3 || target.iso || target.countryCode;
     const adminName = target.adminName || target.name;
 
+    if (target.type === "water-body") {
+      return this.findInlandWaterSourceFeature(target);
+    }
+
     if (activity?.map?.region === "united-states") {
       return this.stateTargets.features.find((feature) => feature.properties.id === sourceFeatureId) || null;
     }
@@ -3923,6 +3927,33 @@ export class MapLibreActivityRunner {
     }) || null;
 
     return this.getRegionalWorldSourceFeature(worldFeature, activity);
+  }
+
+  findInlandWaterSourceFeature(target) {
+    if (!this.inlandWaters?.features?.length || !target) {
+      return null;
+    }
+
+    const matchValues = [
+      target.sourceFeatureId,
+      target.sourceName,
+      target.name,
+      target.id
+    ].filter(Boolean);
+    const normalizedMatchValues = new Set(matchValues.map((value) => normalizeTargetId(value)));
+
+    return this.inlandWaters.features.find((feature) => {
+      const properties = feature.properties || {};
+      const featureValues = [
+        properties.name,
+        properties.sourceName,
+        properties.id
+      ].filter(Boolean);
+
+      return featureValues.some((value) => (
+        matchValues.includes(value) || normalizedMatchValues.has(normalizeTargetId(value))
+      ));
+    }) || null;
   }
 
   getAdmin1FeatureCollection(sourceId) {

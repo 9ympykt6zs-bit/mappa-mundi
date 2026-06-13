@@ -145,7 +145,8 @@ const activityDataPaths = [
   "assets/maps/data/us-states-capitals-08.json",
   "assets/maps/data/us-states-capitals-09.json",
   "assets/maps/data/us-states-capitals-10.json",
-  "assets/maps/data/us-states-capitals-11.json"
+  "assets/maps/data/us-states-capitals-11.json",
+  "assets/maps/data/us-physical-great-lakes.json"
 ];
 const worldCountriesPath = "assets/maps/data/maplibre-world-countries.geojson";
 // Natural Earth map-unit supplements fill territory paths that are absent from
@@ -735,21 +736,21 @@ const US_STATE_CAPITAL_SECTION_VIEWS = {
   }
 };
 const US_PHYSICAL_FEATURE_MENU_ITEMS = [
-  "Northern Appalachian Mountains",
-  "Southern Appalachian Mountains",
-  "Western Mountains",
-  "Northwest Mountains",
-  "Great Lakes",
-  "Bays",
-  "Rivers East",
-  "Rivers West",
-  "Trails",
-  "Canals",
-  "Native American Regions",
-  "Deserts",
-  "Prominent Features",
-  "More Prominent Features"
-].map((label) => ({ label, disabled: true, badge: "Coming soon" }));
+  { label: "Northern Appalachian Mountains", disabled: true, badge: "Coming soon" },
+  { label: "Southern Appalachian Mountains", disabled: true, badge: "Coming soon" },
+  { label: "Western Mountains", disabled: true, badge: "Coming soon" },
+  { label: "Northwest Mountains", disabled: true, badge: "Coming soon" },
+  { label: "Great Lakes", activityId: "us-physical-great-lakes" },
+  { label: "Bays", disabled: true, badge: "Coming soon" },
+  { label: "Rivers East", disabled: true, badge: "Coming soon" },
+  { label: "Rivers West", disabled: true, badge: "Coming soon" },
+  { label: "Trails", disabled: true, badge: "Coming soon" },
+  { label: "Canals", disabled: true, badge: "Coming soon" },
+  { label: "Native American Regions", disabled: true, badge: "Coming soon" },
+  { label: "Deserts", disabled: true, badge: "Coming soon" },
+  { label: "Prominent Features", disabled: true, badge: "Coming soon" },
+  { label: "More Prominent Features", disabled: true, badge: "Coming soon" }
+];
 const ACTIVITY_MENU = [
   {
     id: "world",
@@ -1064,8 +1065,10 @@ const US_PHYSICAL_FEATURE_NAV_NODES = Object.fromEntries(
       id: `us-physical-${index + 1}`,
       label: item.label,
       parent: "us-physical-features",
-      disabled: true,
-      badge: item.badge || "Coming soon"
+      activityId: item.activityId,
+      activityLabel: item.activityId ? item.label : undefined,
+      disabled: !item.activityId,
+      badge: item.activityId ? undefined : (item.badge || "Coming soon")
     }
   ])
 );
@@ -1929,6 +1932,13 @@ const activityCatalogMetadata = {
     category: "Physical Features",
     description: "Practice the continents and major oceans on the modern 3D globe.",
     sortOrder: 8
+  },
+  "us-physical-great-lakes": {
+    mapSet: "north-america",
+    category: "Physical Features",
+    description: "Practice the five Great Lakes using existing inland-water polygons.",
+    sortOrder: 7.6,
+    sectionNumber: 60
   },
   "world-core-americas-countries": {
     mapSet: "world-europe",

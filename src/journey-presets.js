@@ -197,8 +197,13 @@ export const journeyPresets = [
         activityId: "us-states-11",
         title: "Alaska and Hawaii",
         kind: "states"
+      },
+      {
+        id: "us-physical-great-lakes",
+        activityId: "us-physical-great-lakes",
+        title: "Great Lakes",
+        kind: "physical-features"
       }
-      // TODO: Add U.S. physical feature activity IDs when those activities are playable in the MapLibre app.
     ]
   },
   {

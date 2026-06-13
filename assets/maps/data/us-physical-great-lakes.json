@@ -1,0 +1,77 @@
+{
+  "id": "us-physical-great-lakes",
+  "title": "Great Lakes",
+  "targetNoun": "water body",
+  "visibleAnswerLimit": 5,
+  "map": {
+    "region": "united-states",
+    "regionView": { "center": [-85.5, 45.2], "zoom": 3.35 },
+    "studyView": {
+      "bounds": [[-93.2, 40.8], [-74.0, 49.5]],
+      "padding": { "top": 58, "right": 58, "bottom": 96, "left": 58 },
+      "duration": 1050
+    }
+  },
+  "features": [
+    {
+      "id": "lake-superior",
+      "name": "Lake Superior",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Lake Superior",
+      "sourceName": "Lake Superior",
+      "color": "#3b82f6",
+      "labelAnchor": [-87.2, 47.75],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "lake-michigan",
+      "name": "Lake Michigan",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Lake Michigan",
+      "sourceName": "Lake Michigan",
+      "color": "#06b6d4",
+      "labelAnchor": [-87.0, 44.2],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "lake-huron",
+      "name": "Lake Huron",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Lake Huron",
+      "sourceName": "Lake Huron",
+      "color": "#14b8a6",
+      "labelAnchor": [-82.8, 44.8],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "lake-erie",
+      "name": "Lake Erie",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Lake Erie",
+      "sourceName": "Lake Erie",
+      "color": "#f59e0b",
+      "labelAnchor": [-81.3, 42.15],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "lake-ontario",
+      "name": "Lake Ontario",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Lake Ontario",
+      "sourceName": "Lake Ontario",
+      "color": "#8b5cf6",
+      "labelAnchor": [-77.9, 43.75],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    }
+  ]
+}
