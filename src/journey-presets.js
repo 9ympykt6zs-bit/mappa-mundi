@@ -203,6 +203,12 @@ export const journeyPresets = [
         activityId: "us-physical-great-lakes",
         title: "Great Lakes",
         kind: "physical-features"
+      },
+      {
+        id: "us-physical-western-lakes",
+        activityId: "us-physical-western-lakes",
+        title: "Western Lakes",
+        kind: "physical-features"
       }
     ]
   },
@@ -345,6 +351,12 @@ export const journeyPresets = [
         activityId: "canada-western-northern",
         title: "Western and Northern Canada",
         kind: "provinces-territories"
+      },
+      {
+        id: "north-america-physical-canadian-lakes",
+        activityId: "north-america-physical-canadian-lakes",
+        title: "Canadian Lakes",
+        kind: "physical-features"
       }
       // TODO: Add a North America countries activity if one is added later.
     ]
@@ -833,6 +845,12 @@ export const journeyPresets = [
         activityId: "more-southern-africa-countries",
         title: "More Southern Africa",
         kind: "countries"
+      },
+      {
+        id: "africa-physical-african-lakes",
+        activityId: "africa-physical-african-lakes",
+        title: "African Lakes",
+        kind: "physical-features"
       }
       // TODO: Add Cabo Verde, Sao Tome and Principe, Comoros, Mauritius, and Seychelles if the world country source supports them later.
     ]
@@ -848,6 +866,12 @@ export const journeyPresets = [
         activityId: "middle-east-countries",
         title: "Middle East Countries",
         kind: "countries"
+      },
+      {
+        id: "asia-physical-middle-east-waters",
+        activityId: "asia-physical-middle-east-waters",
+        title: "Middle East Waters",
+        kind: "physical-features"
       },
       {
         id: "south-asia-countries",
@@ -896,6 +920,12 @@ export const journeyPresets = [
         activityId: "central-asia",
         title: "Central Asia Countries",
         kind: "countries"
+      },
+      {
+        id: "asia-physical-eurasian-inland-waters",
+        activityId: "asia-physical-eurasian-inland-waters",
+        title: "Eurasian Inland Waters",
+        kind: "physical-features"
       },
       {
         id: "caucasus-countries",

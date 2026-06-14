@@ -1,0 +1,42 @@
+{
+  "id": "asia-physical-middle-east-waters",
+  "title": "Middle East Waters",
+  "targetNoun": "body of water",
+  "promptText": "Name these bodies of water.",
+  "visibleAnswerLimit": 2,
+  "map": {
+    "region": "asia",
+    "regionView": { "center": [35.54, 32.17], "zoom": 5.2 },
+    "studyView": {
+      "bounds": [[35.05, 31.0], [35.95, 33.15]],
+      "padding": { "top": 58, "right": 58, "bottom": 96, "left": 58 },
+      "duration": 1050
+    }
+  },
+  "features": [
+    {
+      "id": "dead-sea",
+      "name": "Dead Sea",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Dead Sea",
+      "sourceName": "Dead Sea",
+      "color": "#2563eb",
+      "labelAnchor": [35.49, 31.54],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "sea-of-galilee",
+      "name": "Sea of Galilee",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Sea of Galilee",
+      "sourceName": "Sea of Galilee",
+      "color": "#14b8a6",
+      "labelAnchor": [35.58, 32.81],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    }
+  ]
+}

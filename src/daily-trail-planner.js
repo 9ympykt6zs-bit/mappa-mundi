@@ -1157,6 +1157,10 @@ function getDailyTrailItemType(activity, target) {
     return "city";
   }
 
+  if (target.type === "water-body") {
+    return "water-body";
+  }
+
   if (target.type === "territory") {
     return "territory";
   }

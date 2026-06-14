@@ -1,0 +1,78 @@
+{
+  "id": "africa-physical-african-lakes",
+  "title": "African Lakes",
+  "targetNoun": "body of water",
+  "promptText": "Name these bodies of water.",
+  "visibleAnswerLimit": 5,
+  "map": {
+    "region": "africa",
+    "regionView": { "center": [26.0, -1.0], "zoom": 2.2 },
+    "studyView": {
+      "bounds": [[13.4, -15.1], [37.6, 14.0]],
+      "padding": { "top": 58, "right": 58, "bottom": 96, "left": 58 },
+      "duration": 1050
+    }
+  },
+  "features": [
+    {
+      "id": "lake-victoria",
+      "name": "Lake Victoria",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Lake Victoria",
+      "sourceName": "Lake Victoria",
+      "color": "#2563eb",
+      "labelAnchor": [33.23, -1.26],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "lake-tanganyika",
+      "name": "Lake Tanganyika",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Lake Tanganyika",
+      "sourceName": "Lake Tanganyika",
+      "color": "#0891b2",
+      "labelAnchor": [30.12, -6.07],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "lake-malawi",
+      "name": "Lake Malawi",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Lake Malawi",
+      "sourceName": "Lake Malawi",
+      "color": "#14b8a6",
+      "labelAnchor": [34.59, -11.94],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "lake-turkana",
+      "name": "Lake Turkana",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Lake Turkana",
+      "sourceName": "Lake Turkana",
+      "color": "#f59e0b",
+      "labelAnchor": [36.27, 3.53],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "lake-chad",
+      "name": "Lake Chad",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Lake Chad",
+      "sourceName": "Lake Chad",
+      "color": "#8b5cf6",
+      "labelAnchor": [14.51, 13.06],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    }
+  ]
+}

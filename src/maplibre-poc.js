@@ -146,7 +146,12 @@ const activityDataPaths = [
   "assets/maps/data/us-states-capitals-09.json",
   "assets/maps/data/us-states-capitals-10.json",
   "assets/maps/data/us-states-capitals-11.json",
-  "assets/maps/data/us-physical-great-lakes.json"
+  "assets/maps/data/us-physical-great-lakes.json",
+  "assets/maps/data/us-physical-western-lakes.json",
+  "assets/maps/data/north-america-physical-canadian-lakes.json",
+  "assets/maps/data/africa-physical-african-lakes.json",
+  "assets/maps/data/asia-physical-middle-east-waters.json",
+  "assets/maps/data/asia-physical-eurasian-inland-waters.json"
 ];
 const worldCountriesPath = "assets/maps/data/maplibre-world-countries.geojson";
 // Natural Earth map-unit supplements fill territory paths that are absent from
@@ -741,6 +746,7 @@ const US_PHYSICAL_FEATURE_MENU_ITEMS = [
   { label: "Western Mountains", disabled: true, badge: "Coming soon" },
   { label: "Northwest Mountains", disabled: true, badge: "Coming soon" },
   { label: "Great Lakes", activityId: "us-physical-great-lakes" },
+  { label: "Western Lakes", activityId: "us-physical-western-lakes" },
   { label: "Bays", disabled: true, badge: "Coming soon" },
   { label: "Rivers East", disabled: true, badge: "Coming soon" },
   { label: "Rivers West", disabled: true, badge: "Coming soon" },
@@ -780,6 +786,7 @@ const ACTIVITY_MENU = [
           { label: "East Africa Countries", activityId: "east-africa-countries" },
           { label: "Southern Africa Countries", activityId: "southern-africa-countries" },
           { label: "More Southern Africa Countries", activityId: "more-southern-africa-countries" },
+          { label: "African Lakes", activityId: "africa-physical-african-lakes" },
           { label: "Cities", activityId: "world-cities-middle-east-north-africa" }
         ]
       }
@@ -876,6 +883,7 @@ const ACTIVITY_MENU = [
         label: "Asia",
         children: [
           { label: "Middle East Countries", activityId: "middle-east-countries" },
+          { label: "Middle East Waters", activityId: "asia-physical-middle-east-waters" },
           { label: "South Asia Countries", activityId: "south-asia-countries" },
           {
             label: "India: States & Union Territories",
@@ -889,6 +897,7 @@ const ACTIVITY_MENU = [
             ]
           },
           { label: "Central Asia Countries", activityId: "central-asia" },
+          { label: "Eurasian Inland Waters", activityId: "asia-physical-eurasian-inland-waters" },
           { label: "Caucasus Countries", activityId: "caucasus-countries" },
           { label: "East Asia Countries", activityId: "east-asia-countries" },
           {
@@ -980,6 +989,12 @@ const ACTIVITY_MENU = [
           { label: "Prairie Provinces", activityId: "canada-prairie-provinces" },
           { label: "Western and Northern Canada", activityId: "canada-western-northern" },
           { label: "All Canada Provinces & Territories Review", activityId: "canada-provinces-territories" }
+        ]
+      },
+      {
+        label: "Physical Features",
+        children: [
+          { label: "Canadian Lakes", activityId: "north-america-physical-canadian-lakes" }
         ]
       },
       {
@@ -1104,6 +1119,7 @@ const GEOGRAPHY_NAV_NODES = {
       "africa-east",
       "southern-africa",
       "more-southern-africa",
+      "africa-physical-african-lakes",
       "africa-cities"
     ]
   },
@@ -1155,6 +1171,13 @@ const GEOGRAPHY_NAV_NODES = {
     parent: "africa",
     activityId: "more-southern-africa-countries",
     activityLabel: "Countries"
+  },
+  "africa-physical-african-lakes": {
+    id: "africa-physical-african-lakes",
+    label: "African Lakes",
+    parent: "africa",
+    activityId: "africa-physical-african-lakes",
+    activityLabel: "Physical Features"
   },
   "africa-cities": {
     id: "africa-cities",
@@ -1337,7 +1360,7 @@ const GEOGRAPHY_NAV_NODES = {
     parent: "world",
     menuRoot: "asia",
     view: { center: [88, 31], zoom: 1.55 },
-    children: ["asia-middle-east", "asia-south", "asia-india-political-divisions", "asia-central", "asia-caucasus", "asia-east", "asia-japan-political-divisions", "asia-china-political-divisions", "asia-mainland-southeast", "asia-maritime-southeast", "asia-cities"]
+    children: ["asia-middle-east", "asia-physical-middle-east-waters", "asia-south", "asia-india-political-divisions", "asia-central", "asia-physical-eurasian-inland-waters", "asia-caucasus", "asia-east", "asia-japan-political-divisions", "asia-china-political-divisions", "asia-mainland-southeast", "asia-maritime-southeast", "asia-cities"]
   },
   "asia-middle-east": {
     id: "asia-middle-east",
@@ -1345,6 +1368,13 @@ const GEOGRAPHY_NAV_NODES = {
     parent: "asia",
     activityId: "middle-east-countries",
     activityLabel: "Countries"
+  },
+  "asia-physical-middle-east-waters": {
+    id: "asia-physical-middle-east-waters",
+    label: "Middle East Waters",
+    parent: "asia",
+    activityId: "asia-physical-middle-east-waters",
+    activityLabel: "Physical Features"
   },
   "asia-south": {
     id: "asia-south",
@@ -1415,6 +1445,13 @@ const GEOGRAPHY_NAV_NODES = {
     parent: "asia",
     activityId: "central-asia",
     activityLabel: "Countries"
+  },
+  "asia-physical-eurasian-inland-waters": {
+    id: "asia-physical-eurasian-inland-waters",
+    label: "Eurasian Inland Waters",
+    parent: "asia",
+    activityId: "asia-physical-eurasian-inland-waters",
+    activityLabel: "Physical Features"
   },
   "asia-caucasus": {
     id: "asia-caucasus",
@@ -1666,7 +1703,7 @@ const GEOGRAPHY_NAV_NODES = {
     parent: "world",
     menuRoot: "north-america",
     view: { center: [-98, 37], zoom: 1.85 },
-    children: ["north-america-united-states", "north-america-mexico", "north-america-canada", "north-america-regional"]
+    children: ["north-america-united-states", "north-america-mexico", "north-america-canada", "north-america-physical-features", "north-america-regional"]
   },
   "north-america-united-states": {
     id: "north-america-united-states",
@@ -1772,6 +1809,20 @@ const GEOGRAPHY_NAV_NODES = {
     label: "All Canada Provinces & Territories Review",
     parent: "north-america-canada",
     activityId: "canada-provinces-territories"
+  },
+  "north-america-physical-features": {
+    id: "north-america-physical-features",
+    label: "Physical Features",
+    parent: "north-america",
+    view: { center: [-106, 57], zoom: 2.4 },
+    children: ["north-america-physical-canadian-lakes"]
+  },
+  "north-america-physical-canadian-lakes": {
+    id: "north-america-physical-canadian-lakes",
+    label: "Canadian Lakes",
+    parent: "north-america-physical-features",
+    activityId: "north-america-physical-canadian-lakes",
+    activityLabel: "Physical Features"
   },
   "us-states-capitals": {
     id: "us-states-capitals",
@@ -1939,6 +1990,41 @@ const activityCatalogMetadata = {
     description: "Practice the five Great Lakes using existing inland-water polygons.",
     sortOrder: 7.6,
     sectionNumber: 60
+  },
+  "us-physical-western-lakes": {
+    mapSet: "north-america",
+    category: "Physical Features",
+    description: "Practice western U.S. lake targets using existing inland-water polygons.",
+    sortOrder: 7.61,
+    sectionNumber: 61
+  },
+  "north-america-physical-canadian-lakes": {
+    mapSet: "north-america",
+    category: "Physical Features",
+    description: "Practice Canadian lake targets using existing inland-water polygons.",
+    sortOrder: 7.62,
+    sectionNumber: 62
+  },
+  "africa-physical-african-lakes": {
+    mapSet: "world-europe",
+    category: "Physical Features",
+    description: "Practice major African lake targets using existing inland-water polygons.",
+    sortOrder: 8.61,
+    sectionNumber: 63
+  },
+  "asia-physical-middle-east-waters": {
+    mapSet: "world-europe",
+    category: "Physical Features",
+    description: "Practice Middle East inland water targets using existing inland-water polygons.",
+    sortOrder: 8.62,
+    sectionNumber: 64
+  },
+  "asia-physical-eurasian-inland-waters": {
+    mapSet: "world-europe",
+    category: "Physical Features",
+    description: "Practice Eurasian inland water targets using existing inland-water polygons.",
+    sortOrder: 8.63,
+    sectionNumber: 65
   },
   "world-core-americas-countries": {
     mapSet: "world-europe",
@@ -10581,6 +10667,10 @@ function getDailyTrailDevItemType(activity, target) {
 
   if (target.type === "city") {
     return "city";
+  }
+
+  if (target.type === "water-body") {
+    return "water-body";
   }
 
   if (target.type === "territory") {

@@ -1,0 +1,42 @@
+{
+  "id": "asia-physical-eurasian-inland-waters",
+  "title": "Eurasian Inland Waters",
+  "targetNoun": "body of water",
+  "promptText": "Name these bodies of water.",
+  "visibleAnswerLimit": 2,
+  "map": {
+    "region": "asia",
+    "regionView": { "center": [83.3, 49.7], "zoom": 2.35 },
+    "studyView": {
+      "bounds": [[56.8, 43.3], [111.4, 56.6]],
+      "padding": { "top": 58, "right": 58, "bottom": 96, "left": 58 },
+      "duration": 1050
+    }
+  },
+  "features": [
+    {
+      "id": "aral-sea",
+      "name": "Aral Sea",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Aral Sea",
+      "sourceName": "Aral Sea",
+      "color": "#2563eb",
+      "labelAnchor": [59.76, 45.47],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "lake-baikal",
+      "name": "Lake Baikal",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Lake Baikal",
+      "sourceName": "Lake Baikal",
+      "color": "#14b8a6",
+      "labelAnchor": [106.84, 53.63],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    }
+  ]
+}

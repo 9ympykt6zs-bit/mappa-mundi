@@ -1,0 +1,66 @@
+{
+  "id": "north-america-physical-canadian-lakes",
+  "title": "Canadian Lakes",
+  "targetNoun": "body of water",
+  "promptText": "Name these bodies of water.",
+  "visibleAnswerLimit": 4,
+  "map": {
+    "region": "north-america",
+    "regionView": { "center": [-111.0, 60.1], "zoom": 2.25 },
+    "studyView": {
+      "bounds": [[-126.2, 49.8], [-95.2, 67.6]],
+      "padding": { "top": 58, "right": 58, "bottom": 96, "left": 58 },
+      "duration": 1050
+    }
+  },
+  "features": [
+    {
+      "id": "great-bear-lake",
+      "name": "Great Bear Lake",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Great Bear Lake",
+      "sourceName": "Great Bear Lake",
+      "color": "#2563eb",
+      "labelAnchor": [-121.29, 65.93],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "great-slave-lake",
+      "name": "Great Slave Lake",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Great Slave Lake",
+      "sourceName": "Great Slave Lake",
+      "color": "#0891b2",
+      "labelAnchor": [-113.69, 61.82],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "lake-winnipeg",
+      "name": "Lake Winnipeg",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Lake Winnipeg",
+      "sourceName": "Lake Winnipeg",
+      "color": "#14b8a6",
+      "labelAnchor": [-97.76, 52.4],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "lake-athabasca",
+      "name": "Lake Athabasca",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Lake Athabasca",
+      "sourceName": "Lake Athabasca",
+      "color": "#6366f1",
+      "labelAnchor": [-108.67, 59.05],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    }
+  ]
+}
