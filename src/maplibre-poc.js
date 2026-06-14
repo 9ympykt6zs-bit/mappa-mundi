@@ -6818,7 +6818,8 @@ function pluralizeInstructionNoun(noun = "place") {
     "federal entity": "federal entities",
     "federal district": "federal districts",
     "union territory": "union territories",
-    "autonomous community": "autonomous communities"
+    "autonomous community": "autonomous communities",
+    "body of water": "bodies of water"
   };
 
   if (overrides[lower]) {
@@ -7380,7 +7381,9 @@ function getMemoryTrailInstructionText(promptType, phase, mode = "", activity = 
 
   if (promptType === "place_to_name") {
     return {
-      banner: `Name the highlighted ${pluralNoun}.`,
+      banner: singularNoun === "body of water"
+        ? "Name the highlighted bodies of water"
+        : `Name the highlighted ${pluralNoun}.`,
       label: `Choose the matching ${singularNoun}.`
     };
   }
@@ -7393,7 +7396,9 @@ function getMemoryTrailInstructionText(promptType, phase, mode = "", activity = 
   }
 
   return {
-    banner: `Find the named ${singularNoun}.`,
+    banner: singularNoun === "body of water"
+      ? "Find the named body of water"
+      : `Find the named ${singularNoun}.`,
     label: `Tap the ${singularNoun} named below.`
   };
 }

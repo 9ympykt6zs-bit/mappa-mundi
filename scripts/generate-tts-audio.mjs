@@ -67,12 +67,25 @@ const memoryTrailInstructionNouns = [
   "state or union territory",
   "state, capital, or location",
   "autonomous community or city",
+  "body of water",
   "continent or ocean",
   "place"
 ];
 
+const bodyOfWaterInstructionPhrases = [
+  "Find the named body of water",
+  "Find the named bodies of water",
+  "Name this body of water",
+  "Name these bodies of water",
+  "Name the highlighted body of water",
+  "Name the highlighted bodies of water",
+  "Tap the highlighted body of water.",
+  "Tap the highlighted body of water. Then repeat its name."
+];
+
 const instructionPhrases = [
   ...baseInstructionPhrases,
+  ...bodyOfWaterInstructionPhrases,
   "Learn these continents and oceans",
   "Tap the highlighted place. Then repeat its name.",
   ...createMemoryTrailInstructionPhrases(memoryTrailInstructionNouns)
@@ -401,6 +414,7 @@ function pluralizeInstructionNoun(noun = "place") {
     "federal district": "federal districts",
     "union territory": "union territories",
     "autonomous community": "autonomous communities",
+    "body of water": "bodies of water",
     location: "locations"
   };
 

@@ -2911,13 +2911,13 @@ function renderMode() {
   updateModeControls();
   const isWordBankMode = currentMode === modes.wordBank;
   const targetNoun = getTargetNoun();
-  const instruction = mapData.hideAnswerBank && mapData.features.length > 0
+  const instruction = mapData.promptText || (mapData.hideAnswerBank && mapData.features.length > 0
     ? `Click each ${targetNoun} on the map to reveal it.`
     : mapData.hideAnswerBank
       ? "Base map ready for coordinates."
     : isWordBankMode
       ? `Drag or select each label, then place it on the correct ${targetNoun}.`
-      : `Name the ${targetNoun} in your head, then click it to check.`;
+      : `Name the ${targetNoun} in your head, then click it to check.`);
 
   instructionText.textContent = instruction;
   answerPanelTitle.textContent = mapData.hideAnswerBank ? mapData.title : (isWordBankMode ? "Answer Bank" : "Click to Reveal");

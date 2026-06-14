@@ -18,6 +18,7 @@ export function normalizeActivity(rawActivity, overrides = {}) {
     engine: overrides.engine || rawActivity.engine || inferEngine(rawActivity),
     cumulativeGroup: overrides.cumulativeGroup ?? rawActivity.cumulativeGroup ?? null,
     sequence: overrides.sequence ?? rawActivity.sequence ?? null,
+    promptText: overrides.promptText || rawActivity.promptText || null,
     targetNoun: overrides.targetNoun || rawActivity.targetNoun || inferTargetNoun(rawTargets),
     defaultMode: overrides.defaultMode || rawActivity.defaultMode || "word-bank",
     visibleAnswerLimit: overrides.visibleAnswerLimit ?? rawActivity.visibleAnswerLimit ?? null,

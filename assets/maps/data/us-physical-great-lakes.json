@@ -1,7 +1,8 @@
 {
   "id": "us-physical-great-lakes",
   "title": "Great Lakes",
-  "targetNoun": "water body",
+  "targetNoun": "body of water",
+  "promptText": "Name these bodies of water.",
   "visibleAnswerLimit": 5,
   "map": {
     "region": "united-states",
