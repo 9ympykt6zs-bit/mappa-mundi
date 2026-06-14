@@ -5273,8 +5273,9 @@ function renderAppShellScreen(screenId) {
   }
 
   if (appShellSettingsGear) {
-    appShellSettingsGear.hidden = isMenuHub;
-    appShellSettingsGear.tabIndex = isMenuHub ? -1 : 0;
+    const shouldShowSettingsGear = normalizedScreenId !== "settings" && normalizedScreenId !== "customize";
+    appShellSettingsGear.hidden = !shouldShowSettingsGear;
+    appShellSettingsGear.tabIndex = shouldShowSettingsGear ? 0 : -1;
   }
 
   toggleMenuSection(mainMenuDailyTrailSection, isMainMenu);

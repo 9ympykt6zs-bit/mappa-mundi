@@ -1075,6 +1075,38 @@ select,
   outline: none;
 }
 
+.launch-gear-button {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(188, 211, 237, 0.84);
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  height: 48px;
+  justify-items: center;
+  padding: 0;
+  position: fixed;
+  right: clamp(16px, 3vw, 34px);
+  top: clamp(16px, 3vw, 34px);
+  width: 48px;
+  z-index: 3;
+}
+
+.launch-gear-button::before {
+  content: "\2699";
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.launch-gear-button:hover,
+.launch-gear-button:focus-visible {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18), 0 10px 24px rgba(0, 0, 0, 0.24);
+  outline: none;
+}
+
 .main-menu-actions {
   display: grid;
   gap: 14px;
