@@ -199,15 +199,9 @@ export const journeyPresets = [
         kind: "states"
       },
       {
-        id: "us-physical-great-lakes",
-        activityId: "us-physical-great-lakes",
-        title: "Great Lakes",
-        kind: "physical-features"
-      },
-      {
-        id: "us-physical-western-lakes",
-        activityId: "us-physical-western-lakes",
-        title: "Western Lakes",
+        id: "us-physical-lakes",
+        activityId: "us-physical-lakes",
+        title: "U.S. Lakes",
         kind: "physical-features"
       }
     ]

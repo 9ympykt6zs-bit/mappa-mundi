@@ -1,14 +1,14 @@
 {
-  "id": "us-physical-great-lakes",
-  "title": "Great Lakes",
+  "id": "us-physical-lakes",
+  "title": "U.S. Lakes",
   "targetNoun": "body of water",
   "promptText": "Name these bodies of water.",
-  "visibleAnswerLimit": 5,
+  "visibleAnswerLimit": 6,
   "map": {
     "region": "united-states",
-    "regionView": { "center": [-85.5, 45.2], "zoom": 3.35 },
+    "regionView": { "center": [-96.0, 44.0], "zoom": 2.65 },
     "studyView": {
-      "bounds": [[-93.2, 40.8], [-74.0, 49.5]],
+      "bounds": [[-113.3, 40.45], [-74.0, 49.5]],
       "padding": { "top": 58, "right": 58, "bottom": 96, "left": 58 },
       "duration": 1050
     }
@@ -71,6 +71,18 @@
       "sourceName": "Lake Ontario",
       "color": "#8b5cf6",
       "labelAnchor": [-77.9, 43.75],
+      "labelFontSize": 11,
+      "labelRotation": 0
+    },
+    {
+      "id": "great-salt-lake",
+      "name": "Great Salt Lake",
+      "type": "water-body",
+      "shape": "path",
+      "sourceFeatureId": "Great Salt Lake",
+      "sourceName": "Great Salt Lake",
+      "color": "#0ea5e9",
+      "labelAnchor": [-112.48, 41.18],
       "labelFontSize": 11,
       "labelRotation": 0
     }

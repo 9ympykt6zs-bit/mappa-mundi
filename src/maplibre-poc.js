@@ -1,4 +1,4 @@
-import { journeyPresets } from "./journey-presets.js?v=20260601-instruction-target-nouns";
+import { journeyPresets } from "./journey-presets.js?v=20260614-us-physical-lakes";
 import { trackEvent } from "./analytics.js?v=20260601-instruction-target-nouns";
 import {
   clearActiveJourney,
@@ -25,7 +25,7 @@ import {
   selectDailyTrailGoal,
   shouldShowDailyTrailGoalChoice,
   syncCompletedDailyTrailGoals
-} from "./daily-trail-planner.js?v=20260606-daily-trail-goals";
+} from "./daily-trail-planner.js?v=20260614-us-physical-lakes";
 
 const APP_NAME = "Mappa Mundi";
 const LANDING_PAGE_TITLE = "Mappa Mundi \u2013 Geography Game for Learning the World";
@@ -146,8 +146,7 @@ const activityDataPaths = [
   "assets/maps/data/us-states-capitals-09.json",
   "assets/maps/data/us-states-capitals-10.json",
   "assets/maps/data/us-states-capitals-11.json",
-  "assets/maps/data/us-physical-great-lakes.json",
-  "assets/maps/data/us-physical-western-lakes.json",
+  "assets/maps/data/us-physical-lakes.json",
   "assets/maps/data/north-america-physical-canadian-lakes.json",
   "assets/maps/data/africa-physical-african-lakes.json",
   "assets/maps/data/asia-physical-middle-east-waters.json",
@@ -745,8 +744,7 @@ const US_PHYSICAL_FEATURE_MENU_ITEMS = [
   { label: "Southern Appalachian Mountains", disabled: true, badge: "Coming soon" },
   { label: "Western Mountains", disabled: true, badge: "Coming soon" },
   { label: "Northwest Mountains", disabled: true, badge: "Coming soon" },
-  { label: "Great Lakes", activityId: "us-physical-great-lakes" },
-  { label: "Western Lakes", activityId: "us-physical-western-lakes" },
+  { label: "U.S. Lakes", activityId: "us-physical-lakes" },
   { label: "Bays", disabled: true, badge: "Coming soon" },
   { label: "Rivers East", disabled: true, badge: "Coming soon" },
   { label: "Rivers West", disabled: true, badge: "Coming soon" },
@@ -1984,19 +1982,12 @@ const activityCatalogMetadata = {
     description: "Practice the continents and major oceans on the modern 3D globe.",
     sortOrder: 8
   },
-  "us-physical-great-lakes": {
+  "us-physical-lakes": {
     mapSet: "north-america",
     category: "Physical Features",
-    description: "Practice the five Great Lakes using existing inland-water polygons.",
+    description: "Practice U.S. lake targets using existing inland-water polygons.",
     sortOrder: 7.6,
     sectionNumber: 60
-  },
-  "us-physical-western-lakes": {
-    mapSet: "north-america",
-    category: "Physical Features",
-    description: "Practice western U.S. lake targets using existing inland-water polygons.",
-    sortOrder: 7.61,
-    sectionNumber: 61
   },
   "north-america-physical-canadian-lakes": {
     mapSet: "north-america",
