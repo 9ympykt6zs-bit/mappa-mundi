@@ -2292,7 +2292,11 @@ export class MapLibreActivityRunner {
       id: "mountain-range-symbol-glow",
       type: "symbol",
       source: "mountain-range-symbols",
-      filter: ["==", ["get", "hasStylizedMountainRangeArt"], true],
+      filter: [
+        "all",
+        ["==", ["get", "hasStylizedMountainRangeArt"], true],
+        ["!=", ["get", "visualOnlyContinuation"], true]
+      ],
       layout: {
         visibility: "none",
         "icon-image": "mappa-mountain-range-glow",
@@ -3735,11 +3739,15 @@ export class MapLibreActivityRunner {
   }
 
   getValidMountainVisualSpines(visualArt) {
-    if (!Array.isArray(visualArt?.spines)) {
+    return this.getValidMountainVisualSpineCoordinates(visualArt?.spines);
+  }
+
+  getValidMountainVisualSpineCoordinates(spines) {
+    if (!Array.isArray(spines)) {
       return [];
     }
 
-    return visualArt.spines
+    return spines
       .map((spine) => (
         Array.isArray(spine)
           ? spine
@@ -3750,6 +3758,43 @@ export class MapLibreActivityRunner {
       .filter((spine) => spine.length >= 2);
   }
 
+  getMountainSymbolVisualSpines(visualArt) {
+    const playableSpines = this.getValidMountainVisualSpineCoordinates(visualArt?.spines)
+      .map((coordinates, index) => ({
+        coordinates,
+        sourceIndex: index,
+        symbolSpineIndex: index,
+        visualOnlyContinuation: false,
+        spineWeight: this.getMountainVisualArtNumberAt(
+          visualArt.spineWeights,
+          index,
+          index === 0 ? 1 : Math.max(0.72, 0.88 - index * 0.08)
+        ),
+        spacingMultiplier: this.getMountainVisualArtNumberAt(
+          visualArt.spineSpacingMultipliers,
+          index,
+          index === 0 ? 1 : 1.08 + index * 0.06
+        )
+      }));
+    const visualOnlySpines = this.getValidMountainVisualSpineCoordinates(visualArt?.visualOnlySpines)
+      .map((coordinates, index) => ({
+        coordinates,
+        sourceIndex: index,
+        symbolSpineIndex: playableSpines.length + index,
+        visualOnlyContinuation: true,
+        spineWeight: this.getMountainVisualArtNumberAt(
+          visualArt.visualOnlySpineWeights,
+          index,
+          0.48
+        ),
+        spacingMultiplier: Number.isFinite(visualArt.visualOnlySpacingMultiplier)
+          ? visualArt.visualOnlySpacingMultiplier
+          : 1.32
+      }));
+
+    return [...playableSpines, ...visualOnlySpines];
+  }
+
   isValidLngLat(coordinates) {
     return Array.isArray(coordinates)
       && coordinates.length >= 2
@@ -3758,7 +3803,7 @@ export class MapLibreActivityRunner {
   }
 
   getStylizedMountainSymbolFeatures(target, visualArt) {
-    const spines = this.getValidMountainVisualSpines(visualArt);
+    const spines = this.getMountainSymbolVisualSpines(visualArt);
     const [smallScale = 0.58, mediumScale = 0.82, largeScale = 1.08] = Array.isArray(visualArt.sizeRange)
       ? visualArt.sizeRange
       : [];
@@ -3768,35 +3813,26 @@ export class MapLibreActivityRunner {
     const sideOffsetDegrees = Number.isFinite(visualArt.sideOffsetDegrees) ? visualArt.sideOffsetDegrees : 0.14;
     const endFadeOpacity = Number.isFinite(visualArt.endFadeOpacity) ? visualArt.endFadeOpacity : 0.34;
 
-    return spines.flatMap((spine, spineIndex) => {
-      const lineLength = this.getLineDistance(spine);
-      const spineWeight = this.getMountainVisualArtNumberAt(
-        visualArt.spineWeights,
-        spineIndex,
-        spineIndex === 0 ? 1 : Math.max(0.72, 0.88 - spineIndex * 0.08)
-      );
-      const spacingMultiplier = this.getMountainVisualArtNumberAt(
-        visualArt.spineSpacingMultipliers,
-        spineIndex,
-        spineIndex === 0 ? 1 : 1.08 + spineIndex * 0.06
-      );
+    return spines.flatMap((spineConfig) => {
+      const lineLength = this.getLineDistance(spineConfig.coordinates);
+      const { sourceIndex, symbolSpineIndex, visualOnlyContinuation, spineWeight, spacingMultiplier } = spineConfig;
 
       if (!Number.isFinite(lineLength) || lineLength <= 0) {
         return [];
       }
 
       const features = [];
-      let cursor = lineLength * (spineIndex === 0 ? 0.025 : 0.055);
+      let cursor = lineLength * (sourceIndex === 0 && !visualOnlyContinuation ? 0.025 : 0.055);
       let symbolIndex = 0;
 
-      while (cursor < lineLength * (spineIndex === 0 ? 0.985 : 0.955)) {
+      while (cursor < lineLength * (sourceIndex === 0 && !visualOnlyContinuation ? 0.985 : 0.955)) {
         const t = Math.max(0, Math.min(1, cursor / lineLength));
-        const position = this.getPointAlongLine(spine, cursor);
+        const position = this.getPointAlongLine(spineConfig.coordinates, cursor);
 
         if (position) {
           const middleWeight = Math.max(0, 1 - Math.abs(t - 0.5) * 2);
           const endWeight = Math.min(1, t / 0.18, (1 - t) / 0.18);
-          const sizeJitter = Math.sin((symbolIndex + 1) * 2.41 + spineIndex * 0.73) * 0.13;
+          const sizeJitter = Math.sin((symbolIndex + 1) * 2.41 + symbolSpineIndex * 0.73) * 0.13;
           const mediumWeight = Math.min(1, middleWeight * 1.55);
           const largeWeight = Math.max(0, (middleWeight - 0.58) / 0.42);
           const baseScale = smallScale
@@ -3808,10 +3844,10 @@ export class MapLibreActivityRunner {
             largeScale
           );
           const normalOffset = (
-            Math.sin((symbolIndex + 1) * 1.73 + spineIndex) * sideOffsetDegrees
-            + Math.sin((symbolIndex + 1) * 4.11 + spineIndex * 1.37) * jitterDegrees * 0.48
+            Math.sin((symbolIndex + 1) * 1.73 + symbolSpineIndex) * sideOffsetDegrees
+            + Math.sin((symbolIndex + 1) * 4.11 + symbolSpineIndex * 1.37) * jitterDegrees * 0.48
           );
-          const alongOffset = Math.cos((symbolIndex + 1) * 2.87 + spineIndex * 0.61) * jitterDegrees * 0.2;
+          const alongOffset = Math.cos((symbolIndex + 1) * 2.87 + symbolSpineIndex * 0.61) * jitterDegrees * 0.2;
           const coordinates = [
             position.point[0] + position.normal[0] * normalOffset + position.tangent[0] * alongOffset,
             position.point[1] + position.normal[1] * normalOffset + position.tangent[1] * alongOffset
@@ -3826,13 +3862,14 @@ export class MapLibreActivityRunner {
           features.push({
             type: "Feature",
             properties: {
-              id: `${target.id}-mountain-symbol-${spineIndex}-${symbolIndex}`,
+              id: `${target.id}-mountain-symbol-${symbolSpineIndex}-${symbolIndex}`,
               targetId: target.id,
               name: target.name,
               physicalFeatureType: target.type,
               hasStylizedMountainRangeArt: true,
-              spineIndex,
+              spineIndex: symbolSpineIndex,
               spineWeight,
+              visualOnlyContinuation,
               iconScale,
               symbolOpacity
             },
@@ -3846,7 +3883,7 @@ export class MapLibreActivityRunner {
         const middleWeight = Math.max(0, 1 - Math.abs(t - 0.5) * 2);
         const irregularSpacing = spacing
           * spacingMultiplier
-          * (1 + Math.sin((symbolIndex + 1) * 2.19 + spineIndex * 0.91) * 0.24);
+          * (1 + Math.sin((symbolIndex + 1) * 2.19 + symbolSpineIndex * 0.91) * 0.24);
         cursor += Math.max(0.28, irregularSpacing * (1 - middleDensityBoost * Math.pow(middleWeight, 0.8)));
         symbolIndex += 1;
       }
@@ -5529,6 +5566,8 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode) {
       return [
         "case",
+        ["boolean", ["get", "visualOnlyContinuation"], false],
+        ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.58],
         ["in", ["get", "targetId"], ["literal", this.memoryTrailWrongHighlightIds]],
         0.96,
         ["in", ["get", "targetId"], ["literal", this.memoryTrailCorrectHighlightIds]],
@@ -5544,6 +5583,8 @@ export class MapLibreActivityRunner {
     if (this.getDifficultyVisualState().isHard) {
       return [
         "case",
+        ["boolean", ["get", "visualOnlyContinuation"], false],
+        ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.46],
         ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
         ["min", 1, ["+", ["coalesce", ["get", "symbolOpacity"], 0.62], 0.2]],
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
@@ -5554,6 +5595,8 @@ export class MapLibreActivityRunner {
 
     return [
       "case",
+      ["boolean", ["get", "visualOnlyContinuation"], false],
+      ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.58],
       ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
       ["min", 1, ["+", ["coalesce", ["get", "symbolOpacity"], 0.62], 0.2]],
       ["in", ["get", "targetId"], ["literal", this.completedIds]],

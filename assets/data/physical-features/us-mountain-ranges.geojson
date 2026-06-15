@@ -42,9 +42,24 @@
               [-105.5, 35.2]
             ]
           ],
+          "visualOnlySpines": [
+            [
+              [-113.9, 49.0],
+              [-114.5, 50.0],
+              [-115.4, 51.3],
+              [-116.2, 52.4]
+            ],
+            [
+              [-112.6, 49.0],
+              [-113.5, 50.0],
+              [-114.4, 51.0]
+            ]
+          ],
           "spineWeights": [0.82, 1.0, 0.96, 0.72],
           "spineSpacingMultipliers": [1.08, 0.76, 0.84, 1.04],
           "corridorOpacityScales": [0.62, 1.0, 0.9, 0.54],
+          "visualOnlySpineWeights": [0.52, 0.42],
+          "visualOnlySpacingMultiplier": 1.32,
           "corridorWidthPx": 56,
           "corridorBlurPx": 24,
           "symbolSpacingDegrees": 0.82,
@@ -89,6 +104,36 @@
         "geometryPrecision": "approximate",
         "targetPrecision": "general-location",
         "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Cascade stylized prototype",
+          "spines": [
+            [
+              [-122.35, 48.7],
+              [-121.95, 47.4],
+              [-121.8, 45.8],
+              [-122.05, 44.1],
+              [-122.3, 42.3]
+            ],
+            [
+              [-121.55, 47.5],
+              [-121.45, 46.0],
+              [-121.65, 44.4],
+              [-121.85, 42.8]
+            ]
+          ],
+          "spineWeights": [0.78, 0.58],
+          "spineSpacingMultipliers": [0.82, 1.05],
+          "corridorOpacityScales": [0.72, 0.48],
+          "corridorWidthPx": 34,
+          "corridorBlurPx": 14,
+          "symbolSpacingDegrees": 0.76,
+          "middleDensityBoost": 0.38,
+          "jitterDegrees": 0.18,
+          "sideOffsetDegrees": 0.12,
+          "sizeRange": [0.56, 0.86, 1.16],
+          "endFadeOpacity": 0.24
+        },
         "symbolAnchors": [
           [-122.5, 42.8],
           [-122.3, 45.0],
@@ -98,12 +143,13 @@
       "geometry": {
         "type": "Polygon",
         "coordinates": [[
-          [-124.5, 41.5],
-          [-120.9, 41.5],
-          [-120.5, 49.0],
-          [-123.0, 49.0],
-          [-124.2, 45.0],
-          [-124.5, 41.5]
+          [-123.05, 41.7],
+          [-120.95, 41.7],
+          [-120.55, 49.0],
+          [-122.75, 49.0],
+          [-122.55, 47.1],
+          [-122.9, 44.5],
+          [-123.05, 41.7]
         ]]
       }
     },
@@ -116,6 +162,36 @@
         "geometryPrecision": "approximate",
         "targetPrecision": "general-location",
         "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Sierra Nevada stylized prototype",
+          "spines": [
+            [
+              [-120.25, 39.8],
+              [-119.75, 38.7],
+              [-119.25, 37.4],
+              [-118.65, 36.2],
+              [-118.25, 35.35]
+            ],
+            [
+              [-119.45, 39.35],
+              [-119.1, 38.15],
+              [-118.55, 36.95],
+              [-118.05, 35.75]
+            ]
+          ],
+          "spineWeights": [0.78, 0.6],
+          "spineSpacingMultipliers": [0.72, 1.0],
+          "corridorOpacityScales": [0.72, 0.5],
+          "corridorWidthPx": 32,
+          "corridorBlurPx": 12,
+          "symbolSpacingDegrees": 0.62,
+          "middleDensityBoost": 0.4,
+          "jitterDegrees": 0.16,
+          "sideOffsetDegrees": 0.1,
+          "sizeRange": [0.58, 0.9, 1.22],
+          "endFadeOpacity": 0.24
+        },
         "symbolAnchors": [
           [-119.0, 36.2],
           [-119.4, 38.0],
@@ -125,11 +201,12 @@
       "geometry": {
         "type": "Polygon",
         "coordinates": [[
-          [-121.8, 35.0],
-          [-118.0, 35.2],
-          [-117.5, 40.1],
-          [-120.5, 40.1],
-          [-121.8, 35.0]
+          [-119.9, 35.1],
+          [-118.25, 35.15],
+          [-117.55, 40.15],
+          [-120.25, 40.15],
+          [-120.75, 38.2],
+          [-119.9, 35.1]
         ]]
       }
     }
