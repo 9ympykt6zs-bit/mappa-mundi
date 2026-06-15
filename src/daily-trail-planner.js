@@ -1161,6 +1161,10 @@ function getDailyTrailItemType(activity, target) {
     return "water-body";
   }
 
+  if (target.type === "mountain-range") {
+    return "mountain-range";
+  }
+
   if (target.type === "territory") {
     return "territory";
   }

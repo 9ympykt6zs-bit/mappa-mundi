@@ -1,4 +1,4 @@
-import { journeyPresets } from "./journey-presets.js?v=20260614-us-physical-lakes";
+import { journeyPresets } from "./journey-presets.js?v=20260614-western-mountains";
 import { trackEvent } from "./analytics.js?v=20260601-instruction-target-nouns";
 import {
   clearActiveJourney,
@@ -25,7 +25,7 @@ import {
   selectDailyTrailGoal,
   shouldShowDailyTrailGoalChoice,
   syncCompletedDailyTrailGoals
-} from "./daily-trail-planner.js?v=20260614-us-physical-lakes";
+} from "./daily-trail-planner.js?v=20260614-western-mountains";
 
 const APP_NAME = "Mappa Mundi";
 const LANDING_PAGE_TITLE = "Mappa Mundi \u2013 Geography Game for Learning the World";
@@ -147,6 +147,7 @@ const activityDataPaths = [
   "assets/maps/data/us-states-capitals-10.json",
   "assets/maps/data/us-states-capitals-11.json",
   "assets/maps/data/us-physical-lakes.json",
+  "assets/maps/data/us-physical-western-mountains.json",
   "assets/maps/data/north-america-physical-canadian-lakes.json",
   "assets/maps/data/africa-physical-african-lakes.json",
   "assets/maps/data/asia-physical-middle-east-waters.json",
@@ -163,6 +164,7 @@ const oceanZonesPath = "assets/maps/data/ocean-zones.geojson";
 const coContinentOverridesPath = "assets/data/co-continent-overrides.json";
 const coContinentLandPath = "assets/maps/data/continents-oceans-land.geojson";
 const inlandWatersPath = "assets/maps/data/inland-waters.geojson";
+const mountainRangesPath = "assets/data/physical-features/us-mountain-ranges.geojson";
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const northAmericaAdmin1Path = "assets/maps/data/maplibre-north-america-admin1.geojson";
@@ -742,7 +744,7 @@ const US_STATE_CAPITAL_SECTION_VIEWS = {
 const US_PHYSICAL_FEATURE_MENU_ITEMS = [
   { label: "Northern Appalachian Mountains", disabled: true, badge: "Coming soon" },
   { label: "Southern Appalachian Mountains", disabled: true, badge: "Coming soon" },
-  { label: "Western Mountains", disabled: true, badge: "Coming soon" },
+  { label: "Western U.S. Mountains", activityId: "us-physical-western-mountains" },
   { label: "Northwest Mountains", disabled: true, badge: "Coming soon" },
   { label: "U.S. Lakes", activityId: "us-physical-lakes" },
   { label: "Bays", disabled: true, badge: "Coming soon" },
@@ -1988,6 +1990,13 @@ const activityCatalogMetadata = {
     description: "Practice U.S. lake targets using existing inland-water polygons.",
     sortOrder: 7.6,
     sectionNumber: 60
+  },
+  "us-physical-western-mountains": {
+    mapSet: "north-america",
+    category: "Physical Features",
+    description: "Practice approximate western U.S. mountain range learning regions.",
+    sortOrder: 7.65,
+    sectionNumber: 61
   },
   "north-america-physical-canadian-lakes": {
     mapSet: "north-america",
@@ -3465,7 +3474,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260606-capital-icons-2"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260614-western-mountains"),
       import("./chip-speech.js?v=20260602-daily-trail-review-chips")
     ]).then(([
       ,
@@ -3516,13 +3525,14 @@ async function ensureMapReady() {
       await ensureMapRuntimeLoaded();
       await ensureActivityDataLoaded();
 
-      const [worldCountries, supplementalWorldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
+      const [worldCountries, supplementalWorldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, mountainRanges, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
         fetchJson(worldCountriesPath),
         Promise.all(worldCountrySupplements.map((path) => fetchJson(path))),
         fetchJson(oceanZonesPath),
         fetchOptionalJson(coContinentOverridesPath, { overrides: [] }),
         fetchOptionalJson(coContinentLandPath, null),
         fetchJson(inlandWatersPath),
+        fetchJson(mountainRangesPath),
         fetchJson(usStatesAtlasPath),
         fetchJson(stateGeoJsonPath),
         fetchJson(northAmericaAdmin1Path),
@@ -3562,6 +3572,7 @@ async function ensureMapReady() {
         coContinentOverrides,
         coContinentLand,
         inlandWaters,
+        mountainRanges,
         usStatesAtlas,
         stateTargets,
         northAmericaAdmin1,
@@ -6897,7 +6908,8 @@ function pluralizeInstructionNoun(noun = "place") {
     "federal district": "federal districts",
     "union territory": "union territories",
     "autonomous community": "autonomous communities",
-    "body of water": "bodies of water"
+    "body of water": "bodies of water",
+    "mountain range": "mountain ranges"
   };
 
   if (overrides[lower]) {
@@ -7453,7 +7465,9 @@ function getMemoryTrailInstructionText(promptType, phase, mode = "", activity = 
       banner: learnCount === 1
         ? `Learn this ${singularNoun || "place"}`
         : `Learn these ${pluralNoun || "places"}`,
-      label: "Tap the highlighted place."
+      label: singularNoun === "mountain range"
+        ? "Tap the highlighted mountain range."
+        : "Tap the highlighted place."
     };
   }
 
@@ -10662,6 +10676,10 @@ function getDailyTrailDevItemType(activity, target) {
 
   if (target.type === "water-body") {
     return "water-body";
+  }
+
+  if (target.type === "mountain-range") {
+    return "mountain-range";
   }
 
   if (target.type === "territory") {

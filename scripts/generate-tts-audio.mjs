@@ -68,6 +68,7 @@ const memoryTrailInstructionNouns = [
   "state, capital, or location",
   "autonomous community or city",
   "body of water",
+  "mountain range",
   "continent or ocean",
   "place"
 ];
@@ -83,9 +84,17 @@ const bodyOfWaterInstructionPhrases = [
   "Tap the highlighted body of water. Then repeat its name."
 ];
 
+const mountainRangeInstructionPhrases = [
+  "Find the named mountain range",
+  "Name these mountain ranges",
+  "Name the highlighted mountain range",
+  "Tap the highlighted mountain range."
+];
+
 const instructionPhrases = [
   ...baseInstructionPhrases,
   ...bodyOfWaterInstructionPhrases,
+  ...mountainRangeInstructionPhrases,
   "Learn these continents and oceans",
   "Tap the highlighted place. Then repeat its name.",
   ...createMemoryTrailInstructionPhrases(memoryTrailInstructionNouns)

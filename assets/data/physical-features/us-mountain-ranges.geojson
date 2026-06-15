@@ -1,0 +1,94 @@
+{
+  "type": "FeatureCollection",
+  "name": "us-mountain-ranges",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "rocky-mountains",
+        "name": "Rocky Mountains",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "symbolAnchors": [
+          [-106.6, 35.6],
+          [-107.7, 38.6],
+          [-109.1, 42.0],
+          [-111.0, 45.1],
+          [-113.0, 47.5]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-108.6, 34.1],
+          [-105.6, 34.8],
+          [-104.8, 37.0],
+          [-105.8, 40.2],
+          [-107.0, 43.4],
+          [-109.4, 46.5],
+          [-111.2, 49.0],
+          [-115.0, 49.0],
+          [-113.2, 45.4],
+          [-111.5, 42.1],
+          [-109.8, 38.6],
+          [-108.6, 34.1]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cascade-mountains",
+        "name": "Cascade Mountains",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "symbolAnchors": [
+          [-122.5, 42.8],
+          [-122.3, 45.0],
+          [-121.8, 47.2]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-124.5, 41.5],
+          [-120.9, 41.5],
+          [-120.5, 49.0],
+          [-123.0, 49.0],
+          [-124.2, 45.0],
+          [-124.5, 41.5]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sierra-nevada",
+        "name": "Sierra Nevada",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "symbolAnchors": [
+          [-119.0, 36.2],
+          [-119.4, 38.0],
+          [-120.0, 39.3]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-121.8, 35.0],
+          [-118.0, 35.2],
+          [-117.5, 40.1],
+          [-120.5, 40.1],
+          [-121.8, 35.0]
+        ]]
+      }
+    }
+  ]
+}

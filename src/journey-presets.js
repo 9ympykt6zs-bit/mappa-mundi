@@ -203,6 +203,12 @@ export const journeyPresets = [
         activityId: "us-physical-lakes",
         title: "U.S. Lakes",
         kind: "physical-features"
+      },
+      {
+        id: "us-physical-western-mountains",
+        activityId: "us-physical-western-mountains",
+        title: "Western U.S. Mountains",
+        kind: "physical-features"
       }
     ]
   },
