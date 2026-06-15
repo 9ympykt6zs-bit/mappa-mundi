@@ -16185,6 +16185,8 @@ function handleResetButtonClick() {
 function syncAnswerBank() {
   const isInputLocked = isActivityInputLocked();
 
+  runner?.setSelectedTarget?.(session?.selectedId || "");
+
   answerBank.querySelectorAll(".label-chip[data-id]").forEach((chip) => {
     const id = chip.dataset.id;
     const isSelected = session.selectedId === id;

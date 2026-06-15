@@ -287,6 +287,7 @@ export class MapLibreActivityRunner {
     this.targetClickHandler = null;
     this.regionSelectHandler = null;
     this.completedIds = [];
+    this.selectedTargetId = "";
     this.shapeTargets = [];
     this.pointTargets = [];
     this.overviewPreviewActivity = null;
@@ -620,6 +621,11 @@ export class MapLibreActivityRunner {
     this.refreshDifficultyVisuals();
   }
 
+  setSelectedTarget(targetId = "") {
+    this.selectedTargetId = targetId || "";
+    this.refreshDifficultyVisuals();
+  }
+
   setStudyPreviewMode(isActive) {
     this.studyPreviewMode = Boolean(isActive);
     if (!this.studyPreviewMode) {
@@ -812,13 +818,19 @@ export class MapLibreActivityRunner {
     this.shapeTargets = activity.targets.filter((target) => target.kind === "shape");
     this.pointTargets = activity.targets.filter((target) => target.kind === "point");
     this.completedIds = [];
+    this.selectedTargetId = "";
 
     const capitalSource = this.map.getSource("study-capitals");
     const shapeSource = this.map.getSource("target-shapes");
+    const mountainCorridorSource = this.map.getSource("mountain-range-corridors");
     const mountainSymbolSource = this.map.getSource("mountain-range-symbols");
 
     if (shapeSource) {
       shapeSource.setData(this.getTargetShapeGeoJson());
+    }
+
+    if (mountainCorridorSource) {
+      mountainCorridorSource.setData(this.getMountainRangeCorridorGeoJson());
     }
 
     if (mountainSymbolSource) {
@@ -2158,6 +2170,11 @@ export class MapLibreActivityRunner {
       data: this.getTargetShapeGeoJson()
     });
 
+    this.map.addSource("mountain-range-corridors", {
+      type: "geojson",
+      data: this.getMountainRangeCorridorGeoJson()
+    });
+
     this.map.addSource("mountain-range-symbols", {
       type: "geojson",
       data: this.getMountainRangeSymbolGeoJson()
@@ -2252,7 +2269,41 @@ export class MapLibreActivityRunner {
       }
     });
 
+    this.map.addLayer({
+      id: "mountain-range-corridor",
+      type: "line",
+      source: "mountain-range-corridors",
+      layout: {
+        visibility: "none",
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": "#b7791f",
+        "line-width": this.getMountainRangeCorridorWidthExpression(),
+        "line-opacity": this.getMountainRangeCorridorOpacityExpression(),
+        "line-blur": ["coalesce", ["get", "corridorBlurPx"], 9]
+      }
+    });
+
     this.ensureMountainRangeImages();
+
+    this.map.addLayer({
+      id: "mountain-range-symbol-glow",
+      type: "symbol",
+      source: "mountain-range-symbols",
+      filter: ["==", ["get", "hasStylizedMountainRangeArt"], true],
+      layout: {
+        visibility: "none",
+        "icon-image": "mappa-mountain-range-glow",
+        "icon-size": this.getMountainRangeSymbolGlowSizeExpression(),
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true
+      },
+      paint: {
+        "icon-opacity": this.getMountainRangeSymbolGlowOpacityExpression()
+      }
+    });
 
     this.map.addLayer({
       id: "mountain-range-symbol",
@@ -3593,7 +3644,54 @@ export class MapLibreActivityRunner {
     };
   }
 
+  getMountainRangeCorridorGeoJson() {
+    return {
+      type: "FeatureCollection",
+      features: this.shapeTargets
+        .filter((target) => target.type === "mountain-range")
+        .flatMap((target) => this.getMountainRangeCorridorFeatures(target))
+    };
+  }
+
+  getMountainRangeCorridorFeatures(target) {
+    const visualArt = this.getMountainRangeVisualArt(target);
+
+    if (!visualArt) {
+      return [];
+    }
+
+    return this.getValidMountainVisualSpines(visualArt)
+      .map((coordinates, index) => ({
+        type: "Feature",
+        properties: {
+          id: `${target.id}-mountain-corridor-${index}`,
+          targetId: target.id,
+          name: target.name,
+          physicalFeatureType: target.type,
+          hasStylizedMountainRangeArt: true,
+          spineIndex: index,
+          corridorOpacityScale: this.getMountainVisualArtNumberAt(
+            visualArt.corridorOpacityScales,
+            index,
+            index === 0 ? 1 : Math.max(0.58, 0.78 - index * 0.08)
+          ),
+          corridorWidthPx: Number.isFinite(visualArt.corridorWidthPx) ? visualArt.corridorWidthPx : 30,
+          corridorBlurPx: Number.isFinite(visualArt.corridorBlurPx) ? visualArt.corridorBlurPx : 9
+        },
+        geometry: {
+          type: "LineString",
+          coordinates
+        }
+      }));
+  }
+
   getMountainRangeSymbolFeatures(target) {
+    const visualArt = this.getMountainRangeVisualArt(target);
+
+    if (visualArt) {
+      return this.getStylizedMountainSymbolFeatures(target, visualArt);
+    }
+
     const sourceFeature = this.findSourceShapeFeature(target, this.activity);
     const anchors = sourceFeature?.properties?.symbolAnchors;
 
@@ -3614,13 +3712,211 @@ export class MapLibreActivityRunner {
           id: `${target.id}-mountain-symbol-${index}`,
           targetId: target.id,
           name: target.name,
-          physicalFeatureType: target.type
+          physicalFeatureType: target.type,
+          iconScale: 0.72,
+          symbolOpacity: 0.62
         },
         geometry: {
           type: "Point",
           coordinates: [coordinates[0], coordinates[1]]
         }
       }));
+  }
+
+  getMountainRangeVisualArt(target) {
+    const sourceFeature = this.findSourceShapeFeature(target, this.activity);
+    const visualArt = sourceFeature?.properties?.visualArt;
+
+    if (visualArt?.kind !== "stylized-mountain-range") {
+      return null;
+    }
+
+    return this.getValidMountainVisualSpines(visualArt).length > 0 ? visualArt : null;
+  }
+
+  getValidMountainVisualSpines(visualArt) {
+    if (!Array.isArray(visualArt?.spines)) {
+      return [];
+    }
+
+    return visualArt.spines
+      .map((spine) => (
+        Array.isArray(spine)
+          ? spine
+              .filter((coordinates) => this.isValidLngLat(coordinates))
+              .map((coordinates) => [coordinates[0], coordinates[1]])
+          : []
+      ))
+      .filter((spine) => spine.length >= 2);
+  }
+
+  isValidLngLat(coordinates) {
+    return Array.isArray(coordinates)
+      && coordinates.length >= 2
+      && Number.isFinite(coordinates[0])
+      && Number.isFinite(coordinates[1]);
+  }
+
+  getStylizedMountainSymbolFeatures(target, visualArt) {
+    const spines = this.getValidMountainVisualSpines(visualArt);
+    const [smallScale = 0.58, mediumScale = 0.82, largeScale = 1.08] = Array.isArray(visualArt.sizeRange)
+      ? visualArt.sizeRange
+      : [];
+    const spacing = Number.isFinite(visualArt.symbolSpacingDegrees) ? visualArt.symbolSpacingDegrees : 0.72;
+    const middleDensityBoost = Number.isFinite(visualArt.middleDensityBoost) ? visualArt.middleDensityBoost : 0.35;
+    const jitterDegrees = Number.isFinite(visualArt.jitterDegrees) ? visualArt.jitterDegrees : 0.18;
+    const sideOffsetDegrees = Number.isFinite(visualArt.sideOffsetDegrees) ? visualArt.sideOffsetDegrees : 0.14;
+    const endFadeOpacity = Number.isFinite(visualArt.endFadeOpacity) ? visualArt.endFadeOpacity : 0.34;
+
+    return spines.flatMap((spine, spineIndex) => {
+      const lineLength = this.getLineDistance(spine);
+      const spineWeight = this.getMountainVisualArtNumberAt(
+        visualArt.spineWeights,
+        spineIndex,
+        spineIndex === 0 ? 1 : Math.max(0.72, 0.88 - spineIndex * 0.08)
+      );
+      const spacingMultiplier = this.getMountainVisualArtNumberAt(
+        visualArt.spineSpacingMultipliers,
+        spineIndex,
+        spineIndex === 0 ? 1 : 1.08 + spineIndex * 0.06
+      );
+
+      if (!Number.isFinite(lineLength) || lineLength <= 0) {
+        return [];
+      }
+
+      const features = [];
+      let cursor = lineLength * (spineIndex === 0 ? 0.025 : 0.055);
+      let symbolIndex = 0;
+
+      while (cursor < lineLength * (spineIndex === 0 ? 0.985 : 0.955)) {
+        const t = Math.max(0, Math.min(1, cursor / lineLength));
+        const position = this.getPointAlongLine(spine, cursor);
+
+        if (position) {
+          const middleWeight = Math.max(0, 1 - Math.abs(t - 0.5) * 2);
+          const endWeight = Math.min(1, t / 0.18, (1 - t) / 0.18);
+          const sizeJitter = Math.sin((symbolIndex + 1) * 2.41 + spineIndex * 0.73) * 0.13;
+          const mediumWeight = Math.min(1, middleWeight * 1.55);
+          const largeWeight = Math.max(0, (middleWeight - 0.58) / 0.42);
+          const baseScale = smallScale
+            + (mediumScale - smallScale) * mediumWeight
+            + (largeScale - mediumScale) * largeWeight;
+          const iconScale = this.clamp(
+            (baseScale + sizeJitter) * spineWeight,
+            smallScale * 0.88,
+            largeScale
+          );
+          const normalOffset = (
+            Math.sin((symbolIndex + 1) * 1.73 + spineIndex) * sideOffsetDegrees
+            + Math.sin((symbolIndex + 1) * 4.11 + spineIndex * 1.37) * jitterDegrees * 0.48
+          );
+          const alongOffset = Math.cos((symbolIndex + 1) * 2.87 + spineIndex * 0.61) * jitterDegrees * 0.2;
+          const coordinates = [
+            position.point[0] + position.normal[0] * normalOffset + position.tangent[0] * alongOffset,
+            position.point[1] + position.normal[1] * normalOffset + position.tangent[1] * alongOffset
+          ];
+          const centerOpacityBoost = 0.1 * Math.pow(middleWeight, 1.2);
+          const symbolOpacity = this.clamp(
+            (endFadeOpacity + (0.9 - endFadeOpacity) * endWeight + centerOpacityBoost) * (0.88 + spineWeight * 0.12),
+            0,
+            0.96
+          );
+
+          features.push({
+            type: "Feature",
+            properties: {
+              id: `${target.id}-mountain-symbol-${spineIndex}-${symbolIndex}`,
+              targetId: target.id,
+              name: target.name,
+              physicalFeatureType: target.type,
+              hasStylizedMountainRangeArt: true,
+              spineIndex,
+              spineWeight,
+              iconScale,
+              symbolOpacity
+            },
+            geometry: {
+              type: "Point",
+              coordinates
+            }
+          });
+        }
+
+        const middleWeight = Math.max(0, 1 - Math.abs(t - 0.5) * 2);
+        const irregularSpacing = spacing
+          * spacingMultiplier
+          * (1 + Math.sin((symbolIndex + 1) * 2.19 + spineIndex * 0.91) * 0.24);
+        cursor += Math.max(0.28, irregularSpacing * (1 - middleDensityBoost * Math.pow(middleWeight, 0.8)));
+        symbolIndex += 1;
+      }
+
+      return features;
+    });
+  }
+
+  getMountainVisualArtNumberAt(values, index, fallback) {
+    if (!Array.isArray(values) || !Number.isFinite(values[index])) {
+      return fallback;
+    }
+
+    return values[index];
+  }
+
+  getLineDistance(coordinates) {
+    let distance = 0;
+
+    for (let index = 1; index < coordinates.length; index += 1) {
+      distance += this.getCoordinateDistance(coordinates[index - 1], coordinates[index]);
+    }
+
+    return distance;
+  }
+
+  getCoordinateDistance(first, second) {
+    const longitudeDelta = second[0] - first[0];
+    const latitudeDelta = second[1] - first[1];
+
+    return Math.hypot(longitudeDelta, latitudeDelta);
+  }
+
+  clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  getPointAlongLine(coordinates, targetDistance) {
+    let traversed = 0;
+
+    for (let index = 1; index < coordinates.length; index += 1) {
+      const start = coordinates[index - 1];
+      const end = coordinates[index];
+      const segmentLength = this.getCoordinateDistance(start, end);
+
+      if (segmentLength <= 0) {
+        continue;
+      }
+
+      if (traversed + segmentLength >= targetDistance) {
+        const segmentT = (targetDistance - traversed) / segmentLength;
+        const tangent = [
+          (end[0] - start[0]) / segmentLength,
+          (end[1] - start[1]) / segmentLength
+        ];
+
+        return {
+          point: [
+            start[0] + (end[0] - start[0]) * segmentT,
+            start[1] + (end[1] - start[1]) * segmentT
+          ],
+          tangent,
+          normal: [-tangent[1], tangent[0]]
+        };
+      }
+
+      traversed += segmentLength;
+    }
+
+    return null;
   }
 
   getTargetShapeFeature(target) {
@@ -3638,6 +3934,7 @@ export class MapLibreActivityRunner {
         name: target.name,
         color: target.color,
         physicalFeatureType: target.type,
+        hasStylizedMountainRangeArt: Boolean(this.getMountainRangeVisualArt(target)),
         geometryPrecision: sourceFeature.properties?.geometryPrecision || target.geometryPrecision || null,
         targetPrecision: sourceFeature.properties?.targetPrecision || target.targetPrecision || null,
         isOceanZone: target.type === "zone",
@@ -4660,6 +4957,16 @@ export class MapLibreActivityRunner {
       this.map.setPaintProperty("state-line", "line-width", this.getShapeLineWidthExpression());
     }
 
+    if (this.map.getLayer("mountain-range-corridor")) {
+      this.map.setPaintProperty("mountain-range-corridor", "line-width", this.getMountainRangeCorridorWidthExpression());
+      this.map.setPaintProperty("mountain-range-corridor", "line-opacity", this.getMountainRangeCorridorOpacityExpression());
+    }
+
+    if (this.map.getLayer("mountain-range-symbol-glow")) {
+      this.map.setLayoutProperty("mountain-range-symbol-glow", "icon-size", this.getMountainRangeSymbolGlowSizeExpression());
+      this.map.setPaintProperty("mountain-range-symbol-glow", "icon-opacity", this.getMountainRangeSymbolGlowOpacityExpression());
+    }
+
     if (this.map.getLayer("mountain-range-symbol")) {
       this.map.setLayoutProperty("mountain-range-symbol", "icon-size", this.getMountainRangeSymbolSizeExpression());
       this.map.setPaintProperty("mountain-range-symbol", "icon-opacity", this.getMountainRangeSymbolOpacityExpression());
@@ -4753,10 +5060,15 @@ export class MapLibreActivityRunner {
 
   refreshStudyFilters() {
     const shapeSource = this.map.getSource("target-shapes");
+    const mountainCorridorSource = this.map.getSource("mountain-range-corridors");
     const mountainSymbolSource = this.map.getSource("mountain-range-symbols");
 
     if (shapeSource) {
       shapeSource.setData(this.getTargetShapeGeoJson());
+    }
+
+    if (mountainCorridorSource) {
+      mountainCorridorSource.setData(this.getMountainRangeCorridorGeoJson());
     }
 
     if (mountainSymbolSource) {
@@ -4940,6 +5252,15 @@ export class MapLibreActivityRunner {
     if (this.studyPreviewMode) {
       return [
         "case",
+        ["boolean", ["get", "hasStylizedMountainRangeArt"], false],
+        [
+          "case",
+          ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
+          0.1,
+          ["in", ["get", "id"], ["literal", this.completedIds]],
+          0.08,
+          0.04
+        ],
         ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
         0.98,
         ["in", ["get", "id"], ["literal", this.completedIds]],
@@ -4953,6 +5274,13 @@ export class MapLibreActivityRunner {
     if (this.getDifficultyVisualState().isHard) {
       return [
         "case",
+        ["boolean", ["get", "hasStylizedMountainRangeArt"], false],
+        [
+          "case",
+          ["in", ["get", "id"], ["literal", this.completedIds]],
+          0.08,
+          0
+        ],
         ["in", ["get", "id"], ["literal", this.completedIds]],
         0.96,
         ["==", ["get", "physicalFeatureType"], "mountain-range"],
@@ -4972,6 +5300,13 @@ export class MapLibreActivityRunner {
       ],
       ["in", ["get", "id"], ["literal", this.completedIds]],
       0.96,
+      ["boolean", ["get", "hasStylizedMountainRangeArt"], false],
+      [
+        "case",
+        ["in", ["get", "id"], ["literal", this.getActiveTargetVisualIds()]],
+        0.1,
+        0.045
+      ],
       ["==", ["get", "physicalFeatureType"], "mountain-range"],
       0.2,
       0.78
@@ -5054,6 +5389,15 @@ export class MapLibreActivityRunner {
         0,
         ["boolean", ["get", "suppressInternalTargetLines"], false],
         0,
+        ["boolean", ["get", "hasStylizedMountainRangeArt"], false],
+        [
+          "case",
+          ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
+          0.16,
+          ["in", ["get", "id"], ["literal", this.completedIds]],
+          0.12,
+          0.04
+        ],
         ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
         1,
         ["in", ["get", "id"], ["literal", this.completedIds]],
@@ -5082,6 +5426,13 @@ export class MapLibreActivityRunner {
         0,
         ["boolean", ["get", "suppressInternalTargetLines"], false],
         0,
+        ["boolean", ["get", "hasStylizedMountainRangeArt"], false],
+        [
+          "case",
+          ["in", ["get", "id"], ["literal", this.completedIds]],
+          0.1,
+          0
+        ],
         ["in", ["get", "id"], ["literal", this.completedIds]],
         1,
         0
@@ -5094,6 +5445,13 @@ export class MapLibreActivityRunner {
       0,
       ["boolean", ["get", "suppressInternalTargetLines"], false],
       0,
+      ["boolean", ["get", "hasStylizedMountainRangeArt"], false],
+      [
+        "case",
+        ["in", ["get", "id"], ["literal", this.getActiveTargetVisualIds()]],
+        0.14,
+        0.035
+      ],
       ["==", ["get", "physicalFeatureType"], "mountain-range"],
       0.5,
       1
@@ -5139,12 +5497,31 @@ export class MapLibreActivityRunner {
 
   getMountainRangeSymbolSizeExpression() {
     return [
-      "case",
-      ["in", ["get", "targetId"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
-      0.92,
-      ["in", ["get", "targetId"], ["literal", this.completedIds]],
-      0.82,
-      0.72
+      "*",
+      ["coalesce", ["get", "iconScale"], 0.72],
+      [
+        "case",
+        ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+        1.16,
+        ["in", ["get", "targetId"], ["literal", this.completedIds]],
+        1.06,
+        1
+      ]
+    ];
+  }
+
+  getMountainRangeSymbolGlowSizeExpression() {
+    return [
+      "*",
+      ["coalesce", ["get", "iconScale"], 0.72],
+      [
+        "case",
+        ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+        1.72,
+        ["in", ["get", "targetId"], ["literal", this.completedIds]],
+        1.58,
+        1.46
+      ]
     ];
   }
 
@@ -5156,29 +5533,107 @@ export class MapLibreActivityRunner {
         0.96,
         ["in", ["get", "targetId"], ["literal", this.memoryTrailCorrectHighlightIds]],
         0.96,
-        ["in", ["get", "targetId"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
-        1,
+        ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+        ["min", 1, ["+", ["coalesce", ["get", "symbolOpacity"], 0.62], 0.2]],
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
-        0.88,
-        0.58
+        ["min", 1, ["+", ["coalesce", ["get", "symbolOpacity"], 0.62], 0.12]],
+        ["coalesce", ["get", "symbolOpacity"], 0.58]
       ];
     }
 
     if (this.getDifficultyVisualState().isHard) {
       return [
         "case",
+        ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+        ["min", 1, ["+", ["coalesce", ["get", "symbolOpacity"], 0.62], 0.2]],
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
-        0.88,
+        ["min", 1, ["+", ["coalesce", ["get", "symbolOpacity"], 0.62], 0.12]],
         0
       ];
     }
 
     return [
       "case",
+      ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+      ["min", 1, ["+", ["coalesce", ["get", "symbolOpacity"], 0.62], 0.2]],
       ["in", ["get", "targetId"], ["literal", this.completedIds]],
-      0.88,
-      0.62
+      ["min", 1, ["+", ["coalesce", ["get", "symbolOpacity"], 0.62], 0.12]],
+      ["coalesce", ["get", "symbolOpacity"], 0.62]
     ];
+  }
+
+  getMountainRangeSymbolGlowOpacityExpression() {
+    if (this.getDifficultyVisualState().isHard && !this.studyPreviewMode) {
+      return [
+        "case",
+        ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+        ["min", 0.62, ["+", ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.42], 0.18]],
+        ["in", ["get", "targetId"], ["literal", this.completedIds]],
+        ["min", 0.48, ["+", ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.34], 0.12]],
+        0
+      ];
+    }
+
+    return [
+      "case",
+      ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+      ["min", 0.62, ["+", ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.42], 0.18]],
+      ["in", ["get", "targetId"], ["literal", this.completedIds]],
+      ["min", 0.48, ["+", ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.34], 0.12]],
+      ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.32]
+    ];
+  }
+
+  getMountainRangeCorridorWidthExpression() {
+    return [
+      "*",
+      ["coalesce", ["get", "corridorWidthPx"], 30],
+      [
+        "case",
+        ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+        1.14,
+        ["in", ["get", "targetId"], ["literal", this.completedIds]],
+        1.06,
+        1
+      ]
+    ];
+  }
+
+  getMountainRangeCorridorOpacityExpression() {
+    if (this.getDifficultyVisualState().isHard && !this.studyPreviewMode) {
+      return [
+        "*",
+        ["coalesce", ["get", "corridorOpacityScale"], 1],
+        [
+          "case",
+          ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+          0.2,
+          ["in", ["get", "targetId"], ["literal", this.completedIds]],
+          0.16,
+          0
+        ]
+      ];
+    }
+
+    return [
+      "*",
+      ["coalesce", ["get", "corridorOpacityScale"], 1],
+      [
+        "case",
+        ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+        0.2,
+        ["in", ["get", "targetId"], ["literal", this.completedIds]],
+        0.16,
+        0.11
+      ]
+    ];
+  }
+
+  getActiveTargetVisualIds() {
+    return [...new Set([
+      ...this.getMemoryTrailActiveHighlightIds(),
+      this.selectedTargetId
+    ].filter(Boolean))];
   }
 
   getPoliticalFillExpression() {
@@ -5336,6 +5791,63 @@ export class MapLibreActivityRunner {
   }
 
   ensureMountainRangeImages() {
+    this.addMountainRangeGlowImage();
+    this.addMountainRangeGlyphImage();
+  }
+
+  addMountainRangeGlowImage() {
+    const id = "mappa-mountain-range-glow";
+
+    if (this.map.hasImage(id)) {
+      return;
+    }
+
+    const size = 88;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      return;
+    }
+
+    context.clearRect(0, 0, size, size);
+    context.lineJoin = "round";
+    context.lineCap = "round";
+    context.shadowColor = "rgba(180, 104, 24, 0.42)";
+    context.shadowBlur = 18;
+
+    this.drawMountainGlowGlyph(context, [
+      [12, 62],
+      [31, 34],
+      [49, 62]
+    ]);
+    this.drawMountainGlowGlyph(context, [
+      [28, 65],
+      [52, 20],
+      [76, 65]
+    ]);
+    this.drawMountainGlowGlyph(context, [
+      [4, 67],
+      [22, 44],
+      [39, 67]
+    ]);
+
+    context.shadowColor = "transparent";
+    const gradient = context.createRadialGradient(45, 48, 8, 45, 48, 42);
+    gradient.addColorStop(0, "rgba(245, 158, 11, 0.22)");
+    gradient.addColorStop(0.58, "rgba(217, 119, 6, 0.12)");
+    gradient.addColorStop(1, "rgba(217, 119, 6, 0)");
+    context.fillStyle = gradient;
+    context.beginPath();
+    context.ellipse(45, 51, 39, 24, -0.16, 0, Math.PI * 2);
+    context.fill();
+
+    this.map.addImage(id, context.getImageData(0, 0, size, size), { pixelRatio: 2 });
+  }
+
+  addMountainRangeGlyphImage() {
     const id = "mappa-mountain-range-glyph";
 
     if (this.map.hasImage(id)) {
@@ -5355,9 +5867,9 @@ export class MapLibreActivityRunner {
     context.clearRect(0, 0, size, size);
     context.lineJoin = "round";
     context.lineCap = "round";
-    context.shadowColor = "rgba(68, 36, 8, 0.18)";
-    context.shadowBlur = 4;
-    context.shadowOffsetY = 1;
+    context.shadowColor = "rgba(68, 36, 8, 0.24)";
+    context.shadowBlur = 5;
+    context.shadowOffsetY = 1.2;
 
     this.drawMountainGlyph(context, [
       [8, 39],
@@ -5386,15 +5898,25 @@ export class MapLibreActivityRunner {
     this.map.addImage(id, context.getImageData(0, 0, size, size), { pixelRatio: 2 });
   }
 
+  drawMountainGlowGlyph(context, points) {
+    context.beginPath();
+    context.moveTo(points[0][0], points[0][1]);
+    context.lineTo(points[1][0], points[1][1]);
+    context.lineTo(points[2][0], points[2][1]);
+    context.closePath();
+    context.fillStyle = "rgba(245, 158, 11, 0.3)";
+    context.fill();
+  }
+
   drawMountainGlyph(context, points) {
     context.beginPath();
     context.moveTo(points[0][0], points[0][1]);
     context.lineTo(points[1][0], points[1][1]);
     context.lineTo(points[2][0], points[2][1]);
     context.closePath();
-    context.fillStyle = "rgba(183, 121, 31, 0.74)";
-    context.strokeStyle = "rgba(124, 63, 18, 0.88)";
-    context.lineWidth = 2.8;
+    context.fillStyle = "rgba(184, 113, 29, 0.84)";
+    context.strokeStyle = "rgba(92, 49, 16, 0.9)";
+    context.lineWidth = 3.1;
     context.fill();
     context.stroke();
 
@@ -5403,8 +5925,8 @@ export class MapLibreActivityRunner {
     context.lineTo(points[1][0] - 4, points[1][1] + 10);
     context.lineTo(points[1][0] + 1, points[1][1] + 8);
     context.lineTo(points[1][0] + 5, points[1][1] + 13);
-    context.strokeStyle = "rgba(255, 247, 237, 0.7)";
-    context.lineWidth = 2;
+    context.strokeStyle = "rgba(255, 247, 237, 0.82)";
+    context.lineWidth = 2.2;
     context.stroke();
   }
 
@@ -5558,7 +6080,7 @@ export class MapLibreActivityRunner {
 
   updateDifficultyLayerVisibility() {
     if (!this.map || this.currentView !== "study") {
-      ["ocean-target-raster", "state-fill", "state-line", "mountain-range-symbol", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
+      ["ocean-target-raster", "state-fill", "state-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
         if (this.map?.getLayer(layerId)) {
           this.map.setLayoutProperty(layerId, "visibility", "none");
         }
@@ -5582,6 +6104,14 @@ export class MapLibreActivityRunner {
 
     if (this.map.getLayer("state-line")) {
       this.map.setLayoutProperty("state-line", "visibility", showGuidedTargets ? "visible" : "none");
+    }
+
+    if (this.map.getLayer("mountain-range-corridor")) {
+      this.map.setLayoutProperty("mountain-range-corridor", "visibility", showGuidedTargets ? "visible" : "none");
+    }
+
+    if (this.map.getLayer("mountain-range-symbol-glow")) {
+      this.map.setLayoutProperty("mountain-range-symbol-glow", "visibility", showGuidedTargets ? "visible" : "none");
     }
 
     if (this.map.getLayer("mountain-range-symbol")) {
@@ -5625,7 +6155,7 @@ export class MapLibreActivityRunner {
   }
 
   setStudyVisibility(visibility) {
-    ["ocean-target-raster", "state-fill", "state-line", "mountain-range-symbol", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
+    ["ocean-target-raster", "state-fill", "state-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
       if (this.map.getLayer(layerId)) {
         this.map.setLayoutProperty(layerId, "visibility", visibility);
       }

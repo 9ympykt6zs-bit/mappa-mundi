@@ -11,6 +11,49 @@
         "geometryPrecision": "approximate",
         "targetPrecision": "general-location",
         "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Rockies stylized prototype",
+          "spines": [
+            [
+              [-113.3, 48.4],
+              [-112.2, 47.0],
+              [-111.1, 45.1],
+              [-110.3, 43.4]
+            ],
+            [
+              [-111.5, 45.3],
+              [-110.2, 43.6],
+              [-109.0, 41.7],
+              [-108.2, 39.8],
+              [-107.4, 38.4]
+            ],
+            [
+              [-109.8, 44.0],
+              [-108.7, 42.4],
+              [-107.7, 40.6],
+              [-106.7, 38.7],
+              [-105.9, 37.0]
+            ],
+            [
+              [-108.5, 39.1],
+              [-107.2, 37.5],
+              [-106.2, 36.1],
+              [-105.5, 35.2]
+            ]
+          ],
+          "spineWeights": [0.82, 1.0, 0.96, 0.72],
+          "spineSpacingMultipliers": [1.08, 0.76, 0.84, 1.04],
+          "corridorOpacityScales": [0.62, 1.0, 0.9, 0.54],
+          "corridorWidthPx": 56,
+          "corridorBlurPx": 24,
+          "symbolSpacingDegrees": 0.82,
+          "middleDensityBoost": 0.56,
+          "jitterDegrees": 0.28,
+          "sideOffsetDegrees": 0.16,
+          "sizeRange": [0.68, 1.08, 1.68],
+          "endFadeOpacity": 0.18
+        },
         "symbolAnchors": [
           [-106.6, 35.6],
           [-107.7, 38.6],
