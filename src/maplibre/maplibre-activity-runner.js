@@ -2340,6 +2340,8 @@ export class MapLibreActivityRunner {
           0,
           ["boolean", ["get", "suppressInternalTargetLines"], false],
           0,
+          ["boolean", ["get", "hasStylizedMountainRangeArt"], false],
+          0,
           0.01
         ]
       }
@@ -5290,14 +5292,7 @@ export class MapLibreActivityRunner {
       return [
         "case",
         ["boolean", ["get", "hasStylizedMountainRangeArt"], false],
-        [
-          "case",
-          ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
-          0.1,
-          ["in", ["get", "id"], ["literal", this.completedIds]],
-          0.08,
-          0.04
-        ],
+        0,
         ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
         0.98,
         ["in", ["get", "id"], ["literal", this.completedIds]],
@@ -5312,12 +5307,7 @@ export class MapLibreActivityRunner {
       return [
         "case",
         ["boolean", ["get", "hasStylizedMountainRangeArt"], false],
-        [
-          "case",
-          ["in", ["get", "id"], ["literal", this.completedIds]],
-          0.08,
-          0
-        ],
+        0,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         0.96,
         ["==", ["get", "physicalFeatureType"], "mountain-range"],
@@ -5338,12 +5328,7 @@ export class MapLibreActivityRunner {
       ["in", ["get", "id"], ["literal", this.completedIds]],
       0.96,
       ["boolean", ["get", "hasStylizedMountainRangeArt"], false],
-      [
-        "case",
-        ["in", ["get", "id"], ["literal", this.getActiveTargetVisualIds()]],
-        0.1,
-        0.045
-      ],
+      0,
       ["==", ["get", "physicalFeatureType"], "mountain-range"],
       0.2,
       0.78
@@ -5427,14 +5412,7 @@ export class MapLibreActivityRunner {
         ["boolean", ["get", "suppressInternalTargetLines"], false],
         0,
         ["boolean", ["get", "hasStylizedMountainRangeArt"], false],
-        [
-          "case",
-          ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
-          0.16,
-          ["in", ["get", "id"], ["literal", this.completedIds]],
-          0.12,
-          0.04
-        ],
+        0,
         ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
         1,
         ["in", ["get", "id"], ["literal", this.completedIds]],
@@ -5464,12 +5442,7 @@ export class MapLibreActivityRunner {
         ["boolean", ["get", "suppressInternalTargetLines"], false],
         0,
         ["boolean", ["get", "hasStylizedMountainRangeArt"], false],
-        [
-          "case",
-          ["in", ["get", "id"], ["literal", this.completedIds]],
-          0.1,
-          0
-        ],
+        0,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         1,
         0
@@ -5483,12 +5456,7 @@ export class MapLibreActivityRunner {
       ["boolean", ["get", "suppressInternalTargetLines"], false],
       0,
       ["boolean", ["get", "hasStylizedMountainRangeArt"], false],
-      [
-        "case",
-        ["in", ["get", "id"], ["literal", this.getActiveTargetVisualIds()]],
-        0.14,
-        0.035
-      ],
+      0,
       ["==", ["get", "physicalFeatureType"], "mountain-range"],
       0.5,
       1

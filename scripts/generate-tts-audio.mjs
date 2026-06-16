@@ -85,10 +85,39 @@ const bodyOfWaterInstructionPhrases = [
 ];
 
 const mountainRangeInstructionPhrases = [
+  "Choose the matching mountain range.",
   "Find the named mountain range",
+  "Find the named mountain ranges",
+  "Name this mountain range",
   "Name these mountain ranges",
   "Name the highlighted mountain range",
-  "Tap the highlighted mountain range."
+  "Name the highlighted mountain ranges",
+  "Practice: what mountain range is this?",
+  "Tap the mountain range named below.",
+  "Tap the highlighted mountain range.",
+  "Tap the highlighted mountain range. Then repeat its name.",
+  "What mountain range is this?"
+];
+
+const proofSheetMountainRangeLabels = [
+  "Adirondack Mountains",
+  "Allegheny Mountains",
+  "Alps",
+  "Blue Ridge Mountains",
+  "Carpathians",
+  "Cascade Mountains",
+  "Caucasus",
+  "Cumberland Mountains",
+  "Great Smoky Mountains",
+  "Green Mountains",
+  "Himalayas",
+  "Pyrenees",
+  "Rocky Mountains",
+  "Sierra Nevada",
+  "Sierra Nevadas",
+  "Ural",
+  "Ural Mountains",
+  "White Mountains"
 ];
 
 const instructionPhrases = [
@@ -288,6 +317,11 @@ async function main() {
 
 async function collectChipLabels() {
   const labels = new Map();
+  addChipLabelEntries(labels, proofSheetMountainRangeLabels, {
+    sourceFile: "proof-sheet-mountain-ranges",
+    sourceContext: "CC proof-sheet mountain ranges"
+  });
+
   const files = (await readdir(dataDir))
     .filter((file) => file.endsWith(".json"))
     .sort((first, second) => first.localeCompare(second));
@@ -299,12 +333,10 @@ async function collectChipLabels() {
     const sourceContexts = getActivitySourceContexts(file, data);
 
     for (const target of targets) {
-      for (const label of collectTargetLabels(target)) {
-        const entry = labels.get(label) || { text: label, sourceFiles: new Set(), sourceContexts: new Set() };
-        entry.sourceFiles.add(file);
-        sourceContexts.forEach((sourceContext) => entry.sourceContexts.add(sourceContext));
-        labels.set(label, entry);
-      }
+      addChipLabelEntries(labels, collectTargetLabels(target), {
+        sourceFile: file,
+        sourceContexts
+      });
     }
   }
 
@@ -315,6 +347,29 @@ async function collectChipLabels() {
       sourceContexts: Array.from(entry.sourceContexts).sort((first, second) => first.localeCompare(second))
     }))
     .sort((first, second) => first.text.localeCompare(second.text));
+}
+
+function addChipLabelEntries(labels, candidateLabels, options = {}) {
+  const sourceFiles = [
+    options.sourceFile,
+    ...(Array.isArray(options.sourceFiles) ? options.sourceFiles : [])
+  ].filter(Boolean);
+  const sourceContexts = [
+    options.sourceContext,
+    ...(Array.isArray(options.sourceContexts) ? options.sourceContexts : [])
+  ]
+    .map(normalizeSpokenText)
+    .filter(Boolean);
+
+  candidateLabels
+    .map(normalizeSpokenText)
+    .filter(Boolean)
+    .forEach((label) => {
+      const entry = labels.get(label) || { text: label, sourceFiles: new Set(), sourceContexts: new Set() };
+      sourceFiles.forEach((sourceFile) => entry.sourceFiles.add(sourceFile));
+      sourceContexts.forEach((sourceContext) => entry.sourceContexts.add(sourceContext));
+      labels.set(label, entry);
+    });
 }
 
 async function parseJsonFile(filePath) {
@@ -424,6 +479,7 @@ function pluralizeInstructionNoun(noun = "place") {
     "union territory": "union territories",
     "autonomous community": "autonomous communities",
     "body of water": "bodies of water",
+    "mountain range": "mountain ranges",
     location: "locations"
   };
 
