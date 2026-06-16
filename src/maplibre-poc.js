@@ -1,4 +1,4 @@
-import { journeyPresets } from "./journey-presets.js?v=20260614-western-mountains";
+import { journeyPresets } from "./journey-presets.js?v=20260616-mountain-active-highlight";
 import { trackEvent } from "./analytics.js?v=20260601-instruction-target-nouns";
 import {
   clearActiveJourney,
@@ -147,6 +147,7 @@ const activityDataPaths = [
   "assets/maps/data/us-states-capitals-10.json",
   "assets/maps/data/us-states-capitals-11.json",
   "assets/maps/data/us-physical-lakes.json",
+  "assets/maps/data/us-physical-eastern-mountains.json",
   "assets/maps/data/us-physical-western-mountains.json",
   "assets/maps/data/north-america-physical-canadian-lakes.json",
   "assets/maps/data/africa-physical-african-lakes.json",
@@ -164,7 +165,7 @@ const oceanZonesPath = "assets/maps/data/ocean-zones.geojson";
 const coContinentOverridesPath = "assets/data/co-continent-overrides.json";
 const coContinentLandPath = "assets/maps/data/continents-oceans-land.geojson";
 const inlandWatersPath = "assets/maps/data/inland-waters.geojson";
-const mountainRangesPath = "assets/data/physical-features/us-mountain-ranges.geojson";
+const mountainRangesPath = "assets/data/physical-features/us-mountain-ranges.geojson?v=20260616-mountain-active-highlight";
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const northAmericaAdmin1Path = "assets/maps/data/maplibre-north-america-admin1.geojson";
@@ -744,6 +745,7 @@ const US_STATE_CAPITAL_SECTION_VIEWS = {
 const US_PHYSICAL_FEATURE_MENU_ITEMS = [
   { label: "Northern Appalachian Mountains", disabled: true, badge: "Coming soon" },
   { label: "Southern Appalachian Mountains", disabled: true, badge: "Coming soon" },
+  { label: "Eastern U.S. Mountains", activityId: "us-physical-eastern-mountains" },
   { label: "Western U.S. Mountains", activityId: "us-physical-western-mountains" },
   { label: "Northwest Mountains", disabled: true, badge: "Coming soon" },
   { label: "U.S. Lakes", activityId: "us-physical-lakes" },
@@ -1990,6 +1992,13 @@ const activityCatalogMetadata = {
     description: "Practice U.S. lake targets using existing inland-water polygons.",
     sortOrder: 7.6,
     sectionNumber: 60
+  },
+  "us-physical-eastern-mountains": {
+    mapSet: "north-america",
+    category: "Physical Features",
+    description: "Practice approximate eastern U.S. mountain range learning regions.",
+    sortOrder: 7.64,
+    sectionNumber: 60.5
   },
   "us-physical-western-mountains": {
     mapSet: "north-america",
@@ -3474,7 +3483,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260614-western-mountains"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260616-mountain-active-highlight"),
       import("./chip-speech.js?v=20260602-daily-trail-review-chips")
     ]).then(([
       ,
@@ -7119,6 +7128,10 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     adaptive: true,
     source: options.source || "memory-trail",
     activityId: activity?.id || "",
+    maxNewTargets: Number.isFinite(Number(activity?.memoryTrailNewTargetLimit))
+      ? Math.max(1, Math.floor(Number(activity.memoryTrailNewTargetLimit)))
+      : null,
+    requireAllTargets: Boolean(activity?.memoryTrailRequireAllTargets),
     sessionSeconds,
     startedAt: Date.now(),
     sessionPhase: "learn",
@@ -7297,7 +7310,11 @@ function introducePracticeWindow(memoryTrail, practiceWindow = [], newTargets = 
 }
 
 function getMaxNewTargetsForSession(memoryTrail) {
-  return Math.min(MAX_NEW_TARGETS_PER_SESSION, memoryTrail?.targetPoolIds?.length || 0);
+  const targetPoolCount = memoryTrail?.targetPoolIds?.length || 0;
+  const configuredLimit = Number.isFinite(memoryTrail?.maxNewTargets)
+    ? memoryTrail.maxNewTargets
+    : MAX_NEW_TARGETS_PER_SESSION;
+  return Math.min(configuredLimit, targetPoolCount);
 }
 
 function getTargetById(memoryTrail, targetId) {
@@ -9293,7 +9310,10 @@ function shouldEndMemoryTrailSession(memoryTrail) {
   }
 
   const introducedStats = getIntroducedMemoryTrailStats(memoryTrail);
-  return introducedStats.length >= Math.min(MIN_NEW_TARGETS_PER_SESSION, memoryTrail.targetPoolIds.length)
+  const requiredIntroducedCount = memoryTrail.requireAllTargets
+    ? memoryTrail.targetPoolIds.length
+    : Math.min(MIN_NEW_TARGETS_PER_SESSION, memoryTrail.targetPoolIds.length);
+  return introducedStats.length >= requiredIntroducedCount
     && introducedStats.every((stats) => stats.isSessionLearned || stats.totalRetrievalCorrect >= getStatsRetrievalCorrectTarget(stats, memoryTrail))
     && getWeakTargets(memoryTrail).every((stats) => stats.currentCorrectStreak > 0);
 }

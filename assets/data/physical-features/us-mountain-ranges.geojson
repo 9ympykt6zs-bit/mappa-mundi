@@ -209,6 +209,396 @@
           [-119.9, 35.1]
         ]]
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "white-mountains",
+        "name": "White Mountains",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "White Mountains stylized prototype",
+          "spines": [
+            [
+              [-71.95, 43.7],
+              [-71.55, 44.1],
+              [-71.25, 44.45]
+            ],
+            [
+              [-71.35, 43.75],
+              [-71.05, 44.08],
+              [-70.85, 44.35]
+            ]
+          ],
+          "spineWeights": [0.72, 0.48],
+          "spineSpacingMultipliers": [0.74, 0.98],
+          "corridorOpacityScales": [0.58, 0.36],
+          "corridorWidthPx": 24,
+          "corridorBlurPx": 10,
+          "symbolSpacingDegrees": 0.36,
+          "middleDensityBoost": 0.24,
+          "jitterDegrees": 0.08,
+          "sideOffsetDegrees": 0.06,
+          "sizeRange": [0.46, 0.72, 0.98],
+          "endFadeOpacity": 0.28
+        },
+        "symbolAnchors": [
+          [-71.75, 43.85],
+          [-71.28, 44.22]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-72.25, 43.55],
+          [-70.75, 43.55],
+          [-70.55, 44.45],
+          [-71.15, 44.9],
+          [-72.2, 44.75],
+          [-72.45, 44.1],
+          [-72.25, 43.55]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "green-mountains",
+        "name": "Green Mountains",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Green Mountains stylized prototype",
+          "spines": [
+            [
+              [-72.92, 42.85],
+              [-72.82, 43.55],
+              [-72.72, 44.2],
+              [-72.55, 44.9]
+            ],
+            [
+              [-72.52, 42.95],
+              [-72.45, 43.65],
+              [-72.35, 44.35]
+            ]
+          ],
+          "spineWeights": [0.7, 0.44],
+          "spineSpacingMultipliers": [0.76, 1.04],
+          "corridorOpacityScales": [0.58, 0.32],
+          "corridorWidthPx": 22,
+          "corridorBlurPx": 9,
+          "symbolSpacingDegrees": 0.42,
+          "middleDensityBoost": 0.28,
+          "jitterDegrees": 0.07,
+          "sideOffsetDegrees": 0.05,
+          "sizeRange": [0.44, 0.68, 0.92],
+          "endFadeOpacity": 0.3
+        },
+        "symbolAnchors": [
+          [-72.85, 43.2],
+          [-72.66, 44.1],
+          [-72.5, 44.75]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-73.15, 42.72],
+          [-72.1, 42.72],
+          [-72.0, 45.0],
+          [-72.85, 45.0],
+          [-73.1, 44.1],
+          [-73.15, 42.72]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "adirondack-mountains",
+        "name": "Adirondack Mountains",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Adirondack Mountains stylized prototype",
+          "spines": [
+            [
+              [-75.35, 43.35],
+              [-74.85, 43.85],
+              [-74.35, 44.35],
+              [-73.85, 44.65]
+            ],
+            [
+              [-74.85, 43.25],
+              [-74.35, 43.75],
+              [-73.75, 44.2]
+            ]
+          ],
+          "spineWeights": [0.72, 0.5],
+          "spineSpacingMultipliers": [0.72, 0.96],
+          "corridorOpacityScales": [0.6, 0.38],
+          "corridorWidthPx": 28,
+          "corridorBlurPx": 11,
+          "symbolSpacingDegrees": 0.42,
+          "middleDensityBoost": 0.32,
+          "jitterDegrees": 0.1,
+          "sideOffsetDegrees": 0.08,
+          "sizeRange": [0.48, 0.76, 1.02],
+          "endFadeOpacity": 0.28
+        },
+        "symbolAnchors": [
+          [-75.0, 43.55],
+          [-74.45, 44.05],
+          [-73.9, 44.45]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-75.65, 43.05],
+          [-73.55, 43.05],
+          [-73.15, 44.55],
+          [-74.35, 45.25],
+          [-75.75, 44.55],
+          [-75.65, 43.05]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "allegheny-mountains",
+        "name": "Allegheny Mountains",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Allegheny Mountains stylized prototype",
+          "spines": [
+            [
+              [-80.45, 37.7],
+              [-79.75, 38.75],
+              [-79.25, 39.75],
+              [-78.45, 41.35]
+            ],
+            [
+              [-79.55, 37.95],
+              [-78.95, 39.0],
+              [-78.2, 40.55]
+            ]
+          ],
+          "spineWeights": [0.76, 0.54],
+          "spineSpacingMultipliers": [0.68, 0.92],
+          "corridorOpacityScales": [0.6, 0.4],
+          "corridorWidthPx": 30,
+          "corridorBlurPx": 12,
+          "symbolSpacingDegrees": 0.54,
+          "middleDensityBoost": 0.34,
+          "jitterDegrees": 0.12,
+          "sideOffsetDegrees": 0.08,
+          "sizeRange": [0.5, 0.78, 1.08],
+          "endFadeOpacity": 0.28
+        },
+        "symbolAnchors": [
+          [-80.1, 38.1],
+          [-79.3, 39.5],
+          [-78.45, 41.0]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-80.95, 37.5],
+          [-78.2, 38.1],
+          [-77.35, 41.15],
+          [-78.55, 42.25],
+          [-80.4, 41.4],
+          [-81.15, 39.2],
+          [-80.95, 37.5]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "blue-ridge-mountains",
+        "name": "Blue Ridge Mountains",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Blue Ridge Mountains stylized prototype",
+          "spines": [
+            [
+              [-84.05, 34.55],
+              [-82.65, 35.45],
+              [-81.25, 36.25],
+              [-79.75, 37.25],
+              [-78.35, 38.35],
+              [-77.45, 39.25]
+            ],
+            [
+              [-83.15, 34.7],
+              [-81.8, 35.65],
+              [-80.4, 36.55],
+              [-78.95, 37.55]
+            ]
+          ],
+          "spineWeights": [0.78, 0.5],
+          "spineSpacingMultipliers": [0.66, 0.94],
+          "corridorOpacityScales": [0.64, 0.34],
+          "corridorWidthPx": 28,
+          "corridorBlurPx": 12,
+          "symbolSpacingDegrees": 0.5,
+          "middleDensityBoost": 0.36,
+          "jitterDegrees": 0.12,
+          "sideOffsetDegrees": 0.07,
+          "sizeRange": [0.5, 0.8, 1.12],
+          "endFadeOpacity": 0.26
+        },
+        "symbolAnchors": [
+          [-83.6, 34.8],
+          [-81.8, 35.8],
+          [-79.9, 37.1],
+          [-78.1, 38.6]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-84.45, 34.15],
+          [-83.05, 33.8],
+          [-77.05, 38.45],
+          [-77.35, 39.7],
+          [-79.2, 38.9],
+          [-84.65, 35.2],
+          [-84.45, 34.15]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "great-smoky-mountains",
+        "name": "Great Smoky Mountains",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Great Smoky Mountains stylized prototype",
+          "spines": [
+            [
+              [-84.2, 35.35],
+              [-83.65, 35.58],
+              [-83.05, 35.82]
+            ],
+            [
+              [-84.0, 35.8],
+              [-83.45, 36.02],
+              [-82.95, 36.12]
+            ]
+          ],
+          "spineWeights": [0.78, 0.52],
+          "spineSpacingMultipliers": [0.6, 0.86],
+          "corridorOpacityScales": [0.64, 0.4],
+          "corridorWidthPx": 24,
+          "corridorBlurPx": 10,
+          "symbolSpacingDegrees": 0.28,
+          "middleDensityBoost": 0.32,
+          "jitterDegrees": 0.07,
+          "sideOffsetDegrees": 0.05,
+          "sizeRange": [0.48, 0.76, 1.06],
+          "endFadeOpacity": 0.28
+        },
+        "symbolAnchors": [
+          [-84.0, 35.45],
+          [-83.45, 35.72],
+          [-83.05, 35.98]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-84.45, 35.1],
+          [-82.7, 35.1],
+          [-82.5, 36.05],
+          [-83.4, 36.42],
+          [-84.55, 36.0],
+          [-84.45, 35.1]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cumberland-mountains",
+        "name": "Cumberland Mountains",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Cumberland Mountains stylized prototype",
+          "spines": [
+            [
+              [-85.25, 35.55],
+              [-84.75, 36.2],
+              [-84.15, 36.85],
+              [-83.45, 37.55]
+            ],
+            [
+              [-84.55, 35.7],
+              [-84.05, 36.35],
+              [-83.45, 37.05]
+            ]
+          ],
+          "spineWeights": [0.72, 0.5],
+          "spineSpacingMultipliers": [0.66, 0.94],
+          "corridorOpacityScales": [0.58, 0.36],
+          "corridorWidthPx": 26,
+          "corridorBlurPx": 10,
+          "symbolSpacingDegrees": 0.42,
+          "middleDensityBoost": 0.32,
+          "jitterDegrees": 0.09,
+          "sideOffsetDegrees": 0.06,
+          "sizeRange": [0.48, 0.74, 1.02],
+          "endFadeOpacity": 0.28
+        },
+        "symbolAnchors": [
+          [-85.0, 35.8],
+          [-84.3, 36.6],
+          [-83.55, 37.35]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-85.75, 35.4],
+          [-83.9, 35.5],
+          [-82.85, 37.1],
+          [-83.55, 38.1],
+          [-85.15, 37.2],
+          [-85.95, 35.9],
+          [-85.75, 35.4]
+        ]]
+      }
     }
   ]
 }

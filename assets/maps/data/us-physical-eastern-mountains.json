@@ -1,0 +1,104 @@
+{
+  "id": "us-physical-eastern-mountains",
+  "title": "Eastern U.S. Mountains",
+  "targetNoun": "mountain range",
+  "promptText": "Name these mountain ranges",
+  "visibleAnswerLimit": 7,
+  "memoryTrailNewTargetLimit": 7,
+  "memoryTrailRequireAllTargets": true,
+  "map": {
+    "region": "united-states",
+    "regionView": { "center": [-77.8, 39.2], "zoom": 3.55 },
+    "studyView": {
+      "bounds": [[-86.4, 33.2], [-69.8, 45.5]],
+      "padding": { "top": 58, "right": 58, "bottom": 96, "left": 58 },
+      "duration": 1050
+    }
+  },
+  "features": [
+    {
+      "id": "white-mountains",
+      "name": "White Mountains",
+      "type": "mountain-range",
+      "shape": "path",
+      "sourceFeatureId": "white-mountains",
+      "sourceName": "White Mountains",
+      "color": "#a16207",
+      "labelAnchor": [-71.35, 44.15],
+      "labelFontSize": 10,
+      "labelRotation": -10
+    },
+    {
+      "id": "green-mountains",
+      "name": "Green Mountains",
+      "type": "mountain-range",
+      "shape": "path",
+      "sourceFeatureId": "green-mountains",
+      "sourceName": "Green Mountains",
+      "color": "#8f6f20",
+      "labelAnchor": [-72.75, 43.95],
+      "labelFontSize": 10,
+      "labelRotation": -8
+    },
+    {
+      "id": "adirondack-mountains",
+      "name": "Adirondack Mountains",
+      "type": "mountain-range",
+      "shape": "path",
+      "sourceFeatureId": "adirondack-mountains",
+      "sourceName": "Adirondack Mountains",
+      "color": "#9a6a1a",
+      "labelAnchor": [-74.45, 44.1],
+      "labelFontSize": 10,
+      "labelRotation": -12
+    },
+    {
+      "id": "allegheny-mountains",
+      "name": "Allegheny Mountains",
+      "type": "mountain-range",
+      "shape": "path",
+      "sourceFeatureId": "allegheny-mountains",
+      "sourceName": "Allegheny Mountains",
+      "color": "#92400e",
+      "labelAnchor": [-79.2, 39.6],
+      "labelFontSize": 10,
+      "labelRotation": -18
+    },
+    {
+      "id": "blue-ridge-mountains",
+      "name": "Blue Ridge Mountains",
+      "type": "mountain-range",
+      "shape": "path",
+      "sourceFeatureId": "blue-ridge-mountains",
+      "sourceName": "Blue Ridge Mountains",
+      "color": "#7c4a16",
+      "labelAnchor": [-80.8, 36.5],
+      "labelFontSize": 10,
+      "labelRotation": -34
+    },
+    {
+      "id": "great-smoky-mountains",
+      "name": "Great Smoky Mountains",
+      "type": "mountain-range",
+      "shape": "path",
+      "sourceFeatureId": "great-smoky-mountains",
+      "sourceName": "Great Smoky Mountains",
+      "color": "#a15c1a",
+      "labelAnchor": [-83.55, 35.65],
+      "labelFontSize": 10,
+      "labelRotation": -15
+    },
+    {
+      "id": "cumberland-mountains",
+      "name": "Cumberland Mountains",
+      "type": "mountain-range",
+      "shape": "path",
+      "sourceFeatureId": "cumberland-mountains",
+      "sourceName": "Cumberland Mountains",
+      "color": "#854d0e",
+      "labelAnchor": [-84.3, 36.65],
+      "labelFontSize": 10,
+      "labelRotation": -23
+    }
+  ]
+}

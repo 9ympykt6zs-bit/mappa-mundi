@@ -22,6 +22,8 @@ export function normalizeActivity(rawActivity, overrides = {}) {
     targetNoun: overrides.targetNoun || rawActivity.targetNoun || inferTargetNoun(rawTargets),
     defaultMode: overrides.defaultMode || rawActivity.defaultMode || "word-bank",
     visibleAnswerLimit: overrides.visibleAnswerLimit ?? rawActivity.visibleAnswerLimit ?? null,
+    memoryTrailNewTargetLimit: overrides.memoryTrailNewTargetLimit ?? rawActivity.memoryTrailNewTargetLimit ?? null,
+    memoryTrailRequireAllTargets: overrides.memoryTrailRequireAllTargets ?? rawActivity.memoryTrailRequireAllTargets ?? false,
     map,
     sources: overrides.sources || rawActivity.sources || [],
     targetLayers: overrides.targetLayers || rawActivity.targetLayers || [],

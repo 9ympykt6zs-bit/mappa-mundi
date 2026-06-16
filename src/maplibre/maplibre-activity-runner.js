@@ -5507,10 +5507,10 @@ export class MapLibreActivityRunner {
       [
         "case",
         ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
-        1.16,
+        1.34,
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
-        1.06,
-        1
+        1.02,
+        0.92
       ]
     ];
   }
@@ -5522,10 +5522,10 @@ export class MapLibreActivityRunner {
       [
         "case",
         ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
-        1.72,
+        2.18,
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
-        1.58,
-        1.46
+        1.46,
+        1.28
       ]
     ];
   }
@@ -5541,10 +5541,10 @@ export class MapLibreActivityRunner {
         ["in", ["get", "targetId"], ["literal", this.memoryTrailCorrectHighlightIds]],
         0.96,
         ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
-        ["min", 1, ["+", ["coalesce", ["get", "symbolOpacity"], 0.62], 0.2]],
+        1,
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
-        ["min", 1, ["+", ["coalesce", ["get", "symbolOpacity"], 0.62], 0.12]],
-        ["coalesce", ["get", "symbolOpacity"], 0.58]
+        ["min", 0.9, ["+", ["coalesce", ["get", "symbolOpacity"], 0.58], 0.08]],
+        ["*", ["coalesce", ["get", "symbolOpacity"], 0.58], 0.82]
       ];
     }
 
@@ -5554,9 +5554,9 @@ export class MapLibreActivityRunner {
         ["boolean", ["get", "visualOnlyContinuation"], false],
         ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.46],
         ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
-        ["min", 1, ["+", ["coalesce", ["get", "symbolOpacity"], 0.62], 0.2]],
+        1,
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
-        ["min", 1, ["+", ["coalesce", ["get", "symbolOpacity"], 0.62], 0.12]],
+        ["min", 0.9, ["+", ["coalesce", ["get", "symbolOpacity"], 0.58], 0.08]],
         0
       ];
     }
@@ -5566,10 +5566,10 @@ export class MapLibreActivityRunner {
       ["boolean", ["get", "visualOnlyContinuation"], false],
       ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.58],
       ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
-      ["min", 1, ["+", ["coalesce", ["get", "symbolOpacity"], 0.62], 0.2]],
+      1,
       ["in", ["get", "targetId"], ["literal", this.completedIds]],
-      ["min", 1, ["+", ["coalesce", ["get", "symbolOpacity"], 0.62], 0.12]],
-      ["coalesce", ["get", "symbolOpacity"], 0.62]
+      ["min", 0.9, ["+", ["coalesce", ["get", "symbolOpacity"], 0.58], 0.08]],
+      ["*", ["coalesce", ["get", "symbolOpacity"], 0.62], 0.82]
     ];
   }
 
@@ -5578,9 +5578,9 @@ export class MapLibreActivityRunner {
       return [
         "case",
         ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
-        ["min", 0.62, ["+", ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.42], 0.18]],
+        ["min", 0.9, ["+", ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.64], 0.28]],
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
-        ["min", 0.48, ["+", ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.34], 0.12]],
+        ["min", 0.42, ["+", ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.28], 0.08]],
         0
       ];
     }
@@ -5588,10 +5588,10 @@ export class MapLibreActivityRunner {
     return [
       "case",
       ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
-      ["min", 0.62, ["+", ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.42], 0.18]],
+      ["min", 0.9, ["+", ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.64], 0.28]],
       ["in", ["get", "targetId"], ["literal", this.completedIds]],
-      ["min", 0.48, ["+", ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.34], 0.12]],
-      ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.32]
+      ["min", 0.42, ["+", ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.28], 0.08]],
+      ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.2]
     ];
   }
 
@@ -5602,10 +5602,10 @@ export class MapLibreActivityRunner {
       [
         "case",
         ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
-        1.14,
+        1.22,
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
-        1.06,
-        1
+        1.02,
+        0.92
       ]
     ];
   }
@@ -5618,9 +5618,9 @@ export class MapLibreActivityRunner {
         [
           "case",
           ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
-          0.2,
+          0.3,
           ["in", ["get", "targetId"], ["literal", this.completedIds]],
-          0.16,
+          0.12,
           0
         ]
       ];
@@ -5632,10 +5632,10 @@ export class MapLibreActivityRunner {
       [
         "case",
         ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
-        0.2,
+        0.32,
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
-        0.16,
-        0.11
+        0.12,
+        0.075
       ]
     ];
   }
