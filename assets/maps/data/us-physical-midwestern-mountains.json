@@ -1,0 +1,56 @@
+{
+  "id": "us-physical-midwestern-mountains",
+  "title": "Central Mountains",
+  "targetNoun": "mountain range",
+  "promptText": "Name these mountain ranges",
+  "visibleAnswerLimit": 3,
+  "memoryTrailNewTargetLimit": 3,
+  "memoryTrailRequireAllTargets": true,
+  "map": {
+    "region": "united-states",
+    "regionView": { "center": [-96.8, 39.0], "zoom": 3.25 },
+    "studyView": {
+      "bounds": [[-106.0, 33.2], [-89.0, 45.4]],
+      "padding": { "top": 58, "right": 58, "bottom": 96, "left": 58 },
+      "duration": 1050
+    }
+  },
+  "features": [
+    {
+      "id": "ozark-mountains",
+      "name": "Ozark Mountains",
+      "type": "mountain-range",
+      "shape": "path",
+      "sourceFeatureId": "ozark-mountains",
+      "sourceName": "Ozark Mountains",
+      "color": "#9a6a1a",
+      "labelAnchor": [-92.7, 36.8],
+      "labelFontSize": 10,
+      "labelRotation": -8
+    },
+    {
+      "id": "ouachita-mountains",
+      "name": "Ouachita Mountains",
+      "type": "mountain-range",
+      "shape": "path",
+      "sourceFeatureId": "ouachita-mountains",
+      "sourceName": "Ouachita Mountains",
+      "color": "#854d0e",
+      "labelAnchor": [-94.0, 34.75],
+      "labelFontSize": 10,
+      "labelRotation": -4
+    },
+    {
+      "id": "black-hills",
+      "name": "Black Hills",
+      "type": "mountain-range",
+      "shape": "path",
+      "sourceFeatureId": "black-hills",
+      "sourceName": "Black Hills",
+      "color": "#7c4a16",
+      "labelAnchor": [-103.65, 44.05],
+      "labelFontSize": 10,
+      "labelRotation": -5
+    }
+  ]
+}

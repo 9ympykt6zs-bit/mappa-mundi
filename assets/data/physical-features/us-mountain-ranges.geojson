@@ -599,6 +599,615 @@
           [-85.75, 35.4]
         ]]
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "coast-ranges",
+        "name": "Coast Ranges",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Coast Ranges stylized prototype",
+          "spines": [
+            [
+              [-120.75, 35.25],
+              [-121.25, 37.0],
+              [-121.75, 39.0],
+              [-122.3, 41.4]
+            ],
+            [
+              [-123.2, 42.4],
+              [-123.35, 44.0],
+              [-123.28, 45.6]
+            ],
+            [
+              [-123.25, 46.3],
+              [-123.25, 47.1]
+            ]
+          ],
+          "spineWeights": [0.72, 0.54, 0.42],
+          "spineSpacingMultipliers": [0.84, 0.96, 1.08],
+          "corridorOpacityScales": [0.58, 0.38, 0.28],
+          "corridorWidthPx": 24,
+          "corridorBlurPx": 9,
+          "symbolSpacingDegrees": 0.62,
+          "middleDensityBoost": 0.28,
+          "jitterDegrees": 0.08,
+          "sideOffsetDegrees": 0.04,
+          "sizeRange": [0.48, 0.74, 1.0],
+          "endFadeOpacity": 0.28
+        },
+        "symbolAnchors": [
+          [-120.75, 35.35],
+          [-121.7, 38.7],
+          [-122.25, 41.2],
+          [-123.32, 44.2],
+          [-123.25, 46.6]
+        ]
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [[
+            [-120.75, 35.25],
+            [-120.5, 35.1],
+            [-120.8, 37.5],
+            [-121.5, 39.5],
+            [-122.2, 41.7],
+            [-122.85, 41.8],
+            [-122.45, 39.2],
+            [-121.95, 37.0],
+            [-120.75, 35.25]
+          ]],
+          [[
+            [-123.6, 42.2],
+            [-122.65, 42.3],
+            [-122.95, 45.7],
+            [-123.4, 46.3],
+            [-123.9, 45.8],
+            [-123.75, 43.4],
+            [-123.6, 42.2]
+          ]],
+          [[
+            [-123.55, 46.25],
+            [-122.8, 46.3],
+            [-123.0, 47.15],
+            [-123.55, 47.35],
+            [-123.65, 46.95],
+            [-123.55, 46.25]
+          ]]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "olympic-mountains",
+        "name": "Olympic Mountains",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Olympic Mountains stylized prototype",
+          "spines": [
+            [
+              [-124.15, 47.75],
+              [-123.75, 48.0],
+              [-123.25, 48.18]
+            ],
+            [
+              [-123.95, 47.55],
+              [-123.5, 47.86],
+              [-123.05, 48.05]
+            ]
+          ],
+          "spineWeights": [0.7, 0.46],
+          "spineSpacingMultipliers": [0.72, 0.96],
+          "corridorOpacityScales": [0.6, 0.36],
+          "corridorWidthPx": 24,
+          "corridorBlurPx": 10,
+          "symbolSpacingDegrees": 0.28,
+          "middleDensityBoost": 0.28,
+          "jitterDegrees": 0.07,
+          "sideOffsetDegrees": 0.05,
+          "sizeRange": [0.46, 0.72, 0.96],
+          "endFadeOpacity": 0.3
+        },
+        "symbolAnchors": [
+          [-123.95, 47.75],
+          [-123.55, 47.98],
+          [-123.15, 48.15]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-124.15, 47.55],
+          [-123.15, 47.35],
+          [-122.95, 47.95],
+          [-123.3, 48.35],
+          [-124.15, 48.35],
+          [-124.45, 47.95],
+          [-124.15, 47.55]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "wasatch-range",
+        "name": "Wasatch Range",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Wasatch Range stylized prototype",
+          "spines": [
+            [
+              [-112.0, 38.75],
+              [-111.75, 39.7],
+              [-111.65, 40.65],
+              [-111.55, 41.75],
+              [-111.45, 42.25]
+            ],
+            [
+              [-111.45, 39.0],
+              [-111.28, 40.2],
+              [-111.18, 41.3]
+            ]
+          ],
+          "spineWeights": [0.72, 0.46],
+          "spineSpacingMultipliers": [0.72, 1.02],
+          "corridorOpacityScales": [0.6, 0.34],
+          "corridorWidthPx": 24,
+          "corridorBlurPx": 10,
+          "symbolSpacingDegrees": 0.4,
+          "middleDensityBoost": 0.3,
+          "jitterDegrees": 0.08,
+          "sideOffsetDegrees": 0.05,
+          "sizeRange": [0.48, 0.74, 1.02],
+          "endFadeOpacity": 0.28
+        },
+        "symbolAnchors": [
+          [-111.95, 39.05],
+          [-111.72, 40.35],
+          [-111.5, 41.75]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-112.35, 38.35],
+          [-111.15, 38.35],
+          [-110.95, 42.35],
+          [-111.75, 42.45],
+          [-112.15, 40.65],
+          [-112.35, 38.35]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "teton-range",
+        "name": "Teton Range",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Teton Range stylized prototype",
+          "spines": [
+            [
+              [-111.05, 43.35],
+              [-110.85, 43.72],
+              [-110.72, 44.08]
+            ],
+            [
+              [-110.65, 43.35],
+              [-110.55, 43.72],
+              [-110.45, 44.05]
+            ]
+          ],
+          "spineWeights": [0.74, 0.44],
+          "spineSpacingMultipliers": [0.66, 0.9],
+          "corridorOpacityScales": [0.62, 0.32],
+          "corridorWidthPx": 22,
+          "corridorBlurPx": 9,
+          "symbolSpacingDegrees": 0.24,
+          "middleDensityBoost": 0.28,
+          "jitterDegrees": 0.05,
+          "sideOffsetDegrees": 0.04,
+          "sizeRange": [0.46, 0.72, 1.02],
+          "endFadeOpacity": 0.3
+        },
+        "symbolAnchors": [
+          [-110.98, 43.42],
+          [-110.78, 43.78],
+          [-110.58, 44.08]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-111.15, 43.2],
+          [-110.45, 43.2],
+          [-110.25, 44.15],
+          [-110.85, 44.35],
+          [-111.25, 43.85],
+          [-111.15, 43.2]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "alaska-range",
+        "name": "Alaska Range",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Alaska Range stylized prototype",
+          "spines": [
+            [
+              [-153.1, 60.2],
+              [-151.2, 61.1],
+              [-148.8, 62.0],
+              [-146.2, 63.0],
+              [-143.6, 63.35]
+            ],
+            [
+              [-151.5, 60.35],
+              [-149.2, 61.15],
+              [-146.7, 62.0],
+              [-144.3, 62.45]
+            ]
+          ],
+          "spineWeights": [0.82, 0.56],
+          "spineSpacingMultipliers": [0.78, 1.02],
+          "corridorOpacityScales": [0.68, 0.42],
+          "corridorWidthPx": 34,
+          "corridorBlurPx": 14,
+          "symbolSpacingDegrees": 0.72,
+          "middleDensityBoost": 0.42,
+          "jitterDegrees": 0.16,
+          "sideOffsetDegrees": 0.1,
+          "sizeRange": [0.54, 0.84, 1.18],
+          "endFadeOpacity": 0.24
+        },
+        "symbolAnchors": [
+          [-152.2, 60.5],
+          [-149.5, 61.55],
+          [-146.7, 62.55],
+          [-144.2, 63.15]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-153.2, 60.0],
+          [-151.0, 61.9],
+          [-146.5, 63.9],
+          [-143.0, 63.2],
+          [-145.0, 61.8],
+          [-149.5, 60.6],
+          [-153.2, 60.0]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "brooks-range",
+        "name": "Brooks Range",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Brooks Range stylized prototype",
+          "spines": [
+            [
+              [-165.2, 67.75],
+              [-160.0, 68.15],
+              [-154.0, 68.35],
+              [-148.2, 68.6],
+              [-142.6, 69.0]
+            ],
+            [
+              [-163.0, 67.35],
+              [-156.0, 67.65],
+              [-149.5, 67.95],
+              [-143.8, 68.35]
+            ]
+          ],
+          "spineWeights": [0.78, 0.52],
+          "spineSpacingMultipliers": [0.82, 1.08],
+          "corridorOpacityScales": [0.64, 0.38],
+          "corridorWidthPx": 30,
+          "corridorBlurPx": 13,
+          "symbolSpacingDegrees": 1.2,
+          "middleDensityBoost": 0.34,
+          "jitterDegrees": 0.22,
+          "sideOffsetDegrees": 0.12,
+          "sizeRange": [0.5, 0.78, 1.08],
+          "endFadeOpacity": 0.26
+        },
+        "symbolAnchors": [
+          [-163.5, 67.8],
+          [-157.3, 68.15],
+          [-150.4, 68.4],
+          [-144.2, 68.85]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-166.0, 67.6],
+          [-161.0, 68.2],
+          [-154.0, 68.6],
+          [-148.0, 68.8],
+          [-143.0, 69.5],
+          [-141.0, 68.7],
+          [-147.0, 67.7],
+          [-154.0, 67.3],
+          [-162.0, 67.0],
+          [-166.0, 67.6]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "appalachian-mountains",
+        "name": "Appalachian Mountains",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Appalachian Mountains stylized prototype",
+          "spines": [
+            [
+              [-85.2, 33.8],
+              [-82.7, 35.4],
+              [-80.3, 37.1],
+              [-78.0, 39.1],
+              [-75.2, 41.5],
+              [-72.2, 44.2]
+            ],
+            [
+              [-84.2, 34.3],
+              [-81.7, 36.0],
+              [-79.2, 38.0],
+              [-76.7, 40.2],
+              [-73.5, 42.8]
+            ],
+            [
+              [-82.4, 35.0],
+              [-80.0, 36.6],
+              [-77.8, 38.3],
+              [-75.0, 40.7]
+            ]
+          ],
+          "spineWeights": [0.68, 0.5, 0.38],
+          "spineSpacingMultipliers": [1.0, 1.18, 1.28],
+          "corridorOpacityScales": [0.46, 0.3, 0.22],
+          "corridorWidthPx": 34,
+          "corridorBlurPx": 16,
+          "symbolSpacingDegrees": 0.9,
+          "middleDensityBoost": 0.22,
+          "jitterDegrees": 0.18,
+          "sideOffsetDegrees": 0.1,
+          "sizeRange": [0.46, 0.7, 0.96],
+          "endFadeOpacity": 0.22
+        },
+        "symbolAnchors": [
+          [-84.6, 34.2],
+          [-82.0, 35.8],
+          [-79.6, 37.7],
+          [-76.8, 40.0],
+          [-73.4, 42.9]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-85.7, 33.4],
+          [-84.3, 33.3],
+          [-82.0, 35.0],
+          [-79.6, 36.5],
+          [-77.8, 38.2],
+          [-75.0, 41.0],
+          [-72.4, 43.0],
+          [-70.2, 45.0],
+          [-71.2, 45.5],
+          [-74.0, 43.7],
+          [-77.2, 41.2],
+          [-80.1, 38.7],
+          [-82.8, 36.5],
+          [-85.2, 35.1],
+          [-85.7, 33.4]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ozark-mountains",
+        "name": "Ozark Mountains",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Ozark Mountains stylized prototype",
+          "spines": [
+            [
+              [-94.5, 36.0],
+              [-93.4, 36.55],
+              [-92.2, 37.05],
+              [-91.0, 37.55]
+            ],
+            [
+              [-94.1, 36.75],
+              [-92.8, 37.25],
+              [-91.7, 37.8]
+            ]
+          ],
+          "spineWeights": [0.72, 0.48],
+          "spineSpacingMultipliers": [0.74, 1.0],
+          "corridorOpacityScales": [0.58, 0.34],
+          "corridorWidthPx": 28,
+          "corridorBlurPx": 11,
+          "symbolSpacingDegrees": 0.48,
+          "middleDensityBoost": 0.28,
+          "jitterDegrees": 0.1,
+          "sideOffsetDegrees": 0.06,
+          "sizeRange": [0.48, 0.74, 1.0],
+          "endFadeOpacity": 0.28
+        },
+        "symbolAnchors": [
+          [-94.2, 36.1],
+          [-93.0, 36.75],
+          [-91.7, 37.45]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-94.8, 35.6],
+          [-91.0, 35.5],
+          [-90.2, 37.6],
+          [-92.0, 38.8],
+          [-94.6, 38.0],
+          [-95.2, 36.4],
+          [-94.8, 35.6]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ouachita-mountains",
+        "name": "Ouachita Mountains",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Ouachita Mountains stylized prototype",
+          "spines": [
+            [
+              [-95.2, 34.55],
+              [-94.0, 34.75],
+              [-92.6, 34.82]
+            ],
+            [
+              [-94.9, 34.95],
+              [-93.7, 35.08],
+              [-92.2, 35.02]
+            ]
+          ],
+          "spineWeights": [0.72, 0.48],
+          "spineSpacingMultipliers": [0.66, 0.92],
+          "corridorOpacityScales": [0.58, 0.34],
+          "corridorWidthPx": 24,
+          "corridorBlurPx": 10,
+          "symbolSpacingDegrees": 0.36,
+          "middleDensityBoost": 0.28,
+          "jitterDegrees": 0.07,
+          "sideOffsetDegrees": 0.05,
+          "sizeRange": [0.46, 0.72, 0.98],
+          "endFadeOpacity": 0.3
+        },
+        "symbolAnchors": [
+          [-95.0, 34.6],
+          [-93.8, 34.85],
+          [-92.5, 35.0]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-95.5, 34.2],
+          [-91.8, 34.2],
+          [-91.3, 35.1],
+          [-93.2, 35.4],
+          [-95.7, 35.0],
+          [-95.5, 34.2]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "black-hills",
+        "name": "Black Hills",
+        "type": "mountain-range",
+        "geometryPrecision": "approximate",
+        "targetPrecision": "general-location",
+        "source": "project-authored approximate learning region",
+        "visualArt": {
+          "kind": "stylized-mountain-range",
+          "debugName": "Black Hills stylized prototype",
+          "spines": [
+            [
+              [-104.05, 43.65],
+              [-103.7, 44.05],
+              [-103.35, 44.55]
+            ],
+            [
+              [-103.75, 43.55],
+              [-103.35, 43.95],
+              [-103.05, 44.4]
+            ]
+          ],
+          "spineWeights": [0.72, 0.46],
+          "spineSpacingMultipliers": [0.66, 0.92],
+          "corridorOpacityScales": [0.58, 0.34],
+          "corridorWidthPx": 24,
+          "corridorBlurPx": 10,
+          "symbolSpacingDegrees": 0.28,
+          "middleDensityBoost": 0.28,
+          "jitterDegrees": 0.06,
+          "sideOffsetDegrees": 0.05,
+          "sizeRange": [0.46, 0.72, 0.98],
+          "endFadeOpacity": 0.3
+        },
+        "symbolAnchors": [
+          [-103.98, 43.65],
+          [-103.62, 44.05],
+          [-103.22, 44.5]
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-104.25, 43.45],
+          [-102.9, 43.55],
+          [-102.75, 44.65],
+          [-103.7, 45.1],
+          [-104.3, 44.55],
+          [-104.25, 43.45]
+        ]]
+      }
     }
   ]
 }

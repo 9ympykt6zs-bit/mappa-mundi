@@ -1,0 +1,48 @@
+{
+  "id": "us-physical-alaska-mountains",
+  "title": "Alaska Mountains",
+  "targetNoun": "mountain range",
+  "promptText": "Name these mountain ranges",
+  "visibleAnswerLimit": 2,
+  "memoryTrailNewTargetLimit": 2,
+  "memoryTrailRequireAllTargets": true,
+  "map": {
+    "region": "united-states",
+    "regionView": { "center": [-153.8, 65.0], "zoom": 3.0 },
+    "studyView": {
+      "bounds": [[-168.0, 59.2], [-140.0, 70.1]],
+      "padding": { "top": 58, "right": 58, "bottom": 96, "left": 58 },
+      "duration": 1050
+    }
+  },
+  "features": [
+    {
+      "id": "alaska-range",
+      "name": "Alaska Range",
+      "type": "mountain-range",
+      "shape": "path",
+      "sourceFeatureId": "alaska-range",
+      "sourceName": "Alaska Range",
+      "color": "#a15c1a",
+      "labelAnchor": [-150.2, 62.0],
+      "labelFontSize": 10,
+      "labelRotation": 12,
+      "focusBounds": [[-153.9, 59.6], [-142.5, 64.4]],
+      "focusDuration": 800
+    },
+    {
+      "id": "brooks-range",
+      "name": "Brooks Range",
+      "type": "mountain-range",
+      "shape": "path",
+      "sourceFeatureId": "brooks-range",
+      "sourceName": "Brooks Range",
+      "color": "#92400e",
+      "labelAnchor": [-154.5, 68.3],
+      "labelFontSize": 10,
+      "labelRotation": 4,
+      "focusBounds": [[-167.5, 66.7], [-140.8, 69.8]],
+      "focusDuration": 800
+    }
+  ]
+}

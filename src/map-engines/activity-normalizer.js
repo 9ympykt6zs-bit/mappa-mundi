@@ -24,6 +24,8 @@ export function normalizeActivity(rawActivity, overrides = {}) {
     visibleAnswerLimit: overrides.visibleAnswerLimit ?? rawActivity.visibleAnswerLimit ?? null,
     memoryTrailNewTargetLimit: overrides.memoryTrailNewTargetLimit ?? rawActivity.memoryTrailNewTargetLimit ?? null,
     memoryTrailRequireAllTargets: overrides.memoryTrailRequireAllTargets ?? rawActivity.memoryTrailRequireAllTargets ?? false,
+    memoryTrailAutoStart: overrides.memoryTrailAutoStart ?? rawActivity.memoryTrailAutoStart ?? false,
+    memoryTrailSections: overrides.memoryTrailSections || rawActivity.memoryTrailSections || [],
     map,
     sources: overrides.sources || rawActivity.sources || [],
     targetLayers: overrides.targetLayers || rawActivity.targetLayers || [],

@@ -1,10 +1,10 @@
 {
   "id": "us-physical-eastern-mountains",
-  "title": "Eastern U.S. Mountains",
+  "title": "Eastern Mountains",
   "targetNoun": "mountain range",
   "promptText": "Name these mountain ranges",
-  "visibleAnswerLimit": 7,
-  "memoryTrailNewTargetLimit": 7,
+  "visibleAnswerLimit": 8,
+  "memoryTrailNewTargetLimit": 8,
   "memoryTrailRequireAllTargets": true,
   "map": {
     "region": "united-states",
@@ -16,6 +16,18 @@
     }
   },
   "features": [
+    {
+      "id": "appalachian-mountains",
+      "name": "Appalachian Mountains",
+      "type": "mountain-range",
+      "shape": "path",
+      "sourceFeatureId": "appalachian-mountains",
+      "sourceName": "Appalachian Mountains",
+      "color": "#6f4e17",
+      "labelAnchor": [-80.2, 38.2],
+      "labelFontSize": 10,
+      "labelRotation": -26
+    },
     {
       "id": "white-mountains",
       "name": "White Mountains",

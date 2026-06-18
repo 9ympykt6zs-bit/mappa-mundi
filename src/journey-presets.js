@@ -205,15 +205,23 @@ export const journeyPresets = [
         kind: "physical-features"
       },
       {
-        id: "us-physical-eastern-mountains",
-        activityId: "us-physical-eastern-mountains",
-        title: "Eastern U.S. Mountains",
+        id: "us-mountain-ranges",
+        activityId: "us-mountain-ranges",
+        title: "U.S. Mountain Ranges",
         kind: "physical-features"
-      },
+      }
+    ]
+  },
+  {
+    id: "us-mountain-ranges",
+    title: "U.S. Mountain Ranges",
+    description: "Learn U.S. mountain ranges by region with section-based practice cameras.",
+    status: "available",
+    steps: [
       {
-        id: "us-physical-western-mountains",
-        activityId: "us-physical-western-mountains",
-        title: "Western U.S. Mountains",
+        id: "us-mountain-ranges",
+        activityId: "us-mountain-ranges",
+        title: "U.S. Mountain Ranges",
         kind: "physical-features"
       }
     ]

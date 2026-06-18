@@ -101,22 +101,32 @@ const mountainRangeInstructionPhrases = [
 
 const proofSheetMountainRangeLabels = [
   "Adirondack Mountains",
+  "Alaska Range",
   "Allegheny Mountains",
   "Alps",
+  "Appalachian Mountains",
+  "Black Hills",
   "Blue Ridge Mountains",
+  "Brooks Range",
   "Carpathians",
   "Cascade Mountains",
   "Caucasus",
+  "Coast Ranges",
   "Cumberland Mountains",
   "Great Smoky Mountains",
   "Green Mountains",
   "Himalayas",
+  "Olympic Mountains",
+  "Ouachita Mountains",
+  "Ozark Mountains",
   "Pyrenees",
   "Rocky Mountains",
   "Sierra Nevada",
   "Sierra Nevadas",
+  "Teton Range",
   "Ural",
   "Ural Mountains",
+  "Wasatch Range",
   "White Mountains"
 ];
 

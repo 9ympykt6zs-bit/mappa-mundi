@@ -1,4 +1,4 @@
-import { journeyPresets } from "./journey-presets.js?v=20260616-mountain-active-highlight";
+import { journeyPresets } from "./journey-presets.js?v=20260618-us-mountain-ranges";
 import { trackEvent } from "./analytics.js?v=20260601-instruction-target-nouns";
 import {
   clearActiveJourney,
@@ -148,7 +148,9 @@ const activityDataPaths = [
   "assets/maps/data/us-states-capitals-11.json",
   "assets/maps/data/us-physical-lakes.json",
   "assets/maps/data/us-physical-eastern-mountains.json",
+  "assets/maps/data/us-physical-midwestern-mountains.json",
   "assets/maps/data/us-physical-western-mountains.json",
+  "assets/maps/data/us-physical-alaska-mountains.json",
   "assets/maps/data/north-america-physical-canadian-lakes.json",
   "assets/maps/data/africa-physical-african-lakes.json",
   "assets/maps/data/asia-physical-middle-east-waters.json",
@@ -165,7 +167,7 @@ const oceanZonesPath = "assets/maps/data/ocean-zones.geojson";
 const coContinentOverridesPath = "assets/data/co-continent-overrides.json";
 const coContinentLandPath = "assets/maps/data/continents-oceans-land.geojson";
 const inlandWatersPath = "assets/maps/data/inland-waters.geojson";
-const mountainRangesPath = "assets/data/physical-features/us-mountain-ranges.geojson?v=20260616-mountain-active-highlight";
+const mountainRangesPath = "assets/data/physical-features/us-mountain-ranges.geojson?v=20260618-us-mountain-ranges";
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const northAmericaAdmin1Path = "assets/maps/data/maplibre-north-america-admin1.geojson";
@@ -743,11 +745,7 @@ const US_STATE_CAPITAL_SECTION_VIEWS = {
   }
 };
 const US_PHYSICAL_FEATURE_MENU_ITEMS = [
-  { label: "Northern Appalachian Mountains", disabled: true, badge: "Coming soon" },
-  { label: "Southern Appalachian Mountains", disabled: true, badge: "Coming soon" },
-  { label: "Eastern U.S. Mountains", activityId: "us-physical-eastern-mountains" },
-  { label: "Western U.S. Mountains", activityId: "us-physical-western-mountains" },
-  { label: "Northwest Mountains", disabled: true, badge: "Coming soon" },
+  { label: "U.S. Mountain Ranges", activityId: "us-mountain-ranges" },
   { label: "U.S. Lakes", activityId: "us-physical-lakes" },
   { label: "Bays", disabled: true, badge: "Coming soon" },
   { label: "Rivers East", disabled: true, badge: "Coming soon" },
@@ -1075,20 +1073,35 @@ const US_STATE_CAPITAL_NAV_NODES = Object.fromEntries(
     }
   ])
 );
-const US_PHYSICAL_FEATURE_NAV_NODES = Object.fromEntries(
-  US_PHYSICAL_FEATURE_MENU_ITEMS.map((item, index) => [
-    `us-physical-${index + 1}`,
-    {
-      id: `us-physical-${index + 1}`,
-      label: item.label,
-      parent: "us-physical-features",
-      activityId: item.activityId,
-      activityLabel: item.activityId ? item.label : undefined,
-      disabled: !item.activityId,
-      badge: item.activityId ? undefined : (item.badge || "Coming soon")
+function buildUsPhysicalFeatureNavNodes(items, parentId = "us-physical-features", prefix = "us-physical") {
+  const entries = [];
+
+  items.forEach((item, index) => {
+    const id = `${prefix}-${index + 1}`;
+    const childIds = item.children?.map((_, childIndex) => `${id}-${childIndex + 1}`) || [];
+    entries.push([
+      id,
+      {
+        id,
+        label: item.label,
+        parent: parentId,
+        activityId: item.activityId,
+        activityLabel: item.activityId ? item.label : undefined,
+        journeyId: item.journeyId,
+        disabled: !item.activityId && childIds.length === 0,
+        badge: item.activityId || childIds.length ? undefined : (item.badge || "Coming soon"),
+        children: childIds.length ? childIds : undefined
+      }
+    ]);
+
+    if (item.children?.length) {
+      entries.push(...Object.entries(buildUsPhysicalFeatureNavNodes(item.children, id, id)));
     }
-  ])
-);
+  });
+
+  return Object.fromEntries(entries);
+}
+const US_PHYSICAL_FEATURE_NAV_NODES = buildUsPhysicalFeatureNavNodes(US_PHYSICAL_FEATURE_MENU_ITEMS);
 const GEOGRAPHY_NAV_NODES = {
   world: {
     id: "world",
@@ -1993,19 +2006,44 @@ const activityCatalogMetadata = {
     sortOrder: 7.6,
     sectionNumber: 60
   },
+  "us-mountain-ranges": {
+    mapSet: "north-america",
+    category: "Physical Features",
+    description: "Learn U.S. mountain ranges with section-aware Memory Trail practice.",
+    sortOrder: 7.63,
+    sectionNumber: 61
+  },
   "us-physical-eastern-mountains": {
     mapSet: "north-america",
     category: "Physical Features",
-    description: "Practice approximate eastern U.S. mountain range learning regions.",
+    description: "Practice the Eastern Mountains section of U.S. Mountain Ranges.",
     sortOrder: 7.64,
-    sectionNumber: 60.5
+    sectionNumber: 60.5,
+    hideFromActivityCatalog: true
+  },
+  "us-physical-midwestern-mountains": {
+    mapSet: "north-america",
+    category: "Physical Features",
+    description: "Practice the Central Mountains section of U.S. Mountain Ranges.",
+    sortOrder: 7.645,
+    sectionNumber: 60.75,
+    hideFromActivityCatalog: true
   },
   "us-physical-western-mountains": {
     mapSet: "north-america",
     category: "Physical Features",
-    description: "Practice approximate western U.S. mountain range learning regions.",
+    description: "Practice the Western Lower 48 section of U.S. Mountain Ranges.",
     sortOrder: 7.65,
-    sectionNumber: 61
+    sectionNumber: 61,
+    hideFromActivityCatalog: true
+  },
+  "us-physical-alaska-mountains": {
+    mapSet: "north-america",
+    category: "Physical Features",
+    description: "Practice the Alaska Mountains section of U.S. Mountain Ranges.",
+    sortOrder: 7.655,
+    sectionNumber: 61.25,
+    hideFromActivityCatalog: true
   },
   "north-america-physical-canadian-lakes": {
     mapSet: "north-america",
@@ -3624,6 +3662,11 @@ function handleRunnerRegionSelect(activityId) {
     return;
   }
 
+  if (supplementalEntry?.launch?.type === "journey") {
+    openJourneyFromOverview(supplementalEntry.launch.journeyId);
+    return;
+  }
+
   const hierarchyNodeId = findHierarchyNodeForActivity(activityId);
   if (hierarchyNodeId) {
     drillToHierarchyNode(hierarchyNodeId);
@@ -3691,7 +3734,7 @@ function configureFeedbackLinks() {
 }
 
 function expandDerivedActivityData(rawActivities) {
-  return rawActivities.flatMap((activity) => {
+  const expandedActivities = rawActivities.flatMap((activity) => {
     if (!activity?.id?.startsWith("us-states-capitals-")) {
       return [activity];
     }
@@ -3701,6 +3744,68 @@ function expandDerivedActivityData(rawActivities) {
       ...createDerivedUsStateCapitalActivities(activity)
     ];
   });
+
+  return appendDerivedUsMountainRangesActivity(expandedActivities);
+}
+
+function appendDerivedUsMountainRangesActivity(activitiesToExpand) {
+  if (activitiesToExpand.some((activity) => activity?.id === "us-mountain-ranges")) {
+    return activitiesToExpand;
+  }
+
+  const sectionActivityIds = [
+    "us-physical-western-mountains",
+    "us-physical-eastern-mountains",
+    "us-physical-midwestern-mountains",
+    "us-physical-alaska-mountains"
+  ];
+  const sectionActivities = sectionActivityIds
+    .map((activityId) => activitiesToExpand.find((activity) => activity?.id === activityId))
+    .filter(Boolean);
+
+  if (sectionActivities.length !== sectionActivityIds.length) {
+    return activitiesToExpand;
+  }
+
+  const sectionTargets = sectionActivities.map((activity) => activity.targets || activity.features || []);
+  const targets = sectionTargets.flat();
+  const firstSection = sectionActivities[0];
+
+  return [
+    ...activitiesToExpand,
+    {
+      ...firstSection,
+      id: "us-mountain-ranges",
+      title: "U.S. Mountain Ranges",
+      targetNoun: "mountain range",
+      promptText: "Name these mountain ranges",
+      visibleAnswerLimit: 8,
+      memoryTrailNewTargetLimit: 8,
+      memoryTrailRequireAllTargets: true,
+      memoryTrailAutoStart: true,
+      map: {
+        ...(firstSection.map || {}),
+        regionView: firstSection.map?.regionView || { center: [-114.8, 41.2], zoom: 3.2 },
+        studyView: firstSection.map?.studyView || {
+          bounds: [[-125.5, 31.4], [-103.2, 49.3]],
+          padding: { top: 58, right: 58, bottom: 96, left: 58 },
+          duration: 1050
+        }
+      },
+      memoryTrailSections: sectionActivities.map((activity, index) => {
+        const activityTargets = sectionTargets[index] || [];
+
+        return {
+          id: activity.id,
+          title: activity.title,
+          targetIds: activityTargets.map((target) => target.id).filter(Boolean),
+          map: activity.map || null
+        };
+      }),
+      features: targets,
+      targets: undefined
+    }
+  ];
 }
 
 function createDerivedUsStateCapitalActivities(activity) {
@@ -3893,7 +3998,8 @@ function normalizeMapLibrePocActivity(rawActivity) {
     previewBounds: metadata.previewBounds,
     previewRegionId: metadata.previewRegionId,
     description: metadata.description,
-    sortOrder: metadata.sortOrder
+    sortOrder: metadata.sortOrder,
+    hideFromActivityCatalog: metadata.hideFromActivityCatalog
   };
 }
 
@@ -4816,7 +4922,8 @@ function getActivityMetadata(rawActivity, region, mapDefaults) {
     previewBounds: configured.previewBounds || mapDefaults.studyView.bounds,
     previewRegionId: configured.previewRegionId || rawActivity.id,
     description: configured.description || "Regional geography proof sheet.",
-    sortOrder: configured.sortOrder ?? rawActivity.sequence ?? 999
+    sortOrder: configured.sortOrder ?? rawActivity.sequence ?? 999,
+    hideFromActivityCatalog: Boolean(configured.hideFromActivityCatalog)
   };
 }
 
@@ -4897,6 +5004,12 @@ function bindUiEvents() {
     if (card.dataset.launchType === "legacy") {
       closeBrowseDrawer();
       openLegacyActivity(card.dataset.legacyActivityId);
+      return;
+    }
+
+    if (card.dataset.launchType === "journey") {
+      closeBrowseDrawer();
+      openJourneyFromOverview(card.dataset.journeyId || card.dataset.activityId);
       return;
     }
 
@@ -6104,6 +6217,42 @@ function getValidJourneySteps(journey) {
   return (journey?.steps || []).filter((step) => getActivityById(step.activityId));
 }
 
+function getStudySelectionSteps(journey) {
+  return (journey?.steps || []).filter((step) => (
+    getActivityById(step.activityId)
+    || (step.journeyId && journeyPresets.some((candidate) => candidate.id === step.journeyId))
+  ));
+}
+
+function getJourneyLinkStepTargetCount(step) {
+  const linkedJourney = journeyPresets.find((candidate) => candidate.id === step?.journeyId);
+
+  if (!linkedJourney) {
+    return 0;
+  }
+
+  return linkedJourney.steps.reduce((count, childStep) => {
+    const activity = getActivityById(childStep.activityId);
+    return count + (activity?.targets?.length || activity?.itemCount || 0);
+  }, 0);
+}
+
+function openJourneyLinkStep(step) {
+  if (!step?.journeyId) {
+    return false;
+  }
+
+  const linkedJourney = journeyPresets.find((candidate) => candidate.id === step.journeyId);
+
+  if (!linkedJourney) {
+    return false;
+  }
+
+  journeyPickerIntent = "learn";
+  selectJourney(linkedJourney.id);
+  return true;
+}
+
 function getJourneyStepCameraTarget(step) {
   const activity = getActivityById(step?.activityId);
   const regionView = activity?.map?.regionView;
@@ -6534,7 +6683,7 @@ function getStudyStepContext(journeyId, stepId) {
   return { journey, step, activity };
 }
 
-async function startStudyPreviewActivity(journeyId, stepId) {
+async function startStudyPreviewActivity(journeyId, stepId, options = {}) {
   await ensureMapReady();
   const { journey, step, activity } = getStudyStepContext(journeyId, stepId);
 
@@ -6544,7 +6693,9 @@ async function startStudyPreviewActivity(journeyId, stepId) {
   }
 
   selectedJourneyId = journey.id;
-  await openStudyExploreActivity(journey, step, activity);
+  await openStudyExploreActivity(journey, step, activity, {
+    autoStartMemoryTrail: Boolean(options.autoStartMemoryTrail)
+  });
 }
 
 async function startStudyPracticeActivity(journeyId, stepId) {
@@ -6609,7 +6760,8 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
     memoryTrail: null,
     retryReturnState: options.retryReturnState || null,
     journeyPlayReturn: options.journeyPlayReturn || null,
-    journeyActivityReturnState: options.journeyActivityReturnState || null
+    journeyActivityReturnState: options.journeyActivityReturnState || null,
+    memoryTrailSectionIndex: getMemoryTrailSections(activity).length ? 0 : null
   };
   activeStudyPracticeSession = null;
   hideStudyPracticeCompletionCard();
@@ -7004,14 +7156,35 @@ function showMemoryTrailCompletionOverlay() {
 
   const canPlayJourney = Boolean(activeStudySession.journeyPlayReturn);
   const canReturnToActivity = Boolean(activeStudySession.journeyActivityReturnState);
+  const memoryTrail = activeStudySession.memoryTrail;
+  const nextSection = getNextMemoryTrailSection(session.currentActivity);
+  const hasNextSection = Boolean(nextSection);
   configureMemoryTrailOverlay({
     mode: "complete",
-    titleText: "Memory Trail Complete",
-    messageText: "Do you want to repeat this exercise?",
-    primaryText: "Do Memory Trail Again",
+    titleText: hasNextSection && memoryTrail?.sectionTitle
+      ? `${memoryTrail.sectionTitle} Complete`
+      : "Memory Trail Complete",
+    messageText: hasNextSection
+      ? `Next: ${nextSection.title}`
+      : "Do you want to repeat this exercise?",
+    primaryText: hasNextSection
+      ? `Continue: ${nextSection.title}`
+      : "Do Memory Trail Again",
     secondaryText: canReturnToActivity ? "Return to Activity" : canPlayJourney ? "Play Journey" : "Return to Study",
     showInfo: false
   });
+}
+
+function startNextMemoryTrailSection() {
+  const nextSection = getNextMemoryTrailSection(session.currentActivity);
+
+  if (!nextSection || !activeStudySession) {
+    return false;
+  }
+
+  activeStudySession.memoryTrailSectionIndex = nextSection.sectionIndex;
+  startMemoryTrail();
+  return true;
 }
 
 function hideMemoryTrailOverlay() {
@@ -7048,6 +7221,10 @@ function handleMemoryTrailOverlayPrimary() {
 
   if (memoryTrailOverlayMode === "complete") {
     hideMemoryTrailOverlay();
+    if (startNextMemoryTrailSection()) {
+      return;
+    }
+
     restartMemoryTrail();
   }
 }
@@ -7101,6 +7278,51 @@ function getActiveMemoryTrail() {
   return isMemoryTrailActive() ? activeStudySession.memoryTrail : null;
 }
 
+function getMemoryTrailSections(activity = session.currentActivity) {
+  return Array.isArray(activity?.memoryTrailSections)
+    ? activity.memoryTrailSections.filter((section) => Array.isArray(section.targetIds) && section.targetIds.length > 0)
+    : [];
+}
+
+function getActiveMemoryTrailSection(activity = session.currentActivity) {
+  const sections = getMemoryTrailSections(activity);
+
+  if (!sections.length || !activeStudySession) {
+    return null;
+  }
+
+  const sectionIndex = Math.min(
+    Math.max(Number(activeStudySession.memoryTrailSectionIndex) || 0, 0),
+    sections.length - 1
+  );
+
+  return {
+    ...sections[sectionIndex],
+    sectionIndex,
+    sectionCount: sections.length
+  };
+}
+
+function getNextMemoryTrailSection(activity = session.currentActivity) {
+  const sections = getMemoryTrailSections(activity);
+
+  if (!sections.length || !activeStudySession) {
+    return null;
+  }
+
+  const nextIndex = (Number(activeStudySession.memoryTrailSectionIndex) || 0) + 1;
+
+  if (nextIndex >= sections.length) {
+    return null;
+  }
+
+  return {
+    ...sections[nextIndex],
+    sectionIndex: nextIndex,
+    sectionCount: sections.length
+  };
+}
+
 function createMemoryTrailSession(activity = session.currentActivity, options = {}) {
   const targetIdSet = new Set(Array.isArray(options.targetIds) ? options.targetIds.filter(Boolean) : []);
   const hasExplicitNewTargetIds = Array.isArray(options.newTargetIds);
@@ -7128,7 +7350,9 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     adaptive: true,
     source: options.source || "memory-trail",
     activityId: activity?.id || "",
-    maxNewTargets: Number.isFinite(Number(activity?.memoryTrailNewTargetLimit))
+    maxNewTargets: Number.isFinite(Number(options.maxNewTargets))
+      ? Math.max(1, Math.floor(Number(options.maxNewTargets)))
+      : Number.isFinite(Number(activity?.memoryTrailNewTargetLimit))
       ? Math.max(1, Math.floor(Number(activity.memoryTrailNewTargetLimit)))
       : null,
     requireAllTargets: Boolean(activity?.memoryTrailRequireAllTargets),
@@ -7158,6 +7382,9 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     introducedTargetIds: initiallyIntroducedTargetIds,
     dailyTrailNewTargetIds: [...newTargetIdSet],
     dailyTrailSessionNumber: Number(options.dailyTrailSessionNumber) || 0,
+    sectionTitle: options.sectionTitle || "",
+    sectionIndex: Number.isInteger(options.sectionIndex) ? options.sectionIndex : null,
+    sectionCount: Number.isInteger(options.sectionCount) ? options.sectionCount : null,
     dailyTrailPracticeRoundOrders: {},
     lastDailyTrailPracticeRoundOrder: [],
     targetStats,
@@ -7759,11 +7986,17 @@ function startMemoryTrail(options = {}) {
   lastSpokenMemoryTrailInstructionKey = "";
   resetAudioInstructionState(`memory-trail:${activeStudySession.activityId}:${Date.now()}`);
   window.GeographyChipSpeech?.primeLocalAudio?.();
+  const memoryTrailSection = !isDailyTrail ? getActiveMemoryTrailSection(session.currentActivity) : null;
+  const sectionTargetIds = memoryTrailSection?.targetIds || null;
   activeStudySession.memoryTrail = createMemoryTrailSession(session.currentActivity, {
     newTargetIds: options.newTargetIds,
     source: options.source,
-    targetIds: options.targetIds,
-    dailyTrailSessionNumber: isDailyTrail ? activeDailyTrailSession?.state?.currentSessionNumber : 0
+    targetIds: options.targetIds || sectionTargetIds,
+    dailyTrailSessionNumber: isDailyTrail ? activeDailyTrailSession?.state?.currentSessionNumber : 0,
+    maxNewTargets: memoryTrailSection?.targetIds?.length,
+    sectionTitle: memoryTrailSection?.title,
+    sectionIndex: memoryTrailSection?.sectionIndex,
+    sectionCount: memoryTrailSection?.sectionCount
   });
   currentMemoryTrailAnalyticsKey = [
     activeStudySession.journeyId,
@@ -7820,7 +8053,14 @@ function restartMemoryTrail() {
   lastSpokenMemoryTrailInstructionKey = "";
   resetAudioInstructionState(`memory-trail:${activeStudySession.activityId}:${Date.now()}`);
   window.GeographyChipSpeech?.primeLocalAudio?.();
-  activeStudySession.memoryTrail = createMemoryTrailSession(session.currentActivity);
+  const memoryTrailSection = getActiveMemoryTrailSection(session.currentActivity);
+  activeStudySession.memoryTrail = createMemoryTrailSession(session.currentActivity, {
+    targetIds: memoryTrailSection?.targetIds,
+    maxNewTargets: memoryTrailSection?.targetIds?.length,
+    sectionTitle: memoryTrailSection?.title,
+    sectionIndex: memoryTrailSection?.sectionIndex,
+    sectionCount: memoryTrailSection?.sectionCount
+  });
   activeStudySession.memoryTrail.previousRevealedTargetIds = previousRevealedTargetIds;
   currentMemoryTrailAnalyticsKey = [
     activeStudySession.journeyId,
@@ -9921,9 +10161,10 @@ function renderMemoryTrailPanel() {
 
   const title = document.createElement("strong");
   const phaseLabel = memoryTrail.sessionPhase === "learn" ? "Learn" : "Practice";
+  const sectionPrefix = memoryTrail.sectionTitle ? `${memoryTrail.sectionTitle} | ` : "";
   title.textContent = memoryTrail.phase === "complete"
     ? "Session complete"
-    : `${phaseLabel} | Prompt ${memoryTrail.promptCount + 1} of ${SESSION_PROMPT_CAP}`;
+    : `${sectionPrefix}${phaseLabel} | Prompt ${memoryTrail.promptCount + 1} of ${SESSION_PROMPT_CAP}`;
 
   const message = document.createElement("p");
   message.className = "memory-trail-message";
@@ -10184,7 +10425,7 @@ function formatJourneyStepCount(count) {
 const journeyPresetSections = [
   {
     title: "Start Here",
-    ids: ["world-geography-core", "world-foundations", "united-states", "north-america", "europe"]
+    ids: ["world-geography-core", "world-foundations", "united-states", "us-mountain-ranges", "north-america", "europe"]
   },
   {
     title: "World",
@@ -10192,7 +10433,7 @@ const journeyPresetSections = [
   },
   {
     title: "Americas",
-    ids: ["the-americas", "north-america", "united-states", "us-capitals", "the-caribbean", "south-america", "brazil"]
+    ids: ["the-americas", "north-america", "united-states", "us-mountain-ranges", "us-capitals", "the-caribbean", "south-america", "brazil"]
   },
   {
     title: "Europe",
@@ -10226,6 +10467,8 @@ const JOURNEY_THUMBNAILS = {
   "World Foundations": "assets/journey-thumbnails/continents-and oceans-card.png",
   "united-states": "assets/journey-thumbnails/united-states-card.png",
   "United States": "assets/journey-thumbnails/united-states-card.png",
+  "us-mountain-ranges": "assets/journey-thumbnails/united-states-card.png",
+  "U.S. Mountain Ranges": "assets/journey-thumbnails/united-states-card.png",
   "us-capitals": "assets/journey-thumbnails/united-states-capitals-card.png",
   "U.S. Capitals": "assets/journey-thumbnails/united-states-capitals-card.png",
   "north-america": "assets/journey-thumbnails/north-america-card.png",
@@ -12644,7 +12887,7 @@ function handleDocumentInfoClick(event) {
 function renderStudySelectionScreen(journey) {
   const panel = document.createElement("section");
   panel.className = "journey-mode-panel study-selection-panel";
-  const validSteps = getValidJourneySteps(journey);
+  const validSteps = getStudySelectionSteps(journey);
   const eligibleMemoryTrailCount = getJourneyMemoryTrailEligibleSteps(journey).length;
   const isLearnIntent = normalizeJourneyDetailIntent(selectedJourneyDetailIntent) === "learn";
 
@@ -12661,6 +12904,7 @@ function renderStudySelectionScreen(journey) {
 
   validSteps.forEach((step, index) => {
     const activity = getActivityById(step.activityId);
+    const isJourneyLink = !activity && Boolean(step.journeyId);
     const card = document.createElement("article");
     card.className = "study-step-card";
 
@@ -12668,7 +12912,9 @@ function renderStudySelectionScreen(journey) {
     titleNode.textContent = step.title;
 
     const meta = document.createElement("span");
-    const targetCount = activity?.targets?.length || activity?.itemCount || 0;
+    const targetCount = isJourneyLink
+      ? getJourneyLinkStepTargetCount(step)
+      : activity?.targets?.length || activity?.itemCount || 0;
     meta.textContent = targetCount > 0
       ? `Section ${index + 1} | ${targetCount} target${targetCount === 1 ? "" : "s"}`
       : `Section ${index + 1}`;
@@ -12678,12 +12924,20 @@ function renderStudySelectionScreen(journey) {
 
     const previewButton = document.createElement("button");
     previewButton.type = "button";
-    previewButton.textContent = isLearnIntent && isMemoryTrailEligible(activity)
+    previewButton.textContent = isJourneyLink
+      ? "Open"
+      : isLearnIntent && isMemoryTrailEligible(activity)
       ? "Memory Trail"
       : "Learn";
-    previewButton.disabled = !activity;
+    previewButton.disabled = !activity && !isJourneyLink;
     previewButton.addEventListener("click", () => {
-      void startStudyPreviewActivity(journey.id, step.id);
+      if (openJourneyLinkStep(step)) {
+        return;
+      }
+
+      void startStudyPreviewActivity(journey.id, step.id, {
+        autoStartMemoryTrail: Boolean(isLearnIntent && activity?.memoryTrailAutoStart && isMemoryTrailEligible(activity))
+      });
     });
 
     actions.append(previewButton);
@@ -14282,6 +14536,10 @@ function createMenuCard(menuItem, regionLabel) {
     if (activity.launch?.activityId) {
       card.dataset.legacyActivityId = activity.launch.activityId;
     }
+
+    if (activity.launch?.journeyId || menuItem.journeyId) {
+      card.dataset.journeyId = activity.launch?.journeyId || menuItem.journeyId;
+    }
   } else {
     card.setAttribute("aria-disabled", "true");
   }
@@ -14328,6 +14586,17 @@ function resolveMenuActivity(menuItem) {
   }
 
   return [...activities, ...supplementalOverviewEntries].find((activity) => activity.id === menuItem.activityId) || null;
+}
+
+function openJourneyFromOverview(journeyId) {
+  const journey = journeyPresets.find((candidate) => candidate.id === journeyId);
+
+  if (!journey) {
+    return;
+  }
+
+  journeyPickerIntent = "learn";
+  selectJourney(journey.id);
 }
 
 function getHierarchyNode(nodeId) {
@@ -14683,6 +14952,13 @@ function drillToHierarchyNode(nodeId) {
   activePreviewActivityId = null;
 
   if (node.activityId) {
+    const activity = resolveMenuActivity({ activityId: node.activityId });
+
+    if (activity?.launch?.type === "journey") {
+      openJourneyFromOverview(activity.launch.journeyId || node.journeyId || node.activityId);
+      return;
+    }
+
     if (currentAppScreen === "free-play") {
       showFreePlayDifficultyScreen(node.activityId);
       return;

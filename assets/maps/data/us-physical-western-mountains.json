@@ -1,14 +1,16 @@
 {
   "id": "us-physical-western-mountains",
-  "title": "Western U.S. Mountains",
+  "title": "Western Lower 48",
   "targetNoun": "mountain range",
   "promptText": "Name these mountain ranges",
-  "visibleAnswerLimit": 3,
+  "visibleAnswerLimit": 7,
+  "memoryTrailNewTargetLimit": 7,
+  "memoryTrailRequireAllTargets": true,
   "map": {
     "region": "united-states",
-    "regionView": { "center": [-113.0, 41.0], "zoom": 3.15 },
+    "regionView": { "center": [-114.8, 41.2], "zoom": 3.2 },
     "studyView": {
-      "bounds": [[-125.2, 31.4], [-103.2, 49.6]],
+      "bounds": [[-125.5, 31.4], [-103.2, 49.3]],
       "padding": { "top": 58, "right": 58, "bottom": 96, "left": 58 },
       "duration": 1050
     }
@@ -49,6 +51,54 @@
       "labelAnchor": [-119.5, 37.55],
       "labelFontSize": 11,
       "labelRotation": -18
+    },
+    {
+      "id": "coast-ranges",
+      "name": "Coast Ranges",
+      "type": "mountain-range",
+      "shape": "path",
+      "sourceFeatureId": "coast-ranges",
+      "sourceName": "Coast Ranges",
+      "color": "#9a6a1a",
+      "labelAnchor": [-122.6, 40.7],
+      "labelFontSize": 10,
+      "labelRotation": -7
+    },
+    {
+      "id": "olympic-mountains",
+      "name": "Olympic Mountains",
+      "type": "mountain-range",
+      "shape": "path",
+      "sourceFeatureId": "olympic-mountains",
+      "sourceName": "Olympic Mountains",
+      "color": "#8f6f20",
+      "labelAnchor": [-123.65, 47.95],
+      "labelFontSize": 10,
+      "labelRotation": -8
+    },
+    {
+      "id": "wasatch-range",
+      "name": "Wasatch Range",
+      "type": "mountain-range",
+      "shape": "path",
+      "sourceFeatureId": "wasatch-range",
+      "sourceName": "Wasatch Range",
+      "color": "#854d0e",
+      "labelAnchor": [-111.75, 40.35],
+      "labelFontSize": 10,
+      "labelRotation": -12
+    },
+    {
+      "id": "teton-range",
+      "name": "Teton Range",
+      "type": "mountain-range",
+      "shape": "path",
+      "sourceFeatureId": "teton-range",
+      "sourceName": "Teton Range",
+      "color": "#7c4a16",
+      "labelAnchor": [-110.85, 43.75],
+      "labelFontSize": 10,
+      "labelRotation": -8
     }
   ]
 }
