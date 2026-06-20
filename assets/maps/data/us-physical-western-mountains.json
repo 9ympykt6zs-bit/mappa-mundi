@@ -9,6 +9,13 @@
   "map": {
     "region": "united-states",
     "regionView": { "center": [-114.8, 41.2], "zoom": 3.2 },
+    "quizView": {
+      "center": [-108.33576, 42.05003],
+      "zoom": 4.1267,
+      "bearing": 0,
+      "pitch": 0,
+      "duration": 850
+    },
     "studyView": {
       "bounds": [[-125.5, 31.4], [-103.2, 49.3]],
       "padding": { "top": 58, "right": 58, "bottom": 96, "left": 58 },
@@ -48,6 +55,10 @@
       "sourceFeatureId": "sierra-nevada",
       "sourceName": "Sierra Nevada",
       "color": "#92400e",
+      "smallTarget": true,
+      "focusLon": -114.25928,
+      "focusLat": 37.62496,
+      "focusZoom": 5.3998,
       "labelAnchor": [-119.5, 37.55],
       "labelFontSize": 11,
       "labelRotation": -18
@@ -60,6 +71,10 @@
       "sourceFeatureId": "coast-ranges",
       "sourceName": "Coast Ranges",
       "color": "#9a6a1a",
+      "smallTarget": true,
+      "focusLon": -124.49987,
+      "focusLat": 42.15139,
+      "focusZoom": 4.3816,
       "labelAnchor": [-122.6, 40.7],
       "labelFontSize": 10,
       "labelRotation": -7

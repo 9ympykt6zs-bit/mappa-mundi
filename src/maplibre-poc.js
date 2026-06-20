@@ -183,6 +183,7 @@ const spainAdmin1Path = "assets/maps/data/maplibre-spain-admin1.geojson";
 const italyAdmin1Path = "assets/maps/data/maplibre-italy-admin1.geojson";
 const unitedKingdomAdmin1Path = "assets/maps/data/maplibre-united-kingdom-admin1.geojson";
 const continentsOceansActivityId = "continents-oceans";
+const usMountainRangesActivityId = "us-mountain-ranges";
 const defaultActivityId = continentsOceansActivityId;
 const continentsOceansLearnFocusProfiles = Object.freeze({
   "north-america": { delayMs: 920, forceOnPromptStart: true },
@@ -2862,6 +2863,8 @@ let cameraDevScopeSelect = null;
 let cameraDevExportOutput = null;
 let cameraDevStylesInjected = false;
 let cameraDevMapEventSource = null;
+let mountainFindDevSessionActive = false;
+let mountainFindDevPanel = null;
 let activeStudySession = null;
 let activeStudyPracticeSession = null;
 let journeyCompletionState = null;
@@ -3521,7 +3524,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260616-mountain-active-highlight"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260619-mountain-learn-focus"),
       import("./chip-speech.js?v=20260602-daily-trail-review-chips")
     ]).then(([
       ,
@@ -3701,6 +3704,12 @@ async function init() {
   setBrowseDrawerOpen(false);
   updateActivityNavigationControls();
   updateAudioMuteControl();
+
+  const mountainFindDevOptions = getMountainFindDevUrlOptions();
+  if (mountainFindDevOptions) {
+    await startMountainFindDev(mountainFindDevOptions);
+    return;
+  }
 
   const initialActivityId = getInitialActivityFromUrl();
 
@@ -7365,11 +7374,13 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     responseChipTargetId: null,
     correction: null,
     currentPromptTargetId: null,
+    currentPromptTargetLabel: "",
     currentPromptKey: "",
     currentPromptType: "guided",
     currentPromptMode: "introducing",
     currentPromptReason: "",
     instructionLabel: "Tap the highlighted place.",
+    visibleInstructionText: "Tap the highlighted place.",
     currentInstructionKey: "",
     lastSpokenTargetPromptKey: "",
     answerChoices: [],
@@ -7385,6 +7396,7 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     sectionTitle: options.sectionTitle || "",
     sectionIndex: Number.isInteger(options.sectionIndex) ? options.sectionIndex : null,
     sectionCount: Number.isInteger(options.sectionCount) ? options.sectionCount : null,
+    sectionQuizView: normalizeMemoryTrailSectionQuizView(options.sectionQuizView),
     dailyTrailPracticeRoundOrders: {},
     lastDailyTrailPracticeRoundOrder: [],
     targetStats,
@@ -7397,6 +7409,7 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     promptHistory: [],
     lastPromptedTargetId: null,
     lastCameraWindowKey: "",
+    lastSectionQuizCameraKey: "",
     timers: [],
     previousRevealedTargetIds: [...(activeStudySession?.revealedTargetIds || [])]
   };
@@ -7404,6 +7417,148 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
   introducePracticeWindow(memoryTrail, currentPracticeWindow);
   updateMemoryTrailDebugObject(memoryTrail);
   return memoryTrail;
+}
+
+function normalizeMemoryTrailSectionQuizView(quizView = null) {
+  const center = Array.isArray(quizView?.center) && quizView.center.length >= 2
+    ? [Number(quizView.center[0]), Number(quizView.center[1])]
+    : null;
+  const zoom = Number(quizView?.zoom);
+
+  if (!center || !center.every(Number.isFinite) || !Number.isFinite(zoom)) {
+    return null;
+  }
+
+  return {
+    center,
+    zoom,
+    bearing: Number.isFinite(Number(quizView.bearing)) ? Number(quizView.bearing) : 0,
+    pitch: Number.isFinite(Number(quizView.pitch)) ? Number(quizView.pitch) : 0,
+    duration: Number.isFinite(Number(quizView.duration)) ? Number(quizView.duration) : 850
+  };
+}
+
+function isUsMountainRangesMemoryTrail(memoryTrail = getActiveMemoryTrail()) {
+  const activityId = memoryTrail?.activityId || session.currentActivity?.id || "";
+  return activityId === usMountainRangesActivityId
+    || /^us-physical-(western|eastern|midwestern|alaska)-mountains$/.test(activityId);
+}
+
+function getMemoryTrailSectionQuizCameraKey(memoryTrail, quizView) {
+  return [
+    memoryTrail?.activityId || "",
+    memoryTrail?.sectionIndex ?? "section",
+    quizView.center.map((value) => value.toFixed(5)).join(","),
+    quizView.zoom.toFixed(4),
+    quizView.bearing.toFixed(2),
+    quizView.pitch.toFixed(2)
+  ].join(":");
+}
+
+function isMapAtMemoryTrailSectionQuizCamera(quizView) {
+  try {
+    const center = runner?.map?.getCenter?.();
+    const zoom = runner?.map?.getZoom?.();
+    const bearing = runner?.map?.getBearing?.();
+    const pitch = runner?.map?.getPitch?.();
+
+    if (!center || !Array.isArray(quizView?.center)) {
+      return false;
+    }
+
+    return Math.abs(center.lng - quizView.center[0]) <= 0.05
+      && Math.abs(center.lat - quizView.center[1]) <= 0.05
+      && Math.abs((Number(zoom) || 0) - quizView.zoom) <= 0.025
+      && Math.abs((Number(bearing) || 0) - quizView.bearing) <= 0.1
+      && Math.abs((Number(pitch) || 0) - quizView.pitch) <= 0.1;
+  } catch {
+    return false;
+  }
+}
+
+function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options = {}) {
+  if (
+    !isUsMountainRangesMemoryTrail(memoryTrail)
+    || !memoryTrail?.sectionQuizView
+    || typeof runner?.moveCamera !== "function"
+  ) {
+    return false;
+  }
+
+  if (selection?.promptType === "guided" || memoryTrail.sessionPhase === "learn") {
+    memoryTrail.lastSectionQuizCameraKey = "";
+    return false;
+  }
+
+  const quizView = memoryTrail.sectionQuizView;
+  const cameraKey = getMemoryTrailSectionQuizCameraKey(memoryTrail, quizView);
+  if (
+    memoryTrail.lastSectionQuizCameraKey === cameraKey
+    && isMapAtMemoryTrailSectionQuizCamera(quizView)
+  ) {
+    return false;
+  }
+
+  // A late practice-window or study-view movement must not win over recall.
+  const didMove = runner.moveCamera({
+    center: quizView.center,
+    zoom: quizView.zoom,
+    bearing: quizView.bearing,
+    pitch: quizView.pitch,
+    padding: quizView.padding || { top: 0, right: 0, bottom: 0, left: 0 },
+    duration: Number.isFinite(Number(options.duration)) ? Number(options.duration) : quizView.duration,
+    retainPadding: false,
+    essential: true
+  }, {
+    cameraContext: "section-quiz-view",
+    source: "memory-trail-section-quiz-camera",
+    requestType: "easeTo",
+    activityId: memoryTrail.activityId,
+    sectionIndex: memoryTrail.sectionIndex,
+    sectionTitle: memoryTrail.sectionTitle || ""
+  }, "easeTo");
+
+  if (didMove) {
+    memoryTrail.lastSectionQuizCameraKey = cameraKey;
+  }
+
+  debugMemoryTrail("section quiz camera", {
+    didMove,
+    sectionTitle: memoryTrail.sectionTitle,
+    sectionIndex: memoryTrail.sectionIndex,
+    quizView,
+    targetId: selection?.targetId || memoryTrail.currentPromptTargetId || "",
+    promptType: selection?.promptType || memoryTrail.currentPromptType || ""
+  });
+  return didMove;
+}
+
+function scheduleMemoryTrailSectionQuizCameraCheck(memoryTrail, selection = {}) {
+  if (
+    !isUsMountainRangesMemoryTrail(memoryTrail)
+    || !memoryTrail?.sectionQuizView
+    || selection?.promptType === "guided"
+    || memoryTrail.sessionPhase === "learn"
+  ) {
+    return false;
+  }
+
+  const promptKey = memoryTrail.currentPromptKey;
+  const targetId = selection?.targetId || memoryTrail.currentPromptTargetId || "";
+  const timeoutId = window.setTimeout(() => {
+    if (
+      !isCurrentMemoryTrailState(memoryTrail)
+      || memoryTrail.currentPromptKey !== promptKey
+      || memoryTrail.currentPromptTargetId !== targetId
+      || memoryTrail.sessionPhase === "learn"
+    ) {
+      return;
+    }
+
+    applyMemoryTrailSectionQuizCamera(memoryTrail, selection, { duration: 260 });
+  }, Math.max(900, (memoryTrail.sectionQuizView.duration || 850) + 140));
+  memoryTrail.timers.push(timeoutId);
+  return true;
 }
 
 function createMemoryTrailTargetStats(target) {
@@ -7647,6 +7802,207 @@ function getMemoryTrailTargetLabel(targetOrId, memoryTrail = getActiveMemoryTrai
   return getTargetChipLabel(target) || target?.completedLabelName || target?.name || "";
 }
 
+function getMemoryTrailActivePromptTarget(memoryTrail = getActiveMemoryTrail()) {
+  return memoryTrail?.currentPromptTargetId
+    ? getTargetById(memoryTrail, memoryTrail.currentPromptTargetId)
+    : null;
+}
+
+function getMemoryTrailActivePromptLabel(memoryTrail = getActiveMemoryTrail()) {
+  const targetLabel = getMemoryTrailTargetLabel(getMemoryTrailActivePromptTarget(memoryTrail), memoryTrail);
+  return targetLabel || memoryTrail?.currentPromptTargetLabel || memoryTrail?.promptName || "";
+}
+
+function sanitizeMemoryTrailAudioLookupKey(text) {
+  return String(text || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+async function getMemoryTrailAudioLookupDebug(text) {
+  const normalizedText = String(text || "").replace(/\s+/g, " ").trim();
+  if (!normalizedText) {
+    return {
+      text: "",
+      generatedAudioFound: false,
+      audioPath: "",
+      fallback: "missing text"
+    };
+  }
+
+  try {
+    const lookup = await window.GeographyChipSpeech?.getAudioManifest?.();
+    const sanitizedKey = sanitizeMemoryTrailAudioLookupKey(normalizedText);
+    const audioPath = lookup?.exact?.get?.(normalizedText) || lookup?.sanitized?.get?.(sanitizedKey) || "";
+    return {
+      text: normalizedText,
+      generatedAudioFound: Boolean(audioPath),
+      audioPath,
+      fallback: audioPath ? "" : "browser speech or silent fallback if muted/unavailable"
+    };
+  } catch (error) {
+    return {
+      text: normalizedText,
+      generatedAudioFound: false,
+      audioPath: "",
+      fallback: error?.message || "audio lookup failed"
+    };
+  }
+}
+
+function getRenderedMemoryTrailFindPromptDebug() {
+  const prompt = document.querySelector(".memory-trail-recall-target")
+    || document.querySelector(".memory-trail-prompt");
+  return {
+    message: document.querySelector(".memory-trail-message")?.textContent?.trim() || "",
+    prompt: prompt?.textContent?.trim() || "",
+    instruction: document.querySelector(".memory-trail-visible-instruction")?.textContent?.trim() || "",
+    actionLabel: document.querySelector(".memory-trail-instruction-label")?.textContent?.trim() || ""
+  };
+}
+
+function getMemoryTrailCameraSnapshot() {
+  try {
+    const center = runner?.map?.getCenter?.();
+    return {
+      center: center ? [Number(center.lng.toFixed(5)), Number(center.lat.toFixed(5))] : null,
+      zoom: Number.isFinite(runner?.map?.getZoom?.()) ? Number(runner.map.getZoom().toFixed(4)) : null,
+      bearing: Number.isFinite(runner?.map?.getBearing?.()) ? Number(runner.map.getBearing().toFixed(2)) : null,
+      pitch: Number.isFinite(runner?.map?.getPitch?.()) ? Number(runner.map.getPitch().toFixed(2)) : null,
+      isMoving: Boolean(runner?.map?.isMoving?.()),
+      isEasing: Boolean(runner?.map?.isEasing?.())
+    };
+  } catch {
+    return { center: null, zoom: null, bearing: null, pitch: null, isMoving: false, isEasing: false };
+  }
+}
+
+function getMemoryTrailFindPromptDebugSnapshot(memoryTrail = getActiveMemoryTrail(), details = {}) {
+  const selection = details.selection || {};
+  const target = details.target || getMemoryTrailActivePromptTarget(memoryTrail);
+  const promptType = selection.promptType || memoryTrail?.currentPromptType || "";
+  const phase = promptType === "guided" ? "learn" : "practice";
+  const instructionText = getMemoryTrailInstructionText(
+    promptType,
+    phase,
+    selection.mode || memoryTrail?.currentPromptMode || "",
+    session.currentActivity,
+    memoryTrail
+  );
+  const activeTargetLabel = getMemoryTrailActivePromptLabel(memoryTrail);
+  const targetSpeechLabel = getStudyPreviewSpeechLabel(target);
+
+  return {
+    stage: details.stage || "",
+    memoryTrailPhase: memoryTrail?.phase || "",
+    sessionPhase: memoryTrail?.sessionPhase || "",
+    promptType,
+    promptMode: selection.mode || memoryTrail?.currentPromptMode || "",
+    activeTargetId: selection.targetId || memoryTrail?.currentPromptTargetId || "",
+    activeTargetLabel,
+    promptName: memoryTrail?.promptName || "",
+    currentPromptTargetId: memoryTrail?.currentPromptTargetId || "",
+    currentPromptTargetLabel: memoryTrail?.currentPromptTargetLabel || "",
+    visiblePromptText: getRenderedMemoryTrailFindPromptDebug(),
+    audioMuted: Boolean(window.GeographyChipSpeech?.getAudioMuted?.()),
+    instructionAudioPhrase: instructionText?.banner || "",
+    targetNameAudioPhrase: targetSpeechLabel,
+    camera: getMemoryTrailCameraSnapshot(),
+    expectedSectionQuizCamera: memoryTrail?.sectionQuizView || null
+  };
+}
+
+function ensureMountainFindDevPanel() {
+  if (!isLocalDevAccessAllowed() || !mountainFindDevSessionActive) {
+    return null;
+  }
+
+  if (mountainFindDevPanel?.isConnected) {
+    mountainFindDevPanel.hidden = false;
+    return mountainFindDevPanel;
+  }
+
+  const panel = document.createElement("section");
+  panel.className = "mountain-find-dev-panel";
+  panel.setAttribute("aria-label", "Mountain Find dev diagnostics");
+  Object.assign(panel.style, {
+    position: "fixed",
+    right: "12px",
+    bottom: "12px",
+    zIndex: "9999",
+    width: "min(520px, calc(100vw - 24px))",
+    maxHeight: "42vh",
+    overflow: "auto",
+    padding: "10px",
+    borderRadius: "8px",
+    border: "1px solid rgba(148, 163, 184, 0.55)",
+    background: "rgba(15, 23, 42, 0.94)",
+    color: "#e5edf7",
+    font: "12px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace",
+    boxShadow: "0 14px 40px rgba(15, 23, 42, 0.35)",
+    whiteSpace: "pre-wrap"
+  });
+
+  const title = document.createElement("div");
+  title.textContent = "Mountain Find dev";
+  title.style.fontWeight = "700";
+  title.style.marginBottom = "6px";
+
+  const status = document.createElement("pre");
+  status.id = "mountain-find-dev-status";
+  status.style.margin = "0";
+  status.style.whiteSpace = "pre-wrap";
+
+  panel.append(title, status);
+  document.body.appendChild(panel);
+  mountainFindDevPanel = panel;
+  return panel;
+}
+
+function updateMountainFindDevPanel(snapshot, extra = {}) {
+  const panel = ensureMountainFindDevPanel();
+  const status = panel?.querySelector("#mountain-find-dev-status");
+  if (!status) {
+    return;
+  }
+
+  status.textContent = JSON.stringify({
+    ...snapshot,
+    ...extra
+  }, null, 2);
+}
+
+function logMemoryTrailFindPromptDebug(memoryTrail, selection = {}, target = null, stage = "unknown") {
+  if (
+    !isLocalDevAccessAllowed()
+    || !isUsMountainRangesMemoryTrail(memoryTrail)
+    || (selection.promptType || memoryTrail?.currentPromptType) !== "name_to_place"
+  ) {
+    return;
+  }
+
+  const snapshot = getMemoryTrailFindPromptDebugSnapshot(memoryTrail, { selection, target, stage });
+  console.info("[mountain-find-dev]", stage, snapshot);
+  updateMountainFindDevPanel(snapshot);
+  Promise.all([
+    getMemoryTrailAudioLookupDebug(snapshot.instructionAudioPhrase),
+    getMemoryTrailAudioLookupDebug(snapshot.targetNameAudioPhrase)
+  ]).then(([instructionAudio, targetAudio]) => {
+    const audioLookup = {
+      stage,
+      promptKey: memoryTrail?.currentPromptKey || "",
+      instructionAudio,
+      targetAudio,
+      audioMuted: snapshot.audioMuted
+    };
+    console.info("[mountain-find-dev] audio lookup", audioLookup);
+    updateMountainFindDevPanel(snapshot, { audioLookup });
+  });
+}
+
 function shuffleMemoryTrailChoices(items = []) {
   const shuffled = [...items];
   for (let index = shuffled.length - 1; index > 0; index -= 1) {
@@ -7849,6 +8205,7 @@ function setMemoryTrailInstruction({ memoryTrail, phase, promptType, mode = "", 
   let speechPromise = Promise.resolve(false);
 
   memoryTrail.instructionLabel = instruction.label;
+  memoryTrail.visibleInstructionText = instruction.banner;
   memoryTrail.currentInstructionKey = instructionKey;
 
   if (isModeChange) {
@@ -7996,7 +8353,8 @@ function startMemoryTrail(options = {}) {
     maxNewTargets: memoryTrailSection?.targetIds?.length,
     sectionTitle: memoryTrailSection?.title,
     sectionIndex: memoryTrailSection?.sectionIndex,
-    sectionCount: memoryTrailSection?.sectionCount
+    sectionCount: memoryTrailSection?.sectionCount,
+    sectionQuizView: memoryTrailSection?.map?.quizView || session.currentActivity?.map?.quizView || null
   });
   currentMemoryTrailAnalyticsKey = [
     activeStudySession.journeyId,
@@ -8017,7 +8375,9 @@ function startMemoryTrail(options = {}) {
   instruction.textContent = "First learn the small group, then practice from memory.";
   fitMapToPracticeWindow(activeStudySession.memoryTrail.currentPracticeWindow, "start");
   renderStudyExplorePanel();
-  promptNextMemoryTrailTarget(activeStudySession?.memoryTrail);
+  if (!options.suppressInitialPrompt) {
+    promptNextMemoryTrailTarget(activeStudySession?.memoryTrail);
+  }
   return true;
 }
 
@@ -8059,7 +8419,8 @@ function restartMemoryTrail() {
     maxNewTargets: memoryTrailSection?.targetIds?.length,
     sectionTitle: memoryTrailSection?.title,
     sectionIndex: memoryTrailSection?.sectionIndex,
-    sectionCount: memoryTrailSection?.sectionCount
+    sectionCount: memoryTrailSection?.sectionCount,
+    sectionQuizView: memoryTrailSection?.map?.quizView || session.currentActivity?.map?.quizView || null
   });
   activeStudySession.memoryTrail.previousRevealedTargetIds = previousRevealedTargetIds;
   currentMemoryTrailAnalyticsKey = [
@@ -8118,19 +8479,32 @@ function promptNextMemoryTrailTarget(memoryTrail = getActiveMemoryTrail()) {
     return;
   }
 
+  applyMemoryTrailPromptSelection(memoryTrail, selection);
+}
+
+function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
+  if (!isCurrentMemoryTrailState(memoryTrail) || !selection?.targetId) {
+    return false;
+  }
+
   const target = getTargetById(memoryTrail, selection.targetId);
   const stats = memoryTrail.targetStats[selection.targetId];
-  const speechLabel = getMemoryTrailTargetLabel(target);
+  if (!target || !stats) {
+    return false;
+  }
+
+  const speechLabel = getMemoryTrailTargetLabel(target, memoryTrail);
   const promptKey = `${memoryTrail.promptCount + 1}:${selection.promptType || "name_to_place"}:${selection.targetId}:${memoryTrail.promptHistory.length}`;
   memoryTrail.phase = "playing";
   memoryTrail.currentPromptTargetId = selection.targetId;
+  memoryTrail.currentPromptTargetLabel = speechLabel || target?.name || "";
   memoryTrail.currentPromptKey = promptKey;
   memoryTrail.currentPromptType = selection.promptType || "name_to_place";
   memoryTrail.currentPromptMode = selection.mode;
   memoryTrail.currentPromptReason = selection.reason;
   memoryTrail.sessionPhase = selection.promptType === "guided" ? "learn" : "practice";
   memoryTrail.correction = null;
-  memoryTrail.promptName = selection.promptType === "place_to_name" ? "" : speechLabel || target?.name || "";
+  memoryTrail.promptName = selection.promptType === "place_to_name" ? "" : memoryTrail.currentPromptTargetLabel;
   memoryTrail.responseChipTargetId = null;
   memoryTrail.answerChoices = selection.promptType === "place_to_name"
     ? buildMemoryTrailAnswerChoices(memoryTrail, selection.targetId, promptKey)
@@ -8171,14 +8545,19 @@ function promptNextMemoryTrailTarget(memoryTrail = getActiveMemoryTrail()) {
   runner.setMemoryTrailHighlight(selection.promptType === "guided" || selection.promptType === "place_to_name"
     ? selection.targetId
     : []);
+  applyMemoryTrailSectionQuizCamera(memoryTrail, selection);
+  scheduleMemoryTrailSectionQuizCameraCheck(memoryTrail, selection);
   scheduleContinentsOceansLearnFocusCheck(memoryTrail, selection, target);
   scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target);
   maybeFocusContinentsOceansNamePrompt(selection, target);
   renderStudyExplorePanel();
+  logMemoryTrailFindPromptDebug(memoryTrail, selection, target, "rendered");
 
   if (shouldSpeakMemoryTrailTargetAtPromptStart(memoryTrail, target, selection)) {
     speakMemoryTrailPromptTargetAfterInstruction(memoryTrail, target, selection, instructionSpeechPromise);
   }
+
+  return true;
 }
 
 function shouldSpeakMemoryTrailTargetAtPromptStart(memoryTrail, target, selection = {}) {
@@ -8239,8 +8618,10 @@ function speakMemoryTrailPromptTargetAfterInstruction(memoryTrail, target, selec
       && memoryTrail.currentPromptTargetId === selection?.targetId
       && memoryTrail.currentPromptKey === promptKey
     ) {
-      const targetLabel = getStudyPreviewSpeechLabel(target);
-      const attempted = speakMemoryTrailTargetOnce(memoryTrail, target, promptKey);
+      const activeTarget = getMemoryTrailActivePromptTarget(memoryTrail) || target;
+      const targetLabel = getStudyPreviewSpeechLabel(activeTarget);
+      const attempted = speakMemoryTrailTargetOnce(memoryTrail, activeTarget, promptKey);
+      logMemoryTrailFindPromptDebug(memoryTrail, selection, activeTarget, "audio-attempt");
       debugMemoryTrail("target label speech attempt", {
         trigger,
         promptType: selection?.promptType || memoryTrail.currentPromptType || "",
@@ -8274,10 +8655,18 @@ function speakMemoryTrailPromptTargetAfterInstruction(memoryTrail, target, selec
 }
 
 function shouldUseMemoryTrailTargetSpeechFallback(memoryTrail, selection = {}) {
+  if (!memoryTrail || !selection?.promptType) {
+    return false;
+  }
+
+  if (selection.promptType === "name_to_place" || selection.promptType === "guided") {
+    return true;
+  }
+
   return Boolean(
-    memoryTrail?.source === "daily-trail"
+    memoryTrail.source === "daily-trail"
     && memoryTrail.activityId === continentsOceansActivityId
-    && selection?.promptType === "place_to_name"
+    && selection.promptType === "place_to_name"
   );
 }
 
@@ -8907,9 +9296,13 @@ function getMemoryTrailAnsweringMessage(memoryTrail) {
     return `What ${singularNoun} is this?`;
   }
 
-  return memoryTrail.promptName
-    ? `Find ${memoryTrail.promptName}.`
-    : "Find the matching place.";
+  if (isNameToPlaceMemoryTrailPrompt(memoryTrail)) {
+    return getMemoryTrailActivePromptLabel(memoryTrail)
+      ? `Tap the ${singularNoun} named below:`
+      : `Find the named ${singularNoun}.`;
+  }
+
+  return "Find the matching place.";
 }
 
 function getMemoryTrailFallbackSpeechDurationMs(labelText) {
@@ -9602,6 +9995,7 @@ function completeMemoryTrailSession(memoryTrail) {
   memoryTrail.phase = "complete";
   memoryTrail.sessionPhase = "practice";
   memoryTrail.promptName = "";
+  memoryTrail.currentPromptTargetLabel = "";
   memoryTrail.responseChipTargetId = null;
   memoryTrail.correction = null;
   memoryTrail.currentPromptTargetId = null;
@@ -10174,11 +10568,28 @@ function renderMemoryTrailPanel() {
   promptGroup.className = "memory-trail-active-prompt";
   promptGroup.appendChild(message);
 
-  if (memoryTrail.promptName) {
+  const activeRecallPromptLabel = isNameToPlaceMemoryTrailPrompt(memoryTrail) && memoryTrail.phase === "answering"
+    ? getMemoryTrailActivePromptLabel(memoryTrail)
+    : "";
+  const promptLabel = activeRecallPromptLabel || memoryTrail.promptName;
+
+  if (promptLabel) {
     const prompt = document.createElement("p");
     prompt.className = "memory-trail-prompt";
-    prompt.textContent = memoryTrail.promptName;
+    if (activeRecallPromptLabel) {
+      prompt.classList.add("memory-trail-recall-target");
+      prompt.textContent = `Find: ${activeRecallPromptLabel}`;
+    } else {
+      prompt.textContent = promptLabel;
+    }
     promptGroup.appendChild(prompt);
+  }
+
+  if (memoryTrail.visibleInstructionText && memoryTrail.phase !== "complete") {
+    const visibleInstruction = document.createElement("p");
+    visibleInstruction.className = "memory-trail-visible-instruction";
+    visibleInstruction.textContent = memoryTrail.visibleInstructionText;
+    promptGroup.appendChild(visibleInstruction);
   }
 
   if (memoryTrail.instructionLabel && memoryTrail.phase !== "complete") {
@@ -11247,6 +11658,178 @@ async function openCameraDevMenu() {
 }
 
 window.openCameraDevMenu = openCameraDevMenu;
+
+const mountainFindDevSections = Object.freeze({
+  western: { index: 0, title: "Western Lower 48" },
+  "western-lower-48": { index: 0, title: "Western Lower 48" },
+  east: { index: 1, title: "Eastern Mountains" },
+  eastern: { index: 1, title: "Eastern Mountains" },
+  central: { index: 2, title: "Central Mountains" },
+  midwestern: { index: 2, title: "Central Mountains" },
+  alaska: { index: 3, title: "Alaska Mountains" }
+});
+
+function normalizeMountainFindDevSection(value = "western") {
+  const key = String(value || "western").trim().toLowerCase().replace(/\s+/g, "-");
+  return mountainFindDevSections[key] || mountainFindDevSections.western;
+}
+
+function getMountainFindDevUrlOptions() {
+  if (!isLocalDevAccessAllowed()) {
+    return null;
+  }
+
+  const params = new URLSearchParams(window.location.search || "");
+  if (!params.has("mountainFindDev") && !params.has("mountain-find-dev")) {
+    return null;
+  }
+
+  return {
+    section: params.get("section") || params.get("mountainFindSection") || "western",
+    target: params.get("target") || params.get("mountainFindTarget") || "Teton Range"
+  };
+}
+
+function resolveMountainFindDevTarget(memoryTrail, targetRef = "") {
+  const requested = String(targetRef || "").trim();
+  const normalized = requested.toLowerCase();
+  return memoryTrail?.targetPool?.find((target) => (
+    target.id === requested
+    || target.id.toLowerCase() === normalized
+    || getMemoryTrailTargetLabel(target, memoryTrail).toLowerCase() === normalized
+    || target.name?.toLowerCase?.() === normalized
+  )) || memoryTrail?.targetPool?.[0] || null;
+}
+
+function prepareMountainFindDevMemoryTrail(memoryTrail) {
+  if (!memoryTrail) {
+    return;
+  }
+
+  memoryTrail.introducedTargetIds = [...memoryTrail.targetPoolIds];
+  memoryTrail.currentPracticeWindow = memoryTrail.targetPool.slice(0, Math.min(MAX_ACTIVE_CHUNK_SIZE, memoryTrail.targetPool.length));
+  Object.values(memoryTrail.targetStats || {}).forEach((stats) => {
+    stats.isIntroduced = true;
+    stats.exposedCount = Math.max(stats.exposedCount || 0, 1);
+    stats.guidedTapCount = Math.max(stats.guidedTapCount || 0, 1);
+    stats.nextDuePrompt = 0;
+  });
+}
+
+async function startMountainFindDev(options = {}) {
+  if (!isLocalDevAccessAllowed()) {
+    console.warn("Mountain Find dev helper is only available on localhost or file URLs.");
+    return null;
+  }
+
+  mountainFindDevSessionActive = true;
+  updateMountainFindDevPanel({
+    stage: "starting",
+    requestedSection: options.section || options.sectionId || "western",
+    requestedTarget: options.target || "Teton Range"
+  });
+
+  await ensureMapReady();
+  try {
+    localStorage.setItem("geography-memory-debug-chip-speech", "true");
+  } catch {
+    // Debug speech logging is best-effort.
+  }
+
+  const journey = journeyPresets.find((candidate) => candidate.id === usMountainRangesActivityId);
+  const step = getValidJourneySteps(journey).find((candidate) => candidate.activityId === usMountainRangesActivityId);
+  const activity = getActivityById(usMountainRangesActivityId);
+  if (!journey || !step || !activity) {
+    console.warn("U.S. Mountain Ranges is not loaded yet.");
+    return null;
+  }
+
+  const section = normalizeMountainFindDevSection(options.section || options.sectionId || "western");
+  selectedJourneyId = journey.id;
+  await openStudyExploreActivity(journey, step, activity, { autoStartMemoryTrail: false });
+  activeStudySession.memoryTrailSectionIndex = section.index;
+  startMemoryTrail({ suppressInitialPrompt: true });
+
+  const memoryTrail = getActiveMemoryTrail();
+  prepareMountainFindDevMemoryTrail(memoryTrail);
+  const snapshot = forceMountainFindDevPrompt(options.target || "Teton Range");
+  console.info("[mountain-find-dev] started", {
+    section: section.title,
+    target: options.target || "Teton Range",
+    snapshot
+  });
+  return snapshot;
+}
+
+function forceMountainFindDevPrompt(targetRef = "Teton Range") {
+  if (!isLocalDevAccessAllowed()) {
+    console.warn("Mountain Find dev helper is only available on localhost or file URLs.");
+    return null;
+  }
+
+  mountainFindDevSessionActive = true;
+  const memoryTrail = getActiveMemoryTrail();
+  if (!memoryTrail) {
+    console.warn("No active Memory Trail. Run window.mappaMountainFindDev.start() first.");
+    return null;
+  }
+
+  prepareMountainFindDevMemoryTrail(memoryTrail);
+  clearMemoryTrailTimers(memoryTrail);
+  clearMemoryTrailTrayFeedback(memoryTrail, "mountain find dev prompt");
+  updateMemoryTrailCorrectionCallout(null);
+  runner?.setMemoryTrailCorrectionHighlight?.({ correctTargetId: "", wrongTargetId: "" });
+  window.GeographyChipSpeech?.stopAudio?.();
+  window.speechSynthesis?.cancel();
+  memoryTrail.correction = null;
+  memoryTrail.trayFeedback = null;
+  memoryTrail.responseChipTargetId = null;
+  memoryTrail.answerChoices = [];
+  memoryTrail.lastSpokenTargetPromptKey = "";
+
+  const target = resolveMountainFindDevTarget(memoryTrail, targetRef);
+  if (!target) {
+    console.warn("Target not found for Mountain Find dev prompt.", { targetRef });
+    return null;
+  }
+
+  const didApply = applyMemoryTrailPromptSelection(memoryTrail, {
+    targetId: target.id,
+    promptType: "name_to_place",
+    mode: "dev-find",
+    reason: "dev-direct-find-test"
+  });
+  const snapshot = getMemoryTrailFindPromptDebugSnapshot(memoryTrail, {
+    stage: "dev-forced",
+    selection: { targetId: target.id, promptType: "name_to_place", mode: "dev-find" },
+    target
+  });
+  console.info("[mountain-find-dev] forced prompt", { didApply, snapshot });
+  return snapshot;
+}
+
+function getMountainFindDevSnapshot() {
+  const memoryTrail = getActiveMemoryTrail();
+  const snapshot = getMemoryTrailFindPromptDebugSnapshot(memoryTrail, {
+    stage: "dev-snapshot",
+    selection: {
+      targetId: memoryTrail?.currentPromptTargetId || "",
+      promptType: memoryTrail?.currentPromptType || "",
+      mode: memoryTrail?.currentPromptMode || ""
+    },
+    target: getMemoryTrailActivePromptTarget(memoryTrail)
+  });
+  console.info("[mountain-find-dev] snapshot", snapshot);
+  return snapshot;
+}
+
+if (isLocalDevAccessAllowed()) {
+  window.mappaMountainFindDev = {
+    start: startMountainFindDev,
+    next: forceMountainFindDevPrompt,
+    snapshot: getMountainFindDevSnapshot
+  };
+}
 
 function bindCameraDevMapEvents() {
   const map = runner?.map;

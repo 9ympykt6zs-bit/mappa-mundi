@@ -9,6 +9,13 @@
   "map": {
     "region": "united-states",
     "regionView": { "center": [-153.8, 65.0], "zoom": 3.0 },
+    "quizView": {
+      "center": [-154.35, 64.95],
+      "zoom": 3.55,
+      "bearing": 0,
+      "pitch": 0,
+      "duration": 850
+    },
     "studyView": {
       "bounds": [[-168.0, 59.2], [-140.0, 70.1]],
       "padding": { "top": 58, "right": 58, "bottom": 96, "left": 58 },

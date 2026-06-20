@@ -9,6 +9,7 @@
   let sharedAudio = null;
   let speechQueue = Promise.resolve();
   let isAudioMuted = loadAudioMuted();
+  const localAudioMaxDurationMs = 6500;
   const pronunciationOverrides = Object.freeze({
     rondonia: {
       lang: "pt-BR",
@@ -278,12 +279,14 @@
       currentAudio = audio;
 
       let isFinished = false;
+      let timeoutId = null;
       const finish = (didPlay) => {
         if (isFinished) {
           return;
         }
 
         isFinished = true;
+        global.clearTimeout(timeoutId);
 
         if (audio.__atlasQuestCancelled) {
           resolve(true);
@@ -306,6 +309,7 @@
       };
 
       const cleanup = () => {
+        global.clearTimeout(timeoutId);
         audio.removeEventListener("ended", handleEnded);
         audio.removeEventListener("error", handleError);
       };
@@ -322,6 +326,20 @@
       audio.addEventListener("ended", handleEnded);
       audio.addEventListener("error", handleError);
       currentAudioCancel = cancelPlayback;
+      timeoutId = global.setTimeout(() => {
+        cleanup();
+        warnMemoryTrailAudioFailure(audioPath, "audio playback timed out", options);
+        if (currentAudio === audio) {
+          audio.pause();
+          audio.removeAttribute("src");
+          audio.load();
+          currentAudio = null;
+        }
+        if (currentAudioCancel === cancelPlayback) {
+          currentAudioCancel = null;
+        }
+        finish(false);
+      }, getAudioPlaybackTimeoutMs(audioPath, options));
 
       const playResult = audio.play();
 
@@ -333,6 +351,18 @@
         });
       }
     });
+  }
+
+  function getAudioPlaybackTimeoutMs(audioPath, options = {}) {
+    const configuredTimeout = Number(options.timeoutMs);
+    if (Number.isFinite(configuredTimeout) && configuredTimeout > 0) {
+      return configuredTimeout;
+    }
+
+    const path = String(audioPath || "");
+    const filename = path.split("/").pop() || path;
+    const estimatedDuration = 900 + filename.length * 70;
+    return Math.max(2400, Math.min(localAudioMaxDurationMs, estimatedDuration));
   }
 
   function warnMemoryTrailAudioFailure(audioPath, error, options = {}) {
@@ -385,8 +415,16 @@
 
     const playFromLookup = (lookup) => {
       const audioPath = lookup && !speech.preferBrowserSpeech ? findLocalAudioPath(speech.lookupText) : null;
+      logChipSpeechDebug("speak-label-path", {
+        labelText,
+        lookupText: speech.lookupText,
+        generatedAudioFound: Boolean(audioPath),
+        audioPath: audioPath || "",
+        fallback: audioPath ? "" : "browser-speech"
+      });
 
       if (!audioPath) {
+        warnMissingLocalAudio(speech.lookupText);
         speakWithBrowserSpeech(speech.text, speech);
         return;
       }
@@ -429,13 +467,20 @@
     if (options.queue) {
       const queuedSpeech = speechQueue
         .catch(() => false)
-        .then(() => playLabelAndWait(labelText, options));
+        .then(() => playLabelAndWait(labelText, options))
+        .catch((error) => {
+          warnQueuedSpeechFailure(labelText, error, options);
+          return false;
+        });
 
       speechQueue = queuedSpeech;
       return queuedSpeech;
     }
 
-    return playLabelAndWait(labelText, options);
+    return playLabelAndWait(labelText, options).catch((error) => {
+      warnQueuedSpeechFailure(labelText, error, options);
+      return false;
+    });
   }
 
   async function playLabelAndWait(labelText, options = {}) {
@@ -452,21 +497,50 @@
 
     const lookup = await getAudioManifest();
     const audioPath = lookup && !speech.preferBrowserSpeech ? findLocalAudioPath(speech.lookupText) : null;
+    logChipSpeechDebug("speak-label-and-wait-path", {
+      labelText,
+      lookupText: speech.lookupText,
+      generatedAudioFound: Boolean(audioPath),
+      audioPath: audioPath || "",
+      queue: Boolean(options.queue),
+      muted: isAudioMuted,
+      fallback: audioPath ? "" : "browser-speech"
+    });
 
     if (!audioPath) {
-      if (!(await waitForBrowserSpeech(speech.text, speech))) {
+      warnMissingLocalAudio(speech.lookupText);
+      const didUseBrowserSpeech = await waitForBrowserSpeech(speech.text, speech);
+      logChipSpeechDebug("browser-speech-result", {
+        labelText,
+        didUseBrowserSpeech
+      });
+      if (!didUseBrowserSpeech) {
         await wait(getSpeechFallbackDurationMs(text));
       }
       return false;
     }
 
-    const didPlay = await playLocalAudio(audioPath, options);
+    const didPlay = await playLocalAudio(audioPath, {
+      ...options,
+      timeoutMs: options.timeoutMs || getSpeechFallbackDurationMs(text) + 2200
+    });
+    logChipSpeechDebug("local-audio-result", {
+      labelText,
+      audioPath,
+      didPlay
+    });
 
     if (didPlay) {
       return true;
     }
 
-    if (!(await waitForBrowserSpeech(speech.text, speech))) {
+    const didUseBrowserSpeech = await waitForBrowserSpeech(speech.text, speech);
+    logChipSpeechDebug("browser-speech-fallback-result", {
+      labelText,
+      audioPath,
+      didUseBrowserSpeech
+    });
+    if (!didUseBrowserSpeech) {
       await wait(getSpeechFallbackDurationMs(text));
     }
 
@@ -476,6 +550,27 @@
   function wait(durationMs) {
     return new Promise((resolve) => {
       global.setTimeout(resolve, durationMs);
+    });
+  }
+
+  function warnQueuedSpeechFailure(labelText, error, options = {}) {
+    if (!options.warnOnAudioFailure) {
+      return;
+    }
+
+    console.warn("[memory-trail-audio] Prompt audio failed; later prompts will continue.", {
+      labelText,
+      error
+    });
+  }
+
+  function warnMissingLocalAudio(labelText) {
+    if (!isChipSpeechDebugEnabled()) {
+      return;
+    }
+
+    console.warn("[memory-trail-audio] Missing generated audio; using browser speech fallback.", {
+      labelText
     });
   }
 
@@ -563,6 +658,14 @@
     }
 
     console.debug("[chip-speech]", eventType, labelText);
+  }
+
+  function logChipSpeechDebug(eventType, details = {}) {
+    if (!isChipSpeechDebugEnabled()) {
+      return;
+    }
+
+    console.debug("[chip-speech]", eventType, details);
   }
 
   function createSpeakerIcon() {

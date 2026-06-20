@@ -101,33 +101,36 @@ const mountainRangeInstructionPhrases = [
 
 const proofSheetMountainRangeLabels = [
   "Adirondack Mountains",
-  "Alaska Range",
   "Allegheny Mountains",
   "Alps",
-  "Appalachian Mountains",
-  "Black Hills",
   "Blue Ridge Mountains",
-  "Brooks Range",
   "Carpathians",
   "Cascade Mountains",
   "Caucasus",
-  "Coast Ranges",
   "Cumberland Mountains",
   "Great Smoky Mountains",
   "Green Mountains",
   "Himalayas",
-  "Olympic Mountains",
-  "Ouachita Mountains",
-  "Ozark Mountains",
   "Pyrenees",
   "Rocky Mountains",
   "Sierra Nevada",
   "Sierra Nevadas",
-  "Teton Range",
   "Ural",
   "Ural Mountains",
-  "Wasatch Range",
   "White Mountains"
+];
+
+const bonusUsMountainRangeLabels = [
+  "Alaska Range",
+  "Appalachian Mountains",
+  "Black Hills",
+  "Brooks Range",
+  "Coast Ranges",
+  "Olympic Mountains",
+  "Ouachita Mountains",
+  "Ozark Mountains",
+  "Teton Range",
+  "Wasatch Range"
 ];
 
 const instructionPhrases = [
@@ -330,6 +333,10 @@ async function collectChipLabels() {
   addChipLabelEntries(labels, proofSheetMountainRangeLabels, {
     sourceFile: "proof-sheet-mountain-ranges",
     sourceContext: "CC proof-sheet mountain ranges"
+  });
+  addChipLabelEntries(labels, bonusUsMountainRangeLabels, {
+    sourceFile: "bonus-us-mountain-ranges",
+    sourceContext: "Bonus U.S. mountain ranges"
   });
 
   const files = (await readdir(dataDir))
