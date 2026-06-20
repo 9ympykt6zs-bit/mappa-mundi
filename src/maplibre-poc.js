@@ -168,6 +168,7 @@ const coContinentOverridesPath = "assets/data/co-continent-overrides.json";
 const coContinentLandPath = "assets/maps/data/continents-oceans-land.geojson";
 const inlandWatersPath = "assets/maps/data/inland-waters.geojson";
 const mountainRangesPath = "assets/data/physical-features/us-mountain-ranges.geojson?v=20260618-us-mountain-ranges";
+const riverLinesPath = "assets/data/physical-features/proof-sheet-rivers.geojson?v=20260620-river-line-targets";
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const northAmericaAdmin1Path = "assets/maps/data/maplibre-north-america-admin1.geojson";
@@ -2862,6 +2863,7 @@ let cameraDevPitchInput = null;
 let cameraDevScopeSelect = null;
 let cameraDevExportOutput = null;
 let cameraDevMemoryTrailSkipButton = null;
+let cameraDevMemoryTrailSectionButton = null;
 let cameraDevMemoryTrailStatusEl = null;
 let cameraDevStylesInjected = false;
 let cameraDevMapEventSource = null;
@@ -3526,7 +3528,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260619-mountain-learn-focus"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260620-river-line-targets"),
       import("./chip-speech.js?v=20260602-daily-trail-review-chips")
     ]).then(([
       ,
@@ -3577,7 +3579,7 @@ async function ensureMapReady() {
       await ensureMapRuntimeLoaded();
       await ensureActivityDataLoaded();
 
-      const [worldCountries, supplementalWorldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, mountainRanges, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
+      const [worldCountries, supplementalWorldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, mountainRanges, riverLines, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
         fetchJson(worldCountriesPath),
         Promise.all(worldCountrySupplements.map((path) => fetchJson(path))),
         fetchJson(oceanZonesPath),
@@ -3585,6 +3587,7 @@ async function ensureMapReady() {
         fetchOptionalJson(coContinentLandPath, null),
         fetchJson(inlandWatersPath),
         fetchJson(mountainRangesPath),
+        fetchJson(riverLinesPath),
         fetchJson(usStatesAtlasPath),
         fetchJson(stateGeoJsonPath),
         fetchJson(northAmericaAdmin1Path),
@@ -3625,6 +3628,7 @@ async function ensureMapReady() {
         coContinentLand,
         inlandWaters,
         mountainRanges,
+        riverLines,
         usStatesAtlas,
         stateTargets,
         northAmericaAdmin1,
@@ -11894,6 +11898,7 @@ function getMemoryTrailDevSnapshot() {
   const memoryTrail = getActiveMemoryTrail();
   const target = getMemoryTrailActivePromptTarget(memoryTrail);
   const expectedCamera = getMemoryTrailDevExpectedCamera(memoryTrail, target);
+  const nextSection = getNextMemoryTrailSection(session.currentActivity);
 
   return {
     activity: {
@@ -11907,6 +11912,10 @@ function getMemoryTrailDevSnapshot() {
       promptMode: memoryTrail.currentPromptMode || "",
       section: memoryTrail.sectionTitle || "",
       sectionIndex: memoryTrail.sectionIndex,
+      nextSection: nextSection ? {
+        title: nextSection.title || "",
+        index: nextSection.sectionIndex
+      } : null,
       targetId: target?.id || memoryTrail.currentPromptTargetId || "",
       targetLabel: getMemoryTrailActivePromptLabel(memoryTrail),
       expectedCamera
@@ -11914,6 +11923,54 @@ function getMemoryTrailDevSnapshot() {
     camera: getMemoryTrailCameraSnapshot(),
     audioMuted: Boolean(window.GeographyChipSpeech?.getAudioMuted?.())
   };
+}
+
+function completeMemoryTrailSectionForDev(memoryTrail) {
+  clearMemoryTrailTimers(memoryTrail);
+  memoryTrail.phase = "complete";
+  memoryTrail.sessionPhase = "practice";
+  memoryTrail.promptName = "";
+  memoryTrail.currentPromptTargetLabel = "";
+  memoryTrail.currentPromptTargetId = null;
+  memoryTrail.currentPromptKey = "";
+  memoryTrail.answerChoices = [];
+  memoryTrail.correction = null;
+  memoryTrail.message = "Dev section skip complete.";
+  runner?.setMemoryTrailHighlight?.([]);
+  runner?.setMemoryTrailCorrectionHighlight?.({ correctTargetId: "", wrongTargetId: "" });
+  renderStudyExplorePanel();
+  showMemoryTrailCompletionOverlay();
+}
+
+function skipMemoryTrailSectionForDev() {
+  if (!isLocalDevAccessAllowed()) {
+    return null;
+  }
+
+  const memoryTrail = getActiveMemoryTrail();
+  if (!memoryTrail) {
+    console.warn("No active Memory Trail section to skip.");
+    updateCameraDevPanel();
+    return null;
+  }
+
+  clearMemoryTrailTimers(memoryTrail);
+  clearMemoryTrailTrayFeedback(memoryTrail, "dev skip section");
+  updateMemoryTrailCorrectionCallout(null);
+  runner?.setMemoryTrailCorrectionHighlight?.({ correctTargetId: "", wrongTargetId: "" });
+  runner?.setMemoryTrailHighlight?.([]);
+  window.GeographyChipSpeech?.stopAudio?.();
+  window.speechSynthesis?.cancel();
+
+  const advanced = startNextMemoryTrailSection();
+  if (!advanced) {
+    completeMemoryTrailSectionForDev(memoryTrail);
+  }
+
+  const snapshot = getMemoryTrailDevSnapshot();
+  console.info("[memory-trail-dev] skipped section", { advanced, snapshot });
+  updateCameraDevPanel({ syncInputs: true });
+  return snapshot;
 }
 
 function skipMemoryTrailPromptForDev() {
@@ -11958,6 +12015,7 @@ if (isLocalDevAccessAllowed()) {
   };
   window.mappaMemoryTrailDev = {
     skip: skipMemoryTrailPromptForDev,
+    skipSection: skipMemoryTrailSectionForDev,
     snapshot: getMemoryTrailDevSnapshot
   };
 }
@@ -12105,8 +12163,10 @@ function ensureCameraDevPanel() {
   cameraDevMemoryTrailStatusEl = document.createElement("p");
   cameraDevMemoryTrailStatusEl.className = "camera-dev-memory-trail-status";
   cameraDevMemoryTrailSkipButton = createCameraDevButton("Dev: Next Prompt", () => skipMemoryTrailPromptForDev());
+  cameraDevMemoryTrailSectionButton = createCameraDevButton("Dev: Next Section", () => skipMemoryTrailSectionForDev());
   cameraDevMemoryTrailSkipButton.disabled = true;
-  memoryTrailDev.append(memoryTrailDevTitle, cameraDevMemoryTrailStatusEl, cameraDevMemoryTrailSkipButton);
+  cameraDevMemoryTrailSectionButton.disabled = true;
+  memoryTrailDev.append(memoryTrailDevTitle, cameraDevMemoryTrailStatusEl, cameraDevMemoryTrailSkipButton, cameraDevMemoryTrailSectionButton);
 
   const exportHeader = document.createElement("div");
   exportHeader.className = "camera-dev-export-header";
@@ -12349,16 +12409,18 @@ function updateCameraDevPanel(options = {}) {
 }
 
 function updateCameraDevMemoryTrailControls() {
-  if (!cameraDevMemoryTrailSkipButton || !cameraDevMemoryTrailStatusEl) {
+  if (!cameraDevMemoryTrailSkipButton || !cameraDevMemoryTrailSectionButton || !cameraDevMemoryTrailStatusEl) {
     return;
   }
 
   const memoryTrail = getActiveMemoryTrail();
   const target = getMemoryTrailActivePromptTarget(memoryTrail);
   const canSkip = Boolean(memoryTrail?.active && target?.id);
+  const nextSection = getNextMemoryTrailSection(session.currentActivity);
   cameraDevMemoryTrailSkipButton.disabled = !canSkip;
+  cameraDevMemoryTrailSectionButton.disabled = !memoryTrail?.active;
   cameraDevMemoryTrailStatusEl.textContent = canSkip
-    ? `${memoryTrail.sectionTitle || "Memory Trail"} | ${memoryTrail.sessionPhase || ""} | ${target.name || target.id}`
+    ? `${memoryTrail.sectionTitle || "Memory Trail"} | ${memoryTrail.sessionPhase || ""} | ${target.name || target.id}${nextSection ? ` | Next: ${nextSection.title}` : " | Final section"}`
     : "Start a Memory Trail to enable skipping.";
 }
 

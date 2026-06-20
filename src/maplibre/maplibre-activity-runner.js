@@ -29,6 +29,9 @@ const colors = {
   memoryTrailWrongLine: "#991b1b",
   mountainRangeFill: "#b7791f",
   mountainRangeLine: "#7c3f12",
+  riverLine: "#3387c5",
+  riverLineMuted: "#83b7d7",
+  riverLineHighlight: "#075985",
   hardContinentChallengeFill: "#4f7f5f",
   neutralMarker: "#ffffff",
   neutralMarkerStroke: "#172033",
@@ -472,6 +475,7 @@ export class MapLibreActivityRunner {
     this.coContinentOverrides = [];
     this.coContinentLand = emptyFeatureCollection;
     this.mountainRanges = emptyFeatureCollection;
+    this.riverLines = emptyFeatureCollection;
     this.coContinentOverrideDebugEnabled = false;
     this.coContinentOverrideDebugPanel = null;
     this.coContinentOverrideDebugSelection = null;
@@ -529,7 +533,7 @@ export class MapLibreActivityRunner {
     this.cameraDevStateChangeHandler = typeof handler === "function" ? handler : null;
   }
 
-  async load({ activity, worldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, mountainRanges, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1 }) {
+  async load({ activity, worldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, mountainRanges, riverLines, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1 }) {
     this.activity = activity;
     this.worldCountries = worldCountries;
     this.oceanZones = oceanZones || emptyFeatureCollection;
@@ -538,6 +542,7 @@ export class MapLibreActivityRunner {
     this.coContinentOverrideDebugEnabled = this.shouldEnableCoContinentOverrideDebug();
     this.inlandWaters = inlandWaters || emptyFeatureCollection;
     this.mountainRanges = mountainRanges || emptyFeatureCollection;
+    this.riverLines = riverLines || emptyFeatureCollection;
     this.usStatesAtlas = usStatesAtlas;
     this.stateTargets = stateTargets;
     this.northAmericaAdmin1 = northAmericaAdmin1 || emptyFeatureCollection;
@@ -986,6 +991,7 @@ export class MapLibreActivityRunner {
     const shapeSource = this.map.getSource("target-shapes");
     const mountainCorridorSource = this.map.getSource("mountain-range-corridors");
     const mountainSymbolSource = this.map.getSource("mountain-range-symbols");
+    const riverLineSource = this.map.getSource("river-lines");
 
     if (shapeSource) {
       shapeSource.setData(this.getTargetShapeGeoJson());
@@ -997,6 +1003,10 @@ export class MapLibreActivityRunner {
 
     if (mountainSymbolSource) {
       mountainSymbolSource.setData(this.getMountainRangeSymbolGeoJson());
+    }
+
+    if (riverLineSource) {
+      riverLineSource.setData(this.getRiverLineGeoJson());
     }
 
     if (capitalSource) {
@@ -1767,7 +1777,7 @@ export class MapLibreActivityRunner {
   }
 
   isSmallMapTarget(target, context = {}) {
-    if (!target || target.kind !== "shape" || this.isOceanTarget(target)) {
+    if (!target || target.kind !== "shape" || this.isOceanTarget(target) || target.type === "river") {
       return false;
     }
 
@@ -2346,6 +2356,11 @@ export class MapLibreActivityRunner {
       data: this.getMountainRangeSymbolGeoJson()
     });
 
+    this.map.addSource("river-lines", {
+      type: "geojson",
+      data: this.getRiverLineGeoJson()
+    });
+
     this.map.addSource("study-capitals", {
       type: "geojson",
       data: this.getCapitalGeoJson()
@@ -2380,7 +2395,7 @@ export class MapLibreActivityRunner {
       id: "state-fill",
       type: "fill",
       source: "target-shapes",
-      filter: ["!=", ["get", "isOceanZone"], true],
+      filter: ["all", ["!=", ["get", "isOceanZone"], true], ["!=", ["get", "physicalFeatureType"], "river"]],
       layout: {
         visibility: "none"
       },
@@ -2425,6 +2440,7 @@ export class MapLibreActivityRunner {
       id: "state-line",
       type: "line",
       source: "target-shapes",
+      filter: ["!=", ["get", "physicalFeatureType"], "river"],
       layout: {
         visibility: "none"
       },
@@ -2510,6 +2526,38 @@ export class MapLibreActivityRunner {
           0,
           0.01
         ]
+      }
+    });
+
+    this.map.addLayer({
+      id: "river-line",
+      type: "line",
+      source: "river-lines",
+      layout: {
+        visibility: "none",
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": this.getRiverLineColorExpression(),
+        "line-width": this.getRiverLineWidthExpression(),
+        "line-opacity": this.getRiverLineOpacityExpression()
+      }
+    });
+
+    this.map.addLayer({
+      id: "river-hit-line",
+      type: "line",
+      source: "river-lines",
+      layout: {
+        visibility: "none",
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": colors.riverLine,
+        "line-width": this.getRiverHitWidthExpression(),
+        "line-opacity": 0.01
       }
     });
 
@@ -2666,7 +2714,7 @@ export class MapLibreActivityRunner {
       }
     });
 
-    ["state-fill", "target-hit-fill", "capital-hit", "capital-marker", "capital-marker-halo", "state-capital-star", "national-capital-ring", "national-capital-star"].forEach((layerId) => {
+    ["state-fill", "target-hit-fill", "river-hit-line", "capital-hit", "capital-marker", "capital-marker-halo", "state-capital-star", "national-capital-ring", "national-capital-star"].forEach((layerId) => {
       this.map.on("mouseenter", layerId, () => {
         if (this.canUseTargetHoverCursor()) {
           this.map.getCanvas().style.cursor = "pointer";
@@ -3335,7 +3383,7 @@ export class MapLibreActivityRunner {
 
     if (!selectedTarget || selectedTarget.kind === "shape") {
       const stateFeatures = this.map.queryRenderedFeatures(queryPoint, {
-        layers: ["target-hit-fill"]
+        layers: ["target-hit-fill", "river-hit-line"]
       });
       const exactShapeTargetIds = [];
 
@@ -3444,7 +3492,7 @@ export class MapLibreActivityRunner {
       [queryPoint[0] - nearMissBox, queryPoint[1] - nearMissBox],
       [queryPoint[0] + nearMissBox, queryPoint[1] + nearMissBox]
     ], {
-      layers: ["target-hit-fill"]
+      layers: target.type === "river" ? ["river-hit-line"] : ["target-hit-fill"]
     });
 
     if (nearbyFeatures.some((feature) => feature.properties?.id === targetId)) {
@@ -3913,6 +3961,19 @@ export class MapLibreActivityRunner {
     return this.getValidMountainVisualSpineCoordinates(visualArt?.spines);
   }
 
+  getRiverLineGeoJson() {
+    return {
+      type: "FeatureCollection",
+      features: this.shapeTargets
+        .filter((target) => target.type === "river")
+        .map((target) => this.getTargetShapeFeature(target))
+        .filter((feature) => (
+          feature
+          && (feature.geometry?.type === "LineString" || feature.geometry?.type === "MultiLineString")
+        ))
+    };
+  }
+
   getValidMountainVisualSpineCoordinates(spines) {
     if (!Array.isArray(spines)) {
       return [];
@@ -4153,7 +4214,11 @@ export class MapLibreActivityRunner {
         geometryPrecision: sourceFeature.properties?.geometryPrecision || target.geometryPrecision || null,
         targetPrecision: sourceFeature.properties?.targetPrecision || target.targetPrecision || null,
         isOceanZone: target.type === "zone",
-        suppressInternalTargetLines: this.shouldSuppressInternalTargetLines(target)
+        suppressInternalTargetLines: this.shouldSuppressInternalTargetLines(target),
+        lineWidthPx: target.type === "river" ? target.lineWidthPx : undefined,
+        highlightWidthPx: target.type === "river" ? target.highlightWidthPx : undefined,
+        hitWidthPx: target.type === "river" ? target.hitWidthPx : undefined,
+        mutedColor: target.type === "river" ? target.mutedColor : undefined
       },
       geometry: sourceFeature.geometry
     };
@@ -4519,6 +4584,10 @@ export class MapLibreActivityRunner {
       return this.findMountainRangeSourceFeature(target);
     }
 
+    if (target.type === "river") {
+      return this.findRiverLineSourceFeature(target);
+    }
+
     if (activity?.map?.region === "united-states") {
       return this.stateTargets.features.find((feature) => feature.properties.id === sourceFeatureId) || null;
     }
@@ -4582,6 +4651,10 @@ export class MapLibreActivityRunner {
 
   findMountainRangeSourceFeature(target) {
     return this.findPhysicalFeatureSourceFeature(this.mountainRanges, target);
+  }
+
+  findRiverLineSourceFeature(target) {
+    return this.findPhysicalFeatureSourceFeature(this.riverLines, target);
   }
 
   findPhysicalFeatureSourceFeature(featureCollection, target) {
@@ -5222,6 +5295,16 @@ export class MapLibreActivityRunner {
       this.map.setPaintProperty("mountain-range-symbol", "icon-opacity", this.getMountainRangeSymbolOpacityExpression());
     }
 
+    if (this.map.getLayer("river-line")) {
+      this.map.setPaintProperty("river-line", "line-color", this.getRiverLineColorExpression());
+      this.map.setPaintProperty("river-line", "line-width", this.getRiverLineWidthExpression());
+      this.map.setPaintProperty("river-line", "line-opacity", this.getRiverLineOpacityExpression());
+    }
+
+    if (this.map.getLayer("river-hit-line")) {
+      this.map.setPaintProperty("river-hit-line", "line-width", this.getRiverHitWidthExpression());
+    }
+
     if (this.map.getLayer("hard-world-context-fill")) {
       this.map.setPaintProperty("hard-world-context-fill", "fill-color", this.getHardWorldContextFillExpression());
     }
@@ -5312,6 +5395,7 @@ export class MapLibreActivityRunner {
     const shapeSource = this.map.getSource("target-shapes");
     const mountainCorridorSource = this.map.getSource("mountain-range-corridors");
     const mountainSymbolSource = this.map.getSource("mountain-range-symbols");
+    const riverLineSource = this.map.getSource("river-lines");
 
     if (shapeSource) {
       shapeSource.setData(this.getTargetShapeGeoJson());
@@ -5323,6 +5407,10 @@ export class MapLibreActivityRunner {
 
     if (mountainSymbolSource) {
       mountainSymbolSource.setData(this.getMountainRangeSymbolGeoJson());
+    }
+
+    if (riverLineSource) {
+      riverLineSource.setData(this.getRiverLineGeoJson());
     }
   }
 
@@ -6277,6 +6365,47 @@ export class MapLibreActivityRunner {
     ]);
   }
 
+  getRiverLineColorExpression() {
+    return [
+      "case",
+      ["in", ["get", "id"], ["literal", this.memoryTrailWrongHighlightIds]],
+      colors.memoryTrailWrongFill,
+      ["in", ["get", "id"], ["literal", this.memoryTrailCorrectHighlightIds]],
+      colors.memoryTrailCorrectFill,
+      ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
+      colors.riverLineHighlight,
+      ["in", ["get", "id"], ["literal", this.completedIds]],
+      colors.riverLine,
+      ["coalesce", ["get", "mutedColor"], colors.riverLineMuted]
+    ];
+  }
+
+  getRiverLineWidthExpression() {
+    return [
+      "case",
+      ["in", ["get", "id"], ["literal", [...this.memoryTrailHighlightIds, ...this.memoryTrailCorrectHighlightIds, ...this.memoryTrailWrongHighlightIds]]],
+      ["coalesce", ["get", "highlightWidthPx"], 5],
+      ["coalesce", ["get", "lineWidthPx"], 2]
+    ];
+  }
+
+  getRiverLineOpacityExpression() {
+    return [
+      "case",
+      ["in", ["get", "id"], ["literal", [...this.memoryTrailHighlightIds, ...this.memoryTrailCorrectHighlightIds, ...this.memoryTrailWrongHighlightIds]]],
+      0.98,
+      0.68
+    ];
+  }
+
+  getRiverHitWidthExpression() {
+    return [
+      "coalesce",
+      ["get", "hitWidthPx"],
+      ["case", ["<=", ["zoom"], 4], 34, 26]
+    ];
+  }
+
   setUnitedStatesContextVisibility(visibility) {
     ["us-state-context-fill", "us-state-context-line"].forEach((layerId) => {
       if (this.map.getLayer(layerId)) {
@@ -6332,7 +6461,7 @@ export class MapLibreActivityRunner {
 
   updateDifficultyLayerVisibility() {
     if (!this.map || this.currentView !== "study") {
-      ["ocean-target-raster", "state-fill", "state-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
+      ["ocean-target-raster", "state-fill", "state-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
         if (this.map?.getLayer(layerId)) {
           this.map.setLayoutProperty(layerId, "visibility", "none");
         }
@@ -6368,6 +6497,14 @@ export class MapLibreActivityRunner {
 
     if (this.map.getLayer("mountain-range-symbol")) {
       this.map.setLayoutProperty("mountain-range-symbol", "visibility", showGuidedTargets ? "visible" : "none");
+    }
+
+    if (this.map.getLayer("river-line")) {
+      this.map.setLayoutProperty("river-line", "visibility", showGuidedTargets ? "visible" : "none");
+    }
+
+    if (this.map.getLayer("river-hit-line")) {
+      this.map.setLayoutProperty("river-hit-line", "visibility", "visible");
     }
 
     if (this.map.getLayer("target-hit-fill")) {
@@ -6407,7 +6544,7 @@ export class MapLibreActivityRunner {
   }
 
   setStudyVisibility(visibility) {
-    ["ocean-target-raster", "state-fill", "state-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
+    ["ocean-target-raster", "state-fill", "state-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
       if (this.map.getLayer(layerId)) {
         this.map.setLayoutProperty(layerId, "visibility", visibility);
       }

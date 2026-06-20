@@ -1,0 +1,7 @@
+{
+  "type": "FeatureCollection",
+  "name": "proof-sheet-rivers",
+  "sourceStatus": "awaiting-verified-line-data",
+  "sourceNote": "Reserved for verified Natural Earth river centerlines. Do not add hand-drawn or approximate river paths.",
+  "features": []
+}

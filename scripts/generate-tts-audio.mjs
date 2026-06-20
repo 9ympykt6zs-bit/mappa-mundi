@@ -69,6 +69,7 @@ const memoryTrailInstructionNouns = [
   "autonomous community or city",
   "body of water",
   "mountain range",
+  "river",
   "continent or ocean",
   "place"
 ];
@@ -97,6 +98,22 @@ const mountainRangeInstructionPhrases = [
   "Tap the highlighted mountain range.",
   "Tap the highlighted mountain range. Then repeat its name.",
   "What mountain range is this?"
+];
+
+const riverInstructionPhrases = [
+  "Choose the matching river.",
+  "Find the named river",
+  "Find the named rivers",
+  "Learn this river",
+  "Learn these rivers",
+  "Name this river",
+  "Name these rivers",
+  "Name the highlighted river",
+  "Name the highlighted rivers",
+  "Tap the highlighted river.",
+  "Tap the highlighted river. Then repeat its name.",
+  "Tap the river named below.",
+  "What river is this?"
 ];
 
 const proofSheetMountainRangeLabels = [
@@ -133,10 +150,41 @@ const bonusUsMountainRangeLabels = [
   "Wasatch Range"
 ];
 
+const proofSheetRiverLabels = [
+  "Arkansas River",
+  "Colorado River",
+  "Columbia River",
+  "Congo River",
+  "Danube River",
+  "Elbe River",
+  "Euphrates River",
+  "Ganges River",
+  "Jordan River",
+  "Mississippi River",
+  "Missouri River",
+  "Niger River",
+  "Nile River",
+  "Ohio River",
+  "Orange River",
+  "Po River",
+  "Red River",
+  "Rhine River",
+  "Rio Grande River",
+  "Seine River",
+  "Senegal River",
+  "St. Lawrence River",
+  "Tigris River",
+  "Volga River",
+  "Yangtze River",
+  "Yellow River",
+  "Zambezi River"
+];
+
 const instructionPhrases = [
   ...baseInstructionPhrases,
   ...bodyOfWaterInstructionPhrases,
   ...mountainRangeInstructionPhrases,
+  ...riverInstructionPhrases,
   "Learn these continents and oceans",
   "Tap the highlighted place. Then repeat its name.",
   ...createMemoryTrailInstructionPhrases(memoryTrailInstructionNouns)
@@ -338,6 +386,10 @@ async function collectChipLabels() {
     sourceFile: "bonus-us-mountain-ranges",
     sourceContext: "Bonus U.S. mountain ranges"
   });
+  addChipLabelEntries(labels, proofSheetRiverLabels, {
+    sourceFile: "proof-sheet-rivers",
+    sourceContext: "CC proof-sheet rivers"
+  });
 
   const files = (await readdir(dataDir))
     .filter((file) => file.endsWith(".json"))
@@ -497,6 +549,7 @@ function pluralizeInstructionNoun(noun = "place") {
     "autonomous community": "autonomous communities",
     "body of water": "bodies of water",
     "mountain range": "mountain ranges",
+    river: "rivers",
     location: "locations"
   };
 
