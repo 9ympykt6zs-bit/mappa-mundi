@@ -103,6 +103,10 @@
       "sourceFeatureId": "great-smoky-mountains",
       "sourceName": "Great Smoky Mountains",
       "color": "#a15c1a",
+      "smallTarget": true,
+      "focusLon": -80.68743,
+      "focusLat": 36.35112,
+      "focusZoom": 5.2451,
       "labelAnchor": [-83.55, 35.65],
       "labelFontSize": 10,
       "labelRotation": -15

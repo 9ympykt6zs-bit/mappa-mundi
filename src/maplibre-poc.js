@@ -2861,6 +2861,8 @@ let cameraDevBearingInput = null;
 let cameraDevPitchInput = null;
 let cameraDevScopeSelect = null;
 let cameraDevExportOutput = null;
+let cameraDevMemoryTrailSkipButton = null;
+let cameraDevMemoryTrailStatusEl = null;
 let cameraDevStylesInjected = false;
 let cameraDevMapEventSource = null;
 let mountainFindDevSessionActive = false;
@@ -7196,6 +7198,19 @@ function startNextMemoryTrailSection() {
   return true;
 }
 
+function advanceMemoryTrailAfterDevCompletion(memoryTrail) {
+  if (!isCurrentMemoryTrailState(memoryTrail)) {
+    return false;
+  }
+
+  if (shouldEndMemoryTrailSession(memoryTrail) && startNextMemoryTrailSection()) {
+    return true;
+  }
+
+  promptNextMemoryTrailTarget(memoryTrail);
+  return true;
+}
+
 function hideMemoryTrailOverlay() {
   memoryTrailOverlayMode = null;
 
@@ -8511,8 +8526,10 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
     : [];
   memoryTrail.message = getMemoryTrailPromptMessage(memoryTrail, target, selection);
   const instructionSpeechPromise = updateMemoryTrailInstructionCue(memoryTrail, selection);
-  stats.lastPromptedAt = memoryTrail.promptCount;
-  memoryTrail.lastPromptedTargetId = selection.targetId;
+  if (!selection.devSkip) {
+    stats.lastPromptedAt = memoryTrail.promptCount;
+    memoryTrail.lastPromptedTargetId = selection.targetId;
+  }
   memoryTrail.promptHistory.push({
     promptNumber: memoryTrail.promptCount + 1,
     promptKey,
@@ -8520,9 +8537,10 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
     promptType: memoryTrail.currentPromptType,
     sessionPhase: memoryTrail.sessionPhase,
     mode: selection.mode,
-    reason: selection.reason
+    reason: selection.reason,
+    devSkipped: selection.devSkip === true
   });
-  if (selection.promptType === "guided") {
+  if (selection.promptType === "guided" && !selection.devSkip) {
     stats.exposedCount += 1;
   }
   memoryTrail.phase = "answering";
@@ -10376,9 +10394,28 @@ function completeMemoryTrailCorrection(memoryTrail, expectedTargetId) {
 
 function handleCorrectMemoryTrailAnswer(memoryTrail, targetId, options = {}) {
   clearMemoryTrailTrayFeedback(memoryTrail, "correct answer");
+  const stats = memoryTrail.targetStats?.[targetId];
+  if (options.devSkip && isGuidedMemoryTrailPrompt(memoryTrail) && stats) {
+    stats.exposedCount = Math.max(stats.exposedCount || 0, 1);
+  }
   memoryTrail.responseChipTargetId = targetId;
   runner.setMemoryTrailHighlight(targetId);
   updateMemoryTrailStats(memoryTrail, targetId, "correct", { promptType: memoryTrail.currentPromptType });
+
+  if (options.devSkip) {
+    const lastHistory = memoryTrail.promptHistory.at(-1);
+    if (lastHistory) {
+      lastHistory.devSkipped = true;
+    }
+    memoryTrail.phase = "feedback";
+    memoryTrail.answerChoices = [];
+    memoryTrail.promptName = getMemoryTrailTargetLabel(targetId);
+    memoryTrail.message = "Dev prompt complete.";
+    runner.setMemoryTrailHighlight([]);
+    advanceMemoryTrailAfterDevCompletion(memoryTrail);
+    return;
+  }
+
   showFeedback("Yes.", true);
 
   memoryTrail.phase = "feedback";
@@ -11823,11 +11860,105 @@ function getMountainFindDevSnapshot() {
   return snapshot;
 }
 
+function getMemoryTrailDevExpectedCamera(memoryTrail, target) {
+  if (!memoryTrail || !target) {
+    return null;
+  }
+
+  if (memoryTrail.currentPromptType !== "guided" && memoryTrail.sectionQuizView) {
+    return {
+      context: "section-quiz-view",
+      source: "memory-trail-section-quiz-camera",
+      camera: memoryTrail.sectionQuizView
+    };
+  }
+
+  if (
+    memoryTrail.currentPromptType === "guided"
+    && runner?.shouldFocusSmallTargetInLearnMode?.(target, { mobile: true })
+    && typeof runner?.getSmallTargetLearnFocusTarget === "function"
+    && typeof runner?.getTargetFocusCamera === "function"
+  ) {
+    const focusTarget = runner.getSmallTargetLearnFocusTarget(target);
+    return {
+      context: "small-target-focus",
+      source: "small-target-learn",
+      camera: runner.getTargetFocusCamera(focusTarget)
+    };
+  }
+
+  return null;
+}
+
+function getMemoryTrailDevSnapshot() {
+  const memoryTrail = getActiveMemoryTrail();
+  const target = getMemoryTrailActivePromptTarget(memoryTrail);
+  const expectedCamera = getMemoryTrailDevExpectedCamera(memoryTrail, target);
+
+  return {
+    activity: {
+      id: session?.currentActivity?.id || "",
+      title: session?.currentActivity?.title || ""
+    },
+    memoryTrail: memoryTrail ? {
+      phase: memoryTrail.phase || "",
+      sessionPhase: memoryTrail.sessionPhase || "",
+      promptType: memoryTrail.currentPromptType || "",
+      promptMode: memoryTrail.currentPromptMode || "",
+      section: memoryTrail.sectionTitle || "",
+      sectionIndex: memoryTrail.sectionIndex,
+      targetId: target?.id || memoryTrail.currentPromptTargetId || "",
+      targetLabel: getMemoryTrailActivePromptLabel(memoryTrail),
+      expectedCamera
+    } : null,
+    camera: getMemoryTrailCameraSnapshot(),
+    audioMuted: Boolean(window.GeographyChipSpeech?.getAudioMuted?.())
+  };
+}
+
+function skipMemoryTrailPromptForDev() {
+  if (!isLocalDevAccessAllowed()) {
+    return null;
+  }
+
+  const memoryTrail = getActiveMemoryTrail();
+  const target = getMemoryTrailActivePromptTarget(memoryTrail);
+  if (!memoryTrail || !target) {
+    console.warn("No active Memory Trail prompt to skip.");
+    updateCameraDevPanel();
+    return null;
+  }
+
+  clearMemoryTrailTimers(memoryTrail);
+  clearMemoryTrailTrayFeedback(memoryTrail, "dev skip prompt");
+  updateMemoryTrailCorrectionCallout(null);
+  runner?.setMemoryTrailCorrectionHighlight?.({ correctTargetId: "", wrongTargetId: "" });
+  runner?.setMemoryTrailHighlight?.([]);
+  window.GeographyChipSpeech?.stopAudio?.();
+  window.speechSynthesis?.cancel();
+  memoryTrail.correction = null;
+  memoryTrail.trayFeedback = null;
+  memoryTrail.responseChipTargetId = null;
+  memoryTrail.answerChoices = [];
+  handleCorrectMemoryTrailAnswer(memoryTrail, target.id, {
+    devSkip: true,
+    suppressTargetSpeech: true
+  });
+  const snapshot = getMemoryTrailDevSnapshot();
+  console.info("[memory-trail-dev] completed prompt", { snapshot });
+  updateCameraDevPanel({ syncInputs: true });
+  return snapshot;
+}
+
 if (isLocalDevAccessAllowed()) {
   window.mappaMountainFindDev = {
     start: startMountainFindDev,
     next: forceMountainFindDevPrompt,
     snapshot: getMountainFindDevSnapshot
+  };
+  window.mappaMemoryTrailDev = {
+    skip: skipMemoryTrailPromptForDev,
+    snapshot: getMemoryTrailDevSnapshot
   };
 }
 
@@ -11967,6 +12098,16 @@ function ensureCameraDevPanel() {
     })
   );
 
+  const memoryTrailDev = document.createElement("section");
+  memoryTrailDev.className = "camera-dev-memory-trail";
+  const memoryTrailDevTitle = document.createElement("strong");
+  memoryTrailDevTitle.textContent = "Memory Trail QA";
+  cameraDevMemoryTrailStatusEl = document.createElement("p");
+  cameraDevMemoryTrailStatusEl.className = "camera-dev-memory-trail-status";
+  cameraDevMemoryTrailSkipButton = createCameraDevButton("Dev: Next Prompt", () => skipMemoryTrailPromptForDev());
+  cameraDevMemoryTrailSkipButton.disabled = true;
+  memoryTrailDev.append(memoryTrailDevTitle, cameraDevMemoryTrailStatusEl, cameraDevMemoryTrailSkipButton);
+
   const exportHeader = document.createElement("div");
   exportHeader.className = "camera-dev-export-header";
   const exportTitle = document.createElement("strong");
@@ -11979,7 +12120,7 @@ function ensureCameraDevPanel() {
   cameraDevExportOutput.readOnly = true;
   cameraDevExportOutput.rows = 9;
 
-  panel.append(header, intro, cameraDevStatusEl, fieldGrid, controls, primaryActions, fitActions, exportHeader, cameraDevExportOutput);
+  panel.append(header, intro, cameraDevStatusEl, fieldGrid, controls, primaryActions, fitActions, memoryTrailDev, exportHeader, cameraDevExportOutput);
   document.body.appendChild(panel);
   cameraDevPanel = panel;
   return panel;
@@ -12128,6 +12269,22 @@ function ensureCameraDevStyles() {
       background: #f7eab5;
     }
 
+    .camera-dev-memory-trail {
+      display: grid;
+      gap: 6px;
+      margin: 12px 0;
+      padding: 10px;
+      border: 1px solid rgba(23, 32, 51, 0.16);
+      border-radius: 10px;
+      background: rgba(255, 247, 214, 0.46);
+    }
+
+    .camera-dev-memory-trail-status {
+      margin: 0;
+      font-size: 0.8rem;
+      line-height: 1.35;
+    }
+
     .camera-dev-export-header {
       margin-top: 12px;
     }
@@ -12178,6 +12335,7 @@ function updateCameraDevPanel(options = {}) {
   cameraDevSnapshotValues = snapshot;
 
   renderCameraDevStatus(snapshot);
+  updateCameraDevMemoryTrailControls();
 
   if (options.syncInputs) {
     syncCameraDevInputs(snapshot);
@@ -12188,6 +12346,20 @@ function updateCameraDevPanel(options = {}) {
   }
 
   updateCameraDevExport();
+}
+
+function updateCameraDevMemoryTrailControls() {
+  if (!cameraDevMemoryTrailSkipButton || !cameraDevMemoryTrailStatusEl) {
+    return;
+  }
+
+  const memoryTrail = getActiveMemoryTrail();
+  const target = getMemoryTrailActivePromptTarget(memoryTrail);
+  const canSkip = Boolean(memoryTrail?.active && target?.id);
+  cameraDevMemoryTrailSkipButton.disabled = !canSkip;
+  cameraDevMemoryTrailStatusEl.textContent = canSkip
+    ? `${memoryTrail.sectionTitle || "Memory Trail"} | ${memoryTrail.sessionPhase || ""} | ${target.name || target.id}`
+    : "Start a Memory Trail to enable skipping.";
 }
 
 function renderCameraDevStatus(snapshot) {

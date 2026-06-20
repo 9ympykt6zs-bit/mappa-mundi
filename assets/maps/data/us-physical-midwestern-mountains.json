@@ -55,6 +55,10 @@
       "sourceFeatureId": "black-hills",
       "sourceName": "Black Hills",
       "color": "#7c4a16",
+      "smallTarget": true,
+      "focusLon": -101.77151,
+      "focusLat": 43.36329,
+      "focusZoom": 5.1891,
       "labelAnchor": [-103.65, 44.05],
       "labelFontSize": 10,
       "labelRotation": -5
