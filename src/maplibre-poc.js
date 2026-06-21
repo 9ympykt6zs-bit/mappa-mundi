@@ -25,7 +25,8 @@ import {
   selectDailyTrailGoal,
   shouldShowDailyTrailGoalChoice,
   syncCompletedDailyTrailGoals
-} from "./daily-trail-planner.js?v=20260614-western-mountains";
+} from "./daily-trail-planner.js?v=20260621-daily-trail-co-progression-2";
+import { resolveMemoryTrailNewTargetLimit } from "./memory-trail-new-target-limit.js?v=20260621-daily-trail-co-progression-2";
 
 const APP_NAME = "Mappa Mundi";
 const LANDING_PAGE_TITLE = "Mappa Mundi \u2013 Geography Game for Learning the World";
@@ -7405,11 +7406,7 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     adaptive: true,
     source: options.source || "memory-trail",
     activityId: activity?.id || "",
-    maxNewTargets: Number.isFinite(Number(options.maxNewTargets))
-      ? Math.max(1, Math.floor(Number(options.maxNewTargets)))
-      : Number.isFinite(Number(activity?.memoryTrailNewTargetLimit))
-      ? Math.max(1, Math.floor(Number(activity.memoryTrailNewTargetLimit)))
-      : null,
+    maxNewTargets: resolveMemoryTrailNewTargetLimit(options, activity),
     requireAllTargets: Boolean(activity?.memoryTrailRequireAllTargets),
     sessionSeconds,
     startedAt: Date.now(),
