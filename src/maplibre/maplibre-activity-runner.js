@@ -1925,7 +1925,7 @@ export class MapLibreActivityRunner {
   }
 
   isMapPointInSmallTargetPaddedHit(target, queryPoint, context = {}) {
-    if (!this.map || !target || target.kind !== "shape" || this.isOceanTarget(target)) {
+    if (!this.map || !target || target.kind !== "shape" || this.isOceanTarget(target) || target.type === "river") {
       return false;
     }
 
@@ -3393,6 +3393,26 @@ export class MapLibreActivityRunner {
         }
       });
 
+      const priorityTarget = options.priorityTarget?.kind === "shape"
+        ? options.priorityTarget
+        : (selectedTarget?.kind === "shape" ? selectedTarget : null);
+      const hasRenderedRiverHit = exactShapeTargetIds.some((targetId) => (
+        this.activity?.targets?.some((target) => target.id === targetId && target.type === "river")
+      ));
+
+      // MapLibre normally resolves the wide, invisible river-hit-line layer.
+      // When a nearly transparent line is omitted from a rendered-feature query,
+      // use its screen-space hit width as a river-only fallback.
+      if (priorityTarget?.type === "river" && !exactShapeTargetIds.includes(priorityTarget.id) && this.isMapPointNearRiverLine(priorityTarget, queryPoint)) {
+        exactShapeTargetIds.unshift(priorityTarget.id);
+      } else if (!hasRenderedRiverHit) {
+        this.getRiverHitTargetIdsAtMapPoint(queryPoint).forEach((targetId) => {
+          if (!exactShapeTargetIds.includes(targetId)) {
+            exactShapeTargetIds.push(targetId);
+          }
+        });
+      }
+
       if (stateFeatures.length === 0 && this.currentView === "study") {
         this.getFallbackShapeTargetIdsAtPoint(queryPoint, selectedTarget).forEach((targetId) => {
           if (!exactShapeTargetIds.includes(targetId)) {
@@ -3401,9 +3421,6 @@ export class MapLibreActivityRunner {
         });
       }
 
-      const priorityTarget = options.priorityTarget?.kind === "shape"
-        ? options.priorityTarget
-        : (selectedTarget?.kind === "shape" ? selectedTarget : null);
       const shapeTargetIds = this.getPrioritizedShapeTargetIdsAtPoint(queryPoint, exactShapeTargetIds, {
         priorityTarget,
         includeOtherSmallTargetHits: !selectedTarget || Boolean(options.priorityTarget)
@@ -3487,6 +3504,10 @@ export class MapLibreActivityRunner {
       return true;
     }
 
+    if (target.type === "river" && this.isMapPointNearRiverLine(target, queryPoint)) {
+      return true;
+    }
+
     const nearMissBox = isCoarsePointer ? 46 : 32;
     const nearbyFeatures = this.map.queryRenderedFeatures([
       [queryPoint[0] - nearMissBox, queryPoint[1] - nearMissBox],
@@ -3503,6 +3524,61 @@ export class MapLibreActivityRunner {
     const sourceFeature = this.getTargetShapeFeature(target);
 
     return this.isPointInGeoJsonGeometry([lngLat.lng, lngLat.lat], sourceFeature?.geometry);
+  }
+
+  getRiverHitTargetIdsAtMapPoint(queryPoint) {
+    return this.shapeTargets
+      .filter((target) => target.type === "river")
+      .filter((target) => this.isMapPointNearRiverLine(target, queryPoint))
+      .map((target) => target.id);
+  }
+
+  isMapPointNearRiverLine(target, queryPoint) {
+    if (!this.map?.project || !target || !Array.isArray(queryPoint)) {
+      return false;
+    }
+
+    const geometry = this.getTargetShapeFeature(target)?.geometry;
+    const lines = geometry?.type === "LineString"
+      ? [geometry.coordinates]
+      : geometry?.type === "MultiLineString"
+        ? geometry.coordinates
+        : [];
+    const isCoarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches;
+    const configuredHitWidth = Number(target.hitWidthPx);
+    const hitWidth = Number.isFinite(configuredHitWidth) ? configuredHitWidth : 34;
+    const hitRadius = Math.max(hitWidth / 2, isCoarsePointer ? 26 : 20);
+    const maxDistanceSquared = hitRadius * hitRadius;
+
+    return lines.some((line) => {
+      for (let index = 1; index < line.length; index += 1) {
+        const start = this.map.project(line[index - 1]);
+        const end = this.map.project(line[index]);
+
+        if (this.getPointToSegmentDistanceSquared(queryPoint, [start.x, start.y], [end.x, end.y]) <= maxDistanceSquared) {
+          return true;
+        }
+      }
+
+      return false;
+    });
+  }
+
+  getPointToSegmentDistanceSquared(point, start, end) {
+    const segmentX = end[0] - start[0];
+    const segmentY = end[1] - start[1];
+    const segmentLengthSquared = segmentX * segmentX + segmentY * segmentY;
+
+    if (segmentLengthSquared === 0) {
+      return (point[0] - start[0]) ** 2 + (point[1] - start[1]) ** 2;
+    }
+
+    const projection = Math.max(0, Math.min(1, (
+      ((point[0] - start[0]) * segmentX + (point[1] - start[1]) * segmentY) / segmentLengthSquared
+    )));
+    const nearestX = start[0] + projection * segmentX;
+    const nearestY = start[1] + projection * segmentY;
+    return (point[0] - nearestX) ** 2 + (point[1] - nearestY) ** 2;
   }
 
   isMapPointInsideStateTarget(queryPoint, stateTargetId) {

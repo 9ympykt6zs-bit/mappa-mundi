@@ -3547,7 +3547,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260620-river-preview-dev-2"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260621-river-hit-fallback-1"),
       import("./chip-speech.js?v=20260602-daily-trail-review-chips")
     ]).then(([
       ,
