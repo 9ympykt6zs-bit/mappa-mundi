@@ -1,5 +1,5 @@
 (function attachChipSpeech(global) {
-  const audioManifestUrl = "assets/audio/audio-manifest.json?v=20260601-instruction-target-nouns";
+  const audioManifestUrl = "assets/audio/audio-manifest.json?v=20260621-washington-dc-audio-1";
   const audioMutedStorageKey = "atlasQuestAudioMuted";
   let audioManifestPromise = null;
   let audioManifestLookup = null;
@@ -19,6 +19,11 @@
       lang: "pt-BR",
       speakAs: "Roraima"
     }
+  });
+  const audioLookupAliases = Object.freeze({
+    "washington-d-c": "Washington D.C.",
+    "washington-dc": "Washington D.C.",
+    "district-of-columbia": "Washington D.C."
   });
 
   function isLocalAudioSupported() {
@@ -198,7 +203,12 @@
       return null;
     }
 
-    return lookup.exact.get(text) || lookup.sanitized.get(sanitizeAudioLookupKey(text)) || null;
+    const canonicalText = audioLookupAliases[sanitizeAudioLookupKey(text)] || text;
+    return lookup.exact.get(canonicalText)
+      || lookup.sanitized.get(sanitizeAudioLookupKey(canonicalText))
+      || lookup.exact.get(text)
+      || lookup.sanitized.get(sanitizeAudioLookupKey(text))
+      || null;
   }
 
   function getAudioPathLookupKey(audioPath) {

@@ -180,6 +180,16 @@ const proofSheetRiverLabels = [
   "Zambezi River"
 ];
 
+const canonicalTargetAudioLabels = Object.freeze({
+  "washington-dc": "Washington D.C."
+});
+
+const audioItemAliases = Object.freeze({
+  "washington-d-c": "Washington D.C.",
+  "washington-dc": "Washington D.C.",
+  "district-of-columbia": "Washington D.C."
+});
+
 const instructionPhrases = [
   ...baseInstructionPhrases,
   ...bodyOfWaterInstructionPhrases,
@@ -312,8 +322,9 @@ async function main() {
   });
   const instructionItems = createAudioItems(instructionPhrases, instructionAudioDir, "assets/audio/instructions");
   const allItems = [...chipItems, ...instructionItems];
+  const canonicalOnlyText = resolveAudioItemAlias(onlyText);
   const selectedItems = onlyText
-    ? allItems.filter((item) => item.text.toLowerCase() === onlyText.toLowerCase())
+    ? allItems.filter((item) => item.text.toLowerCase() === canonicalOnlyText.toLowerCase())
     : allItems;
   const itemsToCreate = force || onlyText ? selectedItems : selectedItems.filter((item) => !item.exists);
 
@@ -345,6 +356,7 @@ async function main() {
     }
 
     if (dryRun) {
+      console.log(`Would create ${item.relativePath}`);
       created += 1;
       continue;
     }
@@ -478,6 +490,11 @@ function getActivitySourceContexts(file, data) {
 
 function collectTargetLabels(target) {
   const spokenPlaceName = getSpokenPlaceNameForTarget(target);
+  const canonicalLabel = getCanonicalTargetAudioLabel(target);
+  if (canonicalLabel) {
+    return [canonicalLabel];
+  }
+
   const labels = [
     spokenPlaceName || target?.name,
     cleanTargetLabelForSpeech(target, target?.completedLabelName),
@@ -583,6 +600,11 @@ function getSpokenPlaceNameForTarget(target) {
     return "";
   }
 
+  const canonicalLabel = getCanonicalTargetAudioLabel(target);
+  if (canonicalLabel) {
+    return canonicalLabel;
+  }
+
   if (target.city) {
     return normalizeSpokenText(target.city);
   }
@@ -592,6 +614,10 @@ function getSpokenPlaceNameForTarget(target) {
   }
 
   return normalizeSpokenText(target.name);
+}
+
+function getCanonicalTargetAudioLabel(target) {
+  return normalizeSpokenText(canonicalTargetAudioLabels[target?.id]);
 }
 
 function isCapitalOrCityTarget(target) {
@@ -608,6 +634,12 @@ function normalizeSpokenText(value) {
   return String(value || "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function resolveAudioItemAlias(value) {
+  const text = normalizeSpokenText(value);
+  const key = sanitizeFilename(text);
+  return audioItemAliases[key] || text;
 }
 
 function getOnlyText(values) {
