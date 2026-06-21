@@ -13,6 +13,14 @@
   "sequence": 8,
   "targetNoun": "state or capital",
   "visibleAnswerLimit": 10,
+  "map": {
+    "dailyTrailNonLearnCamera": {
+      "center": [-102.21814, 34.02285],
+      "zoom": 4.3056,
+      "bearing": 0,
+      "pitch": 0
+    }
+  },
   "features": [
     { "id": "kansas", "name": "Kansas", "type": "state", "state": "KS", "shape": "path", "mapShapeId": "kansas", "color": "#ef4444", "labelFontSize": 12, "labelRotation": 0 },
     { "id": "oklahoma", "name": "Oklahoma", "type": "state", "state": "OK", "shape": "path", "mapShapeId": "oklahoma", "color": "#f97316", "labelFontSize": 12, "labelRotation": 0 },

@@ -7401,6 +7401,7 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     }
   });
   const sessionSeconds = options.sessionSeconds || DEFAULT_SESSION_SECONDS;
+  const dailyTrailFixedCamera = normalizeDailyTrailFixedCamera(options.dailyTrailFixedCamera);
   const memoryTrail = {
     active: true,
     adaptive: true,
@@ -7440,6 +7441,9 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     sectionIndex: Number.isInteger(options.sectionIndex) ? options.sectionIndex : null,
     sectionCount: Number.isInteger(options.sectionCount) ? options.sectionCount : null,
     sectionQuizView: normalizeMemoryTrailSectionQuizView(options.sectionQuizView),
+    dailyTrailFixedCamera,
+    dailyTrailFixedCameraLocked: false,
+    dailyTrailNonLearnCamera: normalizeMemoryTrailSectionQuizView(options.dailyTrailNonLearnCamera),
     dailyTrailPracticeRoundOrders: {},
     lastDailyTrailPracticeRoundOrder: [],
     targetStats,
@@ -7481,6 +7485,13 @@ function normalizeMemoryTrailSectionQuizView(quizView = null) {
   };
 }
 
+function normalizeDailyTrailFixedCamera(config = null) {
+  const camera = normalizeMemoryTrailSectionQuizView(config);
+  const afterLearnTargetId = String(config?.afterLearnTargetId || "").trim();
+
+  return camera && afterLearnTargetId ? { afterLearnTargetId, camera } : null;
+}
+
 function isUsMountainRangesMemoryTrail(memoryTrail = getActiveMemoryTrail()) {
   const activityId = memoryTrail?.activityId || session.currentActivity?.id || "";
   return activityId === usMountainRangesActivityId
@@ -7489,7 +7500,24 @@ function isUsMountainRangesMemoryTrail(memoryTrail = getActiveMemoryTrail()) {
 
 function usesFixedSectionMemoryTrailCamera(memoryTrail = getActiveMemoryTrail()) {
   const activityId = memoryTrail?.activityId || session.currentActivity?.id || "";
-  return isUsMountainRangesMemoryTrail(memoryTrail) || activityId === usPhysicalRiversActivityId;
+  return isUsMountainRangesMemoryTrail(memoryTrail)
+    || activityId === usPhysicalRiversActivityId
+    || Boolean(memoryTrail?.dailyTrailFixedCameraLocked)
+    || Boolean(getActiveDailyTrailNonLearnCamera(memoryTrail));
+}
+
+function getActiveDailyTrailFixedCamera(memoryTrail) {
+  return memoryTrail?.source === "daily-trail" && memoryTrail?.dailyTrailFixedCameraLocked
+    ? memoryTrail.dailyTrailFixedCamera?.camera || null
+    : null;
+}
+
+function getActiveDailyTrailNonLearnCamera(memoryTrail) {
+  return memoryTrail?.source === "daily-trail"
+    && memoryTrail?.sessionPhase !== "learn"
+    && !isGuidedMemoryTrailPrompt(memoryTrail)
+    ? memoryTrail.dailyTrailNonLearnCamera || null
+    : null;
 }
 
 function getMemoryTrailSectionQuizCameraKey(memoryTrail, quizView) {
@@ -7525,20 +7553,22 @@ function isMapAtMemoryTrailSectionQuizCamera(quizView) {
 }
 
 function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options = {}) {
+  const dailyTrailFixedCamera = getActiveDailyTrailFixedCamera(memoryTrail)
+    || getActiveDailyTrailNonLearnCamera(memoryTrail);
   if (
     !usesFixedSectionMemoryTrailCamera(memoryTrail)
-    || !memoryTrail?.sectionQuizView
+    || (!memoryTrail?.sectionQuizView && !dailyTrailFixedCamera)
     || typeof runner?.moveCamera !== "function"
   ) {
     return false;
   }
 
-  if (selection?.promptType === "guided" || memoryTrail.sessionPhase === "learn") {
+  if (!dailyTrailFixedCamera && (selection?.promptType === "guided" || memoryTrail.sessionPhase === "learn")) {
     memoryTrail.lastSectionQuizCameraKey = "";
     return false;
   }
 
-  const quizView = memoryTrail.sectionQuizView;
+  const quizView = dailyTrailFixedCamera || memoryTrail.sectionQuizView;
   const cameraKey = getMemoryTrailSectionQuizCameraKey(memoryTrail, quizView);
   if (
     memoryTrail.lastSectionQuizCameraKey === cameraKey
@@ -7582,11 +7612,13 @@ function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options 
 }
 
 function scheduleMemoryTrailSectionQuizCameraCheck(memoryTrail, selection = {}) {
+  const dailyTrailFixedCamera = getActiveDailyTrailFixedCamera(memoryTrail)
+    || getActiveDailyTrailNonLearnCamera(memoryTrail);
+  const quizView = dailyTrailFixedCamera || memoryTrail?.sectionQuizView;
   if (
     !usesFixedSectionMemoryTrailCamera(memoryTrail)
-    || !memoryTrail?.sectionQuizView
-    || selection?.promptType === "guided"
-    || memoryTrail.sessionPhase === "learn"
+    || !quizView
+    || (!dailyTrailFixedCamera && (selection?.promptType === "guided" || memoryTrail.sessionPhase === "learn"))
   ) {
     return false;
   }
@@ -7598,15 +7630,34 @@ function scheduleMemoryTrailSectionQuizCameraCheck(memoryTrail, selection = {}) 
       !isCurrentMemoryTrailState(memoryTrail)
       || memoryTrail.currentPromptKey !== promptKey
       || memoryTrail.currentPromptTargetId !== targetId
-      || memoryTrail.sessionPhase === "learn"
+      || (!getActiveDailyTrailFixedCamera(memoryTrail)
+        && !getActiveDailyTrailNonLearnCamera(memoryTrail)
+        && memoryTrail.sessionPhase === "learn")
     ) {
       return;
     }
 
     applyMemoryTrailSectionQuizCamera(memoryTrail, selection, { duration: 260 });
-  }, Math.max(900, (memoryTrail.sectionQuizView.duration || 850) + 140));
+  }, Math.max(900, (quizView.duration || 850) + 140));
   memoryTrail.timers.push(timeoutId);
   return true;
+}
+
+function lockDailyTrailFixedCameraAfterLearn(memoryTrail, targetId) {
+  const fixedCamera = memoryTrail?.dailyTrailFixedCamera;
+  if (
+    memoryTrail?.source !== "daily-trail"
+    || !fixedCamera
+    || memoryTrail.dailyTrailFixedCameraLocked
+    || !isGuidedMemoryTrailPrompt(memoryTrail)
+    || targetId !== fixedCamera.afterLearnTargetId
+  ) {
+    return false;
+  }
+
+  memoryTrail.dailyTrailFixedCameraLocked = true;
+  memoryTrail.lastSectionQuizCameraKey = "";
+  return applyMemoryTrailSectionQuizCamera(memoryTrail, { targetId, promptType: "fixed-camera" });
 }
 
 function createMemoryTrailTargetStats(target) {
@@ -8402,7 +8453,9 @@ function startMemoryTrail(options = {}) {
     sectionTitle: memoryTrailSection?.title,
     sectionIndex: memoryTrailSection?.sectionIndex,
     sectionCount: memoryTrailSection?.sectionCount,
-    sectionQuizView: memoryTrailSection?.map?.quizView || session.currentActivity?.map?.quizView || null
+    sectionQuizView: memoryTrailSection?.map?.quizView || session.currentActivity?.map?.quizView || null,
+    dailyTrailFixedCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailFixedCamera || null : null,
+    dailyTrailNonLearnCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailNonLearnCamera || null : null
   });
   currentMemoryTrailAnalyticsKey = [
     activeStudySession.journeyId,
@@ -8765,6 +8818,7 @@ function scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target) {
     session.currentActivity?.id === continentsOceansActivityId
     || selection?.promptType !== "guided"
     || memoryTrail?.sessionPhase !== "learn"
+    || getActiveDailyTrailFixedCamera(memoryTrail)
     || memoryTrail.currentPromptTargetId !== selection?.targetId
     || !target
     || target.kind !== "shape"
@@ -8786,6 +8840,7 @@ function scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target) {
       || memoryTrail.currentPromptTargetId !== selection.targetId
       || memoryTrail.currentPromptType !== "guided"
       || memoryTrail.sessionPhase !== "learn"
+      || getActiveDailyTrailFixedCamera(memoryTrail)
     ) {
       debugMemoryTrail("small target learn focus canceled", {
         targetId: target.id,
@@ -8983,6 +9038,7 @@ function maybeFocusContinentsOceansNamePrompt(selection, target) {
     session.currentActivity?.id !== continentsOceansActivityId
     || selection?.promptType !== "place_to_name"
     || memoryTrail?.activityId !== continentsOceansActivityId
+    || getActiveDailyTrailNonLearnCamera(memoryTrail)
     || memoryTrail.sessionPhase !== "practice"
     || selection?.mode === "learn"
     || !target
@@ -10154,6 +10210,9 @@ function fitMapToPracticeWindow(targets = [], reason = "practice-window") {
   }
 
   const memoryTrail = getActiveMemoryTrail();
+  if (getActiveDailyTrailFixedCamera(memoryTrail) || getActiveDailyTrailNonLearnCamera(memoryTrail)) {
+    return applyMemoryTrailSectionQuizCamera(memoryTrail, { promptType: "fixed-camera" }, { duration: 260 });
+  }
   const windowKey = targets.map((target) => target.id).join("|");
   if (memoryTrail && memoryTrail.lastCameraWindowKey === windowKey) {
     return false;
@@ -10434,6 +10493,7 @@ function handleCorrectMemoryTrailAnswer(memoryTrail, targetId, options = {}) {
   memoryTrail.responseChipTargetId = targetId;
   runner.setMemoryTrailHighlight(targetId);
   updateMemoryTrailStats(memoryTrail, targetId, "correct", { promptType: memoryTrail.currentPromptType });
+  lockDailyTrailFixedCameraAfterLearn(memoryTrail, targetId);
 
   if (options.devSkip) {
     const lastHistory = memoryTrail.promptHistory.at(-1);

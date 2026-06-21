@@ -13,6 +13,14 @@
   "sequence": 11,
   "targetNoun": "state or capital",
   "visibleAnswerLimit": 10,
+  "map": {
+    "dailyTrailNonLearnCamera": {
+      "center": [-148.03546, 45.94864],
+      "zoom": 2.7090,
+      "bearing": 0,
+      "pitch": 0
+    }
+  },
   "features": [
     { "id": "alaska", "name": "Alaska", "type": "state", "state": "AK", "shape": "path", "mapShapeId": "alaska", "color": "#06b6d4", "labelFontSize": 12, "labelRotation": 0 },
     { "id": "hawaii", "name": "Hawaii", "type": "state", "state": "HI", "shape": "path", "mapShapeId": "hawaii", "color": "#22c55e", "labelFontSize": 12, "labelRotation": 0 },

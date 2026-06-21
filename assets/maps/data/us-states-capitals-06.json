@@ -13,6 +13,14 @@
   "sequence": 6,
   "targetNoun": "state or capital",
   "visibleAnswerLimit": 10,
+  "map": {
+    "dailyTrailNonLearnCamera": {
+      "center": [-93.82019, 38.32381],
+      "zoom": 4.3191,
+      "bearing": 0,
+      "pitch": 0
+    }
+  },
   "features": [
     { "id": "wisconsin", "name": "Wisconsin", "type": "state", "state": "WI", "shape": "path", "mapShapeId": "wisconsin", "color": "#ef4444", "labelFontSize": 12, "labelRotation": 0 },
     { "id": "illinois", "name": "Illinois", "type": "state", "state": "IL", "shape": "path", "mapShapeId": "illinois", "color": "#f97316", "labelFontSize": 12, "labelRotation": 0 },

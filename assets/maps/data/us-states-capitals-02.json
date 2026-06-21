@@ -13,6 +13,15 @@
   "sequence": 2,
   "targetNoun": "state or capital",
   "visibleAnswerLimit": 10,
+  "map": {
+    "dailyTrailFixedCamera": {
+      "afterLearnTargetId": "delaware",
+      "center": [-79.94585, 40.53989],
+      "zoom": 4.7016,
+      "bearing": 0,
+      "pitch": 0
+    }
+  },
   "features": [
     { "id": "vermont", "name": "Vermont", "type": "state", "state": "VT", "shape": "path", "mapShapeId": "vermont", "color": "#22c55e", "labelFontSize": 12, "labelRotation": 0 },
     { "id": "new-york", "name": "New York", "type": "state", "state": "NY", "shape": "path", "mapShapeId": "new-york", "color": "#3b82f6", "labelFontSize": 12, "labelRotation": 0 },

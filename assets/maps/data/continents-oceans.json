@@ -1,6 +1,14 @@
 {
   "id": "continents-oceans",
   "title": "Continents and Oceans",
+  "map": {
+    "dailyTrailNonLearnCamera": {
+      "center": [-63.73809, 31.59428],
+      "zoom": 2.2054,
+      "bearing": 0,
+      "pitch": 0
+    }
+  },
   "features": [
     { "id": "north-america", "name": "North America", "type": "region", "color": "#3b82f6", "focusLon": -103, "focusLat": 46, "focusZoom": 2.15 },
     { "id": "south-america", "name": "South America", "type": "region", "color": "#ef4444", "focusLon": -60, "focusLat": -18, "focusZoom": 2.25 },

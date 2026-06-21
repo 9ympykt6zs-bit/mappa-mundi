@@ -13,6 +13,14 @@
   "sequence": 5,
   "targetNoun": "state or capital",
   "visibleAnswerLimit": 10,
+  "map": {
+    "dailyTrailNonLearnCamera": {
+      "center": [-85.09171, 41.83720],
+      "zoom": 4.5195,
+      "bearing": 0,
+      "pitch": 0
+    }
+  },
   "features": [
     { "id": "michigan", "name": "Michigan", "type": "state", "state": "MI", "shape": "path", "mapShapeId": "michigan", "color": "#ef4444", "labelFontSize": 12, "labelRotation": 0 },
     { "id": "ohio", "name": "Ohio", "type": "state", "state": "OH", "shape": "path", "mapShapeId": "ohio", "color": "#f97316", "labelFontSize": 12, "labelRotation": 0 },
