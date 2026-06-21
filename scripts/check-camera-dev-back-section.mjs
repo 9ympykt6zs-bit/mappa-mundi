@@ -6,9 +6,18 @@ const requiredHooks = [
   "function getPreviousMemoryTrailSection",
   "function getPreviousDailyTrailDevSection",
   "async function backOneDailyTrailSectionForDev()",
+  "let dailyTrailDevReplayCursor = null;",
+  "async function startDailyTrailDevReplayCursor()",
+  "completeDailyTrailDevReplaySession(memoryTrail);",
+  "dailyTrailDevReplayCursor.stepIndex += 1;",
+  "clearDailyTrailDevReplayCursor();",
+  "const startedState = isDevReplayStart ? state : applyDailyTrailSessionStart(state, plan);",
+  "const forceDevReplayLearn = activeDailyTrailSession.devReplay === true;",
+  "const newTargetIds = forceDevReplayLearn",
+  "? targetIds",
   "async function backOneMemoryTrailSectionForDev()",
-  "exitDailyTrailGameplay();",
-  "await startDailyTrailSession();",
+  "exitDailyTrailGameplay({ preserveDevReplay: true });",
+  "await startDailyTrailDevReplayCursor();",
   "cameraDevMemoryTrailBackSectionButton.disabled = !previousSection;"
 ];
 

@@ -3,6 +3,15 @@
   "title": "States and Capitals 3",
   "baseMap": "usa-map",
   "baseMapPath": "assets/maps/usa/usa-map.svg",
+  "map": {
+    "dailyTrailFixedCamera": {
+      "afterLearnTargetId": "washington-dc",
+      "center": [-78.44688, 36.76696],
+      "zoom": 5.2471,
+      "bearing": 0,
+      "pitch": 0
+    }
+  },
   "projection": {
     "type": "albers-usa-d3",
     "scale": 1300,

@@ -15,15 +15,51 @@
   "visibleAnswerLimit": 10,
   "map": {
     "dailyTrailNonLearnCamera": {
-      "center": [-148.03546, 45.94864],
-      "zoom": 2.7090,
+      "center": [-129.20682, 49.23213],
+      "zoom": 2.8050,
       "bearing": 0,
       "pitch": 0
     }
   },
   "features": [
-    { "id": "alaska", "name": "Alaska", "type": "state", "state": "AK", "shape": "path", "mapShapeId": "alaska", "color": "#06b6d4", "labelFontSize": 12, "labelRotation": 0 },
-    { "id": "hawaii", "name": "Hawaii", "type": "state", "state": "HI", "shape": "path", "mapShapeId": "hawaii", "color": "#22c55e", "labelFontSize": 12, "labelRotation": 0 },
+    {
+      "id": "alaska",
+      "name": "Alaska",
+      "type": "state",
+      "state": "AK",
+      "shape": "path",
+      "mapShapeId": "alaska",
+      "color": "#06b6d4",
+      "learnCamera": {
+        "center": [-149.27965, 63.16614],
+        "zoom": 3.4310,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "section-overview",
+        "source": "enterStudyView:regionView"
+      },
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
+    {
+      "id": "hawaii",
+      "name": "Hawaii",
+      "type": "state",
+      "state": "HI",
+      "shape": "path",
+      "mapShapeId": "hawaii",
+      "color": "#22c55e",
+      "learnCamera": {
+        "center": [-152.68874, 21.84516],
+        "zoom": 5.2281,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "section-overview",
+        "source": "enterStudyView:regionView"
+      },
+      "labelFontSize": 12,
+      "labelRotation": 0
+    },
     { "id": "juneau-ak", "name": "Juneau, AK", "city": "Juneau", "state": "AK", "type": "capital", "shape": "circle", "lon": -134.4197, "lat": 58.3019, "hitRadius": 14, "color": "#06b6d4", "labelOffset": { "x": -30, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 },
     { "id": "honolulu-hi", "name": "Honolulu, HI", "city": "Honolulu", "state": "HI", "type": "capital", "shape": "circle", "lon": -157.8583, "lat": 21.3069, "hitRadius": 14, "color": "#22c55e", "labelOffset": { "x": -34, "y": 14 }, "labelFontSize": 11, "labelRotation": 0 }
   ]

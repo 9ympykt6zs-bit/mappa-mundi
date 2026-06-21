@@ -3,6 +3,14 @@
   "title": "States and Capitals 7",
   "baseMap": "usa-map",
   "baseMapPath": "assets/maps/usa/usa-map.svg",
+  "map": {
+    "dailyTrailNonLearnCamera": {
+      "center": [-101.34221, 43.94894],
+      "zoom": 4.5833,
+      "bearing": 0,
+      "pitch": 0
+    }
+  },
   "projection": {
     "type": "albers-usa-d3",
     "scale": 1300,

@@ -3,6 +3,15 @@
   "title": "States and Capitals 1",
   "baseMap": "usa-map",
   "baseMapPath": "assets/maps/usa/usa-map.svg",
+  "map": {
+    "dailyTrailFixedCamera": {
+      "afterLearnTargetId": "connecticut",
+      "center": [-70.34115, 44.17516],
+      "zoom": 5.1328,
+      "bearing": 0,
+      "pitch": 0
+    }
+  },
   "projection": {
     "type": "albers-usa-d3",
     "scale": 1300,

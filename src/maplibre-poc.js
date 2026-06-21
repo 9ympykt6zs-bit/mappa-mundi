@@ -136,17 +136,17 @@ const activityDataPaths = [
   "assets/maps/data/mexico-south-gulf-yucatan.json",
   "assets/maps/data/mexico-states.json",
   "assets/maps/data/canada-provinces-territories.json",
-  "assets/maps/data/us-states-capitals-01.json",
+  "assets/maps/data/us-states-capitals-01.json?v=20260621-us-states-01-camera-1",
   "assets/maps/data/us-states-capitals-02.json",
-  "assets/maps/data/us-states-capitals-03.json",
+  "assets/maps/data/us-states-capitals-03.json?v=20260621-us-states-03-camera-1",
   "assets/maps/data/us-states-capitals-04.json",
-  "assets/maps/data/us-states-capitals-05.json",
-  "assets/maps/data/us-states-capitals-06.json",
-  "assets/maps/data/us-states-capitals-07.json",
-  "assets/maps/data/us-states-capitals-08.json",
-  "assets/maps/data/us-states-capitals-09.json",
+  "assets/maps/data/us-states-capitals-05.json?v=20260621-us-states-05-camera-2",
+  "assets/maps/data/us-states-capitals-06.json?v=20260621-us-states-06-camera-2",
+  "assets/maps/data/us-states-capitals-07.json?v=20260621-us-states-07-camera-1",
+  "assets/maps/data/us-states-capitals-08.json?v=20260621-us-states-08-camera-2",
+  "assets/maps/data/us-states-capitals-09.json?v=20260621-us-states-09-camera-1",
   "assets/maps/data/us-states-capitals-10.json",
-  "assets/maps/data/us-states-capitals-11.json",
+  "assets/maps/data/us-states-capitals-11.json?v=20260621-us-states-11-camera-5",
   "assets/maps/data/us-physical-lakes.json",
   "assets/maps/data/us-physical-rivers.json",
   "assets/maps/data/us-physical-eastern-mountains.json",
@@ -2865,6 +2865,7 @@ let activeJourneySession = null;
 let activeDailyTrailSession = null;
 let pendingDailyTrailPlan = null;
 let lastDailyTrailSummary = null;
+let dailyTrailDevReplayCursor = null;
 let dailyTrailResetConfirmationVisible = false;
 let dailyTrailDevSelectedGoalId = "";
 let dailyTrailDevSearchQuery = "";
@@ -8671,6 +8672,7 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
     : []);
   applyMemoryTrailSectionQuizCamera(memoryTrail, selection);
   scheduleMemoryTrailSectionQuizCameraCheck(memoryTrail, selection);
+  scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target);
   scheduleContinentsOceansLearnFocusCheck(memoryTrail, selection, target);
   scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target);
   maybeFocusContinentsOceansNamePrompt(selection, target);
@@ -10147,6 +10149,11 @@ function completeDailyTrailMemoryTrailSession(memoryTrail) {
     return;
   }
 
+  if (activeDailyTrailSession.devReplay) {
+    completeDailyTrailDevReplaySession(memoryTrail);
+    return;
+  }
+
   const targetStats = Object.values(memoryTrail?.targetStats || {});
   let nextState = activeDailyTrailSession.state;
   const completedTargetIds = [...new Set((memoryTrail?.promptHistory || [])
@@ -10179,6 +10186,71 @@ function completeDailyTrailMemoryTrailSession(memoryTrail) {
   });
 
   lastDailyTrailSummary = nextState.lastSessionSummary;
+  activeDailyTrailSession = null;
+  activeStudySession = null;
+  runner.setStudyPreviewMode(false);
+  runner.setMemoryTrailHighlight([]);
+  runner.setCompletedTargets([]);
+  hideMemoryTrailOverlay();
+  showAppScreen("daily-trail-summary", { pushHistory: false });
+}
+
+function scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target) {
+  const camera = normalizeMemoryTrailSectionQuizView(target?.learnCamera);
+  if (
+    memoryTrail?.source !== "daily-trail"
+    || selection?.promptType !== "guided"
+    || memoryTrail?.sessionPhase !== "learn"
+    || memoryTrail.currentPromptTargetId !== selection?.targetId
+    || !target
+    || !camera
+    || typeof runner?.moveCamera !== "function"
+  ) {
+    return false;
+  }
+
+  const promptKey = memoryTrail.currentPromptKey;
+  const timeoutId = window.setTimeout(() => {
+    if (
+      !isCurrentMemoryTrailState(memoryTrail)
+      || memoryTrail.currentPromptKey !== promptKey
+      || memoryTrail.currentPromptTargetId !== selection.targetId
+      || memoryTrail.currentPromptType !== "guided"
+      || memoryTrail.sessionPhase !== "learn"
+    ) {
+      return;
+    }
+
+    runner.moveCamera({
+      center: camera.center,
+      zoom: camera.zoom,
+      bearing: camera.bearing,
+      pitch: camera.pitch,
+      padding: camera.padding || { top: 0, right: 0, bottom: 0, left: 0 },
+      duration: camera.duration || 720,
+      essential: true
+    }, {
+      cameraContext: target.learnCamera?.cameraContext || "learn-target-focus",
+      source: target.learnCamera?.source || "daily-trail-target-learn-camera",
+      requestType: "flyTo",
+      activityId: memoryTrail.activityId,
+      targetId: target.id,
+      targetLabel: target.name || ""
+    }, "flyTo");
+  }, 980);
+  memoryTrail.timers.push(timeoutId);
+  return true;
+}
+
+function completeDailyTrailDevReplaySession(memoryTrail) {
+  lastDailyTrailSummary = {
+    sessionType: "daily-trail-dev-replay",
+    practicedCount: new Set((memoryTrail?.promptHistory || []).map((entry) => entry.targetId).filter(Boolean)).size,
+    newCount: 0,
+    reviewCount: 0,
+    weakItems: [],
+    sessionsUntilNextCheckpoint: 0
+  };
   activeDailyTrailSession = null;
   activeStudySession = null;
   runner.setStudyPreviewMode(false);
@@ -11887,6 +11959,7 @@ function clearDailyTrailDevOverride(options = {}) {
   pendingDailyTrailPlan = null;
 
   if (!options.silent) {
+    clearDailyTrailDevReplayCursor();
     showFeedback("Daily Trail dev override cleared.", true);
   }
 }
@@ -12380,6 +12453,36 @@ function getPreviousDailyTrailDevSection() {
   return previousStep ? { journey, step: previousStep, stepIndex: currentStepIndex - 1 } : null;
 }
 
+function clearDailyTrailDevReplayCursor() {
+  dailyTrailDevReplayCursor = null;
+}
+
+function getDailyTrailDevReplayStep(cursor = dailyTrailDevReplayCursor) {
+  const journey = cursor?.journeyId
+    ? journeyPresets.find((candidate) => candidate.id === cursor.journeyId)
+    : null;
+  const step = journey?.steps?.[cursor.stepIndex] || null;
+  return journey && step ? { journey, step, stepIndex: cursor.stepIndex } : null;
+}
+
+async function startDailyTrailDevReplayCursor() {
+  const replayStep = getDailyTrailDevReplayStep();
+  if (!replayStep) {
+    clearDailyTrailDevReplayCursor();
+    return false;
+  }
+
+  setDailyTrailDevOverride({
+    dailyTrailDevOverrideGoalId: dailyTrailDevReplayCursor.trailId,
+    dailyTrailDevOverrideActivityId: replayStep.step.activityId,
+    dailyTrailDevOverrideItemIds: [],
+    dailyTrailDevMode: "section"
+  });
+  pendingDailyTrailPlan = null;
+  await startDailyTrailSession();
+  return true;
+}
+
 async function backOneDailyTrailSectionForDev() {
   const previousSection = getPreviousDailyTrailDevSection();
   if (!previousSection) {
@@ -12389,15 +12492,13 @@ async function backOneDailyTrailSectionForDev() {
   }
 
   const trailId = activeDailyTrailSession?.trailId || dailyTrailGoals[0]?.id || "world-core";
-  exitDailyTrailGameplay();
-  setDailyTrailDevOverride({
-    dailyTrailDevOverrideGoalId: trailId,
-    dailyTrailDevOverrideActivityId: previousSection.step.activityId,
-    dailyTrailDevOverrideItemIds: [],
-    dailyTrailDevMode: "section"
-  });
-  pendingDailyTrailPlan = null;
-  await startDailyTrailSession();
+  dailyTrailDevReplayCursor = {
+    trailId,
+    journeyId: previousSection.journey.id,
+    stepIndex: previousSection.stepIndex
+  };
+  exitDailyTrailGameplay({ preserveDevReplay: true });
+  await startDailyTrailDevReplayCursor();
 
   const snapshot = {
     activityId: previousSection.step.activityId,
@@ -13546,7 +13647,12 @@ async function startDailyTrailSession() {
     return;
   }
 
-  const startedState = applyDailyTrailSessionStart(state, plan);
+  const isDevReplayStart = Boolean(
+    dailyTrailDevReplayCursor
+    && dailyTrailDevReplayCursor.journeyId === journey.id
+    && dailyTrailDevReplayCursor.stepIndex === journey.steps.findIndex((step) => step.activityId === activity.id)
+  );
+  const startedState = isDevReplayStart ? state : applyDailyTrailSessionStart(state, plan);
   if (devOverride || plan.devOverride) {
     clearDailyTrailDevOverride({ silent: true });
   }
@@ -13559,7 +13665,8 @@ async function startDailyTrailSession() {
     journeyId: journey.id,
     state: startedState,
     plan,
-    activityId: activity.id
+    activityId: activity.id,
+    devReplay: isDevReplayStart
   };
   pendingDailyTrailPlan = null;
   selectedJourneyId = journey.id;
@@ -13596,6 +13703,11 @@ function handleDailyTrailActivityCompletion() {
     mode: "daily-trail"
   });
 
+  if (activeDailyTrailSession.devReplay) {
+    completeDailyTrailDevReplaySession(null);
+    return;
+  }
+
   const nextState = applyDailyTrailSessionResults(activeDailyTrailSession.state, activeDailyTrailSession.plan, {
     completedTargetIds: session.completedIds,
     correctCount: session.completedIds.length,
@@ -13608,8 +13720,11 @@ function handleDailyTrailActivityCompletion() {
   showAppScreen("daily-trail-summary", { pushHistory: false });
 }
 
-function exitDailyTrailGameplay() {
+function exitDailyTrailGameplay(options = {}) {
   trackMemoryTrailAbandoned();
+  if (!options.preserveDevReplay) {
+    clearDailyTrailDevReplayCursor();
+  }
   activeStudySession = null;
   activeDailyTrailSession = null;
   runner?.setStudyPreviewMode(false);
@@ -13626,6 +13741,7 @@ function resetDailyTrailProgress() {
   }
 
   activeDailyTrailSession = null;
+  clearDailyTrailDevReplayCursor();
   if (activeStudySession?.dailyTrail) {
     activeStudySession = null;
     runner?.setStudyPreviewMode(false);
@@ -13644,6 +13760,14 @@ function resetDailyTrailProgress() {
 }
 
 async function continueDailyTrailFromSummary() {
+  if (dailyTrailDevReplayCursor) {
+    dailyTrailDevReplayCursor.stepIndex += 1;
+    if (await startDailyTrailDevReplayCursor()) {
+      lastDailyTrailSummary = null;
+      return;
+    }
+  }
+
   pendingDailyTrailPlan = null;
   lastDailyTrailSummary = null;
   await openDailyTrailIntro();
@@ -13666,10 +13790,16 @@ function startDailyTrailMemoryTrailStepIfNeeded() {
   const targetIds = plannedItemsForActivity
     .map((item) => item.targetId)
     .filter(Boolean);
-  const newTargetIds = plannedItemsForActivity
-    .filter((item) => isDailyTrailItemUnseen(latestState, item))
-    .map((item) => item.targetId)
-    .filter(Boolean);
+  // Camera Dev replays should exercise a section's Learn phase even when its
+  // targets are already introduced in persisted Daily Trail progress. This
+  // only changes the in-memory Memory Trail session for the dev replay.
+  const forceDevReplayLearn = activeDailyTrailSession.devReplay === true;
+  const newTargetIds = forceDevReplayLearn
+    ? targetIds
+    : plannedItemsForActivity
+      .filter((item) => isDailyTrailItemUnseen(latestState, item))
+      .map((item) => item.targetId)
+      .filter(Boolean);
 
   if (targetIds.length === 0) {
     return false;

@@ -1,10 +1,12 @@
 import fs from "node:fs";
 
 const expectedCameras = {
-  "05": { center: [-85.09171, 41.83720], zoom: 4.5195, bearing: 0, pitch: 0 },
-  "06": { center: [-93.82019, 38.32381], zoom: 4.3191, bearing: 0, pitch: 0 },
-  "08": { center: [-102.21814, 34.02285], zoom: 4.3056, bearing: 0, pitch: 0 },
-  "11": { center: [-148.03546, 45.94864], zoom: 2.7090, bearing: 0, pitch: 0 }
+  "05": { center: [-83.05151, 41.26396], zoom: 4.4957, bearing: 0, pitch: 0 },
+  "06": { center: [-92.03510, 40.32598], zoom: 4.2778, bearing: 0, pitch: 0 },
+  "07": { center: [-101.34221, 43.94894], zoom: 4.5833, bearing: 0, pitch: 0 },
+  "08": { center: [-101.29509, 34.83337], zoom: 4.4430, bearing: 0, pitch: 0 },
+  "09": { center: [-113.30046, 37.47135], zoom: 4.7266, bearing: 0, pitch: 0 },
+  "11": { center: [-129.20682, 49.23213], zoom: 2.8050, bearing: 0, pitch: 0 }
 };
 
 for (const [sectionId, expectedCamera] of Object.entries(expectedCameras)) {

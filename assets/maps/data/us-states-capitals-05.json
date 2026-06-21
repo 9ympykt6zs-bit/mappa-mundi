@@ -15,8 +15,8 @@
   "visibleAnswerLimit": 10,
   "map": {
     "dailyTrailNonLearnCamera": {
-      "center": [-85.09171, 41.83720],
-      "zoom": 4.5195,
+      "center": [-83.05151, 41.26396],
+      "zoom": 4.4957,
       "bearing": 0,
       "pitch": 0
     }
