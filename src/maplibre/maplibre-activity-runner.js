@@ -6402,7 +6402,7 @@ export class MapLibreActivityRunner {
     return [
       "coalesce",
       ["get", "hitWidthPx"],
-      ["case", ["<=", ["zoom"], 4], 34, 26]
+      34
     ];
   }
 

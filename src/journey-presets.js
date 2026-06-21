@@ -209,6 +209,12 @@ export const journeyPresets = [
         activityId: "us-mountain-ranges",
         title: "U.S. Mountain Ranges",
         kind: "physical-features"
+      },
+      {
+        id: "us-physical-rivers",
+        activityId: "us-physical-rivers",
+        title: "U.S. Rivers",
+        kind: "physical-features"
       }
     ]
   },

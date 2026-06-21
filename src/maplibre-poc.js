@@ -1,4 +1,4 @@
-import { journeyPresets } from "./journey-presets.js?v=20260618-us-mountain-ranges";
+import { journeyPresets } from "./journey-presets.js?v=20260621-us-rivers-menu-1";
 import { trackEvent } from "./analytics.js?v=20260601-instruction-target-nouns";
 import {
   clearActiveJourney,
@@ -147,6 +147,7 @@ const activityDataPaths = [
   "assets/maps/data/us-states-capitals-10.json",
   "assets/maps/data/us-states-capitals-11.json",
   "assets/maps/data/us-physical-lakes.json",
+  "assets/maps/data/us-physical-rivers.json",
   "assets/maps/data/us-physical-eastern-mountains.json",
   "assets/maps/data/us-physical-midwestern-mountains.json",
   "assets/maps/data/us-physical-western-mountains.json",
@@ -168,7 +169,8 @@ const coContinentOverridesPath = "assets/data/co-continent-overrides.json";
 const coContinentLandPath = "assets/maps/data/continents-oceans-land.geojson";
 const inlandWatersPath = "assets/maps/data/inland-waters.geojson";
 const mountainRangesPath = "assets/data/physical-features/us-mountain-ranges.geojson?v=20260618-us-mountain-ranges";
-const riverLinesPath = "assets/data/physical-features/proof-sheet-rivers.geojson?v=20260620-river-line-targets";
+const riverLinesPath = "assets/data/physical-features/proof-sheet-rivers.geojson?v=20260620-us-rivers-continuity-assembly-1";
+const riverCartographicRepairsPath = "assets/data/physical-features/us-river-cartographic-repairs.json?v=20260621-cartographic-repairs-1";
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const northAmericaAdmin1Path = "assets/maps/data/maplibre-north-america-admin1.geojson";
@@ -185,6 +187,7 @@ const italyAdmin1Path = "assets/maps/data/maplibre-italy-admin1.geojson";
 const unitedKingdomAdmin1Path = "assets/maps/data/maplibre-united-kingdom-admin1.geojson";
 const continentsOceansActivityId = "continents-oceans";
 const usMountainRangesActivityId = "us-mountain-ranges";
+const usPhysicalRiversActivityId = "us-physical-rivers";
 const defaultActivityId = continentsOceansActivityId;
 const continentsOceansLearnFocusProfiles = Object.freeze({
   "north-america": { delayMs: 920, forceOnPromptStart: true },
@@ -215,6 +218,14 @@ const dailyTrailDevOverrideStorageKey = "mappaDailyTrailDevOverride";
 const dailyTrailDevCheatCode = "dailytraildev";
 const cameraDevOverridesStorageKey = "mappaCameraDevOverrides";
 const cameraDevCheatCode = "cameradev";
+const riverPreviewSourceId = "mappa-dev-river-preview-source";
+const riverPreviewStateBorderLayerId = "mappa-dev-river-preview-state-borders";
+const riverPreviewBaseLayerId = "mappa-dev-river-preview-base";
+const riverPreviewTargetLayerId = "mappa-dev-river-preview-target";
+const riverPreviewFallbackTargetId = "__no-river-preview-target__";
+let riverPreviewActive = false;
+let riverPreviewTarget = null;
+let riverPreviewRepairSummary = [];
 const feedbackFormUrl = "https://docs.google.com/forms/d/e/1FAIpQLSf3w51Tbeetre-iS4maV8X0UDRBhvueuuAreQFoGObCG3VFKA/viewform?usp=header";
 const appShellScreenIds = new Set([
   "launch",
@@ -1090,6 +1101,7 @@ function buildUsPhysicalFeatureNavNodes(items, parentId = "us-physical-features"
         activityId: item.activityId,
         activityLabel: item.activityId ? item.label : undefined,
         journeyId: item.journeyId,
+        memoryTrailLaunch: item.memoryTrailLaunch === true,
         disabled: !item.activityId && childIds.length === 0,
         badge: item.activityId || childIds.length ? undefined : (item.badge || "Coming soon"),
         children: childIds.length ? childIds : undefined
@@ -2007,6 +2019,13 @@ const activityCatalogMetadata = {
     description: "Practice U.S. lake targets using existing inland-water polygons.",
     sortOrder: 7.6,
     sectionNumber: 60
+  },
+  "us-physical-rivers": {
+    mapSet: "north-america",
+    category: "Physical Features",
+    description: "Learn major U.S. rivers with section-aware Memory Trail practice.",
+    sortOrder: 7.62,
+    sectionNumber: 60.5
   },
   "us-mountain-ranges": {
     mapSet: "north-america",
@@ -3528,7 +3547,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260620-river-line-targets"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260620-river-preview-dev-2"),
       import("./chip-speech.js?v=20260602-daily-trail-review-chips")
     ]).then(([
       ,
@@ -3710,6 +3729,13 @@ async function init() {
   setBrowseDrawerOpen(false);
   updateActivityNavigationControls();
   updateAudioMuteControl();
+
+  const riverPreviewOptions = getRiverPreviewUrlOptions();
+  if (riverPreviewOptions) {
+    showRiverPreviewSurface();
+    await openRiverPreview(riverPreviewOptions);
+    return;
+  }
 
   const mountainFindDevOptions = getMountainFindDevUrlOptions();
   if (mountainFindDevOptions) {
@@ -6755,6 +6781,7 @@ function showStudyStepNotReady() {
 
 async function openStudyExploreActivity(journey, step, activity, options = {}) {
   await ensureMapReady();
+  closeRiverPreview({ restoreActivityUi: true });
   activity = getActivityById(activity?.id) || activity;
   saveCurrentActivityProgress();
   trackEvent("study_preview_opened", {
@@ -7463,6 +7490,11 @@ function isUsMountainRangesMemoryTrail(memoryTrail = getActiveMemoryTrail()) {
     || /^us-physical-(western|eastern|midwestern|alaska)-mountains$/.test(activityId);
 }
 
+function usesFixedSectionMemoryTrailCamera(memoryTrail = getActiveMemoryTrail()) {
+  const activityId = memoryTrail?.activityId || session.currentActivity?.id || "";
+  return isUsMountainRangesMemoryTrail(memoryTrail) || activityId === usPhysicalRiversActivityId;
+}
+
 function getMemoryTrailSectionQuizCameraKey(memoryTrail, quizView) {
   return [
     memoryTrail?.activityId || "",
@@ -7497,7 +7529,7 @@ function isMapAtMemoryTrailSectionQuizCamera(quizView) {
 
 function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options = {}) {
   if (
-    !isUsMountainRangesMemoryTrail(memoryTrail)
+    !usesFixedSectionMemoryTrailCamera(memoryTrail)
     || !memoryTrail?.sectionQuizView
     || typeof runner?.moveCamera !== "function"
   ) {
@@ -7554,7 +7586,7 @@ function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options 
 
 function scheduleMemoryTrailSectionQuizCameraCheck(memoryTrail, selection = {}) {
   if (
-    !isUsMountainRangesMemoryTrail(memoryTrail)
+    !usesFixedSectionMemoryTrailCamera(memoryTrail)
     || !memoryTrail?.sectionQuizView
     || selection?.promptType === "guided"
     || memoryTrail.sessionPhase === "learn"
@@ -11430,6 +11462,292 @@ function isLocalDevAccessAllowed() {
     || hostname === "";
 }
 
+function getRiverPreviewUrlOptions() {
+  if (!isLocalDevAccessAllowed()) {
+    return null;
+  }
+
+  const params = new URLSearchParams(window.location.search || "");
+  if (!params.has("riverPreview") && !params.has("river-preview")) {
+    return null;
+  }
+
+  return {
+    targetId: params.get("riverPreview") || params.get("river-preview") || "colorado-river"
+  };
+}
+
+function getRiverPreviewFeatureBounds(feature) {
+  const lines = feature?.geometry?.type === "LineString"
+    ? [feature.geometry.coordinates]
+    : feature?.geometry?.type === "MultiLineString"
+      ? feature.geometry.coordinates
+      : [];
+  const points = lines.flat();
+
+  if (!points.length) {
+    return null;
+  }
+
+  const longitudes = points.map(([longitude]) => longitude);
+  const latitudes = points.map(([, latitude]) => latitude);
+  return [
+    [Math.min(...longitudes), Math.min(...latitudes)],
+    [Math.max(...longitudes), Math.max(...latitudes)]
+  ];
+}
+
+function getRiverPreviewLines(geometry) {
+  if (geometry?.type === "LineString") {
+    return [geometry.coordinates];
+  }
+
+  return geometry?.type === "MultiLineString" ? geometry.coordinates : [];
+}
+
+function cloneRiverPreviewLine(line) {
+  return line.map(([longitude, latitude]) => [longitude, latitude]);
+}
+
+function applyRiverCartographicRepairs(riverData, repairData) {
+  const repairs = Array.isArray(repairData?.repairs) ? repairData.repairs : [];
+  const repairsByRiverId = repairs.reduce((byRiverId, repair) => {
+    const riverId = String(repair?.riverId || "");
+    if (riverId) {
+      const riverRepairs = byRiverId.get(riverId) || [];
+      riverRepairs.push(repair);
+      byRiverId.set(riverId, riverRepairs);
+    }
+    return byRiverId;
+  }, new Map());
+  const appliedRepairs = [];
+  const features = (riverData?.features || []).map((feature) => {
+    const featureId = feature.properties?.id || "";
+    const featureRepairs = repairsByRiverId.get(featureId) || [];
+    let lines = getRiverPreviewLines(feature.geometry).map(cloneRiverPreviewLine);
+
+    featureRepairs.forEach((repair) => {
+      if (repair.repairType === "endpoint-trim") {
+        const omittedParts = new Set(repair.omitOriginalParts || []);
+        lines = lines.filter((_, index) => !omittedParts.has(index + 1));
+      } else if (repair.geometry?.type === "LineString" && Array.isArray(repair.geometry.coordinates)) {
+        lines.push(cloneRiverPreviewLine(repair.geometry.coordinates));
+      }
+      appliedRepairs.push({
+        id: repair.id,
+        riverId: repair.riverId,
+        repairType: repair.repairType
+      });
+    });
+
+    return {
+      ...feature,
+      properties: {
+        ...feature.properties,
+        cartographicRepairIds: featureRepairs.map((repair) => repair.id)
+      },
+      geometry: lines.length === 1
+        ? { type: "LineString", coordinates: lines[0] }
+        : { type: "MultiLineString", coordinates: lines }
+    };
+  });
+
+  return {
+    data: { ...riverData, features },
+    appliedRepairs
+  };
+}
+
+function showRiverPreviewSurface() {
+  currentAppScreen = "river-preview-dev";
+  document.body.classList.remove("launch-mode", "app-shell-mode", "browse-mode", "overview-mode", "study-mode", "study-explore-mode");
+  if (launchScreen) {
+    launchScreen.hidden = true;
+  }
+
+  if (appShellScreen) {
+    appShellScreen.hidden = true;
+  }
+  studyCard.hidden = true;
+  document.querySelector("#answer-panel")?.setAttribute("hidden", "");
+  setBrowseDrawerOpen(false);
+  setHeaderTitle("U.S. River Preview", { shortTitle: "River Preview" });
+}
+
+function getRiverPreviewSnapshot() {
+  const map = runner?.map;
+  const source = map?.getSource?.(riverPreviewSourceId);
+
+  return {
+    enabled: Boolean(source && map?.getLayer?.(riverPreviewBaseLayerId)),
+    stateBordersEnabled: Boolean(map?.getLayer?.(riverPreviewStateBorderLayerId)),
+    active: riverPreviewActive,
+    targetId: riverPreviewTarget?.id || "",
+    targetLabel: riverPreviewTarget?.label || "",
+    cartographicRepairs: riverPreviewRepairSummary,
+    camera: map ? {
+      center: [Number(map.getCenter().lng.toFixed(5)), Number(map.getCenter().lat.toFixed(5))],
+      zoom: Number(map.getZoom().toFixed(4)),
+      bearing: Number(map.getBearing().toFixed(2)),
+      pitch: Number(map.getPitch().toFixed(2))
+    } : null
+  };
+}
+
+async function openRiverPreview(options = {}) {
+  if (!isLocalDevAccessAllowed()) {
+    console.warn("River preview is only available on localhost or file URLs.");
+    return null;
+  }
+
+  await ensureMapReady();
+  const [riverData, repairData] = await Promise.all([
+    fetchJson(riverLinesPath),
+    fetchJson(riverCartographicRepairsPath)
+  ]);
+  const features = Array.isArray(riverData?.features) ? riverData.features : [];
+
+  if (features.length === 0) {
+    console.warn("River preview requires validated river GeoJSON with at least one line feature.");
+    return null;
+  }
+
+  const map = runner?.map;
+  if (!map) {
+    return null;
+  }
+
+  closeRiverPreview({ silent: true });
+
+  const requestedTargetId = String(options.targetId || options.target || "colorado-river").trim();
+  const target = features.find((feature) => (
+    feature.properties?.id === requestedTargetId
+    || feature.properties?.label?.toLowerCase() === requestedTargetId.toLowerCase()
+  )) || null;
+  const targetId = target?.properties?.id || riverPreviewFallbackTargetId;
+  const displayData = applyRiverCartographicRepairs(riverData, repairData);
+  const source = map.getSource(riverPreviewSourceId);
+
+  if (source) {
+    source.setData(displayData.data);
+  } else {
+    map.addSource(riverPreviewSourceId, {
+      type: "geojson",
+      data: displayData.data
+    });
+  }
+
+  if (!map.getLayer(riverPreviewStateBorderLayerId)) {
+    map.addLayer({
+      id: riverPreviewStateBorderLayerId,
+      type: "line",
+      source: "us-states-atlas",
+      layout: {
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": "#64748b",
+        "line-width": 0.9,
+        "line-opacity": 0.58
+      }
+    });
+  }
+
+  if (!map.getLayer(riverPreviewBaseLayerId)) {
+    map.addLayer({
+      id: riverPreviewBaseLayerId,
+      type: "line",
+      source: riverPreviewSourceId,
+      layout: {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": "#2384c6",
+        "line-width": 3.5,
+        "line-opacity": 0.92
+      }
+    });
+  }
+
+  if (!map.getLayer(riverPreviewTargetLayerId)) {
+    map.addLayer({
+      id: riverPreviewTargetLayerId,
+      type: "line",
+      source: riverPreviewSourceId,
+      filter: ["==", ["get", "id"], targetId],
+      layout: {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": "#fbbf24",
+        "line-width": 7,
+        "line-opacity": 1
+      }
+    });
+  } else {
+    map.setFilter(riverPreviewTargetLayerId, ["==", ["get", "id"], targetId]);
+  }
+
+  map.setLayoutProperty(riverPreviewBaseLayerId, "visibility", "visible");
+  map.setLayoutProperty(riverPreviewTargetLayerId, "visibility", target ? "visible" : "none");
+
+  const bounds = target ? getRiverPreviewFeatureBounds(target) : [[-126, 24], [-66, 53]];
+  if (bounds) {
+    map.fitBounds(bounds, {
+      padding: { top: 96, right: 96, bottom: 124, left: 96 },
+      maxZoom: target ? 5.2 : 3.2,
+      duration: 700
+    });
+  }
+
+  riverPreviewActive = true;
+  riverPreviewTarget = target
+    ? { id: target.properties?.id || "", label: target.properties?.label || "" }
+    : null;
+  riverPreviewRepairSummary = displayData.appliedRepairs;
+
+  const snapshot = {
+    ...getRiverPreviewSnapshot(),
+    targetId: target?.properties?.id || "",
+    targetLabel: target?.properties?.label || "",
+    featureCount: features.length,
+    cartographicRepairs: displayData.appliedRepairs
+  };
+  console.info("[river-preview] open", snapshot);
+  return snapshot;
+}
+
+function closeRiverPreview(options = {}) {
+  const map = runner?.map;
+  const wasActive = riverPreviewActive || Boolean(map?.getSource?.(riverPreviewSourceId));
+
+  [riverPreviewTargetLayerId, riverPreviewBaseLayerId, riverPreviewStateBorderLayerId].forEach((layerId) => {
+    if (map?.getLayer?.(layerId)) {
+      map.removeLayer(layerId);
+    }
+  });
+
+  if (map?.getSource?.(riverPreviewSourceId)) {
+    map.removeSource(riverPreviewSourceId);
+  }
+
+  riverPreviewActive = false;
+  riverPreviewTarget = null;
+  riverPreviewRepairSummary = [];
+
+  if (options.restoreActivityUi) {
+    document.querySelector("#answer-panel")?.removeAttribute("hidden");
+  }
+
+  const snapshot = getRiverPreviewSnapshot();
+  if (wasActive && !options.silent) {
+    console.info("[river-preview] closed", snapshot);
+  }
+  return snapshot;
+}
+
 function normalizeDailyTrailDevOverride(value) {
   if (!value || typeof value !== "object") {
     return null;
@@ -12008,6 +12326,11 @@ function skipMemoryTrailPromptForDev() {
 }
 
 if (isLocalDevAccessAllowed()) {
+  window.mappaRiverPreview = {
+    open: openRiverPreview,
+    close: closeRiverPreview,
+    snapshot: getRiverPreviewSnapshot
+  };
   window.mappaMountainFindDev = {
     start: startMountainFindDev,
     next: forceMountainFindDevPrompt,
@@ -15776,6 +16099,11 @@ function drillToHierarchyNode(nodeId) {
       return;
     }
 
+    if (node.memoryTrailLaunch) {
+      void openDirectMemoryTrailActivity(node.activityId);
+      return;
+    }
+
     if (currentAppScreen === "free-play") {
       showFreePlayDifficultyScreen(node.activityId);
       return;
@@ -16193,6 +16521,7 @@ function getMemoryTrailAnalyticsContext() {
 async function openActivity(activityId, options = {}) {
   markPerf("mappa-first-activity-start");
   await ensureMapReady();
+  closeRiverPreview({ restoreActivityUi: true });
   saveCurrentActivityProgress();
   cancelGrabbedAnswer();
   closeBrowseDrawer();
@@ -16259,6 +16588,26 @@ async function openActivity(activityId, options = {}) {
 
   markPerf("mappa-first-activity-ready");
   logPerfMeasure("first activity-ready time", "mappa-first-activity-start", "mappa-first-activity-ready");
+}
+
+async function openDirectMemoryTrailActivity(activityId) {
+  await ensureMapReady();
+  const activity = getActivityById(activityId);
+
+  if (!activity || !isMemoryTrailEligible(activity)) {
+    showStudyStepNotReady();
+    return;
+  }
+
+  // Reuse the normal Study/Memory Trail surface without turning this menu item
+  // into a Journey. Colorado and Mississippi use accepted Natural Earth source
+  // geometry here; their minor endpoint/coastline imperfections are accepted for now.
+  await openStudyExploreActivity(
+    { id: `${activity.id}-memory-trail`, title: activity.title },
+    { id: activity.id, activityId: activity.id, title: activity.title },
+    activity,
+    { autoStartMemoryTrail: true }
+  );
 }
 
 function getPresentedActivity(activity, presentationSettings = {}) {

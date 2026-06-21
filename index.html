@@ -326,7 +326,7 @@
 
         window.__mappaMundiLoadApp = () => {
           if (!appModulePromise) {
-            appModulePromise = import("./src/maplibre-poc.js?v=20260620-river-line-targets");
+            appModulePromise = import("./src/maplibre-poc.js?v=20260621-us-rivers-memory-trail-1");
           }
 
           return appModulePromise;
@@ -340,6 +340,12 @@
 
           window.setTimeout(() => window.__mappaMundiLoadApp(), 3000);
         };
+
+        const previewParams = new URLSearchParams(window.location.search);
+        if (previewParams.has("riverPreview") || previewParams.has("river-preview")) {
+          window.__mappaMundiLoadApp();
+          return;
+        }
 
         if (document.readyState === "complete") {
           scheduleAppLoad();

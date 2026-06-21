@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "scope": "dev-preview-only",
+  "description": "Curated educational-map repairs for small U.S. river preview endpoint defects. These coordinates are not Natural Earth source geometry.",
+  "repairs": [
+    {
+      "id": "colorado-river-gulf-extension",
+      "riverId": "colorado-river",
+      "repairType": "endpoint-extension",
+      "reason": "Natural Earth's selected Colorado mainstem stops just north of the Gulf of California at app-map scale.",
+      "approximateCoordinates": [
+        [-115.03521, 31.96608],
+        [-115.08, 31.9],
+        [-115.13, 31.82],
+        [-115.2, 31.72]
+      ],
+      "explanation": "A short display-only extension carries the visible endpoint clearly into the Gulf of California / Sea of Cortez at app-map scale.",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-115.03521, 31.96608],
+          [-115.08, 31.9],
+          [-115.13, 31.82],
+          [-115.2, 31.72]
+        ]
+      }
+    },
+    {
+      "id": "columbia-river-mainstem-gap-bridge",
+      "riverId": "columbia-river",
+      "repairType": "gap-bridge",
+      "reason": "Natural Earth parts 6 and 7 leave a visible 19 km gap in the Columbia mainstem.",
+      "approximateCoordinates": [
+        [-119.05205, 46.22382],
+        [-118.91943, 46.07985]
+      ],
+      "explanation": "A minimal display-only bridge closes the obvious mainstem discontinuity at app scale.",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-119.05205, 46.22382],
+          [-118.91943, 46.07985]
+        ]
+      }
+    },
+    {
+      "id": "columbia-river-pacific-extension",
+      "riverId": "columbia-river",
+      "repairType": "endpoint-extension",
+      "reason": "Natural Earth's Columbia record stops before the Pacific mouth near the Washington/Oregon border.",
+      "approximateCoordinates": [
+        [-123.18009, 46.1791],
+        [-123.65, 46.18],
+        [-124.04, 46.23]
+      ],
+      "explanation": "A short display-scale estuary extension makes the river read as reaching the Pacific without changing source data.",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-123.18009, 46.1791],
+          [-123.65, 46.18],
+          [-124.04, 46.23]
+        ]
+      }
+    },
+    {
+      "id": "mississippi-river-delta-trim",
+      "riverId": "mississippi-river",
+      "repairType": "endpoint-trim",
+      "reason": "The selected Natural Earth Mississippi delta outlet branches visibly extend beyond the app's simplified Gulf coastline.",
+      "approximateCoordinates": [
+        [-89.18823, 29.31879],
+        [-89.27019, 29.20209],
+        [-89.03057, 29.19587],
+        [-89.25713, 29.1549],
+        [-89.26099, 29.15515],
+        [-89.41357, 28.92834]
+      ],
+      "omitOriginalParts": [1, 2, 4],
+      "explanation": "The preview omits only outer delta outlet parts and retains the Natural Earth mainstem to the coast; source geometry remains unchanged on disk."
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "id": "us-physical-rivers",
+  "title": "U.S. Rivers",
+  "targetNoun": "river",
+  "promptText": "Name these rivers",
+  "visibleAnswerLimit": 8,
+  "memoryTrailNewTargetLimit": 5,
+  "memoryTrailRequireAllTargets": true,
+  "memoryTrailAutoStart": true,
+  "map": {
+    "region": "united-states",
+    "regionView": { "center": [-98.5, 39.2], "zoom": 3.05 },
+    "studyView": {
+      "bounds": [[-126.5, 24.0], [-64.0, 50.5]],
+      "padding": { "top": 58, "right": 58, "bottom": 96, "left": 58 },
+      "duration": 1050
+    }
+  },
+  "memoryTrailSections": [
+    {
+      "id": "western-rivers",
+      "title": "Western Rivers",
+      "targetIds": ["colorado-river", "columbia-river", "rio-grande-river"],
+      "map": {
+        "quizView": {
+          "center": [-111.1, 39.1],
+          "zoom": 3.75,
+          "bearing": 0,
+          "pitch": 0,
+          "duration": 850
+        }
+      }
+    },
+    {
+      "id": "central-eastern-rivers",
+      "title": "Central and Eastern Rivers",
+      "targetIds": ["arkansas-river", "mississippi-river", "missouri-river", "ohio-river", "st-lawrence-river"],
+      "map": {
+        "quizView": {
+          "center": [-88.0, 40.1],
+          "zoom": 3.5,
+          "bearing": 0,
+          "pitch": 0,
+          "duration": 850
+        }
+      }
+    }
+  ],
+  "features": [
+    { "id": "arkansas-river", "name": "Arkansas River", "type": "river", "shape": "path", "sourceFeatureId": "arkansas-river", "sourceName": "Arkansas River", "color": "#3387c5", "mutedColor": "#83b7d7", "lineWidthPx": 3.5, "highlightWidthPx": 7, "hitWidthPx": 40 },
+    { "id": "colorado-river", "name": "Colorado River", "type": "river", "shape": "path", "sourceFeatureId": "colorado-river", "sourceName": "Colorado River", "color": "#3387c5", "mutedColor": "#83b7d7", "lineWidthPx": 3.5, "highlightWidthPx": 7, "hitWidthPx": 40 },
+    { "id": "columbia-river", "name": "Columbia River", "type": "river", "shape": "path", "sourceFeatureId": "columbia-river", "sourceName": "Columbia River", "color": "#3387c5", "mutedColor": "#83b7d7", "lineWidthPx": 3.5, "highlightWidthPx": 7, "hitWidthPx": 40 },
+    { "id": "mississippi-river", "name": "Mississippi River", "type": "river", "shape": "path", "sourceFeatureId": "mississippi-river", "sourceName": "Mississippi River", "color": "#3387c5", "mutedColor": "#83b7d7", "lineWidthPx": 3.5, "highlightWidthPx": 7, "hitWidthPx": 40 },
+    { "id": "missouri-river", "name": "Missouri River", "type": "river", "shape": "path", "sourceFeatureId": "missouri-river", "sourceName": "Missouri River", "color": "#3387c5", "mutedColor": "#83b7d7", "lineWidthPx": 3.5, "highlightWidthPx": 7, "hitWidthPx": 40 },
+    { "id": "ohio-river", "name": "Ohio River", "type": "river", "shape": "path", "sourceFeatureId": "ohio-river", "sourceName": "Ohio River", "color": "#3387c5", "mutedColor": "#83b7d7", "lineWidthPx": 3.5, "highlightWidthPx": 7, "hitWidthPx": 40 },
+    { "id": "rio-grande-river", "name": "Rio Grande River", "type": "river", "shape": "path", "sourceFeatureId": "rio-grande-river", "sourceName": "Rio Grande River", "color": "#3387c5", "mutedColor": "#83b7d7", "lineWidthPx": 3.5, "highlightWidthPx": 7, "hitWidthPx": 40 },
+    { "id": "st-lawrence-river", "name": "St. Lawrence River", "type": "river", "shape": "path", "sourceFeatureId": "st-lawrence-river", "sourceName": "St. Lawrence River", "color": "#3387c5", "mutedColor": "#83b7d7", "lineWidthPx": 3.5, "highlightWidthPx": 7, "hitWidthPx": 40 }
+  ]
+}
