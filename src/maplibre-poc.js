@@ -2884,6 +2884,7 @@ let cameraDevScopeSelect = null;
 let cameraDevExportOutput = null;
 let cameraDevMemoryTrailSkipButton = null;
 let cameraDevMemoryTrailSectionButton = null;
+let cameraDevMemoryTrailBackSectionButton = null;
 let cameraDevMemoryTrailStatusEl = null;
 let cameraDevStylesInjected = false;
 let cameraDevMapEventSource = null;
@@ -7482,6 +7483,25 @@ function normalizeMemoryTrailSectionQuizView(quizView = null) {
     bearing: Number.isFinite(Number(quizView.bearing)) ? Number(quizView.bearing) : 0,
     pitch: Number.isFinite(Number(quizView.pitch)) ? Number(quizView.pitch) : 0,
     duration: Number.isFinite(Number(quizView.duration)) ? Number(quizView.duration) : 850
+  };
+}
+
+function getPreviousMemoryTrailSection(activity = session.currentActivity) {
+  const sections = getMemoryTrailSections(activity);
+
+  if (!sections.length || !activeStudySession) {
+    return null;
+  }
+
+  const previousIndex = (Number(activeStudySession.memoryTrailSectionIndex) || 0) - 1;
+  if (previousIndex < 0) {
+    return null;
+  }
+
+  return {
+    ...sections[previousIndex],
+    sectionIndex: previousIndex,
+    sectionCount: sections.length
   };
 }
 
@@ -12348,6 +12368,76 @@ function skipMemoryTrailSectionForDev() {
   return snapshot;
 }
 
+function getPreviousDailyTrailDevSection() {
+  if (!activeDailyTrailSession?.journeyId || !activeDailyTrailSession?.activityId) {
+    return null;
+  }
+
+  const journey = journeyPresets.find((candidate) => candidate.id === activeDailyTrailSession.journeyId);
+  const currentStepIndex = journey?.steps?.findIndex((step) => step.activityId === activeDailyTrailSession.activityId) ?? -1;
+  const previousStep = currentStepIndex > 0 ? journey.steps[currentStepIndex - 1] : null;
+
+  return previousStep ? { journey, step: previousStep, stepIndex: currentStepIndex - 1 } : null;
+}
+
+async function backOneDailyTrailSectionForDev() {
+  const previousSection = getPreviousDailyTrailDevSection();
+  if (!previousSection) {
+    console.info("[camera-dev] No previous Daily Trail section is available.");
+    updateCameraDevPanel();
+    return null;
+  }
+
+  const trailId = activeDailyTrailSession?.trailId || dailyTrailGoals[0]?.id || "world-core";
+  exitDailyTrailGameplay();
+  setDailyTrailDevOverride({
+    dailyTrailDevOverrideGoalId: trailId,
+    dailyTrailDevOverrideActivityId: previousSection.step.activityId,
+    dailyTrailDevOverrideItemIds: [],
+    dailyTrailDevMode: "section"
+  });
+  pendingDailyTrailPlan = null;
+  await startDailyTrailSession();
+
+  const snapshot = {
+    activityId: previousSection.step.activityId,
+    stepIndex: previousSection.stepIndex,
+    title: previousSection.step.title || previousSection.step.activityId
+  };
+  console.info("[camera-dev] Returned to previous Daily Trail section.", snapshot);
+  return snapshot;
+}
+
+async function backOneMemoryTrailSectionForDev() {
+  const previousSection = getPreviousMemoryTrailSection(session.currentActivity);
+  if (!previousSection || !activeStudySession) {
+    console.info("[camera-dev] No previous Memory Trail section is available.");
+    updateCameraDevPanel();
+    return null;
+  }
+
+  clearMemoryTrailState({ restoreReveals: false });
+  activeStudySession.memoryTrailSectionIndex = previousSection.sectionIndex;
+  startMemoryTrail();
+
+  const snapshot = getMemoryTrailDevSnapshot();
+  console.info("[camera-dev] Returned to previous Memory Trail section.", snapshot);
+  updateCameraDevPanel({ syncInputs: true });
+  return snapshot;
+}
+
+async function backOneSectionForDev() {
+  if (!isLocalDevAccessAllowed()) {
+    return null;
+  }
+
+  if (activeDailyTrailSession && currentAppScreen === "daily-trail-gameplay") {
+    return backOneDailyTrailSectionForDev();
+  }
+
+  return backOneMemoryTrailSectionForDev();
+}
+
 function skipMemoryTrailPromptForDev() {
   if (!isLocalDevAccessAllowed()) {
     return null;
@@ -12544,9 +12634,17 @@ function ensureCameraDevPanel() {
   cameraDevMemoryTrailStatusEl.className = "camera-dev-memory-trail-status";
   cameraDevMemoryTrailSkipButton = createCameraDevButton("Dev: Next Prompt", () => skipMemoryTrailPromptForDev());
   cameraDevMemoryTrailSectionButton = createCameraDevButton("Dev: Next Section", () => skipMemoryTrailSectionForDev());
+  cameraDevMemoryTrailBackSectionButton = createCameraDevButton("Back One Section", () => backOneSectionForDev());
   cameraDevMemoryTrailSkipButton.disabled = true;
   cameraDevMemoryTrailSectionButton.disabled = true;
-  memoryTrailDev.append(memoryTrailDevTitle, cameraDevMemoryTrailStatusEl, cameraDevMemoryTrailSkipButton, cameraDevMemoryTrailSectionButton);
+  cameraDevMemoryTrailBackSectionButton.disabled = true;
+  memoryTrailDev.append(
+    memoryTrailDevTitle,
+    cameraDevMemoryTrailStatusEl,
+    cameraDevMemoryTrailSkipButton,
+    cameraDevMemoryTrailSectionButton,
+    cameraDevMemoryTrailBackSectionButton
+  );
 
   const exportHeader = document.createElement("div");
   exportHeader.className = "camera-dev-export-header";
@@ -12789,7 +12887,12 @@ function updateCameraDevPanel(options = {}) {
 }
 
 function updateCameraDevMemoryTrailControls() {
-  if (!cameraDevMemoryTrailSkipButton || !cameraDevMemoryTrailSectionButton || !cameraDevMemoryTrailStatusEl) {
+  if (
+    !cameraDevMemoryTrailSkipButton
+    || !cameraDevMemoryTrailSectionButton
+    || !cameraDevMemoryTrailBackSectionButton
+    || !cameraDevMemoryTrailStatusEl
+  ) {
     return;
   }
 
@@ -12797,11 +12900,17 @@ function updateCameraDevMemoryTrailControls() {
   const target = getMemoryTrailActivePromptTarget(memoryTrail);
   const canSkip = Boolean(memoryTrail?.active && target?.id);
   const nextSection = getNextMemoryTrailSection(session.currentActivity);
+  const previousSection = activeDailyTrailSession && currentAppScreen === "daily-trail-gameplay"
+    ? getPreviousDailyTrailDevSection()
+    : getPreviousMemoryTrailSection(session.currentActivity);
   cameraDevMemoryTrailSkipButton.disabled = !canSkip;
   cameraDevMemoryTrailSectionButton.disabled = !memoryTrail?.active;
+  cameraDevMemoryTrailBackSectionButton.disabled = !previousSection;
   cameraDevMemoryTrailStatusEl.textContent = canSkip
-    ? `${memoryTrail.sectionTitle || "Memory Trail"} | ${memoryTrail.sessionPhase || ""} | ${target.name || target.id}${nextSection ? ` | Next: ${nextSection.title}` : " | Final section"}`
-    : "Start a Memory Trail to enable skipping.";
+    ? `${memoryTrail.sectionTitle || "Memory Trail"} | ${memoryTrail.sessionPhase || ""} | ${target.name || target.id}${previousSection ? ` | Previous: ${previousSection.title || previousSection.step?.title || previousSection.step?.activityId}` : " | First section"}${nextSection ? ` | Next: ${nextSection.title}` : " | Final section"}`
+    : activeDailyTrailSession
+      ? previousSection ? `Previous: ${previousSection.title || previousSection.step?.title || previousSection.step?.activityId}` : "First Daily Trail section."
+      : "Start a Memory Trail to enable skipping.";
 }
 
 function renderCameraDevStatus(snapshot) {
