@@ -19,17 +19,20 @@ import {
   getDailyTrailGoal,
   getDailyTrailGoalOptions,
   hasDailyTrailProgress,
+  isDailyTrailCheckpointReviewPlan,
   loadDailyTrailState,
   planDailyTrailDevSession,
   planDailyTrailSession,
   selectDailyTrailGoal,
   shouldShowDailyTrailGoalChoice,
   syncCompletedDailyTrailGoals
-} from "./daily-trail-planner.js?v=20260621-daily-trail-co-progression-2";
+} from "./daily-trail-planner.js?v=20260622-daily-trail-checkpoint-runtime-2";
 import { resolveMemoryTrailNewTargetLimit } from "./memory-trail-new-target-limit.js?v=20260621-daily-trail-co-progression-2";
 
 const APP_NAME = "Mappa Mundi";
 const LANDING_PAGE_TITLE = "Mappa Mundi \u2013 Geography Game for Learning the World";
+const dailyTrailCheckpointRuntimeFingerprint = "daily-trail-checkpoint-handoff-20260622-2";
+const dailyTrailPlannerModuleSpecifier = "./daily-trail-planner.js?v=20260622-daily-trail-checkpoint-runtime-2";
 const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
 const mapLibreStylesheetUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css";
 const difficultyModes = Object.freeze({
@@ -43,8 +46,8 @@ const studyModes = Object.freeze({
 });
 const activityDataPaths = [
   "assets/maps/data/continents-oceans.json",
-  "assets/maps/data/world-core-americas-countries.json",
-  "assets/maps/data/world-core-europe-countries.json",
+  "assets/maps/data/world-core-americas-countries.json?v=20260621-americas-learn-cameras-7",
+  "assets/maps/data/world-core-europe-countries.json?v=20260622-europe-russia-learn-camera-1",
   "assets/maps/data/world-core-africa-countries.json",
   "assets/maps/data/world-core-west-central-south-asia-countries.json",
   "assets/maps/data/world-core-east-southeast-asia-oceania-countries.json",
@@ -7336,6 +7339,100 @@ function getActiveMemoryTrail() {
   return isMemoryTrailActive() ? activeStudySession.memoryTrail : null;
 }
 
+function isDailyTrailCheckpointPlan(plan = activeDailyTrailSession?.plan) {
+  return isDailyTrailCheckpointReviewPlan(plan);
+}
+
+function getDailyTrailCheckpointCameraDebug(memoryTrail, selection = {}) {
+  if (!memoryTrail?.checkpointReview) {
+    return {
+      mode: "normal-memory-trail",
+      source: "normal-memory-trail",
+      camera: null,
+      usesTargetLearnCamera: false
+    };
+  }
+
+  const { source, camera: configuredCamera } = getMixedDailyTrailCheckpointCameraConfig(memoryTrail, selection);
+  return {
+    mode: configuredCamera ? "activity-regional-camera" : "activity-context-fit",
+    source: configuredCamera ? "daily-trail-checkpoint-context" : "activity-context-fit",
+    configurationSource: source,
+    cameraContext: configuredCamera ? "daily-trail-checkpoint-context" : "activity-context-fit",
+    camera: normalizeMemoryTrailSectionQuizView(configuredCamera),
+    usesTargetLearnCamera: false
+  };
+}
+
+function getDailyTrailCheckpointRuntimeSnapshot(memoryTrail = getActiveMemoryTrail(), details = {}) {
+  const plan = activeDailyTrailSession?.plan || null;
+  const queueTargetIds = [...(memoryTrail?.checkpointTargetQueue || [])];
+  const duplicateTargetIds = queueTargetIds.filter((targetId, index) => queueTargetIds.indexOf(targetId) !== index);
+  const activeHighlightIds = runner?.getMemoryTrailActiveHighlightIds?.() || [];
+  const currentTargetId = memoryTrail?.currentPromptTargetId || "";
+  const selection = details.selection || {
+    targetId: currentTargetId,
+    promptType: memoryTrail?.currentPromptType || ""
+  };
+  const selectedCamera = getDailyTrailCheckpointCameraDebug(memoryTrail, selection);
+
+  return {
+    fingerprint: dailyTrailCheckpointRuntimeFingerprint,
+    mapModuleUrl: import.meta.url,
+    plannerModuleSpecifier: dailyTrailPlannerModuleSpecifier,
+    stage: details.stage || "snapshot",
+    planSessionType: plan?.sessionType || "",
+    checkpointMixedReview: plan?.checkpointMixedReview === true,
+    checkpointReview: memoryTrail?.checkpointReview === true,
+    queueTargetIds,
+    queueHasDuplicates: duplicateTargetIds.length > 0,
+    duplicateTargetIds: [...new Set(duplicateTargetIds)],
+    currentTargetId,
+    currentPromptType: memoryTrail?.currentPromptType || "",
+    currentPromptMode: memoryTrail?.currentPromptMode || "",
+    currentSessionPhase: memoryTrail?.sessionPhase || "",
+    preAnswerHighlightEnabled: Boolean(details.preAnswerHighlightEnabled),
+    activeHighlightIds,
+    selectedCamera,
+    cameraSnapshot: getMemoryTrailCameraSnapshot(),
+    serviceWorkerController: typeof navigator !== "undefined"
+      ? navigator.serviceWorker?.controller?.scriptURL || null
+      : null
+  };
+}
+
+function publishDailyTrailCheckpointRuntimeSnapshot(memoryTrail = getActiveMemoryTrail(), details = {}) {
+  const plan = activeDailyTrailSession?.plan;
+  if (!memoryTrail?.checkpointReview && !isDailyTrailCheckpointPlan(plan)) {
+    return null;
+  }
+
+  const snapshot = getDailyTrailCheckpointRuntimeSnapshot(memoryTrail, details);
+  if (typeof window !== "undefined") {
+    window.mappaDailyTrailCheckpointDebug = {
+      fingerprint: dailyTrailCheckpointRuntimeFingerprint,
+      getSnapshot: () => getDailyTrailCheckpointRuntimeSnapshot(getActiveMemoryTrail()),
+      log: () => {
+        const current = getDailyTrailCheckpointRuntimeSnapshot(getActiveMemoryTrail());
+        console.info("[daily-trail-checkpoint]", current);
+        return current;
+      },
+      getServiceWorkerState: async () => {
+        if (!navigator.serviceWorker?.getRegistrations) {
+          return { controller: null, registrations: [] };
+        }
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        return {
+          controller: navigator.serviceWorker.controller?.scriptURL || null,
+          registrations: registrations.map((registration) => registration.active?.scriptURL || registration.scope)
+        };
+      }
+    };
+  }
+  console.info("[daily-trail-checkpoint]", snapshot);
+  return snapshot;
+}
+
 function getMemoryTrailSections(activity = session.currentActivity) {
   return Array.isArray(activity?.memoryTrailSections)
     ? activity.memoryTrailSections.filter((section) => Array.isArray(section.targetIds) && section.targetIds.length > 0)
@@ -7446,6 +7543,12 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     dailyTrailFixedCamera,
     dailyTrailFixedCameraLocked: false,
     dailyTrailNonLearnCamera: normalizeMemoryTrailSectionQuizView(options.dailyTrailNonLearnCamera),
+    dailyTrailQuizCamera: normalizeDailyTrailTargetQuizCamera(options.dailyTrailQuizCamera),
+    lastDailyTrailQuizCameraKey: "",
+    checkpointReview: options.checkpointReview === true,
+    checkpointTargetQueue: options.checkpointReview === true
+      ? getCheckpointMemoryTrailTargetQueue(targetPool)
+      : [],
     dailyTrailPracticeRoundOrders: {},
     lastDailyTrailPracticeRoundOrder: [],
     targetStats,
@@ -7459,6 +7562,7 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     lastPromptedTargetId: null,
     lastCameraWindowKey: "",
     lastSectionQuizCameraKey: "",
+    lastCheckpointCameraKey: "",
     timers: [],
     previousRevealedTargetIds: [...(activeStudySession?.revealedTargetIds || [])]
   };
@@ -7485,6 +7589,20 @@ function normalizeMemoryTrailSectionQuizView(quizView = null) {
     pitch: Number.isFinite(Number(quizView.pitch)) ? Number(quizView.pitch) : 0,
     duration: Number.isFinite(Number(quizView.duration)) ? Number(quizView.duration) : 850
   };
+}
+
+function normalizeDailyTrailTargetQuizCamera(config = null) {
+  const camera = normalizeMemoryTrailSectionQuizView(config);
+  const targetIds = [...new Set((Array.isArray(config?.targetIds) ? config.targetIds : [])
+    .map((targetId) => String(targetId || "").trim())
+    .filter(Boolean))];
+
+  return camera && targetIds.length > 0 ? {
+    ...camera,
+    targetIds,
+    cameraContext: String(config?.cameraContext || "daily-trail-target-quiz").trim(),
+    source: String(config?.source || "daily-trail-target-quiz-camera").trim()
+  } : null;
 }
 
 function getPreviousMemoryTrailSection(activity = session.currentActivity) {
@@ -7541,6 +7659,19 @@ function getActiveDailyTrailNonLearnCamera(memoryTrail) {
     : null;
 }
 
+function getActiveDailyTrailTargetQuizCamera(memoryTrail, selection = {}) {
+  const quizCamera = memoryTrail?.dailyTrailQuizCamera;
+  const targetId = String(selection?.targetId || memoryTrail?.currentPromptTargetId || "").trim();
+  return memoryTrail?.source === "daily-trail"
+    && !isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
+    && memoryTrail?.sessionPhase === "practice"
+    && selection?.promptType === "name_to_place"
+    && targetId
+    && quizCamera?.targetIds?.includes(targetId)
+    ? quizCamera
+    : null;
+}
+
 function getMemoryTrailSectionQuizCameraKey(memoryTrail, quizView) {
   return [
     memoryTrail?.activityId || "",
@@ -7574,6 +7705,10 @@ function isMapAtMemoryTrailSectionQuizCamera(quizView) {
 }
 
 function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options = {}) {
+  if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
+    return false;
+  }
+
   const dailyTrailFixedCamera = getActiveDailyTrailFixedCamera(memoryTrail)
     || getActiveDailyTrailNonLearnCamera(memoryTrail);
   if (
@@ -7632,7 +7767,49 @@ function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options 
   return didMove;
 }
 
+function applyDailyTrailTargetQuizCamera(memoryTrail, selection = {}, options = {}) {
+  const quizCamera = getActiveDailyTrailTargetQuizCamera(memoryTrail, selection);
+  const targetId = String(selection?.targetId || memoryTrail?.currentPromptTargetId || "").trim();
+  if (!quizCamera || !targetId || typeof runner?.moveCamera !== "function") {
+    return false;
+  }
+
+  const cameraKey = `${targetId}:${getMemoryTrailSectionQuizCameraKey(memoryTrail, quizCamera)}`;
+  if (
+    memoryTrail.lastDailyTrailQuizCameraKey === cameraKey
+    && isMapAtMemoryTrailSectionQuizCamera(quizCamera)
+  ) {
+    return false;
+  }
+
+  const didMove = runner.moveCamera({
+    center: quizCamera.center,
+    zoom: quizCamera.zoom,
+    bearing: quizCamera.bearing,
+    pitch: quizCamera.pitch,
+    padding: quizCamera.padding || { top: 0, right: 0, bottom: 0, left: 0 },
+    duration: Number.isFinite(Number(options.duration)) ? Number(options.duration) : quizCamera.duration,
+    retainPadding: false,
+    essential: true
+  }, {
+    cameraContext: quizCamera.cameraContext,
+    source: quizCamera.source,
+    requestType: "easeTo",
+    activityId: memoryTrail.activityId,
+    targetId
+  }, "easeTo");
+
+  if (didMove) {
+    memoryTrail.lastDailyTrailQuizCameraKey = cameraKey;
+  }
+  return didMove;
+}
+
 function scheduleMemoryTrailSectionQuizCameraCheck(memoryTrail, selection = {}) {
+  if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
+    return false;
+  }
+
   const dailyTrailFixedCamera = getActiveDailyTrailFixedCamera(memoryTrail)
     || getActiveDailyTrailNonLearnCamera(memoryTrail);
   const quizView = dailyTrailFixedCamera || memoryTrail?.sectionQuizView;
@@ -8440,6 +8617,13 @@ function shouldSuppressStudyIntroCameraForSmallTargetLearn(memoryTrail = getActi
 
 function startMemoryTrail(options = {}) {
   const isDailyTrail = options.source === "daily-trail";
+  // A Daily Trail checkpoint can reach this boundary through a grouped plan or
+  // a remediation plan. Derive the session behavior here so a caller cannot
+  // accidentally create a normal Memory Trail session for a checkpoint.
+  const checkpointReview = Boolean(
+    isDailyTrail
+    && (options.checkpointReview === true || isDailyTrailCheckpointPlan(activeDailyTrailSession?.plan))
+  );
   if (
     !activeStudySession
     || (!isDailyTrail && currentAppScreen !== "study-explore")
@@ -8476,7 +8660,12 @@ function startMemoryTrail(options = {}) {
     sectionCount: memoryTrailSection?.sectionCount,
     sectionQuizView: memoryTrailSection?.map?.quizView || session.currentActivity?.map?.quizView || null,
     dailyTrailFixedCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailFixedCamera || null : null,
-    dailyTrailNonLearnCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailNonLearnCamera || null : null
+    dailyTrailNonLearnCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailNonLearnCamera || null : null,
+    dailyTrailQuizCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailQuizCamera || null : null,
+    checkpointReview
+  });
+  publishDailyTrailCheckpointRuntimeSnapshot(activeStudySession.memoryTrail, {
+    stage: "memory-trail-created"
   });
   currentMemoryTrailAnalyticsKey = [
     activeStudySession.journeyId,
@@ -8667,15 +8856,29 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
     answerChoices: memoryTrail.answerChoices,
     stats
   });
-  runner.setMemoryTrailHighlight(selection.promptType === "guided" || selection.promptType === "place_to_name"
-    ? selection.targetId
-    : []);
-  applyMemoryTrailSectionQuizCamera(memoryTrail, selection);
+  const shouldHighlightPromptTarget = !isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
+    && (selection.promptType === "guided" || selection.promptType === "place_to_name");
+  if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
+    runner.setMemoryTrailHighlight([]);
+  } else {
+    runner.setMemoryTrailHighlight(shouldHighlightPromptTarget ? selection.targetId : []);
+  }
+  const didApplyCheckpointCamera = applyMixedDailyTrailCheckpointCamera(memoryTrail, { selection, duration: 820 });
+  const didApplySectionQuizCamera = applyMemoryTrailSectionQuizCamera(memoryTrail, selection);
+  const didApplyTargetQuizCamera = applyDailyTrailTargetQuizCamera(memoryTrail, selection);
   scheduleMemoryTrailSectionQuizCameraCheck(memoryTrail, selection);
   scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target);
   scheduleContinentsOceansLearnFocusCheck(memoryTrail, selection, target);
   scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target);
   maybeFocusContinentsOceansNamePrompt(selection, target);
+  publishDailyTrailCheckpointRuntimeSnapshot(memoryTrail, {
+    stage: "checkpoint-prompt-rendered",
+    selection,
+    preAnswerHighlightEnabled: shouldHighlightPromptTarget,
+    didApplyCheckpointCamera,
+    didApplySectionQuizCamera,
+    didApplyTargetQuizCamera
+  });
   renderStudyExplorePanel();
   logMemoryTrailFindPromptDebug(memoryTrail, selection, target, "rendered");
 
@@ -8843,6 +9046,7 @@ function scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target) {
     || getActiveDailyTrailFixedCamera(memoryTrail)
     || memoryTrail.currentPromptTargetId !== selection?.targetId
     || !target
+    || (memoryTrail?.source === "daily-trail" && target?.learnCamera)
     || target.kind !== "shape"
     || typeof runner?.shouldFocusSmallTargetInLearnMode !== "function"
     || typeof runner?.focusTargetIfNeeded !== "function"
@@ -9496,6 +9700,10 @@ function speakMemoryTrailTarget(target, onComplete) {
 }
 
 function chooseNextPrompt(memoryTrail) {
+  if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
+    return chooseNextCheckpointReviewPrompt(memoryTrail);
+  }
+
   const introducedStats = getIntroducedMemoryTrailStats(memoryTrail);
   const avoidLast = (stats) => stats.targetId !== memoryTrail.lastPromptedTargetId || introducedStats.length === 1;
   const due = (stats) => stats.nextDuePrompt <= memoryTrail.promptCount;
@@ -10081,6 +10289,14 @@ function shouldEndMemoryTrailSession(memoryTrail) {
 }
 
 function shouldEndDailyTrailMemoryTrailSession(memoryTrail) {
+  if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
+    const promptedTargetIds = new Set((memoryTrail.promptHistory || [])
+      .map((entry) => entry?.targetId)
+      .filter(Boolean));
+    return memoryTrail.checkpointTargetQueue.length > 0
+      && memoryTrail.checkpointTargetQueue.every((targetId) => promptedTargetIds.has(targetId));
+  }
+
   const requiredStats = getDailyTrailRequiredMemoryTrailStats(memoryTrail);
 
   if (requiredStats.length === 0) {
@@ -10154,8 +10370,140 @@ function completeDailyTrailMemoryTrailSession(memoryTrail) {
     return;
   }
 
+  const result = getDailyTrailMemoryTrailResult(memoryTrail);
+  if (isMixedDailyTrailCheckpointSession()) {
+    mergeDailyTrailCheckpointResult(activeDailyTrailSession, result);
+    if (advanceMixedDailyTrailCheckpoint()) {
+      return;
+    }
+    finalizeDailyTrailMemoryTrailSession(activeDailyTrailSession.checkpointResult);
+    return;
+  }
+
+  finalizeDailyTrailMemoryTrailSession(result);
+}
+
+function getCheckpointMemoryTrailTargetQueue(targetPool = []) {
+  const targetIdsByCanonicalId = new Map();
+  targetPool.filter(Boolean).forEach((target) => {
+    const targetId = String(target?.id || "").trim();
+    const targetKind = String(target?.kind || target?.type || "target").trim();
+    const canonicalTargetId = targetId ? `${targetKind}:${targetId}` : "";
+    if (canonicalTargetId && !targetIdsByCanonicalId.has(canonicalTargetId)) {
+      targetIdsByCanonicalId.set(canonicalTargetId, targetId);
+    }
+  });
+  return [...targetIdsByCanonicalId.values()];
+}
+
+function chooseNextCheckpointReviewPrompt(memoryTrail) {
+  const promptedTargetIds = new Set((memoryTrail?.promptHistory || [])
+    .map((entry) => entry?.targetId)
+    .filter(Boolean));
+  const targetId = (memoryTrail?.checkpointTargetQueue || [])
+    .find((candidateTargetId) => !promptedTargetIds.has(candidateTargetId));
+
+  return targetId ? {
+    targetId,
+    promptType: "name_to_place",
+    mode: "checkpoint-review",
+    reason: "one-pass mixed checkpoint queue"
+  } : null;
+}
+
+function isMixedDailyTrailCheckpointMemoryTrail(memoryTrail = getActiveMemoryTrail()) {
+  return Boolean(
+    memoryTrail?.source === "daily-trail"
+    && memoryTrail?.checkpointReview === true
+  );
+}
+
+function getMixedDailyTrailCheckpointCameraConfig(memoryTrail, selection = {}) {
+  const activity = getActivityById(memoryTrail?.activityId || "");
+  const targetId = String(selection?.targetId || memoryTrail?.currentPromptTargetId || "").trim();
+  const quizCamera = activity?.map?.dailyTrailQuizCamera;
+  const quizCameraMatchesTarget = targetId
+    && Array.isArray(quizCamera?.targetIds)
+    && quizCamera.targetIds.includes(targetId);
+  const cameraSources = [
+    ["dailyTrailNonLearnCamera", activity?.map?.dailyTrailNonLearnCamera],
+    ["dailyTrailFixedCamera", activity?.map?.dailyTrailFixedCamera],
+    ["checkpointCamera", activity?.map?.checkpointCamera],
+    ["dailyTrailQuizCamera", quizCameraMatchesTarget ? quizCamera : null],
+    ["regionView", activity?.map?.regionView],
+    ["initialView", activity?.map?.initialView]
+  ];
+  const [source, configuredCamera] = cameraSources.find(([, camera]) => Boolean(camera)) || ["activity-context-fit", null];
+  return {
+    source,
+    camera: normalizeMemoryTrailSectionQuizView(configuredCamera)
+  };
+}
+
+function getMixedDailyTrailCheckpointCamera(memoryTrail, selection = {}) {
+  return getMixedDailyTrailCheckpointCameraConfig(memoryTrail, selection).camera;
+}
+
+function applyMixedDailyTrailCheckpointCamera(memoryTrail, options = {}) {
+  if (!isMixedDailyTrailCheckpointMemoryTrail(memoryTrail) || typeof runner?.moveCamera !== "function") {
+    return false;
+  }
+
+  const activity = getActivityById(memoryTrail.activityId);
+  const checkpointCameraConfig = getMixedDailyTrailCheckpointCameraConfig(memoryTrail, options.selection);
+  const checkpointCamera = checkpointCameraConfig.camera;
+  const contextTargets = (activity?.targets || []).filter((target) => target?.id);
+  const cameraKey = checkpointCamera
+    ? `${memoryTrail.activityId}:${checkpointCamera.center.join(",")}:${checkpointCamera.zoom}`
+    : `${memoryTrail.activityId}:context:${contextTargets.map((target) => target.id).join("|")}`;
+
+  if (memoryTrail.lastCheckpointCameraKey === cameraKey) {
+    return false;
+  }
+
+  let didMove = false;
+  if (checkpointCamera) {
+    didMove = runner.moveCamera({
+      center: checkpointCamera.center,
+      zoom: checkpointCamera.zoom,
+      bearing: checkpointCamera.bearing,
+      pitch: checkpointCamera.pitch,
+      padding: checkpointCamera.padding || { top: 72, right: 72, bottom: 170, left: 72 },
+      duration: Number.isFinite(Number(options.duration)) ? Number(options.duration) : 820,
+      retainPadding: false,
+      essential: true
+    }, {
+      cameraContext: "daily-trail-checkpoint-context",
+      source: "daily-trail-checkpoint-context",
+      requestType: "easeTo",
+      activityId: memoryTrail.activityId
+    }, "easeTo");
+  } else if (contextTargets.length > 0 && typeof runner?.fitTargets === "function") {
+    didMove = runner.fitTargets(contextTargets, {
+      duration: Number.isFinite(Number(options.duration)) ? Number(options.duration) : 820,
+      maxZoom: 4.1,
+      padding: { top: 86, right: 86, bottom: 192, left: 86 }
+    });
+  }
+
+  if (didMove) {
+    memoryTrail.lastCheckpointCameraKey = cameraKey;
+  }
+  publishDailyTrailCheckpointRuntimeSnapshot(memoryTrail, {
+    stage: "checkpoint-camera-applied",
+    selectedCamera: {
+      mode: checkpointCamera ? "activity-regional-camera" : "activity-context-fit",
+      source: checkpointCamera ? "daily-trail-checkpoint-context" : "activity-context-fit",
+      configurationSource: checkpointCameraConfig.source,
+      camera: checkpointCamera
+    },
+    didMove
+  });
+  return didMove;
+}
+
+function getDailyTrailMemoryTrailResult(memoryTrail) {
   const targetStats = Object.values(memoryTrail?.targetStats || {});
-  let nextState = activeDailyTrailSession.state;
   const completedTargetIds = [...new Set((memoryTrail?.promptHistory || [])
     .filter((entry) => entry.result === "correct" && entry.guided !== true)
     .map((entry) => entry.targetId)
@@ -10174,15 +10522,78 @@ function completeDailyTrailMemoryTrailSession(memoryTrail) {
       .map((stats) => [stats.targetId, stats.totalRetrievalIncorrect])
   );
 
-  taughtTargetIds.forEach((targetId) => {
+  return {
+    completedTargetIds,
+    taughtTargetIds,
+    correctCount: memoryTrail.correctCount,
+    incorrectCount: memoryTrail.incorrectCount,
+    missesByTargetId
+  };
+}
+
+function isMixedDailyTrailCheckpointSession() {
+  return Boolean(
+    activeDailyTrailSession?.plan?.checkpointMixedReview
+    && activeDailyTrailSession?.checkpointActivityGroups?.length > 1
+  );
+}
+
+function mergeDailyTrailCheckpointResult(dailyTrailSession, result) {
+  const aggregate = dailyTrailSession.checkpointResult || {
+    completedTargetIds: new Set(),
+    taughtTargetIds: new Set(),
+    correctCount: 0,
+    incorrectCount: 0,
+    missesByTargetId: {}
+  };
+
+  result.completedTargetIds.forEach((targetId) => aggregate.completedTargetIds.add(targetId));
+  result.taughtTargetIds.forEach((targetId) => aggregate.taughtTargetIds.add(targetId));
+  aggregate.correctCount += result.correctCount;
+  aggregate.incorrectCount += result.incorrectCount;
+  Object.entries(result.missesByTargetId).forEach(([targetId, missCount]) => {
+    aggregate.missesByTargetId[targetId] = (aggregate.missesByTargetId[targetId] || 0) + missCount;
+  });
+  dailyTrailSession.checkpointResult = aggregate;
+}
+
+function advanceMixedDailyTrailCheckpoint() {
+  const dailyTrailSession = activeDailyTrailSession;
+  const nextIndex = (dailyTrailSession?.checkpointActivityIndex || 0) + 1;
+  const nextGroup = dailyTrailSession?.checkpointActivityGroups?.[nextIndex];
+
+  if (!dailyTrailSession || !nextGroup?.homeActivityId) {
+    return false;
+  }
+
+  dailyTrailSession.checkpointActivityIndex = nextIndex;
+  dailyTrailSession.activityId = nextGroup.homeActivityId;
+  dailyTrailSession.checkpointTransitionInProgress = true;
+  void startDailyTrailActivity(nextGroup.homeActivityId)
+    .catch(() => showFeedback("Checkpoint transition could not start."))
+    .finally(() => {
+      if (activeDailyTrailSession === dailyTrailSession) {
+        dailyTrailSession.checkpointTransitionInProgress = false;
+      }
+    });
+  return true;
+}
+
+function finalizeDailyTrailMemoryTrailSession(result) {
+  if (!activeDailyTrailSession) {
+    return;
+  }
+
+  let nextState = activeDailyTrailSession.state;
+  result.taughtTargetIds.forEach((targetId) => {
     nextState = applyDailyTrailTeachingProgress(nextState, activeDailyTrailSession.plan, targetId);
   });
 
   nextState = applyDailyTrailSessionResults(nextState, activeDailyTrailSession.plan, {
-    completedTargetIds,
-    correctCount: memoryTrail.correctCount,
-    incorrectCount: memoryTrail.incorrectCount,
-    missesByTargetId
+    completedTargetIds: [...result.completedTargetIds],
+    correctCount: result.correctCount,
+    incorrectCount: result.incorrectCount,
+    missesByTargetId: result.missesByTargetId
   });
 
   lastDailyTrailSummary = nextState.lastSessionSummary;
@@ -10199,6 +10610,7 @@ function scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target) {
   const camera = normalizeMemoryTrailSectionQuizView(target?.learnCamera);
   if (
     memoryTrail?.source !== "daily-trail"
+    || isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
     || selection?.promptType !== "guided"
     || memoryTrail?.sessionPhase !== "learn"
     || memoryTrail.currentPromptTargetId !== selection?.targetId
@@ -10302,6 +10714,9 @@ function fitMapToPracticeWindow(targets = [], reason = "practice-window") {
   }
 
   const memoryTrail = getActiveMemoryTrail();
+  if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
+    return applyMixedDailyTrailCheckpointCamera(memoryTrail, { duration: 820 });
+  }
   if (getActiveDailyTrailFixedCamera(memoryTrail) || getActiveDailyTrailNonLearnCamera(memoryTrail)) {
     return applyMemoryTrailSectionQuizCamera(memoryTrail, { promptType: "fixed-camera" }, { duration: 260 });
   }
@@ -13592,7 +14007,9 @@ function getDailyTrailIntroCopy(plan) {
   }
 
   if (plan.sessionType === "checkpoint") {
-    return "A short checkpoint will check what you have learned recently.";
+    return plan.checkpointMixedReview
+      ? "A short checkpoint will mix places from the journey so far."
+      : "A short checkpoint will check what you have learned recently.";
   }
 
   if (plan.sessionType === "remediation-session") {
@@ -13615,6 +14032,10 @@ function getDailyTrailIntroCopy(plan) {
 }
 
 function getDailyTrailFocusText(plan) {
+  if (plan.checkpointMixedReview && (plan.activityGroups?.length || 0) > 1) {
+    return `Checkpoint across ${plan.activityGroups.length} regions.`;
+  }
+
   const group = plan.cameraGroups?.[0];
   const activityTitle = plan.playItems?.find((item) => item.homeActivityId === plan.activeActivityId)?.activityTitle;
 
@@ -13640,7 +14061,11 @@ async function startDailyTrailSession() {
   const plan = pendingDailyTrailPlan || getDailyTrailPlanForState(state, items, devOverride);
   const goal = getDailyTrailGoal(plan.trailGoalId || state.activeTrailGoal);
   const journey = journeyPresets.find((candidate) => candidate.id === goal.journeyId);
-  const activity = getActivityById(plan.activeActivityId);
+  const checkpointActivityGroups = plan.checkpointMixedReview
+    ? (plan.activityGroups || []).filter((group) => group?.homeActivityId)
+    : [];
+  const initialActivityId = checkpointActivityGroups[0]?.homeActivityId || plan.activeActivityId;
+  const activity = getActivityById(initialActivityId);
 
   if (!journey || !activity) {
     showFeedback("Daily Trail is not ready yet.");
@@ -13657,19 +14082,44 @@ async function startDailyTrailSession() {
     clearDailyTrailDevOverride({ silent: true });
   }
 
-  const plannedTargetIds = plan.playItems
-    .filter((item) => item.homeActivityId === activity.id)
-    .map((item) => item.targetId);
   activeDailyTrailSession = {
     trailId: plan.trailGoalId || goal.id,
     journeyId: journey.id,
     state: startedState,
     plan,
     activityId: activity.id,
-    devReplay: isDevReplayStart
+    devReplay: isDevReplayStart,
+    checkpointActivityGroups,
+    checkpointActivityIndex: 0,
+    checkpointResult: null,
+    checkpointTransitionInProgress: false
   };
+  publishDailyTrailCheckpointRuntimeSnapshot(null, {
+    stage: "daily-trail-session-created"
+  });
   pendingDailyTrailPlan = null;
   selectedJourneyId = journey.id;
+  await startDailyTrailActivity(activity.id);
+}
+
+async function startDailyTrailActivity(activityId) {
+  const dailyTrailSession = activeDailyTrailSession;
+  const activity = getActivityById(activityId);
+  if (!dailyTrailSession || !activity) {
+    return false;
+  }
+
+  const plannedTargetIds = dailyTrailSession.plan.playItems
+    .filter((item) => item.homeActivityId === activity.id)
+    .map((item) => item.targetId);
+  if (plannedTargetIds.length === 0) {
+    return false;
+  }
+
+  dailyTrailSession.activityId = activity.id;
+  if (isDailyTrailCheckpointPlan(dailyTrailSession.plan)) {
+    runner.suppressStudyIntroCameraOnce?.("daily-trail-mixed-checkpoint-context", 5000);
+  }
   currentPresentationSettings = getEffectivePresentationSettings(activity, {
     presentationSettings: {
       reviewMode: studyModes.sectionOnly,
@@ -13686,7 +14136,10 @@ async function startDailyTrailSession() {
     presentationSettings: currentPresentationSettings
   });
 
-  startDailyTrailMemoryTrailStepIfNeeded();
+  if (activeDailyTrailSession === dailyTrailSession) {
+    startDailyTrailMemoryTrailStepIfNeeded();
+  }
+  return true;
 }
 
 function handleDailyTrailActivityCompletion() {
@@ -13823,7 +14276,8 @@ function startDailyTrailMemoryTrailStepIfNeeded() {
   return startMemoryTrail({
     newTargetIds,
     source: "daily-trail",
-    targetIds
+    targetIds,
+    checkpointReview: isDailyTrailCheckpointPlan(activeDailyTrailSession.plan)
   });
 }
 

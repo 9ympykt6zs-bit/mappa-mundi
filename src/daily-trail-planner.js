@@ -4,6 +4,7 @@ export const dailyTrailJourneyId = "world-geography-core";
 export const dailyTrailCheckpointInterval = 4;
 export const dailyTrailNewItemCount = 4;
 export const dailyTrailReviewItemCount = 10;
+export const dailyTrailCheckpointReviewItemCount = 10;
 export const dailyTrailGoals = [
   {
     id: dailyTrailId,
@@ -156,6 +157,19 @@ export function buildDailyTrailGoalItems(journey, activities, options = {}) {
   }));
 }
 
+// Keep the planner's checkpoint markers in one place so the UI handoff cannot
+// silently downgrade a checkpoint to an ordinary Memory Trail session.
+export function isDailyTrailCheckpointReviewPlan(plan = {}) {
+  return Boolean(
+    plan && (
+      plan.sessionType === "checkpoint"
+      || plan.sessionType === "remediationCheckpoint"
+      || plan.checkpointMixedReview === true
+      || plan.checkpointReview === true
+    )
+  );
+}
+
 export function planDailyTrailSession(state, items) {
   const normalized = createDailyTrailState(state);
   const safeItems = Array.isArray(items) ? items : [];
@@ -170,7 +184,8 @@ export function planDailyTrailSession(state, items) {
     plan = buildCheckpointPlan(normalized, safeItems, {
       sessionType: "remediationCheckpoint",
       title: "Quick Check",
-      maxItems: 10
+      maxItems: 10,
+      mixedReview: false
     });
   } else if (normalized.sessionsSinceLastCheckpoint >= dailyTrailCheckpointInterval - 1
     && normalized.hasStarted
@@ -540,35 +555,153 @@ function buildCheckpointPlan(state, items, options = {}) {
   const availableItems = getNormalDailyTrailItems(state, items);
   const newSinceCheckpoint = state.newSinceLastCheckpoint
     .map((id) => availableItems.find((item) => item.id === id))
-    .filter(Boolean);
-  const recentIds = new Set(newSinceCheckpoint.map((item) => item.id));
-  const weakRecentItems = getWeakItems(state, newSinceCheckpoint);
-  const activeActivityId = getCheckpointActivityId(state, newSinceCheckpoint, weakRecentItems, availableItems);
-  const sameActivityItems = activeActivityId
-    ? availableItems.filter((item) => item.homeActivityId === activeActivityId)
-    : availableItems;
-  const olderReviewItems = selectDailyTrailReviewItems(state, sameActivityItems, {
-    excludeIds: recentIds,
-    limit: Math.max(2, Math.min(6, Math.floor((options.maxItems || 22) * 0.28)))
-  });
-  const playItems = dedupeItems([
-    ...newSinceCheckpoint,
-    ...weakRecentItems,
-    ...olderReviewItems
-  ]).slice(0, options.maxItems || 22);
-  const playableItems = activeActivityId
-    ? playItems.filter((item) => item.homeActivityId === activeActivityId)
-    : playItems;
+    .filter((item) => item && isItemPracticeEligible(state, item));
+  const mixedReview = options.mixedReview !== false;
+  const maxItems = Math.min(
+    Math.max(1, Number(options.maxItems) || dailyTrailCheckpointReviewItemCount),
+    dailyTrailCheckpointReviewItemCount
+  );
+  const playItems = mixedReview
+    ? selectMixedCheckpointReviewItems(state, availableItems, {
+      recentItems: newSinceCheckpoint,
+      limit: maxItems
+    })
+    : selectSingleActivityCheckpointReviewItems(state, availableItems, newSinceCheckpoint, maxItems);
+  const activeActivityId = playItems[0]?.homeActivityId || "";
 
   return createPlan({
     state,
     sessionType: options.sessionType || "checkpoint",
     title: options.title || "Checkpoint",
     newItems: [],
-    reviewItems: playableItems,
-    playItems: playableItems,
+    reviewItems: playItems,
+    playItems,
     allItems: items,
-    activeActivityId
+    activeActivityId,
+    checkpointMixedReview: mixedReview
+  });
+}
+
+function selectSingleActivityCheckpointReviewItems(state, availableItems, recentItems, limit) {
+  const recentIds = new Set(recentItems.map((item) => item.id));
+  const weakRecentItems = getWeakItems(state, recentItems);
+  const activeActivityId = getCheckpointActivityId(state, recentItems, weakRecentItems, availableItems);
+  const sameActivityItems = activeActivityId
+    ? availableItems.filter((item) => item.homeActivityId === activeActivityId)
+    : availableItems;
+  const olderReviewItems = selectDailyTrailReviewItems(state, sameActivityItems, {
+    excludeIds: recentIds,
+    limit: Math.max(2, Math.min(6, Math.floor(limit * 0.6)))
+  });
+
+  return dedupeItems([
+    ...recentItems.filter((item) => item.homeActivityId === activeActivityId),
+    ...weakRecentItems.filter((item) => item.homeActivityId === activeActivityId),
+    ...olderReviewItems
+  ]).slice(0, limit);
+}
+
+function selectMixedCheckpointReviewItems(state, availableItems, options = {}) {
+  const limit = Math.max(0, Number(options.limit) || dailyTrailCheckpointReviewItemCount);
+  const recentIds = new Set((options.recentItems || []).map((item) => item.id));
+  const eligibleItems = dedupeCheckpointItemsByCanonicalTargetId(
+    availableItems.filter((item) => isItemPracticeEligible(state, item))
+  );
+
+  if (limit <= 0 || eligibleItems.length === 0) {
+    return [];
+  }
+
+  const groups = new Map();
+  eligibleItems.forEach((item) => {
+    const activityId = item.homeActivityId || "world";
+    const group = groups.get(activityId) || {
+      homeActivityId: activityId,
+      earliestOrder: item.order,
+      items: []
+    };
+    group.earliestOrder = Math.min(group.earliestOrder, item.order);
+    group.items.push(item);
+    groups.set(activityId, group);
+  });
+
+  const checkpointGroups = Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      recentCount: group.items.filter((item) => recentIds.has(item.id)).length,
+      dueCount: group.items.filter((item) => isReviewItemDue(state, item)).length,
+      weakCount: group.items.filter((item) => isCurrentlyWeakProgress(state.itemProgress[item.id] || {})).length,
+      items: sortCheckpointItems(state, group.items, recentIds)
+    }))
+    .sort((left, right) => (
+      right.recentCount - left.recentCount
+      || right.weakCount - left.weakCount
+      || right.dueCount - left.dueCount
+      || left.earliestOrder - right.earliestOrder
+    ));
+  const maxPerActivity = checkpointGroups.length >= 3
+    ? Math.max(2, Math.ceil(limit / checkpointGroups.length))
+    : limit;
+  const selected = [];
+  const selectedCounts = new Map();
+
+  while (selected.length < limit) {
+    let selectedInRound = false;
+
+    for (const group of checkpointGroups) {
+      const selectedCount = selectedCounts.get(group.homeActivityId) || 0;
+      const item = selectedCount < maxPerActivity ? group.items.shift() : null;
+      if (!item) {
+        continue;
+      }
+
+      selected.push(item);
+      selectedCounts.set(group.homeActivityId, selectedCount + 1);
+      selectedInRound = true;
+      if (selected.length >= limit) {
+        break;
+      }
+    }
+
+    if (!selectedInRound) {
+      break;
+    }
+  }
+
+  return dedupeCheckpointItemsByCanonicalTargetId(selected);
+}
+
+function getCheckpointCanonicalTargetId(item) {
+  const targetId = String(item?.targetId || item?.id || "").trim();
+  const targetType = String(item?.type || item?.homeActivityId || "target").trim();
+  return `${targetType}:${targetId}`;
+}
+
+function dedupeCheckpointItemsByCanonicalTargetId(items = []) {
+  const byCanonicalTargetId = new Map();
+  items.filter(Boolean).forEach((item) => {
+    const canonicalTargetId = getCheckpointCanonicalTargetId(item);
+    if (!canonicalTargetId || !byCanonicalTargetId.has(canonicalTargetId)) {
+      byCanonicalTargetId.set(canonicalTargetId, item);
+    }
+  });
+  return Array.from(byCanonicalTargetId.values());
+}
+
+function sortCheckpointItems(state, items, recentIds) {
+  return [...items].sort((left, right) => {
+    const leftPriority = getReviewPriority(state, left);
+    const rightPriority = getReviewPriority(state, right);
+    const leftRecent = recentIds.has(left.id) ? 1 : 0;
+    const rightRecent = recentIds.has(right.id) ? 1 : 0;
+
+    return rightPriority.isRelearning - leftPriority.isRelearning
+      || rightPriority.isWeak - leftPriority.isWeak
+      || rightPriority.isDue - leftPriority.isDue
+      || rightRecent - leftRecent
+      || rightPriority.overdueScore - leftPriority.overdueScore
+      || leftPriority.retrievability - rightPriority.retrievability
+      || getRotatingOrder(left, state.currentSessionNumber) - getRotatingOrder(right, state.currentSessionNumber);
   });
 }
 
@@ -602,6 +735,7 @@ function createPlan({
   allItems,
   activeActivityId,
   continentsOceansReviewType = null,
+  checkpointMixedReview = false,
   trailGoalId = state?.activeTrailGoal || dailyTrailId,
   devOverride = null
 }) {
@@ -641,8 +775,10 @@ function createPlan({
     playItems: defensivePlayItems,
     allItems,
     continentsOceansReviewType,
+    checkpointMixedReview,
     devOverride,
     cameraGroups: groupedItems,
+    activityGroups: groupItemsByActivity(defensivePlayItems),
     intro: {
       newCount: defensiveNewItems.length,
       reviewCount: defensiveReviewItems.length,
@@ -1389,6 +1525,24 @@ function groupItemsByCamera(items) {
   return Array.from(groups.entries()).map(([cameraGroupId, groupItems]) => ({
     cameraGroupId,
     homeActivityId: groupItems[0]?.homeActivityId || "",
+    items: groupItems
+  }));
+}
+
+function groupItemsByActivity(items) {
+  const groups = new Map();
+
+  items.forEach((item) => {
+    const key = item.homeActivityId || "world";
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key).push(item);
+  });
+
+  return Array.from(groups.entries()).map(([homeActivityId, groupItems]) => ({
+    homeActivityId,
+    cameraGroupId: groupItems[0]?.cameraGroupId || homeActivityId,
     items: groupItems
   }));
 }

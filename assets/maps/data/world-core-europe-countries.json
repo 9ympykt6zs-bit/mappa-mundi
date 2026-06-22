@@ -5,7 +5,33 @@
   "targetNoun": "country",
   "visibleAnswerLimit": 10,
   "map": {
-    "region": "world-core-europe"
+    "region": "world-core-europe",
+    "regionView": {
+      "center": [17.2111, 48.09795],
+      "zoom": 3.4354,
+      "bearing": 0,
+      "pitch": 0
+    },
+    "dailyTrailQuizCamera": {
+      "targetIds": [
+        "germany",
+        "united-kingdom",
+        "france",
+        "spain",
+        "italy",
+        "portugal",
+        "netherlands",
+        "poland",
+        "ireland",
+        "ukraine"
+      ],
+      "center": [22.65378, 50.41408],
+      "zoom": 3.3006,
+      "bearing": 0,
+      "pitch": 0,
+      "cameraContext": "small-target-focus",
+      "source": "small-target-learn"
+    }
   },
   "features": [
     {
@@ -15,6 +41,14 @@
       "shape": "path",
       "isoA3": "GBR",
       "color": "#ef4444",
+      "learnCamera": {
+        "center": [2.32064, 57.20641],
+        "zoom": 3.2846,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [-2.12, 54.4],
       "labelFontSize": 13,
       "labelRotation": 0
@@ -26,6 +60,14 @@
       "shape": "path",
       "isoA3": "FRA",
       "color": "#3b82f6",
+      "learnCamera": {
+        "center": [10.02767, 50.21096],
+        "zoom": 3.5253,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [2.55, 46.7],
       "labelFontSize": 13,
       "labelRotation": 0
@@ -37,6 +79,14 @@
       "shape": "path",
       "isoA3": "DEU",
       "color": "#ef4444",
+      "learnCamera": {
+        "center": [11.41659, 52.75124],
+        "zoom": 3.4449,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [9.68, 50.96],
       "labelFontSize": 13,
       "labelRotation": 0
@@ -48,6 +98,14 @@
       "shape": "path",
       "isoA3": "ITA",
       "color": "#22c55e",
+      "learnCamera": {
+        "center": [14.65074, 45.44307],
+        "zoom": 3.658,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [11.08, 44.73],
       "labelFontSize": 13,
       "labelRotation": 0
@@ -70,6 +128,14 @@
       "shape": "path",
       "isoA3": "NLD",
       "color": "#f97316",
+      "learnCamera": {
+        "center": [4.09792, 52.75518],
+        "zoom": 4.2619,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [5.61, 52.42],
       "labelFontSize": 11,
       "labelRotation": 0
@@ -81,6 +147,14 @@
       "shape": "path",
       "isoA3": "POL",
       "color": "#f97316",
+      "learnCamera": {
+        "center": [20.07383, 53.56967],
+        "zoom": 3.5017,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [19.49, 51.99],
       "labelFontSize": 13,
       "labelRotation": 0
@@ -92,6 +166,14 @@
       "shape": "path",
       "isoA3": "UKR",
       "color": "#f59e0b",
+      "learnCamera": {
+        "center": [40.78967, 51.27866],
+        "zoom": 3.9829,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [31.2, 49],
       "labelFontSize": 11,
       "labelRotation": 0
@@ -103,6 +185,14 @@
       "shape": "path",
       "isoA3": "SWE",
       "color": "#facc15",
+      "learnCamera": {
+        "center": [26.15428, 65.0201],
+        "zoom": 3.4161,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [17.5, 62.6],
       "labelFontSize": 13,
       "labelRotation": 0
@@ -114,6 +204,14 @@
       "shape": "path",
       "isoA3": "RUS",
       "color": "#3b82f6",
+      "learnCamera": {
+        "center": [73.50101, 72.8856],
+        "zoom": 1.5323,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [88, 61],
       "labelFontSize": 13,
       "labelRotation": 0
