@@ -453,6 +453,7 @@ export class MapLibreActivityRunner {
     this.regionSelectHandler = null;
     this.completedIds = [];
     this.selectedTargetId = "";
+    this.memoryTrailCheckpointPreAnswerStyle = false;
     this.shapeTargets = [];
     this.pointTargets = [];
     this.overviewPreviewActivity = null;
@@ -799,6 +800,7 @@ export class MapLibreActivityRunner {
       this.memoryTrailHighlightIds = [];
       this.memoryTrailCorrectHighlightIds = [];
       this.memoryTrailWrongHighlightIds = [];
+      this.memoryTrailCheckpointPreAnswerStyle = false;
     }
     this.refreshDifficultyVisuals();
   }
@@ -807,12 +809,18 @@ export class MapLibreActivityRunner {
     this.memoryTrailHighlightIds = Array.isArray(targetIds)
       ? targetIds.filter(Boolean)
       : [targetIds].filter(Boolean);
+    if (this.memoryTrailHighlightIds.length > 0) {
+      this.memoryTrailCheckpointPreAnswerStyle = false;
+    }
     this.memoryTrailCorrectHighlightIds = [];
     this.memoryTrailWrongHighlightIds = [];
     this.refreshDifficultyVisuals();
   }
 
   setMemoryTrailCorrectionHighlight({ correctTargetId = "", wrongTargetId = "" } = {}) {
+    if (correctTargetId || wrongTargetId) {
+      this.memoryTrailCheckpointPreAnswerStyle = false;
+    }
     this.memoryTrailHighlightIds = [];
     this.memoryTrailCorrectHighlightIds = [correctTargetId].filter(Boolean);
     this.memoryTrailWrongHighlightIds = [wrongTargetId].filter(Boolean);
@@ -825,6 +833,28 @@ export class MapLibreActivityRunner {
       ...this.memoryTrailCorrectHighlightIds,
       ...this.memoryTrailWrongHighlightIds
     ])];
+  }
+
+  setMemoryTrailCheckpointPreAnswerStyle(isActive = false) {
+    this.memoryTrailCheckpointPreAnswerStyle = Boolean(isActive);
+    this.refreshDifficultyVisuals();
+  }
+
+  isMemoryTrailCheckpointPreAnswerStyleEnabled() {
+    return Boolean(this.studyPreviewMode && this.memoryTrailCheckpointPreAnswerStyle);
+  }
+
+  getMemoryTrailPromptVisualState() {
+    const checkpointPreAnswerStyle = this.isMemoryTrailCheckpointPreAnswerStyleEnabled();
+    return {
+      checkpointPreAnswerStyle,
+      selectedTargetId: this.selectedTargetId || "",
+      activeTargetVisualIds: this.getActiveTargetVisualIds(),
+      blueOutlineSource: checkpointPreAnswerStyle ? "state-line:targetStroke" : "state-line:studyTargetLine",
+      neutralizedOutlineLayerIds: checkpointPreAnswerStyle
+        ? ["state-fill", "state-line", ...(this.isContinentsOceansActivity() ? ["ocean-region-line"] : [])]
+        : []
+    };
   }
 
   setDifficulty(difficulty) {
@@ -986,6 +1016,7 @@ export class MapLibreActivityRunner {
     this.pointTargets = activity.targets.filter((target) => target.kind === "point");
     this.completedIds = [];
     this.selectedTargetId = "";
+    this.memoryTrailCheckpointPreAnswerStyle = false;
 
     const capitalSource = this.map.getSource("study-capitals");
     const shapeSource = this.map.getSource("target-shapes");
@@ -5451,7 +5482,7 @@ export class MapLibreActivityRunner {
         colors.memoryTrailLine,
         ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.completedIds]],
         oceanCompletedOutlineColor,
-        colors.studyTargetLine
+        this.isMemoryTrailCheckpointPreAnswerStyleEnabled() ? colors.targetStroke : colors.studyTargetLine
       ];
     }
 
@@ -5674,7 +5705,7 @@ export class MapLibreActivityRunner {
         0.96,
         ["==", ["get", "physicalFeatureType"], "mountain-range"],
         0.24,
-        0.52
+        this.isMemoryTrailCheckpointPreAnswerStyleEnabled() ? 0 : 0.52
       ];
     }
 
@@ -5711,6 +5742,10 @@ export class MapLibreActivityRunner {
   }
 
   getContinentsOceansFillOpacityExpression() {
+    if (this.isMemoryTrailCheckpointPreAnswerStyleEnabled()) {
+      return 0;
+    }
+
     if (this.studyPreviewMode) {
       return [
         "case",
@@ -5766,7 +5801,7 @@ export class MapLibreActivityRunner {
         colors.targetStroke,
         ["==", ["get", "physicalFeatureType"], "mountain-range"],
         this.getMountainRangeLineColorExpression(),
-        colors.studyTargetLine
+        this.isMemoryTrailCheckpointPreAnswerStyleEnabled() ? colors.targetStroke : colors.studyTargetLine
       ];
     }
 
@@ -6045,7 +6080,7 @@ export class MapLibreActivityRunner {
   getActiveTargetVisualIds() {
     return [...new Set([
       ...this.getMemoryTrailActiveHighlightIds(),
-      this.selectedTargetId
+      this.isMemoryTrailCheckpointPreAnswerStyleEnabled() ? "" : this.selectedTargetId
     ].filter(Boolean))];
   }
 

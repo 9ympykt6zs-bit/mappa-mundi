@@ -26,13 +26,13 @@ import {
   selectDailyTrailGoal,
   shouldShowDailyTrailGoalChoice,
   syncCompletedDailyTrailGoals
-} from "./daily-trail-planner.js?v=20260622-daily-trail-checkpoint-runtime-2";
+} from "./daily-trail-planner.js?v=20260622-daily-trail-checkpoint-runtime-3";
 import { resolveMemoryTrailNewTargetLimit } from "./memory-trail-new-target-limit.js?v=20260621-daily-trail-co-progression-2";
 
 const APP_NAME = "Mappa Mundi";
 const LANDING_PAGE_TITLE = "Mappa Mundi \u2013 Geography Game for Learning the World";
-const dailyTrailCheckpointRuntimeFingerprint = "daily-trail-checkpoint-handoff-20260622-2";
-const dailyTrailPlannerModuleSpecifier = "./daily-trail-planner.js?v=20260622-daily-trail-checkpoint-runtime-2";
+const dailyTrailCheckpointRuntimeFingerprint = "daily-trail-checkpoint-outline-20260622-3";
+const dailyTrailPlannerModuleSpecifier = "./daily-trail-planner.js?v=20260622-daily-trail-checkpoint-runtime-3";
 const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
 const mapLibreStylesheetUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css";
 const difficultyModes = Object.freeze({
@@ -3553,7 +3553,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260621-river-hit-fallback-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260622-daily-trail-checkpoint-outline-1"),
       import("./chip-speech.js?v=20260602-daily-trail-review-chips")
     ]).then(([
       ,
@@ -7375,6 +7375,7 @@ function getDailyTrailCheckpointRuntimeSnapshot(memoryTrail = getActiveMemoryTra
     promptType: memoryTrail?.currentPromptType || ""
   };
   const selectedCamera = getDailyTrailCheckpointCameraDebug(memoryTrail, selection);
+  const promptVisualState = runner?.getMemoryTrailPromptVisualState?.() || null;
 
   return {
     fingerprint: dailyTrailCheckpointRuntimeFingerprint,
@@ -7393,6 +7394,7 @@ function getDailyTrailCheckpointRuntimeSnapshot(memoryTrail = getActiveMemoryTra
     currentSessionPhase: memoryTrail?.sessionPhase || "",
     preAnswerHighlightEnabled: Boolean(details.preAnswerHighlightEnabled),
     activeHighlightIds,
+    promptVisualState,
     selectedCamera,
     cameraSnapshot: getMemoryTrailCameraSnapshot(),
     serviceWorkerController: typeof navigator !== "undefined"
@@ -8583,6 +8585,7 @@ function clearMemoryTrailState({ restoreReveals = true, render = false } = {}) {
     // Speech cleanup is best-effort; visual state is still cleared below.
   }
   runner?.setMemoryTrailHighlight([]);
+  runner?.setMemoryTrailCheckpointPreAnswerStyle?.(false);
 
   if (restoreReveals && activeStudySession) {
     activeStudySession.revealedTargetIds = [...memoryTrail.previousRevealedTargetIds];
@@ -8858,6 +8861,9 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
   });
   const shouldHighlightPromptTarget = !isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
     && (selection.promptType === "guided" || selection.promptType === "place_to_name");
+  const checkpointPreAnswerStyle = isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
+    && memoryTrail.phase === "answering";
+  runner?.setMemoryTrailCheckpointPreAnswerStyle?.(checkpointPreAnswerStyle);
   if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
     runner.setMemoryTrailHighlight([]);
   } else {
@@ -8875,6 +8881,7 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
     stage: "checkpoint-prompt-rendered",
     selection,
     preAnswerHighlightEnabled: shouldHighlightPromptTarget,
+    checkpointPreAnswerStyle,
     didApplyCheckpointCamera,
     didApplySectionQuizCamera,
     didApplyTargetQuizCamera

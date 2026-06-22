@@ -140,6 +140,7 @@ assert.equal(completedState.pendingRemediation, false);
 assert.equal(completedState.pendingCheckpointRetry, false);
 
 const runtimeSource = fs.readFileSync(new URL("../src/maplibre-poc.js", import.meta.url), "utf8");
+const runnerSource = fs.readFileSync(new URL("../src/maplibre/maplibre-activity-runner.js", import.meta.url), "utf8");
 const appEntrySource = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const previewEntrySource = fs.readFileSync(new URL("../maplibre-poc.html", import.meta.url), "utf8");
 const europeActivity = JSON.parse(fs.readFileSync(
@@ -169,11 +170,11 @@ assert.deepEqual(europeActivity.map?.dailyTrailQuizCamera, {
 const plannerImport = runtimeSource.match(/from "\.\/daily-trail-planner\.js\?v=([^"]+)"/);
 assert.equal(
   plannerImport?.[1],
-  "20260622-daily-trail-checkpoint-runtime-2",
+  "20260622-daily-trail-checkpoint-runtime-3",
   "The runtime must load the checkpoint-aware planner under a new cache key."
 );
-assert.ok(appEntrySource.includes("./src/maplibre-poc.js?v=20260622-daily-trail-checkpoint-runtime-2"));
-assert.ok(previewEntrySource.includes("src/maplibre-poc.js?v=20260622-daily-trail-checkpoint-runtime-2"));
+assert.ok(appEntrySource.includes("./src/maplibre-poc.js?v=20260622-daily-trail-checkpoint-runtime-3"));
+assert.ok(previewEntrySource.includes("src/maplibre-poc.js?v=20260622-daily-trail-checkpoint-runtime-3"));
 [
   "checkpointActivityGroups",
   "function startDailyTrailActivity(activityId)",
@@ -192,7 +193,7 @@ assert.ok(previewEntrySource.includes("src/maplibre-poc.js?v=20260622-daily-trai
   "function getMixedDailyTrailCheckpointCameraConfig(memoryTrail, selection = {})",
   "function getMixedDailyTrailCheckpointCamera(memoryTrail, selection = {})",
   "reason: \"one-pass mixed checkpoint queue\"",
-  "const dailyTrailCheckpointRuntimeFingerprint = \"daily-trail-checkpoint-handoff-20260622-2\";",
+  "const dailyTrailCheckpointRuntimeFingerprint = \"daily-trail-checkpoint-outline-20260622-3\";",
   "function getDailyTrailCheckpointRuntimeSnapshot(memoryTrail = getActiveMemoryTrail(), details = {})",
   "queueHasDuplicates: duplicateTargetIds.length > 0",
   "preAnswerHighlightEnabled: Boolean(details.preAnswerHighlightEnabled)",
@@ -214,6 +215,21 @@ assert.ok(previewEntrySource.includes("src/maplibre-poc.js?v=20260622-daily-trai
   "runner.suppressStudyIntroCameraOnce?.(\"daily-trail-mixed-checkpoint-context\", 5000)",
   "maxZoom: 4.1"
 ].forEach((hook) => assert.ok(runtimeSource.includes(hook), `Missing mixed checkpoint runtime hook: ${hook}`));
+
+[
+  "setMemoryTrailCheckpointPreAnswerStyle(isActive = false)",
+  "isMemoryTrailCheckpointPreAnswerStyleEnabled()",
+  "getMemoryTrailPromptVisualState()",
+  "blueOutlineSource: checkpointPreAnswerStyle ? \"state-line:targetStroke\" : \"state-line:studyTargetLine\"",
+  "this.isMemoryTrailCheckpointPreAnswerStyleEnabled() ? colors.targetStroke : colors.studyTargetLine",
+  "this.isMemoryTrailCheckpointPreAnswerStyleEnabled() ? 0 : 0.52",
+  "if (this.isMemoryTrailCheckpointPreAnswerStyleEnabled()) {\n      return 0;\n    }",
+  "if (this.memoryTrailHighlightIds.length > 0) {\n      this.memoryTrailCheckpointPreAnswerStyle = false;",
+  "if (correctTargetId || wrongTargetId) {\n      this.memoryTrailCheckpointPreAnswerStyle = false;",
+  "this.isMemoryTrailCheckpointPreAnswerStyleEnabled() ? \"\" : this.selectedTargetId"
+].forEach((hook) => assert.ok(runnerSource.includes(hook), `Missing checkpoint pre-answer outline guard: ${hook}`));
+assert.ok(runtimeSource.includes("runner?.setMemoryTrailCheckpointPreAnswerStyle?.(checkpointPreAnswerStyle);"));
+assert.ok(runtimeSource.includes("import(\"./maplibre/maplibre-activity-runner.js?v=20260622-daily-trail-checkpoint-outline-1\")"));
 
 const queueSelectorIndex = runtimeSource.indexOf("if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {");
 const defaultLearnSelectorIndex = runtimeSource.indexOf("const unguidedCurrentTarget = memoryTrail.currentPracticeWindow");
