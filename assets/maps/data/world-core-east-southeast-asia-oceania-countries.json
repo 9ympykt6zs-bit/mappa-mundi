@@ -5,7 +5,13 @@
   "targetNoun": "country",
   "visibleAnswerLimit": 10,
   "map": {
-    "region": "world-core-east-southeast-asia-oceania"
+    "region": "world-core-east-southeast-asia-oceania",
+    "dailyTrailNonLearnCamera": {
+      "center": [131.48844, -8.01292],
+      "zoom": 2.6416,
+      "bearing": 0,
+      "pitch": 0
+    }
   },
   "features": [
     {
@@ -15,6 +21,14 @@
       "shape": "path",
       "isoA3": "CHN",
       "color": "#f97316",
+      "learnCamera": {
+        "center": [105.46946, 31.57908],
+        "zoom": 3.0061,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "start",
+        "source": "fitMapToPracticeWindow"
+      },
       "labelAnchor": [103.8, 35.4],
       "labelFontSize": 13,
       "labelRotation": 0
@@ -26,6 +40,14 @@
       "shape": "path",
       "isoA3": "JPN",
       "color": "#38bdf8",
+      "learnCamera": {
+        "center": [135.22357, 38.23612],
+        "zoom": 3.2159,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [138.2, 37.6],
       "labelFontSize": 12,
       "labelRotation": 0
@@ -48,6 +70,14 @@
       "shape": "path",
       "isoA3": "IDN",
       "color": "#a855f7",
+      "learnCamera": {
+        "center": [124.46301, -2.27222],
+        "zoom": 3.2603,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [117.3, -2.7],
       "labelFontSize": 11,
       "labelRotation": 0
@@ -59,6 +89,14 @@
       "shape": "path",
       "isoA3": "VNM",
       "color": "#a855f7",
+      "learnCamera": {
+        "center": [110.11430, 17.87085],
+        "zoom": 3.5272,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [106.3, 16.2],
       "labelFontSize": 11,
       "labelRotation": 0
@@ -103,6 +141,14 @@
       "shape": "path",
       "isoA3": "AUS",
       "color": "#22c55e",
+      "learnCamera": {
+        "center": [138.80192, -21.94616],
+        "zoom": 2.8501,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "section-quiz-view",
+        "source": "memory-trail-section-quiz-camera"
+      },
       "labelAnchor": [134.5, -25.8],
       "labelFontSize": 12,
       "labelRotation": 0
@@ -114,6 +160,14 @@
       "shape": "path",
       "isoA3": "NZL",
       "color": "#3b82f6",
+      "learnCamera": {
+        "center": [165.39661, -40.30704],
+        "zoom": 2.5676,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "section-quiz-view",
+        "source": "memory-trail-section-quiz-camera"
+      },
       "labelAnchor": [172.2, -41.1],
       "labelFontSize": 11,
       "labelRotation": 0

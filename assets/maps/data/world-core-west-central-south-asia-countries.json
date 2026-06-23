@@ -176,6 +176,14 @@
       "shape": "path",
       "isoA3": "BGD",
       "color": "#ef4444",
+      "learnCamera": {
+        "center": [91.07431, 23.06821],
+        "zoom": 3.4617,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "advance",
+        "source": "fitMapToPracticeWindow"
+      },
       "labelAnchor": [90.3, 23.8],
       "labelFontSize": 10,
       "labelRotation": 0

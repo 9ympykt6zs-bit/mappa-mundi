@@ -170,11 +170,11 @@ assert.deepEqual(europeActivity.map?.dailyTrailQuizCamera, {
 const plannerImport = runtimeSource.match(/from "\.\/daily-trail-planner\.js\?v=([^"]+)"/);
 assert.equal(
   plannerImport?.[1],
-  "20260622-daily-trail-checkpoint-runtime-3",
+  "20260623-daily-trail-terminal-completion-1",
   "The runtime must load the checkpoint-aware planner under a new cache key."
 );
-assert.ok(appEntrySource.includes("./src/maplibre-poc.js?v=20260623-learn-camera-audio-sequence-1"));
-assert.ok(previewEntrySource.includes("src/maplibre-poc.js?v=20260623-learn-camera-audio-sequence-1"));
+assert.ok(appEntrySource.includes("./src/maplibre-poc.js?v=20260623-daily-trail-terminal-completion-1"));
+assert.ok(previewEntrySource.includes("src/maplibre-poc.js?v=20260623-daily-trail-terminal-completion-1"));
 [
   "checkpointActivityGroups",
   "function startDailyTrailActivity(activityId)",

@@ -20,6 +20,7 @@ const dailyTrailMinNewItemBatchCount = 3;
 const dailyTrailMaxNewItemBatchCount = 6;
 const reviewCooldownSessions = 2;
 const continentsOceansActivityId = "continents-oceans";
+const worldCoreTerminalActivityId = "world-core-east-southeast-asia-oceania-countries";
 const continentsOceansStatuses = new Set(["unseen", "weak", "developing", "strong", "mastered"]);
 const continentsOceansSmallReviewSessionCooldown = 2;
 const continentsOceansFullReviewSessionCooldown = 4;
@@ -44,6 +45,10 @@ export function createDailyTrailState(value = {}) {
   return {
     trailId: dailyTrailId,
     hasStarted: Boolean(source.hasStarted),
+    // World Core is a finite guided path. Keep its terminal state separate
+    // from FSRS-style item scheduling so a completed trail cannot fall back
+    // into an unbounded global review queue on its next launch.
+    pathCompleted: Boolean(source.pathCompleted),
     activeTrailGoal: getDailyTrailGoal(source.activeTrailGoal).id,
     currentSessionNumber,
     sessionsSinceLastCheckpoint,
@@ -114,6 +119,25 @@ export function syncCompletedDailyTrailGoals(state) {
   return createDailyTrailState(state);
 }
 
+export function isDailyTrailPathComplete(state, items = []) {
+  const normalized = createDailyTrailState(state);
+  const safeItems = Array.isArray(items) ? items.filter(Boolean) : [];
+
+  if (normalized.pathCompleted) {
+    return true;
+  }
+
+  if (safeItems.length === 0 || !safeItems.every((item) => isItemPracticeEligible(normalized, item))) {
+    return false;
+  }
+
+  const continentsOceansItems = getContinentsOceansItems(safeItems);
+  const hasWorldCoreTerminalActivity = safeItems.some((item) => item.homeActivityId === worldCoreTerminalActivityId);
+  return hasWorldCoreTerminalActivity
+    && continentsOceansItems.length > 0
+    && isContinentsOceansFoundationComplete(normalized, continentsOceansItems);
+}
+
 export function buildWorldCoreDailyTrailItems(journey, activities) {
   const steps = Array.isArray(journey?.steps) ? journey.steps : [];
 
@@ -176,7 +200,9 @@ export function planDailyTrailSession(state, items) {
   const continentsOceansDecision = getContinentsOceansReviewDecision(normalized, safeItems);
   let plan;
 
-  if (continentsOceansDecision?.type === "foundation") {
+  if (isDailyTrailPathComplete(normalized, safeItems)) {
+    plan = buildDailyTrailCompletePlan(normalized, safeItems);
+  } else if (continentsOceansDecision?.type === "foundation") {
     plan = buildContinentsOceansPlan(normalized, safeItems, continentsOceansDecision);
   } else if (normalized.pendingRemediation) {
     plan = buildRemediationPlan(normalized, safeItems);
@@ -363,6 +389,11 @@ export function applyDailyTrailSessionResults(state, plan, result = {}) {
   const passedCheckpoint = !isCheckpoint || (accuracy >= 0.85 && newMissLimitPassed);
   updateContinentsOceansProgress(next, plan, practicedItems, missesByTargetId, completedDate);
 
+  const trailCompleted = isDailyTrailPathComplete(next, plan?.allItems || []);
+  if (trailCompleted) {
+    next.pathCompleted = true;
+  }
+
   next.currentSessionNumber += 1;
   next.lastDailyTrailSessionDate = completedDate;
 
@@ -391,7 +422,8 @@ export function applyDailyTrailSessionResults(state, plan, result = {}) {
     reviewCount: Math.max(0, practicedItems.length - (plan?.newItems || []).length),
     weakItems: dedupeItems(weakItems).map((item) => ({ id: item.id, label: item.label })),
     sessionsUntilNextCheckpoint: next.sessionsUntilNextCheckpoint,
-    checkpointPassed: isCheckpoint ? passedCheckpoint : null
+    checkpointPassed: isCheckpoint ? passedCheckpoint : null,
+    trailCompleted
   };
 
   return saveDailyTrailState(next);
@@ -582,6 +614,20 @@ function buildCheckpointPlan(state, items, options = {}) {
   });
 }
 
+function buildDailyTrailCompletePlan(state, items) {
+  return createPlan({
+    state,
+    sessionType: "complete",
+    title: "Daily Trail Finished",
+    newItems: [],
+    reviewItems: [],
+    playItems: [],
+    allItems: items,
+    activeActivityId: "",
+    trailCompleted: true
+  });
+}
+
 function selectSingleActivityCheckpointReviewItems(state, availableItems, recentItems, limit) {
   const recentIds = new Set(recentItems.map((item) => item.id));
   const weakRecentItems = getWeakItems(state, recentItems);
@@ -736,6 +782,7 @@ function createPlan({
   activeActivityId,
   continentsOceansReviewType = null,
   checkpointMixedReview = false,
+  trailCompleted = false,
   trailGoalId = state?.activeTrailGoal || dailyTrailId,
   devOverride = null
 }) {
@@ -776,6 +823,7 @@ function createPlan({
     allItems,
     continentsOceansReviewType,
     checkpointMixedReview,
+    trailCompleted,
     devOverride,
     cameraGroups: groupedItems,
     activityGroups: groupItemsByActivity(defensivePlayItems),

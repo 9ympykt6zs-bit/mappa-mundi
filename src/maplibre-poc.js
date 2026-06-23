@@ -26,13 +26,13 @@ import {
   selectDailyTrailGoal,
   shouldShowDailyTrailGoalChoice,
   syncCompletedDailyTrailGoals
-} from "./daily-trail-planner.js?v=20260622-daily-trail-checkpoint-runtime-3";
+} from "./daily-trail-planner.js?v=20260623-daily-trail-terminal-completion-1";
 import { resolveMemoryTrailNewTargetLimit } from "./memory-trail-new-target-limit.js?v=20260621-daily-trail-co-progression-2";
 
 const APP_NAME = "Mappa Mundi";
 const LANDING_PAGE_TITLE = "Mappa Mundi \u2013 Geography Game for Learning the World";
 const dailyTrailCheckpointRuntimeFingerprint = "daily-trail-checkpoint-outline-20260622-3";
-const dailyTrailPlannerModuleSpecifier = "./daily-trail-planner.js?v=20260622-daily-trail-checkpoint-runtime-3";
+const dailyTrailPlannerModuleSpecifier = "./daily-trail-planner.js?v=20260623-daily-trail-terminal-completion-1";
 const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
 const mapLibreStylesheetUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css";
 const difficultyModes = Object.freeze({
@@ -49,8 +49,8 @@ const activityDataPaths = [
   "assets/maps/data/world-core-americas-countries.json?v=20260621-americas-learn-cameras-7",
   "assets/maps/data/world-core-europe-countries.json?v=20260622-europe-russia-learn-camera-1",
   "assets/maps/data/world-core-africa-countries.json?v=20260622-africa-algeria-learn-camera-6",
-  "assets/maps/data/world-core-west-central-south-asia-countries.json?v=20260623-west-central-south-asia-regional-camera-8",
-  "assets/maps/data/world-core-east-southeast-asia-oceania-countries.json",
+  "assets/maps/data/world-core-west-central-south-asia-countries.json?v=20260623-west-central-south-asia-bangladesh-learn-camera-9",
+  "assets/maps/data/world-core-east-southeast-asia-oceania-countries.json?v=20260623-east-southeast-asia-oceania-regional-camera-9",
   "assets/maps/data/western-european-countries.json",
   "assets/maps/data/european-cities.json",
   "assets/maps/data/former-soviet-republics-review.json",
@@ -13950,6 +13950,11 @@ function renderDailyTrailIntroScreen() {
   const plan = pendingDailyTrailPlan || getDailyTrailPlanForState(state, items, devOverride);
   pendingDailyTrailPlan = plan;
 
+  if (plan.trailCompleted) {
+    renderDailyTrailFinishedPanel();
+    return;
+  }
+
   const panel = document.createElement("section");
   panel.className = "daily-trail-panel";
 
@@ -14370,6 +14375,11 @@ function renderDailyTrailSummaryScreen() {
   const panel = document.createElement("section");
   panel.className = "daily-trail-panel";
 
+  if (summary.trailCompleted) {
+    renderDailyTrailFinishedPanel();
+    return;
+  }
+
   const heading = document.createElement("h2");
   heading.textContent = summary.sessionType === "checkpoint" && summary.checkpointPassed === false
     ? "Checkpoint Needs Review"
@@ -14415,6 +14425,30 @@ function renderDailyTrailSummaryScreen() {
 
   actions.append(continueButton, mainMenuButton);
   panel.append(heading, practiced, stats, weak, actions);
+  journeyShellContent.appendChild(panel);
+}
+
+function renderDailyTrailFinishedPanel() {
+  const panel = document.createElement("section");
+  panel.className = "daily-trail-panel";
+
+  const heading = document.createElement("h2");
+  heading.textContent = "Daily Trail Finished";
+
+  const copy = document.createElement("p");
+  copy.textContent = "You completed the World Core Daily Trail. Great work mapping the world from memory.";
+
+  const actions = document.createElement("div");
+  actions.className = "daily-trail-actions";
+
+  const mainMenuButton = document.createElement("button");
+  mainMenuButton.type = "button";
+  mainMenuButton.className = "main-menu-button main-menu-button-green";
+  mainMenuButton.textContent = "Choose Another Activity";
+  mainMenuButton.addEventListener("click", () => showAppScreen("main-menu"));
+
+  actions.appendChild(mainMenuButton);
+  panel.append(heading, copy, actions);
   journeyShellContent.appendChild(panel);
 }
 

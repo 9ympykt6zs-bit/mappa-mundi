@@ -71,6 +71,14 @@ const expectedNonLearnCamera = {
   bearing: 0,
   pitch: 0
 };
+const expectedBangladeshCamera = {
+  center: [91.07431, 23.06821],
+  zoom: 3.4617,
+  bearing: 0,
+  pitch: 0,
+  cameraContext: "advance",
+  source: "fitMapToPracticeWindow"
+};
 
 assert.equal(activity.id, "world-core-west-central-south-asia-countries");
 assert.equal(activity.map?.region, "world-core-west-central-south-asia");
@@ -82,12 +90,13 @@ assert.deepEqual(activity.features.find((target) => target.id === "iraq")?.learn
 assert.deepEqual(activity.features.find((target) => target.id === "pakistan")?.learnCamera, expectedPakistanCamera);
 assert.deepEqual(activity.features.find((target) => target.id === "india")?.learnCamera, expectedIndiaCamera);
 assert.deepEqual(activity.features.find((target) => target.id === "kazakhstan")?.learnCamera, expectedKazakhstanCamera);
+assert.deepEqual(activity.features.find((target) => target.id === "bangladesh")?.learnCamera, expectedBangladeshCamera);
 assert.deepEqual(
   activity.features.filter((target) => target.learnCamera).map((target) => target.id),
-  ["saudi-arabia", "iran", "israel", "iraq", "kazakhstan", "india", "pakistan"],
-  "Only Saudi Arabia, Iran, Israel, Iraq, Kazakhstan, India, and Pakistan may have West, Central, and South Asia target Learn cameras."
+  ["saudi-arabia", "iran", "israel", "iraq", "kazakhstan", "india", "pakistan", "bangladesh"],
+  "Only Saudi Arabia, Iran, Israel, Iraq, Kazakhstan, India, Pakistan, and Bangladesh may have West, Central, and South Asia target Learn cameras."
 );
-assert.ok(runtimeSource.includes("assets/maps/data/world-core-west-central-south-asia-countries.json?v=20260623-west-central-south-asia-regional-camera-8"));
+assert.ok(runtimeSource.includes("assets/maps/data/world-core-west-central-south-asia-countries.json?v=20260623-west-central-south-asia-bangladesh-learn-camera-9"));
 assert.ok(runtimeSource.includes("const camera = normalizeMemoryTrailSectionQuizView(target?.learnCamera);"));
 assert.ok(runtimeSource.includes("source: target.learnCamera?.source || \"daily-trail-target-learn-camera\","));
 
@@ -99,5 +108,6 @@ console.log("Daily Trail West/Central/South Asia Learn camera check passed:", JS
   pakistan: expectedPakistanCamera,
   india: expectedIndiaCamera,
   kazakhstan: expectedKazakhstanCamera,
+  bangladesh: expectedBangladeshCamera,
   nonLearnCamera: expectedNonLearnCamera
 }));
