@@ -120,7 +120,7 @@ for (const requiredHook of [
   'memoryTrail?.source !== "daily-trail"',
   'selection?.promptType !== "guided"',
   'memoryTrail?.sessionPhase !== "learn"',
-  "scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target);",
+  "const dailyTrailLearnCameraPromise = scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target);",
   "function getActiveDailyTrailNonLearnCamera(memoryTrail)",
   "getActiveDailyTrailNonLearnCamera(memoryTrail)",
   "function scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target)",
@@ -136,10 +136,10 @@ const instructionCueIndex = mapSource.indexOf(
   "const instructionSpeechPromise = updateMemoryTrailInstructionCue(memoryTrail, selection);"
 );
 const cameraScheduleIndex = mapSource.indexOf(
-  "scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target);"
+  "const dailyTrailLearnCameraPromise = scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target);"
 );
 const targetSpeechIndex = mapSource.indexOf(
-  "speakMemoryTrailPromptTargetAfterInstruction(memoryTrail, target, selection, instructionSpeechPromise);"
+  "speakMemoryTrailPromptTargetAfterInstruction("
 );
 assert.ok(instructionCueIndex >= 0 && instructionCueIndex < cameraScheduleIndex);
 assert.ok(cameraScheduleIndex >= 0 && cameraScheduleIndex < targetSpeechIndex);

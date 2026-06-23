@@ -48,8 +48,8 @@ const activityDataPaths = [
   "assets/maps/data/continents-oceans.json",
   "assets/maps/data/world-core-americas-countries.json?v=20260621-americas-learn-cameras-7",
   "assets/maps/data/world-core-europe-countries.json?v=20260622-europe-russia-learn-camera-1",
-  "assets/maps/data/world-core-africa-countries.json",
-  "assets/maps/data/world-core-west-central-south-asia-countries.json",
+  "assets/maps/data/world-core-africa-countries.json?v=20260622-africa-algeria-learn-camera-6",
+  "assets/maps/data/world-core-west-central-south-asia-countries.json?v=20260623-west-central-south-asia-regional-camera-8",
   "assets/maps/data/world-core-east-southeast-asia-oceania-countries.json",
   "assets/maps/data/western-european-countries.json",
   "assets/maps/data/european-cities.json",
@@ -2918,6 +2918,7 @@ let audioInstructionHideTimer = null;
 let memoryTrailInstructionBannerTimer = null;
 let lastMemoryTrailInstructionKey = "";
 let lastSpokenMemoryTrailInstructionKey = "";
+let memoryTrailAudioSessionSequence = 0;
 let journeyGameplayInstructionKeys = new Set();
 let atlasProgress = loadProgress();
 let mapLayerSettings = loadMapLayerSettings();
@@ -3216,7 +3217,7 @@ function ensureChipSpeechLoaded() {
     return Promise.resolve(window.GeographyChipSpeech);
   }
 
-  return import("./chip-speech.js?v=20260602-daily-trail-review-chips")
+  return import("./chip-speech.js?v=20260622-prompt-audio-dedupe-1")
     .then(() => window.GeographyChipSpeech || null);
 }
 
@@ -3554,7 +3555,7 @@ async function ensureMapRuntimeLoaded() {
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/maplibre-activity-runner.js?v=20260622-daily-trail-checkpoint-outline-1"),
-      import("./chip-speech.js?v=20260602-daily-trail-review-chips")
+      import("./chip-speech.js?v=20260622-prompt-audio-dedupe-1")
     ]).then(([
       ,
       ,
@@ -7506,6 +7507,7 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
   const memoryTrail = {
     active: true,
     adaptive: true,
+    audioSessionId: `memory-trail-audio-${++memoryTrailAudioSessionSequence}`,
     source: options.source || "memory-trail",
     activityId: activity?.id || "",
     maxNewTargets: resolveMemoryTrailNewTargetLimit(options, activity),
@@ -8431,7 +8433,7 @@ function isMemoryTrailInstructionSpeechEnabled() {
   return audioSettings.speakMemoryTrailInstructions === true;
 }
 
-function maybeSpeakMemoryTrailInstruction(text, promptType, phase, instructionKey) {
+function maybeSpeakMemoryTrailInstruction(text, promptType, phase, instructionKey, options = {}) {
   const message = String(text || "").trim();
   const key = instructionKey || getMemoryTrailInstructionKey(promptType, phase);
   const skipped = (reason) => {
@@ -8473,6 +8475,7 @@ function maybeSpeakMemoryTrailInstruction(text, promptType, phase, instructionKe
     if (speech?.speakLabelAndWait) {
       return speech.speakLabelAndWait(message, {
         queue: true,
+        dedupeKey: options.dedupeKey || "",
         warnOnAudioFailure: false
       }).then(Boolean);
     }
@@ -8509,7 +8512,9 @@ function setMemoryTrailInstruction({ memoryTrail, phase, promptType, mode = "", 
 
   if (isModeChange) {
     showMemoryTrailInstructionBanner(instruction.banner);
-    speechPromise = maybeSpeakMemoryTrailInstruction(instruction.banner, promptType, phase, instructionKey);
+    speechPromise = maybeSpeakMemoryTrailInstruction(instruction.banner, promptType, phase, instructionKey, {
+      dedupeKey: `${memoryTrail.audioSessionId || "memory-trail"}:${memoryTrail.currentPromptKey || instructionKey}:instruction:${instructionKey}`
+    });
     lastMemoryTrailInstructionKey = instructionKey;
   }
 
@@ -8873,9 +8878,14 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
   const didApplySectionQuizCamera = applyMemoryTrailSectionQuizCamera(memoryTrail, selection);
   const didApplyTargetQuizCamera = applyDailyTrailTargetQuizCamera(memoryTrail, selection);
   scheduleMemoryTrailSectionQuizCameraCheck(memoryTrail, selection);
-  scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target);
-  scheduleContinentsOceansLearnFocusCheck(memoryTrail, selection, target);
-  scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target);
+  const dailyTrailLearnCameraPromise = scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target);
+  const continentsOceansLearnCameraPromise = scheduleContinentsOceansLearnFocusCheck(memoryTrail, selection, target);
+  const smallTargetLearnCameraPromise = scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target);
+  const learnCameraReadyPromise = Promise.all([
+    dailyTrailLearnCameraPromise,
+    continentsOceansLearnCameraPromise,
+    smallTargetLearnCameraPromise
+  ]);
   maybeFocusContinentsOceansNamePrompt(selection, target);
   publishDailyTrailCheckpointRuntimeSnapshot(memoryTrail, {
     stage: "checkpoint-prompt-rendered",
@@ -8890,7 +8900,13 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
   logMemoryTrailFindPromptDebug(memoryTrail, selection, target, "rendered");
 
   if (shouldSpeakMemoryTrailTargetAtPromptStart(memoryTrail, target, selection)) {
-    speakMemoryTrailPromptTargetAfterInstruction(memoryTrail, target, selection, instructionSpeechPromise);
+    speakMemoryTrailPromptTargetAfterInstruction(
+      memoryTrail,
+      target,
+      selection,
+      instructionSpeechPromise,
+      learnCameraReadyPromise
+    );
   }
 
   return true;
@@ -8939,7 +8955,13 @@ function shouldSpeakMemoryTrailTargetAtPromptStart(memoryTrail, target, selectio
     : skip("place-to-name answer would be revealed outside C&O learn");
 }
 
-function speakMemoryTrailPromptTargetAfterInstruction(memoryTrail, target, selection, instructionSpeechPromise = Promise.resolve(false)) {
+function speakMemoryTrailPromptTargetAfterInstruction(
+  memoryTrail,
+  target,
+  selection,
+  instructionSpeechPromise = Promise.resolve(false),
+  learnCameraReadyPromise = Promise.resolve(false)
+) {
   const promptKey = memoryTrail?.currentPromptKey || "";
   let didAttempt = false;
   const attempt = (trigger) => {
@@ -8984,9 +9006,13 @@ function speakMemoryTrailPromptTargetAfterInstruction(memoryTrail, target, selec
     });
   };
 
-  instructionSpeechPromise.finally(() => attempt("instruction-complete"));
+  Promise.allSettled([instructionSpeechPromise, learnCameraReadyPromise])
+    .finally(() => attempt("instruction-and-learn-camera-ready"));
   if (shouldUseMemoryTrailTargetSpeechFallback(memoryTrail, selection)) {
-    window.setTimeout(() => attempt("instruction-fallback-timeout"), 1800);
+    window.setTimeout(() => {
+      Promise.resolve(learnCameraReadyPromise)
+        .finally(() => attempt("instruction-fallback-after-learn-camera"));
+    }, 1800);
   }
 }
 
@@ -9058,7 +9084,7 @@ function scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target) {
     || typeof runner?.shouldFocusSmallTargetInLearnMode !== "function"
     || typeof runner?.focusTargetIfNeeded !== "function"
   ) {
-    return false;
+    return Promise.resolve(false);
   }
 
   const promptKey = memoryTrail.currentPromptKey;
@@ -9066,66 +9092,77 @@ function scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target) {
   const mapState = runner.getMapInteractionState?.();
   const needsFocusAtSchedule = runner.shouldFocusSmallTargetInLearnMode(target, { mobile: true });
   const delayMs = (isFirstPromptInChunk || mapState?.isMoving || mapState?.isEasing) ? 980 : 120;
-  const attemptFocus = (remainingSettleChecks = 6) => {
-    if (
-      !isCurrentMemoryTrailState(memoryTrail)
-      || memoryTrail.currentPromptKey !== promptKey
-      || memoryTrail.currentPromptTargetId !== selection.targetId
-      || memoryTrail.currentPromptType !== "guided"
-      || memoryTrail.sessionPhase !== "learn"
-      || getActiveDailyTrailFixedCamera(memoryTrail)
-    ) {
-      debugMemoryTrail("small target learn focus canceled", {
+  return new Promise((resolve) => {
+    const attemptFocus = (remainingSettleChecks = 6) => {
+      if (
+        !isCurrentMemoryTrailState(memoryTrail)
+        || memoryTrail.currentPromptKey !== promptKey
+        || memoryTrail.currentPromptTargetId !== selection.targetId
+        || memoryTrail.currentPromptType !== "guided"
+        || memoryTrail.sessionPhase !== "learn"
+        || getActiveDailyTrailFixedCamera(memoryTrail)
+      ) {
+        debugMemoryTrail("small target learn focus canceled", {
+          targetId: target.id,
+          targetName: target.name,
+          reason: "prompt changed before deferred focus"
+        });
+        resolve(false);
+        return;
+      }
+
+      const currentMapState = runner.getMapInteractionState?.();
+      if ((currentMapState?.isMoving || currentMapState?.isEasing) && remainingSettleChecks > 0) {
+        const settleTimeoutId = window.setTimeout(() => attemptFocus(remainingSettleChecks - 1), 180);
+        memoryTrail.timers.push(settleTimeoutId);
+        return;
+      }
+
+      const needsFocusNow = runner.shouldFocusSmallTargetInLearnMode(target, { mobile: true });
+      if (!needsFocusAtSchedule && !needsFocusNow) {
+        debugMemoryTrail("small target learn focus skipped", {
+          targetId: target.id,
+          targetName: target.name,
+          reason: "target is already comfortably playable"
+        });
+        resolve(false);
+        return;
+      }
+
+      const focusOptions = typeof runner.getSmallTargetLearnFocusOptions === "function"
+        ? runner.getSmallTargetLearnFocusOptions(target)
+        : {
+          duration: 720,
+          force: true,
+          maxZoom: 7.8,
+          zoomTolerance: 0.35,
+          padding: { top: 98, right: 34, bottom: 214, left: 34 },
+          comfortPadding: { top: 104, right: 34, bottom: 214, left: 34 }
+        };
+      focusOptions.cameraContext = "small-target-focus";
+      focusOptions.source = "small-target-learn";
+      const focusTarget = typeof runner.getSmallTargetLearnFocusTarget === "function"
+        ? runner.getSmallTargetLearnFocusTarget(target)
+        : target;
+      const didFocus = runner.focusTargetIfNeeded(focusTarget, focusOptions);
+      debugMemoryTrail("small target learn focus", {
         targetId: target.id,
         targetName: target.name,
-        reason: "prompt changed before deferred focus"
+        didFocus,
+        focusOptions
       });
-      return;
-    }
 
-    const currentMapState = runner.getMapInteractionState?.();
-    if ((currentMapState?.isMoving || currentMapState?.isEasing) && remainingSettleChecks > 0) {
-      const settleTimeoutId = window.setTimeout(() => attemptFocus(remainingSettleChecks - 1), 180);
+      if (!didFocus) {
+        resolve(false);
+        return;
+      }
+
+      const settleTimeoutId = window.setTimeout(() => resolve(true), (focusOptions.duration || 720) + 100);
       memoryTrail.timers.push(settleTimeoutId);
-      return;
-    }
-
-    const needsFocusNow = runner.shouldFocusSmallTargetInLearnMode(target, { mobile: true });
-    if (!needsFocusAtSchedule && !needsFocusNow) {
-      debugMemoryTrail("small target learn focus skipped", {
-        targetId: target.id,
-        targetName: target.name,
-        reason: "target is already comfortably playable"
-      });
-      return;
-    }
-
-    const focusOptions = typeof runner.getSmallTargetLearnFocusOptions === "function"
-      ? runner.getSmallTargetLearnFocusOptions(target)
-      : {
-        duration: 720,
-        force: true,
-        maxZoom: 7.8,
-        zoomTolerance: 0.35,
-        padding: { top: 98, right: 34, bottom: 214, left: 34 },
-        comfortPadding: { top: 104, right: 34, bottom: 214, left: 34 }
-      };
-    focusOptions.cameraContext = "small-target-focus";
-    focusOptions.source = "small-target-learn";
-    const focusTarget = typeof runner.getSmallTargetLearnFocusTarget === "function"
-      ? runner.getSmallTargetLearnFocusTarget(target)
-      : target;
-    const didFocus = runner.focusTargetIfNeeded(focusTarget, focusOptions);
-    debugMemoryTrail("small target learn focus", {
-      targetId: target.id,
-      targetName: target.name,
-      didFocus,
-      focusOptions
-    });
-  };
-  const timeoutId = window.setTimeout(() => attemptFocus(), delayMs);
-  memoryTrail.timers.push(timeoutId);
-  return true;
+    };
+    const timeoutId = window.setTimeout(() => attemptFocus(), delayMs);
+    memoryTrail.timers.push(timeoutId);
+  });
 }
 
 function scheduleContinentsOceansLearnFocusCheck(memoryTrail, selection, target) {
@@ -9158,27 +9195,36 @@ function scheduleContinentsOceansLearnFocusCheck(memoryTrail, selection, target)
     delayMs: focusProfile.delayMs,
     force: focusProfile.forceOnPromptStart
   }, memoryTrail);
-  const timeoutId = window.setTimeout(() => {
-    if (
-      !isCurrentMemoryTrailState(memoryTrail)
-      || memoryTrail.currentPromptKey !== promptKey
-      || memoryTrail.currentPromptTargetId !== selection.targetId
-    ) {
-      debugContinentsOceansLearnCamera("target focus canceled", {
-        source: "c&o-learn-target-focus",
-        requestType: "focusTargetIfNeeded",
-        targetId: target.id,
-        targetLabel: target.name,
-        expectedPromptKey: promptKey,
-        reason: "prompt changed before deferred focus"
-      }, memoryTrail);
-      return;
-    }
+  return new Promise((resolve) => {
+    const timeoutId = window.setTimeout(() => {
+      if (
+        !isCurrentMemoryTrailState(memoryTrail)
+        || memoryTrail.currentPromptKey !== promptKey
+        || memoryTrail.currentPromptTargetId !== selection.targetId
+      ) {
+        debugContinentsOceansLearnCamera("target focus canceled", {
+          source: "c&o-learn-target-focus",
+          requestType: "focusTargetIfNeeded",
+          targetId: target.id,
+          targetLabel: target.name,
+          expectedPromptKey: promptKey,
+          reason: "prompt changed before deferred focus"
+        }, memoryTrail);
+        resolve(false);
+        return;
+      }
 
-    maybeFocusContinentsOceansLearnPrompt(memoryTrail, target, focusProfile);
-  }, focusProfile.delayMs);
-  memoryTrail.timers.push(timeoutId);
-  return true;
+      const didFocus = maybeFocusContinentsOceansLearnPrompt(memoryTrail, target, focusProfile);
+      if (!didFocus) {
+        resolve(false);
+        return;
+      }
+
+      const settleTimeoutId = window.setTimeout(() => resolve(true), 800);
+      memoryTrail.timers.push(settleTimeoutId);
+    }, focusProfile.delayMs);
+    memoryTrail.timers.push(timeoutId);
+  });
 }
 
 function getContinentsOceansLearnFocusProfile(target, memoryTrail) {
@@ -10625,28 +10671,18 @@ function scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target) {
     || !camera
     || typeof runner?.moveCamera !== "function"
   ) {
-    return false;
+    return Promise.resolve(false);
   }
 
   const promptKey = memoryTrail.currentPromptKey;
-  const timeoutId = window.setTimeout(() => {
-    if (
-      !isCurrentMemoryTrailState(memoryTrail)
-      || memoryTrail.currentPromptKey !== promptKey
-      || memoryTrail.currentPromptTargetId !== selection.targetId
-      || memoryTrail.currentPromptType !== "guided"
-      || memoryTrail.sessionPhase !== "learn"
-    ) {
-      return;
-    }
-
-    runner.moveCamera({
+  const duration = camera.duration || 720;
+  const didMove = runner.moveCamera({
       center: camera.center,
       zoom: camera.zoom,
       bearing: camera.bearing,
       pitch: camera.pitch,
       padding: camera.padding || { top: 0, right: 0, bottom: 0, left: 0 },
-      duration: camera.duration || 720,
+      duration,
       essential: true
     }, {
       cameraContext: target.learnCamera?.cameraContext || "learn-target-focus",
@@ -10656,9 +10692,25 @@ function scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target) {
       targetId: target.id,
       targetLabel: target.name || ""
     }, "flyTo");
-  }, 980);
-  memoryTrail.timers.push(timeoutId);
-  return true;
+
+  if (!didMove) {
+    return Promise.resolve(false);
+  }
+
+  // MapLibre completion events can be preempted by a later camera request. A
+  // bounded settle delay guarantees target narration never gets ahead of this
+  // Learn fly-to while keeping the prompt resilient to those interruptions.
+  return new Promise((resolve) => {
+    const timeoutId = window.setTimeout(() => {
+      const promptIsStillCurrent = isCurrentMemoryTrailState(memoryTrail)
+        && memoryTrail.currentPromptKey === promptKey
+        && memoryTrail.currentPromptTargetId === selection.targetId
+        && memoryTrail.currentPromptType === "guided"
+        && memoryTrail.sessionPhase === "learn";
+      resolve(promptIsStillCurrent);
+    }, duration + 100);
+    memoryTrail.timers.push(timeoutId);
+  });
 }
 
 function completeDailyTrailDevReplaySession(memoryTrail) {
@@ -13931,11 +13983,10 @@ function renderDailyTrailIntroScreen() {
   const beginButton = document.createElement("button");
   beginButton.type = "button";
   beginButton.className = "main-menu-button main-menu-button-green";
-  beginButton.textContent = plan.sessionType === "checkpoint"
-    ? "Start Checkpoint"
-    : plan.sessionType === "remediationCheckpoint"
-      ? "Start Quick Check"
-      : "Begin Daily Trail";
+  const beginButtonLabel = getDailyTrailIntroPrimaryActionLabel(state);
+  beginButton.textContent = beginButtonLabel;
+  beginButton.setAttribute("aria-label", beginButtonLabel);
+  beginButton.title = beginButtonLabel;
   beginButton.addEventListener("click", startDailyTrailSession);
 
   const backButton = document.createElement("button");
@@ -13947,6 +13998,12 @@ function renderDailyTrailIntroScreen() {
   actions.append(beginButton, backButton);
   panel.append(heading, stats, copy, focus, actions);
   journeyShellContent.appendChild(panel);
+}
+
+function getDailyTrailIntroPrimaryActionLabel(state = loadDailyTrailState()) {
+  return hasDailyTrailProgress(state)
+    ? "CONTINUE DAILY TRAIL"
+    : "BEGIN DAILY TRAIL";
 }
 
 function renderDailyTrailGoalChoiceScreen() {

@@ -5,7 +5,13 @@
   "targetNoun": "country",
   "visibleAnswerLimit": 10,
   "map": {
-    "region": "world-core-africa"
+    "region": "world-core-africa",
+    "dailyTrailNonLearnCamera": {
+      "center": [17.53087, 0.44607],
+      "zoom": 3.0084,
+      "bearing": 0,
+      "pitch": 0
+    }
   },
   "features": [
     {
@@ -15,6 +21,14 @@
       "shape": "path",
       "isoA3": "EGY",
       "color": "#a855f7",
+      "learnCamera": {
+        "center": [31.83280, 31.95761],
+        "zoom": 3.3079,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [29.45, 26.19],
       "labelFontSize": 12,
       "labelRotation": 0
@@ -26,6 +40,14 @@
       "shape": "path",
       "isoA3": "NGA",
       "color": "#ec4899",
+      "learnCamera": {
+        "center": [12.26605, 13.39308],
+        "zoom": 3.3714,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [7.5, 9.44],
       "labelFontSize": 12,
       "labelRotation": 0
@@ -37,6 +59,14 @@
       "shape": "path",
       "isoA3": "ZAF",
       "color": "#ef4444",
+      "learnCamera": {
+        "center": [19.86861, -15.38212],
+        "zoom": 3.4101,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [23.67, -29.71],
       "labelFontSize": 12,
       "labelRotation": 0
@@ -59,6 +89,14 @@
       "shape": "path",
       "isoA3": "ETH",
       "color": "#ef4444",
+      "learnCamera": {
+        "center": [36.04799, 8.84654],
+        "zoom": 3.4246,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "section-overview",
+        "source": "enterStudyView:regionView"
+      },
       "labelAnchor": [39.09, 8.03],
       "labelFontSize": 12,
       "labelRotation": 0
@@ -92,6 +130,14 @@
       "shape": "path",
       "isoA3": "DZA",
       "color": "#f59e0b",
+      "learnCamera": {
+        "center": [6.75329, 26.38119],
+        "zoom": 3.2832,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "section-overview",
+        "source": "enterStudyView:regionView"
+      },
       "labelAnchor": [2.81, 27.4],
       "labelFontSize": 13,
       "labelRotation": 0

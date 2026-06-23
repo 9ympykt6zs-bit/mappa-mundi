@@ -5,7 +5,13 @@
   "targetNoun": "country",
   "visibleAnswerLimit": 10,
   "map": {
-    "region": "world-core-west-central-south-asia"
+    "region": "world-core-west-central-south-asia",
+    "dailyTrailNonLearnCamera": {
+      "center": [69.63166, 33.59030],
+      "zoom": 3.1385,
+      "bearing": 0,
+      "pitch": 0
+    }
   },
   "features": [
     {
@@ -26,6 +32,14 @@
       "shape": "path",
       "isoA3": "SAU",
       "color": "#ec4899",
+      "learnCamera": {
+        "center": [44.58633, 23.57349],
+        "zoom": 3.9315,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [45.1, 23.9],
       "labelFontSize": 12,
       "labelRotation": 0
@@ -37,6 +51,14 @@
       "shape": "path",
       "isoA3": "IRN",
       "color": "#a855f7",
+      "learnCamera": {
+        "center": [47.23440, 33.66587],
+        "zoom": 3.9438,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [53.4, 32.4],
       "labelFontSize": 13,
       "labelRotation": 0
@@ -48,6 +70,14 @@
       "shape": "path",
       "isoA3": "ISR",
       "color": "#38bdf8",
+      "learnCamera": {
+        "center": [35.34258, 30.50501],
+        "zoom": 4.7508,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "small-target-focus",
+        "source": "small-target-learn"
+      },
       "labelAnchor": [35, 31.4],
       "labelFontSize": 10,
       "labelRotation": 0
@@ -70,6 +100,14 @@
       "shape": "path",
       "isoA3": "IRQ",
       "color": "#3b82f6",
+      "learnCamera": {
+        "center": [47.02940, 34.15605],
+        "zoom": 3.7346,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "section-overview",
+        "source": "enterStudyView:regionView"
+      },
       "labelAnchor": [43.75, 33.4],
       "labelFontSize": 12,
       "labelRotation": 0
@@ -81,6 +119,14 @@
       "shape": "path",
       "isoA3": "KAZ",
       "color": "#38bdf8",
+      "learnCamera": {
+        "center": [67.50794, 48.66828],
+        "zoom": 3.4092,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "section-overview",
+        "source": "enterStudyView:regionView"
+      },
       "labelAnchor": [67.5, 48.1],
       "labelFontSize": 13,
       "labelRotation": 0
@@ -92,6 +138,14 @@
       "shape": "path",
       "isoA3": "IND",
       "color": "#f59e0b",
+      "learnCamera": {
+        "center": [79.78024, 22.18743],
+        "zoom": 3.4709,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "advance",
+        "source": "fitMapToPracticeWindow"
+      },
       "labelAnchor": [78.9, 22.8],
       "labelFontSize": 12,
       "labelRotation": 0
@@ -103,6 +157,14 @@
       "shape": "path",
       "isoA3": "PAK",
       "color": "#3b82f6",
+      "learnCamera": {
+        "center": [69.56245, 29.78506],
+        "zoom": 3.8033,
+        "bearing": 0,
+        "pitch": 0,
+        "cameraContext": "section-overview",
+        "source": "enterStudyView:regionView"
+      },
       "labelAnchor": [69.35, 29.9],
       "labelFontSize": 11,
       "labelRotation": 0

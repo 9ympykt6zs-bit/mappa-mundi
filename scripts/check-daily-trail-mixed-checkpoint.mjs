@@ -173,8 +173,8 @@ assert.equal(
   "20260622-daily-trail-checkpoint-runtime-3",
   "The runtime must load the checkpoint-aware planner under a new cache key."
 );
-assert.ok(appEntrySource.includes("./src/maplibre-poc.js?v=20260622-daily-trail-checkpoint-runtime-3"));
-assert.ok(previewEntrySource.includes("src/maplibre-poc.js?v=20260622-daily-trail-checkpoint-runtime-3"));
+assert.ok(appEntrySource.includes("./src/maplibre-poc.js?v=20260623-learn-camera-audio-sequence-1"));
+assert.ok(previewEntrySource.includes("src/maplibre-poc.js?v=20260623-learn-camera-audio-sequence-1"));
 [
   "checkpointActivityGroups",
   "function startDailyTrailActivity(activityId)",

@@ -8,6 +8,7 @@
   let currentSpeechFinish = null;
   let sharedAudio = null;
   let speechQueue = Promise.resolve();
+  const activeSpeechRequestsByKey = new Map();
   let isAudioMuted = loadAudioMuted();
   const localAudioMaxDurationMs = 6500;
   const pronunciationOverrides = Object.freeze({
@@ -211,6 +212,10 @@
       || null;
   }
 
+  function normalizeSpeechDedupeKey(value) {
+    return String(value || "").trim();
+  }
+
   function getAudioPathLookupKey(audioPath) {
     return String(audioPath || "")
       .split("/")
@@ -285,6 +290,7 @@
       }
 
       audio.__atlasQuestCancelled = false;
+      audio.__atlasQuestPlaybackStarted = false;
       audio.src = audioPath;
       currentAudio = audio;
 
@@ -320,8 +326,20 @@
 
       const cleanup = () => {
         global.clearTimeout(timeoutId);
+        audio.removeEventListener("playing", handlePlaying);
         audio.removeEventListener("ended", handleEnded);
         audio.removeEventListener("error", handleError);
+      };
+      const handlePlaying = () => {
+        if (audio.__atlasQuestPlaybackStarted) {
+          return;
+        }
+
+        audio.__atlasQuestPlaybackStarted = true;
+        // A generated MP3 has claimed this narration event. Any queued browser
+        // fallback would duplicate it, so stop it before the MP3 becomes audible.
+        stopBrowserSpeech();
+        logChipSpeechDebug("local-audio-started", { audioPath });
       };
       const handleEnded = () => {
         cleanup();
@@ -330,9 +348,12 @@
       const handleError = () => {
         cleanup();
         warnMemoryTrailAudioFailure(audioPath, "audio element error", options);
-        finish(false);
+        // If playback already began, do not start browser speech for the same
+        // narration event. It would overlap or repeat the generated voice.
+        finish(audio.__atlasQuestPlaybackStarted === true);
       };
 
+      audio.addEventListener("playing", handlePlaying);
       audio.addEventListener("ended", handleEnded);
       audio.addEventListener("error", handleError);
       currentAudioCancel = cancelPlayback;
@@ -348,16 +369,20 @@
         if (currentAudioCancel === cancelPlayback) {
           currentAudioCancel = null;
         }
-        finish(false);
+        finish(audio.__atlasQuestPlaybackStarted === true);
       }, getAudioPlaybackTimeoutMs(audioPath, options));
 
       const playResult = audio.play();
+
+      if (playResult?.then) {
+        playResult.then(handlePlaying);
+      }
 
       if (playResult?.catch) {
         playResult.catch((error) => {
           cleanup();
           warnMemoryTrailAudioFailure(audioPath, error, options);
-          finish(false);
+          finish(audio.__atlasQuestPlaybackStarted === true);
         });
       }
     });
@@ -474,23 +499,41 @@
   }
 
   async function speakLabelAndWait(labelText, options = {}) {
-    if (options.queue) {
-      const queuedSpeech = speechQueue
+    const dedupeKey = normalizeSpeechDedupeKey(options.dedupeKey);
+    const existingSpeech = dedupeKey ? activeSpeechRequestsByKey.get(dedupeKey) : null;
+
+    if (existingSpeech) {
+      logChipSpeechDebug("speech-deduped", { labelText, dedupeKey });
+      return existingSpeech;
+    }
+
+    const playback = options.queue
+      ? speechQueue
         .catch(() => false)
         .then(() => playLabelAndWait(labelText, options))
         .catch((error) => {
           warnQueuedSpeechFailure(labelText, error, options);
           return false;
-        });
+        })
+      : playLabelAndWait(labelText, options).catch((error) => {
+        warnQueuedSpeechFailure(labelText, error, options);
+        return false;
+      });
 
-      speechQueue = queuedSpeech;
-      return queuedSpeech;
+    if (options.queue) {
+      speechQueue = playback;
     }
 
-    return playLabelAndWait(labelText, options).catch((error) => {
-      warnQueuedSpeechFailure(labelText, error, options);
-      return false;
-    });
+    if (dedupeKey) {
+      activeSpeechRequestsByKey.set(dedupeKey, playback);
+      void playback.finally(() => {
+        if (activeSpeechRequestsByKey.get(dedupeKey) === playback) {
+          activeSpeechRequestsByKey.delete(dedupeKey);
+        }
+      });
+    }
+
+    return playback;
   }
 
   async function playLabelAndWait(labelText, options = {}) {

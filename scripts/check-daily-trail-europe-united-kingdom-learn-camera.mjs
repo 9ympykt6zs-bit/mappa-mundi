@@ -137,7 +137,7 @@ for (const requiredHook of [
   'selection?.promptType !== "guided"',
   'memoryTrail?.sessionPhase !== "learn"',
   'memoryTrail?.source === "daily-trail" && target?.learnCamera',
-  "scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target);",
+  "const dailyTrailLearnCameraPromise = scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target);",
   "regionView: { center: [28, 55], zoom: 2.0 }"
 ]) {
   assert.ok(mapSource.includes(requiredHook), `Missing United Kingdom Learn camera hook: ${requiredHook}`);
@@ -147,10 +147,10 @@ const instructionCueIndex = mapSource.indexOf(
   "const instructionSpeechPromise = updateMemoryTrailInstructionCue(memoryTrail, selection);"
 );
 const cameraScheduleIndex = mapSource.indexOf(
-  "scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target);"
+  "const dailyTrailLearnCameraPromise = scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target);"
 );
 const targetSpeechIndex = mapSource.indexOf(
-  "speakMemoryTrailPromptTargetAfterInstruction(memoryTrail, target, selection, instructionSpeechPromise);"
+  "speakMemoryTrailPromptTargetAfterInstruction("
 );
 assert.ok(instructionCueIndex >= 0 && instructionCueIndex < cameraScheduleIndex);
 assert.ok(cameraScheduleIndex >= 0 && cameraScheduleIndex < targetSpeechIndex);
