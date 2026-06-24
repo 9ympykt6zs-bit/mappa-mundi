@@ -548,6 +548,7 @@ export class MapLibreActivityRunner {
     this.mountainRanges = mountainRanges || emptyFeatureCollection;
     this.riverLines = riverLines || emptyFeatureCollection;
     this.usStatesAtlas = usStatesAtlas;
+    this.usStatesAtlasDisplay = createCoastlineDisplayGeoJson(usStatesAtlas);
     this.stateTargets = stateTargets;
     this.northAmericaAdmin1 = northAmericaAdmin1 || emptyFeatureCollection;
     this.australiaAdmin1 = australiaAdmin1 || emptyFeatureCollection;
@@ -2075,6 +2076,12 @@ export class MapLibreActivityRunner {
       attribution: "U.S. Census Bureau"
     });
 
+    this.map.addSource("us-states-atlas-display", {
+      type: "geojson",
+      data: this.usStatesAtlasDisplay,
+      attribution: "U.S. Census Bureau (display cleanup)"
+    });
+
     this.map.addLayer({
       id: "world-land",
       type: "fill",
@@ -2140,7 +2147,7 @@ export class MapLibreActivityRunner {
     this.map.addLayer({
       id: "us-state-context-fill",
       type: "fill",
-      source: "us-states-atlas",
+      source: "us-states-atlas-display",
       layout: {
         visibility: "none"
       },
@@ -2153,7 +2160,7 @@ export class MapLibreActivityRunner {
     this.map.addLayer({
       id: "us-state-context-line",
       type: "line",
-      source: "us-states-atlas",
+      source: "us-states-atlas-display",
       layout: {
         visibility: "none"
       },
@@ -2469,6 +2476,22 @@ export class MapLibreActivityRunner {
       paint: {
         "fill-color": this.getStateFillExpression(),
         "fill-opacity": this.getShapeFillOpacityExpression(),
+        "fill-antialias": false
+      }
+    });
+
+    // Navigation must retain the full authoritative state geometry even when
+    // the visible context fill removes detached coastal display fragments.
+    this.map.addLayer({
+      id: "us-state-context-hit",
+      type: "fill",
+      source: "us-states-atlas",
+      layout: {
+        visibility: "none"
+      },
+      paint: {
+        "fill-color": colors.neutralMarker,
+        "fill-opacity": 0.01,
         "fill-antialias": false
       }
     });
@@ -3816,7 +3839,7 @@ export class MapLibreActivityRunner {
       ? this.getFallbackWorldCountryNavigationCandidatesAtPoint(queryPoint)
       : [];
     fallbackWorldCountryCandidates.forEach(addCandidate);
-    this.getRenderedNavigationFeatures(queryPoint, "us-state-context-fill", "us-state").forEach(addCandidate);
+    this.getRenderedNavigationFeatures(queryPoint, "us-state-context-hit", "us-state").forEach(addCandidate);
     this.debugNavigationHitTest(queryPoint, {
       renderedWorldCountryCandidates,
       fallbackWorldCountryCandidates
@@ -6578,7 +6601,7 @@ export class MapLibreActivityRunner {
   }
 
   setUnitedStatesContextVisibility(visibility) {
-    ["us-state-context-fill", "us-state-context-line"].forEach((layerId) => {
+    ["us-state-context-fill", "us-state-context-line", "us-state-context-hit"].forEach((layerId) => {
       if (this.map.getLayer(layerId)) {
         this.map.setLayoutProperty(layerId, "visibility", visibility);
       }
@@ -6625,8 +6648,12 @@ export class MapLibreActivityRunner {
       this.map.setLayoutProperty("hard-world-context-fill", "visibility", shouldShow ? "visible" : "none");
     }
 
-    if (this.map.getLayer("us-state-context-fill") && this.activity?.map?.region === "united-states") {
-      this.map.setLayoutProperty("us-state-context-fill", "visibility", this.currentView === "study" ? "visible" : "none");
+    if (this.activity?.map?.region === "united-states") {
+      ["us-state-context-fill", "us-state-context-line", "us-state-context-hit"].forEach((layerId) => {
+        if (this.map.getLayer(layerId)) {
+          this.map.setLayoutProperty(layerId, "visibility", this.currentView === "study" ? "visible" : "none");
+        }
+      });
     }
   }
 

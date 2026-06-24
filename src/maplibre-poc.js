@@ -3558,7 +3558,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260623-coastal-water-mask-tiled-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260624-state-context-display-cleanup-1"),
       import("./chip-speech.js?v=20260622-prompt-audio-dedupe-1")
     ]).then(([
       ,

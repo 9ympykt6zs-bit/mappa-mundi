@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { createCoastlineDisplayGeoJson } from "../src/maplibre/coastline-display-geometry.js";
+import { coastlineDisplayCleanup, createCoastlineDisplayGeoJson } from "../src/maplibre/coastline-display-geometry.js";
 
 const source = {
   type: "FeatureCollection",
@@ -58,6 +58,7 @@ assert.equal(
 const runnerSource = fs.readFileSync(new URL("../src/maplibre/maplibre-activity-runner.js", import.meta.url), "utf8");
 [
   'this.map.addSource("world-countries-display",',
+  'this.map.addSource("us-states-atlas-display",',
   'this.map.addSource("target-shapes-display",',
   'source: "world-countries-display",',
   'source: "target-shapes-display",',
@@ -70,6 +71,29 @@ assert.match(
   runnerSource,
   /id: "target-hit-fill",\s+type: "fill",\s+source: "target-shapes"/,
   "Target hit testing must retain the authoritative target-shapes source."
+);
+assert.match(
+  runnerSource,
+  /id: "us-state-context-fill",\s+type: "fill",\s+source: "us-states-atlas-display"/,
+  "U.S. state context fills must use display-only state geometry."
+);
+assert.match(
+  runnerSource,
+  /id: "us-state-context-line",\s+type: "line",\s+source: "us-states-atlas-display"/,
+  "U.S. state context borders must match the cleaned display geometry."
+);
+assert.match(
+  runnerSource,
+  /id: "us-state-context-hit",\s+type: "fill",\s+source: "us-states-atlas"/,
+  "U.S. state navigation must retain authoritative geometry."
+);
+assert.ok(
+  runnerSource.includes('getRenderedNavigationFeatures(queryPoint, "us-state-context-hit", "us-state")'),
+  "State navigation must query the authoritative hit layer instead of a visual-only layer."
+);
+assert.ok(
+  !runnerSource.includes('getRenderedNavigationFeatures(queryPoint, "us-state-context-fill", "us-state")'),
+  "State navigation must not query the cleaned display layer."
 );
 
 const stateFillLayerIndex = runnerSource.indexOf('id: "state-fill"');
@@ -160,6 +184,30 @@ const stateDisplay = createCoastlineDisplayGeoJson(stateAtlas);
   assert.ok(original && cleaned, `Missing ${stateId} coastline fixture.`);
   assert.equal(cleaned.geometry.type, original.geometry.type, `${stateId} display geometry type changed.`);
   assert.ok(countVertices(cleaned.geometry) <= countVertices(original.geometry), `${stateId} display geometry added coastline noise.`);
+});
+assert.ok(
+  stateDisplay.features.every((feature, index) => (
+    JSON.stringify(feature.properties) === JSON.stringify(stateAtlas.features[index]?.properties)
+  )),
+  "Display cleanup must retain state fill-owner properties exactly."
+);
+stateDisplay.features.forEach((feature) => {
+  if (feature.geometry?.type !== "MultiPolygon") {
+    return;
+  }
+
+  const polygonAreas = feature.geometry.coordinates.map((polygon) => ringArea(polygon[0]));
+  const largestArea = Math.max(...polygonAreas);
+  const minimumArea = feature.geometry.coordinates.length >= coastlineDisplayCleanup.denseMultipartComponentCount
+    ? coastlineDisplayCleanup.denseMultipartMinExteriorAreaDegrees
+    : coastlineDisplayCleanup.minExteriorAreaDegrees;
+
+  polygonAreas.forEach((area) => {
+    assert.ok(
+      area === largestArea || area >= minimumArea,
+      "Display-only state geometry must not retain detached sub-threshold fragments."
+    );
+  });
 });
 const maineSource = stateAtlas.features.find((feature) => feature.properties?.id === "maine");
 const maineDisplay = stateDisplay.features.find((feature) => feature.properties?.id === "maine");
@@ -258,4 +306,8 @@ function signedArea(ring) {
     const [previousLongitude, previousLatitude] = ring[index];
     return area + ((previousLongitude * latitude) - (longitude * previousLatitude));
   }, 0) / 2;
+}
+
+function ringArea(ring) {
+  return Math.abs(signedArea(ring));
 }
