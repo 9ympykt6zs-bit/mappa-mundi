@@ -172,6 +172,7 @@ const oceanZonesPath = "assets/maps/data/ocean-zones.geojson";
 const coContinentOverridesPath = "assets/data/co-continent-overrides.json";
 const coContinentLandPath = "assets/maps/data/continents-oceans-land.geojson";
 const inlandWatersPath = "assets/maps/data/inland-waters.geojson";
+const coastalWaterMaskPath = "assets/maps/data/coastal-water-mask.geojson?v=20260623-coastal-water-mask-tiled-1";
 const mountainRangesPath = "assets/data/physical-features/us-mountain-ranges.geojson?v=20260618-us-mountain-ranges";
 const riverLinesPath = "assets/data/physical-features/proof-sheet-rivers.geojson?v=20260620-us-rivers-continuity-assembly-1";
 const riverCartographicRepairsPath = "assets/data/physical-features/us-river-cartographic-repairs.json?v=20260621-cartographic-repairs-1";
@@ -3554,7 +3555,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260622-daily-trail-checkpoint-outline-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260623-coastal-water-mask-tiled-1"),
       import("./chip-speech.js?v=20260622-prompt-audio-dedupe-1")
     ]).then(([
       ,
@@ -3605,13 +3606,14 @@ async function ensureMapReady() {
       await ensureMapRuntimeLoaded();
       await ensureActivityDataLoaded();
 
-      const [worldCountries, supplementalWorldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, mountainRanges, riverLines, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
+      const [worldCountries, supplementalWorldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, coastalWaterMask, mountainRanges, riverLines, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
         fetchJson(worldCountriesPath),
         Promise.all(worldCountrySupplements.map((path) => fetchJson(path))),
         fetchJson(oceanZonesPath),
         fetchOptionalJson(coContinentOverridesPath, { overrides: [] }),
         fetchOptionalJson(coContinentLandPath, null),
         fetchJson(inlandWatersPath),
+        fetchJson(coastalWaterMaskPath),
         fetchJson(mountainRangesPath),
         fetchJson(riverLinesPath),
         fetchJson(usStatesAtlasPath),
@@ -3653,6 +3655,7 @@ async function ensureMapReady() {
         coContinentOverrides,
         coContinentLand,
         inlandWaters,
+        coastalWaterMask,
         mountainRanges,
         riverLines,
         usStatesAtlas,

@@ -6,6 +6,7 @@ import {
   oceanZoneMutedColor,
   oceanTextureSize
 } from "./ocean-textures.js?v=20260601-instruction-target-nouns";
+import { createCoastlineDisplayGeoJson } from "./coastline-display-geometry.js?v=20260623-coastline-visual-cleanup-2";
 
 const colors = {
   ink: "#172033",
@@ -534,14 +535,16 @@ export class MapLibreActivityRunner {
     this.cameraDevStateChangeHandler = typeof handler === "function" ? handler : null;
   }
 
-  async load({ activity, worldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, mountainRanges, riverLines, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1 }) {
+  async load({ activity, worldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, coastalWaterMask, mountainRanges, riverLines, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1 }) {
     this.activity = activity;
     this.worldCountries = worldCountries;
+    this.worldCountriesDisplay = createCoastlineDisplayGeoJson(worldCountries);
     this.oceanZones = oceanZones || emptyFeatureCollection;
     this.coContinentOverrides = this.getInitialCoContinentOverrides(coContinentOverrides);
     this.coContinentLand = coContinentLand || emptyFeatureCollection;
     this.coContinentOverrideDebugEnabled = this.shouldEnableCoContinentOverrideDebug();
     this.inlandWaters = inlandWaters || emptyFeatureCollection;
+    this.coastalWaterMask = coastalWaterMask || emptyFeatureCollection;
     this.mountainRanges = mountainRanges || emptyFeatureCollection;
     this.riverLines = riverLines || emptyFeatureCollection;
     this.usStatesAtlas = usStatesAtlas;
@@ -1019,14 +1022,11 @@ export class MapLibreActivityRunner {
     this.memoryTrailCheckpointPreAnswerStyle = false;
 
     const capitalSource = this.map.getSource("study-capitals");
-    const shapeSource = this.map.getSource("target-shapes");
     const mountainCorridorSource = this.map.getSource("mountain-range-corridors");
     const mountainSymbolSource = this.map.getSource("mountain-range-symbols");
     const riverLineSource = this.map.getSource("river-lines");
 
-    if (shapeSource) {
-      shapeSource.setData(this.getTargetShapeGeoJson());
-    }
+    this.refreshTargetShapeSources();
 
     if (mountainCorridorSource) {
       mountainCorridorSource.setData(this.getMountainRangeCorridorGeoJson());
@@ -2063,6 +2063,12 @@ export class MapLibreActivityRunner {
       attribution: "Natural Earth public domain"
     });
 
+    this.map.addSource("world-countries-display", {
+      type: "geojson",
+      data: this.worldCountriesDisplay,
+      attribution: "Natural Earth public domain (display cleanup)"
+    });
+
     this.map.addSource("us-states-atlas", {
       type: "geojson",
       data: this.usStatesAtlas,
@@ -2075,15 +2081,28 @@ export class MapLibreActivityRunner {
       source: "world-countries",
       paint: {
         "fill-color": this.getPoliticalFillExpression(),
-        "fill-opacity": 1,
+        // This remains the authoritative world-navigation hit layer. The
+        // visible land comes from world-land-display below.
+        "fill-opacity": 0.01,
         "fill-antialias": false
+      }
+    });
+
+    this.map.addLayer({
+      id: "world-land-display",
+      type: "fill",
+      source: "world-countries-display",
+      paint: {
+        "fill-color": this.getPoliticalFillExpression(),
+        "fill-opacity": 1,
+        "fill-antialias": true
       }
     });
 
     this.map.addLayer({
       id: "hard-world-context-fill",
       type: "fill",
-      source: "world-countries",
+      source: "world-countries-display",
       layout: {
         visibility: "none"
       },
@@ -2096,7 +2115,11 @@ export class MapLibreActivityRunner {
     this.map.addLayer({
       id: "country-borders",
       type: "line",
-      source: "world-countries",
+      source: "world-countries-display",
+      layout: {
+        "line-cap": "round",
+        "line-join": "round"
+      },
       paint: {
         "line-color": colors.countryBorder,
         "line-width": [
@@ -2372,9 +2395,22 @@ export class MapLibreActivityRunner {
       promoteId: "id"
     });
 
+    const targetShapeGeoJson = this.getTargetShapeGeoJson();
+
     this.map.addSource("target-shapes", {
       type: "geojson",
-      data: this.getTargetShapeGeoJson()
+      data: targetShapeGeoJson
+    });
+
+    this.map.addSource("coastal-water-mask", {
+      type: "geojson",
+      data: this.coastalWaterMask,
+      attribution: "Natural Earth public domain (10m ocean, display-only)"
+    });
+
+    this.map.addSource("target-shapes-display", {
+      type: "geojson",
+      data: createCoastlineDisplayGeoJson(targetShapeGeoJson)
     });
 
     this.map.addSource("mountain-range-corridors", {
@@ -2425,7 +2461,7 @@ export class MapLibreActivityRunner {
     this.map.addLayer({
       id: "state-fill",
       type: "fill",
-      source: "target-shapes",
+      source: "target-shapes-display",
       filter: ["all", ["!=", ["get", "isOceanZone"], true], ["!=", ["get", "physicalFeatureType"], "river"]],
       layout: {
         visibility: "none"
@@ -2437,13 +2473,28 @@ export class MapLibreActivityRunner {
       }
     });
 
+    // This display-only mask cuts administrative coastal-water extents back to
+    // the ocean color. It is intentionally never used for hit testing.
+    this.map.addLayer({
+      id: "coastal-water-mask-fill",
+      type: "fill",
+      source: "coastal-water-mask",
+      paint: {
+        "fill-color": colors.ocean,
+        "fill-opacity": 1,
+        "fill-antialias": true
+      }
+    });
+
     this.map.addLayer({
       id: "parent-country-outline-halo",
       type: "line",
-      source: "world-countries",
+      source: "world-countries-display",
       filter: this.getParentCountryOutlineFilter(),
       layout: {
-        visibility: "none"
+        visibility: "none",
+        "line-cap": "round",
+        "line-join": "round"
       },
       paint: {
         "line-color": "#f8fafc",
@@ -2455,10 +2506,12 @@ export class MapLibreActivityRunner {
     this.map.addLayer({
       id: "parent-country-outline",
       type: "line",
-      source: "world-countries",
+      source: "world-countries-display",
       filter: this.getParentCountryOutlineFilter(),
       layout: {
-        visibility: "none"
+        visibility: "none",
+        "line-cap": "round",
+        "line-join": "round"
       },
       paint: {
         "line-color": "#1e3a8a",
@@ -2470,11 +2523,13 @@ export class MapLibreActivityRunner {
     this.map.addLayer({
       id: "state-line",
       type: "line",
-      source: "target-shapes",
-      filter: ["!=", ["get", "physicalFeatureType"], "river"],
+      source: "target-shapes-display",
       layout: {
-        visibility: "none"
+        visibility: "none",
+        "line-cap": "round",
+        "line-join": "round"
       },
+      filter: ["!=", ["get", "physicalFeatureType"], "river"],
       paint: {
         "line-color": this.getStateLineExpression(),
         "line-opacity": this.getShapeLineOpacityExpression(),
@@ -3222,11 +3277,7 @@ export class MapLibreActivityRunner {
   }
 
   refreshCoContinentOverridePreview() {
-    const shapeSource = this.map?.getSource("target-shapes");
-
-    if (shapeSource) {
-      shapeSource.setData(this.getTargetShapeGeoJson());
-    }
+    this.refreshTargetShapeSources();
 
     this.refreshDifficultyVisuals();
     this.refreshMapRender();
@@ -5499,14 +5550,11 @@ export class MapLibreActivityRunner {
   }
 
   refreshStudyFilters() {
-    const shapeSource = this.map.getSource("target-shapes");
     const mountainCorridorSource = this.map.getSource("mountain-range-corridors");
     const mountainSymbolSource = this.map.getSource("mountain-range-symbols");
     const riverLineSource = this.map.getSource("river-lines");
 
-    if (shapeSource) {
-      shapeSource.setData(this.getTargetShapeGeoJson());
-    }
+    this.refreshTargetShapeSources();
 
     if (mountainCorridorSource) {
       mountainCorridorSource.setData(this.getMountainRangeCorridorGeoJson());
@@ -6082,6 +6130,18 @@ export class MapLibreActivityRunner {
       ...this.getMemoryTrailActiveHighlightIds(),
       this.isMemoryTrailCheckpointPreAnswerStyleEnabled() ? "" : this.selectedTargetId
     ].filter(Boolean))];
+  }
+
+  refreshTargetShapeSources() {
+    const shapeSource = this.map?.getSource("target-shapes");
+    const displaySource = this.map?.getSource("target-shapes-display");
+    if (!shapeSource && !displaySource) {
+      return;
+    }
+
+    const targetShapeGeoJson = this.getTargetShapeGeoJson();
+    shapeSource?.setData(targetShapeGeoJson);
+    displaySource?.setData(createCoastlineDisplayGeoJson(targetShapeGeoJson));
   }
 
   getPoliticalFillExpression() {
