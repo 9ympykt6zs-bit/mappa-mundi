@@ -5,6 +5,7 @@ import {
   applyDailyTrailTeachingProgress,
   createDailyTrailState,
   isDailyTrailPathComplete,
+  planCompletedDailyTrailReviewSession,
   planDailyTrailSession
 } from "../src/daily-trail-planner.js";
 
@@ -96,6 +97,28 @@ assert.deepEqual(terminalPlan.playItems, []);
 assert.deepEqual(terminalPlan.reviewItems, []);
 assert.deepEqual(terminalPlan.newItems, []);
 
+const completedTrailReviewPlan = planCompletedDailyTrailReviewSession(state, items);
+assert.equal(completedTrailReviewPlan.sessionType, "completed-trail-review");
+assert.ok(completedTrailReviewPlan.playItems.length > 0, "Completed material must be reviewable.");
+assert.ok(completedTrailReviewPlan.playItems.length <= 10, "Completed-trail review must remain bounded.");
+assert.equal(
+  new Set(completedTrailReviewPlan.playItems.map((item) => item.id)).size,
+  completedTrailReviewPlan.playItems.length,
+  "Completed-trail review must not repeat an item in one session."
+);
+assert.ok(
+  completedTrailReviewPlan.playItems.every((item) => item.homeActivityId === completedTrailReviewPlan.activeActivityId),
+  "Completed-trail review must stay in one activity so it can finish cleanly."
+);
+
+const reviewResultState = applyDailyTrailSessionResults(state, completedTrailReviewPlan, {
+  completedTargetIds: completedTrailReviewPlan.playItems.map((item) => item.targetId),
+  correctCount: completedTrailReviewPlan.playItems.length,
+  incorrectCount: 0,
+  missesByTargetId: {}
+});
+assert.equal(reviewResultState.pathCompleted, true, "Reviewing completed material must not reopen the trail.");
+
 const legacyCompleteState = createDailyTrailState({ ...state, pathCompleted: false });
 assert.equal(
   planDailyTrailSession(legacyCompleteState, items).sessionType,
@@ -108,7 +131,9 @@ const runtimeSource = fs.readFileSync(new URL("../src/maplibre-poc.js", import.m
 [
   "if (plan.trailCompleted) {\n    renderDailyTrailFinishedPanel();",
   "if (summary.trailCompleted) {\n    renderDailyTrailFinishedPanel();",
-  "heading.textContent = \"Daily Trail Finished\";",
+  "heading.textContent = \"Daily Trail complete\";",
+  "Review Completed Trail",
+  "planCompletedDailyTrailReviewSession",
   "Choose Another Activity"
 ].forEach((hook) => assert.ok(runtimeSource.includes(hook), `Missing terminal Daily Trail UI hook: ${hook}`));
 
@@ -116,5 +141,6 @@ console.log("Daily Trail terminal completion check passed:", JSON.stringify({
   finalLearningTargets: finalLearningPlan.playItems.map((item) => item.targetId),
   terminalSessionType: terminalPlan.sessionType,
   terminalQueueLength: terminalPlan.playItems.length,
+  completedReviewQueueLength: completedTrailReviewPlan.playItems.length,
   pathCompleted: state.pathCompleted
 }));

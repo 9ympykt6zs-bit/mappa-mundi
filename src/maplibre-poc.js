@@ -18,21 +18,24 @@ import {
   dailyTrailStorageKey,
   getDailyTrailGoal,
   getDailyTrailGoalOptions,
+  getNextDailyTrailGoal,
   hasDailyTrailProgress,
   isDailyTrailCheckpointReviewPlan,
   loadDailyTrailState,
+  planCompletedDailyTrailReviewSession,
   planDailyTrailDevSession,
   planDailyTrailSession,
   selectDailyTrailGoal,
+  startNextDailyTrailGoal,
   shouldShowDailyTrailGoalChoice,
   syncCompletedDailyTrailGoals
-} from "./daily-trail-planner.js?v=20260623-daily-trail-terminal-completion-1";
+} from "./daily-trail-planner.js?v=20260624-daily-trail-curriculum-progression-1";
 import { resolveMemoryTrailNewTargetLimit } from "./memory-trail-new-target-limit.js?v=20260621-daily-trail-co-progression-2";
 
 const APP_NAME = "Mappa Mundi";
 const LANDING_PAGE_TITLE = "Mappa Mundi \u2013 Geography Game for Learning the World";
 const dailyTrailCheckpointRuntimeFingerprint = "daily-trail-checkpoint-outline-20260622-3";
-const dailyTrailPlannerModuleSpecifier = "./daily-trail-planner.js?v=20260623-daily-trail-terminal-completion-1";
+const dailyTrailPlannerModuleSpecifier = "./daily-trail-planner.js?v=20260624-daily-trail-curriculum-progression-1";
 const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
 const mapLibreStylesheetUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css";
 const difficultyModes = Object.freeze({
@@ -8708,9 +8711,14 @@ function updateDailyTrailMainMenuButton(isMainMenu = currentAppScreen === "main-
     return;
   }
 
-  const hasProgress = hasDailyTrailProgress(loadDailyTrailState());
+  const state = loadDailyTrailState();
+  const hasProgress = hasDailyTrailProgress(state);
   if (mainMenuDailyTrailAction) {
-    mainMenuDailyTrailAction.textContent = hasProgress ? "Continue Daily Trail" : "Start Daily Trail";
+    mainMenuDailyTrailAction.textContent = state.pathCompleted && getNextDailyTrailGoal(state)
+      ? "Start Next Daily Trail"
+      : hasProgress
+        ? "Continue Daily Trail"
+        : "Start Daily Trail";
   }
   mainMenuDailyTrailButton.disabled = !isMainMenu;
   mainMenuDailyTrailButton.tabIndex = isMainMenu ? 0 : -1;
@@ -11959,10 +11967,10 @@ async function openDailyTrailIntro() {
 }
 
 function getDailyTrailItems(options = {}) {
-  const items = dailyTrailGoals.flatMap((goal) => {
-    const journey = journeyPresets.find((candidate) => candidate.id === goal.journeyId);
-    return getDailyTrailGoalItems(goal, journey);
-  });
+  const state = loadDailyTrailState();
+  const goal = getDailyTrailGoal(options.goalId || options.devOverride?.dailyTrailDevOverrideGoalId || state.activeTrailGoal);
+  const journey = journeyPresets.find((candidate) => candidate.id === goal.journeyId);
+  const items = getDailyTrailGoalItems(goal, journey);
 
   return options.devOverride
     ? dedupeDailyTrailDevItems([...items, ...getDailyTrailDevOverrideItems(options.devOverride, items)])
@@ -11975,12 +11983,16 @@ function getDailyTrailGoalItems(goal, journey) {
   }
 
   if (goal.id === "world-core") {
-    return buildWorldCoreDailyTrailItems(journey, activities);
+    return buildWorldCoreDailyTrailItems(journey, activities, {
+      goalId: goal.id,
+      activityIds: goal.activityIds
+    });
   }
 
   return buildDailyTrailGoalItems(journey, activities, {
     goalId: goal.id,
-    homeJourneyId: journey.id
+    homeJourneyId: journey.id,
+    activityIds: goal.activityIds
   });
 }
 
@@ -14070,6 +14082,10 @@ function renderDailyTrailGoalChoiceScreen() {
 }
 
 function getDailyTrailIntroCopy(plan) {
+  if (plan.sessionType === "completed-trail-review") {
+    return "A short review will revisit places from the trail you completed.";
+  }
+
   if (plan.continentsOceansReviewType === "small") {
     return "A quick Continents and Oceans review will keep the world map fresh.";
   }
@@ -14298,6 +14314,39 @@ async function continueDailyTrailFromSummary() {
   await openDailyTrailIntro();
 }
 
+async function startCompletedDailyTrailReview() {
+  await ensureMapRuntimeLoaded();
+  await ensureActivityDataLoaded();
+
+  const items = getDailyTrailItems();
+  const state = syncCompletedDailyTrailGoals(loadDailyTrailState(), items);
+  const plan = planCompletedDailyTrailReviewSession(state, items);
+
+  if (plan.playItems.length === 0) {
+    showFeedback("There is no completed Daily Trail material ready to review yet.");
+    return;
+  }
+
+  pendingDailyTrailPlan = plan;
+  lastDailyTrailSummary = null;
+  await startDailyTrailSession();
+}
+
+async function startNextDailyTrail() {
+  const currentState = loadDailyTrailState();
+  const nextGoal = getNextDailyTrailGoal(currentState);
+
+  if (!nextGoal) {
+    showFeedback("There is no next Daily Trail available yet.");
+    return;
+  }
+
+  startNextDailyTrailGoal(currentState, nextGoal.id);
+  pendingDailyTrailPlan = null;
+  lastDailyTrailSummary = null;
+  await openDailyTrailIntro();
+}
+
 function startDailyTrailMemoryTrailStepIfNeeded() {
   if (!activeDailyTrailSession || currentAppScreen !== "daily-trail-gameplay") {
     return false;
@@ -14432,21 +14481,46 @@ function renderDailyTrailSummaryScreen() {
 }
 
 function renderDailyTrailFinishedPanel() {
+  const items = getDailyTrailItems();
+  const state = syncCompletedDailyTrailGoals(loadDailyTrailState(), items);
+  const activeGoal = getDailyTrailGoal(state.activeTrailGoal);
+  const nextGoal = getNextDailyTrailGoal(state);
+  const reviewPlan = planCompletedDailyTrailReviewSession(state, items);
   const panel = document.createElement("section");
   panel.className = "daily-trail-panel";
 
   const heading = document.createElement("h2");
-  heading.textContent = "Daily Trail Finished";
+  heading.textContent = "Daily Trail complete";
 
   const copy = document.createElement("p");
-  copy.textContent = "You completed the World Core Daily Trail. Great work mapping the world from memory.";
+  copy.textContent = nextGoal
+    ? `You finished ${activeGoal.title}. Start the next trail or review what you've learned.`
+    : "You've finished the available Daily Trail content. You can review what you've learned or choose another activity.";
 
   const actions = document.createElement("div");
   actions.className = "daily-trail-actions";
 
+  if (nextGoal) {
+    const nextButton = document.createElement("button");
+    nextButton.type = "button";
+    nextButton.className = "main-menu-button main-menu-button-green";
+    nextButton.textContent = "Start Next Daily Trail";
+    nextButton.addEventListener("click", startNextDailyTrail);
+    actions.appendChild(nextButton);
+  }
+
+  if (reviewPlan.playItems.length > 0) {
+    const reviewButton = document.createElement("button");
+    reviewButton.type = "button";
+    reviewButton.className = "main-menu-button main-menu-button-quiet";
+    reviewButton.textContent = "Review Completed Trail";
+    reviewButton.addEventListener("click", startCompletedDailyTrailReview);
+    actions.appendChild(reviewButton);
+  }
+
   const mainMenuButton = document.createElement("button");
   mainMenuButton.type = "button";
-  mainMenuButton.className = "main-menu-button main-menu-button-green";
+  mainMenuButton.className = "main-menu-button main-menu-button-quiet";
   mainMenuButton.textContent = "Choose Another Activity";
   mainMenuButton.addEventListener("click", () => showAppScreen("main-menu"));
 
@@ -15698,12 +15772,12 @@ function renderDailyTrailResetControl() {
 
   const copy = document.createElement("p");
   copy.className = "settings-panel-copy";
-  copy.textContent = "Erase only your Daily Trail learning history. Journeys, settings, and preferences stay as they are.";
+  copy.textContent = "Erase all Daily Trail goal progress and learning history. Journeys, settings, and preferences stay as they are.";
 
   const resetButton = document.createElement("button");
   resetButton.type = "button";
   resetButton.className = "settings-reset-button";
-  resetButton.textContent = "Reset Daily Trail Progress";
+  resetButton.textContent = "Reset All Daily Trail Progress";
   resetButton.dataset.settingsControl = "reset-daily-trail-progress";
   resetButton.addEventListener("click", () => {
     dailyTrailResetConfirmationVisible = true;
@@ -15728,11 +15802,11 @@ function renderDailyTrailResetConfirmation() {
 
   const title = document.createElement("h3");
   title.id = "daily-trail-reset-title";
-  title.textContent = "Reset Daily Trail progress?";
+  title.textContent = "Reset all Daily Trail progress?";
 
   const body = document.createElement("p");
   body.id = "daily-trail-reset-copy";
-  body.textContent = "This will erase your Daily Trail learning history and start you over from the beginning. Your regular journey progress will not be affected.";
+  body.textContent = "This will erase every Daily Trail goal, completion, and learning record, then return you to World Core. Your regular journey progress will not be affected.";
 
   const actions = document.createElement("div");
   actions.className = "settings-reset-confirmation-actions";
@@ -15750,7 +15824,7 @@ function renderDailyTrailResetConfirmation() {
   const confirmButton = document.createElement("button");
   confirmButton.type = "button";
   confirmButton.className = "settings-reset-button settings-reset-button-danger";
-  confirmButton.textContent = "Reset Daily Trail";
+  confirmButton.textContent = "Reset All Daily Trail";
   confirmButton.dataset.settingsControl = "reset-daily-trail-confirm";
   confirmButton.addEventListener("click", () => {
     resetDailyTrailProgress();

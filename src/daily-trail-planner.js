@@ -1,17 +1,40 @@
 export const dailyTrailStorageKey = "mappaDailyTrailProgress";
 export const dailyTrailId = "world-core";
 export const dailyTrailJourneyId = "world-geography-core";
+export const dailyTrailUsCapitalsGoalId = "us-capitals";
 export const dailyTrailCheckpointInterval = 4;
 export const dailyTrailNewItemCount = 4;
 export const dailyTrailReviewItemCount = 10;
 export const dailyTrailCheckpointReviewItemCount = 10;
+export const dailyTrailCompletedReviewItemCount = 10;
 export const dailyTrailGoals = [
   {
     id: dailyTrailId,
     title: "World Core",
     description: "Build a steady foundation across the world map.",
     journeyId: dailyTrailJourneyId,
+    activityIds: [
+      "continents-oceans",
+      "us-states-01", "us-states-02", "us-states-03", "us-states-04", "us-states-05", "us-states-06",
+      "us-states-07", "us-states-08", "us-states-09", "us-states-10", "us-states-11",
+      "world-core-americas-countries", "world-core-europe-countries", "world-core-africa-countries",
+      "world-core-west-central-south-asia-countries", "world-core-east-southeast-asia-oceania-countries"
+    ],
+    completionPredicate: "world-core-foundation",
+    prerequisiteGoalIds: [],
     recommended: true
+  },
+  {
+    id: dailyTrailUsCapitalsGoalId,
+    title: "U.S. Capitals",
+    description: "Build on the states you know by learning their capital cities.",
+    journeyId: "us-capitals",
+    activityIds: [
+      "us-capitals-01", "us-capitals-02", "us-capitals-03", "us-capitals-04", "us-capitals-05", "us-capitals-06",
+      "us-capitals-07", "us-capitals-08", "us-capitals-09", "us-capitals-10", "us-capitals-11"
+    ],
+    completionPredicate: "all-items-practice-eligible",
+    prerequisiteGoalIds: [dailyTrailId]
   }
 ];
 
@@ -38,6 +61,8 @@ const minRetrievability = 0;
 
 export function createDailyTrailState(value = {}) {
   const source = value && typeof value === "object" ? value : {};
+  const activeTrailGoal = getDailyTrailGoal(source.activeTrailGoal).id;
+  const completedGoalIds = normalizeCompletedGoalIds(source.completedGoalIds, source.pathCompleted);
   const currentSessionNumber = Math.max(1, Number(source.currentSessionNumber) || 1);
   const sessionsSinceLastCheckpoint = Math.max(0, Number(source.sessionsSinceLastCheckpoint) || 0);
   const lastDailyTrailSessionDate = normalizeLocalDateString(source.lastDailyTrailSessionDate);
@@ -45,15 +70,15 @@ export function createDailyTrailState(value = {}) {
   return {
     trailId: dailyTrailId,
     hasStarted: Boolean(source.hasStarted),
-    // World Core is a finite guided path. Keep its terminal state separate
-    // from FSRS-style item scheduling so a completed trail cannot fall back
-    // into an unbounded global review queue on its next launch.
-    pathCompleted: Boolean(source.pathCompleted),
-    activeTrailGoal: getDailyTrailGoal(source.activeTrailGoal).id,
+    // This remains a compatibility mirror for the active goal. Completed
+    // goals are tracked separately so a finished goal can hand off safely.
+    pathCompleted: Boolean(source.pathCompleted) || completedGoalIds.includes(activeTrailGoal),
+    activeTrailGoal,
+    completedGoalIds,
     currentSessionNumber,
     sessionsSinceLastCheckpoint,
     sessionsUntilNextCheckpoint: getSessionsUntilNextCheckpoint(sessionsSinceLastCheckpoint),
-    activeGoalJourneyIds: [dailyTrailId],
+    activeGoalJourneyIds: [getDailyTrailGoal(activeTrailGoal).journeyId],
     introducedItemIds: Array.isArray(source.introducedItemIds) ? source.introducedItemIds.filter(Boolean) : [],
     newSinceLastCheckpoint: Array.isArray(source.newSinceLastCheckpoint) ? source.newSinceLastCheckpoint.filter(Boolean) : [],
     lastDailyTrailSessionDate,
@@ -100,8 +125,28 @@ export function getDailyTrailGoal(goalId = dailyTrailId) {
   return dailyTrailGoals.find((goal) => goal.id === goalId) || dailyTrailGoals[0];
 }
 
-export function getDailyTrailGoalOptions() {
-  return dailyTrailGoals.map((goal) => ({ ...goal }));
+export function getDailyTrailGoalOptions(state = createDailyTrailState()) {
+  const normalized = createDailyTrailState(state);
+  return dailyTrailGoals
+    .filter((goal) => goal.id === normalized.activeTrailGoal || isDailyTrailGoalEligible(normalized, goal.id))
+    .map((goal) => ({ ...goal }));
+}
+
+export function isDailyTrailGoalEligible(state, goalId) {
+  const normalized = createDailyTrailState(state);
+  const goal = getDailyTrailGoal(goalId);
+  return (goal.prerequisiteGoalIds || []).every((prerequisiteGoalId) => (
+    normalized.completedGoalIds.includes(prerequisiteGoalId)
+  ));
+}
+
+export function getNextDailyTrailGoal(state) {
+  const normalized = createDailyTrailState(state);
+  const activeGoalIndex = dailyTrailGoals.findIndex((goal) => goal.id === normalized.activeTrailGoal);
+  return dailyTrailGoals
+    .slice(activeGoalIndex + 1)
+    .find((goal) => !normalized.completedGoalIds.includes(goal.id) && isDailyTrailGoalEligible(normalized, goal.id))
+    || null;
 }
 
 export function shouldShowDailyTrailGoalChoice() {
@@ -109,26 +154,72 @@ export function shouldShowDailyTrailGoalChoice() {
 }
 
 export function selectDailyTrailGoal(state, goalId = dailyTrailId) {
+  const normalized = createDailyTrailState(state);
+  const goal = getDailyTrailGoal(goalId);
+
+  if (!isDailyTrailGoalEligible(normalized, goal.id)) {
+    return normalized;
+  }
+
   return saveDailyTrailState({
-    ...createDailyTrailState(state),
-    activeTrailGoal: getDailyTrailGoal(goalId).id
+    ...normalized,
+    activeTrailGoal: goal.id,
+    pathCompleted: normalized.completedGoalIds.includes(goal.id),
+    activeGoalJourneyIds: [goal.journeyId]
   });
 }
 
-export function syncCompletedDailyTrailGoals(state) {
-  return createDailyTrailState(state);
+export function startNextDailyTrailGoal(state, goalId = getNextDailyTrailGoal(state)?.id) {
+  const normalized = createDailyTrailState(state);
+  const goal = getDailyTrailGoal(goalId);
+
+  if (!goalId || !isDailyTrailGoalEligible(normalized, goal.id) || normalized.completedGoalIds.includes(goal.id)) {
+    return normalized;
+  }
+
+  return saveDailyTrailState({
+    ...normalized,
+    activeTrailGoal: goal.id,
+    pathCompleted: false,
+    activeGoalJourneyIds: [goal.journeyId],
+    sessionsSinceLastCheckpoint: 0,
+    sessionsUntilNextCheckpoint: getSessionsUntilNextCheckpoint(0),
+    newSinceLastCheckpoint: [],
+    pendingRemediation: false,
+    pendingCheckpointRetry: false,
+    lastSessionSummary: null
+  });
+}
+
+export function syncCompletedDailyTrailGoals(state, items = []) {
+  const normalized = createDailyTrailState(state);
+  const activeGoalComplete = isDailyTrailPathComplete(normalized, items);
+  const completedGoalIds = activeGoalComplete
+    ? addUnique(normalized.completedGoalIds, normalized.activeTrailGoal)
+    : normalized.completedGoalIds;
+
+  return createDailyTrailState({
+    ...normalized,
+    completedGoalIds,
+    pathCompleted: completedGoalIds.includes(normalized.activeTrailGoal)
+  });
 }
 
 export function isDailyTrailPathComplete(state, items = []) {
   const normalized = createDailyTrailState(state);
   const safeItems = Array.isArray(items) ? items.filter(Boolean) : [];
 
-  if (normalized.pathCompleted) {
+  if (normalized.completedGoalIds.includes(normalized.activeTrailGoal) || normalized.pathCompleted) {
     return true;
   }
 
   if (safeItems.length === 0 || !safeItems.every((item) => isItemPracticeEligible(normalized, item))) {
     return false;
+  }
+
+  const goal = getDailyTrailGoal(normalized.activeTrailGoal);
+  if (goal.completionPredicate === "all-items-practice-eligible") {
+    return true;
   }
 
   const continentsOceansItems = getContinentsOceansItems(safeItems);
@@ -138,8 +229,10 @@ export function isDailyTrailPathComplete(state, items = []) {
     && isContinentsOceansFoundationComplete(normalized, continentsOceansItems);
 }
 
-export function buildWorldCoreDailyTrailItems(journey, activities) {
-  const steps = Array.isArray(journey?.steps) ? journey.steps : [];
+export function buildWorldCoreDailyTrailItems(journey, activities, options = {}) {
+  const sourceSteps = Array.isArray(journey?.steps) ? journey.steps : [];
+  const steps = getGoalOrderedSteps(sourceSteps, options.activityIds);
+  const goalId = options.goalId || dailyTrailId;
 
   return steps.flatMap((step, stepIndex) => {
     const activity = activities.find((candidate) => candidate.id === step.activityId);
@@ -155,6 +248,7 @@ export function buildWorldCoreDailyTrailItems(journey, activities) {
 
       return {
         id: `${type}:${target.id}`,
+        trailGoalId: goalId,
         targetId: target.id,
         label: target.name,
         type,
@@ -174,7 +268,7 @@ export function buildDailyTrailGoalItems(journey, activities, options = {}) {
   const goalId = options.goalId || dailyTrailId;
   const homeJourneyId = options.homeJourneyId || journey?.id || dailyTrailJourneyId;
 
-  return buildWorldCoreDailyTrailItems(journey, activities).map((item) => ({
+  return buildWorldCoreDailyTrailItems(journey, activities, options).map((item) => ({
     ...item,
     id: `${goalId}:${item.id}`,
     homeJourneyId
@@ -231,6 +325,38 @@ export function planDailyTrailSession(state, items) {
 
   logDailyTrailPlan(normalized, safeItems, plan);
   return plan;
+}
+
+// A completed trail deliberately has no automatic follow-up session. This
+// explicit plan is only used after the learner chooses to review, which keeps
+// terminal completion from falling back to an unbounded global review queue.
+export function planCompletedDailyTrailReviewSession(state, items) {
+  const normalized = createDailyTrailState(state);
+  const safeItems = Array.isArray(items) ? items : [];
+  const completedItems = safeItems.filter((item) => isItemPracticeEligible(normalized, item));
+  const activeActivityId = getReviewActivityId(
+    normalized,
+    getWeakItems(normalized, completedItems),
+    completedItems
+  );
+  const activityItems = activeActivityId
+    ? completedItems.filter((item) => item.homeActivityId === activeActivityId)
+    : completedItems;
+  const reviewItems = selectDailyTrailReviewItems(normalized, activityItems, {
+    limit: dailyTrailCompletedReviewItemCount
+  });
+
+  return createPlan({
+    state: normalized,
+    sessionType: "completed-trail-review",
+    title: "Review Completed Trail",
+    newItems: [],
+    reviewItems,
+    playItems: reviewItems,
+    allItems: safeItems,
+    activeActivityId,
+    trailCompleted: true
+  });
 }
 
 export function planDailyTrailDevSession(state, items, override = {}) {
@@ -392,6 +518,7 @@ export function applyDailyTrailSessionResults(state, plan, result = {}) {
   const trailCompleted = isDailyTrailPathComplete(next, plan?.allItems || []);
   if (trailCompleted) {
     next.pathCompleted = true;
+    next.completedGoalIds = addUnique(next.completedGoalIds, plan?.trailGoalId || next.activeTrailGoal);
   }
 
   next.currentSessionNumber += 1;
@@ -612,6 +739,16 @@ function buildCheckpointPlan(state, items, options = {}) {
     activeActivityId,
     checkpointMixedReview: mixedReview
   });
+}
+
+function getGoalOrderedSteps(steps, activityIds = []) {
+  if (!Array.isArray(activityIds) || activityIds.length === 0) {
+    return steps;
+  }
+
+  return activityIds
+    .map((activityId) => steps.find((step) => step.activityId === activityId))
+    .filter(Boolean);
 }
 
 function buildDailyTrailCompletePlan(state, items) {
@@ -1603,6 +1740,18 @@ function dedupeItems(items) {
     }
   });
   return Array.from(byId.values()).sort((left, right) => left.order - right.order);
+}
+
+function normalizeCompletedGoalIds(value, legacyPathCompleted) {
+  const completedGoalIds = Array.isArray(value)
+    ? value.filter((goalId) => dailyTrailGoals.some((goal) => goal.id === goalId))
+    : [];
+
+  // Earlier progress only had a single terminal flag, which represented a
+  // completed World Core path. Preserve that learner progress on migration.
+  return legacyPathCompleted
+    ? addUnique(completedGoalIds, dailyTrailId)
+    : completedGoalIds;
 }
 
 function addUnique(items, item) {
