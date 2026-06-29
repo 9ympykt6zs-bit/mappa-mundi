@@ -16,6 +16,7 @@ import {
   buildWorldCoreDailyTrailItems,
   dailyTrailGoals,
   dailyTrailStorageKey,
+  dailyTrailUsCapitalsGoalId,
   getDailyTrailGoal,
   getDailyTrailGoalOptions,
   getNextDailyTrailGoal,
@@ -8361,8 +8362,8 @@ function buildMemoryTrailAnswerChoices(memoryTrail, correctTargetId, promptKey =
 }
 
 function getMemoryTrailInstructionText(promptType, phase, mode = "", activity = session.currentActivity, memoryTrail = getActiveMemoryTrail()) {
-  const singularNoun = getInstructionNoun(activity);
-  const pluralNoun = getInstructionNounPlural(activity);
+  const singularNoun = getMemoryTrailInstructionNoun(activity, memoryTrail);
+  const pluralNoun = pluralizeInstructionNounPhrase(singularNoun);
   if (promptType === "guided" || phase === "learn") {
     if (activity?.id === continentsOceansActivityId) {
       return {
@@ -10692,6 +10693,43 @@ function getMixedDailyTrailCheckpointCameraConfig(memoryTrail, selection = {}) {
   };
 }
 
+function getMemoryTrailInstructionNoun(activity = session.currentActivity, memoryTrail = getActiveMemoryTrail()) {
+  const target = getMemoryTrailActivePromptTarget(memoryTrail);
+  if (isDailyTrailMemoryTrail(memoryTrail) && target) {
+    return getInstructionNounForTarget(target) || getInstructionNoun(activity);
+  }
+
+  return getInstructionNoun(activity);
+}
+
+function getInstructionNounForTarget(target) {
+  if (!target) {
+    return "";
+  }
+
+  if (target.type === "capital") {
+    return "capital city";
+  }
+
+  if (target.type === "country") {
+    return "country";
+  }
+
+  if (target.type === "state" || target.type === "federal-district") {
+    return "state";
+  }
+
+  if (target.type === "zone" || /ocean/i.test(target.name || "")) {
+    return "ocean";
+  }
+
+  if (target.type === "region") {
+    return "continent";
+  }
+
+  return "";
+}
+
 function getMixedDailyTrailCheckpointCamera(memoryTrail, selection = {}) {
   return getMixedDailyTrailCheckpointCameraConfig(memoryTrail, selection).camera;
 }
@@ -11258,6 +11296,7 @@ function handleCorrectMemoryTrailAnswer(memoryTrail, targetId, options = {}) {
   memoryTrail.responseChipTargetId = targetId;
   runner.setMemoryTrailHighlight(targetId);
   updateMemoryTrailStats(memoryTrail, targetId, "correct", { promptType: memoryTrail.currentPromptType });
+  refreshDailyTrailCapitalProgressMarkers(memoryTrail);
   lockDailyTrailFixedCameraAfterLearn(memoryTrail, targetId);
 
   if (options.devSkip) {
@@ -12158,11 +12197,24 @@ function getDailyTrailItems(options = {}) {
   const state = loadDailyTrailState();
   const goal = getDailyTrailGoal(options.goalId || options.devOverride?.dailyTrailDevOverrideGoalId || state.activeTrailGoal);
   const journey = journeyPresets.find((candidate) => candidate.id === goal.journeyId);
-  const items = getDailyTrailGoalItems(goal, journey);
+  const items = dedupeDailyTrailDevItems([
+    ...getDailyTrailGoalItems(goal, journey),
+    ...getCompletedDailyTrailGoalReviewItems(state, goal)
+  ]);
 
   return options.devOverride
     ? dedupeDailyTrailDevItems([...items, ...getDailyTrailDevOverrideItems(options.devOverride, items)])
     : items;
+}
+
+function getCompletedDailyTrailGoalReviewItems(state, activeGoal) {
+  return dailyTrailGoals
+    .filter((goal) => goal.id !== activeGoal?.id)
+    .filter((goal) => state.completedGoalIds.includes(goal.id))
+    .flatMap((goal) => {
+      const journey = journeyPresets.find((candidate) => candidate.id === goal.journeyId);
+      return getDailyTrailGoalItems(goal, journey);
+    });
 }
 
 function getDailyTrailGoalItems(goal, journey) {
@@ -14398,7 +14450,12 @@ async function startDailyTrailActivity(activityId) {
   currentPresentationSettings = getEffectivePresentationSettings(activity, {
     presentationSettings: {
       reviewMode: studyModes.sectionOnly,
-      dailyTrailTargetIds: plannedTargetIds
+      dailyTrailTargetIds: plannedTargetIds,
+      dailyTrailTargetItems: plannedItemsForActivity.map((item) => ({
+        targetId: item.targetId,
+        homeActivityId: item.homeActivityId
+      })),
+      dailyTrailVisualContextTargetIds: getDailyTrailVisualContextTargetIds(activity)
     }
   });
 
@@ -14427,10 +14484,19 @@ function getDailyTrailPlannedItemsForActivity(activity, plan) {
 
   const cumulativeItems = playItems.filter((item) => (
     item.homeActivityId !== activity.id
-    && isDailyTrailCumulativeActivityItem(activity, item)
+    && isDailyTrailRenderableActivityItem(activity, item)
   ));
 
   return dedupeDailyTrailPlannedItems([...directItems, ...cumulativeItems]);
+}
+
+function isDailyTrailRenderableActivityItem(activeActivity, item) {
+  if (!activeActivity?.cumulativeGroup || !item?.homeActivityId) {
+    return isDailyTrailGlobalShapeReviewItem(activeActivity, item);
+  }
+
+  return isDailyTrailCumulativeActivityItem(activeActivity, item)
+    || isDailyTrailGlobalShapeReviewItem(activeActivity, item);
 }
 
 function isDailyTrailCumulativeActivityItem(activeActivity, item) {
@@ -14449,6 +14515,83 @@ function isDailyTrailCumulativeActivityItem(activeActivity, item) {
     && Number.isFinite(itemSequence)
     && itemSequence < activeSequence
   );
+}
+
+function isDailyTrailGlobalShapeReviewItem(activeActivity, item) {
+  const itemActivity = getActivityById(item?.homeActivityId);
+  const itemTarget = itemActivity?.targets?.find((target) => target.id === item?.targetId);
+
+  if (
+    !itemActivity
+    || !itemTarget
+    || activeActivity?.id === continentsOceansActivityId
+    || itemActivity.id === continentsOceansActivityId
+    || itemTarget.kind !== "shape"
+  ) {
+    return false;
+  }
+
+  return isDailyTrailSafeGlobalShapeReviewTarget(itemTarget);
+}
+
+function isDailyTrailSafeGlobalShapeReviewTarget(target) {
+  return target?.kind === "shape" && target.type === "country";
+}
+
+function getDailyTrailVisualContextTargetIds(activity, memoryTrail = null) {
+  if (!isDailyTrailStateCapitalsActivity(activity)) {
+    return [];
+  }
+
+  const state = activeDailyTrailSession?.state || loadDailyTrailState();
+  const planItems = activeDailyTrailSession?.plan?.allItems || [];
+  const introducedTargetIds = planItems
+    .filter((item) => item.trailGoalId === dailyTrailUsCapitalsGoalId)
+    .filter((item) => item.type === "capital")
+    .filter((item) => (
+      !isDailyTrailItemUnseen(state, item)
+      || hasDailyTrailMemoryTrailIntroducedTarget(memoryTrail, item.targetId)
+    ))
+    .map((item) => item.targetId)
+    .filter(Boolean);
+  const activeSectionTargetIds = (activity.targets || [])
+    .filter((target) => target.kind === "point" && target.type === "capital")
+    .map((target) => target.id)
+    .filter(Boolean);
+
+  return [...new Set([...introducedTargetIds, ...activeSectionTargetIds])];
+}
+
+function isDailyTrailStateCapitalsActivity(activity) {
+  return Boolean(
+    activity?.id?.startsWith("us-capitals-")
+    && (activity.targets || []).some((target) => target.kind === "point" && target.type === "capital")
+  );
+}
+
+function hasDailyTrailMemoryTrailIntroducedTarget(memoryTrail, targetId) {
+  const stats = targetId ? memoryTrail?.targetStats?.[targetId] : null;
+  return Boolean(stats && hasTargetCompletedGuidedExposure(stats));
+}
+
+function refreshDailyTrailCapitalProgressMarkers(memoryTrail = getActiveMemoryTrail()) {
+  const activity = getActivityById(activeDailyTrailSession?.activityId);
+  if (
+    !activeDailyTrailSession
+    || currentAppScreen !== "daily-trail-gameplay"
+    || !isDailyTrailStateCapitalsActivity(activity)
+    || typeof runner?.setVisualPointTargets !== "function"
+  ) {
+    return false;
+  }
+
+  currentPresentationSettings = {
+    ...currentPresentationSettings,
+    dailyTrailVisualContextTargetIds: getDailyTrailVisualContextTargetIds(activity, memoryTrail)
+  };
+  const presentedActivity = getPresentedActivity(activity, currentPresentationSettings);
+  runner.setVisualPointTargets(presentedActivity?.visualPointTargets || [], presentedActivity?.targets || []);
+  return true;
 }
 
 function dedupeDailyTrailPlannedItems(items = []) {
@@ -17812,18 +17955,26 @@ function getDailyTrailPresentedActivity(activity, presentationSettings = {}) {
   const targetIds = Array.isArray(presentationSettings.dailyTrailTargetIds)
     ? presentationSettings.dailyTrailTargetIds.filter(Boolean)
     : [];
+  const targetItems = Array.isArray(presentationSettings.dailyTrailTargetItems)
+    ? presentationSettings.dailyTrailTargetItems.filter(Boolean)
+    : [];
+  const visualContextTargetIds = Array.isArray(presentationSettings.dailyTrailVisualContextTargetIds)
+    ? presentationSettings.dailyTrailVisualContextTargetIds.filter(Boolean)
+    : [];
 
   if (!activity || targetIds.length === 0) {
     return activity;
   }
 
   const allowedTargetIds = new Set(targetIds);
-  const targetsById = new Map(getDailyTrailPresentationTargetCandidates(activity)
+  const candidates = getDailyTrailPresentationTargetCandidates(activity, targetItems);
+  const targetsById = new Map(candidates
     .filter((target) => allowedTargetIds.has(target.id))
     .map((target) => [target.id, target]));
   const targets = targetIds
     .map((targetId) => targetsById.get(targetId))
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((target) => getDailyTrailCapitalProgressTarget(target, visualContextTargetIds));
 
   if (targets.length === 0) {
     return activity;
@@ -17832,6 +17983,10 @@ function getDailyTrailPresentedActivity(activity, presentationSettings = {}) {
   return {
     ...activity,
     targets,
+    visualPointTargets: visualContextTargetIds
+      .map((targetId) => candidates.find((target) => target.id === targetId))
+      .filter((target) => target?.kind === "point" && !allowedTargetIds.has(target.id))
+      .map((target) => getDailyTrailCapitalProgressTarget(target, visualContextTargetIds)),
     answerBankItems: targets.map((target) => ({
       id: target.id,
       name: target.name
@@ -17839,22 +17994,57 @@ function getDailyTrailPresentedActivity(activity, presentationSettings = {}) {
   };
 }
 
-function getDailyTrailPresentationTargetCandidates(activity) {
-  if (!activity?.cumulativeGroup) {
-    return activity?.targets || [];
-  }
+function getDailyTrailPresentationTargetCandidates(activity, targetItems = []) {
+  const candidates = [...(activity?.targets || [])];
 
   const sequence = Number(activity.sequence);
-  if (!Number.isFinite(sequence)) {
-    return activity.targets || [];
+  if (activity?.cumulativeGroup && Number.isFinite(sequence)) {
+    activities
+      .filter((candidate) => candidate.cumulativeGroup === activity.cumulativeGroup)
+      .filter((candidate) => Number.isFinite(Number(candidate.sequence)))
+      .filter((candidate) => Number(candidate.sequence) <= sequence)
+      .sort((left, right) => Number(left.sequence) - Number(right.sequence))
+      .flatMap((candidate) => candidate.targets || [])
+      .forEach((target) => candidates.push(target));
   }
 
-  return activities
-    .filter((candidate) => candidate.cumulativeGroup === activity.cumulativeGroup)
-    .filter((candidate) => Number.isFinite(Number(candidate.sequence)))
-    .filter((candidate) => Number(candidate.sequence) <= sequence)
-    .sort((left, right) => Number(left.sequence) - Number(right.sequence))
-    .flatMap((candidate) => candidate.targets || []);
+  if ((activity?.targets || []).every((target) => target.kind === "shape" && target.type === "country")) {
+    activities
+      .filter((candidate) => candidate.id !== activity.id)
+      .filter((candidate) => (candidate.targets || []).every((target) => target.kind === "shape" && target.type === "country"))
+      .flatMap((candidate) => candidate.targets || [])
+      .forEach((target) => candidates.push(target));
+  }
+
+  targetItems.forEach((item) => {
+    const itemActivity = getActivityById(item.homeActivityId);
+    const target = itemActivity?.targets?.find((candidate) => candidate.id === item.targetId);
+    if (target) {
+      candidates.push(target);
+    }
+  });
+
+  const byId = new Map();
+  candidates.filter(Boolean).forEach((target) => {
+    if (target.id && !byId.has(target.id)) {
+      byId.set(target.id, target);
+    }
+  });
+
+  return Array.from(byId.values());
+}
+
+function getDailyTrailCapitalProgressTarget(target, progressTargetIds = []) {
+  if (target?.kind !== "point" || target.type !== "capital") {
+    return target;
+  }
+
+  const isProgressTarget = progressTargetIds.includes(target.id);
+  return {
+    ...target,
+    dailyTrailCapitalProgressStar: isProgressTarget,
+    dailyTrailCapitalProgressStarOpacity: isProgressTarget ? 0.48 : 1
+  };
 }
 
 function selectActivity(activityId, options = {}) {

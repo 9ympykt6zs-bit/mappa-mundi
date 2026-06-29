@@ -208,12 +208,14 @@ export function syncCompletedDailyTrailGoals(state, items = []) {
 export function isDailyTrailPathComplete(state, items = []) {
   const normalized = createDailyTrailState(state);
   const safeItems = Array.isArray(items) ? items.filter(Boolean) : [];
+  const activeGoalItems = getActiveDailyTrailGoalItems(normalized, safeItems);
+  const completionItems = activeGoalItems.length > 0 ? activeGoalItems : safeItems;
 
   if (normalized.completedGoalIds.includes(normalized.activeTrailGoal) || normalized.pathCompleted) {
     return true;
   }
 
-  if (safeItems.length === 0 || !safeItems.every((item) => isItemPracticeEligible(normalized, item))) {
+  if (completionItems.length === 0 || !completionItems.every((item) => isItemPracticeEligible(normalized, item))) {
     return false;
   }
 
@@ -222,8 +224,8 @@ export function isDailyTrailPathComplete(state, items = []) {
     return true;
   }
 
-  const continentsOceansItems = getContinentsOceansItems(safeItems);
-  const hasWorldCoreTerminalActivity = safeItems.some((item) => item.homeActivityId === worldCoreTerminalActivityId);
+  const continentsOceansItems = getContinentsOceansItems(completionItems);
+  const hasWorldCoreTerminalActivity = completionItems.some((item) => item.homeActivityId === worldCoreTerminalActivityId);
   return hasWorldCoreTerminalActivity
     && continentsOceansItems.length > 0
     && isContinentsOceansFoundationComplete(normalized, continentsOceansItems);
@@ -291,17 +293,19 @@ export function isDailyTrailCheckpointReviewPlan(plan = {}) {
 export function planDailyTrailSession(state, items) {
   const normalized = createDailyTrailState(state);
   const safeItems = Array.isArray(items) ? items : [];
-  const continentsOceansDecision = getContinentsOceansReviewDecision(normalized, safeItems);
+  const activeGoalItems = getActiveDailyTrailGoalItems(normalized, safeItems);
+  const planningItems = activeGoalItems.length > 0 ? activeGoalItems : safeItems;
+  const continentsOceansDecision = getContinentsOceansReviewDecision(normalized, planningItems);
   let plan;
 
-  if (isDailyTrailPathComplete(normalized, safeItems)) {
-    plan = buildDailyTrailCompletePlan(normalized, safeItems);
+  if (isDailyTrailPathComplete(normalized, planningItems)) {
+    plan = buildDailyTrailCompletePlan(normalized, planningItems);
   } else if (continentsOceansDecision?.type === "foundation") {
-    plan = buildContinentsOceansPlan(normalized, safeItems, continentsOceansDecision);
+    plan = buildContinentsOceansPlan(normalized, planningItems, continentsOceansDecision);
   } else if (normalized.pendingRemediation) {
-    plan = buildRemediationPlan(normalized, safeItems);
+    plan = buildRemediationPlan(normalized, planningItems);
   } else if (normalized.pendingCheckpointRetry) {
-    plan = buildCheckpointPlan(normalized, safeItems, {
+    plan = buildCheckpointPlan(normalized, planningItems, {
       sessionType: "remediationCheckpoint",
       title: "Quick Check",
       maxItems: 10,
@@ -310,15 +314,15 @@ export function planDailyTrailSession(state, items) {
   } else if (normalized.sessionsSinceLastCheckpoint >= dailyTrailCheckpointInterval - 1
     && normalized.hasStarted
     && continentsOceansDecision?.type === "full") {
-    plan = buildContinentsOceansPlan(normalized, safeItems, continentsOceansDecision);
+    plan = buildContinentsOceansPlan(normalized, planningItems, continentsOceansDecision);
   } else if (normalized.sessionsSinceLastCheckpoint >= dailyTrailCheckpointInterval - 1 && normalized.hasStarted) {
-    plan = buildCheckpointPlan(normalized, safeItems, {
+    plan = buildCheckpointPlan(normalized, planningItems, {
       sessionType: "checkpoint",
       title: "Checkpoint",
       maxItems: 22
     });
   } else if (continentsOceansDecision) {
-    plan = buildContinentsOceansPlan(normalized, safeItems, continentsOceansDecision);
+    plan = buildContinentsOceansPlan(normalized, planningItems, continentsOceansDecision);
   } else {
     plan = buildLearningPlan(normalized, safeItems);
   }
@@ -557,7 +561,10 @@ export function applyDailyTrailSessionResults(state, plan, result = {}) {
 }
 
 function buildLearningPlan(state, items) {
-  const availableItems = getNormalDailyTrailItems(state, items);
+  const activeGoalItems = getActiveDailyTrailGoalItems(state, items);
+  const planningItems = activeGoalItems.length > 0 ? activeGoalItems : items;
+  const availableItems = getNormalDailyTrailItems(state, planningItems);
+  const reviewCandidateItems = getNormalDailyTrailItems(state, items);
   const initialActivityId = getNextLearningActivityId(state, availableItems);
   const initialPlayableItems = initialActivityId
     ? availableItems.filter((item) => item.homeActivityId === initialActivityId)
@@ -579,7 +586,7 @@ function buildLearningPlan(state, items) {
   const oldSectionReviewItems = newItems.length > 0
     ? selectDailyTrailOldSectionReviewItems(state, {
       activeActivityId,
-      availableItems,
+      availableItems: reviewCandidateItems,
       playableItems,
       excludeIds: newItemIds,
       limit: 1
@@ -1087,21 +1094,15 @@ function selectDailyTrailOldSectionReviewItems(state, options = {}) {
   const activeItems = availableItems.filter((item) => item.homeActivityId === activeActivityId);
   const activeAnchor = activeItems[0] || playableItems[0] || null;
   const activeStepIndex = Number(activeAnchor?.homeStepIndex);
-  const activeTypes = new Set(playableItems.map((item) => item.type).filter(Boolean));
 
   if (!activeActivityId || limit <= 0 || !activeAnchor || !Number.isFinite(activeStepIndex)) {
     return [];
   }
 
-  const completedActivityIds = getCompletedDailyTrailSectionActivityIds(state, availableItems);
   const candidates = availableItems.filter((item) => (
     item.homeActivityId
     && item.homeActivityId !== activeActivityId
-    && completedActivityIds.has(item.homeActivityId)
-    && Number(item.homeStepIndex) < activeStepIndex
-    && item.homeJourneyId === activeAnchor.homeJourneyId
-    && item.trailGoalId === activeAnchor.trailGoalId
-    && (activeTypes.size === 0 || activeTypes.has(item.type))
+    && isDailyTrailGlobalReviewCandidateForActiveItem(item, activeAnchor, activeStepIndex)
   ));
 
   return selectDailyTrailReviewItems(state, candidates, {
@@ -1111,22 +1112,19 @@ function selectDailyTrailOldSectionReviewItems(state, options = {}) {
   });
 }
 
-function getCompletedDailyTrailSectionActivityIds(state, items = []) {
-  const sectionItems = new Map();
+function isDailyTrailGlobalReviewCandidateForActiveItem(item, activeAnchor, activeStepIndex) {
+  const sameGoalTrack = item.trailGoalId === activeAnchor.trailGoalId
+    && item.homeJourneyId === activeAnchor.homeJourneyId;
 
-  items.forEach((item) => {
-    if (!item?.homeActivityId) {
-      return;
-    }
+  if (sameGoalTrack) {
+    const itemStepIndex = Number(item.homeStepIndex);
+    return Number.isFinite(itemStepIndex) && itemStepIndex < activeStepIndex;
+  }
 
-    const current = sectionItems.get(item.homeActivityId) || [];
-    current.push(item);
-    sectionItems.set(item.homeActivityId, current);
-  });
-
-  return new Set(Array.from(sectionItems.entries())
-    .filter(([, groupItems]) => groupItems.length > 0 && groupItems.every((item) => isItemPracticeEligible(state, item)))
-    .map(([homeActivityId]) => homeActivityId));
+  return Boolean(
+    item.trailGoalId
+    && item.trailGoalId !== activeAnchor.trailGoalId
+  );
 }
 
 function isReviewItemDue(state, item) {
@@ -1213,6 +1211,10 @@ function getNormalDailyTrailItems(state, items) {
   }
 
   return items.filter((item) => !isContinentsOceansItem(item));
+}
+
+function getActiveDailyTrailGoalItems(state, items = []) {
+  return items.filter((item) => !item?.trailGoalId || item.trailGoalId === state.activeTrailGoal);
 }
 
 function getContinentsOceansReviewDecision(state, items) {

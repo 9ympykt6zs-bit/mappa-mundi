@@ -457,6 +457,7 @@ export class MapLibreActivityRunner {
     this.memoryTrailCheckpointPreAnswerStyle = false;
     this.shapeTargets = [];
     this.pointTargets = [];
+    this.visualPointTargets = [];
     this.overviewPreviewActivity = null;
     this.overviewPreviewCompletedIds = [];
     this.overviewMapSet = "world-europe";
@@ -564,6 +565,7 @@ export class MapLibreActivityRunner {
     this.unitedKingdomAdmin1 = unitedKingdomAdmin1 || emptyFeatureCollection;
     this.shapeTargets = activity.targets.filter((target) => target.kind === "shape");
     this.pointTargets = activity.targets.filter((target) => target.kind === "point");
+    this.visualPointTargets = (activity.visualPointTargets || []).filter((target) => target.kind === "point");
 
     this.map = new this.maplibregl.Map({
       container: this.container,
@@ -844,6 +846,21 @@ export class MapLibreActivityRunner {
     this.refreshDifficultyVisuals();
   }
 
+  setVisualPointTargets(visualPointTargets = [], pointTargets = null) {
+    if (Array.isArray(pointTargets)) {
+      this.pointTargets = pointTargets.filter((target) => target.kind === "point");
+    }
+    this.visualPointTargets = Array.isArray(visualPointTargets)
+      ? visualPointTargets.filter((target) => target.kind === "point")
+      : [];
+
+    const capitalSource = this.map?.getSource("study-capitals");
+    if (capitalSource) {
+      capitalSource.setData(this.getCapitalGeoJson());
+    }
+    this.refreshDifficultyVisuals();
+  }
+
   isMemoryTrailCheckpointPreAnswerStyleEnabled() {
     return Boolean(this.studyPreviewMode && this.memoryTrailCheckpointPreAnswerStyle);
   }
@@ -1018,6 +1035,7 @@ export class MapLibreActivityRunner {
     this.activity = activity;
     this.shapeTargets = activity.targets.filter((target) => target.kind === "shape");
     this.pointTargets = activity.targets.filter((target) => target.kind === "point");
+    this.visualPointTargets = (activity.visualPointTargets || []).filter((target) => target.kind === "point");
     this.completedIds = [];
     this.selectedTargetId = "";
     this.memoryTrailCheckpointPreAnswerStyle = false;
@@ -2737,10 +2755,32 @@ export class MapLibreActivityRunner {
     });
 
     this.map.addLayer({
+      id: "state-capital-active-halo",
+      type: "circle",
+      source: "study-capitals",
+      filter: ["==", ["get", "capitalMarkerType"], "state-capital"],
+      layout: {
+        visibility: "none"
+      },
+      paint: {
+        "circle-radius": this.getStateCapitalActiveHaloRadiusExpression(),
+        "circle-color": "#f8fafc",
+        "circle-opacity": this.getStateCapitalActiveHaloOpacityExpression(),
+        "circle-stroke-color": "#2563eb",
+        "circle-stroke-width": this.getStateCapitalActiveHaloStrokeWidthExpression(),
+        "circle-stroke-opacity": this.getStateCapitalActiveHaloStrokeOpacityExpression()
+      }
+    });
+
+    this.map.addLayer({
       id: "state-capital-star",
       type: "symbol",
       source: "study-capitals",
-      filter: ["==", ["get", "capitalMarkerType"], "state-capital"],
+      filter: [
+        "all",
+        ["==", ["get", "capitalMarkerType"], "state-capital"],
+        ["!=", ["get", "showProgressStar"], false]
+      ],
       layout: {
         visibility: "none",
         "icon-image": "mappa-state-capital-star",
@@ -2757,7 +2797,7 @@ export class MapLibreActivityRunner {
         "icon-ignore-placement": true
       },
       paint: {
-        "icon-opacity": this.getCapitalOpacityExpression()
+        "icon-opacity": this.getStateCapitalStarOpacityExpression()
       }
     });
 
@@ -2790,6 +2830,7 @@ export class MapLibreActivityRunner {
       id: "capital-hit",
       type: "circle",
       source: "study-capitals",
+      filter: ["!=", ["get", "visualOnly"], true],
       layout: {
         visibility: "none"
       },
@@ -2823,7 +2864,7 @@ export class MapLibreActivityRunner {
       }
     });
 
-    ["state-fill", "target-hit-fill", "river-hit-line", "capital-hit", "capital-marker", "capital-marker-halo", "state-capital-star", "national-capital-ring", "national-capital-star"].forEach((layerId) => {
+    ["state-fill", "target-hit-fill", "river-hit-line", "capital-hit", "capital-marker", "capital-marker-halo", "state-capital-star", "state-capital-active-halo", "national-capital-ring", "national-capital-star"].forEach((layerId) => {
       this.map.on("mouseenter", layerId, () => {
         if (this.canUseTargetHoverCursor()) {
           this.map.getCanvas().style.cursor = "pointer";
@@ -4003,9 +4044,14 @@ export class MapLibreActivityRunner {
   }
 
   getCapitalGeoJson() {
+    const playablePointIds = new Set(this.pointTargets.map((feature) => feature.id));
+    const pointFeatures = [...this.pointTargets, ...this.visualPointTargets]
+      .filter((feature) => feature?.id)
+      .filter((feature, index, features) => features.findIndex((candidate) => candidate.id === feature.id) === index);
+
     return {
       type: "FeatureCollection",
-      features: this.pointTargets
+      features: pointFeatures
         .map((feature) => ({
           type: "Feature",
           properties: {
@@ -4017,7 +4063,12 @@ export class MapLibreActivityRunner {
             mediumHitRadius: feature.mediumHitRadius || Math.max(feature.hitRadius || 14, 20),
             hardHitRadius: feature.hardHitRadius || Math.max(feature.hitRadius || 14, 16),
             labelFontSize: feature.label?.fontSize || feature.labelFontSize || 11,
-            capitalMarkerType: this.getPointMarkerType(feature)
+            capitalMarkerType: this.getPointMarkerType(feature),
+            visualOnly: !playablePointIds.has(feature.id),
+            showProgressStar: feature.dailyTrailCapitalProgressStar !== false,
+            progressStarOpacity: Number.isFinite(Number(feature.dailyTrailCapitalProgressStarOpacity))
+              ? Number(feature.dailyTrailCapitalProgressStarOpacity)
+              : 1
           },
           geometry: {
             type: "Point",
@@ -5507,7 +5558,14 @@ export class MapLibreActivityRunner {
     }
 
     if (this.map.getLayer("state-capital-star")) {
-      this.map.setPaintProperty("state-capital-star", "icon-opacity", this.getCapitalOpacityExpression());
+      this.map.setPaintProperty("state-capital-star", "icon-opacity", this.getStateCapitalStarOpacityExpression());
+    }
+
+    if (this.map.getLayer("state-capital-active-halo")) {
+      this.map.setPaintProperty("state-capital-active-halo", "circle-radius", this.getStateCapitalActiveHaloRadiusExpression());
+      this.map.setPaintProperty("state-capital-active-halo", "circle-opacity", this.getStateCapitalActiveHaloOpacityExpression());
+      this.map.setPaintProperty("state-capital-active-halo", "circle-stroke-width", this.getStateCapitalActiveHaloStrokeWidthExpression());
+      this.map.setPaintProperty("state-capital-active-halo", "circle-stroke-opacity", this.getStateCapitalActiveHaloStrokeOpacityExpression());
     }
 
     if (this.map.getLayer("national-capital-star")) {
@@ -6510,6 +6568,63 @@ export class MapLibreActivityRunner {
     return 0;
   }
 
+  getStateCapitalStarOpacityExpression() {
+    return [
+      "case",
+      ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
+      1,
+      [
+        "*",
+        this.getCapitalOpacityExpression(),
+        ["coalesce", ["get", "progressStarOpacity"], 1]
+      ]
+    ];
+  }
+
+  getStateCapitalActiveHaloRadiusExpression() {
+    return [
+      "case",
+      ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
+      [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        3,
+        12,
+        7,
+        17
+      ],
+      0
+    ];
+  }
+
+  getStateCapitalActiveHaloOpacityExpression() {
+    return [
+      "case",
+      ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
+      0.82,
+      0
+    ];
+  }
+
+  getStateCapitalActiveHaloStrokeWidthExpression() {
+    return [
+      "case",
+      ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
+      3,
+      0
+    ];
+  }
+
+  getStateCapitalActiveHaloStrokeOpacityExpression() {
+    return [
+      "case",
+      ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
+      0.95,
+      0
+    ];
+  }
+
   getCapitalStrokeOpacityExpression() {
     return this.getCapitalOpacityExpression();
   }
@@ -6659,7 +6774,7 @@ export class MapLibreActivityRunner {
 
   updateDifficultyLayerVisibility() {
     if (!this.map || this.currentView !== "study") {
-      ["ocean-target-raster", "state-fill", "state-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
+      ["ocean-target-raster", "state-fill", "state-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-active-halo", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
         if (this.map?.getLayer(layerId)) {
           this.map.setLayoutProperty(layerId, "visibility", "none");
         }
@@ -6724,6 +6839,10 @@ export class MapLibreActivityRunner {
       this.map.setLayoutProperty("state-capital-star", "visibility", shouldShowPointMarkers ? "visible" : "none");
     }
 
+    if (this.map.getLayer("state-capital-active-halo")) {
+      this.map.setLayoutProperty("state-capital-active-halo", "visibility", shouldShowPointMarkers ? "visible" : "none");
+    }
+
     if (this.map.getLayer("national-capital-ring")) {
       this.map.setLayoutProperty("national-capital-ring", "visibility", shouldShowPointMarkers ? "visible" : "none");
     }
@@ -6742,7 +6861,7 @@ export class MapLibreActivityRunner {
   }
 
   setStudyVisibility(visibility) {
-    ["ocean-target-raster", "state-fill", "state-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
+    ["ocean-target-raster", "state-fill", "state-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-active-halo", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
       if (this.map.getLayer(layerId)) {
         this.map.setLayoutProperty(layerId, "visibility", visibility);
       }

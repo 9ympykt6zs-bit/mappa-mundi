@@ -164,9 +164,9 @@ const incompleteSectionState = createDailyTrailState({
 const incompletePlan = planDailyTrailSession(incompleteSectionState, items);
 
 assert.equal(
-  incompletePlan.reviewItems.filter((item) => item.homeActivityId === "us-capitals-01").length,
-  0,
-  "Incomplete previous sections should not provide old review items."
+  incompletePlan.reviewItems.some((item) => item.id === "us-capitals:capital:montpelier-vt"),
+  false,
+  "Unseen items from previous sections should not be selected as old review."
 );
 
 console.log("Daily Trail old-section review check passed:", JSON.stringify({
