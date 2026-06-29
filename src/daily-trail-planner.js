@@ -576,9 +576,22 @@ function buildLearningPlan(state, items) {
     limit: dailyTrailReviewItemCount,
     requireDue: newItems.length > 0
   });
+  const oldSectionReviewItems = newItems.length > 0
+    ? selectDailyTrailOldSectionReviewItems(state, {
+      activeActivityId,
+      availableItems,
+      playableItems,
+      excludeIds: newItemIds,
+      limit: 1
+    })
+    : [];
+  const combinedReviewItems = dedupeItems([
+    ...oldSectionReviewItems,
+    ...reviewItems
+  ]).slice(0, dailyTrailReviewItemCount);
   const playItems = dedupeItems([
     ...newItems,
-    ...reviewItems
+    ...combinedReviewItems
   ]);
 
   return createPlan({
@@ -586,7 +599,7 @@ function buildLearningPlan(state, items) {
     sessionType: "learning-session",
     title: "Daily Trail",
     newItems,
-    reviewItems,
+    reviewItems: combinedReviewItems,
     playItems,
     allItems: items,
     activeActivityId
@@ -1064,6 +1077,56 @@ function selectDailyTrailReviewItems(state, items, options = {}) {
     ...sortItemsForReviewVariety(state, weakItems).slice(0, weakLimit),
     ...sortItemsForReviewVariety(state, olderItems).slice(0, olderLimit)
   ]).slice(0, limit);
+}
+
+function selectDailyTrailOldSectionReviewItems(state, options = {}) {
+  const activeActivityId = options.activeActivityId || "";
+  const availableItems = Array.isArray(options.availableItems) ? options.availableItems : [];
+  const playableItems = Array.isArray(options.playableItems) ? options.playableItems : [];
+  const limit = Math.max(0, Number(options.limit) || 1);
+  const activeItems = availableItems.filter((item) => item.homeActivityId === activeActivityId);
+  const activeAnchor = activeItems[0] || playableItems[0] || null;
+  const activeStepIndex = Number(activeAnchor?.homeStepIndex);
+  const activeTypes = new Set(playableItems.map((item) => item.type).filter(Boolean));
+
+  if (!activeActivityId || limit <= 0 || !activeAnchor || !Number.isFinite(activeStepIndex)) {
+    return [];
+  }
+
+  const completedActivityIds = getCompletedDailyTrailSectionActivityIds(state, availableItems);
+  const candidates = availableItems.filter((item) => (
+    item.homeActivityId
+    && item.homeActivityId !== activeActivityId
+    && completedActivityIds.has(item.homeActivityId)
+    && Number(item.homeStepIndex) < activeStepIndex
+    && item.homeJourneyId === activeAnchor.homeJourneyId
+    && item.trailGoalId === activeAnchor.trailGoalId
+    && (activeTypes.size === 0 || activeTypes.has(item.type))
+  ));
+
+  return selectDailyTrailReviewItems(state, candidates, {
+    excludeIds: options.excludeIds || new Set(),
+    limit,
+    requireDue: false
+  });
+}
+
+function getCompletedDailyTrailSectionActivityIds(state, items = []) {
+  const sectionItems = new Map();
+
+  items.forEach((item) => {
+    if (!item?.homeActivityId) {
+      return;
+    }
+
+    const current = sectionItems.get(item.homeActivityId) || [];
+    current.push(item);
+    sectionItems.set(item.homeActivityId, current);
+  });
+
+  return new Set(Array.from(sectionItems.entries())
+    .filter(([, groupItems]) => groupItems.length > 0 && groupItems.every((item) => isItemPracticeEligible(state, item)))
+    .map(([homeActivityId]) => homeActivityId));
 }
 
 function isReviewItemDue(state, item) {

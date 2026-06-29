@@ -7491,6 +7491,8 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
   const targetIdSet = new Set(Array.isArray(options.targetIds) ? options.targetIds.filter(Boolean) : []);
   const hasExplicitNewTargetIds = Array.isArray(options.newTargetIds);
   const newTargetIdSet = new Set(Array.isArray(options.newTargetIds) ? options.newTargetIds.filter(Boolean) : []);
+  const insertedReviewTargetIds = [...new Set((Array.isArray(options.insertedReviewTargetIds) ? options.insertedReviewTargetIds : [])
+    .filter(Boolean))];
   const targets = (activity?.targets || [])
     .filter((target) => target?.id)
     .filter((target) => targetIdSet.size === 0 || targetIdSet.has(target.id));
@@ -7561,6 +7563,8 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
       : [],
     dailyTrailPracticeRoundOrders: {},
     lastDailyTrailPracticeRoundOrder: [],
+    dailyTrailInsertedReviewBatchKeys: [],
+    dailyTrailInsertedReviewTargetIds: insertedReviewTargetIds,
     targetStats,
     promptCount: 0,
     retrievalPromptCount: 0,
@@ -9818,12 +9822,23 @@ function chooseNextPrompt(memoryTrail) {
     };
   }
 
+  const dailyTrailBatchReview = getDailyTrailNewBatchInsertedReview(memoryTrail, dueIntroduced);
+  if (dailyTrailBatchReview) {
+    return {
+      targetId: dailyTrailBatchReview.targetId,
+      promptType: chooseRetrievalPromptType(memoryTrail, dailyTrailBatchReview),
+      mode: "review",
+      reason: "recent review after new batch recall"
+    };
+  }
+
   const currentWindowNeed = memoryTrail.currentPracticeWindow
     .map((target) => memoryTrail.targetStats[target.id])
     .filter((stats) => (
       stats
       && due(stats)
       && avoidLast(stats)
+      && !shouldDeferDailyTrailInsertedReviewTarget(memoryTrail, stats)
       && stats.totalRetrievalCorrect < getStatsRetrievalCorrectTarget(stats, memoryTrail)
       && (!isDailyTrailPacingCapEnabled(memoryTrail) || !hasDailyTrailStatsSettledForCurrentSection(memoryTrail, stats))
     ))
@@ -9843,7 +9858,7 @@ function chooseNextPrompt(memoryTrail) {
   }
 
   const review = getReviewTargets(memoryTrail)
-    .filter((stats) => due(stats) && avoidLast(stats))
+    .filter((stats) => due(stats) && avoidLast(stats) && !shouldDeferDailyTrailInsertedReviewTarget(memoryTrail, stats))
     .sort((left, right) => left.totalRetrievalCorrect - right.totalRetrievalCorrect || left.lastPromptedAt - right.lastPromptedAt)[0];
 
   if (review && memoryTrail.promptCount % 4 === 3) {
@@ -9857,7 +9872,8 @@ function chooseNextPrompt(memoryTrail) {
 
   const learningTarget = dueIntroduced
     .filter((stats) => (
-      stats.totalRetrievalCorrect < getStatsRetrievalCorrectTarget(stats, memoryTrail)
+      !shouldDeferDailyTrailInsertedReviewTarget(memoryTrail, stats)
+      && stats.totalRetrievalCorrect < getStatsRetrievalCorrectTarget(stats, memoryTrail)
       && (!isDailyTrailPacingCapEnabled(memoryTrail) || !hasDailyTrailStatsSettledForCurrentSection(memoryTrail, stats))
     ))
     .sort((left, right) => (
@@ -9875,8 +9891,13 @@ function chooseNextPrompt(memoryTrail) {
     };
   }
 
-  const fallback = dueIntroduced.sort((left, right) => left.lastPromptedAt - right.lastPromptedAt)[0]
-    || introducedStats.filter(avoidLast).sort((left, right) => left.nextDuePrompt - right.nextDuePrompt)[0]
+  const fallback = dueIntroduced
+    .filter((stats) => !shouldDeferDailyTrailInsertedReviewTarget(memoryTrail, stats))
+    .sort((left, right) => left.lastPromptedAt - right.lastPromptedAt)[0]
+    || introducedStats
+      .filter((stats) => avoidLast(stats) && !shouldDeferDailyTrailInsertedReviewTarget(memoryTrail, stats))
+      .sort((left, right) => left.nextDuePrompt - right.nextDuePrompt)[0]
+    || introducedStats.find((stats) => !shouldDeferDailyTrailInsertedReviewTarget(memoryTrail, stats))
     || introducedStats[0];
 
   return fallback ? {
@@ -9964,6 +9985,161 @@ function getDailyTrailPracticeRoundKey(stats) {
   return `recall:${stats?.totalRetrievalCorrect || 0}`;
 }
 
+function getDailyTrailNewBatchInsertedReview(memoryTrail, dueIntroduced = []) {
+  const batchTargetIds = getDailyTrailNewItemBatchTargetIds(memoryTrail);
+  const batchKey = batchTargetIds.join("|");
+  const insertedReviewTargetIds = new Set(memoryTrail?.dailyTrailInsertedReviewTargetIds || []);
+  if (
+    !isDailyTrailNewItemBatchPractice(memoryTrail)
+    || !batchKey
+    || insertedReviewTargetIds.size === 0
+    || memoryTrail.dailyTrailInsertedReviewBatchKeys?.includes(batchKey)
+  ) {
+    return null;
+  }
+
+  const newTargetIds = new Set(memoryTrail.dailyTrailNewTargetIds.filter(Boolean));
+  const newBatchStats = batchTargetIds
+    .map((targetId) => memoryTrail?.targetStats?.[targetId])
+    .filter(Boolean);
+
+  if (
+    newBatchStats.length === 0
+    || newBatchStats.some((stats) => (stats.totalRetrievalCorrect || 0) < 1)
+  ) {
+    return null;
+  }
+
+  const review = dueIntroduced
+    .filter((stats) => insertedReviewTargetIds.has(stats.targetId))
+    .filter((stats) => !newTargetIds.has(stats.targetId))
+    .filter((stats) => hasTargetCompletedGuidedExposure(stats))
+    .filter((stats) => !stats.isWeak && (stats.totalRetrievalIncorrect || 0) <= 0)
+    .sort((left, right) => (
+      (left.lastPromptedAt || 0) - (right.lastPromptedAt || 0)
+      || (left.totalRetrievalCorrect || 0) - (right.totalRetrievalCorrect || 0)
+      || left.targetId.localeCompare(right.targetId)
+    ))[0] || null;
+
+  if (review) {
+    memoryTrail.dailyTrailInsertedReviewBatchKeys = [
+      ...(memoryTrail.dailyTrailInsertedReviewBatchKeys || []),
+      batchKey
+    ];
+  }
+
+  return review;
+}
+
+function shouldDeferDailyTrailInsertedReviewTarget(memoryTrail, stats) {
+  if (!isDailyTrailNewItemBatchPractice(memoryTrail) || !stats?.targetId) {
+    return false;
+  }
+
+  const insertedReviewTargetIds = new Set(memoryTrail.dailyTrailInsertedReviewTargetIds || []);
+  if (!insertedReviewTargetIds.has(stats.targetId)) {
+    return false;
+  }
+
+  if ((stats.totalRetrievalIncorrect || 0) > 0 || stats.isWeak) {
+    return false;
+  }
+
+  return (stats.totalRetrievalCorrect || 0) >= 1
+    || !hasDailyTrailInsertedReviewForCurrentBatch(memoryTrail);
+}
+
+function hasDailyTrailInsertedReviewForCurrentBatch(memoryTrail) {
+  const batchTargetIds = getDailyTrailNewItemBatchTargetIds(memoryTrail);
+  const batchKey = batchTargetIds.join("|");
+  return Boolean(batchKey && memoryTrail?.dailyTrailInsertedReviewBatchKeys?.includes(batchKey));
+}
+
+function isDailyTrailNewItemBatchPractice(memoryTrail) {
+  return Boolean(
+    isDailyTrailMemoryTrail(memoryTrail)
+    && !isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
+    && Array.isArray(memoryTrail?.dailyTrailNewTargetIds)
+    && memoryTrail.dailyTrailNewTargetIds.length > 0
+  );
+}
+
+function getDailyTrailNewItemBatchTargetIds(memoryTrail) {
+  if (!isDailyTrailNewItemBatchPractice(memoryTrail)) {
+    return [];
+  }
+
+  const newTargetIds = new Set(memoryTrail.dailyTrailNewTargetIds.filter(Boolean));
+  return (memoryTrail.currentPracticeWindow || [])
+    .map((target) => target?.id)
+    .filter((targetId) => targetId && newTargetIds.has(targetId));
+}
+
+function getDailyTrailNewItemBatchPracticeRoundKey(memoryTrail) {
+  const batchTargetIds = getDailyTrailNewItemBatchTargetIds(memoryTrail);
+  if (batchTargetIds.length === 0) {
+    return "";
+  }
+
+  const batchStats = batchTargetIds
+    .map((targetId) => memoryTrail?.targetStats?.[targetId])
+    .filter(Boolean);
+
+  if (batchStats.length === 0) {
+    return "";
+  }
+
+  const batchPassIndex = Math.max(0, Math.min(...batchStats.map((stats) => Math.max(0, Number(stats.totalRetrievalCorrect) || 0))));
+  return [
+    "new-batch",
+    memoryTrail.source || "daily-trail",
+    memoryTrail.activityId || "",
+    memoryTrail.dailyTrailSessionNumber || 0,
+    batchTargetIds.join("|"),
+    `pass:${batchPassIndex}`
+  ].join(":");
+}
+
+function getDailyTrailNewItemBatchPracticeRoundOrder(memoryTrail) {
+  const batchTargetIds = getDailyTrailNewItemBatchTargetIds(memoryTrail);
+  if (batchTargetIds.length === 0) {
+    return [];
+  }
+
+  memoryTrail.dailyTrailPracticeRoundOrders ||= {};
+  const roundKey = getDailyTrailNewItemBatchPracticeRoundKey(memoryTrail);
+  if (roundKey && memoryTrail.dailyTrailPracticeRoundOrders[roundKey]) {
+    return memoryTrail.dailyTrailPracticeRoundOrders[roundKey];
+  }
+
+  const seed = [
+    memoryTrail.source,
+    memoryTrail.activityId,
+    memoryTrail.dailyTrailSessionNumber,
+    roundKey || batchTargetIds.join("|")
+  ].join(":");
+  let ordered = [...batchTargetIds].sort((left, right) => (
+    Math.abs(hashMemoryTrailString(`${seed}:${left}`)) - Math.abs(hashMemoryTrailString(`${seed}:${right}`))
+    || left.localeCompare(right)
+  ));
+
+  if (ordered.length > 1 && areTargetOrdersEqual(ordered, batchTargetIds)) {
+    ordered = rotateTargetOrder(ordered);
+  }
+
+  ordered = reduceMatchingTargetOrderPositions(ordered, batchTargetIds);
+
+  if (ordered.length > 1 && areTargetOrdersEqual(ordered, memoryTrail.lastDailyTrailPracticeRoundOrder)) {
+    ordered = rotateTargetOrder(ordered);
+  }
+
+  if (roundKey) {
+    memoryTrail.dailyTrailPracticeRoundOrders[roundKey] = ordered;
+  }
+  memoryTrail.lastDailyTrailPracticeRoundOrder = ordered;
+  return ordered;
+}
+
 function getDailyTrailPracticeRoundOrder(memoryTrail, roundKey) {
   if (!isDailyTrailMemoryTrail(memoryTrail)) {
     return [];
@@ -10005,6 +10181,18 @@ function getDailyTrailPracticeRoundOrder(memoryTrail, roundKey) {
 function compareDailyTrailPracticeOrder(left, right, memoryTrail) {
   if (!isDailyTrailMemoryTrail(memoryTrail)) {
     return 0;
+  }
+
+  const leftIsNewBatchTarget = isDailyTrailNewItemBatchPractice(memoryTrail) && memoryTrail.dailyTrailNewTargetIds.includes(left.targetId);
+  const rightIsNewBatchTarget = isDailyTrailNewItemBatchPractice(memoryTrail) && memoryTrail.dailyTrailNewTargetIds.includes(right.targetId);
+
+  if (leftIsNewBatchTarget && rightIsNewBatchTarget) {
+    const newBatchOrder = getDailyTrailNewItemBatchPracticeRoundOrder(memoryTrail);
+    const leftIndex = newBatchOrder.indexOf(left.targetId);
+    const rightIndex = newBatchOrder.indexOf(right.targetId);
+    const safeLeftIndex = leftIndex >= 0 ? leftIndex : Number.MAX_SAFE_INTEGER;
+    const safeRightIndex = rightIndex >= 0 ? rightIndex : Number.MAX_SAFE_INTEGER;
+    return safeLeftIndex - safeRightIndex || left.targetId.localeCompare(right.targetId);
   }
 
   const leftOrder = getDailyTrailPracticeRoundOrder(memoryTrail, getDailyTrailPracticeRoundKey(left));
@@ -14197,9 +14385,8 @@ async function startDailyTrailActivity(activityId) {
     return false;
   }
 
-  const plannedTargetIds = dailyTrailSession.plan.playItems
-    .filter((item) => item.homeActivityId === activity.id)
-    .map((item) => item.targetId);
+  const plannedItemsForActivity = getDailyTrailPlannedItemsForActivity(activity, dailyTrailSession.plan);
+  const plannedTargetIds = plannedItemsForActivity.map((item) => item.targetId);
   if (plannedTargetIds.length === 0) {
     return false;
   }
@@ -14228,6 +14415,52 @@ async function startDailyTrailActivity(activityId) {
     startDailyTrailMemoryTrailStepIfNeeded();
   }
   return true;
+}
+
+function getDailyTrailPlannedItemsForActivity(activity, plan) {
+  const playItems = Array.isArray(plan?.playItems) ? plan.playItems.filter(Boolean) : [];
+  const directItems = playItems.filter((item) => item.homeActivityId === activity?.id);
+
+  if (!activity || isDailyTrailCheckpointPlan(plan)) {
+    return directItems;
+  }
+
+  const cumulativeItems = playItems.filter((item) => (
+    item.homeActivityId !== activity.id
+    && isDailyTrailCumulativeActivityItem(activity, item)
+  ));
+
+  return dedupeDailyTrailPlannedItems([...directItems, ...cumulativeItems]);
+}
+
+function isDailyTrailCumulativeActivityItem(activeActivity, item) {
+  if (!activeActivity?.cumulativeGroup || !item?.homeActivityId) {
+    return false;
+  }
+
+  const itemActivity = getActivityById(item.homeActivityId);
+  const activeSequence = Number(activeActivity.sequence);
+  const itemSequence = Number(itemActivity?.sequence);
+
+  return Boolean(
+    itemActivity
+    && itemActivity.cumulativeGroup === activeActivity.cumulativeGroup
+    && Number.isFinite(activeSequence)
+    && Number.isFinite(itemSequence)
+    && itemSequence < activeSequence
+  );
+}
+
+function dedupeDailyTrailPlannedItems(items = []) {
+  const byTargetId = new Map();
+
+  items.filter(Boolean).forEach((item) => {
+    if (item.targetId && !byTargetId.has(item.targetId)) {
+      byTargetId.set(item.targetId, item);
+    }
+  });
+
+  return Array.from(byTargetId.values());
 }
 
 function handleDailyTrailActivityCompletion() {
@@ -14359,8 +14592,7 @@ function startDailyTrailMemoryTrailStepIfNeeded() {
     return false;
   }
 
-  const plannedItemsForActivity = activeDailyTrailSession.plan.playItems
-    .filter((item) => item.homeActivityId === activity.id);
+  const plannedItemsForActivity = getDailyTrailPlannedItemsForActivity(activity, activeDailyTrailSession.plan);
   const targetIds = plannedItemsForActivity
     .map((item) => item.targetId)
     .filter(Boolean);
@@ -14398,6 +14630,10 @@ function startDailyTrailMemoryTrailStepIfNeeded() {
     newTargetIds,
     source: "daily-trail",
     targetIds,
+    insertedReviewTargetIds: plannedItemsForActivity
+      .filter((item) => item.homeActivityId && item.homeActivityId !== activity.id)
+      .map((item) => item.targetId)
+      .filter(Boolean),
     checkpointReview: isDailyTrailCheckpointPlan(activeDailyTrailSession.plan)
   });
 }
@@ -17582,7 +17818,12 @@ function getDailyTrailPresentedActivity(activity, presentationSettings = {}) {
   }
 
   const allowedTargetIds = new Set(targetIds);
-  const targets = activity.targets.filter((target) => allowedTargetIds.has(target.id));
+  const targetsById = new Map(getDailyTrailPresentationTargetCandidates(activity)
+    .filter((target) => allowedTargetIds.has(target.id))
+    .map((target) => [target.id, target]));
+  const targets = targetIds
+    .map((targetId) => targetsById.get(targetId))
+    .filter(Boolean);
 
   if (targets.length === 0) {
     return activity;
@@ -17596,6 +17837,24 @@ function getDailyTrailPresentedActivity(activity, presentationSettings = {}) {
       name: target.name
     }))
   };
+}
+
+function getDailyTrailPresentationTargetCandidates(activity) {
+  if (!activity?.cumulativeGroup) {
+    return activity?.targets || [];
+  }
+
+  const sequence = Number(activity.sequence);
+  if (!Number.isFinite(sequence)) {
+    return activity.targets || [];
+  }
+
+  return activities
+    .filter((candidate) => candidate.cumulativeGroup === activity.cumulativeGroup)
+    .filter((candidate) => Number.isFinite(Number(candidate.sequence)))
+    .filter((candidate) => Number(candidate.sequence) <= sequence)
+    .sort((left, right) => Number(left.sequence) - Number(right.sequence))
+    .flatMap((candidate) => candidate.targets || []);
 }
 
 function selectActivity(activityId, options = {}) {
