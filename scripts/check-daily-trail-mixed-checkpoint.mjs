@@ -220,7 +220,7 @@ assert.ok(previewEntrySource.includes("src/maplibre-poc.js?v=20260624-state-cont
   "setMemoryTrailCheckpointPreAnswerStyle(isActive = false)",
   "isMemoryTrailCheckpointPreAnswerStyleEnabled()",
   "getMemoryTrailPromptVisualState()",
-  "blueOutlineSource: checkpointPreAnswerStyle ? \"state-line:targetStroke\" : \"state-line:studyTargetLine\"",
+  "blueOutlineSource: preAnswerOutlineSuppressed ? \"suppressed\" : checkpointPreAnswerStyle ? \"state-line:targetStroke\" : \"state-line:studyTargetLine\"",
   "this.isMemoryTrailCheckpointPreAnswerStyleEnabled() ? colors.targetStroke : colors.studyTargetLine",
   "this.isMemoryTrailCheckpointPreAnswerStyleEnabled() ? 0 : 0.52",
   "if (this.isMemoryTrailCheckpointPreAnswerStyleEnabled()) {\n      return 0;\n    }",

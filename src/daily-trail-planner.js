@@ -338,17 +338,10 @@ export function planCompletedDailyTrailReviewSession(state, items) {
   const normalized = createDailyTrailState(state);
   const safeItems = Array.isArray(items) ? items : [];
   const completedItems = safeItems.filter((item) => isItemPracticeEligible(normalized, item));
-  const activeActivityId = getReviewActivityId(
-    normalized,
-    getWeakItems(normalized, completedItems),
-    completedItems
-  );
-  const activityItems = activeActivityId
-    ? completedItems.filter((item) => item.homeActivityId === activeActivityId)
-    : completedItems;
-  const reviewItems = selectDailyTrailReviewItems(normalized, activityItems, {
+  const reviewItems = selectCompletedDailyTrailReviewItems(normalized, completedItems, {
     limit: dailyTrailCompletedReviewItemCount
   });
+  const activeActivityId = reviewItems[0]?.homeActivityId || completedItems[0]?.homeActivityId || "";
 
   return createPlan({
     state: normalized,
@@ -359,7 +352,8 @@ export function planCompletedDailyTrailReviewSession(state, items) {
     playItems: reviewItems,
     allItems: safeItems,
     activeActivityId,
-    trailCompleted: true
+    trailCompleted: true,
+    completedTrailReviewMixed: new Set(reviewItems.map((item) => item.homeActivityId)).size > 1
   });
 }
 
@@ -949,6 +943,7 @@ function createPlan({
   continentsOceansReviewType = null,
   checkpointMixedReview = false,
   trailCompleted = false,
+  completedTrailReviewMixed = false,
   trailGoalId = state?.activeTrailGoal || dailyTrailId,
   devOverride = null
 }) {
@@ -989,6 +984,7 @@ function createPlan({
     allItems,
     continentsOceansReviewType,
     checkpointMixedReview,
+    completedTrailReviewMixed,
     trailCompleted,
     devOverride,
     cameraGroups: groupedItems,
@@ -1093,6 +1089,74 @@ function selectDailyTrailReviewItems(state, items, options = {}) {
     ...sortItemsForReviewVariety(state, weakItems).slice(0, weakLimit),
     ...sortItemsForReviewVariety(state, olderItems).slice(0, olderLimit)
   ]).slice(0, limit);
+}
+
+function selectCompletedDailyTrailReviewItems(state, items = [], options = {}) {
+  const limit = Math.max(0, Number(options.limit) || dailyTrailCompletedReviewItemCount);
+  const eligibleItems = items.filter((item) => isItemPracticeEligible(state, item));
+
+  if (limit <= 0 || eligibleItems.length === 0) {
+    return [];
+  }
+
+  const dueItems = eligibleItems.filter((item) => isReviewItemDue(state, item));
+  const selectionPool = dueItems.length > 0 ? dueItems : eligibleItems;
+  const groups = new Map();
+  selectionPool.forEach((item) => {
+    const key = item.homeActivityId || "";
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key).push(item);
+  });
+
+  const sortedGroups = [...groups.values()]
+    .map((groupItems) => sortItemsForCompletedTrailReview(state, groupItems))
+    .sort((left, right) => compareCompletedTrailReviewGroups(state, left, right));
+  const selected = [];
+  const maxGroupLength = Math.max(...sortedGroups.map((groupItems) => groupItems.length));
+
+  for (let index = 0; index < maxGroupLength && selected.length < limit; index += 1) {
+    sortedGroups.forEach((groupItems) => {
+      if (selected.length < limit && groupItems[index]) {
+        selected.push(groupItems[index]);
+      }
+    });
+  }
+
+  return dedupeItems(selected).slice(0, limit);
+}
+
+function sortItemsForCompletedTrailReview(state, items = []) {
+  return [...items].sort((left, right) => {
+    const leftPriority = getReviewPriority(state, left);
+    const rightPriority = getReviewPriority(state, right);
+    const leftProgress = state.itemProgress[left.id] || {};
+    const rightProgress = state.itemProgress[right.id] || {};
+
+    return rightPriority.isRelearning - leftPriority.isRelearning
+      || rightPriority.isWeak - leftPriority.isWeak
+      || rightPriority.isDue - leftPriority.isDue
+      || rightPriority.overdueScore - leftPriority.overdueScore
+      || (rightProgress.missCount || 0) - (leftProgress.missCount || 0)
+      || getRotatingOrder(left, state.currentSessionNumber) - getRotatingOrder(right, state.currentSessionNumber)
+      || left.order - right.order;
+  });
+}
+
+function compareCompletedTrailReviewGroups(state, left = [], right = []) {
+  const leftFirst = left[0] || {};
+  const rightFirst = right[0] || {};
+  const getGroupPriority = (items) => items.reduce((best, item) => {
+    const priority = getReviewPriority(state, item);
+    return Math.max(best, (priority.isRelearning * 1000) + (priority.isWeak * 500) + (priority.isDue * 100) + priority.overdueScore);
+  }, 0);
+  const leftPriority = getGroupPriority(left);
+  const rightPriority = getGroupPriority(right);
+
+  return rightPriority - leftPriority
+    || getRotatingOrder(leftFirst, state.currentSessionNumber) - getRotatingOrder(rightFirst, state.currentSessionNumber)
+    || (leftFirst.order || 0) - (rightFirst.order || 0);
 }
 
 function selectDailyTrailOldSectionReviewItems(state, options = {}) {
