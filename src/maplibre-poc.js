@@ -14,8 +14,10 @@ import {
   applyDailyTrailTeachingProgress,
   buildDailyTrailGoalItems,
   buildWorldCoreDailyTrailItems,
+  DAILY_TRAIL_AFK_RESPONSE_MS,
   dailyTrailGoals,
   dailyTrailStorageKey,
+  DAILY_TRAIL_SLOW_CORRECT_MS,
   dailyTrailUsCapitalsGoalId,
   getDailyTrailGoal,
   getDailyTrailGoalOptions,
@@ -7551,6 +7553,7 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     currentPromptType: "guided",
     currentPromptMode: "introducing",
     currentPromptReason: "",
+    currentPromptStartedAtMs: null,
     instructionLabel: "Tap the highlighted place.",
     visibleInstructionText: "Tap the highlighted place.",
     currentInstructionKey: "",
@@ -7594,6 +7597,7 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     retrievalPromptCount: 0,
     correctCount: 0,
     incorrectCount: 0,
+    slowCorrectMsByTargetId: {},
     recentResults: [],
     recentRetrievalResults: [],
     promptHistory: [],
@@ -8908,6 +8912,11 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
     stats.exposedCount += 1;
   }
   memoryTrail.phase = "answering";
+  memoryTrail.currentPromptStartedAtMs = getMonotonicNowMs();
+  const lastHistory = memoryTrail.promptHistory.at(-1);
+  if (lastHistory) {
+    lastHistory.answerableStartedAtMs = memoryTrail.currentPromptStartedAtMs;
+  }
   memoryTrail.message = getMemoryTrailAnsweringMessage(memoryTrail);
   if (memoryTrail.trayFeedback) {
     debugMemoryTrail("tray feedback retained", {
@@ -11022,7 +11031,8 @@ function getDailyTrailMemoryTrailResult(memoryTrail) {
     taughtTargetIds,
     correctCount: memoryTrail.correctCount,
     incorrectCount: memoryTrail.incorrectCount,
-    missesByTargetId
+    missesByTargetId,
+    slowCorrectMsByTargetId: { ...(memoryTrail?.slowCorrectMsByTargetId || {}) }
   };
 }
 
@@ -11081,6 +11091,12 @@ function advanceMixedDailyTrailCheckpoint() {
   return true;
 }
 
+function getMonotonicNowMs() {
+  return typeof performance !== "undefined" && typeof performance.now === "function"
+    ? performance.now()
+    : Date.now();
+}
+
 function mergeDailyTrailCompletedReviewResult(dailyTrailSession, result) {
   const aggregate = dailyTrailSession.completedReviewResult || {
     completedTargetIds: new Set(),
@@ -11130,7 +11146,8 @@ function finalizeDailyTrailMemoryTrailSession(result) {
     completedTargetIds: [...result.completedTargetIds],
     correctCount: result.correctCount,
     incorrectCount: result.incorrectCount,
-    missesByTargetId: result.missesByTargetId
+    missesByTargetId: result.missesByTargetId,
+    slowCorrectMsByTargetId: result.slowCorrectMsByTargetId
   });
 
   lastDailyTrailSummary = nextState.lastSessionSummary;
@@ -11534,8 +11551,56 @@ function completeMemoryTrailCorrection(memoryTrail, expectedTargetId) {
   }, memoryTrailCorrectPauseMs);
 }
 
+function getDailyTrailCorrectResponseElapsedMs(memoryTrail, targetId) {
+  if (
+    !memoryTrail
+    || memoryTrail.phase !== "answering"
+    || memoryTrail.currentPromptTargetId !== targetId
+    || !Number.isFinite(Number(memoryTrail.currentPromptStartedAtMs))
+  ) {
+    return null;
+  }
+
+  return Math.max(0, getMonotonicNowMs() - Number(memoryTrail.currentPromptStartedAtMs));
+}
+
+function shouldRecordDailyTrailSlowCorrect(memoryTrail, targetId, elapsedMs) {
+  return Boolean(
+    isDailyTrailMemoryTrail(memoryTrail)
+    && !isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
+    && !isCompletedDailyTrailReviewMemoryTrail(memoryTrail)
+    && targetId
+    && memoryTrail?.targetStats?.[targetId]
+    && memoryTrail.currentPromptType !== "guided"
+    && memoryTrail.currentPromptMode !== "learn"
+    && Number.isFinite(Number(elapsedMs))
+    && elapsedMs >= DAILY_TRAIL_SLOW_CORRECT_MS
+    && elapsedMs < DAILY_TRAIL_AFK_RESPONSE_MS
+  );
+}
+
+function recordDailyTrailSlowCorrect(memoryTrail, targetId, elapsedMs) {
+  if (!shouldRecordDailyTrailSlowCorrect(memoryTrail, targetId, elapsedMs)) {
+    return false;
+  }
+
+  const roundedElapsedMs = Math.max(0, Math.round(elapsedMs));
+  memoryTrail.slowCorrectMsByTargetId ||= {};
+  memoryTrail.slowCorrectMsByTargetId[targetId] = Math.max(
+    Number(memoryTrail.slowCorrectMsByTargetId[targetId]) || 0,
+    roundedElapsedMs
+  );
+  const lastHistory = memoryTrail.promptHistory.at(-1);
+  if (lastHistory && lastHistory.targetId === targetId && lastHistory.promptKey === memoryTrail.currentPromptKey) {
+    lastHistory.slowCorrectMs = roundedElapsedMs;
+  }
+  return true;
+}
+
 function handleCorrectMemoryTrailAnswer(memoryTrail, targetId, options = {}) {
   clearMemoryTrailTrayFeedback(memoryTrail, "correct answer");
+  const responseElapsedMs = getDailyTrailCorrectResponseElapsedMs(memoryTrail, targetId);
+  const isSlowCorrect = options.devSkip ? false : recordDailyTrailSlowCorrect(memoryTrail, targetId, responseElapsedMs);
   const stats = memoryTrail.targetStats?.[targetId];
   if (options.devSkip && isGuidedMemoryTrailPrompt(memoryTrail) && stats) {
     stats.exposedCount = Math.max(stats.exposedCount || 0, 1);
@@ -11576,6 +11641,13 @@ function handleCorrectMemoryTrailAnswer(memoryTrail, targetId, options = {}) {
   }, memoryTrailCorrectPauseMs);
 
   maybeSpeakPlaceToNameFeedbackTarget(memoryTrail, targetId, options);
+
+  if (isSlowCorrect) {
+    debugMemoryTrail("daily trail slow correct recorded", {
+      targetId,
+      elapsedMs: Math.round(responseElapsedMs)
+    });
+  }
 }
 
 function handleIncorrectMemoryTrailAnswer(memoryTrail, expectedTargetId, options = {}) {

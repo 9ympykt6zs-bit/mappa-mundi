@@ -455,6 +455,7 @@ export class MapLibreActivityRunner {
     this.completedIds = [];
     this.selectedTargetId = "";
     this.memoryTrailCheckpointPreAnswerStyle = false;
+    this.memoryTrailSuppressPreAnswerOutlines = false;
     this.shapeTargets = [];
     this.pointTargets = [];
     this.visualPointTargets = [];
@@ -807,7 +808,13 @@ export class MapLibreActivityRunner {
       this.memoryTrailCorrectHighlightIds = [];
       this.memoryTrailWrongHighlightIds = [];
       this.memoryTrailCheckpointPreAnswerStyle = false;
+      this.memoryTrailSuppressPreAnswerOutlines = false;
     }
+    this.refreshDifficultyVisuals();
+  }
+
+  setMemoryTrailPreAnswerOutlinesSuppressed(isSuppressed = false) {
+    this.memoryTrailSuppressPreAnswerOutlines = Boolean(isSuppressed);
     this.refreshDifficultyVisuals();
   }
 
@@ -865,13 +872,19 @@ export class MapLibreActivityRunner {
     return Boolean(this.studyPreviewMode && this.memoryTrailCheckpointPreAnswerStyle);
   }
 
+  isMemoryTrailPreAnswerOutlineSuppressed() {
+    return Boolean(this.studyPreviewMode && this.memoryTrailSuppressPreAnswerOutlines);
+  }
+
   getMemoryTrailPromptVisualState() {
     const checkpointPreAnswerStyle = this.isMemoryTrailCheckpointPreAnswerStyleEnabled();
+    const preAnswerOutlineSuppressed = this.isMemoryTrailPreAnswerOutlineSuppressed();
     return {
       checkpointPreAnswerStyle,
+      preAnswerOutlineSuppressed,
       selectedTargetId: this.selectedTargetId || "",
       activeTargetVisualIds: this.getActiveTargetVisualIds(),
-      blueOutlineSource: checkpointPreAnswerStyle ? "state-line:targetStroke" : "state-line:studyTargetLine",
+      blueOutlineSource: preAnswerOutlineSuppressed ? "suppressed" : checkpointPreAnswerStyle ? "state-line:targetStroke" : "state-line:studyTargetLine",
       neutralizedOutlineLayerIds: checkpointPreAnswerStyle
         ? ["state-fill", "state-line", ...(this.isContinentsOceansActivity() ? ["ocean-region-line"] : [])]
         : []
@@ -5765,7 +5778,9 @@ export class MapLibreActivityRunner {
         ["match", ["get", "id"], ...this.getColorMatchStops(), colors.targetFill],
         ["==", ["get", "physicalFeatureType"], "mountain-range"],
         this.getMountainRangeFillColorExpression(),
-        colors.studyTargetFill
+        this.isMemoryTrailPreAnswerOutlineSuppressed()
+          ? ["match", ["get", "id"], ...this.getMutedTargetColorStops(), colors.targetFill]
+          : colors.studyTargetFill
       ];
     }
 
@@ -5957,8 +5972,8 @@ export class MapLibreActivityRunner {
         ["in", ["get", "id"], ["literal", this.completedIds]],
         1,
         ["==", ["get", "physicalFeatureType"], "mountain-range"],
-        0.52,
-        0.86
+        this.isMemoryTrailPreAnswerOutlineSuppressed() ? 0 : 0.52,
+        this.isMemoryTrailPreAnswerOutlineSuppressed() ? 0 : 0.86
       ];
     }
 

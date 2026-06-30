@@ -7,6 +7,8 @@ export const dailyTrailNewItemCount = 4;
 export const dailyTrailReviewItemCount = 10;
 export const dailyTrailCheckpointReviewItemCount = 10;
 export const dailyTrailCompletedReviewItemCount = 10;
+export const DAILY_TRAIL_SLOW_CORRECT_MS = 6000;
+export const DAILY_TRAIL_AFK_RESPONSE_MS = 60000;
 export const dailyTrailGoals = [
   {
     id: dailyTrailId,
@@ -444,6 +446,7 @@ export function applyDailyTrailSessionResults(state, plan, result = {}) {
   const itemsByTargetId = new Map((plan?.playItems || []).map((item) => [item.targetId, item]));
   const completedTargetIds = new Set(result.completedTargetIds || []);
   const missesByTargetId = result.missesByTargetId || {};
+  const slowCorrectMsByTargetId = result.slowCorrectMsByTargetId || {};
   const practicedItems = [];
   const weakItems = [];
   const completedDate = getLocalDateString();
@@ -466,10 +469,21 @@ export function applyDailyTrailSessionResults(state, plan, result = {}) {
     }
   });
 
+  Object.keys(slowCorrectMsByTargetId).forEach((targetId) => {
+    if (!itemsByTargetId.has(targetId)) {
+      const fallback = (plan?.allItems || []).find((item) => item.targetId === targetId);
+      if (fallback) {
+        itemsByTargetId.set(targetId, fallback);
+      }
+    }
+  });
+
   itemsByTargetId.forEach((item, targetId) => {
     const progress = getOrCreateItemProgress(next, item);
     const missCount = Number(missesByTargetId[targetId]) || 0;
-    const wasSeen = completedTargetIds.has(targetId) || missCount > 0;
+    const slowCorrectMs = Number(slowCorrectMsByTargetId[targetId]) || 0;
+    const hasSlowCorrectSignal = completedTargetIds.has(targetId) && slowCorrectMs > 0;
+    const wasSeen = completedTargetIds.has(targetId) || missCount > 0 || hasSlowCorrectSignal;
 
     if (!wasSeen) {
       return;
@@ -488,10 +502,17 @@ export function applyDailyTrailSessionResults(state, plan, result = {}) {
       progress.correctStreak = 0;
     }
 
+    if (hasSlowCorrectSignal) {
+      progress.slowCorrectCount = Math.max(0, Number(progress.slowCorrectCount) || 0) + 1;
+      progress.lastSlowCorrectSession = next.currentSessionNumber;
+      progress.lastSlowCorrectMs = Math.max(0, Math.round(slowCorrectMs));
+    }
+
     progress.status = getNextItemStatus(progress, missCount);
     updateMemorySchedulingAfterAttempt(progress, {
       isCorrect: completedTargetIds.has(targetId),
-      missCount
+      missCount,
+      hasSlowCorrectSignal
     }, next, completedDate);
     practicedItems.push(item);
 
@@ -1079,6 +1100,7 @@ function selectDailyTrailReviewItems(state, items, options = {}) {
     const progress = state.itemProgress[item.id] || {};
     return isCurrentlyWeakProgress(progress)
       || progress.status === "introduced"
+      || hasRecentSlowCorrectSignal(state, progress)
       || (progress.status === "learning" && (progress.correctStreak || 0) <= 0);
   });
   const olderItems = selectionPool.filter((item) => !weakItems.includes(item));
@@ -1205,7 +1227,8 @@ function isDailyTrailWeakReviewCandidate(state, item) {
   return isCurrentlyWeakProgress(progress)
     || progress.memoryState === "relearning"
     || (Number(progress.missCount) || 0) > 0
-    || (Number(progress.lapseCount) || 0) > 0;
+    || (Number(progress.lapseCount) || 0) > 0
+    || hasRecentSlowCorrectSignal(state, progress);
 }
 
 function sortItemsForWeakReview(state, items = []) {
@@ -1269,7 +1292,7 @@ function isDailyTrailItemDue(state, item) {
   }
 
   const progress = state.itemProgress[item.id] || {};
-  if (isCurrentlyWeakProgress(progress) || progress.status === "introduced" || progress.memoryState === "relearning") {
+  if (isCurrentlyWeakProgress(progress) || progress.status === "introduced" || progress.memoryState === "relearning" || hasRecentSlowCorrectSignal(state, progress)) {
     return true;
   }
 
@@ -1477,7 +1500,10 @@ function normalizeItemProgress(value, stateContext = {}) {
       missCount: Math.max(0, Number(progress?.missCount) || 0),
       correctStreak: Math.max(0, Number(progress?.correctStreak) || 0),
       lastSeenSession: Math.max(0, Number(progress?.lastSeenSession) || 0),
-      introducedSession: Math.max(0, Number(progress?.introducedSession) || 0)
+      introducedSession: Math.max(0, Number(progress?.introducedSession) || 0),
+      slowCorrectCount: Math.max(0, Number(progress?.slowCorrectCount) || 0),
+      lastSlowCorrectSession: Math.max(0, Number(progress?.lastSlowCorrectSession) || 0),
+      lastSlowCorrectMs: Math.max(0, Number(progress?.lastSlowCorrectMs) || 0)
     };
     const memoryFields = getDefaultMemoryFields({
       ...progress,
@@ -1534,7 +1560,10 @@ function getDefaultMemoryFields(progress = {}, stateContext = {}) {
       dueDate: null,
       lastReviewedSession: 0,
       lastReviewedDate: null,
-      lapseCount: 0
+      lapseCount: 0,
+      slowCorrectCount: 0,
+      lastSlowCorrectSession: 0,
+      lastSlowCorrectMs: 0
     };
   }
 
@@ -1745,6 +1774,7 @@ function getWeakItems(state, items) {
       return progress && (
         isCurrentlyWeakProgress(progress)
         || progress.status === "introduced"
+        || hasRecentSlowCorrectSignal(state, progress)
         || (progress.status === "learning" && (progress.correctStreak || 0) <= 0)
       );
     })
@@ -1758,6 +1788,13 @@ function getWeakItems(state, items) {
 
 function isCurrentlyWeakProgress(progress = {}) {
   return (progress.missCount || 0) > 0 && (progress.correctStreak || 0) <= 0;
+}
+
+function hasRecentSlowCorrectSignal(state, progress = {}) {
+  const slowCorrectCount = Math.max(0, Number(progress.slowCorrectCount) || 0);
+  const lastSlowCorrectSession = Math.max(0, Number(progress.lastSlowCorrectSession) || 0);
+  const currentSessionNumber = Math.max(1, Number(state?.currentSessionNumber) || 1);
+  return slowCorrectCount > 0 && lastSlowCorrectSession >= Math.max(1, currentSessionNumber - reviewCooldownSessions);
 }
 
 function getNextItemStatus(progress, missCount) {
@@ -1783,6 +1820,7 @@ function getNextItemStatus(progress, missCount) {
 function updateMemorySchedulingAfterAttempt(progress, result, state, completedDate) {
   const isCorrect = Boolean(result?.isCorrect);
   const missCount = Math.max(0, Number(result?.missCount) || 0);
+  const hasSlowCorrectSignal = Boolean(result?.hasSlowCorrectSignal);
   const currentSessionNumber = Math.max(1, Number(state.currentSessionNumber) || 1);
 
   progress.lastReviewedSession = currentSessionNumber;
@@ -1816,7 +1854,7 @@ function updateMemorySchedulingAfterAttempt(progress, result, state, completedDa
   progress.stability = Math.max(1, previousStability + growth + streakBonus);
   progress.retrievability = clampNumber((Number(progress.retrievability) || 0.55) + 0.18, minRetrievability, 0.97, 0.73);
 
-  const interval = Math.max(1, Math.round(progress.stability));
+  const interval = hasSlowCorrectSignal ? 1 : Math.max(1, Math.round(progress.stability));
   progress.dueSession = currentSessionNumber + interval;
   progress.dueDate = addDaysToLocalDate(completedDate, interval);
 }
