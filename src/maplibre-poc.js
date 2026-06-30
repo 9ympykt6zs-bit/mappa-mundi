@@ -7494,6 +7494,8 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
   const newTargetIdSet = new Set(Array.isArray(options.newTargetIds) ? options.newTargetIds.filter(Boolean) : []);
   const insertedReviewTargetIds = [...new Set((Array.isArray(options.insertedReviewTargetIds) ? options.insertedReviewTargetIds : [])
     .filter(Boolean))];
+  const weakReviewTargetIds = [...new Set((Array.isArray(options.weakReviewTargetIds) ? options.weakReviewTargetIds : [])
+    .filter(Boolean))];
   const targets = (activity?.targets || [])
     .filter((target) => target?.id)
     .filter((target) => targetIdSet.size === 0 || targetIdSet.has(target.id));
@@ -7566,6 +7568,7 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     lastDailyTrailPracticeRoundOrder: [],
     dailyTrailInsertedReviewBatchKeys: [],
     dailyTrailInsertedReviewTargetIds: insertedReviewTargetIds,
+    dailyTrailWeakReviewTargetIds: weakReviewTargetIds,
     targetStats,
     promptCount: 0,
     retrievalPromptCount: 0,
@@ -10017,7 +10020,8 @@ function getDailyTrailNewBatchInsertedReview(memoryTrail, dueIntroduced = []) {
     .filter((stats) => hasTargetCompletedGuidedExposure(stats))
     .filter((stats) => !stats.isWeak && (stats.totalRetrievalIncorrect || 0) <= 0)
     .sort((left, right) => (
-      (left.lastPromptedAt || 0) - (right.lastPromptedAt || 0)
+      getDailyTrailWeakReviewRank(memoryTrail, right) - getDailyTrailWeakReviewRank(memoryTrail, left)
+      || (left.lastPromptedAt || 0) - (right.lastPromptedAt || 0)
       || (left.totalRetrievalCorrect || 0) - (right.totalRetrievalCorrect || 0)
       || left.targetId.localeCompare(right.targetId)
     ))[0] || null;
@@ -10030,6 +10034,10 @@ function getDailyTrailNewBatchInsertedReview(memoryTrail, dueIntroduced = []) {
   }
 
   return review;
+}
+
+function getDailyTrailWeakReviewRank(memoryTrail, stats) {
+  return memoryTrail?.dailyTrailWeakReviewTargetIds?.includes(stats?.targetId) ? 1 : 0;
 }
 
 function shouldDeferDailyTrailInsertedReviewTarget(memoryTrail, stats) {
@@ -14749,6 +14757,10 @@ function startDailyTrailMemoryTrailStepIfNeeded() {
       .filter((item) => isDailyTrailItemUnseen(latestState, item))
       .map((item) => item.targetId)
       .filter(Boolean);
+  const weakReviewTargetIds = plannedItemsForActivity
+    .filter((item) => isDailyTrailPlannedWeakReviewItem(activeDailyTrailSession.state, item))
+    .map((item) => item.targetId)
+    .filter(Boolean);
 
   if (targetIds.length === 0) {
     return false;
@@ -14773,12 +14785,27 @@ function startDailyTrailMemoryTrailStepIfNeeded() {
     newTargetIds,
     source: "daily-trail",
     targetIds,
-    insertedReviewTargetIds: plannedItemsForActivity
-      .filter((item) => item.homeActivityId && item.homeActivityId !== activity.id)
-      .map((item) => item.targetId)
-      .filter(Boolean),
+    insertedReviewTargetIds: [
+      ...plannedItemsForActivity
+        .filter((item) => item.homeActivityId && item.homeActivityId !== activity.id)
+        .map((item) => item.targetId)
+        .filter(Boolean),
+      ...weakReviewTargetIds
+    ],
+    weakReviewTargetIds,
     checkpointReview: isDailyTrailCheckpointPlan(activeDailyTrailSession.plan)
   });
+}
+
+function isDailyTrailPlannedWeakReviewItem(state, item) {
+  if (!item?.id || isDailyTrailItemUnseen(state, item)) {
+    return false;
+  }
+
+  const progress = state?.itemProgress?.[item.id] || {};
+  return (Number(progress.missCount) || 0) > 0
+    || (Number(progress.lapseCount) || 0) > 0
+    || progress.memoryState === "relearning";
 }
 
 function isDailyTrailItemUnseen(state, item) {

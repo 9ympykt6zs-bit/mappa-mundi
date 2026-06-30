@@ -583,16 +583,25 @@ function buildLearningPlan(state, items) {
     limit: dailyTrailReviewItemCount,
     requireDue: newItems.length > 0
   });
+  const weakReviewItems = newItems.length > 0
+    ? selectDailyTrailWeakReviewItems(state, reviewCandidateItems, {
+      activeActivityId,
+      excludeIds: newItemIds,
+      limit: 1
+    })
+    : [];
+  const weakReviewIds = new Set(weakReviewItems.map((item) => item.id));
   const oldSectionReviewItems = newItems.length > 0
     ? selectDailyTrailOldSectionReviewItems(state, {
       activeActivityId,
       availableItems: reviewCandidateItems,
       playableItems,
-      excludeIds: newItemIds,
+      excludeIds: new Set([...newItemIds, ...weakReviewIds]),
       limit: 1
     })
     : [];
   const combinedReviewItems = dedupeItems([
+    ...weakReviewItems,
     ...oldSectionReviewItems,
     ...reviewItems
   ]).slice(0, dailyTrailReviewItemCount);
@@ -1109,6 +1118,47 @@ function selectDailyTrailOldSectionReviewItems(state, options = {}) {
     excludeIds: options.excludeIds || new Set(),
     limit,
     requireDue: false
+  });
+}
+
+function selectDailyTrailWeakReviewItems(state, items = [], options = {}) {
+  const excludeIds = options.excludeIds || new Set();
+  const limit = Math.max(0, Number(options.limit) || 1);
+  const candidates = items
+    .filter((item) => !excludeIds.has(item.id))
+    .filter((item) => isItemPracticeEligible(state, item))
+    .filter((item) => isDailyTrailWeakReviewCandidate(state, item));
+
+  if (limit <= 0 || candidates.length === 0) {
+    return [];
+  }
+
+  return sortItemsForWeakReview(state, candidates).slice(0, limit);
+}
+
+function isDailyTrailWeakReviewCandidate(state, item) {
+  const progress = state.itemProgress[item.id] || {};
+  return isCurrentlyWeakProgress(progress)
+    || progress.memoryState === "relearning"
+    || (Number(progress.missCount) || 0) > 0
+    || (Number(progress.lapseCount) || 0) > 0;
+}
+
+function sortItemsForWeakReview(state, items = []) {
+  return [...items].sort((left, right) => {
+    const leftProgress = state.itemProgress[left.id] || {};
+    const rightProgress = state.itemProgress[right.id] || {};
+    const leftPriority = getReviewPriority(state, left);
+    const rightPriority = getReviewPriority(state, right);
+
+    return rightPriority.isRelearning - leftPriority.isRelearning
+      || rightPriority.isWeak - leftPriority.isWeak
+      || (rightProgress.missCount || 0) - (leftProgress.missCount || 0)
+      || (rightProgress.lapseCount || 0) - (leftProgress.lapseCount || 0)
+      || rightPriority.isDue - leftPriority.isDue
+      || rightPriority.overdueScore - leftPriority.overdueScore
+      || (rightProgress.lastSeenSession || rightProgress.lastReviewedSession || 0) - (leftProgress.lastSeenSession || leftProgress.lastReviewedSession || 0)
+      || getRotatingOrder(left, state.currentSessionNumber) - getRotatingOrder(right, state.currentSessionNumber);
   });
 }
 
