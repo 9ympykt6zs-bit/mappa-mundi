@@ -441,6 +441,15 @@ function markDailyTrailItemIntroduced(state, item) {
   }
 }
 
+function isNormalNewLearningBatchPlan(plan = {}) {
+  return Boolean(
+    plan?.sessionType === "learning-session"
+    && !plan?.continentsOceansReviewType
+    && Array.isArray(plan?.newItems)
+    && plan.newItems.length > 0
+  );
+}
+
 export function applyDailyTrailSessionResults(state, plan, result = {}) {
   const next = createDailyTrailState(state);
   const itemsByTargetId = new Map((plan?.playItems || []).map((item) => [item.targetId, item]));
@@ -532,6 +541,7 @@ export function applyDailyTrailSessionResults(state, plan, result = {}) {
   const accuracy = Math.max(0, totalCorrect / totalAttempts);
   const newMissLimitPassed = (plan?.newItems || []).every((item) => (missesByTargetId[item.targetId] || 0) <= 1);
   const passedCheckpoint = !isCheckpoint || (accuracy >= 0.85 && newMissLimitPassed);
+  const completedNormalNewLearningBatch = isNormalNewLearningBatchPlan(plan);
   updateContinentsOceansProgress(next, plan, practicedItems, missesByTargetId, completedDate);
 
   const trailCompleted = isDailyTrailPathComplete(next, plan?.allItems || []);
@@ -556,7 +566,7 @@ export function applyDailyTrailSessionResults(state, plan, result = {}) {
   } else if (plan?.sessionType === "remediation-session") {
     next.pendingRemediation = false;
     next.pendingCheckpointRetry = true;
-  } else {
+  } else if (completedNormalNewLearningBatch) {
     next.sessionsSinceLastCheckpoint += 1;
   }
 

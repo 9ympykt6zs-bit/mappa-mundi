@@ -139,6 +139,85 @@ assert.equal(completedState.sessionsSinceLastCheckpoint, 0);
 assert.equal(completedState.pendingRemediation, false);
 assert.equal(completedState.pendingCheckpointRetry, false);
 
+const normalLearningPlan = {
+  sessionType: "learning-session",
+  newItems: [items[0]],
+  reviewItems: [],
+  playItems: [items[0]],
+  allItems: items
+};
+const normalLearningState = applyDailyTrailSessionResults(createDailyTrailState({
+  ...state,
+  sessionsSinceLastCheckpoint: 1
+}), normalLearningPlan, {
+  completedTargetIds: [items[0].targetId],
+  correctCount: 1,
+  incorrectCount: 0,
+  missesByTargetId: {}
+});
+assert.equal(
+  normalLearningState.sessionsSinceLastCheckpoint,
+  2,
+  "A completed normal new-learning batch should advance checkpoint cadence."
+);
+
+const reviewOnlyPlan = {
+  sessionType: "learning-session",
+  newItems: [],
+  reviewItems: [items[0]],
+  playItems: [items[0]],
+  allItems: items
+};
+const reviewOnlyState = applyDailyTrailSessionResults(createDailyTrailState({
+  ...state,
+  sessionsSinceLastCheckpoint: 1
+}), reviewOnlyPlan, {
+  completedTargetIds: [items[0].targetId],
+  correctCount: 1,
+  incorrectCount: 0,
+  missesByTargetId: {}
+});
+assert.equal(
+  reviewOnlyState.sessionsSinceLastCheckpoint,
+  1,
+  "A review-only Daily Trail session must not advance checkpoint cadence."
+);
+
+const continentsOceansFoundationPlan = {
+  sessionType: "learning-session",
+  continentsOceansReviewType: "foundation",
+  newItems: [items[0]],
+  reviewItems: [],
+  playItems: [items[0]],
+  allItems: items
+};
+const continentsOceansFoundationState = applyDailyTrailSessionResults(createDailyTrailState({
+  ...state,
+  sessionsSinceLastCheckpoint: 1
+}), continentsOceansFoundationPlan, {
+  completedTargetIds: [items[0].targetId],
+  correctCount: 1,
+  incorrectCount: 0,
+  missesByTargetId: {}
+});
+assert.equal(
+  continentsOceansFoundationState.sessionsSinceLastCheckpoint,
+  1,
+  "C&O foundation batches must not advance mixed checkpoint cadence."
+);
+
+const checkpointReadyState = applyDailyTrailSessionResults(createDailyTrailState({
+  ...state,
+  sessionsSinceLastCheckpoint: 2
+}), normalLearningPlan, {
+  completedTargetIds: [items[0].targetId],
+  correctCount: 1,
+  incorrectCount: 0,
+  missesByTargetId: {}
+});
+assert.equal(checkpointReadyState.sessionsSinceLastCheckpoint, 3);
+assert.equal(planDailyTrailSession(checkpointReadyState, items).sessionType, "checkpoint");
+
 const runtimeSource = fs.readFileSync(new URL("../src/maplibre-poc.js", import.meta.url), "utf8");
 const runnerSource = fs.readFileSync(new URL("../src/maplibre/maplibre-activity-runner.js", import.meta.url), "utf8");
 const appEntrySource = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");

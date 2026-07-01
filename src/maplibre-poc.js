@@ -11132,17 +11132,32 @@ function advanceSegmentedCompletedDailyTrailReview() {
   return true;
 }
 
+function getDailyTrailSegmentCompleteMessage(plan = {}, summary = {}) {
+  const newCount = Math.max(0, Number(summary.newCount ?? plan?.newItems?.length) || 0);
+  if (
+    summary?.trailCompleted
+    || plan?.sessionType !== "learning-session"
+    || plan?.continentsOceansReviewType
+    || newCount <= 0
+  ) {
+    return "";
+  }
+
+  return `${newCount} new ${newCount === 1 ? "place" : "places"} learned`;
+}
+
 function finalizeDailyTrailMemoryTrailSession(result) {
   if (!activeDailyTrailSession) {
     return;
   }
 
+  const completedPlan = activeDailyTrailSession.plan;
   let nextState = activeDailyTrailSession.state;
   result.taughtTargetIds.forEach((targetId) => {
-    nextState = applyDailyTrailTeachingProgress(nextState, activeDailyTrailSession.plan, targetId);
+    nextState = applyDailyTrailTeachingProgress(nextState, completedPlan, targetId);
   });
 
-  nextState = applyDailyTrailSessionResults(nextState, activeDailyTrailSession.plan, {
+  nextState = applyDailyTrailSessionResults(nextState, completedPlan, {
     completedTargetIds: [...result.completedTargetIds],
     correctCount: result.correctCount,
     incorrectCount: result.incorrectCount,
@@ -11151,6 +11166,7 @@ function finalizeDailyTrailMemoryTrailSession(result) {
   });
 
   lastDailyTrailSummary = nextState.lastSessionSummary;
+  const segmentCompleteMessage = getDailyTrailSegmentCompleteMessage(completedPlan, lastDailyTrailSummary);
   activeDailyTrailSession = null;
   activeStudySession = null;
   runner.setStudyPreviewMode(false);
@@ -11158,6 +11174,9 @@ function finalizeDailyTrailMemoryTrailSession(result) {
   runner.setCompletedTargets([]);
   hideMemoryTrailOverlay();
   showAppScreen("daily-trail-summary", { pushHistory: false });
+  if (segmentCompleteMessage) {
+    showFeedback(segmentCompleteMessage, true);
+  }
 }
 
 function scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target) {
