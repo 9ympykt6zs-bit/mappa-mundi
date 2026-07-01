@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import {
   createDailyTrailState,
   dailyTrailId,
@@ -168,6 +169,19 @@ assert.equal(
   false,
   "Unseen items from previous sections should not be selected as old review."
 );
+
+const runtimeSource = fs.readFileSync(new URL("../src/maplibre-poc.js", import.meta.url), "utf8");
+[
+  "function isDailyTrailInsertedOldReviewPrompt(memoryTrail, selection = {})",
+  "Remember this one?",
+  "memoryTrail?.dailyTrailInsertedReviewTargetIds?.includes(targetId)",
+  "!memoryTrail?.dailyTrailWeakReviewTargetIds?.includes(targetId)",
+  "!isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)",
+  "!isCompletedDailyTrailReviewMemoryTrail(memoryTrail)",
+  "promptReason !== \"missed new item retry\"",
+  "return `${oldReviewPrefix}Practice: what ${singularNoun} is this?`;",
+  "`${oldReviewPrefix}Find the named ${singularNoun}.`;"
+].forEach((hook) => assert.ok(runtimeSource.includes(hook), `Missing old-review copy hook: ${hook}`));
 
 console.log("Daily Trail old-section review check passed:", JSON.stringify({
   activeActivityId: plan.activeActivityId,

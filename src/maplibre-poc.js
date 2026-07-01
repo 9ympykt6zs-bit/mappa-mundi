@@ -9722,24 +9722,30 @@ function focusContinentsOceansNamePromptTarget(memoryTrail, target) {
 function getMemoryTrailPromptMessage(memoryTrail, target, selection) {
   const label = getMemoryTrailTargetLabel(target);
   const singularNoun = getInstructionNoun();
+  const oldReviewPrefix = isDailyTrailInsertedOldReviewPrompt(memoryTrail, selection)
+    ? "Remember this one? "
+    : "";
 
   if (selection.promptType === "guided") {
     return label ? `Learn: ${label}.` : "Learn this place.";
   }
 
   if (selection.promptType === "place_to_name") {
-    return `Practice: what ${singularNoun} is this?`;
+    return `${oldReviewPrefix}Practice: what ${singularNoun} is this?`;
   }
 
   if (selection.mode === "weak-review") {
     return label ? `Practice: let's review ${label}.` : "Practice: let's review this one.";
   }
 
-  return label ? `Practice: find ${label}.` : "Practice: find the matching place.";
+  return label ? `${oldReviewPrefix}Practice: find ${label}.` : `${oldReviewPrefix}Practice: find the matching place.`;
 }
 
 function getMemoryTrailAnsweringMessage(memoryTrail) {
   const singularNoun = getInstructionNoun();
+  const oldReviewPrefix = isDailyTrailInsertedOldReviewPrompt(memoryTrail)
+    ? "Remember this one? "
+    : "";
 
   if (isGuidedMemoryTrailPrompt(memoryTrail)) {
     return memoryTrail.promptName
@@ -9748,16 +9754,41 @@ function getMemoryTrailAnsweringMessage(memoryTrail) {
   }
 
   if (isPlaceToNameMemoryTrailPrompt(memoryTrail)) {
-    return `What ${singularNoun} is this?`;
+    return `${oldReviewPrefix}What ${singularNoun} is this?`;
   }
 
   if (isNameToPlaceMemoryTrailPrompt(memoryTrail)) {
     return getMemoryTrailActivePromptLabel(memoryTrail)
-      ? `Tap the ${singularNoun} named below:`
-      : `Find the named ${singularNoun}.`;
+      ? `${oldReviewPrefix}Tap the ${singularNoun} named below:`
+      : `${oldReviewPrefix}Find the named ${singularNoun}.`;
   }
 
-  return "Find the matching place.";
+  return `${oldReviewPrefix}Find the matching place.`;
+}
+
+function isDailyTrailInsertedOldReviewPrompt(memoryTrail, selection = {}) {
+  if (
+    !isDailyTrailMemoryTrail(memoryTrail)
+    || isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
+    || isCompletedDailyTrailReviewMemoryTrail(memoryTrail)
+  ) {
+    return false;
+  }
+
+  const targetId = selection.targetId || memoryTrail?.currentPromptTargetId || "";
+  if (!targetId) {
+    return false;
+  }
+
+  const promptType = selection.promptType || memoryTrail?.currentPromptType || "";
+  const promptMode = selection.mode || memoryTrail?.currentPromptMode || "";
+  const promptReason = selection.reason || memoryTrail?.currentPromptReason || "";
+  return promptType !== "guided"
+    && promptMode !== "learn"
+    && promptMode !== "weak-review"
+    && promptReason !== "missed new item retry"
+    && memoryTrail?.dailyTrailInsertedReviewTargetIds?.includes(targetId)
+    && !memoryTrail?.dailyTrailWeakReviewTargetIds?.includes(targetId);
 }
 
 function getMemoryTrailFallbackSpeechDurationMs(labelText) {
