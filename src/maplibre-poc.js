@@ -11161,6 +11161,7 @@ function getDailyTrailMemoryTrailResult(memoryTrail) {
       .filter((stats) => missedTargetIds.has(stats.targetId) && (stats.totalRetrievalIncorrect || 0) > 0)
       .map((stats) => [stats.targetId, stats.totalRetrievalIncorrect])
   );
+  const retriedNewTargetIds = [...new Set(memoryTrail?.dailyTrailRetriedNewTargetIds || [])].filter(Boolean);
 
   return {
     completedTargetIds,
@@ -11168,6 +11169,8 @@ function getDailyTrailMemoryTrailResult(memoryTrail) {
     correctCount: memoryTrail.correctCount,
     incorrectCount: memoryTrail.incorrectCount,
     missesByTargetId,
+    retriedNewTargetIds,
+    missedNewRetryCount: retriedNewTargetIds.length,
     slowCorrectMsByTargetId: { ...(memoryTrail?.slowCorrectMsByTargetId || {}) }
   };
 }
@@ -11192,13 +11195,17 @@ function mergeDailyTrailCheckpointResult(dailyTrailSession, result) {
     taughtTargetIds: new Set(),
     correctCount: 0,
     incorrectCount: 0,
-    missesByTargetId: {}
+    missesByTargetId: {},
+    retriedNewTargetIds: new Set(),
+    missedNewRetryCount: 0
   };
 
   result.completedTargetIds.forEach((targetId) => aggregate.completedTargetIds.add(targetId));
   result.taughtTargetIds.forEach((targetId) => aggregate.taughtTargetIds.add(targetId));
   aggregate.correctCount += result.correctCount;
   aggregate.incorrectCount += result.incorrectCount;
+  (result.retriedNewTargetIds || []).forEach((targetId) => aggregate.retriedNewTargetIds.add(targetId));
+  aggregate.missedNewRetryCount = aggregate.retriedNewTargetIds.size;
   Object.entries(result.missesByTargetId).forEach(([targetId, missCount]) => {
     aggregate.missesByTargetId[targetId] = (aggregate.missesByTargetId[targetId] || 0) + missCount;
   });
@@ -11240,13 +11247,17 @@ function mergeDailyTrailCompletedReviewResult(dailyTrailSession, result) {
     taughtTargetIds: new Set(),
     correctCount: 0,
     incorrectCount: 0,
-    missesByTargetId: {}
+    missesByTargetId: {},
+    retriedNewTargetIds: new Set(),
+    missedNewRetryCount: 0
   };
 
   result.completedTargetIds.forEach((targetId) => aggregate.completedTargetIds.add(targetId));
   result.taughtTargetIds.forEach((targetId) => aggregate.taughtTargetIds.add(targetId));
   aggregate.correctCount += result.correctCount;
   aggregate.incorrectCount += result.incorrectCount;
+  (result.retriedNewTargetIds || []).forEach((targetId) => aggregate.retriedNewTargetIds.add(targetId));
+  aggregate.missedNewRetryCount = aggregate.retriedNewTargetIds.size;
   Object.entries(result.missesByTargetId).forEach(([targetId, missCount]) => {
     aggregate.missesByTargetId[targetId] = (aggregate.missesByTargetId[targetId] || 0) + missCount;
   });
@@ -15372,6 +15383,7 @@ function renderDailyTrailSummaryScreen() {
     practicedCount: 0,
     newCount: 0,
     reviewCount: 0,
+    missedNewRetryCount: 0,
     weakItems: [],
     sessionsUntilNextCheckpoint: 3
   };
@@ -15395,11 +15407,7 @@ function renderDailyTrailSummaryScreen() {
   const stats = document.createElement("div");
   stats.className = "daily-trail-stat-grid";
 
-  [
-    ["New", summary.newCount],
-    ["Review", summary.reviewCount],
-    ["Next checkpoint", `${summary.sessionsUntilNextCheckpoint} sessions`]
-  ].forEach(([label, value]) => {
+  getDailyTrailSummaryMetricRows(summary).forEach(([label, value]) => {
     const stat = document.createElement("p");
     stat.className = "daily-trail-stat";
     stat.textContent = `${label}: ${value}`;
@@ -15421,15 +15429,46 @@ function renderDailyTrailSummaryScreen() {
   continueButton.textContent = "Continue Trail";
   continueButton.addEventListener("click", continueDailyTrailFromSummary);
 
-  const mainMenuButton = document.createElement("button");
-  mainMenuButton.type = "button";
-  mainMenuButton.className = "main-menu-button main-menu-button-quiet";
-  mainMenuButton.textContent = "Main Menu";
-  mainMenuButton.addEventListener("click", () => showAppScreen("main-menu"));
-
-  actions.append(continueButton, mainMenuButton);
+  actions.appendChild(continueButton);
   panel.append(heading, practiced, stats, weak, actions);
   journeyShellContent.appendChild(panel);
+}
+
+function getDailyTrailSummaryMetricRows(summary = {}) {
+  const rows = [];
+  const sessionType = summary.sessionType || "learning-session";
+  const isCheckpoint = sessionType === "checkpoint" || sessionType === "remediationCheckpoint";
+  const newCount = Math.max(0, Number(summary.newCount) || 0);
+  const reviewCount = Math.max(0, Number(summary.reviewCount) || 0);
+  const missedNewRetryCount = Math.max(0, Number(summary.missedNewRetryCount) || 0);
+  const sessionsUntilNextCheckpoint = Math.max(0, Number(summary.sessionsUntilNextCheckpoint) || 0);
+
+  if (isCheckpoint) {
+    rows.push(["Checkpoint", summary.checkpointPassed === false ? "Review needed" : "Passed"]);
+    const correct = Number(summary.checkpointCorrectCount);
+    const incorrect = Number(summary.checkpointIncorrectCount);
+    if (Number.isFinite(correct) && Number.isFinite(incorrect)) {
+      rows.push(["Checkpoint result", `${Math.max(0, correct)} / ${Math.max(0, correct + incorrect)} correct`]);
+    }
+  }
+
+  if (newCount > 0) {
+    rows.push(["New places learned", newCount]);
+  }
+
+  if (reviewCount > 0) {
+    rows.push(["Review items strengthened", reviewCount]);
+  }
+
+  if (missedNewRetryCount > 0) {
+    rows.push(["Missed items retried", missedNewRetryCount]);
+  }
+
+  if (!isCheckpoint || summary.checkpointPassed !== false) {
+    rows.push(["Next checkpoint", `${sessionsUntilNextCheckpoint} ${sessionsUntilNextCheckpoint === 1 ? "segment" : "segments"}`]);
+  }
+
+  return rows;
 }
 
 function renderDailyTrailFinishedPanel() {

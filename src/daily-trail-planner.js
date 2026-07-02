@@ -459,6 +459,7 @@ export function applyDailyTrailSessionResults(state, plan, result = {}) {
   const practicedItems = [];
   const weakItems = [];
   const completedDate = getLocalDateString();
+  const newItemIds = new Set((plan?.newItems || []).map((item) => item.id).filter(Boolean));
 
   completedTargetIds.forEach((targetId) => {
     if (!itemsByTargetId.has(targetId)) {
@@ -571,14 +572,28 @@ export function applyDailyTrailSessionResults(state, plan, result = {}) {
   }
 
   next.sessionsUntilNextCheckpoint = getSessionsUntilNextCheckpoint(next.sessionsSinceLastCheckpoint);
+  const taughtTargetIds = new Set(result.taughtTargetIds || []);
+  const learnedNewItems = (plan?.newItems || []).filter((item) => (
+    completedTargetIds.has(item.targetId) || taughtTargetIds.has(item.targetId)
+  ));
+  const reviewItemsStrengthened = practicedItems.filter((item) => !newItemIds.has(item.id));
+  const retriedNewTargetIds = Array.isArray(result.retriedNewTargetIds)
+    ? result.retriedNewTargetIds.filter(Boolean)
+    : [];
+  const missedNewRetryCount = Number.isFinite(Number(result.missedNewRetryCount))
+    ? Math.max(0, Number(result.missedNewRetryCount))
+    : new Set(retriedNewTargetIds).size;
   next.lastSessionSummary = {
     sessionType: plan?.sessionType || "learning-session",
     practicedCount: practicedItems.length,
-    newCount: (plan?.newItems || []).length,
-    reviewCount: Math.max(0, practicedItems.length - (plan?.newItems || []).length),
+    newCount: learnedNewItems.length,
+    reviewCount: reviewItemsStrengthened.length,
+    missedNewRetryCount,
     weakItems: dedupeItems(weakItems).map((item) => ({ id: item.id, label: item.label })),
     sessionsUntilNextCheckpoint: next.sessionsUntilNextCheckpoint,
     checkpointPassed: isCheckpoint ? passedCheckpoint : null,
+    checkpointCorrectCount: isCheckpoint ? totalCorrect : null,
+    checkpointIncorrectCount: isCheckpoint ? totalMisses : null,
     trailCompleted
   };
 
