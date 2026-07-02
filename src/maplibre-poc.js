@@ -2969,6 +2969,7 @@ const MIN_GAP_AFTER_MISS = 1;
 const MEMORY_TRAIL_ANSWER_CHOICE_COUNT = 4;
 const MEMORY_TRAIL_INSTRUCTION_BANNER_MS = 2200;
 const memoryTrailCorrectPauseMs = 520;
+const dailyTrailRetrievalCorrectPauseMs = 360;
 const memoryTrailReplayPauseMs = 900;
 const audioInstructionVisibleDurationMs = 5200;
 const audioInstructionPhrases = {
@@ -8912,10 +8913,10 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
     stats.exposedCount += 1;
   }
   memoryTrail.phase = "answering";
-  memoryTrail.currentPromptStartedAtMs = getMonotonicNowMs();
+  memoryTrail.currentPromptStartedAtMs = null;
   const lastHistory = memoryTrail.promptHistory.at(-1);
   if (lastHistory) {
-    lastHistory.answerableStartedAtMs = memoryTrail.currentPromptStartedAtMs;
+    delete lastHistory.answerableStartedAtMs;
   }
   memoryTrail.message = getMemoryTrailAnsweringMessage(memoryTrail);
   if (memoryTrail.trayFeedback) {
@@ -8968,8 +8969,9 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
   renderStudyExplorePanel();
   logMemoryTrailFindPromptDebug(memoryTrail, selection, target, "rendered");
 
+  let targetSpeechPromise = Promise.resolve(false);
   if (shouldSpeakMemoryTrailTargetAtPromptStart(memoryTrail, target, selection)) {
-    speakMemoryTrailPromptTargetAfterInstruction(
+    targetSpeechPromise = speakMemoryTrailPromptTargetAfterInstruction(
       memoryTrail,
       target,
       selection,
@@ -8978,7 +8980,99 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
     );
   }
 
+  const promptActionablePromise = getMemoryTrailPromptActionablePromise(memoryTrail, selection, {
+    didApplyCheckpointCamera,
+    didApplySectionQuizCamera,
+    didApplyTargetQuizCamera,
+    instructionSpeechPromise,
+    learnCameraReadyPromise,
+    targetSpeechPromise
+  });
+  scheduleMemoryTrailPromptResponseTimer(memoryTrail, selection, promptKey, promptActionablePromise);
+
   return true;
+}
+
+function getMemoryTrailPromptActionablePromise(memoryTrail, selection = {}, waits = {}) {
+  const promptKey = memoryTrail?.currentPromptKey || "";
+  const targetId = selection?.targetId || "";
+  const pending = [];
+  const cameraSettleMs = getMemoryTrailPromptStartCameraSettleMs(memoryTrail, selection, waits);
+
+  if (cameraSettleMs > 0) {
+    pending.push(waitForCurrentMemoryTrailPrompt(memoryTrail, promptKey, targetId, cameraSettleMs));
+  }
+
+  if (isDailyTrailMemoryTrail(memoryTrail)) {
+    pending.push(waits.instructionSpeechPromise);
+    pending.push(waits.learnCameraReadyPromise);
+    pending.push(waits.targetSpeechPromise);
+  }
+
+  const activeWaits = pending.filter((promise) => promise?.then);
+  return activeWaits.length ? Promise.allSettled(activeWaits) : Promise.resolve();
+}
+
+function getMemoryTrailPromptStartCameraSettleMs(memoryTrail, selection = {}, waits = {}) {
+  if (!isDailyTrailMemoryTrail(memoryTrail) || isCompletedDailyTrailReviewMemoryTrail(memoryTrail)) {
+    return 0;
+  }
+
+  const settleBufferMs = 100;
+  const durations = [];
+  if (waits.didApplySectionQuizCamera) {
+    const quizView = getActiveDailyTrailFixedCamera(memoryTrail)
+      || getActiveDailyTrailNonLearnCamera(memoryTrail)
+      || memoryTrail?.sectionQuizView;
+    durations.push(Number(quizView?.duration) || 850);
+  }
+  if (waits.didApplyTargetQuizCamera) {
+    const quizCamera = getActiveDailyTrailTargetQuizCamera(memoryTrail, selection);
+    durations.push(Number(quizCamera?.duration) || 720);
+  }
+  if (waits.didApplyCheckpointCamera) {
+    durations.push(820);
+  }
+
+  const maxDuration = Math.max(0, ...durations.filter((duration) => Number.isFinite(duration)));
+  return maxDuration > 0 ? maxDuration + settleBufferMs : 0;
+}
+
+function waitForCurrentMemoryTrailPrompt(memoryTrail, promptKey, targetId, delayMs) {
+  return new Promise((resolve) => {
+    const timeoutId = window.setTimeout(() => {
+      if (memoryTrail?.timers) {
+        memoryTrail.timers = memoryTrail.timers.filter((timer) => timer !== timeoutId);
+      }
+      resolve(
+        isCurrentMemoryTrailState(memoryTrail)
+        && memoryTrail.currentPromptKey === promptKey
+        && memoryTrail.currentPromptTargetId === targetId
+      );
+    }, Math.max(0, delayMs));
+    memoryTrail?.timers?.push(timeoutId);
+  });
+}
+
+function scheduleMemoryTrailPromptResponseTimer(memoryTrail, selection = {}, promptKey = "", readyPromise = Promise.resolve()) {
+  const targetId = selection?.targetId || "";
+  Promise.resolve(readyPromise).finally(() => {
+    if (
+      !isCurrentMemoryTrailState(memoryTrail)
+      || memoryTrail.currentPromptKey !== promptKey
+      || memoryTrail.currentPromptTargetId !== targetId
+      || memoryTrail.phase !== "answering"
+      || Number.isFinite(Number(memoryTrail.currentPromptStartedAtMs))
+    ) {
+      return;
+    }
+
+    memoryTrail.currentPromptStartedAtMs = getMonotonicNowMs();
+    const lastHistory = memoryTrail.promptHistory.at(-1);
+    if (lastHistory && lastHistory.targetId === targetId && lastHistory.promptKey === promptKey) {
+      lastHistory.answerableStartedAtMs = memoryTrail.currentPromptStartedAtMs;
+    }
+  });
 }
 
 function shouldSpeakMemoryTrailTargetAtPromptStart(memoryTrail, target, selection = {}) {
@@ -9033,56 +9127,65 @@ function speakMemoryTrailPromptTargetAfterInstruction(
 ) {
   const promptKey = memoryTrail?.currentPromptKey || "";
   let didAttempt = false;
-  const attempt = (trigger) => {
-    if (didAttempt) {
-      return;
-    }
+  return new Promise((resolve) => {
+    const attempt = (trigger) => {
+      if (didAttempt) {
+        return;
+      }
 
-    didAttempt = true;
+      didAttempt = true;
 
-    if (
-      isCurrentMemoryTrailState(memoryTrail)
-      && memoryTrail.currentPromptTargetId === selection?.targetId
-      && memoryTrail.currentPromptKey === promptKey
-    ) {
-      const activeTarget = getMemoryTrailActivePromptTarget(memoryTrail) || target;
-      const targetLabel = getStudyPreviewSpeechLabel(activeTarget);
-      const attempted = speakMemoryTrailTargetOnce(memoryTrail, activeTarget, promptKey);
-      logMemoryTrailFindPromptDebug(memoryTrail, selection, activeTarget, "audio-attempt");
-      debugMemoryTrail("target label speech attempt", {
+      if (
+        isCurrentMemoryTrailState(memoryTrail)
+        && memoryTrail.currentPromptTargetId === selection?.targetId
+        && memoryTrail.currentPromptKey === promptKey
+      ) {
+        const activeTarget = getMemoryTrailActivePromptTarget(memoryTrail) || target;
+        const targetLabel = getStudyPreviewSpeechLabel(activeTarget);
+        const speechPromise = speakMemoryTrailTargetOnce(memoryTrail, activeTarget, promptKey);
+        const attempted = Boolean(speechPromise);
+        logMemoryTrailFindPromptDebug(memoryTrail, selection, activeTarget, "audio-attempt");
+        debugMemoryTrail("target label speech attempt", {
+          trigger,
+          promptType: selection?.promptType || memoryTrail.currentPromptType || "",
+          activeTargetId: selection?.targetId || "",
+          activeTargetLabel: targetLabel,
+          targetLabelText: targetLabel,
+          instructionText: getMemoryTrailInstructionText(selection?.promptType || memoryTrail.currentPromptType, memoryTrail.sessionPhase, selection?.mode, session.currentActivity, memoryTrail)?.banner || "",
+          speechAttempted: attempted,
+          speechSkipped: !attempted,
+          skipReason: attempted ? "" : "already spoken or missing prompt key"
+        });
+        if (attempted && speechPromise?.finally) {
+          speechPromise.finally(() => resolve(true));
+        } else {
+          resolve(false);
+        }
+        return;
+      }
+
+      debugMemoryTrail("target label speech skipped", {
         trigger,
-        promptType: selection?.promptType || memoryTrail.currentPromptType || "",
+        reason: "prompt changed before speech",
+        promptType: selection?.promptType || "",
         activeTargetId: selection?.targetId || "",
-        activeTargetLabel: targetLabel,
-        targetLabelText: targetLabel,
-        instructionText: getMemoryTrailInstructionText(selection?.promptType || memoryTrail.currentPromptType, memoryTrail.sessionPhase, selection?.mode, session.currentActivity, memoryTrail)?.banner || "",
-        speechAttempted: attempted,
-        speechSkipped: !attempted,
-        skipReason: attempted ? "" : "already spoken or missing prompt key"
+        activeTargetLabel: getStudyPreviewSpeechLabel(target),
+        currentPromptTargetId: memoryTrail?.currentPromptTargetId || "",
+        currentPromptKey: memoryTrail?.currentPromptKey || "",
+        expectedPromptKey: promptKey
       });
-      return;
+      resolve(false);
+    };
+
+    Promise.allSettled([instructionSpeechPromise, learnCameraReadyPromise])
+      .finally(() => attempt("instruction-and-learn-camera-ready"));
+    if (shouldUseMemoryTrailTargetSpeechFallback(memoryTrail, selection)) {
+      window.setTimeout(() => {
+        Promise.resolve(learnCameraReadyPromise)
+          .finally(() => attempt("instruction-fallback-after-learn-camera"));
+      }, 1800);
     }
-
-    debugMemoryTrail("target label speech skipped", {
-      trigger,
-      reason: "prompt changed before speech",
-      promptType: selection?.promptType || "",
-      activeTargetId: selection?.targetId || "",
-      activeTargetLabel: getStudyPreviewSpeechLabel(target),
-      currentPromptTargetId: memoryTrail?.currentPromptTargetId || "",
-      currentPromptKey: memoryTrail?.currentPromptKey || "",
-      expectedPromptKey: promptKey
-    });
-  };
-
-  Promise.allSettled([instructionSpeechPromise, learnCameraReadyPromise])
-    .finally(() => attempt("instruction-and-learn-camera-ready"));
-  if (shouldUseMemoryTrailTargetSpeechFallback(memoryTrail, selection)) {
-    window.setTimeout(() => {
-      Promise.resolve(learnCameraReadyPromise)
-        .finally(() => attempt("instruction-fallback-after-learn-camera"));
-    }, 1800);
-  }
+  });
 }
 
 function shouldUseMemoryTrailTargetSpeechFallback(memoryTrail, selection = {}) {
@@ -9802,54 +9905,56 @@ function speakMemoryTrailTargetOnce(memoryTrail, target, promptKey = memoryTrail
   }
 
   memoryTrail.lastSpokenTargetPromptKey = promptKey;
-  speakMemoryTrailTarget(target);
-  return true;
+  return speakMemoryTrailTarget(target);
 }
 
 function speakMemoryTrailTarget(target, onComplete) {
-  let labelText = "";
-  let didFinish = false;
-  const finish = () => {
-    if (didFinish) {
-      return;
-    }
+  return new Promise((resolve) => {
+    let labelText = "";
+    let didFinish = false;
+    const finish = (didSpeak = false) => {
+      if (didFinish) {
+        return;
+      }
 
-    didFinish = true;
-    onComplete?.();
-  };
+      didFinish = true;
+      onComplete?.();
+      resolve(Boolean(didSpeak));
+    };
 
-  try {
-    labelText = getStudyPreviewSpeechLabel(target);
-    if (!labelText) {
-      finish();
-      return;
-    }
+    try {
+      labelText = getStudyPreviewSpeechLabel(target);
+      if (!labelText) {
+        finish(false);
+        return;
+      }
 
-    if (window.GeographyChipSpeech?.speakLabelAndWait) {
-      window.GeographyChipSpeech.speakLabelAndWait(labelText, {
-        queue: true,
-        warnOnAudioFailure: true
-      }).then(finish).catch((error) => {
-        console.warn("[memory-trail-audio] Speech sequence failed; continuing Memory Trail.", error);
-        window.setTimeout(finish, getMemoryTrailFallbackSpeechDurationMs(labelText));
+      if (window.GeographyChipSpeech?.speakLabelAndWait) {
+        window.GeographyChipSpeech.speakLabelAndWait(labelText, {
+          queue: true,
+          warnOnAudioFailure: true
+        }).then(finish).catch((error) => {
+          console.warn("[memory-trail-audio] Speech sequence failed; continuing Memory Trail.", error);
+          window.setTimeout(() => finish(false), getMemoryTrailFallbackSpeechDurationMs(labelText));
+        });
+        return;
+      }
+
+      const didSpeak = window.GeographyChipSpeech?.speakLabelWithCompletion?.(labelText, () => finish(true));
+
+      if (didSpeak) {
+        return;
+      }
+    } catch (error) {
+      debugMemoryTrail("target speech failed before playback", {
+        targetId: target?.id || "",
+        error: error?.message || String(error)
       });
-      return;
+      // Speech is an enhancement; the visible prompt carries the exercise.
     }
 
-    const didSpeak = window.GeographyChipSpeech?.speakLabelWithCompletion?.(labelText, finish);
-
-    if (didSpeak) {
-      return;
-    }
-  } catch (error) {
-    debugMemoryTrail("target speech failed before playback", {
-      targetId: target?.id || "",
-      error: error?.message || String(error)
-    });
-    // Speech is an enhancement; the visible prompt carries the exercise.
-  }
-
-  window.setTimeout(finish, getMemoryTrailFallbackSpeechDurationMs(labelText));
+    window.setTimeout(() => finish(false), getMemoryTrailFallbackSpeechDurationMs(labelText));
+  });
 }
 
 function chooseNextPrompt(memoryTrail) {
@@ -11647,6 +11752,31 @@ function recordDailyTrailSlowCorrect(memoryTrail, targetId, elapsedMs) {
   return true;
 }
 
+function showDailyTrailCorrectAnswerSuccessVisual(memoryTrail, targetId) {
+  if (
+    !isDailyTrailMemoryTrail(memoryTrail)
+    || isCompletedDailyTrailReviewMemoryTrail(memoryTrail)
+    || !targetId
+  ) {
+    return false;
+  }
+
+  runner.setMemoryTrailCorrectionHighlight({
+    correctTargetId: targetId,
+    wrongTargetId: ""
+  });
+  return true;
+}
+
+function getMemoryTrailCorrectAnswerPauseMs(memoryTrail) {
+  return isDailyTrailMemoryTrail(memoryTrail)
+    && !isGuidedMemoryTrailPrompt(memoryTrail)
+    && !isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
+    && !isCompletedDailyTrailReviewMemoryTrail(memoryTrail)
+    ? dailyTrailRetrievalCorrectPauseMs
+    : memoryTrailCorrectPauseMs;
+}
+
 function handleCorrectMemoryTrailAnswer(memoryTrail, targetId, options = {}) {
   clearMemoryTrailTrayFeedback(memoryTrail, "correct answer");
   const responseElapsedMs = getDailyTrailCorrectResponseElapsedMs(memoryTrail, targetId);
@@ -11676,6 +11806,7 @@ function handleCorrectMemoryTrailAnswer(memoryTrail, targetId, options = {}) {
   }
 
   showFeedback("Yes.", true);
+  showDailyTrailCorrectAnswerSuccessVisual(memoryTrail, targetId);
 
   memoryTrail.phase = "feedback";
   memoryTrail.answerChoices = [];
@@ -11688,7 +11819,7 @@ function handleCorrectMemoryTrailAnswer(memoryTrail, targetId, options = {}) {
   scheduleMemoryTrailStep(memoryTrail, () => {
     runner.setMemoryTrailHighlight([]);
     promptNextMemoryTrailTarget(memoryTrail);
-  }, memoryTrailCorrectPauseMs);
+  }, getMemoryTrailCorrectAnswerPauseMs(memoryTrail));
 
   maybeSpeakPlaceToNameFeedbackTarget(memoryTrail, targetId, options);
 
