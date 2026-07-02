@@ -16,6 +16,7 @@ import {
   buildWorldCoreDailyTrailItems,
   DAILY_TRAIL_AFK_RESPONSE_MS,
   DAILY_TRAIL_CONFIG,
+  DAILY_TRAIL_DEBUG_REASONS,
   dailyTrailGoals,
   dailyTrailStorageKey,
   DAILY_TRAIL_SLOW_CORRECT_MS,
@@ -2939,6 +2940,7 @@ const incorrectRevealThreshold = 3;
 const activityRetryThreshold = 5;
 const incorrectRevealDurationMs = 1700;
 const ENABLE_MEMORY_TRAIL_DEBUG = false;
+const ENABLE_DAILY_TRAIL_DEBUG = false;
 const DEFAULT_SESSION_SECONDS = 300;
 const SHORT_SESSION_SECONDS = 180;
 const LONG_SESSION_SECONDS = 600;
@@ -8935,6 +8937,7 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
     answerChoices: memoryTrail.answerChoices,
     stats
   });
+  logDailyTrailRuntimeDebug("prompt-selected", createDailyTrailPromptSelectedDebug(memoryTrail, selection, stats));
   const shouldHighlightPromptTarget = !isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
     && (selection.promptType === "guided" || selection.promptType === "place_to_name");
   const checkpointPreAnswerStyle = isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
@@ -11498,6 +11501,70 @@ function debugMemoryTrail(label, details = {}) {
   }
 
   console.debug("[memory-trail]", label, details);
+}
+
+function logDailyTrailRuntimeDebug(eventName, details = {}) {
+  if (!ENABLE_DAILY_TRAIL_DEBUG || typeof console === "undefined") {
+    return;
+  }
+
+  console.log(`[DailyTrail] ${eventName}`, details);
+}
+
+function createDailyTrailPromptSelectedDebug(memoryTrail, selection = {}, stats = null) {
+  const targetId = selection.targetId || memoryTrail?.currentPromptTargetId || "";
+  const targetStats = stats || memoryTrail?.targetStats?.[targetId] || {};
+  const newTargetIds = new Set(memoryTrail?.dailyTrailNewTargetIds || []);
+  return {
+    targetId,
+    reason: getDailyTrailPromptDebugReason(memoryTrail, selection, targetStats),
+    promptType: selection.promptType || memoryTrail?.currentPromptType || "",
+    promptMode: selection.mode || memoryTrail?.currentPromptMode || "",
+    practiceWindowIds: (memoryTrail?.currentPracticeWindow || []).map((target) => target?.id).filter(Boolean),
+    isNew: newTargetIds.has(targetId),
+    isReview: !newTargetIds.has(targetId),
+    retrievalCorrect: Math.max(0, Number(targetStats.totalRetrievalCorrect) || 0),
+    retrievalIncorrect: Math.max(0, Number(targetStats.totalRetrievalIncorrect) || 0)
+  };
+}
+
+function getDailyTrailPromptDebugReason(memoryTrail, selection = {}, stats = {}) {
+  if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
+    return activeDailyTrailSession?.plan?.sessionType === "remediationCheckpoint"
+      ? DAILY_TRAIL_DEBUG_REASONS.CHECKPOINT_REMEDIATION
+      : DAILY_TRAIL_DEBUG_REASONS.CHECKPOINT;
+  }
+
+  if (isCompletedDailyTrailReviewMemoryTrail(memoryTrail)) {
+    return DAILY_TRAIL_DEBUG_REASONS.TERMINAL_REVIEW;
+  }
+
+  const reasonText = String(selection.reason || "").toLowerCase();
+  if (reasonText.includes("missed new item retry")) {
+    return DAILY_TRAIL_DEBUG_REASONS.MISSED_NEW_RETRY;
+  }
+
+  if (selection.promptType === "guided" || selection.mode === "learn") {
+    return memoryTrail?.activityId === continentsOceansActivityId
+      ? DAILY_TRAIL_DEBUG_REASONS.CO_FOUNDATION
+      : DAILY_TRAIL_DEBUG_REASONS.NEW;
+  }
+
+  if (selection.mode === "weak-review" || stats?.isWeak || (stats?.totalRetrievalIncorrect || 0) > 0) {
+    return DAILY_TRAIL_DEBUG_REASONS.WEAK_REVIEW;
+  }
+
+  if (selection.mode === "review" || reasonText.includes("review")) {
+    return memoryTrail?.activityId === continentsOceansActivityId
+      ? DAILY_TRAIL_DEBUG_REASONS.CO_REVIEW
+      : DAILY_TRAIL_DEBUG_REASONS.RECENT_REVIEW;
+  }
+
+  if (memoryTrail?.dailyTrailNewTargetIds?.includes(selection.targetId)) {
+    return DAILY_TRAIL_DEBUG_REASONS.NEW;
+  }
+
+  return DAILY_TRAIL_DEBUG_REASONS.UNKNOWN;
 }
 
 function updateMemoryTrailDebugObject(memoryTrail = getActiveMemoryTrail()) {

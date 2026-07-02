@@ -72,6 +72,18 @@ const maxMemoryDifficulty = 10;
 const minMemoryDifficulty = 1;
 const maxRetrievability = 1;
 const minRetrievability = 0;
+export const DAILY_TRAIL_DEBUG_REASONS = Object.freeze({
+  NEW: "new",
+  RECENT_REVIEW: "recent-review",
+  WEAK_REVIEW: "weak-review",
+  MISSED_NEW_RETRY: "missed-new-retry",
+  CHECKPOINT: "checkpoint",
+  CHECKPOINT_REMEDIATION: "checkpoint-remediation",
+  TERMINAL_REVIEW: "terminal-review",
+  CO_FOUNDATION: "co-foundation",
+  CO_REVIEW: "co-review",
+  UNKNOWN: "unknown"
+});
 
 export function createDailyTrailState(value = {}) {
   const source = value && typeof value === "object" ? value : {};
@@ -2078,44 +2090,126 @@ function logDailyTrailPlan(state, items, plan) {
     return;
   }
 
-  const unseenCount = items.filter((item) => getItemStatus(state, item) === "unseen").length;
-  const introducedCount = items.filter((item) => state.introducedItemIds.includes(item.id)).length;
-  const continentsOceansItems = getContinentsOceansItems(items);
-  const continentsOceansRemainingItems = getRemainingContinentsOceansFoundationItems(state, continentsOceansItems);
+  const reasonByItemId = getDailyTrailPlanReasonMap(state, plan);
+  const plannedItems = Array.isArray(plan?.playItems) ? plan.playItems : [];
+  const itemIdsByReason = (reason) => plannedItems
+    .filter((item) => reasonByItemId.get(item.id) === reason)
+    .map((item) => item.id);
 
-  console.log("[Daily Trail planner]", {
-    itemCount: items.length,
-    unseenCount,
-    introducedCount,
-    continentsOceans: {
-      totalCount: continentsOceansItems.length,
-      introducedCount: continentsOceansItems.filter((item) => (
-        state.continentsOceansProgress.introducedItemIds.includes(item.id)
-        || practiceEligibleStatuses.has(getItemStatus(state, item))
-      )).length,
-      quizCoveredCount: continentsOceansItems.filter((item) => (
-        state.continentsOceansProgress.quizCoveredItemIds.includes(item.id)
-        || (state.itemProgress[item.id]?.timesSeen || 0) > 0
-      )).length,
-      remainingLabels: continentsOceansRemainingItems.map((item) => item.label),
-      foundationComplete: isContinentsOceansFoundationComplete(state, continentsOceansItems),
-      advanceAllowed: plan.activeActivityId !== continentsOceansActivityId
-    },
-    currentSessionNumber: state.currentSessionNumber,
-    sessionsUntilNextCheckpoint: state.sessionsUntilNextCheckpoint,
+  logDailyTrailDebug("planner-session", {
+    sessionNumber: state.currentSessionNumber,
     sessionType: plan.sessionType,
-    activeActivityId: plan.activeActivityId,
-    newItems: plan.newItems.map((item) => ({
-      id: item.id,
-      label: item.label,
-      homeActivityId: item.homeActivityId,
-      cameraGroupId: item.cameraGroupId
-    })),
-    reviewItems: plan.reviewItems.map((item) => ({
-      id: item.id,
-      label: item.label,
-      homeActivityId: item.homeActivityId,
-      cameraGroupId: item.cameraGroupId
-    }))
+    goalId: plan.trailGoalId || state.activeTrailGoal,
+    journeyId: getDailyTrailGoal(plan.trailGoalId || state.activeTrailGoal)?.journeyId || "",
+    activityId: plan.activeActivityId || "",
+    checkpointCount: state.sessionsSinceLastCheckpoint,
+    checkpointStatus: getDailyTrailCheckpointDebugStatus(state, plan),
+    newItemIds: itemIdsByReason(DAILY_TRAIL_DEBUG_REASONS.NEW),
+    recentReviewIds: itemIdsByReason(DAILY_TRAIL_DEBUG_REASONS.RECENT_REVIEW),
+    weakReviewIds: itemIdsByReason(DAILY_TRAIL_DEBUG_REASONS.WEAK_REVIEW),
+    checkpointIds: [
+      ...itemIdsByReason(DAILY_TRAIL_DEBUG_REASONS.CHECKPOINT),
+      ...itemIdsByReason(DAILY_TRAIL_DEBUG_REASONS.CHECKPOINT_REMEDIATION)
+    ],
+    terminalReviewIds: itemIdsByReason(DAILY_TRAIL_DEBUG_REASONS.TERMINAL_REVIEW),
+    playItemIds: plannedItems.map((item) => item.id)
   });
+
+  plannedItems.forEach((item) => {
+    logDailyTrailDebug("planner-item", createDailyTrailPlannerItemDebug(state, item, reasonByItemId.get(item.id)));
+  });
+}
+
+function logDailyTrailDebug(eventName, details = {}) {
+  if (!ENABLE_DAILY_TRAIL_DEBUG || typeof console === "undefined") {
+    return;
+  }
+
+  console.log(`[DailyTrail] ${eventName}`, details);
+}
+
+function getDailyTrailPlanReasonMap(state, plan = {}) {
+  const reasonByItemId = new Map();
+  const sessionType = plan.sessionType || "";
+
+  if (sessionType === "completed-trail-review") {
+    (plan.playItems || []).forEach((item) => reasonByItemId.set(item.id, DAILY_TRAIL_DEBUG_REASONS.TERMINAL_REVIEW));
+    return reasonByItemId;
+  }
+
+  if (sessionType === "checkpoint" || sessionType === "remediationCheckpoint") {
+    const reason = sessionType === "remediationCheckpoint"
+      ? DAILY_TRAIL_DEBUG_REASONS.CHECKPOINT_REMEDIATION
+      : DAILY_TRAIL_DEBUG_REASONS.CHECKPOINT;
+    (plan.playItems || []).forEach((item) => reasonByItemId.set(item.id, reason));
+    return reasonByItemId;
+  }
+
+  if (plan.continentsOceansReviewType === "foundation") {
+    (plan.playItems || []).forEach((item) => reasonByItemId.set(item.id, DAILY_TRAIL_DEBUG_REASONS.CO_FOUNDATION));
+    return reasonByItemId;
+  }
+
+  if (plan.continentsOceansReviewType) {
+    (plan.playItems || []).forEach((item) => reasonByItemId.set(item.id, DAILY_TRAIL_DEBUG_REASONS.CO_REVIEW));
+    return reasonByItemId;
+  }
+
+  (plan.newItems || []).forEach((item) => reasonByItemId.set(item.id, DAILY_TRAIL_DEBUG_REASONS.NEW));
+  (plan.reviewItems || []).forEach((item) => {
+    if (!reasonByItemId.has(item.id)) {
+      reasonByItemId.set(item.id, getDailyTrailReviewDebugReason(state, item));
+    }
+  });
+  (plan.playItems || []).forEach((item) => {
+    if (!reasonByItemId.has(item.id)) {
+      reasonByItemId.set(item.id, DAILY_TRAIL_DEBUG_REASONS.UNKNOWN);
+    }
+  });
+  return reasonByItemId;
+}
+
+function getDailyTrailReviewDebugReason(state, item) {
+  const progress = state.itemProgress?.[item.id] || {};
+  return isCurrentlyWeakProgress(progress)
+    || progress.status === "introduced"
+    || hasRecentSlowCorrectSignal(state, progress)
+    || (progress.status === "learning" && (progress.correctStreak || 0) <= 0)
+    ? DAILY_TRAIL_DEBUG_REASONS.WEAK_REVIEW
+    : DAILY_TRAIL_DEBUG_REASONS.RECENT_REVIEW;
+}
+
+function createDailyTrailPlannerItemDebug(state, item, reason = DAILY_TRAIL_DEBUG_REASONS.UNKNOWN) {
+  const progress = state.itemProgress?.[item.id] || {};
+  const reviewPriority = isItemPracticeEligible(state, item)
+    ? getReviewPriority(state, item).overdueScore
+    : null;
+  return {
+    itemId: item.id || "",
+    targetId: item.targetId || "",
+    activityId: item.homeActivityId || "",
+    reason: reason || DAILY_TRAIL_DEBUG_REASONS.UNKNOWN,
+    dueSession: Number(progress.dueSession) || null,
+    lastSeenSession: Number(progress.lastSeenSession) || 0,
+    missCount: Number(progress.missCount) || 0,
+    lapseCount: Number(progress.lapseCount) || 0,
+    slowCorrectCount: Number(progress.slowCorrectCount) || 0,
+    reviewPriority
+  };
+}
+
+function getDailyTrailCheckpointDebugStatus(state, plan = {}) {
+  if (plan.sessionType === "checkpoint" || plan.sessionType === "remediationCheckpoint") {
+    return plan.sessionType;
+  }
+
+  if (state.pendingRemediation) {
+    return "pending-remediation";
+  }
+
+  if (state.pendingCheckpointRetry) {
+    return "pending-checkpoint-retry";
+  }
+
+  return "tracking";
 }
