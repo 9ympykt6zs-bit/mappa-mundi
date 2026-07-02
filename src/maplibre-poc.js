@@ -11214,10 +11214,11 @@ function advanceMixedDailyTrailCheckpoint() {
     return false;
   }
 
+  const previousActivityId = dailyTrailSession.activityId;
   dailyTrailSession.checkpointActivityIndex = nextIndex;
   dailyTrailSession.activityId = nextGroup.homeActivityId;
   dailyTrailSession.checkpointTransitionInProgress = true;
-  void startDailyTrailActivity(nextGroup.homeActivityId)
+  void startDailyTrailActivity(nextGroup.homeActivityId, { previousActivityId })
     .catch(() => showFeedback("Checkpoint transition could not start."))
     .finally(() => {
       if (activeDailyTrailSession === dailyTrailSession) {
@@ -11261,9 +11262,10 @@ function advanceSegmentedCompletedDailyTrailReview() {
     return false;
   }
 
+  const previousActivityId = dailyTrailSession.activityId;
   dailyTrailSession.completedReviewActivityIndex = nextIndex;
   dailyTrailSession.activityId = nextGroup.homeActivityId;
-  void startDailyTrailActivity(nextGroup.homeActivityId)
+  void startDailyTrailActivity(nextGroup.homeActivityId, { previousActivityId })
     .catch(() => showFeedback("Daily Trail review could not continue."));
   return true;
 }
@@ -14939,6 +14941,7 @@ async function startDailyTrailSession() {
 }
 
 async function startDailyTrailActivity(activityId) {
+  const options = arguments[1] || {};
   const dailyTrailSession = activeDailyTrailSession;
   const activity = getActivityById(activityId);
   if (!dailyTrailSession || !activity) {
@@ -14979,11 +14982,32 @@ async function startDailyTrailActivity(activityId) {
   });
 
   runner?.setMemoryTrailPreAnswerOutlinesSuppressed?.(dailyTrailSession.plan?.sessionType === "completed-trail-review");
+  maybeShowDailyTrailActivityTransitionCue(dailyTrailSession, activity, options.previousActivityId);
 
   if (activeDailyTrailSession === dailyTrailSession) {
     startDailyTrailMemoryTrailStepIfNeeded();
   }
   return true;
+}
+
+function maybeShowDailyTrailActivityTransitionCue(dailyTrailSession, activity, previousActivityId = "") {
+  if (
+    !dailyTrailSession
+    || !activity?.id
+    || !previousActivityId
+    || previousActivityId === activity.id
+    || dailyTrailSession.plan?.sessionType === "completed-trail-review"
+  ) {
+    return false;
+  }
+
+  showFeedback(getDailyTrailActivityTransitionCueText(activity), true);
+  return true;
+}
+
+function getDailyTrailActivityTransitionCueText(activity) {
+  const title = String(activity?.title || "").trim();
+  return title ? `Next stop: ${title}` : "Next stop";
 }
 
 function getDailyTrailPlannedItemsForActivity(activity, plan) {
