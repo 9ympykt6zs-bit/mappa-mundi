@@ -2,13 +2,25 @@ export const dailyTrailStorageKey = "mappaDailyTrailProgress";
 export const dailyTrailId = "world-core";
 export const dailyTrailJourneyId = "world-geography-core";
 export const dailyTrailUsCapitalsGoalId = "us-capitals";
-export const dailyTrailCheckpointInterval = 4;
-export const dailyTrailNewItemCount = 4;
-export const dailyTrailReviewItemCount = 10;
-export const dailyTrailCheckpointReviewItemCount = 10;
-export const dailyTrailCompletedReviewItemCount = 10;
-export const DAILY_TRAIL_SLOW_CORRECT_MS = 6000;
-export const DAILY_TRAIL_AFK_RESPONSE_MS = 60000;
+export const DAILY_TRAIL_CONFIG = Object.freeze({
+  newItemCount: 4,
+  reviewItemCount: 10,
+  recentReviewCount: 1,
+  weakReviewCount: 1,
+  missedNewRetryCount: 1,
+  checkpointInterval: 4,
+  checkpointReviewItemCount: 10,
+  completedReviewItemCount: 10,
+  slowCorrectMs: 6000,
+  afkResponseMs: 60000
+});
+export const dailyTrailCheckpointInterval = DAILY_TRAIL_CONFIG.checkpointInterval;
+export const dailyTrailNewItemCount = DAILY_TRAIL_CONFIG.newItemCount;
+export const dailyTrailReviewItemCount = DAILY_TRAIL_CONFIG.reviewItemCount;
+export const dailyTrailCheckpointReviewItemCount = DAILY_TRAIL_CONFIG.checkpointReviewItemCount;
+export const dailyTrailCompletedReviewItemCount = DAILY_TRAIL_CONFIG.completedReviewItemCount;
+export const DAILY_TRAIL_SLOW_CORRECT_MS = DAILY_TRAIL_CONFIG.slowCorrectMs;
+export const DAILY_TRAIL_AFK_RESPONSE_MS = DAILY_TRAIL_CONFIG.afkResponseMs;
 export const dailyTrailGoals = [
   {
     id: dailyTrailId,
@@ -313,11 +325,11 @@ export function planDailyTrailSession(state, items) {
       maxItems: 10,
       mixedReview: false
     });
-  } else if (normalized.sessionsSinceLastCheckpoint >= dailyTrailCheckpointInterval - 1
+  } else if (normalized.sessionsSinceLastCheckpoint >= DAILY_TRAIL_CONFIG.checkpointInterval - 1
     && normalized.hasStarted
     && continentsOceansDecision?.type === "full") {
     plan = buildContinentsOceansPlan(normalized, planningItems, continentsOceansDecision);
-  } else if (normalized.sessionsSinceLastCheckpoint >= dailyTrailCheckpointInterval - 1 && normalized.hasStarted) {
+  } else if (normalized.sessionsSinceLastCheckpoint >= DAILY_TRAIL_CONFIG.checkpointInterval - 1 && normalized.hasStarted) {
     plan = buildCheckpointPlan(normalized, planningItems, {
       sessionType: "checkpoint",
       title: "Checkpoint",
@@ -341,7 +353,7 @@ export function planCompletedDailyTrailReviewSession(state, items) {
   const safeItems = Array.isArray(items) ? items : [];
   const completedItems = safeItems.filter((item) => isItemPracticeEligible(normalized, item));
   const reviewItems = selectCompletedDailyTrailReviewItems(normalized, completedItems, {
-    limit: dailyTrailCompletedReviewItemCount
+    limit: DAILY_TRAIL_CONFIG.completedReviewItemCount
   });
   const activeActivityId = reviewItems[0]?.homeActivityId || completedItems[0]?.homeActivityId || "";
 
@@ -620,14 +632,14 @@ function buildLearningPlan(state, items) {
   const newItemIds = new Set(newItems.map((item) => item.id));
   const reviewItems = selectDailyTrailReviewItems(state, playableItems, {
     excludeIds: newItemIds,
-    limit: dailyTrailReviewItemCount,
+    limit: DAILY_TRAIL_CONFIG.reviewItemCount,
     requireDue: newItems.length > 0
   });
   const weakReviewItems = newItems.length > 0
     ? selectDailyTrailWeakReviewItems(state, reviewCandidateItems, {
       activeActivityId,
       excludeIds: newItemIds,
-      limit: 1
+      limit: DAILY_TRAIL_CONFIG.weakReviewCount
     })
     : [];
   const weakReviewIds = new Set(weakReviewItems.map((item) => item.id));
@@ -637,14 +649,14 @@ function buildLearningPlan(state, items) {
       availableItems: reviewCandidateItems,
       playableItems,
       excludeIds: new Set([...newItemIds, ...weakReviewIds]),
-      limit: 1
+      limit: DAILY_TRAIL_CONFIG.recentReviewCount
     })
     : [];
   const combinedReviewItems = dedupeItems([
     ...weakReviewItems,
     ...oldSectionReviewItems,
     ...reviewItems
-  ]).slice(0, dailyTrailReviewItemCount);
+  ]).slice(0, DAILY_TRAIL_CONFIG.reviewItemCount);
   const playItems = dedupeItems([
     ...newItems,
     ...combinedReviewItems
@@ -708,7 +720,7 @@ function chooseDailyTrailNewItemBatchSize(unseenCount) {
     return { count: unseenCount };
   }
 
-  const preferredCount = Math.min(dailyTrailNewItemCount, dailyTrailMaxNewItemBatchCount);
+  const preferredCount = Math.min(DAILY_TRAIL_CONFIG.newItemCount, dailyTrailMaxNewItemBatchCount);
   const remainingAfterPreferred = unseenCount - preferredCount;
   if (remainingAfterPreferred === 1 && preferredCount < dailyTrailMaxNewItemBatchCount) {
     return { count: preferredCount + 1 };
@@ -786,8 +798,8 @@ function buildCheckpointPlan(state, items, options = {}) {
     .filter((item) => item && isItemPracticeEligible(state, item));
   const mixedReview = options.mixedReview !== false;
   const maxItems = Math.min(
-    Math.max(1, Number(options.maxItems) || dailyTrailCheckpointReviewItemCount),
-    dailyTrailCheckpointReviewItemCount
+    Math.max(1, Number(options.maxItems) || DAILY_TRAIL_CONFIG.checkpointReviewItemCount),
+    DAILY_TRAIL_CONFIG.checkpointReviewItemCount
   );
   const playItems = mixedReview
     ? selectMixedCheckpointReviewItems(state, availableItems, {
@@ -854,7 +866,7 @@ function selectSingleActivityCheckpointReviewItems(state, availableItems, recent
 }
 
 function selectMixedCheckpointReviewItems(state, availableItems, options = {}) {
-  const limit = Math.max(0, Number(options.limit) || dailyTrailCheckpointReviewItemCount);
+  const limit = Math.max(0, Number(options.limit) || DAILY_TRAIL_CONFIG.checkpointReviewItemCount);
   const recentIds = new Set((options.recentItems || []).map((item) => item.id));
   const eligibleItems = dedupeCheckpointItemsByCanonicalTargetId(
     availableItems.filter((item) => isItemPracticeEligible(state, item))
@@ -1106,7 +1118,7 @@ function getCheckpointActivityId(state, recentItems, weakItems, allItems) {
 
 function selectDailyTrailReviewItems(state, items, options = {}) {
   const excludeIds = options.excludeIds || new Set();
-  const limit = Math.max(0, Number(options.limit) || dailyTrailReviewItemCount);
+  const limit = Math.max(0, Number(options.limit) || DAILY_TRAIL_CONFIG.reviewItemCount);
   const eligibleItems = items
     .filter((item) => !excludeIds.has(item.id))
     .filter((item) => isItemPracticeEligible(state, item));
@@ -1139,7 +1151,7 @@ function selectDailyTrailReviewItems(state, items, options = {}) {
 }
 
 function selectCompletedDailyTrailReviewItems(state, items = [], options = {}) {
-  const limit = Math.max(0, Number(options.limit) || dailyTrailCompletedReviewItemCount);
+  const limit = Math.max(0, Number(options.limit) || DAILY_TRAIL_CONFIG.completedReviewItemCount);
   const eligibleItems = items.filter((item) => isItemPracticeEligible(state, item));
 
   if (limit <= 0 || eligibleItems.length === 0) {
@@ -2001,7 +2013,7 @@ function addUnique(items, item) {
 }
 
 function getSessionsUntilNextCheckpoint(sessionsSinceLastCheckpoint) {
-  return Math.max(0, dailyTrailCheckpointInterval - 1 - sessionsSinceLastCheckpoint);
+  return Math.max(0, DAILY_TRAIL_CONFIG.checkpointInterval - 1 - sessionsSinceLastCheckpoint);
 }
 
 function getSessionGap(currentSessionNumber, previousSessionNumber) {

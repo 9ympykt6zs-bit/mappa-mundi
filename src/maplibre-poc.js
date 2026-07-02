@@ -15,6 +15,7 @@ import {
   buildDailyTrailGoalItems,
   buildWorldCoreDailyTrailItems,
   DAILY_TRAIL_AFK_RESPONSE_MS,
+  DAILY_TRAIL_CONFIG,
   dailyTrailGoals,
   dailyTrailStorageKey,
   DAILY_TRAIL_SLOW_CORRECT_MS,
@@ -10315,6 +10316,7 @@ function getDailyTrailMissedNewItemRetry(memoryTrail, dueIntroduced = [], avoidL
 
   const pendingRetryIds = memoryTrail.dailyTrailMissedNewRetryTargetIds || [];
   const retriedIds = new Set(memoryTrail.dailyTrailRetriedNewTargetIds || []);
+  const retryCount = Math.max(1, Number(DAILY_TRAIL_CONFIG.missedNewRetryCount) || 1);
   const retry = dueIntroduced
     .filter((stats) => pendingRetryIds.includes(stats.targetId))
     .filter((stats) => !retriedIds.has(stats.targetId))
@@ -10323,7 +10325,8 @@ function getDailyTrailMissedNewItemRetry(memoryTrail, dueIntroduced = [], avoidL
       Number(avoidLast(right)) - Number(avoidLast(left))
       || (left.lastMissPrompt || 0) - (right.lastMissPrompt || 0)
       || compareDailyTrailPracticeOrder(left, right, memoryTrail)
-    ))[0] || null;
+    ))
+    .slice(0, retryCount)[0] || null;
 
   if (retry) {
     memoryTrail.dailyTrailMissedNewRetryTargetIds = pendingRetryIds.filter((targetId) => targetId !== retry.targetId);
