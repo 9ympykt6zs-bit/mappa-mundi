@@ -358,28 +358,45 @@
       (() => {
         const launchScreen = document.querySelector("#launch-screen");
         const startButtons = document.querySelectorAll("[data-launch-action='start']");
-        const appShellScreen = document.querySelector("#app-shell-screen");
-        const appShellTitle = document.querySelector("#app-shell-title");
-        const appShellSubtitle = document.querySelector("#app-shell-subtitle");
 
-        if (!launchScreen || !appShellScreen || startButtons.length === 0) {
+        if (!launchScreen || startButtons.length === 0) {
           return;
         }
 
-        let didLaunch = false;
+        let launchLoadPromise = null;
+
+        const setLaunchLoading = (isLoading) => {
+          launchScreen.setAttribute("aria-busy", String(isLoading));
+          startButtons.forEach((button) => {
+            button.disabled = isLoading;
+            button.setAttribute("aria-busy", String(isLoading));
+          });
+        };
 
         const showMainMenu = () => {
-          if (didLaunch) {
+          if (launchLoadPromise) {
             return;
           }
 
-          didLaunch = true;
           window.__mappaMundiLaunchRequested = true;
-          document.body.classList.remove("launch-mode");
-          document.body.classList.add("app-shell-mode");
-          launchScreen.hidden = true;
-          appShellScreen.hidden = false;
-          window.__mappaMundiLoadApp?.();
+          setLaunchLoading(true);
+          if (typeof window.__mappaMundiLoadApp !== "function") {
+            console.error("Mappa Mundi loader is not available.");
+            window.__mappaMundiLaunchRequested = false;
+            setLaunchLoading(false);
+            return;
+          }
+
+          launchLoadPromise = window.__mappaMundiLoadApp()
+            .then(() => {
+              setLaunchLoading(false);
+            })
+            .catch((error) => {
+              console.error("Mappa Mundi could not load.", error);
+              window.__mappaMundiLaunchRequested = false;
+              launchLoadPromise = null;
+              setLaunchLoading(false);
+            });
         };
 
         startButtons.forEach((button) => {
