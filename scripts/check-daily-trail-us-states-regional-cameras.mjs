@@ -23,7 +23,7 @@ const requiredHooks = [
   "function getActiveDailyTrailNonLearnCamera(memoryTrail)",
   'memoryTrail?.source === "daily-trail"',
   'memoryTrail?.sessionPhase !== "learn"',
-  "dailyTrailNonLearnCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailNonLearnCamera || null : null",
+  "dailyTrailNonLearnCamera: getDailyTrailMemoryTrailNonLearnCamera(session.currentActivity, options),",
   "getActiveDailyTrailNonLearnCamera(memoryTrail)"
 ];
 

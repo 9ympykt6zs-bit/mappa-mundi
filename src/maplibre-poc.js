@@ -209,6 +209,16 @@ const continentsOceansLearnFocusProfiles = Object.freeze({
   "indian-ocean": { forceOnPromptStart: true },
   "southern-ocean": { forceOnPromptStart: true }
 });
+const continentsOceansMobileLearnCameraOverrides = Object.freeze({
+  antarctica: Object.freeze({
+    center: [59.55067, -85.05113],
+    zoom: -1.2394,
+    bearing: 0,
+    pitch: 0,
+    cameraContext: "c&o-learn-focus",
+    source: "c&o-learn-target-focus"
+  })
+});
 const continentsOceansNamePromptFocusProfiles = Object.freeze({
   africa: { forceOnPromptStart: true },
   asia: { forceOnPromptStart: true },
@@ -2886,6 +2896,10 @@ let dailyTrailDevCheatListenerBound = false;
 let cameraDevCheatBuffer = "";
 let cameraDevCheatListenerBound = false;
 let cameraDevPanel = null;
+let cameraDevPanelBody = null;
+let cameraDevPanelCollapseButton = null;
+let cameraDevPanelCollapsed = false;
+let cameraDevViewportListenerBound = false;
 let cameraDevSnapshotValues = null;
 let cameraDevStatusEl = null;
 let cameraDevZoomInput = null;
@@ -8405,6 +8419,17 @@ function getMemoryTrailInstructionText(promptType, phase, mode = "", activity = 
   const pluralNoun = pluralizeInstructionNounPhrase(singularNoun);
   if (promptType === "guided" || phase === "learn") {
     if (activity?.id === continentsOceansActivityId) {
+      const oceanInstruction = getContinentsOceansOceanLearnInstruction(
+        memoryTrail,
+        getMemoryTrailActivePromptTarget(memoryTrail)
+      );
+      if (oceanInstruction) {
+        return {
+          banner: oceanInstruction,
+          label: oceanInstruction
+        };
+      }
+
       return {
         banner: "Tap the highlighted place. Then repeat its name.",
         label: "Tap the highlighted place. Then repeat its name."
@@ -8459,6 +8484,32 @@ function getMemoryTrailLearnPromptCount(memoryTrail) {
     .filter((stats) => !stats.isIntroduced)
     .length;
   return unintroducedCount || memoryTrail.currentPracticeWindow?.length || 0;
+}
+
+function isContinentsOceansOceanLearnTarget(memoryTrail, target) {
+  const activityId = memoryTrail?.activityId || session.currentActivity?.id || "";
+  return activityId === continentsOceansActivityId && target?.type === "zone";
+}
+
+function getContinentsOceansOceanLearnInstruction(memoryTrail, target) {
+  if (!isContinentsOceansOceanLearnTarget(memoryTrail, target)) {
+    return "";
+  }
+
+  const targetLabel = getMemoryTrailTargetLabel(target, memoryTrail)
+    || getStudyPreviewSpeechLabel(target);
+  return targetLabel ? `Now tap the ${targetLabel}.` : "";
+}
+
+function getContinentsOceansOceanLearnInstructionForSelection(memoryTrail, selection = {}) {
+  const promptType = selection?.promptType || memoryTrail?.currentPromptType || "";
+  const mode = selection?.mode || memoryTrail?.currentPromptMode || "";
+  if (promptType !== "guided" || mode !== "learn") {
+    return "";
+  }
+
+  const target = getTargetById(memoryTrail, selection?.targetId || memoryTrail?.currentPromptTargetId);
+  return getContinentsOceansOceanLearnInstruction(memoryTrail, target);
 }
 
 function showMemoryTrailInstructionBanner(text) {
@@ -8592,11 +8643,16 @@ function updateMemoryTrailInstructionCue(memoryTrail, selection) {
   const promptType = selection?.promptType || memoryTrail.currentPromptType;
   const phase = promptType === "guided" ? "learn" : "practice";
   const mode = selection?.mode || memoryTrail.currentPromptMode;
+  const oceanLearnInstruction = getContinentsOceansOceanLearnInstructionForSelection(memoryTrail, selection);
+  const targetSpecificSpeakKey = oceanLearnInstruction
+    ? `${getMemoryTrailInstructionKey(promptType, phase)}:${selection?.targetId || memoryTrail.currentPromptTargetId}:ocean-learn`
+    : "";
   return setMemoryTrailInstruction({
     memoryTrail,
     phase,
     promptType,
-    mode
+    mode,
+    speakKey: targetSpecificSpeakKey
   });
 }
 
@@ -9106,6 +9162,10 @@ function shouldSpeakMemoryTrailTargetAtPromptStart(memoryTrail, target, selectio
   }
 
   if (promptType === "guided") {
+    if (getContinentsOceansOceanLearnInstructionForSelection(memoryTrail, selection)) {
+      return skip("target already included in ocean learn instruction");
+    }
+
     return true;
   }
 
@@ -9421,6 +9481,18 @@ function getContinentsOceansLearnFocusProfile(target, memoryTrail) {
   };
 }
 
+function getContinentsOceansMobileLearnCameraOverride(target) {
+  if (
+    session.currentActivity?.id !== continentsOceansActivityId
+    || !isCompactTouchLayout()
+    || !target?.id
+  ) {
+    return null;
+  }
+
+  return continentsOceansMobileLearnCameraOverrides[target.id] || null;
+}
+
 function maybeFocusContinentsOceansLearnPrompt(memoryTrail, target, focusProfile = {}) {
   if (
     session.currentActivity?.id !== continentsOceansActivityId
@@ -9435,23 +9507,36 @@ function maybeFocusContinentsOceansLearnPrompt(memoryTrail, target, focusProfile
   }
 
   const isOcean = target.type === "zone";
+  const mobileLearnCameraOverride = getContinentsOceansMobileLearnCameraOverride(target);
+  const focusTarget = mobileLearnCameraOverride
+    ? {
+        ...target,
+        focusCenter: mobileLearnCameraOverride.center,
+        focusZoom: mobileLearnCameraOverride.zoom,
+        focusMaxZoom: mobileLearnCameraOverride.zoom
+      }
+    : target;
   debugContinentsOceansLearnCamera("target focus requested", {
     source: "c&o-learn-target-focus",
     requestType: "focusTargetIfNeeded",
     targetId: target.id,
     targetLabel: target.name,
     requestedCamera: {
-      center: Number.isFinite(target.focusLon) && Number.isFinite(target.focusLat)
+      center: mobileLearnCameraOverride?.center
+        || (Number.isFinite(target.focusLon) && Number.isFinite(target.focusLat)
         ? [target.focusLon, target.focusLat]
-        : null,
-      zoom: Number.isFinite(target.focusZoom) ? target.focusZoom : null,
+        : null),
+      zoom: Number.isFinite(mobileLearnCameraOverride?.zoom)
+        ? mobileLearnCameraOverride.zoom
+        : (Number.isFinite(target.focusZoom) ? target.focusZoom : null),
       bounds: target.focusBounds || null
     },
-    force: Boolean(focusProfile.forceOnPromptStart)
+    mobileLearnCameraOverride: Boolean(mobileLearnCameraOverride),
+    force: Boolean(focusProfile.forceOnPromptStart || mobileLearnCameraOverride)
   }, memoryTrail);
-  const didFocus = runner.focusTargetIfNeeded(target, {
+  const didFocus = runner.focusTargetIfNeeded(focusTarget, {
     duration: 700,
-    force: Boolean(focusProfile.forceOnPromptStart),
+    force: Boolean(focusProfile.forceOnPromptStart || mobileLearnCameraOverride),
     zoomTolerance: isOcean ? 0.35 : 0.7,
     comfortPadding: {
       top: isOcean ? 130 : 110,
@@ -9459,8 +9544,8 @@ function maybeFocusContinentsOceansLearnPrompt(memoryTrail, target, focusProfile
       bottom: isOcean ? 235 : 220,
       left: isOcean ? 120 : 48
     },
-    cameraContext: "c&o-learn-focus",
-    source: "c&o-learn-target-focus"
+    cameraContext: mobileLearnCameraOverride?.cameraContext || "c&o-learn-focus",
+    source: mobileLearnCameraOverride?.source || "c&o-learn-target-focus"
   });
   debugContinentsOceansLearnCamera("target focus result", {
     source: "c&o-learn-target-focus",
@@ -9855,6 +9940,14 @@ function getMemoryTrailAnsweringMessage(memoryTrail) {
     : "";
 
   if (isGuidedMemoryTrailPrompt(memoryTrail)) {
+    const oceanInstruction = getContinentsOceansOceanLearnInstruction(
+      memoryTrail,
+      getMemoryTrailActivePromptTarget(memoryTrail)
+    );
+    if (oceanInstruction) {
+      return oceanInstruction;
+    }
+
     return memoryTrail.promptName
       ? `Tap the highlighted place: ${memoryTrail.promptName}.`
       : "Tap the highlighted place.";
@@ -13727,6 +13820,10 @@ function skipMemoryTrailSectionForDev() {
     return null;
   }
 
+  if (activeDailyTrailSession && currentAppScreen === "daily-trail-gameplay") {
+    return skipDailyTrailSectionForDev();
+  }
+
   const memoryTrail = getActiveMemoryTrail();
   if (!memoryTrail) {
     console.warn("No active Memory Trail section to skip.");
@@ -13765,6 +13862,20 @@ function getPreviousDailyTrailDevSection() {
   return previousStep ? { journey, step: previousStep, stepIndex: currentStepIndex - 1 } : null;
 }
 
+function getNextDailyTrailDevSection() {
+  if (!activeDailyTrailSession?.journeyId || !activeDailyTrailSession?.activityId) {
+    return null;
+  }
+
+  const journey = journeyPresets.find((candidate) => candidate.id === activeDailyTrailSession.journeyId);
+  const currentStepIndex = journey?.steps?.findIndex((step) => step.activityId === activeDailyTrailSession.activityId) ?? -1;
+  const nextStep = currentStepIndex >= 0 && currentStepIndex < journey.steps.length - 1
+    ? journey.steps[currentStepIndex + 1]
+    : null;
+
+  return nextStep ? { journey, step: nextStep, stepIndex: currentStepIndex + 1 } : null;
+}
+
 function clearDailyTrailDevReplayCursor() {
   dailyTrailDevReplayCursor = null;
 }
@@ -13793,6 +13904,71 @@ async function startDailyTrailDevReplayCursor() {
   pendingDailyTrailPlan = null;
   await startDailyTrailSession();
   return true;
+}
+
+function clearDailyTrailSectionSkipRuntimeStateForDev(memoryTrail = getActiveMemoryTrail()) {
+  if (memoryTrail) {
+    clearMemoryTrailTimers(memoryTrail);
+    clearMemoryTrailTrayFeedback(memoryTrail, "dev skip daily trail section");
+  }
+  updateMemoryTrailCorrectionCallout(null);
+  hideMemoryTrailOverlay();
+  runner?.setMemoryTrailCorrectionHighlight?.({ correctTargetId: "", wrongTargetId: "" });
+  runner?.setMemoryTrailHighlight?.([]);
+  runner?.setCompletedTargets?.([]);
+  try {
+    window.GeographyChipSpeech?.stopAudio?.();
+    window.speechSynthesis?.cancel();
+  } catch {
+    // Dev-only cleanup must not block section navigation.
+  }
+  clearMemoryTrailState({ restoreReveals: false });
+}
+
+async function skipDailyTrailSectionForDev() {
+  const memoryTrail = getActiveMemoryTrail();
+  const nextSection = getNextDailyTrailDevSection();
+  const trailId = activeDailyTrailSession?.trailId || dailyTrailGoals[0]?.id || "world-core";
+  const currentSectionSnapshot = {
+    activityId: activeDailyTrailSession?.activityId || "",
+    title: session?.currentActivity?.title || activeDailyTrailSession?.activityId || ""
+  };
+
+  try {
+    clearDailyTrailSectionSkipRuntimeStateForDev(memoryTrail);
+
+    if (!nextSection) {
+      console.info("[camera-dev] Final Daily Trail section skipped.", currentSectionSnapshot);
+      completeDailyTrailDevReplaySession(memoryTrail);
+      return {
+        ...currentSectionSnapshot,
+        finalSection: true
+      };
+    }
+
+    dailyTrailDevReplayCursor = {
+      trailId,
+      journeyId: nextSection.journey.id,
+      stepIndex: nextSection.stepIndex
+    };
+    exitDailyTrailGameplay({ preserveDevReplay: true });
+    const didStart = await startDailyTrailDevReplayCursor();
+
+    const snapshot = {
+      activityId: nextSection.step.activityId,
+      stepIndex: nextSection.stepIndex,
+      title: nextSection.step.title || nextSection.step.activityId,
+      didStart
+    };
+    console.info("[camera-dev] Skipped to next Daily Trail section.", snapshot);
+    return snapshot;
+  } catch (error) {
+    console.warn("[camera-dev] Daily Trail section skip failed.", error);
+    updateCameraDevPanel({ syncInputs: true });
+    return null;
+  } finally {
+    updateCameraDevPanel({ syncInputs: true });
+  }
 }
 
 async function backOneDailyTrailSectionForDev() {
@@ -13924,9 +14100,11 @@ function handleCameraDevMapMoveEnd() {
 
 function ensureCameraDevPanel() {
   ensureCameraDevStyles();
+  bindCameraDevViewportListener();
 
   if (cameraDevPanel?.isConnected) {
     cameraDevPanel.hidden = false;
+    setCameraDevPanelCollapsed(isCameraDevMobileViewport());
     return cameraDevPanel;
   }
 
@@ -13940,6 +14118,19 @@ function ensureCameraDevPanel() {
   const title = document.createElement("h2");
   title.textContent = "Camera Dev";
 
+  const headerActions = document.createElement("div");
+  headerActions.className = "camera-dev-header-actions";
+
+  const collapseButton = document.createElement("button");
+  collapseButton.type = "button";
+  collapseButton.className = "camera-dev-collapse";
+  collapseButton.textContent = "Collapse";
+  collapseButton.setAttribute("aria-controls", "camera-dev-panel-body");
+  collapseButton.addEventListener("click", () => {
+    setCameraDevPanelCollapsed(!cameraDevPanelCollapsed);
+  });
+  cameraDevPanelCollapseButton = collapseButton;
+
   const closeButton = document.createElement("button");
   closeButton.type = "button";
   closeButton.className = "camera-dev-close";
@@ -13948,7 +14139,8 @@ function ensureCameraDevPanel() {
     panel.hidden = true;
   });
 
-  header.append(title, closeButton);
+  headerActions.append(collapseButton, closeButton);
+  header.append(title, headerActions);
 
   const intro = document.createElement("p");
   intro.className = "camera-dev-copy";
@@ -14071,10 +14263,59 @@ function ensureCameraDevPanel() {
   cameraDevExportOutput.readOnly = true;
   cameraDevExportOutput.rows = 9;
 
-  panel.append(header, intro, cameraDevStatusEl, fieldGrid, controls, primaryActions, fitActions, memoryTrailDev, exportHeader, cameraDevExportOutput);
-  document.body.appendChild(panel);
+  const panelBody = document.createElement("div");
+  panelBody.id = "camera-dev-panel-body";
+  panelBody.className = "camera-dev-body";
+  panelBody.append(intro, cameraDevStatusEl, fieldGrid, controls, primaryActions, fitActions, memoryTrailDev, exportHeader, cameraDevExportOutput);
+
+  panel.append(header, panelBody);
   cameraDevPanel = panel;
+  cameraDevPanelBody = panelBody;
+  setCameraDevPanelCollapsed(isCameraDevMobileViewport());
+  document.body.appendChild(panel);
   return panel;
+}
+
+function isCameraDevMobileViewport() {
+  return Boolean(
+    window.matchMedia?.("(max-width: 760px), (max-height: 520px)")?.matches
+    || window.innerWidth <= 760
+    || window.innerHeight <= 520
+  );
+}
+
+function setCameraDevPanelCollapsed(collapsed) {
+  cameraDevPanelCollapsed = Boolean(collapsed);
+
+  if (!cameraDevPanel) {
+    return;
+  }
+
+  cameraDevPanel.classList.toggle("is-collapsed", cameraDevPanelCollapsed);
+  if (cameraDevPanelBody) {
+    cameraDevPanelBody.hidden = cameraDevPanelCollapsed;
+    cameraDevPanelBody.setAttribute("aria-hidden", String(cameraDevPanelCollapsed));
+  }
+  if (cameraDevPanelCollapseButton) {
+    cameraDevPanelCollapseButton.textContent = cameraDevPanelCollapsed ? "Camera Dev" : "Collapse";
+    cameraDevPanelCollapseButton.setAttribute("aria-label", cameraDevPanelCollapsed ? "Expand Camera Dev" : "Collapse Camera Dev");
+    cameraDevPanelCollapseButton.setAttribute("aria-expanded", String(!cameraDevPanelCollapsed));
+  }
+}
+
+function bindCameraDevViewportListener() {
+  if (cameraDevViewportListenerBound) {
+    return;
+  }
+
+  cameraDevViewportListenerBound = true;
+  window.addEventListener("resize", () => {
+    if (!cameraDevPanel?.isConnected || cameraDevPanel.hidden || isCameraDevMobileViewport()) {
+      return;
+    }
+
+    setCameraDevPanelCollapsed(false);
+  });
 }
 
 function createCameraDevNumberInput(labelText, id, step) {
@@ -14135,9 +14376,23 @@ function ensureCameraDevStyles() {
       gap: 12px;
     }
 
+    .camera-dev-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .camera-dev-header h2 {
       margin: 0;
       font-size: 1.25rem;
+    }
+
+    .camera-dev-body {
+      display: contents;
+    }
+
+    .camera-dev-body[hidden] {
+      display: none;
     }
 
     .camera-dev-copy {
@@ -14202,6 +14457,7 @@ function ensureCameraDevStyles() {
     }
 
     .camera-dev-actions button,
+    .camera-dev-collapse,
     .camera-dev-close,
     .camera-dev-export-header button {
       border: 1px solid rgba(23, 32, 51, 0.2);
@@ -14214,7 +14470,12 @@ function ensureCameraDevStyles() {
       cursor: pointer;
     }
 
+    .camera-dev-collapse {
+      display: none;
+    }
+
     .camera-dev-actions button:hover,
+    .camera-dev-collapse:hover,
     .camera-dev-close:hover,
     .camera-dev-export-header button:hover {
       background: #f7eab5;
@@ -14246,6 +14507,100 @@ function ensureCameraDevStyles() {
       font-family: Consolas, "Liberation Mono", monospace;
       font-size: 0.76rem;
       resize: vertical;
+    }
+
+    @media (max-width: 760px), (max-height: 520px) {
+      .camera-dev-panel {
+        left: 8px;
+        right: 8px;
+        top: auto;
+        bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+        width: auto;
+        height: auto;
+        max-height: 45vh;
+        max-height: 45dvh;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding: 0;
+        border-radius: 16px 16px 10px 10px;
+      }
+
+      .camera-dev-panel.is-collapsed {
+        left: auto;
+        right: env(safe-area-inset-right, 0px);
+        top: 44%;
+        bottom: auto;
+        width: 42px;
+        height: 108px;
+        max-height: none;
+        transform: translateY(-50%);
+        border-radius: 12px 0 0 12px;
+      }
+
+      .camera-dev-header {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(23, 32, 51, 0.14);
+        background: rgba(252, 248, 239, 0.98);
+      }
+
+      .camera-dev-panel.is-collapsed .camera-dev-header {
+        width: 100%;
+        height: 100%;
+        justify-content: center;
+        padding: 0;
+        border-bottom: 0;
+      }
+
+      .camera-dev-panel.is-collapsed .camera-dev-header h2,
+      .camera-dev-panel.is-collapsed .camera-dev-close {
+        display: none;
+      }
+
+      .camera-dev-panel.is-collapsed .camera-dev-header-actions {
+        width: 100%;
+        height: 100%;
+      }
+
+      .camera-dev-header h2 {
+        font-size: 1.05rem;
+      }
+
+      .camera-dev-collapse {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .camera-dev-panel.is-collapsed .camera-dev-collapse {
+        width: 100%;
+        height: 100%;
+        min-width: 42px;
+        min-height: 108px;
+        border: 0;
+        border-radius: 12px 0 0 12px;
+        padding: 0;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+      }
+
+      .camera-dev-body {
+        display: block;
+        box-sizing: border-box;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: 10px 12px 12px;
+      }
+
+      .camera-dev-panel.is-collapsed .camera-dev-body {
+        display: none;
+      }
     }
   `;
   document.head.appendChild(style);

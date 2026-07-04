@@ -70,7 +70,7 @@ assert.deepEqual(
 assert.ok(runtimeSource.includes("assets/maps/data/world-core-africa-countries.json?v=20260622-africa-algeria-learn-camera-6"));
 assert.ok(runtimeSource.includes("const camera = normalizeMemoryTrailSectionQuizView(target?.learnCamera);"));
 assert.ok(runtimeSource.includes("source: target.learnCamera?.source || \"daily-trail-target-learn-camera\","));
-assert.ok(runtimeSource.includes("dailyTrailNonLearnCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailNonLearnCamera || null : null,"));
+assert.ok(runtimeSource.includes("dailyTrailNonLearnCamera: getDailyTrailMemoryTrailNonLearnCamera(session.currentActivity, options),"));
 
 console.log("Daily Trail Africa camera check passed:", JSON.stringify({
   learnCameras: expectedLearnCameras,

@@ -16,7 +16,7 @@ if (JSON.stringify(activity.map?.dailyTrailNonLearnCamera) !== JSON.stringify(ex
 }
 
 const requiredHooks = [
-  "dailyTrailNonLearnCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailNonLearnCamera || null : null",
+  "dailyTrailNonLearnCamera: getDailyTrailMemoryTrailNonLearnCamera(session.currentActivity, options),",
   "function getActiveDailyTrailNonLearnCamera(memoryTrail)",
   'memoryTrail?.activityId === continentsOceansActivityId',
   'memoryTrail?.sessionPhase !== "learn"',
