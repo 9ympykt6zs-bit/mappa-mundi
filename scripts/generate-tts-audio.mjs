@@ -116,6 +116,14 @@ const riverInstructionPhrases = [
   "What river is this?"
 ];
 
+const continentsOceansOceanLearnInstructionPhrases = [
+  "Now tap the Pacific Ocean.",
+  "Now tap the Atlantic Ocean.",
+  "Now tap the Indian Ocean.",
+  "Now tap the Arctic Ocean.",
+  "Now tap the Southern Ocean."
+];
+
 const proofSheetMountainRangeLabels = [
   "Adirondack Mountains",
   "Allegheny Mountains",
@@ -195,6 +203,7 @@ const instructionPhrases = [
   ...bodyOfWaterInstructionPhrases,
   ...mountainRangeInstructionPhrases,
   ...riverInstructionPhrases,
+  ...continentsOceansOceanLearnInstructionPhrases,
   "Learn these continents and oceans",
   "Tap the highlighted place. Then repeat its name.",
   ...createMemoryTrailInstructionPhrases(memoryTrailInstructionNouns)
