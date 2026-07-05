@@ -1247,17 +1247,22 @@ export class MapLibreActivityRunner {
 
     const requestedCamera = this.applyCameraDevOverride(camera, metadata);
     const duration = Number.isFinite(requestedCamera.duration) ? requestedCamera.duration : 650;
+    const offset = this.normalizeCameraOffset(requestedCamera.offset);
 
     this.map.stop();
 
     if (this.hasValidBounds(requestedCamera.bounds)) {
-      this.map.fitBounds(requestedCamera.bounds, {
+      const fitOptions = {
         padding: requestedCamera.padding,
         maxZoom: requestedCamera.maxZoom,
         retainPadding: requestedCamera.retainPadding ?? false,
         duration,
         essential: true
-      });
+      };
+      if (offset) {
+        fitOptions.offset = offset;
+      }
+      this.map.fitBounds(requestedCamera.bounds, fitOptions);
       return true;
     }
 
@@ -1280,6 +1285,9 @@ export class MapLibreActivityRunner {
       duration,
       essential: true
     };
+    if (offset) {
+      cameraOptions.offset = offset;
+    }
 
     if (preferredMethod === "flyTo") {
       this.map.flyTo(cameraOptions);
@@ -1288,6 +1296,22 @@ export class MapLibreActivityRunner {
     }
 
     return true;
+  }
+
+  normalizeCameraOffset(offset) {
+    if (Array.isArray(offset) && offset.length >= 2) {
+      const x = Number(offset[0]);
+      const y = Number(offset[1]);
+      return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : undefined;
+    }
+
+    if (offset && typeof offset === "object") {
+      const x = Number(offset.x);
+      const y = Number(offset.y);
+      return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : undefined;
+    }
+
+    return undefined;
   }
 
   applyCameraDevCamera(camera = {}) {
@@ -1592,6 +1616,7 @@ export class MapLibreActivityRunner {
         bottom: 198,
         left: 64
       }),
+      offset: Array.isArray(options.offset) ? options.offset : undefined,
       maxZoom: Number.isFinite(options.maxZoom) ? options.maxZoom : 5.35,
       retainPadding: false,
       duration: Number.isFinite(options.duration) ? options.duration : 850,

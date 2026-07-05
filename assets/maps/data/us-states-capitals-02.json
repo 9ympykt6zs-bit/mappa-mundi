@@ -20,6 +20,14 @@
       "zoom": 4.7016,
       "bearing": 0,
       "pitch": 0
+    },
+    "dailyTrailMobileSectionQuizCamera": {
+      "center": [-75.50126, 40.65817],
+      "zoom": 4.6148,
+      "bearing": 0,
+      "pitch": 0,
+      "cameraContext": "section-quiz-view",
+      "source": "memory-trail-section-quiz-camera"
     }
   },
   "features": [

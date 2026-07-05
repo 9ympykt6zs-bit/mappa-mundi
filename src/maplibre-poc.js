@@ -7592,6 +7592,11 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     sectionQuizView: normalizeMemoryTrailSectionQuizView(options.sectionQuizView),
     dailyTrailFixedCamera,
     dailyTrailFixedCameraLocked: false,
+    dailyTrailMobileSectionQuizCamera: normalizeMemoryTrailSectionQuizView(options.dailyTrailMobileSectionQuizCamera),
+    lastMobileSectionQuizCameraKey: "",
+    lastDailyTrailMobileLearnCameraKey: "",
+    lastDailyTrailMobileLearnCameraPromptKey: "",
+    lastDailyTrailMobileLearnCameraTargetId: "",
     dailyTrailNonLearnCamera: normalizeMemoryTrailSectionQuizView(options.dailyTrailNonLearnCamera),
     dailyTrailQuizCamera: normalizeDailyTrailTargetQuizCamera(options.dailyTrailQuizCamera),
     lastDailyTrailQuizCameraKey: "",
@@ -7665,6 +7670,16 @@ function normalizeDailyTrailTargetQuizCamera(config = null) {
   } : null;
 }
 
+function normalizeDailyTrailMobileLearnCamera(config = null) {
+  const camera = normalizeMemoryTrailSectionQuizView(config);
+
+  return camera ? {
+    ...camera,
+    cameraContext: String(config?.cameraContext || "learn-target-focus").trim(),
+    source: String(config?.source || "daily-trail-mobile-learn-fit").trim()
+  } : null;
+}
+
 function getPreviousMemoryTrailSection(activity = session.currentActivity) {
   const sections = getMemoryTrailSections(activity);
 
@@ -7732,6 +7747,27 @@ function getActiveDailyTrailTargetQuizCamera(memoryTrail, selection = {}) {
     : null;
 }
 
+function getActiveDailyTrailMobileSectionQuizCamera(memoryTrail) {
+  return memoryTrail?.source === "daily-trail"
+    && memoryTrail?.sessionPhase !== "learn"
+    && !isGuidedMemoryTrailPrompt(memoryTrail)
+    && isCompactTouchLayout()
+    ? memoryTrail.dailyTrailMobileSectionQuizCamera || null
+    : null;
+}
+
+function shouldUseGenericMobileSectionQuizCamera(memoryTrail = getActiveMemoryTrail()) {
+  const viewportWidth = window.innerWidth || document.documentElement?.clientWidth || 0;
+  const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 0;
+  const shortLandscape = viewportHeight > 0 && viewportWidth > viewportHeight && viewportHeight < 520;
+  return memoryTrail?.source === "daily-trail"
+    && isCompactTouchLayout()
+    && !shortLandscape
+    && memoryTrail?.sessionPhase !== "learn"
+    && !isGuidedMemoryTrailPrompt(memoryTrail)
+    && !isCompletedDailyTrailReviewMemoryTrail(memoryTrail);
+}
+
 function getMemoryTrailSectionQuizCameraKey(memoryTrail, quizView) {
   return [
     memoryTrail?.activityId || "",
@@ -7764,9 +7800,295 @@ function isMapAtMemoryTrailSectionQuizCamera(quizView) {
   }
 }
 
+function getMemoryTrailSectionTargetSet(memoryTrail = getActiveMemoryTrail()) {
+  const targets = Array.isArray(memoryTrail?.targetPool)
+    ? memoryTrail.targetPool
+    : [];
+  return targets.filter((target) => target?.id);
+}
+
+function getMobileSectionQuizFitPadding() {
+  const canvas = runner?.map?.getCanvas?.();
+  const mapRect = canvas?.getBoundingClientRect?.();
+  const viewportWidth = window.innerWidth || document.documentElement?.clientWidth || 0;
+  const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 0;
+  const fallbackRect = {
+    left: 0,
+    top: 0,
+    right: viewportWidth,
+    bottom: viewportHeight,
+    width: viewportWidth,
+    height: viewportHeight
+  };
+  const rect = mapRect?.width && mapRect?.height ? mapRect : fallbackRect;
+  const headerRect = document.querySelector(".poc-header")?.getBoundingClientRect?.();
+  const trayRect = document.querySelector("#answer-panel")?.getBoundingClientRect?.();
+  const leftInset = Math.max(12, 16 - Math.max(0, rect.left));
+  const rightInset = Math.max(12, 16 - Math.max(0, viewportWidth - rect.right));
+  const headerBottom = headerRect && headerRect.bottom > rect.top
+    ? Math.min(headerRect.bottom, rect.bottom)
+    : rect.top;
+  const trayTop = trayRect && trayRect.top < rect.bottom
+    ? Math.max(trayRect.top, rect.top)
+    : rect.bottom;
+
+  const padding = {
+    top: Math.max(24, Math.ceil(headerBottom - rect.top + 12)),
+    right: Math.max(12, Math.ceil(rightInset)),
+    bottom: Math.max(20, Math.ceil(rect.bottom - trayTop > 0 ? 20 : 24)),
+    left: Math.max(12, Math.ceil(leftInset))
+  };
+
+  const minUsableWidth = Math.min(220, Math.max(80, rect.width * 0.42));
+  const minUsableHeight = Math.min(220, Math.max(80, rect.height * 0.42));
+  const maxHorizontalPadding = Math.max(24, rect.width - minUsableWidth);
+  const maxVerticalPadding = Math.max(32, rect.height - minUsableHeight);
+  const horizontalTotal = padding.left + padding.right;
+  const verticalTotal = padding.top + padding.bottom;
+
+  if (horizontalTotal > maxHorizontalPadding) {
+    const scale = maxHorizontalPadding / horizontalTotal;
+    padding.left = Math.max(8, Math.floor(padding.left * scale));
+    padding.right = Math.max(8, Math.floor(padding.right * scale));
+  }
+
+  if (verticalTotal > maxVerticalPadding) {
+    const scale = maxVerticalPadding / verticalTotal;
+    padding.top = Math.max(12, Math.floor(padding.top * scale));
+    padding.bottom = Math.max(16, Math.floor(padding.bottom * scale));
+  }
+
+  return padding;
+}
+
+function getMobileSectionQuizFitOffset() {
+  const canvas = runner?.map?.getCanvas?.();
+  const mapRect = canvas?.getBoundingClientRect?.();
+  const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 0;
+  const rect = mapRect?.width && mapRect?.height
+    ? mapRect
+    : {
+        top: 0,
+        bottom: viewportHeight,
+        height: viewportHeight
+      };
+  const headerRect = document.querySelector(".poc-header")?.getBoundingClientRect?.();
+  const trayRect = document.querySelector("#answer-panel")?.getBoundingClientRect?.();
+  const headerBottom = headerRect && headerRect.bottom > rect.top
+    ? Math.min(headerRect.bottom, rect.bottom)
+    : rect.top;
+  const trayTop = trayRect && trayRect.top < rect.bottom
+    ? Math.max(trayRect.top, rect.top)
+    : rect.bottom;
+  const usableTop = Math.min(rect.bottom, Math.max(rect.top, headerBottom + 12));
+  const usableBottom = Math.max(usableTop + 80, Math.min(rect.bottom, trayTop - 18));
+  const mapCenterY = rect.top + rect.height / 2;
+  const usableCenterY = (usableTop + usableBottom) / 2;
+  const rawOffsetY = usableCenterY - mapCenterY;
+  const maxOffset = Math.max(0, Math.min(150, rect.height * 0.22));
+  const offsetY = Math.max(-maxOffset, Math.min(maxOffset, rawOffsetY));
+
+  return [0, Math.round(offsetY)];
+}
+
+function getMobileSectionQuizCameraKey(memoryTrail, targets = [], padding = {}, offset = [0, 0]) {
+  const canvas = runner?.map?.getCanvas?.();
+  return [
+    "mobile-section-fit",
+    memoryTrail?.activityId || "",
+    memoryTrail?.sectionIndex ?? "section",
+    targets.map((target) => target.id).filter(Boolean).join(","),
+    Math.round(canvas?.clientWidth || window.innerWidth || 0),
+    Math.round(canvas?.clientHeight || window.innerHeight || 0),
+    Math.round(padding.top || 0),
+    Math.round(padding.right || 0),
+    Math.round(padding.bottom || 0),
+    Math.round(padding.left || 0),
+    Math.round(offset[0] || 0),
+    Math.round(offset[1] || 0)
+  ].join(":");
+}
+
+function applyGenericMobileSectionQuizCamera(memoryTrail, selection = {}, options = {}) {
+  if (
+    !shouldUseGenericMobileSectionQuizCamera(memoryTrail)
+    || isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
+    || typeof runner?.fitTargets !== "function"
+  ) {
+    return false;
+  }
+
+  const targets = getMemoryTrailSectionTargetSet(memoryTrail);
+  const padding = getMobileSectionQuizFitPadding();
+  const offset = getMobileSectionQuizFitOffset();
+  const cameraKey = getMobileSectionQuizCameraKey(memoryTrail, targets, padding, offset);
+  if (targets.length === 0 || memoryTrail.lastMobileSectionQuizCameraKey === cameraKey) {
+    return false;
+  }
+
+  const didMove = runner.fitTargets(targets, {
+    padding,
+    offset,
+    maxZoom: 7.25,
+    duration: Number.isFinite(Number(options.duration)) ? Number(options.duration) : 850,
+    cameraContext: "section-quiz-view",
+    source: "memory-trail-section-quiz-camera",
+    skipCameraDevOverride: Boolean(options.skipCameraDevOverride)
+  });
+
+  if (didMove) {
+    memoryTrail.lastMobileSectionQuizCameraKey = cameraKey;
+    memoryTrail.lastSectionQuizCameraKey = cameraKey;
+  }
+
+  debugMemoryTrail("mobile section quiz camera", {
+    didMove,
+    sectionTitle: memoryTrail.sectionTitle,
+    sectionIndex: memoryTrail.sectionIndex,
+    targetIds: targets.map((target) => target.id),
+    padding,
+    offset,
+    targetId: selection?.targetId || memoryTrail.currentPromptTargetId || "",
+    promptType: selection?.promptType || memoryTrail.currentPromptType || ""
+  });
+  return didMove;
+}
+
+function getDailyTrailMobileLearnCameraOverride(target) {
+  return normalizeDailyTrailMobileLearnCamera(target?.mobileDailyTrailLearnCamera);
+}
+
+function isGenericMobileDailyTrailLearnTarget(memoryTrail, selection = {}, target = null) {
+  return memoryTrail?.source === "daily-trail"
+    && currentAppScreen === "daily-trail-gameplay"
+    && isCompactTouchLayout()
+    && session.currentActivity?.id !== continentsOceansActivityId
+    && !isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
+    && !isCompletedDailyTrailReviewMemoryTrail(memoryTrail)
+    && selection?.promptType === "guided"
+    && selection?.mode === "learn"
+    && memoryTrail?.sessionPhase === "learn"
+    && memoryTrail.currentPromptTargetId === selection?.targetId
+    && target?.id === selection?.targetId
+    && target?.kind === "shape"
+    && !getActiveDailyTrailFixedCamera(memoryTrail);
+}
+
+function getMobileDailyTrailLearnFitPadding() {
+  const canvas = runner?.map?.getCanvas?.();
+  const mapRect = canvas?.getBoundingClientRect?.();
+  const viewportWidth = window.innerWidth || document.documentElement?.clientWidth || 0;
+  const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 0;
+  const rect = mapRect?.width && mapRect?.height
+    ? mapRect
+    : {
+        left: 0,
+        top: 0,
+        right: viewportWidth,
+        bottom: viewportHeight,
+        width: viewportWidth,
+        height: viewportHeight
+      };
+  const headerRect = document.querySelector(".poc-header")?.getBoundingClientRect?.();
+  const trayRect = document.querySelector("#answer-panel")?.getBoundingClientRect?.();
+  const headerBottom = headerRect && headerRect.bottom > rect.top
+    ? Math.min(headerRect.bottom, rect.bottom)
+    : rect.top;
+  const trayTop = trayRect && trayRect.top < rect.bottom
+    ? Math.max(trayRect.top, rect.top)
+    : rect.bottom;
+  const usableTop = Math.min(rect.bottom, Math.max(rect.top, headerBottom + 12));
+  const usableBottom = Math.max(usableTop + 96, Math.min(rect.bottom, trayTop - 18));
+  const usableHeight = Math.max(96, usableBottom - usableTop);
+  const maxFocusWidth = Math.max(96, rect.width - 24);
+  const maxFocusHeight = Math.max(96, usableHeight - 12);
+  const focusWidth = Math.min(maxFocusWidth, Math.min(210, Math.max(180, rect.width * 0.58)));
+  const focusHeight = Math.min(maxFocusHeight, Math.min(210, Math.max(180, usableHeight * 0.52)));
+  const desiredCenterY = usableTop + usableHeight * 0.415;
+  const minCenterY = usableTop + focusHeight / 2;
+  const maxCenterY = usableBottom - focusHeight / 2;
+  const centerY = Math.max(minCenterY, Math.min(maxCenterY, desiredCenterY));
+  const horizontalPadding = Math.max(12, Math.round((rect.width - focusWidth) / 2));
+
+  return {
+    top: Math.max(12, Math.round(centerY - focusHeight / 2 - rect.top)),
+    right: horizontalPadding,
+    bottom: Math.max(20, Math.round(rect.bottom - (centerY + focusHeight / 2))),
+    left: horizontalPadding
+  };
+}
+
+function getDailyTrailMobileLearnCameraKey(memoryTrail, target, padding = {}, camera = null) {
+  const canvas = runner?.map?.getCanvas?.();
+  return [
+    "daily-trail-mobile-learn",
+    memoryTrail?.activityId || "",
+    memoryTrail?.currentPromptKey || "",
+    target?.id || "",
+    Math.round(canvas?.clientWidth || window.innerWidth || 0),
+    Math.round(canvas?.clientHeight || window.innerHeight || 0),
+    Math.round(padding.top || 0),
+    Math.round(padding.right || 0),
+    Math.round(padding.bottom || 0),
+    Math.round(padding.left || 0),
+    camera ? camera.center.map((value) => value.toFixed(5)).join(",") : "fit",
+    camera ? camera.zoom.toFixed(4) : "fit"
+  ].join(":");
+}
+
+function hasAppliedDailyTrailMobileLearnCameraForPrompt(memoryTrail, selection = {}) {
+  return Boolean(
+    memoryTrail?.lastDailyTrailMobileLearnCameraPromptKey
+    && memoryTrail.lastDailyTrailMobileLearnCameraPromptKey === memoryTrail.currentPromptKey
+    && memoryTrail.lastDailyTrailMobileLearnCameraTargetId === selection?.targetId
+  );
+}
+
 function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options = {}) {
   if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
     return false;
+  }
+
+  const mobileSectionQuizCamera = getActiveDailyTrailMobileSectionQuizCamera(memoryTrail);
+  if (mobileSectionQuizCamera) {
+    if (typeof runner?.moveCamera !== "function") {
+      return false;
+    }
+
+    const cameraKey = getMemoryTrailSectionQuizCameraKey(memoryTrail, mobileSectionQuizCamera);
+    if (
+      memoryTrail.lastSectionQuizCameraKey === cameraKey
+      && isMapAtMemoryTrailSectionQuizCamera(mobileSectionQuizCamera)
+    ) {
+      return false;
+    }
+
+    const didMove = runner.moveCamera({
+      center: mobileSectionQuizCamera.center,
+      zoom: mobileSectionQuizCamera.zoom,
+      bearing: mobileSectionQuizCamera.bearing,
+      pitch: mobileSectionQuizCamera.pitch,
+      padding: mobileSectionQuizCamera.padding || { top: 0, right: 0, bottom: 0, left: 0 },
+      duration: Number.isFinite(Number(options.duration)) ? Number(options.duration) : mobileSectionQuizCamera.duration,
+      retainPadding: false,
+      essential: true
+    }, {
+      cameraContext: "section-quiz-view",
+      source: "memory-trail-section-quiz-camera",
+      requestType: "easeTo",
+      activityId: memoryTrail.activityId,
+      sectionIndex: memoryTrail.sectionIndex,
+      sectionTitle: memoryTrail.sectionTitle || ""
+    }, "easeTo");
+
+    if (didMove) {
+      memoryTrail.lastSectionQuizCameraKey = cameraKey;
+    }
+    return didMove;
+  }
+
+  if (applyGenericMobileSectionQuizCamera(memoryTrail, selection, options)) {
+    return true;
   }
 
   const dailyTrailFixedCamera = getActiveDailyTrailFixedCamera(memoryTrail)
@@ -7870,13 +8192,16 @@ function scheduleMemoryTrailSectionQuizCameraCheck(memoryTrail, selection = {}) 
     return false;
   }
 
+  const mobileSectionQuizCamera = getActiveDailyTrailMobileSectionQuizCamera(memoryTrail);
+  const shouldUseGenericMobileCamera = shouldUseGenericMobileSectionQuizCamera(memoryTrail)
+    && !mobileSectionQuizCamera
+    && !isMixedDailyTrailCheckpointMemoryTrail(memoryTrail);
   const dailyTrailFixedCamera = getActiveDailyTrailFixedCamera(memoryTrail)
     || getActiveDailyTrailNonLearnCamera(memoryTrail);
-  const quizView = dailyTrailFixedCamera || memoryTrail?.sectionQuizView;
+  const quizView = mobileSectionQuizCamera || dailyTrailFixedCamera || memoryTrail?.sectionQuizView;
   if (
-    !usesFixedSectionMemoryTrailCamera(memoryTrail)
-    || !quizView
-    || (!dailyTrailFixedCamera && (selection?.promptType === "guided" || memoryTrail.sessionPhase === "learn"))
+    (!shouldUseGenericMobileCamera && (!usesFixedSectionMemoryTrailCamera(memoryTrail) || !quizView))
+    || (!mobileSectionQuizCamera && !shouldUseGenericMobileCamera && !dailyTrailFixedCamera && (selection?.promptType === "guided" || memoryTrail.sessionPhase === "learn"))
   ) {
     return false;
   }
@@ -7896,7 +8221,7 @@ function scheduleMemoryTrailSectionQuizCameraCheck(memoryTrail, selection = {}) 
     }
 
     applyMemoryTrailSectionQuizCamera(memoryTrail, selection, { duration: 260 });
-  }, Math.max(900, (quizView.duration || 850) + 140));
+  }, Math.max(900, (quizView?.duration || 850) + 140));
   memoryTrail.timers.push(timeoutId);
   return true;
 }
@@ -8786,6 +9111,7 @@ function startMemoryTrail(options = {}) {
     sectionCount: memoryTrailSection?.sectionCount,
     sectionQuizView: memoryTrailSection?.map?.quizView || session.currentActivity?.map?.quizView || null,
     dailyTrailFixedCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailFixedCamera || null : null,
+    dailyTrailMobileSectionQuizCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailMobileSectionQuizCamera || null : null,
     dailyTrailNonLearnCamera: getDailyTrailMemoryTrailNonLearnCamera(session.currentActivity, options),
     dailyTrailQuizCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailQuizCamera || null : null,
     checkpointReview,
@@ -8863,7 +9189,8 @@ function restartMemoryTrail() {
     sectionTitle: memoryTrailSection?.title,
     sectionIndex: memoryTrailSection?.sectionIndex,
     sectionCount: memoryTrailSection?.sectionCount,
-    sectionQuizView: memoryTrailSection?.map?.quizView || session.currentActivity?.map?.quizView || null
+    sectionQuizView: memoryTrailSection?.map?.quizView || session.currentActivity?.map?.quizView || null,
+    dailyTrailMobileSectionQuizCamera: session.currentActivity?.map?.dailyTrailMobileSectionQuizCamera || null
   });
   activeStudySession.memoryTrail.previousRevealedTargetIds = previousRevealedTargetIds;
   currentMemoryTrailAnalyticsKey = [
@@ -9316,6 +9643,7 @@ function scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target) {
     || memoryTrail.currentPromptTargetId !== selection?.targetId
     || !target
     || (memoryTrail?.source === "daily-trail" && target?.learnCamera)
+    || hasAppliedDailyTrailMobileLearnCameraForPrompt(memoryTrail, selection)
     || target.kind !== "shape"
     || typeof runner?.shouldFocusSmallTargetInLearnMode !== "function"
     || typeof runner?.focusTargetIfNeeded !== "function"
@@ -11436,38 +11764,113 @@ function scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target) {
     || memoryTrail?.sessionPhase !== "learn"
     || memoryTrail.currentPromptTargetId !== selection?.targetId
     || !target
-    || !camera
-    || typeof runner?.moveCamera !== "function"
   ) {
     return Promise.resolve(false);
   }
 
+  if (camera && typeof runner?.moveCamera === "function") {
+    const promptKey = memoryTrail.currentPromptKey;
+    const duration = camera.duration || 720;
+    const source = target.learnCamera?.source || "daily-trail-target-learn-camera";
+    runner.suppressStudyIntroCameraOnce?.(source, 5000);
+    const didMove = runner.moveCamera({
+        center: camera.center,
+        zoom: camera.zoom,
+        bearing: camera.bearing,
+        pitch: camera.pitch,
+        padding: camera.padding || { top: 0, right: 0, bottom: 0, left: 0 },
+        duration,
+        essential: true
+      }, {
+        cameraContext: target.learnCamera?.cameraContext || "learn-target-focus",
+        source: target.learnCamera?.source || "daily-trail-target-learn-camera",
+        requestType: "flyTo",
+        activityId: memoryTrail.activityId,
+        targetId: target.id,
+        targetLabel: target.name || ""
+      }, "flyTo");
+
+    if (!didMove) {
+      return Promise.resolve(false);
+    }
+
+    // MapLibre completion events can be preempted by a later camera request. A
+    // bounded settle delay guarantees target narration never gets ahead of this
+    // Learn fly-to while keeping the prompt resilient to those interruptions.
+    return new Promise((resolve) => {
+      const timeoutId = window.setTimeout(() => {
+        const promptIsStillCurrent = isCurrentMemoryTrailState(memoryTrail)
+          && memoryTrail.currentPromptKey === promptKey
+          && memoryTrail.currentPromptTargetId === selection.targetId
+          && memoryTrail.currentPromptType === "guided"
+          && memoryTrail.sessionPhase === "learn";
+        resolve(promptIsStillCurrent);
+      }, duration + 100);
+      memoryTrail.timers.push(timeoutId);
+    });
+  }
+
+  if (
+    !isGenericMobileDailyTrailLearnTarget(memoryTrail, selection, target)
+    || typeof runner?.fitTargets !== "function"
+  ) {
+    return Promise.resolve(false);
+  }
+
+  const mobileCamera = getDailyTrailMobileLearnCameraOverride(target);
+  const padding = getMobileDailyTrailLearnFitPadding();
+  const cameraKey = getDailyTrailMobileLearnCameraKey(memoryTrail, target, padding, mobileCamera);
+  if (memoryTrail.lastDailyTrailMobileLearnCameraKey === cameraKey) {
+    return Promise.resolve(false);
+  }
+
   const promptKey = memoryTrail.currentPromptKey;
-  const duration = camera.duration || 720;
-  const didMove = runner.moveCamera({
-      center: camera.center,
-      zoom: camera.zoom,
-      bearing: camera.bearing,
-      pitch: camera.pitch,
-      padding: camera.padding || { top: 0, right: 0, bottom: 0, left: 0 },
+  const duration = mobileCamera?.duration || 720;
+  const cameraContext = mobileCamera?.cameraContext || "learn-target-focus";
+  const source = mobileCamera?.source || "daily-trail-mobile-learn-fit";
+  runner.suppressStudyIntroCameraOnce?.(source, 5000);
+  const didMove = mobileCamera && typeof runner?.moveCamera === "function"
+    ? runner.moveCamera({
+      center: mobileCamera.center,
+      zoom: mobileCamera.zoom,
+      bearing: mobileCamera.bearing,
+      pitch: mobileCamera.pitch,
+      padding: mobileCamera.padding || { top: 0, right: 0, bottom: 0, left: 0 },
       duration,
       essential: true
     }, {
-      cameraContext: target.learnCamera?.cameraContext || "learn-target-focus",
-      source: target.learnCamera?.source || "daily-trail-target-learn-camera",
+      cameraContext,
+      source,
       requestType: "flyTo",
       activityId: memoryTrail.activityId,
       targetId: target.id,
       targetLabel: target.name || ""
-    }, "flyTo");
+    }, "flyTo")
+    : runner.fitTargets([target], {
+      padding,
+      maxZoom: 7.25,
+      duration,
+      cameraContext,
+      source,
+      skipCameraDevOverride: false
+    });
 
   if (!didMove) {
     return Promise.resolve(false);
   }
 
-  // MapLibre completion events can be preempted by a later camera request. A
-  // bounded settle delay guarantees target narration never gets ahead of this
-  // Learn fly-to while keeping the prompt resilient to those interruptions.
+  memoryTrail.lastDailyTrailMobileLearnCameraKey = cameraKey;
+  memoryTrail.lastDailyTrailMobileLearnCameraPromptKey = promptKey;
+  memoryTrail.lastDailyTrailMobileLearnCameraTargetId = target.id;
+  debugMemoryTrail("daily trail mobile learn camera", {
+    targetId: target.id,
+    targetName: target.name,
+    source,
+    cameraContext,
+    padding,
+    explicitMobileOverride: Boolean(mobileCamera)
+  });
+
   return new Promise((resolve) => {
     const timeoutId = window.setTimeout(() => {
       const promptIsStillCurrent = isCurrentMemoryTrailState(memoryTrail)

@@ -18,11 +18,11 @@ if (JSON.stringify(activity.map?.dailyTrailNonLearnCamera) !== JSON.stringify(ex
 const requiredHooks = [
   "dailyTrailNonLearnCamera: getDailyTrailMemoryTrailNonLearnCamera(session.currentActivity, options),",
   "function getActiveDailyTrailNonLearnCamera(memoryTrail)",
-  'memoryTrail?.activityId === continentsOceansActivityId',
   'memoryTrail?.sessionPhase !== "learn"',
-  "const quizView = dailyTrailFixedCamera || memoryTrail?.sectionQuizView;",
-  "(quizView.duration || 850)",
+  "const quizView = mobileSectionQuizCamera || dailyTrailFixedCamera || memoryTrail?.sectionQuizView;",
+  "(quizView?.duration || 850)",
   "getActiveDailyTrailNonLearnCamera(memoryTrail)",
+  "applyGenericMobileSectionQuizCamera(memoryTrail, selection, options)",
   "maybeFocusContinentsOceansNamePrompt"
 ];
 

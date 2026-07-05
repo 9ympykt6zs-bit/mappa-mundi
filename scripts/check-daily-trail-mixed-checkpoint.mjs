@@ -288,12 +288,24 @@ assert.ok(previewEntrySource.includes("src/maplibre-poc.js?v=20260624-state-cont
   "dailyTrailQuizCamera",
   "!isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)",
   "applyMixedDailyTrailCheckpointCamera(memoryTrail, { selection, duration: 820 });",
-  "if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {\n    return false;\n  }\n\n  const dailyTrailFixedCamera",
   "source: checkpointCamera ? \"daily-trail-checkpoint-context\" : \"activity-context-fit\"",
   "daily-trail-checkpoint-context",
   "runner.suppressStudyIntroCameraOnce?.(\"daily-trail-mixed-checkpoint-context\", 5000)",
   "maxZoom: 4.1"
 ].forEach((hook) => assert.ok(runtimeSource.includes(hook), `Missing mixed checkpoint runtime hook: ${hook}`));
+
+const sectionQuizCameraStart = runtimeSource.indexOf("function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options = {})");
+assert.notEqual(sectionQuizCameraStart, -1, "Section quiz camera function is missing.");
+const sectionQuizCameraEnd = runtimeSource.indexOf("function applyDailyTrailTargetQuizCamera", sectionQuizCameraStart);
+const sectionQuizCameraSource = runtimeSource.slice(sectionQuizCameraStart, sectionQuizCameraEnd);
+assert.ok(
+  sectionQuizCameraSource.includes("if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {\n    return false;\n  }"),
+  "Section quiz camera must still exit for mixed checkpoints."
+);
+assert.ok(
+  sectionQuizCameraSource.includes("const dailyTrailFixedCamera"),
+  "Section quiz camera must preserve non-checkpoint fixed camera handling."
+);
 
 [
   "setMemoryTrailCheckpointPreAnswerStyle(isActive = false)",

@@ -45,6 +45,12 @@
       "state": "NH",
       "shape": "path",
       "mapShapeId": "new-hampshire",
+      "mobileDailyTrailLearnCamera": {
+        "center": [-71.63703, 41.88495],
+        "zoom": 4.6367,
+        "bearing": 0,
+        "pitch": 0
+      },
       "color": "#d65a8c",
       "labelPosition": {
         "x": 895,
