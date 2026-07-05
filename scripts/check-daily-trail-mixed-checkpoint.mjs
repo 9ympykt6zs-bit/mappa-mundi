@@ -252,8 +252,8 @@ assert.equal(
   "20260624-daily-trail-curriculum-progression-1",
   "The runtime must load the checkpoint-aware planner under a new cache key."
 );
-assert.ok(appEntrySource.includes("./src/maplibre-poc.js?v=20260624-state-context-display-cleanup-1"));
-assert.ok(previewEntrySource.includes("src/maplibre-poc.js?v=20260624-state-context-display-cleanup-1"));
+assert.ok(appEntrySource.includes("./src/maplibre-poc.js?v=20260705-daily-trail-ui-simplify"));
+assert.ok(previewEntrySource.includes("src/maplibre-poc.js?v=20260705-daily-trail-ui-simplify"));
 [
   "checkpointActivityGroups",
   "function startDailyTrailActivity(activityId)",

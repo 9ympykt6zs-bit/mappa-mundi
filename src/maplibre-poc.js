@@ -2909,12 +2909,18 @@ let cameraDevBearingInput = null;
 let cameraDevPitchInput = null;
 let cameraDevScopeSelect = null;
 let cameraDevExportOutput = null;
+let cameraDevTraceStatusEl = null;
+let cameraDevTraceOutput = null;
 let cameraDevMemoryTrailSkipButton = null;
 let cameraDevMemoryTrailSectionButton = null;
 let cameraDevMemoryTrailBackSectionButton = null;
 let cameraDevMemoryTrailStatusEl = null;
 let cameraDevStylesInjected = false;
 let cameraDevMapEventSource = null;
+const cameraDevTraceEventLimit = 80;
+let cameraDevTraceEvents = [];
+let cameraDevTraceSequence = 0;
+let cameraDevTraceStartedAtMs = 0;
 let mountainFindDevSessionActive = false;
 let mountainFindDevPanel = null;
 let activeStudySession = null;
@@ -2939,6 +2945,7 @@ let launchScreenEventsBound = false;
 let audioInstructionState = createAudioInstructionState("app");
 let audioInstructionHideTimer = null;
 let memoryTrailInstructionBannerTimer = null;
+let dailyTrailTransitionNoticeTimer = null;
 let lastMemoryTrailInstructionKey = "";
 let lastSpokenMemoryTrailInstructionKey = "";
 let memoryTrailAudioSessionSequence = 0;
@@ -3086,7 +3093,11 @@ function isGameplayNavigationLocked() {
 }
 
 function shouldShowResetControl() {
-  return Boolean(session?.currentActivity && isActiveGameplayScreen());
+  return Boolean(
+    session?.currentActivity
+    && isActiveGameplayScreen()
+    && currentAppScreen !== "daily-trail-gameplay"
+  );
 }
 
 function updateResetControlVisibility() {
@@ -3281,8 +3292,11 @@ function showAudioInstructionText(message) {
   }
 
   window.clearTimeout(audioInstructionHideTimer);
+  window.clearTimeout(dailyTrailTransitionNoticeTimer);
+  dailyTrailTransitionNoticeTimer = null;
   audioInstructionBanner.textContent = text;
   audioInstructionBanner.hidden = false;
+  audioInstructionBanner.classList.remove("daily-trail-transition-banner");
 
   audioInstructionHideTimer = window.setTimeout(() => {
     hideAudioInstructionBanner();
@@ -3294,11 +3308,13 @@ function hideAudioInstructionBanner() {
   audioInstructionHideTimer = null;
   window.clearTimeout(memoryTrailInstructionBannerTimer);
   memoryTrailInstructionBannerTimer = null;
+  window.clearTimeout(dailyTrailTransitionNoticeTimer);
+  dailyTrailTransitionNoticeTimer = null;
 
   if (audioInstructionBanner) {
     audioInstructionBanner.hidden = true;
     audioInstructionBanner.textContent = "";
-    audioInstructionBanner.classList.remove("memory-trail-instruction-banner");
+    audioInstructionBanner.classList.remove("memory-trail-instruction-banner", "daily-trail-transition-banner");
   }
 }
 
@@ -3382,6 +3398,32 @@ function setActiveActivityHeaderTitle(activity = session?.currentActivity, optio
     shortTitle: activityTitle,
     ...options
   });
+}
+
+function getDailyTrailHeaderLabel(dailyTrailSession = activeDailyTrailSession) {
+  const goal = getDailyTrailGoal(dailyTrailSession?.trailId || dailyTrailSession?.plan?.trailGoalId || "");
+  const journey = journeyPresets.find((candidate) => candidate.id === (goal?.journeyId || dailyTrailSession?.journeyId)) || null;
+  const labelSource = [
+    goal?.title,
+    journey?.title,
+    goal?.id,
+    journey?.id
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  if (/\b(u\.?s\.?|united states|us-capitals)\b/.test(labelSource)) {
+    return "United States";
+  }
+
+  if (/\b(world|continents|oceans|geography)\b/.test(labelSource)) {
+    return "World Geography";
+  }
+
+  return "Daily Trail";
+}
+
+function setDailyTrailGameplayHeaderTitle(dailyTrailSession = activeDailyTrailSession) {
+  const label = getDailyTrailHeaderLabel(dailyTrailSession);
+  setHeaderTitle(label, { shortTitle: label });
 }
 
 function getActivityHeaderDisplayName(activity = session?.currentActivity) {
@@ -3675,6 +3717,9 @@ async function ensureMapReady() {
       runner.setCameraDevOverrideProvider?.(getCameraDevOverrideForRequest);
       runner.onCameraDevStateChange?.(() => {
         updateCameraDevPanel();
+      });
+      runner.onCameraTraceEvent?.((event) => {
+        recordCameraDevTraceEvent(event);
       });
       runner.onRegionSelect(handleRunnerRegionSelect);
       runner.onTargetClick(handleTargetClick);
@@ -7594,6 +7639,9 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     dailyTrailFixedCameraLocked: false,
     dailyTrailMobileSectionQuizCamera: normalizeMemoryTrailSectionQuizView(options.dailyTrailMobileSectionQuizCamera),
     lastMobileSectionQuizCameraKey: "",
+    lastAuthoritativeSectionQuizCameraKey: "",
+    lastAuthoritativeSectionQuizCameraMode: "",
+    lastAuthoritativeSectionQuizCameraSectionIndex: null,
     lastDailyTrailMobileLearnCameraKey: "",
     lastDailyTrailMobileLearnCameraPromptKey: "",
     lastDailyTrailMobileLearnCameraTargetId: "",
@@ -7756,6 +7804,12 @@ function getActiveDailyTrailMobileSectionQuizCamera(memoryTrail) {
     : null;
 }
 
+const memoryTrailSectionQuizCameraContext = "section-quiz-view";
+const memoryTrailSectionQuizCameraSource = "memory-trail-section-quiz-camera";
+const genericMobileSectionQuizMaxLongitudeSpan = 72;
+const genericMobileSectionQuizMaxLatitudeSpan = 58;
+const genericMobileSectionQuizAntimeridianSpan = 170;
+
 function shouldUseGenericMobileSectionQuizCamera(memoryTrail = getActiveMemoryTrail()) {
   const viewportWidth = window.innerWidth || document.documentElement?.clientWidth || 0;
   const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 0;
@@ -7766,6 +7820,30 @@ function shouldUseGenericMobileSectionQuizCamera(memoryTrail = getActiveMemoryTr
     && memoryTrail?.sessionPhase !== "learn"
     && !isGuidedMemoryTrailPrompt(memoryTrail)
     && !isCompletedDailyTrailReviewMemoryTrail(memoryTrail);
+}
+
+function recordSectionQuizCameraTrace(memoryTrail, status, details = {}) {
+  recordCameraDevTraceEvent({
+    eventType: "section-quiz-camera",
+    status,
+    activityId: memoryTrail?.activityId || session?.currentActivity?.id || "",
+    activityTitle: session?.currentActivity?.title || "",
+    sectionIndex: memoryTrail?.sectionIndex ?? null,
+    sectionTitle: memoryTrail?.sectionTitle || "",
+    targetId: details.targetId || memoryTrail?.currentPromptTargetId || "",
+    targetLabel: details.targetLabel || memoryTrail?.currentPromptTargetLabel || "",
+    targetIds: Array.isArray(details.targetIds) ? details.targetIds : [],
+    targetLabels: Array.isArray(details.targetLabels) ? details.targetLabels : [],
+    cameraContext: details.cameraContext || memoryTrailSectionQuizCameraContext,
+    cameraSource: details.cameraSource || memoryTrailSectionQuizCameraSource,
+    requestType: details.requestType || "",
+    requestedCamera: details.requestedCamera || null,
+    resultingCamera: details.resultingCamera || null,
+    sectionBounds: details.sectionBounds || null,
+    padding: details.padding || null,
+    offset: details.offset || null,
+    reason: details.reason || ""
+  });
 }
 
 function getMemoryTrailSectionQuizCameraKey(memoryTrail, quizView) {
@@ -7805,6 +7883,118 @@ function getMemoryTrailSectionTargetSet(memoryTrail = getActiveMemoryTrail()) {
     ? memoryTrail.targetPool
     : [];
   return targets.filter((target) => target?.id);
+}
+
+function getCameraDevSectionQuizSnapshot() {
+  return runner?.getCameraDevSnapshot?.() || {};
+}
+
+function isCameraDevSnapshotSectionQuizCamera(memoryTrail, snapshot = getCameraDevSectionQuizSnapshot()) {
+  return snapshot?.cameraContext === memoryTrailSectionQuizCameraContext
+    && snapshot?.cameraSource === memoryTrailSectionQuizCameraSource
+    && (!memoryTrail?.activityId || snapshot.activityId === memoryTrail.activityId)
+    && (
+      snapshot.sectionIndex == null
+      || memoryTrail?.sectionIndex == null
+      || snapshot.sectionIndex === memoryTrail.sectionIndex
+    );
+}
+
+function isAuthoritativeSectionQuizCameraCurrent(memoryTrail, cameraKey = memoryTrail?.lastAuthoritativeSectionQuizCameraKey) {
+  return Boolean(
+    memoryTrail
+    && cameraKey
+    && memoryTrail.lastAuthoritativeSectionQuizCameraKey === cameraKey
+    && isCameraDevSnapshotSectionQuizCamera(memoryTrail)
+  );
+}
+
+function markAuthoritativeSectionQuizCameraApplied(memoryTrail, cameraKey, mode, details = {}) {
+  if (!memoryTrail || !cameraKey) {
+    return;
+  }
+
+  memoryTrail.lastAuthoritativeSectionQuizCameraKey = cameraKey;
+  memoryTrail.lastAuthoritativeSectionQuizCameraMode = mode || "";
+  memoryTrail.lastAuthoritativeSectionQuizCameraSectionIndex = memoryTrail.sectionIndex;
+  recordSectionQuizCameraTrace(memoryTrail, "applied", {
+    ...details,
+    reason: mode ? `${mode} section quiz camera applied` : "section quiz camera applied"
+  });
+}
+
+function getGenericMobileSectionQuizFitDecision(memoryTrail = getActiveMemoryTrail()) {
+  const targets = getMemoryTrailSectionTargetSet(memoryTrail);
+  const targetIds = targets.map((target) => target.id).filter(Boolean);
+  const targetLabels = targets.map((target) => target.name).filter(Boolean);
+  const reject = (reason, extra = {}) => ({
+    ok: false,
+    reason,
+    targets,
+    targetIds,
+    targetLabels,
+    ...extra
+  });
+
+  if (!shouldUseGenericMobileSectionQuizCamera(memoryTrail)) {
+    return reject("generic mobile section quiz camera inactive");
+  }
+
+  if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
+    return reject("checkpoint camera has higher precedence");
+  }
+
+  if (getActiveDailyTrailFixedCamera(memoryTrail) || getActiveDailyTrailNonLearnCamera(memoryTrail)) {
+    return reject("fixed regional camera has higher precedence");
+  }
+
+  if (targets.length === 0) {
+    return reject("section has no target geometry");
+  }
+
+  if (typeof runner?.getCombinedTargetBounds !== "function") {
+    return reject("runner combined bounds helper unavailable");
+  }
+
+  const bounds = runner.getCombinedTargetBounds(targets);
+  if (
+    !Array.isArray(bounds)
+    || bounds.length < 2
+    || !Array.isArray(bounds[0])
+    || !Array.isArray(bounds[1])
+  ) {
+    return reject("section target bounds unavailable", { bounds: null });
+  }
+
+  const longitudeSpan = bounds[1][0] - bounds[0][0];
+  const latitudeSpan = bounds[1][1] - bounds[0][1];
+  const touchesWorldWrap = bounds[0][0] <= -179 || bounds[1][0] >= 179;
+
+  if (
+    touchesWorldWrap
+    || longitudeSpan >= genericMobileSectionQuizAntimeridianSpan
+  ) {
+    return reject("section bounds cross world wrap or antimeridian", { bounds, longitudeSpan, latitudeSpan });
+  }
+
+  if (longitudeSpan > genericMobileSectionQuizMaxLongitudeSpan) {
+    return reject("section longitude span is too broad for generic mobile fit", { bounds, longitudeSpan, latitudeSpan });
+  }
+
+  if (latitudeSpan > genericMobileSectionQuizMaxLatitudeSpan) {
+    return reject("section latitude span is too broad for generic mobile fit", { bounds, longitudeSpan, latitudeSpan });
+  }
+
+  return {
+    ok: true,
+    reason: "safe compact section bounds",
+    targets,
+    targetIds,
+    targetLabels,
+    bounds,
+    longitudeSpan,
+    latitudeSpan
+  };
 }
 
 function getMobileSectionQuizFitPadding() {
@@ -7910,19 +8100,47 @@ function getMobileSectionQuizCameraKey(memoryTrail, targets = [], padding = {}, 
 }
 
 function applyGenericMobileSectionQuizCamera(memoryTrail, selection = {}, options = {}) {
-  if (
-    !shouldUseGenericMobileSectionQuizCamera(memoryTrail)
-    || isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
-    || typeof runner?.fitTargets !== "function"
-  ) {
+  if (typeof runner?.fitTargets !== "function") {
     return false;
   }
 
-  const targets = getMemoryTrailSectionTargetSet(memoryTrail);
+  const fitDecision = getGenericMobileSectionQuizFitDecision(memoryTrail);
+  if (!fitDecision.ok) {
+    recordSectionQuizCameraTrace(memoryTrail, "rejected", {
+      reason: fitDecision.reason,
+      targetIds: fitDecision.targetIds,
+      targetLabels: fitDecision.targetLabels,
+      sectionBounds: fitDecision.bounds || null
+    });
+    return false;
+  }
+
+  recordSectionQuizCameraTrace(memoryTrail, "accepted", {
+    reason: fitDecision.reason,
+    targetIds: fitDecision.targetIds,
+    targetLabels: fitDecision.targetLabels,
+    sectionBounds: fitDecision.bounds
+  });
+
+  const targets = fitDecision.targets;
   const padding = getMobileSectionQuizFitPadding();
   const offset = getMobileSectionQuizFitOffset();
   const cameraKey = getMobileSectionQuizCameraKey(memoryTrail, targets, padding, offset);
-  if (targets.length === 0 || memoryTrail.lastMobileSectionQuizCameraKey === cameraKey) {
+  if (memoryTrail.lastMobileSectionQuizCameraKey === cameraKey) {
+    if (isAuthoritativeSectionQuizCameraCurrent(memoryTrail, cameraKey)) {
+      return false;
+    }
+    recordSectionQuizCameraTrace(memoryTrail, "reapply", {
+      reason: "cached generic section camera key no longer matches active camera context",
+      targetIds: fitDecision.targetIds,
+      targetLabels: fitDecision.targetLabels,
+      sectionBounds: fitDecision.bounds,
+      padding,
+      offset
+    });
+  }
+
+  if (targets.length === 0) {
     return false;
   }
 
@@ -7931,14 +8149,23 @@ function applyGenericMobileSectionQuizCamera(memoryTrail, selection = {}, option
     offset,
     maxZoom: 7.25,
     duration: Number.isFinite(Number(options.duration)) ? Number(options.duration) : 850,
-    cameraContext: "section-quiz-view",
-    source: "memory-trail-section-quiz-camera",
+    cameraContext: memoryTrailSectionQuizCameraContext,
+    source: memoryTrailSectionQuizCameraSource,
+    sectionIndex: memoryTrail.sectionIndex,
+    sectionTitle: memoryTrail.sectionTitle || "",
     skipCameraDevOverride: Boolean(options.skipCameraDevOverride)
   });
 
   if (didMove) {
     memoryTrail.lastMobileSectionQuizCameraKey = cameraKey;
     memoryTrail.lastSectionQuizCameraKey = cameraKey;
+    markAuthoritativeSectionQuizCameraApplied(memoryTrail, cameraKey, "generic", {
+      targetIds: fitDecision.targetIds,
+      targetLabels: fitDecision.targetLabels,
+      sectionBounds: fitDecision.bounds,
+      padding,
+      offset
+    });
   }
 
   debugMemoryTrail("mobile section quiz camera", {
@@ -8059,8 +8286,21 @@ function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options 
     if (
       memoryTrail.lastSectionQuizCameraKey === cameraKey
       && isMapAtMemoryTrailSectionQuizCamera(mobileSectionQuizCamera)
+      && isAuthoritativeSectionQuizCameraCurrent(memoryTrail, cameraKey)
     ) {
       return false;
+    }
+
+    if (memoryTrail.lastSectionQuizCameraKey === cameraKey) {
+      recordSectionQuizCameraTrace(memoryTrail, "reapply", {
+        reason: "cached explicit section camera key no longer matches active camera context",
+        requestedCamera: mobileSectionQuizCamera
+      });
+    } else {
+      recordSectionQuizCameraTrace(memoryTrail, "selected", {
+        reason: "explicit mobile section quiz override selected",
+        requestedCamera: mobileSectionQuizCamera
+      });
     }
 
     const didMove = runner.moveCamera({
@@ -8073,8 +8313,8 @@ function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options 
       retainPadding: false,
       essential: true
     }, {
-      cameraContext: "section-quiz-view",
-      source: "memory-trail-section-quiz-camera",
+      cameraContext: memoryTrailSectionQuizCameraContext,
+      source: memoryTrailSectionQuizCameraSource,
       requestType: "easeTo",
       activityId: memoryTrail.activityId,
       sectionIndex: memoryTrail.sectionIndex,
@@ -8083,6 +8323,9 @@ function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options 
 
     if (didMove) {
       memoryTrail.lastSectionQuizCameraKey = cameraKey;
+      markAuthoritativeSectionQuizCameraApplied(memoryTrail, cameraKey, "explicit", {
+        requestedCamera: mobileSectionQuizCamera
+      });
     }
     return didMove;
   }
@@ -8111,8 +8354,23 @@ function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options 
   if (
     memoryTrail.lastSectionQuizCameraKey === cameraKey
     && isMapAtMemoryTrailSectionQuizCamera(quizView)
+    && isAuthoritativeSectionQuizCameraCurrent(memoryTrail, cameraKey)
   ) {
     return false;
+  }
+
+  if (memoryTrail.lastSectionQuizCameraKey === cameraKey) {
+    recordSectionQuizCameraTrace(memoryTrail, "reapply", {
+      reason: "cached fallback section camera key no longer matches active camera context",
+      requestedCamera: quizView
+    });
+  } else {
+    recordSectionQuizCameraTrace(memoryTrail, "selected", {
+      reason: dailyTrailFixedCamera
+        ? "fixed regional section quiz camera selected"
+        : "configured section quiz camera selected",
+      requestedCamera: quizView
+    });
   }
 
   // A late practice-window or study-view movement must not win over recall.
@@ -8126,8 +8384,8 @@ function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options 
     retainPadding: false,
     essential: true
   }, {
-    cameraContext: "section-quiz-view",
-    source: "memory-trail-section-quiz-camera",
+    cameraContext: memoryTrailSectionQuizCameraContext,
+    source: memoryTrailSectionQuizCameraSource,
     requestType: "easeTo",
     activityId: memoryTrail.activityId,
     sectionIndex: memoryTrail.sectionIndex,
@@ -8136,6 +8394,9 @@ function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options 
 
   if (didMove) {
     memoryTrail.lastSectionQuizCameraKey = cameraKey;
+    markAuthoritativeSectionQuizCameraApplied(memoryTrail, cameraKey, dailyTrailFixedCamera ? "fixed" : "configured", {
+      requestedCamera: quizView
+    });
   }
 
   debugMemoryTrail("section quiz camera", {
@@ -8153,6 +8414,17 @@ function applyDailyTrailTargetQuizCamera(memoryTrail, selection = {}, options = 
   const quizCamera = getActiveDailyTrailTargetQuizCamera(memoryTrail, selection);
   const targetId = String(selection?.targetId || memoryTrail?.currentPromptTargetId || "").trim();
   if (!quizCamera || !targetId || typeof runner?.moveCamera !== "function") {
+    return false;
+  }
+
+  if (isCompactTouchLayout() && isAuthoritativeSectionQuizCameraCurrent(memoryTrail)) {
+    recordSectionQuizCameraTrace(memoryTrail, "suppressed", {
+      reason: "target quiz camera suppressed while authoritative mobile section quiz camera is active",
+      targetId,
+      cameraContext: quizCamera.cameraContext,
+      cameraSource: quizCamera.source,
+      requestedCamera: quizCamera
+    });
     return false;
   }
 
@@ -8845,8 +9117,11 @@ function showMemoryTrailInstructionBanner(text) {
   }
 
   window.clearTimeout(memoryTrailInstructionBannerTimer);
+  window.clearTimeout(dailyTrailTransitionNoticeTimer);
+  dailyTrailTransitionNoticeTimer = null;
   audioInstructionBanner.textContent = message;
   audioInstructionBanner.hidden = false;
+  audioInstructionBanner.classList.remove("daily-trail-transition-banner");
   audioInstructionBanner.classList.add("memory-trail-instruction-banner");
 
   memoryTrailInstructionBannerTimer = window.setTimeout(() => {
@@ -11765,6 +12040,16 @@ function scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target) {
     || memoryTrail.currentPromptTargetId !== selection?.targetId
     || !target
   ) {
+    recordCameraDevTraceEvent({
+      eventType: "daily-trail-learn-camera",
+      status: "skipped",
+      reason: "not current Daily Trail guided Learn target",
+      activityId: memoryTrail?.activityId || session?.currentActivity?.id || "",
+      targetId: selection?.targetId || target?.id || "",
+      targetLabel: target?.name || target?.label || "",
+      cameraContext: target?.learnCamera?.cameraContext || "learn-target-focus",
+      cameraSource: target?.learnCamera?.source || "daily-trail-target-learn-camera"
+    });
     return Promise.resolve(false);
   }
 
@@ -11791,6 +12076,24 @@ function scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target) {
       }, "flyTo");
 
     if (!didMove) {
+      recordCameraDevTraceEvent({
+        eventType: "daily-trail-learn-camera",
+        status: "skipped",
+        reason: "explicit Learn camera request was not applied",
+        activityId: memoryTrail.activityId,
+        targetId: target.id,
+        targetLabel: target.name || "",
+        cameraContext: target.learnCamera?.cameraContext || "learn-target-focus",
+        cameraSource: source,
+        requestedCamera: {
+          center: camera.center,
+          zoom: camera.zoom,
+          bearing: camera.bearing,
+          pitch: camera.pitch,
+          padding: camera.padding || { top: 0, right: 0, bottom: 0, left: 0 },
+          duration
+        }
+      });
       return Promise.resolve(false);
     }
 
@@ -11814,6 +12117,16 @@ function scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target) {
     !isGenericMobileDailyTrailLearnTarget(memoryTrail, selection, target)
     || typeof runner?.fitTargets !== "function"
   ) {
+    recordCameraDevTraceEvent({
+      eventType: "daily-trail-mobile-learn-camera",
+      status: "skipped",
+      reason: typeof runner?.fitTargets !== "function" ? "runner fitTargets unavailable" : "not a generic mobile Daily Trail Learn target",
+      activityId: memoryTrail.activityId,
+      targetId: target.id,
+      targetLabel: target.name || "",
+      cameraContext: "learn-target-focus",
+      cameraSource: "daily-trail-mobile-learn-fit"
+    });
     return Promise.resolve(false);
   }
 
@@ -11821,6 +12134,17 @@ function scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target) {
   const padding = getMobileDailyTrailLearnFitPadding();
   const cameraKey = getDailyTrailMobileLearnCameraKey(memoryTrail, target, padding, mobileCamera);
   if (memoryTrail.lastDailyTrailMobileLearnCameraKey === cameraKey) {
+    recordCameraDevTraceEvent({
+      eventType: "daily-trail-mobile-learn-camera",
+      status: "skipped",
+      reason: "duplicate mobile Learn camera key",
+      activityId: memoryTrail.activityId,
+      targetId: target.id,
+      targetLabel: target.name || "",
+      cameraContext: mobileCamera?.cameraContext || "learn-target-focus",
+      cameraSource: mobileCamera?.source || "daily-trail-mobile-learn-fit",
+      padding
+    });
     return Promise.resolve(false);
   }
 
@@ -12545,6 +12869,63 @@ function updateMemoryTrailCorrectionCallout(memoryTrail = getActiveMemoryTrail()
     : "Click the correct answer to continue";
 }
 
+function getDailyTrailPromptPanelInstruction(memoryTrail) {
+  const target = getMemoryTrailActivePromptTarget(memoryTrail);
+  const singularNoun = getMemoryTrailInstructionNoun(session.currentActivity, memoryTrail) || "place";
+
+  if (isGuidedMemoryTrailPrompt(memoryTrail)) {
+    return isContinentsOceansOceanLearnTarget(memoryTrail, target)
+      ? "Tap the named place."
+      : "Tap the highlighted place.";
+  }
+
+  if (isPlaceToNameMemoryTrailPrompt(memoryTrail)) {
+    return "Name the highlighted place.";
+  }
+
+  if (isNameToPlaceMemoryTrailPrompt(memoryTrail)) {
+    return singularNoun === "body of water"
+      ? "Find the named body of water."
+      : `Find the named ${singularNoun}.`;
+  }
+
+  return memoryTrail.instructionLabel || memoryTrail.visibleInstructionText || "Choose the correct answer.";
+}
+
+function shouldShowDailyTrailPromptTargetChip(memoryTrail) {
+  return Boolean(
+    memoryTrail
+    && memoryTrail.phase !== "complete"
+    && memoryTrail.currentPromptTargetId
+    && !isPlaceToNameMemoryTrailPrompt(memoryTrail)
+  );
+}
+
+function createDailyTrailPromptTargetChip(memoryTrail) {
+  if (!shouldShowDailyTrailPromptTargetChip(memoryTrail)) {
+    return null;
+  }
+
+  const target = getMemoryTrailActivePromptTarget(memoryTrail);
+  const labelText = getMemoryTrailTargetLabel(target, memoryTrail) || memoryTrail.currentPromptTargetLabel || "";
+  if (!labelText) {
+    return null;
+  }
+
+  const chip = document.createElement("div");
+  chip.className = "label-chip memory-trail-response-chip daily-trail-prompt-target-chip";
+  chip.setAttribute("role", "status");
+  chip.setAttribute("aria-label", `Daily Trail target: ${labelText}`);
+  chip.appendChild(createChipLabelText(labelText));
+
+  const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(labelText);
+  if (speaker) {
+    chip.appendChild(speaker);
+  }
+
+  return chip;
+}
+
 function renderMemoryTrailPanel() {
   const memoryTrail = getActiveMemoryTrail();
 
@@ -12554,6 +12935,10 @@ function renderMemoryTrailPanel() {
 
   const panel = document.createElement("div");
   panel.className = "memory-trail-panel";
+  const isDailyTrail = isDailyTrailMemoryTrail(memoryTrail);
+  if (isDailyTrail) {
+    panel.classList.add("daily-trail-memory-trail-panel");
+  }
 
   const status = document.createElement("div");
   status.className = "memory-trail-status";
@@ -12562,57 +12947,71 @@ function renderMemoryTrailPanel() {
     status.classList.add("memory-trail-status-choice-prompt");
   }
 
-  const kicker = document.createElement("span");
-  kicker.className = "memory-trail-kicker";
-  kicker.textContent = "Memory Trail";
-
-  const title = document.createElement("strong");
-  const phaseLabel = memoryTrail.sessionPhase === "learn" ? "Learn" : "Practice";
-  const sectionPrefix = memoryTrail.sectionTitle ? `${memoryTrail.sectionTitle} | ` : "";
-  title.textContent = memoryTrail.phase === "complete"
-    ? "Session complete"
-    : `${sectionPrefix}${phaseLabel} | Prompt ${memoryTrail.promptCount + 1} of ${SESSION_PROMPT_CAP}`;
-
-  const message = document.createElement("p");
-  message.className = "memory-trail-message";
-  message.textContent = memoryTrail.message;
-
   const promptGroup = document.createElement("div");
   promptGroup.className = "memory-trail-active-prompt";
-  promptGroup.appendChild(message);
 
-  const activeRecallPromptLabel = isNameToPlaceMemoryTrailPrompt(memoryTrail) && memoryTrail.phase === "answering"
-    ? getMemoryTrailActivePromptLabel(memoryTrail)
-    : "";
-  const promptLabel = activeRecallPromptLabel || memoryTrail.promptName;
-
-  if (promptLabel) {
-    const prompt = document.createElement("p");
-    prompt.className = "memory-trail-prompt";
-    if (activeRecallPromptLabel) {
-      prompt.classList.add("memory-trail-recall-target");
-      prompt.textContent = `Find: ${activeRecallPromptLabel}`;
-    } else {
-      prompt.textContent = promptLabel;
-    }
-    promptGroup.appendChild(prompt);
-  }
-
-  if (memoryTrail.visibleInstructionText && memoryTrail.phase !== "complete") {
-    const visibleInstruction = document.createElement("p");
-    visibleInstruction.className = "memory-trail-visible-instruction";
-    visibleInstruction.textContent = memoryTrail.visibleInstructionText;
-    promptGroup.appendChild(visibleInstruction);
-  }
-
-  if (memoryTrail.instructionLabel && memoryTrail.phase !== "complete") {
+  if (isDailyTrail && memoryTrail.phase !== "complete") {
     const instructionLabel = document.createElement("p");
-    instructionLabel.className = "memory-trail-instruction-label";
-    instructionLabel.textContent = memoryTrail.instructionLabel;
+    instructionLabel.className = "memory-trail-instruction-label daily-trail-primary-instruction";
+    instructionLabel.textContent = getDailyTrailPromptPanelInstruction(memoryTrail);
     promptGroup.appendChild(instructionLabel);
-  }
 
-  status.append(kicker, title, promptGroup);
+    const targetChip = createDailyTrailPromptTargetChip(memoryTrail);
+    if (targetChip) {
+      promptGroup.appendChild(targetChip);
+    }
+
+    status.appendChild(promptGroup);
+  } else {
+    const kicker = document.createElement("span");
+    kicker.className = "memory-trail-kicker";
+    kicker.textContent = "Memory Trail";
+
+    const title = document.createElement("strong");
+    const phaseLabel = memoryTrail.sessionPhase === "learn" ? "Learn" : "Practice";
+    const sectionPrefix = memoryTrail.sectionTitle ? `${memoryTrail.sectionTitle} | ` : "";
+    title.textContent = memoryTrail.phase === "complete"
+      ? "Session complete"
+      : `${sectionPrefix}${phaseLabel} | Prompt ${memoryTrail.promptCount + 1} of ${SESSION_PROMPT_CAP}`;
+
+    const message = document.createElement("p");
+    message.className = "memory-trail-message";
+    message.textContent = memoryTrail.message;
+    promptGroup.appendChild(message);
+
+    const activeRecallPromptLabel = isNameToPlaceMemoryTrailPrompt(memoryTrail) && memoryTrail.phase === "answering"
+      ? getMemoryTrailActivePromptLabel(memoryTrail)
+      : "";
+    const promptLabel = activeRecallPromptLabel || memoryTrail.promptName;
+
+    if (promptLabel) {
+      const prompt = document.createElement("p");
+      prompt.className = "memory-trail-prompt";
+      if (activeRecallPromptLabel) {
+        prompt.classList.add("memory-trail-recall-target");
+        prompt.textContent = `Find: ${activeRecallPromptLabel}`;
+      } else {
+        prompt.textContent = promptLabel;
+      }
+      promptGroup.appendChild(prompt);
+    }
+
+    if (memoryTrail.visibleInstructionText && memoryTrail.phase !== "complete") {
+      const visibleInstruction = document.createElement("p");
+      visibleInstruction.className = "memory-trail-visible-instruction";
+      visibleInstruction.textContent = memoryTrail.visibleInstructionText;
+      promptGroup.appendChild(visibleInstruction);
+    }
+
+    if (memoryTrail.instructionLabel && memoryTrail.phase !== "complete") {
+      const instructionLabel = document.createElement("p");
+      instructionLabel.className = "memory-trail-instruction-label";
+      instructionLabel.textContent = memoryTrail.instructionLabel;
+      promptGroup.appendChild(instructionLabel);
+    }
+
+    status.append(kicker, title, promptGroup);
+  }
 
   const choiceList = createMemoryTrailAnswerChoiceList(memoryTrail);
   if (choiceList && isAnswerChoicePrompt) {
@@ -12624,7 +13023,9 @@ function renderMemoryTrailPanel() {
     status.appendChild(trayFeedback);
   }
 
-  const responseChip = createMemoryTrailResponseChip(memoryTrail);
+  const responseChip = isDailyTrail && shouldShowDailyTrailPromptTargetChip(memoryTrail)
+    ? null
+    : createMemoryTrailResponseChip(memoryTrail);
   if (responseChip) {
     status.appendChild(responseChip);
   }
@@ -12633,19 +13034,24 @@ function renderMemoryTrailPanel() {
     status.appendChild(choiceList);
   }
 
-  const stats = document.createElement("p");
-  stats.className = "memory-trail-session-stats";
-  stats.textContent = `${memoryTrail.correctCount} retrieval correct | ${getWeakTargets(memoryTrail).length} review`;
-  status.appendChild(stats);
+  if (!isDailyTrail || memoryTrail.phase === "complete") {
+    const stats = document.createElement("p");
+    stats.className = "memory-trail-session-stats";
+    stats.textContent = `${memoryTrail.correctCount} retrieval correct | ${getWeakTargets(memoryTrail).length} review`;
+    status.appendChild(stats);
+  }
 
   const controls = document.createElement("div");
   controls.className = "study-explore-controls memory-trail-controls";
 
-  if (memoryTrail.phase !== "complete") {
+  if (memoryTrail.phase !== "complete" && !isDailyTrail) {
     appendStudyControlButton(controls, "Exit Memory Trail", exitMemoryTrail, "Exit Trail");
   }
 
-  panel.append(status, controls);
+  panel.appendChild(status);
+  if (controls.childElementCount > 0) {
+    panel.appendChild(controls);
+  }
   answerBank.appendChild(panel);
   ensureActiveTrayContentVisible(memoryTrail);
 }
@@ -14654,6 +15060,24 @@ function ensureCameraDevPanel() {
     cameraDevMemoryTrailBackSectionButton
   );
 
+  const traceDev = document.createElement("section");
+  traceDev.className = "camera-dev-memory-trail";
+  const traceDevTitle = document.createElement("strong");
+  traceDevTitle.textContent = "Camera Trace";
+  cameraDevTraceStatusEl = document.createElement("p");
+  cameraDevTraceStatusEl.className = "camera-dev-memory-trail-status";
+  const traceActions = document.createElement("div");
+  traceActions.className = "camera-dev-actions";
+  traceActions.append(
+    createCameraDevButton("Copy Trace", () => copyCameraDevTrace()),
+    createCameraDevButton("Clear Trace", () => clearCameraDevTrace())
+  );
+  cameraDevTraceOutput = document.createElement("textarea");
+  cameraDevTraceOutput.className = "camera-dev-export";
+  cameraDevTraceOutput.readOnly = true;
+  cameraDevTraceOutput.rows = 7;
+  traceDev.append(traceDevTitle, cameraDevTraceStatusEl, traceActions, cameraDevTraceOutput);
+
   const exportHeader = document.createElement("div");
   exportHeader.className = "camera-dev-export-header";
   const exportTitle = document.createElement("strong");
@@ -14669,7 +15093,7 @@ function ensureCameraDevPanel() {
   const panelBody = document.createElement("div");
   panelBody.id = "camera-dev-panel-body";
   panelBody.className = "camera-dev-body";
-  panelBody.append(intro, cameraDevStatusEl, fieldGrid, controls, primaryActions, fitActions, memoryTrailDev, exportHeader, cameraDevExportOutput);
+  panelBody.append(intro, cameraDevStatusEl, fieldGrid, controls, primaryActions, fitActions, memoryTrailDev, traceDev, exportHeader, cameraDevExportOutput);
 
   panel.append(header, panelBody);
   cameraDevPanel = panel;
@@ -15035,6 +15459,332 @@ function getCameraDevSnapshot() {
   };
 }
 
+function getCameraDevTraceNowMs() {
+  return typeof performance !== "undefined" && typeof performance.now === "function"
+    ? performance.now()
+    : Date.now();
+}
+
+function hasCameraDevTraceFlag() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("cameraTrace") || params.has("debugCameraTrace")) {
+      return true;
+    }
+  } catch {
+    // Debug-only best effort.
+  }
+
+  try {
+    return localStorage.getItem("mappa-mundi-camera-trace") === "true";
+  } catch {
+    return false;
+  }
+}
+
+function isCameraDevTraceEnabled() {
+  return isCameraDevAccessAllowed()
+    && (ENABLE_MEMORY_TRAIL_DEBUG || hasCameraDevTraceFlag() || Boolean(cameraDevPanel?.isConnected));
+}
+
+function cloneCameraDevTraceJson(value) {
+  if (value == null) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return null;
+  }
+}
+
+function normalizeCameraDevTraceNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Number(number.toFixed(5)) : null;
+}
+
+function normalizeCameraDevTraceCenter(center) {
+  return Array.isArray(center) && center.length >= 2
+    ? [normalizeCameraDevTraceNumber(center[0]), normalizeCameraDevTraceNumber(center[1])]
+    : null;
+}
+
+function normalizeCameraDevTraceCamera(camera = null) {
+  if (!camera || typeof camera !== "object") {
+    return null;
+  }
+
+  const center = normalizeCameraDevTraceCenter(camera.center);
+  return {
+    center: center?.every(Number.isFinite) ? center : null,
+    zoom: normalizeCameraDevTraceNumber(camera.zoom),
+    bearing: normalizeCameraDevTraceNumber(camera.bearing),
+    pitch: normalizeCameraDevTraceNumber(camera.pitch),
+    bounds: normalizeCameraDevTraceBounds(camera.bounds),
+    maxZoom: normalizeCameraDevTraceNumber(camera.maxZoom),
+    padding: normalizeCameraDevTracePadding(camera.padding),
+    offset: normalizeCameraDevTraceOffset(camera.offset),
+    duration: normalizeCameraDevTraceNumber(camera.duration)
+  };
+}
+
+function normalizeCameraDevTraceBounds(bounds) {
+  if (
+    !Array.isArray(bounds)
+    || bounds.length < 2
+    || !Array.isArray(bounds[0])
+    || !Array.isArray(bounds[1])
+  ) {
+    return null;
+  }
+
+  const normalized = [
+    [normalizeCameraDevTraceNumber(bounds[0][0]), normalizeCameraDevTraceNumber(bounds[0][1])],
+    [normalizeCameraDevTraceNumber(bounds[1][0]), normalizeCameraDevTraceNumber(bounds[1][1])]
+  ];
+  return normalized.flat().every(Number.isFinite) ? normalized : null;
+}
+
+function normalizeCameraDevTracePadding(padding = null) {
+  if (!padding || typeof padding !== "object") {
+    return null;
+  }
+
+  return {
+    top: normalizeCameraDevTraceNumber(padding.top) ?? 0,
+    right: normalizeCameraDevTraceNumber(padding.right) ?? 0,
+    bottom: normalizeCameraDevTraceNumber(padding.bottom) ?? 0,
+    left: normalizeCameraDevTraceNumber(padding.left) ?? 0
+  };
+}
+
+function normalizeCameraDevTraceOffset(offset = null) {
+  if (!offset || typeof offset !== "object") {
+    return null;
+  }
+
+  const x = normalizeCameraDevTraceNumber(Array.isArray(offset) ? offset[0] : offset.x);
+  const y = normalizeCameraDevTraceNumber(Array.isArray(offset) ? offset[1] : offset.y);
+  return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
+}
+
+function getCameraDevTraceLayoutSnapshot(event = {}) {
+  const viewportWidth = window.innerWidth || document.documentElement?.clientWidth || 0;
+  const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 0;
+  const canvas = runner?.map?.getCanvas?.();
+  const canvasRect = canvas?.getBoundingClientRect?.();
+  const rect = canvasRect?.width && canvasRect?.height
+    ? canvasRect
+    : {
+        left: 0,
+        top: 0,
+        right: viewportWidth,
+        bottom: viewportHeight,
+        width: viewportWidth,
+        height: viewportHeight
+      };
+  const headerRect = document.querySelector(".poc-header")?.getBoundingClientRect?.();
+  const trayRect = document.querySelector("#answer-panel")?.getBoundingClientRect?.();
+  const headerBottom = headerRect && headerRect.bottom > rect.top
+    ? Math.min(headerRect.bottom, rect.bottom)
+    : rect.top;
+  const chipTrayTop = trayRect && trayRect.top < rect.bottom
+    ? Math.max(trayRect.top, rect.top)
+    : rect.bottom;
+  const chipTrayHeight = trayRect ? Math.max(0, Math.min(rect.bottom, trayRect.bottom) - Math.max(rect.top, trayRect.top)) : 0;
+  const usableTop = Math.min(rect.bottom, Math.max(rect.top, headerBottom));
+  const usableBottom = Math.max(usableTop, Math.min(rect.bottom, chipTrayTop));
+  const padding = normalizeCameraDevTracePadding(event.padding || event.appliedCamera?.padding || event.requestedCamera?.padding);
+  const focusRect = event.layout?.focusRect
+    ? cloneCameraDevTraceJson(event.layout.focusRect)
+    : padding
+      ? {
+          left: normalizeCameraDevTraceNumber(padding.left),
+          top: normalizeCameraDevTraceNumber(padding.top),
+          right: normalizeCameraDevTraceNumber(rect.width - padding.right),
+          bottom: normalizeCameraDevTraceNumber(rect.height - padding.bottom),
+          width: normalizeCameraDevTraceNumber(rect.width - padding.left - padding.right),
+          height: normalizeCameraDevTraceNumber(rect.height - padding.top - padding.bottom)
+        }
+      : null;
+
+  return {
+    viewport: {
+      width: Math.round(viewportWidth),
+      height: Math.round(viewportHeight)
+    },
+    mapCanvas: {
+      width: Math.round(rect.width || 0),
+      height: Math.round(rect.height || 0)
+    },
+    layout: {
+      headerBottom: normalizeCameraDevTraceNumber(headerBottom - rect.top),
+      chipTrayTop: normalizeCameraDevTraceNumber(chipTrayTop - rect.top),
+      chipTrayHeight: normalizeCameraDevTraceNumber(chipTrayHeight),
+      usableTop: normalizeCameraDevTraceNumber(usableTop - rect.top),
+      usableBottom: normalizeCameraDevTraceNumber(usableBottom - rect.top),
+      usableWidth: normalizeCameraDevTraceNumber(rect.width),
+      usableHeight: normalizeCameraDevTraceNumber(usableBottom - usableTop),
+      focusRect
+    }
+  };
+}
+
+function getCameraDevTracePromptContext() {
+  const memoryTrail = getActiveMemoryTrail();
+  const activeTarget = getMemoryTrailActivePromptTarget(memoryTrail);
+  const promptPhase = [
+    memoryTrail?.sessionPhase,
+    memoryTrail?.currentPromptType,
+    memoryTrail?.currentPromptMode
+  ].filter(Boolean).join("/");
+
+  return {
+    promptId: memoryTrail?.currentPromptKey || "",
+    promptPhase,
+    targetId: activeTarget?.id || memoryTrail?.currentPromptTargetId || "",
+    targetLabel: activeTarget?.name || activeTarget?.label || ""
+  };
+}
+
+function getCameraDevTraceResultingCamera(event = {}) {
+  const direct = normalizeCameraDevTraceCamera(event.resultingCamera);
+  if (direct) {
+    return direct;
+  }
+
+  const snapshot = getCameraDevSnapshot();
+  return normalizeCameraDevTraceCamera({
+    center: snapshot.center,
+    zoom: snapshot.zoom,
+    bearing: snapshot.bearing,
+    pitch: snapshot.pitch
+  });
+}
+
+function updateCameraDevTraceGlobal(latestEvent = null) {
+  if (typeof window === "undefined" || !isCameraDevAccessAllowed()) {
+    return;
+  }
+
+  window.__mappaCameraTrace = {
+    version: 1,
+    limit: cameraDevTraceEventLimit,
+    count: cameraDevTraceEvents.length,
+    latest: latestEvent,
+    events: cameraDevTraceEvents.slice()
+  };
+}
+
+function recordCameraDevTraceEvent(event = {}) {
+  if (!isCameraDevTraceEnabled()) {
+    return;
+  }
+
+  const now = getCameraDevTraceNowMs();
+  if (!cameraDevTraceStartedAtMs) {
+    cameraDevTraceStartedAtMs = now;
+  }
+
+  const snapshot = getCameraDevSnapshot();
+  const promptContext = getCameraDevTracePromptContext();
+  const layoutSnapshot = getCameraDevTraceLayoutSnapshot(event);
+  const requestedCamera = normalizeCameraDevTraceCamera(event.requestedCamera);
+  const appliedCamera = normalizeCameraDevTraceCamera(event.appliedCamera);
+  const traceEvent = {
+    sequence: ++cameraDevTraceSequence,
+    timestamp: new Date().toISOString(),
+    elapsedMs: Math.round(now - cameraDevTraceStartedAtMs),
+    eventType: event.eventType || "camera-event",
+    status: event.status || "",
+    screen: currentAppScreen || snapshot.screen || "",
+    appMode: snapshot.mode || "",
+    activityId: event.activityId || snapshot.activityId || "",
+    activityTitle: event.activityTitle || snapshot.activityTitle || "",
+    sectionIndex: event.sectionIndex ?? snapshot.sectionIndex ?? null,
+    sectionTitle: event.sectionTitle || snapshot.sectionTitle || "",
+    targetId: event.targetId || promptContext.targetId || snapshot.targetId || "",
+    targetLabel: event.targetLabel || promptContext.targetLabel || snapshot.targetLabel || "",
+    targetIds: Array.isArray(event.targetIds) ? event.targetIds.slice() : [],
+    targetLabels: Array.isArray(event.targetLabels) ? event.targetLabels.slice() : [],
+    promptId: event.promptId || promptContext.promptId || "",
+    promptPhase: event.promptPhase || promptContext.promptPhase || "",
+    cameraContext: event.cameraContext || event.context || snapshot.cameraContext || "",
+    cameraSource: event.cameraSource || event.source || snapshot.cameraSource || "",
+    requestType: event.requestType || snapshot.requestType || "",
+    requestedCamera,
+    appliedCamera,
+    resultingCamera: getCameraDevTraceResultingCamera(event),
+    targetBounds: normalizeCameraDevTraceBounds(event.targetBounds || requestedCamera?.bounds || null),
+    sectionBounds: normalizeCameraDevTraceBounds(event.sectionBounds || null),
+    viewport: layoutSnapshot.viewport,
+    mapCanvas: layoutSnapshot.mapCanvas,
+    layout: layoutSnapshot.layout,
+    padding: normalizeCameraDevTracePadding(event.padding || appliedCamera?.padding || requestedCamera?.padding),
+    offset: normalizeCameraDevTraceOffset(event.offset || appliedCamera?.offset || requestedCamera?.offset),
+    requestToken: event.requestToken || "",
+    reason: event.reason || ""
+  };
+
+  cameraDevTraceEvents.push(traceEvent);
+  if (cameraDevTraceEvents.length > cameraDevTraceEventLimit) {
+    cameraDevTraceEvents = cameraDevTraceEvents.slice(-cameraDevTraceEventLimit);
+  }
+
+  updateCameraDevTraceGlobal(traceEvent);
+  updateCameraDevTracePanel();
+}
+
+function getCameraDevTraceExport() {
+  return {
+    version: 1,
+    limit: cameraDevTraceEventLimit,
+    count: cameraDevTraceEvents.length,
+    events: cameraDevTraceEvents
+  };
+}
+
+function updateCameraDevTracePanel() {
+  if (!cameraDevTraceStatusEl || !cameraDevTraceOutput) {
+    return;
+  }
+
+  const latest = cameraDevTraceEvents[cameraDevTraceEvents.length - 1] || null;
+  cameraDevTraceStatusEl.textContent = latest
+    ? `${cameraDevTraceEvents.length} events | #${latest.sequence} ${latest.eventType} ${latest.status || ""} ${latest.cameraContext || ""}`.trim()
+    : hasCameraDevTraceFlag() || cameraDevPanel?.isConnected
+      ? "Trace is armed. Camera requests will appear here."
+      : "Open Camera Dev or add ?cameraTrace to capture camera requests.";
+  cameraDevTraceOutput.value = JSON.stringify(getCameraDevTraceExport(), null, 2);
+}
+
+async function copyCameraDevTrace() {
+  updateCameraDevTracePanel();
+  const text = cameraDevTraceOutput?.value || JSON.stringify(getCameraDevTraceExport(), null, 2);
+
+  try {
+    await navigator.clipboard?.writeText(text);
+    showFeedback("Camera trace JSON copied.", true);
+  } catch {
+    cameraDevTraceOutput?.select();
+    showFeedback("Camera trace JSON is selected.");
+  }
+}
+
+function clearCameraDevTrace() {
+  cameraDevTraceEvents = [];
+  cameraDevTraceSequence = 0;
+  cameraDevTraceStartedAtMs = 0;
+  updateCameraDevTraceGlobal(null);
+  updateCameraDevTracePanel();
+  showFeedback("Camera trace cleared.", true);
+}
+
 function updateCameraDevPanel(options = {}) {
   if (!cameraDevPanel?.isConnected || cameraDevPanel.hidden) {
     return;
@@ -15055,6 +15805,7 @@ function updateCameraDevPanel(options = {}) {
   }
 
   updateCameraDevExport();
+  updateCameraDevTracePanel();
 }
 
 function updateCameraDevMemoryTrailControls() {
@@ -15840,13 +16591,40 @@ function maybeShowDailyTrailActivityTransitionCue(dailyTrailSession, activity, p
     return false;
   }
 
-  showFeedback(getDailyTrailActivityTransitionCueText(activity), true);
+  showDailyTrailTransitionNotice(getDailyTrailActivityTransitionCueText(activity));
   return true;
 }
 
 function getDailyTrailActivityTransitionCueText(activity) {
   const title = String(activity?.title || "").trim();
   return title ? `Next stop: ${title}` : "Next stop";
+}
+
+function showDailyTrailTransitionNotice(text) {
+  const message = String(text || "").trim();
+  if (!audioInstructionBanner || !message) {
+    return false;
+  }
+
+  window.clearTimeout(audioInstructionHideTimer);
+  audioInstructionHideTimer = null;
+  window.clearTimeout(memoryTrailInstructionBannerTimer);
+  memoryTrailInstructionBannerTimer = null;
+  window.clearTimeout(dailyTrailTransitionNoticeTimer);
+  audioInstructionBanner.textContent = message;
+  audioInstructionBanner.hidden = false;
+  audioInstructionBanner.classList.remove("memory-trail-instruction-banner");
+  audioInstructionBanner.classList.add("daily-trail-transition-banner");
+
+  dailyTrailTransitionNoticeTimer = window.setTimeout(() => {
+    if (!audioInstructionBanner?.classList.contains("daily-trail-transition-banner")) {
+      return;
+    }
+
+    audioInstructionBanner.classList.remove("daily-trail-transition-banner");
+    hideAudioInstructionBanner();
+  }, 1400);
+  return true;
 }
 
 function getDailyTrailPlannedItemsForActivity(activity, plan) {
@@ -16031,10 +16809,18 @@ function exitDailyTrailGameplay(options = {}) {
   if (!options.preserveDevReplay) {
     clearDailyTrailDevReplayCursor();
   }
+  clearMemoryTrailState({ restoreReveals: false });
   activeStudySession = null;
   activeDailyTrailSession = null;
+  document.body.classList.remove("study-mode", "study-explore-mode");
   runner?.setStudyPreviewMode(false);
   runner?.setMemoryTrailHighlight([]);
+  if (studyCard) {
+    studyCard.hidden = true;
+  }
+  if (answerBank) {
+    answerBank.innerHTML = "";
+  }
   resetActivityAttemptState();
   showAppScreen("main-menu", { pushHistory: false });
 }
@@ -16161,10 +16947,10 @@ function startDailyTrailMemoryTrailStepIfNeeded() {
     journeyPlayReturn: null,
     journeyActivityReturnState: null
   };
-  setActiveActivityHeaderTitle(activity);
-  studyCard.hidden = false;
-  studyCard.querySelector("strong").textContent = activity.title;
-  studyCard.querySelector("span").textContent = "Daily Trail";
+  setDailyTrailGameplayHeaderTitle(activeDailyTrailSession);
+  if (studyCard) {
+    studyCard.hidden = true;
+  }
   return startMemoryTrail({
     newTargetIds,
     source: "daily-trail",
@@ -19500,12 +20286,16 @@ function enterStudy() {
   document.body.classList.remove("browse-mode");
   document.body.classList.remove("overview-mode");
   document.body.classList.add("study-mode");
-  setActiveActivityHeaderTitle();
+  if (currentAppScreen === "daily-trail-gameplay") {
+    setDailyTrailGameplayHeaderTitle(activeDailyTrailSession);
+  } else {
+    setActiveActivityHeaderTitle();
+  }
   updateStudyInstruction();
   updateStudyCardDetails();
   updateProgress();
   updateDifficultyControls();
-  studyCard.hidden = false;
+  studyCard.hidden = currentAppScreen === "daily-trail-gameplay";
   runner.enterStudyView();
   renderActivityNavControls(session.currentActivity.id);
   updateTopBarNavigation();
@@ -19517,6 +20307,13 @@ function updateStudyInstruction() {
     return;
   }
 
+  if (currentAppScreen === "daily-trail-gameplay") {
+    instruction.hidden = true;
+    instruction.textContent = "";
+    return;
+  }
+
+  instruction.hidden = false;
   const node = getHierarchyNode(activeHierarchyNodeId);
   const targetNoun = getInstructionNoun();
   instruction.textContent = node?.id === "world"
@@ -21579,13 +22376,22 @@ function renderActivityNavControls(activityId) {
 
 function updateTopBarNavigation() {
   const isHome = activeHierarchyNodeId === "world";
+  const isDailyTrailGameplay = currentAppScreen === "daily-trail-gameplay";
 
   if (backButton) {
-    backButton.hidden = isHome && !["free-play", "journey-gameplay", "study-explore", "study-practice"].includes(currentAppScreen);
+    backButton.hidden = !isDailyTrailGameplay
+      && isHome
+      && !["free-play", "journey-gameplay", "study-explore", "study-practice"].includes(currentAppScreen);
+    backButton.textContent = isDailyTrailGameplay ? "Exit" : "Back";
+    backButton.setAttribute("aria-label", isDailyTrailGameplay ? "Exit Daily Trail" : "Back");
+    backButton.title = isDailyTrailGameplay ? "Exit Daily Trail" : "Back";
   }
 
   if (homeButton) {
+    homeButton.hidden = isDailyTrailGameplay;
     homeButton.disabled = false;
+    homeButton.tabIndex = isDailyTrailGameplay ? -1 : 0;
+    homeButton.setAttribute("aria-hidden", String(isDailyTrailGameplay));
     homeButton.setAttribute("aria-current", isHome ? "page" : "false");
   }
 
@@ -21624,6 +22430,13 @@ function updateDifficultyControls() {
 }
 
 function updateStudyCardDetails() {
+  if (currentAppScreen === "daily-trail-gameplay") {
+    if (studyCard) {
+      studyCard.hidden = true;
+    }
+    return;
+  }
+
   studyCard.querySelector("strong").textContent = getActivityHeaderDisplayName(session.currentActivity);
   const difficultyLabel = isDifficultyApplicable(session.currentActivity)
     ? ` - ${getEffectiveDifficulty(session.currentActivity)[0].toUpperCase()}${getEffectiveDifficulty(session.currentActivity).slice(1)}`

@@ -2703,6 +2703,37 @@ body.study-explore-mode .answer-panel {
   margin-bottom: 0;
 }
 
+.answer-panel:has(.daily-trail-memory-trail-panel) .status-row {
+  display: none;
+}
+
+.daily-trail-memory-trail-panel .memory-trail-status {
+  gap: 10px;
+  padding: 12px;
+}
+
+.daily-trail-memory-trail-panel .memory-trail-active-prompt {
+  align-items: start;
+  gap: 10px;
+}
+
+.daily-trail-memory-trail-panel .daily-trail-primary-instruction {
+  background: transparent;
+  border: 0;
+  color: #10233f;
+  font-size: 1rem;
+  line-height: 1.28;
+  padding: 0;
+}
+
+.daily-trail-memory-trail-panel .daily-trail-prompt-target-chip {
+  font-size: clamp(1.05rem, 2.3vw, 1.3rem);
+  justify-self: start;
+  max-width: 100%;
+  min-height: 44px;
+  white-space: normal;
+}
+
 .memory-trail-overlay {
   align-items: center;
   background: rgba(2, 6, 17, 0.46);
@@ -3400,6 +3431,21 @@ body.study-mode .map-shell {
 
 .audio-instruction-banner[hidden] {
   display: none;
+}
+
+.audio-instruction-banner.daily-trail-transition-banner {
+  animation: none;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(48, 122, 184, 0.22);
+  border-radius: 18px;
+  color: #12345f;
+  font-size: clamp(1rem, 2vw, 1.18rem);
+  font-weight: 950;
+  line-height: 1.2;
+  padding: 12px 18px;
+  pointer-events: none;
+  top: 104px;
+  z-index: 22;
 }
 
 .memory-trail-correction-callout {

@@ -473,6 +473,9 @@ export class MapLibreActivityRunner {
     this.cameraDevOverrideProvider = null;
     this.cameraDevStateChangeHandler = null;
     this.lastCameraDevContext = null;
+    this.cameraTraceEventHandler = null;
+    this.cameraTraceRequestSequence = 0;
+    this.activeCameraTraceToken = "";
     this.memoryTrailHighlightIds = [];
     this.memoryTrailCorrectHighlightIds = [];
     this.memoryTrailWrongHighlightIds = [];
@@ -535,6 +538,10 @@ export class MapLibreActivityRunner {
 
   onCameraDevStateChange(handler) {
     this.cameraDevStateChangeHandler = typeof handler === "function" ? handler : null;
+  }
+
+  onCameraTraceEvent(handler) {
+    this.cameraTraceEventHandler = typeof handler === "function" ? handler : null;
   }
 
   async load({ activity, worldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, coastalWaterMask, mountainRanges, riverLines, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1 }) {
@@ -1107,6 +1114,8 @@ export class MapLibreActivityRunner {
       activityTitle: extra.activityTitle || lastContext.activityTitle || this.activity?.title || "",
       targetId: extra.targetId || lastContext.targetId || "",
       targetLabel: extra.targetLabel || lastContext.targetLabel || "",
+      sectionIndex: extra.sectionIndex ?? lastContext.sectionIndex ?? null,
+      sectionTitle: extra.sectionTitle || lastContext.sectionTitle || "",
       cameraContext: extra.cameraContext || lastContext.cameraContext || "",
       cameraSource: extra.source || lastContext.source || "",
       requestType: extra.requestType || lastContext.requestType || "",
@@ -1126,6 +1135,8 @@ export class MapLibreActivityRunner {
       cameraContext: metadata.cameraContext || metadata.context || "",
       source: metadata.source || "",
       requestType: metadata.requestType || "",
+      sectionIndex: metadata.sectionIndex ?? null,
+      sectionTitle: metadata.sectionTitle || "",
       targetIds: Array.isArray(metadata.targetIds) ? metadata.targetIds.filter(Boolean) : [],
       targetLabels: Array.isArray(metadata.targetLabels) ? metadata.targetLabels.filter(Boolean) : []
     };
@@ -1141,6 +1152,60 @@ export class MapLibreActivityRunner {
       pitch: Number.isFinite(camera.pitch) ? camera.pitch : null,
       duration: Number.isFinite(camera.duration) ? camera.duration : null
     };
+  }
+
+  cloneCameraTraceBounds(bounds) {
+    return this.hasValidBounds(bounds)
+      ? [[Number(bounds[0][0]), Number(bounds[0][1])], [Number(bounds[1][0]), Number(bounds[1][1])]]
+      : null;
+  }
+
+  summarizeCameraTraceCamera(camera = {}) {
+    if (!camera || typeof camera !== "object") {
+      return null;
+    }
+
+    const offset = this.normalizeCameraOffset(camera.offset);
+    const center = Array.isArray(camera.center) && camera.center.length >= 2
+      ? [Number(camera.center[0]), Number(camera.center[1])]
+      : null;
+    return {
+      center: center?.every(Number.isFinite) ? center : null,
+      zoom: Number.isFinite(Number(camera.zoom)) ? Number(camera.zoom) : null,
+      bearing: Number.isFinite(Number(camera.bearing)) ? Number(camera.bearing) : null,
+      pitch: Number.isFinite(Number(camera.pitch)) ? Number(camera.pitch) : null,
+      bounds: this.cloneCameraTraceBounds(camera.bounds),
+      maxZoom: Number.isFinite(Number(camera.maxZoom)) ? Number(camera.maxZoom) : null,
+      padding: camera.padding && typeof camera.padding === "object" ? { ...camera.padding } : null,
+      offset: offset ? { x: offset.x, y: offset.y } : null,
+      duration: Number.isFinite(Number(camera.duration)) ? Number(camera.duration) : null
+    };
+  }
+
+  getCameraTraceMapState() {
+    const center = this.map?.getCenter?.();
+    return {
+      center: center?.toArray?.() || (center ? [center.lng, center.lat] : null),
+      zoom: this.map?.getZoom?.() ?? null,
+      bearing: this.map?.getBearing?.() ?? null,
+      pitch: this.map?.getPitch?.() ?? null
+    };
+  }
+
+  emitCameraTraceEvent(event = {}) {
+    if (typeof this.cameraTraceEventHandler !== "function") {
+      return;
+    }
+
+    try {
+      this.cameraTraceEventHandler({
+        activityId: this.activity?.id || "",
+        activityTitle: this.activity?.title || "",
+        ...event
+      });
+    } catch {
+      // Diagnostics must never interrupt camera movement.
+    }
   }
 
   applyCameraDevOverride(camera = {}, metadata = {}) {
@@ -1242,13 +1307,62 @@ export class MapLibreActivityRunner {
 
   moveCamera(camera = {}, metadata = {}, preferredMethod = "easeTo") {
     if (!this.map || !camera) {
+      this.emitCameraTraceEvent({
+        eventType: "camera-request",
+        status: "skipped",
+        reason: !this.map ? "missing map" : "missing camera",
+        preferredMethod,
+        cameraContext: metadata.cameraContext || metadata.context || "",
+        cameraSource: metadata.source || "",
+        requestType: metadata.requestType || preferredMethod,
+        requestedCamera: this.summarizeCameraTraceCamera(camera),
+        resultingCamera: this.getCameraTraceMapState()
+      });
       return false;
+    }
+
+    const requestToken = metadata.requestToken || `camera-${++this.cameraTraceRequestSequence}`;
+    const originalCamera = this.summarizeCameraTraceCamera(camera);
+    const wasMoving = Boolean(this.map?.isMoving?.() || this.map?.isEasing?.() || this.map?.isZooming?.());
+    if (wasMoving && this.activeCameraTraceToken) {
+      this.emitCameraTraceEvent({
+        eventType: "camera-interrupt",
+        status: "overwritten",
+        requestToken: this.activeCameraTraceToken,
+        reason: "new camera request",
+        resultingCamera: this.getCameraTraceMapState()
+      });
     }
 
     const requestedCamera = this.applyCameraDevOverride(camera, metadata);
     const duration = Number.isFinite(requestedCamera.duration) ? requestedCamera.duration : 650;
     const offset = this.normalizeCameraOffset(requestedCamera.offset);
+    const appliedCamera = this.summarizeCameraTraceCamera(requestedCamera);
+    const traceBase = {
+      eventType: "camera-request",
+      status: "requested",
+      requestToken,
+      preferredMethod,
+      cameraContext: metadata.cameraContext || metadata.context || "",
+      cameraSource: metadata.source || "",
+      requestType: metadata.requestType || preferredMethod,
+      targetId: metadata.targetId || "",
+      targetLabel: metadata.targetLabel || "",
+      targetIds: Array.isArray(metadata.targetIds) ? metadata.targetIds.filter(Boolean) : [],
+      targetLabels: Array.isArray(metadata.targetLabels) ? metadata.targetLabels.filter(Boolean) : [],
+      sectionIndex: metadata.sectionIndex ?? null,
+      sectionTitle: metadata.sectionTitle || "",
+      requestedCamera: originalCamera,
+      appliedCamera,
+      resultingCamera: this.getCameraTraceMapState(),
+      padding: appliedCamera?.padding || null,
+      offset: appliedCamera?.offset || null,
+      targetBounds: this.cloneCameraTraceBounds(metadata.targetBounds),
+      sectionBounds: this.cloneCameraTraceBounds(metadata.sectionBounds),
+      reason: metadata.reason || ""
+    };
 
+    this.emitCameraTraceEvent(traceBase);
     this.map.stop();
 
     if (this.hasValidBounds(requestedCamera.bounds)) {
@@ -1263,6 +1377,25 @@ export class MapLibreActivityRunner {
         fitOptions.offset = offset;
       }
       this.map.fitBounds(requestedCamera.bounds, fitOptions);
+      this.activeCameraTraceToken = requestToken;
+      this.emitCameraTraceEvent({
+        ...traceBase,
+        status: "applied",
+        requestType: "fitBounds",
+        resultingCamera: this.getCameraTraceMapState()
+      });
+      this.map.once?.("moveend", () => {
+        this.emitCameraTraceEvent({
+          ...traceBase,
+          eventType: "camera-settled",
+          status: "settled",
+          requestType: "fitBounds",
+          resultingCamera: this.getCameraTraceMapState()
+        });
+        if (this.activeCameraTraceToken === requestToken) {
+          this.activeCameraTraceToken = "";
+        }
+      });
       return true;
     }
 
@@ -1272,6 +1405,12 @@ export class MapLibreActivityRunner {
       : (currentCenter?.toArray?.() || (currentCenter ? [currentCenter.lng, currentCenter.lat] : null));
 
     if (!Array.isArray(center)) {
+      this.emitCameraTraceEvent({
+        ...traceBase,
+        status: "skipped",
+        reason: "missing center",
+        resultingCamera: this.getCameraTraceMapState()
+      });
       return false;
     }
 
@@ -1294,6 +1433,26 @@ export class MapLibreActivityRunner {
     } else {
       this.map.easeTo(cameraOptions);
     }
+
+    this.activeCameraTraceToken = requestToken;
+    this.emitCameraTraceEvent({
+      ...traceBase,
+      status: "applied",
+      requestType: preferredMethod,
+      resultingCamera: this.getCameraTraceMapState()
+    });
+    this.map.once?.("moveend", () => {
+      this.emitCameraTraceEvent({
+        ...traceBase,
+        eventType: "camera-settled",
+        status: "settled",
+        requestType: preferredMethod,
+        resultingCamera: this.getCameraTraceMapState()
+      });
+      if (this.activeCameraTraceToken === requestToken) {
+        this.activeCameraTraceToken = "";
+      }
+    });
 
     return true;
   }
@@ -1564,31 +1723,7 @@ export class MapLibreActivityRunner {
       return false;
     }
 
-    const bounds = targets.reduce((combinedBounds, target) => {
-      const camera = this.getTargetFocusCamera(target);
-      const targetBounds = camera?.bounds || (
-        Array.isArray(camera?.center)
-          ? [[camera.center[0] - 0.35, camera.center[1] - 0.35], [camera.center[0] + 0.35, camera.center[1] + 0.35]]
-          : null
-      );
-
-      if (!this.hasValidBounds(targetBounds)) {
-        return combinedBounds;
-      }
-
-      if (!combinedBounds) {
-        return [
-          [targetBounds[0][0], targetBounds[0][1]],
-          [targetBounds[1][0], targetBounds[1][1]]
-        ];
-      }
-
-      combinedBounds[0][0] = Math.min(combinedBounds[0][0], targetBounds[0][0]);
-      combinedBounds[0][1] = Math.min(combinedBounds[0][1], targetBounds[0][1]);
-      combinedBounds[1][0] = Math.max(combinedBounds[1][0], targetBounds[1][0]);
-      combinedBounds[1][1] = Math.max(combinedBounds[1][1], targetBounds[1][1]);
-      return combinedBounds;
-    }, null);
+    const bounds = this.getCombinedTargetBounds(targets);
 
     if (!this.hasValidBounds(bounds)) {
       debugContinentsOceansRunnerCamera("fitTargets skipped", {
@@ -1596,6 +1731,17 @@ export class MapLibreActivityRunner {
         source: "fitTargets",
         reason: "missing bounds",
         targetIds: targets.map((target) => target.id).filter(Boolean)
+      });
+      this.emitCameraTraceEvent({
+        eventType: "fit-targets",
+        status: "skipped",
+        requestType: "fitBounds",
+        cameraContext: options.cameraContext || options.context || "fit-targets",
+        cameraSource: options.source || "fitTargets",
+        reason: "missing bounds",
+        targetIds: targets.map((target) => target.id).filter(Boolean),
+        targetLabels: targets.map((target) => target.name).filter(Boolean),
+        resultingCamera: this.getCameraTraceMapState()
       });
       return false;
     }
@@ -1626,12 +1772,52 @@ export class MapLibreActivityRunner {
       source: options.source || "fitTargets",
       requestType: "fitBounds",
       activityId: this.activity?.id,
+      sectionIndex: options.sectionIndex ?? null,
+      sectionTitle: options.sectionTitle || "",
       targetIds: targets.map((target) => target.id).filter(Boolean),
       targetLabels: targets.map((target) => target.name).filter(Boolean),
+      targetId: targets.length === 1 ? targets[0]?.id || "" : "",
+      targetLabel: targets.length === 1 ? targets[0]?.name || "" : "",
+      targetBounds: targets.length === 1 ? bounds : null,
+      sectionBounds: targets.length > 1 ? bounds : null,
       skipCameraDevOverride: Boolean(options.skipCameraDevOverride)
     }, "fitBounds");
 
     return true;
+  }
+
+  getCombinedTargetBounds(targets = []) {
+    if (!Array.isArray(targets) || targets.length === 0) {
+      return null;
+    }
+
+    const bounds = targets.reduce((combinedBounds, target) => {
+      const camera = this.getTargetFocusCamera(target);
+      const targetBounds = camera?.bounds || (
+        Array.isArray(camera?.center)
+          ? [[camera.center[0] - 0.35, camera.center[1] - 0.35], [camera.center[0] + 0.35, camera.center[1] + 0.35]]
+          : null
+      );
+
+      if (!this.hasValidBounds(targetBounds)) {
+        return combinedBounds;
+      }
+
+      if (!combinedBounds) {
+        return [
+          [targetBounds[0][0], targetBounds[0][1]],
+          [targetBounds[1][0], targetBounds[1][1]]
+        ];
+      }
+
+      combinedBounds[0][0] = Math.min(combinedBounds[0][0], targetBounds[0][0]);
+      combinedBounds[0][1] = Math.min(combinedBounds[0][1], targetBounds[0][1]);
+      combinedBounds[1][0] = Math.max(combinedBounds[1][0], targetBounds[1][0]);
+      combinedBounds[1][1] = Math.max(combinedBounds[1][1], targetBounds[1][1]);
+      return combinedBounds;
+    }, null);
+
+    return this.hasValidBounds(bounds) ? bounds : null;
   }
 
   getMapInteractionState() {

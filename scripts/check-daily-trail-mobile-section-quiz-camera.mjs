@@ -10,13 +10,23 @@ const applyEnd = source.indexOf("function applyDailyTrailTargetQuizCamera", appl
 assert.ok(applyStart >= 0 && applyEnd > applyStart, "Section quiz camera function is missing.");
 const applySource = source.slice(applyStart, applyEnd);
 
+const targetQuizStart = source.indexOf("function applyDailyTrailTargetQuizCamera(memoryTrail, selection = {}, options = {})");
+const targetQuizEnd = source.indexOf("function scheduleMemoryTrailSectionQuizCameraCheck", targetQuizStart);
+assert.ok(targetQuizStart >= 0 && targetQuizEnd > targetQuizStart, "Target quiz camera function is missing.");
+const targetQuizSource = source.slice(targetQuizStart, targetQuizEnd);
+
 const genericStart = source.indexOf("function applyGenericMobileSectionQuizCamera(memoryTrail, selection = {}, options = {})");
 const genericEnd = source.indexOf("function applyMemoryTrailSectionQuizCamera", genericStart);
 assert.ok(genericStart >= 0 && genericEnd > genericStart, "Generic mobile section quiz camera helper is missing.");
 const genericSource = source.slice(genericStart, genericEnd);
 
+const decisionStart = source.indexOf("function getGenericMobileSectionQuizFitDecision(memoryTrail = getActiveMemoryTrail())");
+const decisionEnd = source.indexOf("function getMobileSectionQuizFitPadding", decisionStart);
+assert.ok(decisionStart >= 0 && decisionEnd > decisionStart, "Generic section quiz fit decision helper is missing.");
+const decisionSource = source.slice(decisionStart, decisionEnd);
+
 const shouldUseStart = source.indexOf("function shouldUseGenericMobileSectionQuizCamera(memoryTrail = getActiveMemoryTrail())");
-const shouldUseEnd = source.indexOf("function getMemoryTrailSectionQuizCameraKey", shouldUseStart);
+const shouldUseEnd = source.indexOf("function recordSectionQuizCameraTrace", shouldUseStart);
 assert.ok(shouldUseStart >= 0 && shouldUseEnd > shouldUseStart, "Generic mobile section quiz gate is missing.");
 const shouldUseSource = source.slice(shouldUseStart, shouldUseEnd);
 
@@ -44,8 +54,10 @@ assert.ok(
   "Generic mobile section camera must fit the combined section targets."
 );
 assert.ok(
-  genericSource.includes('cameraContext: "section-quiz-view"')
-    && genericSource.includes('source: "memory-trail-section-quiz-camera"'),
+  source.includes('const memoryTrailSectionQuizCameraContext = "section-quiz-view"')
+    && source.includes('const memoryTrailSectionQuizCameraSource = "memory-trail-section-quiz-camera"')
+    && genericSource.includes("cameraContext: memoryTrailSectionQuizCameraContext")
+    && genericSource.includes("source: memoryTrailSectionQuizCameraSource"),
   "Generic mobile section camera must preserve section quiz camera context/source."
 );
 assert.ok(
@@ -56,9 +68,22 @@ assert.ok(
   shouldUseSource.includes('memoryTrail?.source === "daily-trail"')
     && shouldUseSource.includes('memoryTrail?.sessionPhase !== "learn"')
     && shouldUseSource.includes("!isGuidedMemoryTrailPrompt(memoryTrail)")
-    && genericSource.includes("isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)")
+    && decisionSource.includes("isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)")
     && shouldUseSource.includes("!isCompletedDailyTrailReviewMemoryTrail(memoryTrail)"),
   "Generic section camera must exclude Learn, checkpoint, completed review, and non-Daily Trail contexts."
+);
+assert.ok(
+  decisionSource.includes("getActiveDailyTrailFixedCamera(memoryTrail) || getActiveDailyTrailNonLearnCamera(memoryTrail)")
+    && decisionSource.indexOf("getActiveDailyTrailFixedCamera(memoryTrail) || getActiveDailyTrailNonLearnCamera(memoryTrail)")
+      < decisionSource.indexOf("runner.getCombinedTargetBounds(targets)"),
+  "Existing fixed/non-Learn regional cameras must reject the generic fit before bounds fitting."
+);
+assert.ok(
+  decisionSource.includes("genericMobileSectionQuizAntimeridianSpan")
+    && decisionSource.includes("genericMobileSectionQuizMaxLongitudeSpan")
+    && decisionSource.includes("genericMobileSectionQuizMaxLatitudeSpan")
+    && decisionSource.includes("touchesWorldWrap"),
+  "Generic mobile section camera must reject world-wrap and overly broad section bounds."
 );
 assert.ok(
   paddingSource.includes('document.querySelector(".poc-header")')
@@ -78,6 +103,12 @@ assert.ok(
   "Runner fitBounds path must pass section-quiz offsets through to MapLibre."
 );
 assert.ok(
+  runnerSource.includes("getCombinedTargetBounds(targets = [])")
+    && runnerSource.indexOf("const bounds = this.getCombinedTargetBounds(targets);")
+      < runnerSource.indexOf("debugContinentsOceansRunnerCamera(\"fitTargets requested\""),
+  "Runner must expose the combined target bounds used by generic section fits."
+);
+assert.ok(
   applySource.indexOf("const mobileSectionQuizCamera = getActiveDailyTrailMobileSectionQuizCamera(memoryTrail);")
     < applySource.indexOf("applyGenericMobileSectionQuizCamera(memoryTrail, selection, options)")
     && applySource.indexOf("applyGenericMobileSectionQuizCamera(memoryTrail, selection, options)")
@@ -85,11 +116,23 @@ assert.ok(
   "Camera precedence must be explicit mobile override, generic mobile fit, then existing fixed/regional fallback."
 );
 assert.ok(
+  genericSource.includes("isAuthoritativeSectionQuizCameraCurrent(memoryTrail, cameraKey)")
+    && applySource.includes("isAuthoritativeSectionQuizCameraCurrent(memoryTrail, cameraKey)")
+    && genericSource.includes("cached generic section camera key no longer matches active camera context"),
+  "Cached section camera keys must not suppress reapply after another camera overwrites the context."
+);
+assert.ok(
+  targetQuizSource.includes("isCompactTouchLayout() && isAuthoritativeSectionQuizCameraCurrent(memoryTrail)")
+    && targetQuizSource.includes("target quiz camera suppressed while authoritative mobile section quiz camera is active"),
+  "Target-specific quiz cameras must be suppressed while an authoritative mobile section quiz camera is current."
+);
+assert.ok(
   scheduleSource.includes("shouldUseGenericMobileCamera")
     && scheduleSource.includes("shouldUseGenericMobileSectionQuizCamera(memoryTrail)")
     && scheduleSource.includes("!mobileSectionQuizCamera")
-    && shouldUseSource.includes("!isCompletedDailyTrailReviewMemoryTrail(memoryTrail)"),
-  "Follow-up camera check must include the generic mobile path without changing terminal review."
+    && shouldUseSource.includes("!isCompletedDailyTrailReviewMemoryTrail(memoryTrail)")
+    && scheduleSource.includes("applyMemoryTrailSectionQuizCamera(memoryTrail, selection, { duration: 260 })"),
+  "Follow-up camera check must include the generic mobile path and re-run the authoritative section camera apply."
 );
 
 assert.deepEqual(usStates02.map?.dailyTrailMobileSectionQuizCamera, {
