@@ -2887,6 +2887,7 @@ let activeJourneySession = null;
 let activeDailyTrailSession = null;
 let pendingDailyTrailPlan = null;
 let lastDailyTrailSummary = null;
+let pendingDailyTrailGameplaySettingsReturn = false;
 let dailyTrailDevReplayCursor = null;
 let dailyTrailResetConfirmationVisible = false;
 let dailyTrailDevSelectedGoalId = "";
@@ -5382,12 +5383,20 @@ function normalizeJourneyDetailIntent(intent) {
 }
 
 function showSettingsScreen(options = {}) {
+  const shouldReturnToDailyTrailGameplay = currentAppScreen === "daily-trail-gameplay"
+    && activeDailyTrailSession
+    && activeStudySession?.memoryTrail?.source === "daily-trail";
+
   if (options.track !== false) {
     trackEvent("settings_opened", {
       source_screen: currentAppScreen
     });
   }
-  showAppScreen("settings");
+
+  pendingDailyTrailGameplaySettingsReturn = shouldReturnToDailyTrailGameplay;
+  showAppScreen("settings", {
+    pushHistory: !shouldReturnToDailyTrailGameplay
+  });
 }
 
 function showCustomizeScreen(options = {}) {
@@ -5398,6 +5407,43 @@ function showCustomizeScreen(options = {}) {
     });
   }
   showAppScreen("customize");
+}
+
+function restoreDailyTrailGameplayFromSettings() {
+  if (
+    !pendingDailyTrailGameplaySettingsReturn
+    || !activeDailyTrailSession
+    || activeStudySession?.memoryTrail?.source !== "daily-trail"
+  ) {
+    return false;
+  }
+
+  pendingDailyTrailGameplaySettingsReturn = false;
+  currentAppScreen = "daily-trail-gameplay";
+  isCurrentActivityProgressDisabled = true;
+  lastTrackedMainMenuVisibility = false;
+  document.body.classList.remove("launch-mode", "app-shell-mode", "browse-mode", "overview-mode");
+  document.body.classList.add("study-mode");
+  document.title = APP_NAME;
+
+  if (launchScreen) {
+    launchScreen.hidden = true;
+  }
+
+  if (appShellScreen) {
+    appShellScreen.hidden = true;
+  }
+
+  setDailyTrailGameplayHeaderTitle(activeDailyTrailSession);
+  updateStudyInstruction();
+  updateStudyCardDetails();
+  updateProgress();
+  updateDifficultyControls();
+  renderStudyExplorePanel();
+  renderActivityNavControls(session.currentActivity?.id);
+  updateTopBarNavigation();
+  updateResetControlVisibility();
+  return true;
 }
 
 function normalizeAppShellScreenId(screenId) {
@@ -5528,6 +5574,10 @@ function trackAppScreenShown(screenId) {
 }
 
 function goBackAppScreen() {
+  if (currentAppScreen === "settings" && restoreDailyTrailGameplayFromSettings()) {
+    return;
+  }
+
   const previousSnapshot = popAppScreenHistory();
   const previousScreen = getAppScreenSnapshotScreenId(previousSnapshot);
 
