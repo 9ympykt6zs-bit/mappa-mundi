@@ -65,6 +65,9 @@ const colors = {
   ]
 };
 
+// Keep visually suppressed retrieval targets queryable for map hit testing.
+const suppressedStudyTargetHitFillOpacity = 0.001;
+
 const oceanHighlightLatExtent = 89.5;
 const oceanHighlightTextureBounds = [
   [-180, oceanHighlightLatExtent],
@@ -456,6 +459,8 @@ export class MapLibreActivityRunner {
     this.selectedTargetId = "";
     this.memoryTrailCheckpointPreAnswerStyle = false;
     this.memoryTrailSuppressPreAnswerOutlines = false;
+    this.memoryTrailSuppressStudyTargetEmphasis = false;
+    this.memoryTrailSuppressStudyTargetEmphasisReason = "";
     this.shapeTargets = [];
     this.pointTargets = [];
     this.visualPointTargets = [];
@@ -816,12 +821,22 @@ export class MapLibreActivityRunner {
       this.memoryTrailWrongHighlightIds = [];
       this.memoryTrailCheckpointPreAnswerStyle = false;
       this.memoryTrailSuppressPreAnswerOutlines = false;
+      this.memoryTrailSuppressStudyTargetEmphasis = false;
+      this.memoryTrailSuppressStudyTargetEmphasisReason = "";
     }
     this.refreshDifficultyVisuals();
   }
 
   setMemoryTrailPreAnswerOutlinesSuppressed(isSuppressed = false) {
     this.memoryTrailSuppressPreAnswerOutlines = Boolean(isSuppressed);
+    this.refreshDifficultyVisuals();
+  }
+
+  setMemoryTrailStudyTargetEmphasisSuppressed(isSuppressed = false, reason = "") {
+    this.memoryTrailSuppressStudyTargetEmphasis = Boolean(isSuppressed);
+    this.memoryTrailSuppressStudyTargetEmphasisReason = this.memoryTrailSuppressStudyTargetEmphasis
+      ? String(reason || "").trim()
+      : "";
     this.refreshDifficultyVisuals();
   }
 
@@ -883,18 +898,42 @@ export class MapLibreActivityRunner {
     return Boolean(this.studyPreviewMode && this.memoryTrailSuppressPreAnswerOutlines);
   }
 
+  isMemoryTrailStudyTargetEmphasisSuppressed() {
+    return Boolean(this.studyPreviewMode && this.memoryTrailSuppressStudyTargetEmphasis);
+  }
+
   getMemoryTrailPromptVisualState() {
     const checkpointPreAnswerStyle = this.isMemoryTrailCheckpointPreAnswerStyleEnabled();
     const preAnswerOutlineSuppressed = this.isMemoryTrailPreAnswerOutlineSuppressed();
+    const suppressStudyTargetEmphasis = this.isMemoryTrailStudyTargetEmphasisSuppressed();
     return {
       checkpointPreAnswerStyle,
       preAnswerOutlineSuppressed,
+      suppressStudyTargetEmphasis,
+      suppressStudyTargetEmphasisReason: this.memoryTrailSuppressStudyTargetEmphasisReason,
       selectedTargetId: this.selectedTargetId || "",
       activeTargetVisualIds: this.getActiveTargetVisualIds(),
-      blueOutlineSource: preAnswerOutlineSuppressed ? "suppressed" : checkpointPreAnswerStyle ? "state-line:targetStroke" : "state-line:studyTargetLine",
-      neutralizedOutlineLayerIds: checkpointPreAnswerStyle
+      blueOutlineSource: preAnswerOutlineSuppressed || suppressStudyTargetEmphasis ? "suppressed" : checkpointPreAnswerStyle ? "state-line:targetStroke" : "state-line:studyTargetLine",
+      neutralizedOutlineLayerIds: checkpointPreAnswerStyle || suppressStudyTargetEmphasis
         ? ["state-fill", "state-line", ...(this.isContinentsOceansActivity() ? ["ocean-region-line"] : [])]
         : []
+    };
+  }
+
+  getMemoryTrailVisualDebugState() {
+    return {
+      studyPreviewMode: Boolean(this.studyPreviewMode),
+      completedIds: [...this.completedIds],
+      memoryTrailHighlightIds: [...this.memoryTrailHighlightIds],
+      memoryTrailCorrectHighlightIds: [...this.memoryTrailCorrectHighlightIds],
+      memoryTrailWrongHighlightIds: [...this.memoryTrailWrongHighlightIds],
+      memoryTrailCheckpointPreAnswerStyle: Boolean(this.memoryTrailCheckpointPreAnswerStyle),
+      memoryTrailSuppressPreAnswerOutlines: Boolean(this.memoryTrailSuppressPreAnswerOutlines),
+      memoryTrailSuppressStudyTargetEmphasis: Boolean(this.memoryTrailSuppressStudyTargetEmphasis),
+      memoryTrailSuppressStudyTargetEmphasisReason: this.memoryTrailSuppressStudyTargetEmphasisReason,
+      selectedTargetId: this.selectedTargetId || "",
+      activeTargetVisualIds: this.getActiveTargetVisualIds(),
+      activeMemoryTrailHighlightIds: this.getMemoryTrailActiveHighlightIds()
     };
   }
 
@@ -1059,6 +1098,8 @@ export class MapLibreActivityRunner {
     this.completedIds = [];
     this.selectedTargetId = "";
     this.memoryTrailCheckpointPreAnswerStyle = false;
+    this.memoryTrailSuppressStudyTargetEmphasis = false;
+    this.memoryTrailSuppressStudyTargetEmphasisReason = "";
 
     const capitalSource = this.map.getSource("study-capitals");
     const mountainCorridorSource = this.map.getSource("mountain-range-corridors");
@@ -5838,7 +5879,7 @@ export class MapLibreActivityRunner {
         colors.memoryTrailLine,
         ["in", this.getOceanRegionFeatureIdExpression(), ["literal", this.completedIds]],
         oceanCompletedOutlineColor,
-        this.isMemoryTrailCheckpointPreAnswerStyleEnabled() ? colors.targetStroke : colors.studyTargetLine
+        this.isMemoryTrailCheckpointPreAnswerStyleEnabled() || this.isMemoryTrailStudyTargetEmphasisSuppressed() ? colors.targetStroke : colors.studyTargetLine
       ];
     }
 
@@ -5977,6 +6018,7 @@ export class MapLibreActivityRunner {
     }
 
     if (this.studyPreviewMode) {
+      const suppressStudyTargetEmphasis = this.isMemoryTrailStudyTargetEmphasisSuppressed();
       return [
         "case",
         ["in", ["get", "id"], ["literal", this.memoryTrailWrongHighlightIds]],
@@ -5985,6 +6027,8 @@ export class MapLibreActivityRunner {
         colors.memoryTrailCorrectFill,
         ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
         colors.memoryTrailFill,
+        suppressStudyTargetEmphasis,
+        ["match", ["get", "id"], ...this.getMutedTargetColorStops(), colors.targetFill],
         ["in", ["get", "id"], ["literal", this.completedIds]],
         ["match", ["get", "id"], ...this.getColorMatchStops(), colors.targetFill],
         ["==", ["get", "physicalFeatureType"], "mountain-range"],
@@ -6050,12 +6094,15 @@ export class MapLibreActivityRunner {
     }
 
     if (this.studyPreviewMode) {
+      const suppressStudyTargetEmphasis = this.isMemoryTrailStudyTargetEmphasisSuppressed();
       return [
         "case",
         ["boolean", ["get", "hasStylizedMountainRangeArt"], false],
         0,
         ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
         0.98,
+        suppressStudyTargetEmphasis,
+        suppressedStudyTargetHitFillOpacity,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         0.96,
         ["==", ["get", "physicalFeatureType"], "mountain-range"],
@@ -6144,6 +6191,7 @@ export class MapLibreActivityRunner {
 
   getStateLineExpression() {
     if (this.studyPreviewMode) {
+      const suppressStudyTargetEmphasis = this.isMemoryTrailStudyTargetEmphasisSuppressed();
       return [
         "case",
         ["in", ["get", "id"], ["literal", this.memoryTrailWrongHighlightIds]],
@@ -6152,6 +6200,8 @@ export class MapLibreActivityRunner {
         colors.memoryTrailCorrectLine,
         ["in", ["get", "id"], ["literal", this.memoryTrailHighlightIds]],
         colors.memoryTrailLine,
+        suppressStudyTargetEmphasis,
+        colors.targetStroke,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         colors.targetStroke,
         ["==", ["get", "physicalFeatureType"], "mountain-range"],
@@ -6170,6 +6220,7 @@ export class MapLibreActivityRunner {
 
   getShapeLineOpacityExpression() {
     if (this.studyPreviewMode) {
+      const suppressStudyTargetEmphasis = this.isMemoryTrailStudyTargetEmphasisSuppressed();
       return [
         "case",
         ["boolean", ["get", "isOceanZone"], false],
@@ -6180,6 +6231,8 @@ export class MapLibreActivityRunner {
         0,
         ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
         1,
+        suppressStudyTargetEmphasis,
+        0,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         1,
         ["==", ["get", "physicalFeatureType"], "mountain-range"],
@@ -6230,10 +6283,13 @@ export class MapLibreActivityRunner {
 
   getShapeLineWidthExpression() {
     if (this.studyPreviewMode) {
+      const suppressStudyTargetEmphasis = this.isMemoryTrailStudyTargetEmphasisSuppressed();
       return [
         "case",
         ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
         3,
+        suppressStudyTargetEmphasis,
+        1.7,
         ["in", ["get", "id"], ["literal", this.completedIds]],
         2.15,
         ["==", ["get", "physicalFeatureType"], "mountain-range"],

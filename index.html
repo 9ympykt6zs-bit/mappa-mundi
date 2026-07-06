@@ -326,7 +326,7 @@
 
         window.__mappaMundiLoadApp = () => {
           if (!appModulePromise) {
-            appModulePromise = import("./src/maplibre-poc.js?v=20260705-daily-trail-ui-simplify");
+            appModulePromise = import("./src/maplibre-poc.js?v=20260706-active-visual-suppression-1");
           }
 
           return appModulePromise;
@@ -342,7 +342,13 @@
         };
 
         const previewParams = new URLSearchParams(window.location.search);
-        if (previewParams.has("riverPreview") || previewParams.has("river-preview")) {
+        const isLocalDev = ["localhost", "127.0.0.1", "::1", ""].includes(window.location.hostname);
+        const memoryTrailDebugMode = previewParams.get("memoryTrailDebug") || previewParams.get("memory-trail-debug");
+        if (
+          previewParams.has("riverPreview")
+          || previewParams.has("river-preview")
+          || (isLocalDev && memoryTrailDebugMode === "old-review-outline")
+        ) {
           window.__mappaMundiLoadApp();
           return;
         }

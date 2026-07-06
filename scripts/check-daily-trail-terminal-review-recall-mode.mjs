@@ -51,7 +51,9 @@ assert.ok(!completedReviewSelectorSource.includes("getStatsRetrievalCorrectTarge
   "setMemoryTrailPreAnswerOutlinesSuppressed(isSuppressed = false)",
   "isMemoryTrailPreAnswerOutlineSuppressed()",
   "preAnswerOutlineSuppressed",
-  "blueOutlineSource: preAnswerOutlineSuppressed ? \"suppressed\"",
+  "blueOutlineSource: preAnswerOutlineSuppressed || suppressStudyTargetEmphasis ? \"suppressed\"",
+  "const suppressStudyTargetEmphasis = this.isMemoryTrailStudyTargetEmphasisSuppressed();",
+  "suppressStudyTargetEmphasis,\n        [\"match\", [\"get\", \"id\"], ...this.getMutedTargetColorStops(), colors.targetFill]",
   "this.isMemoryTrailPreAnswerOutlineSuppressed()\n          ? [\"match\", [\"get\", \"id\"], ...this.getMutedTargetColorStops(), colors.targetFill]\n          : colors.studyTargetFill",
   "this.isMemoryTrailPreAnswerOutlineSuppressed() ? 0 : 0.52",
   "this.isMemoryTrailPreAnswerOutlineSuppressed() ? 0 : 0.86"

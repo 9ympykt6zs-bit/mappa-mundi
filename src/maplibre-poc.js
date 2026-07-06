@@ -3628,7 +3628,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260624-state-context-display-cleanup-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260706-active-visual-suppression-1"),
       import("./chip-speech.js?v=20260622-prompt-audio-dedupe-1")
     ]).then(([
       ,
@@ -3826,6 +3826,11 @@ async function init() {
   const mountainFindDevOptions = getMountainFindDevUrlOptions();
   if (mountainFindDevOptions) {
     await startMountainFindDev(mountainFindDevOptions);
+    return;
+  }
+
+  if (getMemoryTrailDebugUrlMode() === "old-review-outline") {
+    await startDailyTrailOldReviewOutlineDebugFixture();
     return;
   }
 
@@ -8761,6 +8766,25 @@ function isDailyTrailMemoryTrail(memoryTrail) {
   return memoryTrail?.source === "daily-trail";
 }
 
+function isActiveDailyTrailMemoryTrailVisualState(memoryTrail, selection = {}) {
+  if (!isDailyTrailMemoryTrail(memoryTrail) || memoryTrail?.active === false) {
+    return false;
+  }
+
+  const promptType = selection.promptType || memoryTrail?.currentPromptType || "";
+  const phase = memoryTrail?.phase || "";
+  return Boolean(
+    promptType
+    && phase !== "idle"
+    && phase !== "complete"
+    && currentAppScreen === "daily-trail-gameplay"
+  );
+}
+
+function shouldSuppressDailyTrailStudyTargetEmphasis(memoryTrail, selection = {}) {
+  return isActiveDailyTrailMemoryTrailVisualState(memoryTrail, selection);
+}
+
 function getStatsRetrievalCorrectTarget(stats, memoryTrail = null) {
   if (isDailyTrailMemoryTrail(memoryTrail)) {
     return getDailyTrailRetrievalCorrectTarget(stats, memoryTrail);
@@ -9347,6 +9371,7 @@ function clearMemoryTrailState({ restoreReveals = true, render = false } = {}) {
   }
   runner?.setMemoryTrailHighlight([]);
   runner?.setMemoryTrailCheckpointPreAnswerStyle?.(false);
+  runner?.setMemoryTrailStudyTargetEmphasisSuppressed?.(false);
 
   if (restoreReveals && activeStudySession) {
     activeStudySession.revealedTargetIds = [...memoryTrail.previousRevealedTargetIds];
@@ -9455,6 +9480,7 @@ function startMemoryTrail(options = {}) {
   trackEvent("memory_trail_started", getMemoryTrailAnalyticsContext());
   activeStudySession.revealedTargetIds = [];
   runner.setStudyPreviewMode(true);
+  runner?.setMemoryTrailStudyTargetEmphasisSuppressed?.(false);
   if (session.currentActivity?.id === continentsOceansActivityId) {
     runner.suppressStudyIntroCameraOnce?.("c&o-learn-target-focus", 5000);
   } else if (shouldSuppressStudyIntroCameraForSmallTargetLearn(activeStudySession.memoryTrail)) {
@@ -9650,6 +9676,10 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
     && (selection.promptType === "guided" || selection.promptType === "place_to_name");
   const checkpointPreAnswerStyle = isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
     && memoryTrail.phase === "answering";
+  runner?.setMemoryTrailStudyTargetEmphasisSuppressed?.(
+    shouldSuppressDailyTrailStudyTargetEmphasis(memoryTrail, selection),
+    "daily-trail-active-prompt"
+  );
   runner?.setMemoryTrailCheckpointPreAnswerStyle?.(checkpointPreAnswerStyle);
   if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
     runner.setMemoryTrailHighlight([]);
@@ -11672,6 +11702,7 @@ function completeMemoryTrailSession(memoryTrail) {
   memoryTrail.answerChoices = [];
   memoryTrail.message = `Great session: ${memoryTrail.correctCount} retrieval correct, ${memoryTrail.incorrectCount} to review.`;
   runner.setMemoryTrailHighlight([]);
+  runner?.setMemoryTrailStudyTargetEmphasisSuppressed?.(false);
   renderStudyExplorePanel();
   if (completedMemoryTrailAnalyticsKey !== currentMemoryTrailAnalyticsKey) {
     completedMemoryTrailAnalyticsKey = currentMemoryTrailAnalyticsKey;
@@ -12494,6 +12525,7 @@ function handleMemoryTrailTargetTap(targetIds, mapPoint = null) {
   const candidateIds = Array.isArray(targetIds)
     ? targetIds
     : [targetIds].filter(Boolean);
+  recordOldReviewOutlineDebugVisualTrace("map-tap-received", { candidateIds });
 
   if (!memoryTrail) {
     debugMemoryTrail("map click ignored", {
@@ -12542,11 +12574,13 @@ function handleMemoryTrailTargetTap(targetIds, mapPoint = null) {
     debugMemoryTrail("map click accepted", getMemoryTrailClickDebugContext(memoryTrail, candidateIds, {
       result: "correct"
     }));
+    recordOldReviewOutlineDebugVisualTrace("map-tap-correct", { candidateIds, expectedTargetId });
     handleCorrectMemoryTrailAnswer(memoryTrail, expectedTargetId);
   } else if (runner?.isTargetNearMapPoint?.(expectedTargetId, mapPoint)) {
     debugMemoryTrail("map click accepted", getMemoryTrailClickDebugContext(memoryTrail, candidateIds, {
       result: "near-miss"
     }));
+    recordOldReviewOutlineDebugVisualTrace("map-tap-near-miss", { candidateIds, expectedTargetId });
     handleIncorrectMemoryTrailAnswer(memoryTrail, expectedTargetId, {
       nearMiss: true,
       selectedTargetId: candidateIds[0] || ""
@@ -12555,6 +12589,7 @@ function handleMemoryTrailTargetTap(targetIds, mapPoint = null) {
     debugMemoryTrail("map click accepted", getMemoryTrailClickDebugContext(memoryTrail, candidateIds, {
       result: "incorrect"
     }));
+    recordOldReviewOutlineDebugVisualTrace("map-tap-incorrect", { candidateIds, expectedTargetId });
     handleIncorrectMemoryTrailAnswer(memoryTrail, expectedTargetId, {
       selectedTargetId: candidateIds[0] || ""
     });
@@ -12731,6 +12766,7 @@ function getMemoryTrailCorrectAnswerPauseMs(memoryTrail) {
 }
 
 function handleCorrectMemoryTrailAnswer(memoryTrail, targetId, options = {}) {
+  recordOldReviewOutlineDebugVisualTrace("correct-answer:start", { targetId });
   clearMemoryTrailTrayFeedback(memoryTrail, "correct answer");
   const responseElapsedMs = getDailyTrailCorrectResponseElapsedMs(memoryTrail, targetId);
   const isSlowCorrect = options.devSkip ? false : recordDailyTrailSlowCorrect(memoryTrail, targetId, responseElapsedMs);
@@ -12739,8 +12775,11 @@ function handleCorrectMemoryTrailAnswer(memoryTrail, targetId, options = {}) {
     stats.exposedCount = Math.max(stats.exposedCount || 0, 1);
   }
   memoryTrail.responseChipTargetId = targetId;
+  recordOldReviewOutlineDebugVisualTrace("correct-answer:suppression-preserved", { targetId });
   runner.setMemoryTrailHighlight(targetId);
+  recordOldReviewOutlineDebugVisualTrace("correct-answer:after-set-highlight", { targetId });
   updateMemoryTrailStats(memoryTrail, targetId, "correct", { promptType: memoryTrail.currentPromptType });
+  recordOldReviewOutlineDebugVisualTrace("correct-answer:after-update-stats", { targetId });
   refreshDailyTrailCapitalProgressMarkers(memoryTrail);
   lockDailyTrailFixedCameraAfterLearn(memoryTrail, targetId);
 
@@ -12760,6 +12799,7 @@ function handleCorrectMemoryTrailAnswer(memoryTrail, targetId, options = {}) {
 
   showFeedback("Yes.", true);
   showDailyTrailCorrectAnswerSuccessVisual(memoryTrail, targetId);
+  recordOldReviewOutlineDebugVisualTrace("correct-answer:after-success-visual", { targetId });
 
   memoryTrail.phase = "feedback";
   memoryTrail.answerChoices = [];
@@ -12770,8 +12810,11 @@ function handleCorrectMemoryTrailAnswer(memoryTrail, targetId, options = {}) {
   renderStudyExplorePanel();
 
   scheduleMemoryTrailStep(memoryTrail, () => {
+    recordOldReviewOutlineDebugVisualTrace("correct-answer:scheduled-step-start", { targetId });
     runner.setMemoryTrailHighlight([]);
+    recordOldReviewOutlineDebugVisualTrace("correct-answer:after-clear-highlight", { targetId });
     promptNextMemoryTrailTarget(memoryTrail);
+    recordOldReviewOutlineDebugVisualTrace("correct-answer:after-next-prompt", { targetId });
   }, getMemoryTrailCorrectAnswerPauseMs(memoryTrail));
 
   maybeSpeakPlaceToNameFeedbackTarget(memoryTrail, targetId, options);
@@ -12785,8 +12828,11 @@ function handleCorrectMemoryTrailAnswer(memoryTrail, targetId, options = {}) {
 }
 
 function handleIncorrectMemoryTrailAnswer(memoryTrail, expectedTargetId, options = {}) {
+  recordOldReviewOutlineDebugVisualTrace("incorrect-answer:start", { expectedTargetId, selectedTargetId: options.selectedTargetId || "" });
   updateMemoryTrailStats(memoryTrail, expectedTargetId, "incorrect", { promptType: memoryTrail.currentPromptType });
+  recordOldReviewOutlineDebugVisualTrace("incorrect-answer:after-update-stats", { expectedTargetId, selectedTargetId: options.selectedTargetId || "" });
   const selectedTargetId = options.selectedTargetId || "";
+  recordOldReviewOutlineDebugVisualTrace("incorrect-answer:suppression-preserved", { expectedTargetId, selectedTargetId });
   memoryTrail.phase = "correction";
   memoryTrail.promptName = getMemoryTrailTargetLabel(expectedTargetId);
   memoryTrail.responseChipTargetId = expectedTargetId;
@@ -12807,6 +12853,7 @@ function handleIncorrectMemoryTrailAnswer(memoryTrail, expectedTargetId, options
     correctTargetId: expectedTargetId,
     wrongTargetId: selectedTargetId
   });
+  recordOldReviewOutlineDebugVisualTrace("incorrect-answer:after-correction-highlight", { expectedTargetId, selectedTargetId });
   showFeedback(memoryTrail.message);
   renderStudyExplorePanel();
   debugMemoryTrail("correction step started", getMemoryTrailClickDebugContext(memoryTrail, [selectedTargetId].filter(Boolean), {
@@ -13873,6 +13920,772 @@ function isLocalDevAccessAllowed() {
     || hostname === "127.0.0.1"
     || hostname === "::1"
     || hostname === "";
+}
+
+function getMemoryTrailDebugUrlMode() {
+  if (!isLocalDevAccessAllowed()) {
+    return "";
+  }
+
+  const params = new URLSearchParams(window.location.search || "");
+  return String(params.get("memoryTrailDebug") || params.get("memory-trail-debug") || "").trim();
+}
+
+function getMemoryTrailDebugFixtureMode() {
+  if (!isLocalDevAccessAllowed()) {
+    return "";
+  }
+
+  const params = new URLSearchParams(window.location.search || "");
+  return String(
+    params.get("memoryTrailDebugFixture")
+      || params.get("memory-trail-debug-fixture")
+      || params.get("fixture")
+      || "name-to-place"
+  ).trim();
+}
+
+function getOldReviewOutlineDebugFixtureConfig() {
+  const mode = getMemoryTrailDebugFixtureMode().toLowerCase();
+  const configs = {
+    "name-to-place": {
+      id: "name-to-place",
+      currentActivityId: "us-states-04",
+      currentSectionTargetIds: ["georgia", "florida", "alabama", "mississippi", "louisiana"],
+      reviewTargets: [{ targetId: "maine", activityId: "us-states-01" }],
+      prompt: {
+        targetId: "maine",
+        promptType: "name_to_place",
+        mode: "review",
+        reason: "debug old review outline fixture"
+      },
+      completedTargetIds: ["maine"],
+      backgroundTargetIds: ["tennessee"]
+    },
+    "learn-review-outline": {
+      id: "learn-review-outline",
+      currentActivityId: "us-states-10",
+      currentSectionTargetIds: ["montana", "idaho", "washington", "oregon"],
+      reviewTargets: [
+        { targetId: "iowa", activityId: "us-states-06" },
+        { targetId: "maryland", activityId: "us-states-03" }
+      ],
+      prompt: {
+        targetId: "oregon",
+        promptType: "guided",
+        mode: "learn",
+        reason: "debug guided learn with future review targets"
+      },
+      completedTargetIds: [],
+      backgroundTargetIds: ["nevada"]
+    },
+    "answer-flash": {
+      id: "answer-flash",
+      currentActivityId: "us-states-04",
+      currentSectionTargetIds: ["georgia", "florida", "alabama", "mississippi", "louisiana"],
+      reviewTargets: [],
+      prompt: {
+        targetId: "georgia",
+        promptType: "name_to_place",
+        mode: "practice",
+        reason: "debug answer visual transition"
+      },
+      completedTargetIds: [],
+      backgroundTargetIds: ["tennessee"]
+    }
+  };
+
+  return configs[mode] || configs["name-to-place"];
+}
+
+async function startDailyTrailOldReviewOutlineDebugFixture() {
+  if (!isLocalDevAccessAllowed()) {
+    showAppScreen("launch", { pushHistory: false });
+    return false;
+  }
+
+  await ensureMapRuntimeLoaded();
+  await ensureActivityDataLoaded();
+
+  const config = getOldReviewOutlineDebugFixtureConfig();
+  const currentActivity = getActivityById(config.currentActivityId);
+  const reviewTargetRefs = (config.reviewTargets || [])
+    .map((item) => ({
+      ...item,
+      activity: getActivityById(item.activityId),
+      target: getActivityById(item.activityId)?.targets?.find((target) => target.id === item.targetId)
+    }));
+  if (
+    !currentActivity
+    || reviewTargetRefs.some((item) => !item.activity || !item.target)
+    || !(config.currentSectionTargetIds || []).every((targetId) => currentActivity.targets?.some((target) => target.id === targetId))
+  ) {
+    showFeedback("Old-review outline debug fixture could not be built.");
+    showAppScreen("launch", { pushHistory: false });
+    return false;
+  }
+
+  const playItems = [
+    ...config.currentSectionTargetIds.map((targetId, index) => createOldReviewOutlineDebugPlanItem({
+      targetId,
+      activity: currentActivity,
+      order: index,
+      isReview: false
+    })),
+    ...reviewTargetRefs.map((item, index) => createOldReviewOutlineDebugPlanItem({
+      targetId: item.targetId,
+      activity: item.activity,
+      order: config.currentSectionTargetIds.length + index,
+      isReview: true
+    }))
+  ].filter(Boolean);
+  const targetIds = playItems.map((item) => item.targetId);
+
+  activeDailyTrailSession = {
+    trailId: "debug-old-review-outline",
+    journeyId: "debug-old-review-outline",
+    state: {
+      activeTrailGoal: "debug-old-review-outline",
+      currentSessionNumber: 1,
+      progressByTarget: {}
+    },
+    plan: {
+      sessionType: "debug-old-review-outline",
+      trailGoalId: "debug-old-review-outline",
+      activeActivityId: config.currentActivityId,
+      playItems,
+      allItems: playItems,
+      newItems: playItems.filter((item) => !item.isReview),
+      reviewItems: playItems.filter((item) => item.isReview),
+      debugFixture: "old-review-outline",
+      debugFixtureMode: config.id
+    },
+    activityId: config.currentActivityId,
+    devReplay: true,
+    debugFixture: "old-review-outline",
+    debugFixtureMode: config.id,
+    checkpointActivityGroups: [],
+    checkpointActivityIndex: 0,
+    checkpointResult: null,
+    completedReviewActivityGroups: [],
+    completedReviewActivityIndex: 0,
+    completedReviewResult: null,
+    checkpointTransitionInProgress: false
+  };
+  pendingDailyTrailPlan = null;
+
+  const presentationSettings = getEffectivePresentationSettings(currentActivity, {
+    presentationSettings: {
+      reviewMode: studyModes.sectionOnly,
+      dailyTrailTargetIds: targetIds,
+      dailyTrailTargetItems: playItems.map((item) => ({
+        targetId: item.targetId,
+        homeActivityId: item.homeActivityId
+      })),
+      dailyTrailVisualContextTargetIds: []
+    }
+  });
+
+  await openActivity(config.currentActivityId, {
+    appScreen: "daily-trail-gameplay",
+    difficultyId: difficultyModes.easy,
+    disableActivityProgress: true,
+    forceGameplayVisible: true,
+    hierarchyNodeId: findHierarchyNodeForActivity(config.currentActivityId),
+    presentationSettings
+  });
+
+  activeStudySession = {
+    journeyId: "debug-old-review-outline",
+    stepId: config.id,
+    activityId: config.currentActivityId,
+    dailyTrail: true,
+    memoryTrailSectionIndex: 0,
+    revealedTargetIds: []
+  };
+
+  const didStartMemoryTrail = startMemoryTrail({
+    source: "daily-trail",
+    newTargetIds: config.currentSectionTargetIds,
+    targetIds,
+    insertedReviewTargetIds: reviewTargetRefs.map((item) => item.targetId),
+    suppressInitialPrompt: true
+  });
+  const memoryTrail = activeStudySession?.memoryTrail;
+  if (!didStartMemoryTrail || !memoryTrail) {
+    showFeedback("Old-review outline debug fixture could not start.");
+    return false;
+  }
+
+  const currentWindow = config.currentSectionTargetIds
+    .map((targetId) => getTargetById(memoryTrail, targetId))
+    .filter(Boolean);
+  if (currentWindow.length > 0) {
+    memoryTrail.currentPracticeWindow = currentWindow;
+  }
+  config.currentSectionTargetIds.forEach((targetId) => {
+    markOldReviewOutlineDebugTargetIntroduced(memoryTrail, targetId);
+  });
+  reviewTargetRefs.forEach((item) => {
+    markOldReviewOutlineDebugTargetIntroduced(memoryTrail, item.targetId, { retrievalCorrect: 1 });
+  });
+
+  const fixture = {
+    mode: config.id,
+    currentActivityId: config.currentActivityId,
+    currentActivityTitle: currentActivity.title,
+    currentSectionId: config.currentActivityId,
+    currentSectionTargetIds: config.currentSectionTargetIds,
+    currentLearnTargetIds: config.currentSectionTargetIds,
+    oldReviewActivityId: reviewTargetRefs[0]?.activityId || "",
+    oldReviewTargetId: reviewTargetRefs[0]?.targetId || config.prompt.targetId,
+    oldReviewTargetIds: reviewTargetRefs.map((item) => item.targetId),
+    oldReviewTargetOrigins: Object.fromEntries(reviewTargetRefs.map((item) => [item.targetId, item.activityId])),
+    oldReviewTargetLabel: reviewTargetRefs[0]?.target?.name || reviewTargetRefs[0]?.targetId || "",
+    reviewClassification: reviewTargetRefs.length > 0 ? "inserted-old-review" : "none",
+    promptTargetId: config.prompt.targetId,
+    inspectTargetIds: [
+      ...config.currentSectionTargetIds,
+      ...reviewTargetRefs.map((item) => item.targetId),
+      ...(config.backgroundTargetIds || [])
+    ],
+    expectedClickTargetId: config.id === "answer-flash" ? config.prompt.targetId : ""
+  };
+  if (typeof window !== "undefined") {
+    window.__oldReviewOutlineDebugTrace = {
+      sequence: 0,
+      startedAtMs: getMonotonicNowMs(),
+      events: []
+    };
+  }
+  installOldReviewOutlineDebugTrace(memoryTrail, fixture);
+  runner?.setCompletedTargets?.(config.completedTargetIds || []);
+  recordOldReviewOutlineDebugVisualTrace("fixture-before-prompt", { fixtureMode: config.id });
+  applyMemoryTrailPromptSelection(memoryTrail, config.prompt);
+  recordOldReviewOutlineDebugVisualTrace("fixture-after-prompt", { fixtureMode: config.id });
+  renderOldReviewOutlineDebugPanel(memoryTrail, fixture);
+  runner?.map?.once?.("idle", () => renderOldReviewOutlineDebugPanel(memoryTrail, fixture));
+  runner?.map?.on?.("idle", () => {
+    if (activeDailyTrailSession?.debugFixture === "old-review-outline" && isCurrentMemoryTrailState(memoryTrail)) {
+      renderOldReviewOutlineDebugPanel(memoryTrail, fixture);
+    }
+  });
+  window.setTimeout(() => renderOldReviewOutlineDebugPanel(memoryTrail, fixture), 800);
+  return true;
+}
+
+function markOldReviewOutlineDebugTargetIntroduced(memoryTrail, targetId, options = {}) {
+  const stats = memoryTrail?.targetStats?.[targetId];
+  if (!stats) {
+    return false;
+  }
+
+  stats.isIntroduced = true;
+  stats.guidedTapCount = Math.max(1, Number(stats.guidedTapCount) || 0);
+  stats.exposedCount = Math.max(1, Number(stats.exposedCount) || 0);
+  if (options.retrievalCorrect) {
+    stats.totalRetrievalAttempts = Math.max(1, Number(stats.totalRetrievalAttempts) || 0);
+    stats.totalRetrievalCorrect = Math.max(Number(options.retrievalCorrect), Number(stats.totalRetrievalCorrect) || 0);
+  }
+  if (!memoryTrail.introducedTargetIds.includes(targetId)) {
+    memoryTrail.introducedTargetIds.push(targetId);
+  }
+  return true;
+}
+
+function createOldReviewOutlineDebugPlanItem({ targetId, activity, order = 0, isReview = false } = {}) {
+  const target = activity?.targets?.find((candidate) => candidate.id === targetId);
+  if (!target) {
+    return null;
+  }
+
+  return {
+    id: `${activity.id}:${targetId}`,
+    targetId,
+    label: target.name || targetId,
+    activityId: activity.id,
+    activityTitle: activity.title || activity.id,
+    homeActivityId: activity.id,
+    order,
+    type: target.type || "",
+    kind: target.kind || "",
+    isReview
+  };
+}
+
+function getOldReviewOutlineDebugTrace() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  window.__oldReviewOutlineDebugTrace ||= {
+    sequence: 0,
+    startedAtMs: getMonotonicNowMs(),
+    events: []
+  };
+  return window.__oldReviewOutlineDebugTrace;
+}
+
+function installOldReviewOutlineDebugTrace(memoryTrail, fixture) {
+  if (!runner) {
+    return;
+  }
+
+  runner.__oldReviewOutlineDebugFixture = fixture;
+  if (runner.__oldReviewOutlineDebugTraceInstalled) {
+    return;
+  }
+
+  runner.__oldReviewOutlineDebugTraceInstalled = true;
+  [
+    "setStudyPreviewMode",
+    "setCompletedTargets",
+    "setMemoryTrailStudyTargetEmphasisSuppressed",
+    "setMemoryTrailHighlight",
+    "setMemoryTrailCorrectionHighlight",
+    "setMemoryTrailCheckpointPreAnswerStyle",
+    "refreshDifficultyVisuals",
+    "refreshMapRender"
+  ].forEach((methodName) => {
+    const original = runner[methodName];
+    if (typeof original !== "function") {
+      return;
+    }
+
+    runner[methodName] = function wrappedOldReviewOutlineDebugTrace(...args) {
+      recordOldReviewOutlineDebugVisualTrace(`${methodName}:before`, { args });
+      const result = original.apply(this, args);
+      recordOldReviewOutlineDebugVisualTrace(`${methodName}:after`, { args });
+      return result;
+    };
+  });
+
+  const originalTriggerRepaint = runner.map?.triggerRepaint;
+  if (typeof originalTriggerRepaint === "function" && !runner.map.__oldReviewOutlineDebugTraceInstalled) {
+    runner.map.__oldReviewOutlineDebugTraceInstalled = true;
+    runner.map.triggerRepaint = function wrappedOldReviewOutlineTriggerRepaint(...args) {
+      recordOldReviewOutlineDebugVisualTrace("map.triggerRepaint", { args });
+      return originalTriggerRepaint.apply(this, args);
+    };
+  }
+
+  recordOldReviewOutlineDebugVisualTrace("trace-installed", {
+    fixtureMode: fixture?.mode || "",
+    promptTargetId: fixture?.promptTargetId || "",
+    targetIds: fixture?.inspectTargetIds || []
+  });
+}
+
+function recordOldReviewOutlineDebugVisualTrace(eventType, details = {}) {
+  if (activeDailyTrailSession?.debugFixture !== "old-review-outline") {
+    return;
+  }
+
+  const trace = getOldReviewOutlineDebugTrace();
+  if (!trace) {
+    return;
+  }
+
+  const now = getMonotonicNowMs();
+  if (eventType === "map.triggerRepaint") {
+    const elapsedSinceStart = now - trace.startedAtMs;
+    if (Number.isFinite(trace.lastRepaintEventAtMs) && elapsedSinceStart - trace.lastRepaintEventAtMs < 80) {
+      return;
+    }
+    trace.lastRepaintEventAtMs = elapsedSinceStart;
+  }
+
+  const memoryTrail = getActiveMemoryTrail();
+  const visualDebugState = runner?.getMemoryTrailVisualDebugState?.() || {};
+  const promptVisualState = runner?.getMemoryTrailPromptVisualState?.() || {};
+  const fixture = runner?.__oldReviewOutlineDebugFixture || {};
+  const event = {
+    sequence: ++trace.sequence,
+    elapsedMs: Math.round(now - trace.startedAtMs),
+    eventType,
+    activityId: memoryTrail?.activityId || session?.currentActivity?.id || "",
+    sectionId: fixture.currentSectionId || "",
+    promptType: memoryTrail?.currentPromptType || "",
+    phase: memoryTrail?.phase || "",
+    sessionPhase: memoryTrail?.sessionPhase || "",
+    currentTarget: memoryTrail?.currentPromptTargetId || "",
+    completedIds: visualDebugState.completedIds || [],
+    introducedIds: memoryTrail?.introducedTargetIds || [],
+    memoryTrailHighlightIds: visualDebugState.memoryTrailHighlightIds || [],
+    memoryTrailCorrectHighlightIds: visualDebugState.memoryTrailCorrectHighlightIds || [],
+    memoryTrailWrongHighlightIds: visualDebugState.memoryTrailWrongHighlightIds || [],
+    correctionIds: [
+      memoryTrail?.correction?.expectedTargetId || "",
+      memoryTrail?.correction?.selectedTargetId || ""
+    ].filter(Boolean),
+    selectedTargetId: visualDebugState.selectedTargetId || "",
+    suppressStudyTargetEmphasis: Boolean(promptVisualState.suppressStudyTargetEmphasis),
+    suppressStudyTargetEmphasisReason: promptVisualState.suppressStudyTargetEmphasisReason || "",
+    feedbackState: memoryTrail?.trayFeedback?.tone || memoryTrail?.phase || "",
+    stateFillBranches: getOldReviewOutlineDebugTargetRows(memoryTrail, fixture, visualDebugState)
+      .map((row) => [row.targetId, row.fillExpressionBranch]),
+    stateLineBranches: getOldReviewOutlineDebugTargetRows(memoryTrail, fixture, visualDebugState)
+      .map((row) => [row.targetId, row.lineExpressionBranch]),
+    paintUpdated: /:after$/.test(eventType) || eventType === "map.triggerRepaint",
+    triggerRepaint: eventType === "map.triggerRepaint" || eventType === "refreshMapRender:after",
+    asyncBoundary: /prompt|fixture/.test(eventType) ? "same task" : "",
+    details: sanitizeOldReviewOutlineDebugTraceDetails(details)
+  };
+
+  trace.events.push(event);
+  if (trace.events.length > 140) {
+    trace.events.splice(0, trace.events.length - 140);
+  }
+}
+
+function sanitizeOldReviewOutlineDebugTraceDetails(details = {}) {
+  if (!details || typeof details !== "object") {
+    return {};
+  }
+
+  return Object.fromEntries(Object.entries(details).map(([key, value]) => {
+    if (Array.isArray(value)) {
+      return [key, value.map((item) => (
+        typeof item === "object" && item !== null
+          ? JSON.stringify(item)
+          : item
+      ))];
+    }
+
+    if (typeof value === "object" && value !== null) {
+      return [key, JSON.stringify(value)];
+    }
+
+    return [key, value];
+  }));
+}
+
+function renderOldReviewOutlineDebugPanel(memoryTrail, fixture) {
+  if (!memoryTrail || !fixture?.inspectTargetIds?.length || typeof document === "undefined") {
+    return;
+  }
+
+  const snapshot = getOldReviewOutlineDebugSnapshot(memoryTrail, fixture);
+  let panel = document.querySelector("#old-review-outline-debug");
+  if (!panel) {
+    panel = document.createElement("pre");
+    panel.id = "old-review-outline-debug";
+    panel.setAttribute("aria-live", "polite");
+    panel.style.position = "fixed";
+    panel.style.left = "8px";
+    panel.style.top = "64px";
+    panel.style.zIndex = "80";
+    panel.style.maxWidth = "min(360px, calc(100vw - 16px))";
+    panel.style.maxHeight = "30vh";
+    panel.style.overflow = "auto";
+    panel.style.margin = "0";
+    panel.style.padding = "8px";
+    panel.style.border = "1px solid rgba(15, 23, 42, 0.28)";
+    panel.style.borderRadius = "6px";
+    panel.style.background = "rgba(255, 255, 255, 0.9)";
+    panel.style.color = "#172033";
+    panel.style.font = "11px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+    panel.style.whiteSpace = "pre-wrap";
+    panel.style.pointerEvents = "none";
+    document.body.appendChild(panel);
+  }
+
+  panel.textContent = JSON.stringify(snapshot, null, 2);
+}
+
+function getOldReviewOutlineDebugSnapshot(memoryTrail, fixture) {
+  const promptVisualState = runner?.getMemoryTrailPromptVisualState?.() || {};
+  const visualDebugState = runner?.getMemoryTrailVisualDebugState?.() || {};
+  const candidateLayerPaintByTarget = Object.fromEntries((fixture.inspectTargetIds || [])
+    .map((targetId) => [targetId, getOldReviewOutlineCandidateLayerPaint(targetId, visualDebugState)]));
+  const trace = getOldReviewOutlineDebugTrace();
+  return {
+    fixture: "old-review-outline",
+    fixtureMode: fixture.mode || "name-to-place",
+    activityId: fixture.currentActivityId,
+    activityTitle: fixture.currentActivityTitle,
+    currentSectionId: fixture.currentSectionId,
+    currentSectionTargetIds: fixture.currentSectionTargetIds,
+    currentLearnTargetIds: fixture.currentLearnTargetIds || [],
+    oldReviewActivityId: fixture.oldReviewActivityId,
+    oldReviewTargetId: fixture.oldReviewTargetId,
+    oldReviewTargetIds: fixture.oldReviewTargetIds || [],
+    oldReviewTargetLabel: fixture.oldReviewTargetLabel,
+    reviewClassification: fixture.reviewClassification,
+    promptTargetId: fixture.promptTargetId,
+    expectedClickTargetId: fixture.expectedClickTargetId || "",
+    promptType: memoryTrail.currentPromptType,
+    promptMode: memoryTrail.currentPromptMode,
+    promptText: memoryTrail.message || memoryTrail.visibleInstructionText || "",
+    suppressStudyTargetEmphasis: Boolean(promptVisualState.suppressStudyTargetEmphasis),
+    suppressStudyTargetEmphasisReason: promptVisualState.suppressStudyTargetEmphasisReason || "",
+    memoryTrailHighlightIds: visualDebugState.memoryTrailHighlightIds || [],
+    memoryTrailCorrectHighlightIds: visualDebugState.memoryTrailCorrectHighlightIds || [],
+    memoryTrailWrongHighlightIds: visualDebugState.memoryTrailWrongHighlightIds || [],
+    completedIds: visualDebugState.completedIds || [],
+    correction: memoryTrail.correction || null,
+    phase: memoryTrail.phase,
+    sessionPhase: memoryTrail.sessionPhase,
+    promptVisualState,
+    visualDebugState,
+    targetRows: getOldReviewOutlineDebugTargetRows(memoryTrail, fixture, visualDebugState),
+    candidateLayerPaintByTarget,
+    layerSummaryByTarget: Object.fromEntries(Object.entries(candidateLayerPaintByTarget).map(([targetId, entries]) => [
+      targetId,
+      entries.map((entry) => ({
+        layerId: entry.layerId,
+        type: entry.type,
+        branch: entry.branch,
+        lineColor: entry.paint?.["line-color"],
+        lineWidth: entry.paint?.["line-width"],
+        lineOpacity: entry.paint?.["line-opacity"],
+        fillColor: entry.paint?.["fill-color"],
+        fillOpacity: entry.paint?.["fill-opacity"],
+        fillOutlineColor: entry.paint?.["fill-outline-color"]
+      }))
+    ])),
+    visualTraceTail: (trace?.events || []).slice(-40),
+    visualTraceKeyEvents: (trace?.events || [])
+      .filter((event) => event.eventType !== "map.triggerRepaint")
+      .slice(-80)
+  };
+}
+
+function getOldReviewOutlineDebugTargetRows(memoryTrail, fixture, visualDebugState = {}) {
+  const promptVisualState = runner?.getMemoryTrailPromptVisualState?.() || {};
+  const currentSectionIds = new Set(fixture?.currentSectionTargetIds || []);
+  const learnIds = new Set(fixture?.currentLearnTargetIds || []);
+  const oldReviewIds = new Set(fixture?.oldReviewTargetIds || []);
+  const activityTargetIds = new Set((session?.currentActivity?.targets || []).map((target) => target.id).filter(Boolean));
+  const introducedIds = new Set(memoryTrail?.introducedTargetIds || []);
+  const completedIds = new Set(visualDebugState.completedIds || []);
+  const highlightIds = new Set(visualDebugState.memoryTrailHighlightIds || []);
+  const correctIds = new Set(visualDebugState.memoryTrailCorrectHighlightIds || []);
+  const wrongIds = new Set(visualDebugState.memoryTrailWrongHighlightIds || []);
+  const correctionIds = new Set([
+    memoryTrail?.correction?.expectedTargetId || "",
+    memoryTrail?.correction?.selectedTargetId || ""
+  ].filter(Boolean));
+
+  return (fixture?.inspectTargetIds || []).map((targetId) => {
+    const target = findOldReviewOutlineDebugTarget(targetId);
+    const feature = {
+      id: targetId,
+      properties: {
+        id: targetId,
+        targetId,
+        physicalFeatureType: target?.physicalFeatureType || ""
+      }
+    };
+    const fillExpressionBranch = describeOldReviewOutlineStyleBranch("state-fill", feature, visualDebugState);
+    const lineExpressionBranch = describeOldReviewOutlineStyleBranch("state-line", feature, visualDebugState);
+    return {
+      targetId,
+      label: target?.name || targetId,
+      originActivityId: findOldReviewOutlineDebugTargetActivityId(targetId, fixture),
+      currentSectionMember: currentSectionIds.has(targetId),
+      currentLearnSetMember: learnIds.has(targetId),
+      olderReviewMember: oldReviewIds.has(targetId),
+      activePromptTarget: memoryTrail?.currentPromptTargetId === targetId,
+      activityTargetsMember: activityTargetIds.has(targetId),
+      introducedMember: introducedIds.has(targetId),
+      completedMember: completedIds.has(targetId),
+      explicitMemoryTrailHighlightMember: highlightIds.has(targetId),
+      correctFeedbackMember: correctIds.has(targetId),
+      wrongFeedbackMember: wrongIds.has(targetId),
+      correctionMember: correctionIds.has(targetId),
+      selectedOrHoveredMember: visualDebugState.selectedTargetId === targetId,
+      suppressStudyTargetEmphasis: Boolean(promptVisualState.suppressStudyTargetEmphasis),
+      promptType: memoryTrail?.currentPromptType || "",
+      promptPhase: memoryTrail?.phase || "",
+      fillExpressionBranch,
+      lineExpressionBranch,
+      resultingFill: describeOldReviewOutlineDebugFillResult(targetId, fillExpressionBranch, visualDebugState),
+      resultingLine: describeOldReviewOutlineDebugLineResult(targetId, lineExpressionBranch, visualDebugState),
+      screenPoint: getOldReviewOutlineDebugTargetScreenPoint(target)
+    };
+  });
+}
+
+function findOldReviewOutlineDebugTarget(targetId) {
+  return session?.currentActivity?.targets?.find((target) => target.id === targetId)
+    || activities.flatMap((activity) => activity.targets || []).find((target) => target.id === targetId)
+    || null;
+}
+
+function findOldReviewOutlineDebugTargetActivityId(targetId, fixture = {}) {
+  if ((fixture.currentSectionTargetIds || []).includes(targetId)) {
+    return fixture.currentActivityId || "";
+  }
+
+  if (fixture.oldReviewTargetOrigins?.[targetId]) {
+    return fixture.oldReviewTargetOrigins[targetId];
+  }
+
+  const activity = activities.find((candidate) => (candidate.targets || []).some((target) => target.id === targetId));
+  return activity?.id || "";
+}
+
+function getOldReviewOutlineDebugTargetScreenPoint(target) {
+  if (!target || !runner?.map?.project) {
+    return null;
+  }
+
+  let centroid = getTargetCentroid(target);
+  if ((!centroid || centroid.type !== "lonlat") && stateLabelAnchors[target.id]) {
+    const [longitude, latitude] = stateLabelAnchors[target.id];
+    centroid = { x: longitude, y: latitude, type: "lonlat" };
+  }
+  if (!centroid || centroid.type !== "lonlat") {
+    return null;
+  }
+
+  try {
+    const point = runner.map.project([centroid.x, centroid.y]);
+    return point ? {
+      x: Math.round(point.x),
+      y: Math.round(point.y)
+    } : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function describeOldReviewOutlineDebugFillResult(targetId, branch, visualDebugState = {}) {
+  if (visualDebugState.memoryTrailWrongHighlightIds?.includes(targetId)) {
+    return { color: "memoryTrailWrongFill", opacity: 0.98 };
+  }
+  if (visualDebugState.memoryTrailCorrectHighlightIds?.includes(targetId)) {
+    return { color: "memoryTrailCorrectFill", opacity: 0.98 };
+  }
+  if (visualDebugState.memoryTrailHighlightIds?.includes(targetId)) {
+    return { color: "memoryTrailFill", opacity: 0.98 };
+  }
+  if (/suppression/.test(branch)) {
+    return { color: "muted target color", opacity: 0 };
+  }
+  if (/completedIds/.test(branch)) {
+    return { color: "target color match", opacity: 0.96 };
+  }
+  if (/study-preview/.test(branch)) {
+    return { color: "studyTargetFill", opacity: 0.52 };
+  }
+  return { color: "ordinary map fill", opacity: null };
+}
+
+function describeOldReviewOutlineDebugLineResult(targetId, branch, visualDebugState = {}) {
+  if (visualDebugState.memoryTrailWrongHighlightIds?.includes(targetId)) {
+    return { color: "memoryTrailWrongLine", opacity: 1, width: 3 };
+  }
+  if (visualDebugState.memoryTrailCorrectHighlightIds?.includes(targetId)) {
+    return { color: "memoryTrailCorrectLine", opacity: 1, width: 3 };
+  }
+  if (visualDebugState.memoryTrailHighlightIds?.includes(targetId)) {
+    return { color: "memoryTrailLine", opacity: 1, width: 3 };
+  }
+  if (/suppression/.test(branch)) {
+    return { color: "targetStroke", opacity: 0, width: 1.7 };
+  }
+  if (/completedIds/.test(branch)) {
+    return { color: "targetStroke", opacity: 1, width: 2.15 };
+  }
+  if (/study-preview/.test(branch)) {
+    return { color: "studyTargetLine", opacity: 0.86, width: 1.7 };
+  }
+  return { color: "ordinary boundary", opacity: null, width: null };
+}
+
+function getOldReviewOutlineCandidateLayerPaint(targetId, visualDebugState = {}) {
+  const map = runner?.map;
+  if (!map?.getLayer) {
+    return [];
+  }
+
+  return ["state-fill", "state-line", "target-hit-fill", "us-state-context-fill", "us-state-context-line"]
+    .filter((layerId) => map.getLayer(layerId))
+    .map((layerId) => {
+      const layer = map.getLayer(layerId);
+      return {
+        layerId,
+        type: layer?.type || "",
+        source: layer?.source || "",
+        sourceLayer: layer?.["source-layer"] || "",
+        filter: layer?.filter || null,
+        paint: getOldReviewOutlineLayerPaint(map, layer),
+        branch: describeOldReviewOutlineStyleBranch(layerId, {
+          id: targetId,
+          properties: { id: targetId, targetId }
+        }, visualDebugState)
+      };
+    });
+}
+
+function getOldReviewOutlineLayerPaint(map, layer) {
+  if (!map || !layer?.id) {
+    return {};
+  }
+
+  const paintPropertiesByType = {
+    fill: ["fill-color", "fill-opacity", "fill-outline-color"],
+    line: ["line-color", "line-width", "line-opacity"],
+    circle: ["circle-color", "circle-opacity", "circle-radius", "circle-stroke-color", "circle-stroke-width", "circle-stroke-opacity"],
+    symbol: ["icon-opacity", "icon-size", "text-opacity"],
+    raster: ["raster-opacity"]
+  };
+  const paint = {};
+  (paintPropertiesByType[layer.type] || []).forEach((property) => {
+    const value = map.getPaintProperty(layer.id, property);
+    if (value !== undefined) {
+      paint[property] = value;
+    }
+  });
+  return paint;
+}
+
+function describeOldReviewOutlineStyleBranch(layerId, feature, visualDebugState = {}) {
+  const properties = feature?.properties || {};
+  const targetId = String(properties.id || properties.targetId || feature?.id || "");
+  const activeHighlightIds = visualDebugState.activeMemoryTrailHighlightIds || [];
+  const correctHighlightIds = visualDebugState.memoryTrailCorrectHighlightIds || [];
+  const wrongHighlightIds = visualDebugState.memoryTrailWrongHighlightIds || [];
+  const completedIds = visualDebugState.completedIds || [];
+  const suppressionActive = Boolean(visualDebugState.memoryTrailSuppressStudyTargetEmphasis);
+
+  if (wrongHighlightIds.includes(targetId)) {
+    return "wrong feedback highlight branch";
+  }
+
+  if (correctHighlightIds.includes(targetId)) {
+    return "correct feedback highlight branch";
+  }
+
+  if (activeHighlightIds.includes(targetId)) {
+    return "explicit Memory Trail highlight branch";
+  }
+
+  if (suppressionActive && (layerId === "state-fill" || layerId === "state-line")) {
+    return "Daily Trail active-prompt suppression branch before completedIds";
+  }
+
+  if (completedIds.includes(targetId)) {
+    return suppressionActive
+      ? "completedIds branch while suppression is active"
+      : "completedIds branch";
+  }
+
+  if (layerId === "us-state-context-line") {
+    return "ordinary United States context boundary";
+  }
+
+  if (layerId === "target-hit-fill") {
+    return "transparent hit-test layer";
+  }
+
+  if (visualDebugState.studyPreviewMode && (layerId === "state-fill" || layerId === "state-line")) {
+    return "baseline study-preview target styling branch";
+  }
+
+  return "ordinary map/style branch";
 }
 
 function getRiverPreviewUrlOptions() {

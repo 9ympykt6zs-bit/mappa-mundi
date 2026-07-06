@@ -252,8 +252,8 @@ assert.equal(
   "20260624-daily-trail-curriculum-progression-1",
   "The runtime must load the checkpoint-aware planner under a new cache key."
 );
-assert.ok(appEntrySource.includes("./src/maplibre-poc.js?v=20260705-daily-trail-ui-simplify"));
-assert.ok(previewEntrySource.includes("src/maplibre-poc.js?v=20260705-daily-trail-ui-simplify"));
+assert.ok(appEntrySource.includes("./src/maplibre-poc.js?v=20260706-active-visual-suppression-1"));
+assert.ok(previewEntrySource.includes("src/maplibre-poc.js?v=20260706-active-visual-suppression-1"));
 [
   "checkpointActivityGroups",
   "function startDailyTrailActivity(activityId)",
@@ -311,16 +311,17 @@ assert.ok(
   "setMemoryTrailCheckpointPreAnswerStyle(isActive = false)",
   "isMemoryTrailCheckpointPreAnswerStyleEnabled()",
   "getMemoryTrailPromptVisualState()",
-  "blueOutlineSource: preAnswerOutlineSuppressed ? \"suppressed\" : checkpointPreAnswerStyle ? \"state-line:targetStroke\" : \"state-line:studyTargetLine\"",
-  "this.isMemoryTrailCheckpointPreAnswerStyleEnabled() ? colors.targetStroke : colors.studyTargetLine",
-  "this.isMemoryTrailCheckpointPreAnswerStyleEnabled() ? 0 : 0.52",
+  "blueOutlineSource: preAnswerOutlineSuppressed || suppressStudyTargetEmphasis ? \"suppressed\" : checkpointPreAnswerStyle ? \"state-line:targetStroke\" : \"state-line:studyTargetLine\"",
+  "this.isMemoryTrailCheckpointPreAnswerStyleEnabled() || this.isMemoryTrailStudyTargetEmphasisSuppressed() ? colors.targetStroke : colors.studyTargetLine",
+  "suppressStudyTargetEmphasis,\n        0",
+  "this.isMemoryTrailPreAnswerOutlineSuppressed() ? 0 : 0.52",
   "if (this.isMemoryTrailCheckpointPreAnswerStyleEnabled()) {\n      return 0;\n    }",
   "if (this.memoryTrailHighlightIds.length > 0) {\n      this.memoryTrailCheckpointPreAnswerStyle = false;",
   "if (correctTargetId || wrongTargetId) {\n      this.memoryTrailCheckpointPreAnswerStyle = false;",
   "this.isMemoryTrailCheckpointPreAnswerStyleEnabled() ? \"\" : this.selectedTargetId"
 ].forEach((hook) => assert.ok(runnerSource.includes(hook), `Missing checkpoint pre-answer outline guard: ${hook}`));
 assert.ok(runtimeSource.includes("runner?.setMemoryTrailCheckpointPreAnswerStyle?.(checkpointPreAnswerStyle);"));
-assert.ok(runtimeSource.includes("import(\"./maplibre/maplibre-activity-runner.js?v=20260624-state-context-display-cleanup-1\")"));
+assert.ok(runtimeSource.includes("import(\"./maplibre/maplibre-activity-runner.js?v=20260706-active-visual-suppression-1\")"));
 
 const queueSelectorIndex = runtimeSource.indexOf("if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {");
 const defaultLearnSelectorIndex = runtimeSource.indexOf("const unguidedCurrentTarget = memoryTrail.currentPracticeWindow");
