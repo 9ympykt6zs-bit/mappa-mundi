@@ -707,6 +707,32 @@ select,
   text-transform: none;
 }
 
+.main-menu-us-memory-trail-card {
+  background: linear-gradient(180deg, rgba(11, 76, 80, 0.96), rgba(7, 42, 52, 0.98));
+  border-color: rgba(145, 225, 211, 0.72);
+  border-radius: 18px;
+  min-height: 172px;
+}
+
+.main-menu-us-memory-trail-card::before {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.18));
+}
+
+.main-menu-us-memory-trail-card::after {
+  background: linear-gradient(180deg, rgba(20, 137, 126, 0.82), rgba(9, 82, 93, 0.9));
+  height: 100%;
+}
+
+.main-menu-us-memory-trail-card .main-menu-daily-trail-panel {
+  align-content: center;
+  min-height: 0;
+}
+
+.main-menu-us-memory-trail-card .main-menu-daily-trail-title {
+  font-size: clamp(1.35rem, 3.2vw, 2rem);
+  line-height: 1.05;
+}
+
 .main-menu-daily-trail-card:hover,
 .main-menu-daily-trail-card:focus-visible {
   filter: brightness(1.04);

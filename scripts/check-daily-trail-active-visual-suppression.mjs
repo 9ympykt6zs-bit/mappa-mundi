@@ -11,12 +11,12 @@ const runnerSource = fs.readFileSync(
 );
 
 [
-  "function isActiveDailyTrailMemoryTrailVisualState(memoryTrail, selection = {})",
+  "function isActiveAdaptiveTrailMemoryTrailVisualState(memoryTrail, selection = {})",
   "function shouldSuppressDailyTrailStudyTargetEmphasis(memoryTrail, selection = {})",
-  "return isActiveDailyTrailMemoryTrailVisualState(memoryTrail, selection);",
+  "return isActiveAdaptiveTrailMemoryTrailVisualState(memoryTrail, selection);",
   "phase !== \"idle\"",
   "phase !== \"complete\"",
-  "currentAppScreen === \"daily-trail-gameplay\"",
+  "getAdaptiveTrailGameplayScreen(memoryTrail)",
   "runner?.setMemoryTrailStudyTargetEmphasisSuppressed?.(\n    shouldSuppressDailyTrailStudyTargetEmphasis(memoryTrail, selection),\n    \"daily-trail-active-prompt\"\n  );\n  runner?.setMemoryTrailCheckpointPreAnswerStyle?.(checkpointPreAnswerStyle);",
   "runner.setMemoryTrailHighlight(shouldHighlightPromptTarget ? selection.targetId : []);",
   "correct-answer:suppression-preserved",

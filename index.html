@@ -31,7 +31,7 @@
     <link rel="icon" type="image/png" href="/assets/icons/atlas-quest-icon-192.png" />
     <link rel="apple-touch-icon" href="/assets/icons/atlas-quest-icon-180.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="stylesheet" href="maplibre-poc.css?v=20260705-daily-trail-ui-simplify" />
+    <link rel="stylesheet" href="maplibre-poc.css?v=20260708-us-memory-trail-tray-simplify" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -118,6 +118,14 @@
               <span class="main-menu-daily-trail-title">Daily Trail</span>
               <span class="main-menu-daily-trail-description">A short daily path that teaches, reviews, and keeps your memory fresh.</span>
               <span id="main-menu-daily-trail-action" class="main-menu-daily-trail-action">Continue Daily Trail</span>
+            </span>
+          </button>
+          <button id="main-menu-us-memory-trail-button" class="main-menu-daily-trail-card main-menu-us-memory-trail-card" type="button">
+            <span class="main-menu-daily-trail-panel">
+              <span class="main-menu-daily-trail-kicker">United States</span>
+              <span class="main-menu-daily-trail-title">United States Memory Trail</span>
+              <span class="main-menu-daily-trail-description">A continuous path through all 50 states with cumulative review.</span>
+              <span id="main-menu-us-memory-trail-action" class="main-menu-daily-trail-action">Start</span>
             </span>
           </button>
           <p class="main-menu-more-ways-copy">Looking for something else?</p>
@@ -326,7 +334,7 @@
 
         window.__mappaMundiLoadApp = () => {
           if (!appModulePromise) {
-            appModulePromise = import("./src/maplibre-poc.js?v=20260706-active-visual-suppression-1");
+            appModulePromise = import("./src/maplibre-poc.js?v=20260708-us-memory-trail-tray-simplify");
           }
 
           return appModulePromise;

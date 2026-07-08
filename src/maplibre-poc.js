@@ -35,6 +35,23 @@ import {
   shouldShowDailyTrailGoalChoice,
   syncCompletedDailyTrailGoals
 } from "./daily-trail-planner.js?v=20260624-daily-trail-curriculum-progression-1";
+import {
+  applyUnitedStatesMemoryTrailSessionResults,
+  applyUnitedStatesMemoryTrailSessionSnapshot,
+  applyUnitedStatesMemoryTrailSessionStart,
+  buildUnitedStatesMemoryTrailItems,
+  createUnitedStatesMemoryTrailState,
+  hasUnitedStatesMemoryTrailProgress,
+  isUnitedStatesMemoryTrailItemUnseen,
+  isUnitedStatesMemoryTrailWeakReviewItem,
+  loadUnitedStatesMemoryTrailProgress,
+  planUnitedStatesMemoryTrailSession,
+  resetUnitedStatesMemoryTrailProgress as resetUnitedStatesMemoryTrailPersistedProgress,
+  saveUnitedStatesMemoryTrailProgress,
+  unitedStatesMemoryTrailJourneyId,
+  unitedStatesMemoryTrailStorageKey,
+  UNITED_STATES_MEMORY_TRAIL_SOURCE
+} from "./united-states-memory-trail-planner.js?v=20260707-phase-1a";
 import { resolveMemoryTrailNewTargetLimit } from "./memory-trail-new-target-limit.js?v=20260621-daily-trail-co-progression-2";
 
 const APP_NAME = "Mappa Mundi";
@@ -265,6 +282,7 @@ const appShellScreenIds = new Set([
   "daily-trail-goal-choice",
   "daily-trail-intro",
   "daily-trail-summary",
+  "united-states-trail-summary",
   "begin-journey-placeholder",
   "free-play-difficulty",
   "settings",
@@ -2888,6 +2906,11 @@ let activeDailyTrailSession = null;
 let pendingDailyTrailPlan = null;
 let lastDailyTrailSummary = null;
 let pendingDailyTrailGameplaySettingsReturn = false;
+let activeUnitedStatesMemoryTrailSession = null;
+let pendingUnitedStatesMemoryTrailPlan = null;
+let lastUnitedStatesMemoryTrailSummary = null;
+let pendingUnitedStatesMemoryTrailGameplaySettingsReturn = false;
+let unitedStatesMemoryTrailResetConfirmationVisible = false;
 let dailyTrailDevReplayCursor = null;
 let dailyTrailResetConfirmationVisible = false;
 let dailyTrailDevSelectedGoalId = "";
@@ -3049,8 +3072,10 @@ const mainMenuForkSection = document.querySelector("#main-menu-fork-section");
 const mainMenuLearnButton = document.querySelector("#main-menu-learn-button");
 const mainMenuChallengeButton = document.querySelector("#main-menu-challenge-button");
 const mainMenuDailyTrailButton = document.querySelector("#main-menu-daily-trail-button");
+const mainMenuUnitedStatesMemoryTrailButton = document.querySelector("#main-menu-us-memory-trail-button");
 const mainMenuMoreWaysButton = document.querySelector("#main-menu-more-ways-button");
 const mainMenuDailyTrailAction = document.querySelector("#main-menu-daily-trail-action");
+const mainMenuUnitedStatesMemoryTrailAction = document.querySelector("#main-menu-us-memory-trail-action");
 const mainMenuLearnSection = document.querySelector("#main-menu-learn-section");
 const mainMenuChallengeSection = document.querySelector("#main-menu-challenge-section");
 const mainMenuUtilityArea = document.querySelector("#main-menu-utility-area");
@@ -3080,6 +3105,7 @@ function isCompactTouchLayout() {
 function isActiveGameplayScreen() {
   return currentAppScreen === "journey-gameplay"
     || currentAppScreen === "daily-trail-gameplay"
+    || currentAppScreen === "united-states-trail-gameplay"
     || currentAppScreen === "study-practice"
     || (currentAppScreen === "free-play" && isStudyModeActive());
 }
@@ -3098,6 +3124,7 @@ function shouldShowResetControl() {
     session?.currentActivity
     && isActiveGameplayScreen()
     && currentAppScreen !== "daily-trail-gameplay"
+    && currentAppScreen !== "united-states-trail-gameplay"
   );
 }
 
@@ -5224,6 +5251,11 @@ function bindUiEvents() {
       return;
     }
 
+    if (currentAppScreen === "united-states-trail-gameplay") {
+      exitUnitedStatesMemoryTrailGameplay();
+      return;
+    }
+
     if (currentAppScreen === "study-explore") {
       exitStudyExplore();
       return;
@@ -5261,6 +5293,11 @@ function bindUiEvents() {
       return;
     }
 
+    if (currentAppScreen === "united-states-trail-gameplay") {
+      exitUnitedStatesMemoryTrailGameplay();
+      return;
+    }
+
     if (currentAppScreen === "free-play" && activeHierarchyNodeId === "world") {
       goBackAppScreen();
       return;
@@ -5272,6 +5309,7 @@ function bindUiEvents() {
   browseCloseButton?.addEventListener("click", closeBrowseDrawer);
   journeyMemoryTrailButton?.addEventListener("click", startMemoryTrailFromJourneyGameplay);
   mainMenuDailyTrailButton?.addEventListener("click", openDailyTrailIntro);
+  mainMenuUnitedStatesMemoryTrailButton?.addEventListener("click", startOrContinueUnitedStatesMemoryTrail);
   mainMenuMoreWaysButton?.addEventListener("click", () => showAppScreen("main-menu-more-ways"));
   audioMuteButton?.addEventListener("click", toggleAudioMute);
   window.addEventListener("atlas-quest-audio-muted-change", updateAudioMuteControl);
@@ -5391,6 +5429,9 @@ function showSettingsScreen(options = {}) {
   const shouldReturnToDailyTrailGameplay = currentAppScreen === "daily-trail-gameplay"
     && activeDailyTrailSession
     && activeStudySession?.memoryTrail?.source === "daily-trail";
+  const shouldReturnToUnitedStatesMemoryTrailGameplay = currentAppScreen === "united-states-trail-gameplay"
+    && activeUnitedStatesMemoryTrailSession
+    && activeStudySession?.memoryTrail?.source === UNITED_STATES_MEMORY_TRAIL_SOURCE;
 
   if (options.track !== false) {
     trackEvent("settings_opened", {
@@ -5399,8 +5440,9 @@ function showSettingsScreen(options = {}) {
   }
 
   pendingDailyTrailGameplaySettingsReturn = shouldReturnToDailyTrailGameplay;
+  pendingUnitedStatesMemoryTrailGameplaySettingsReturn = shouldReturnToUnitedStatesMemoryTrailGameplay;
   showAppScreen("settings", {
-    pushHistory: !shouldReturnToDailyTrailGameplay
+    pushHistory: !shouldReturnToDailyTrailGameplay && !shouldReturnToUnitedStatesMemoryTrailGameplay
   });
 }
 
@@ -5440,6 +5482,43 @@ function restoreDailyTrailGameplayFromSettings() {
   }
 
   setDailyTrailGameplayHeaderTitle(activeDailyTrailSession);
+  updateStudyInstruction();
+  updateStudyCardDetails();
+  updateProgress();
+  updateDifficultyControls();
+  renderStudyExplorePanel();
+  renderActivityNavControls(session.currentActivity?.id);
+  updateTopBarNavigation();
+  updateResetControlVisibility();
+  return true;
+}
+
+function restoreUnitedStatesMemoryTrailGameplayFromSettings() {
+  if (
+    !pendingUnitedStatesMemoryTrailGameplaySettingsReturn
+    || !activeUnitedStatesMemoryTrailSession
+    || activeStudySession?.memoryTrail?.source !== UNITED_STATES_MEMORY_TRAIL_SOURCE
+  ) {
+    return false;
+  }
+
+  pendingUnitedStatesMemoryTrailGameplaySettingsReturn = false;
+  currentAppScreen = "united-states-trail-gameplay";
+  isCurrentActivityProgressDisabled = true;
+  lastTrackedMainMenuVisibility = false;
+  document.body.classList.remove("launch-mode", "app-shell-mode", "browse-mode", "overview-mode");
+  document.body.classList.add("study-mode");
+  document.title = APP_NAME;
+
+  if (launchScreen) {
+    launchScreen.hidden = true;
+  }
+
+  if (appShellScreen) {
+    appShellScreen.hidden = true;
+  }
+
+  setUnitedStatesMemoryTrailGameplayHeaderTitle();
   updateStudyInstruction();
   updateStudyCardDetails();
   updateProgress();
@@ -5580,6 +5659,10 @@ function trackAppScreenShown(screenId) {
 
 function goBackAppScreen() {
   if (currentAppScreen === "settings" && restoreDailyTrailGameplayFromSettings()) {
+    return;
+  }
+
+  if (currentAppScreen === "settings" && restoreUnitedStatesMemoryTrailGameplayFromSettings()) {
     return;
   }
 
@@ -5816,6 +5899,10 @@ function getAppShellScreenContent(screenId) {
       title: "Daily Trail",
       subtitle: "Today's trail is complete."
     },
+    "united-states-trail-summary": {
+      title: "United States Memory Trail",
+      subtitle: "This session is complete."
+    },
     "begin-journey-placeholder": {
       title: `Play: ${selectedJourneyTitle}`,
       subtitle: "Journey gameplay is coming next.",
@@ -5871,6 +5958,7 @@ function isJourneyShellScreen(screenId) {
     "daily-trail-goal-choice",
     "daily-trail-intro",
     "daily-trail-summary",
+    "united-states-trail-summary",
     "begin-journey-placeholder",
     "free-play-difficulty",
     "settings",
@@ -7824,13 +7912,13 @@ function usesFixedSectionMemoryTrailCamera(memoryTrail = getActiveMemoryTrail())
 }
 
 function getActiveDailyTrailFixedCamera(memoryTrail) {
-  return memoryTrail?.source === "daily-trail" && memoryTrail?.dailyTrailFixedCameraLocked
+  return isAdaptiveTrailMemoryTrail(memoryTrail) && memoryTrail?.dailyTrailFixedCameraLocked
     ? memoryTrail.dailyTrailFixedCamera?.camera || null
     : null;
 }
 
 function getActiveDailyTrailNonLearnCamera(memoryTrail) {
-  return memoryTrail?.source === "daily-trail"
+  return isAdaptiveTrailMemoryTrail(memoryTrail)
     && memoryTrail?.sessionPhase !== "learn"
     && !isGuidedMemoryTrailPrompt(memoryTrail)
     ? memoryTrail.dailyTrailNonLearnCamera || null
@@ -7851,7 +7939,7 @@ function getActiveDailyTrailTargetQuizCamera(memoryTrail, selection = {}) {
 }
 
 function getActiveDailyTrailMobileSectionQuizCamera(memoryTrail) {
-  return memoryTrail?.source === "daily-trail"
+  return isAdaptiveTrailMemoryTrail(memoryTrail)
     && memoryTrail?.sessionPhase !== "learn"
     && !isGuidedMemoryTrailPrompt(memoryTrail)
     && isCompactTouchLayout()
@@ -8766,8 +8854,20 @@ function isDailyTrailMemoryTrail(memoryTrail) {
   return memoryTrail?.source === "daily-trail";
 }
 
-function isActiveDailyTrailMemoryTrailVisualState(memoryTrail, selection = {}) {
-  if (!isDailyTrailMemoryTrail(memoryTrail) || memoryTrail?.active === false) {
+function isUnitedStatesMemoryTrail(memoryTrail) {
+  return memoryTrail?.source === UNITED_STATES_MEMORY_TRAIL_SOURCE;
+}
+
+function isAdaptiveTrailMemoryTrail(memoryTrail) {
+  return isDailyTrailMemoryTrail(memoryTrail) || isUnitedStatesMemoryTrail(memoryTrail);
+}
+
+function getAdaptiveTrailGameplayScreen(memoryTrail) {
+  return isUnitedStatesMemoryTrail(memoryTrail) ? "united-states-trail-gameplay" : "daily-trail-gameplay";
+}
+
+function isActiveAdaptiveTrailMemoryTrailVisualState(memoryTrail, selection = {}) {
+  if (!isAdaptiveTrailMemoryTrail(memoryTrail) || memoryTrail?.active === false) {
     return false;
   }
 
@@ -8777,16 +8877,16 @@ function isActiveDailyTrailMemoryTrailVisualState(memoryTrail, selection = {}) {
     promptType
     && phase !== "idle"
     && phase !== "complete"
-    && currentAppScreen === "daily-trail-gameplay"
+    && currentAppScreen === getAdaptiveTrailGameplayScreen(memoryTrail)
   );
 }
 
 function shouldSuppressDailyTrailStudyTargetEmphasis(memoryTrail, selection = {}) {
-  return isActiveDailyTrailMemoryTrailVisualState(memoryTrail, selection);
+  return isActiveAdaptiveTrailMemoryTrailVisualState(memoryTrail, selection);
 }
 
 function getStatsRetrievalCorrectTarget(stats, memoryTrail = null) {
-  if (isDailyTrailMemoryTrail(memoryTrail)) {
+  if (isAdaptiveTrailMemoryTrail(memoryTrail)) {
     return getDailyTrailRetrievalCorrectTarget(stats, memoryTrail);
   }
 
@@ -9405,11 +9505,11 @@ function shouldSuppressStudyIntroCameraForSmallTargetLearn(memoryTrail = getActi
 }
 
 function getDailyTrailMemoryTrailNonLearnCamera(activity, options = {}) {
-  if (options.source !== "daily-trail") {
+  if (options.source !== "daily-trail" && options.source !== UNITED_STATES_MEMORY_TRAIL_SOURCE) {
     return null;
   }
 
-  if (options.completedTrailReview === true && activity?.id?.startsWith("us-states-")) {
+  if (options.source === "daily-trail" && options.completedTrailReview === true && activity?.id?.startsWith("us-states-")) {
     return DAILY_TRAIL_TERMINAL_US_STATES_REVIEW_CAMERA;
   }
 
@@ -9418,6 +9518,7 @@ function getDailyTrailMemoryTrailNonLearnCamera(activity, options = {}) {
 
 function startMemoryTrail(options = {}) {
   const isDailyTrail = options.source === "daily-trail";
+  const isUnitedStatesTrail = options.source === UNITED_STATES_MEMORY_TRAIL_SOURCE;
   // A Daily Trail checkpoint can reach this boundary through a grouped plan or
   // a remediation plan. Derive the session behavior here so a caller cannot
   // accidentally create a normal Memory Trail session for a checkpoint.
@@ -9427,7 +9528,8 @@ function startMemoryTrail(options = {}) {
   );
   if (
     !activeStudySession
-    || (!isDailyTrail && currentAppScreen !== "study-explore")
+    || (!isDailyTrail && !isUnitedStatesTrail && currentAppScreen !== "study-explore")
+    || (isUnitedStatesTrail && currentAppScreen !== "united-states-trail-gameplay")
     || (isDailyTrail && currentAppScreen !== "daily-trail-gameplay")
     || !session.currentActivity.targets.length
   ) {
@@ -9435,6 +9537,9 @@ function startMemoryTrail(options = {}) {
   }
 
   if (!isDailyTrail && !isMemoryTrailEligible(session.currentActivity)) {
+    if (isUnitedStatesTrail) {
+      return false;
+    }
     hideMemoryTrailOverlay();
     clearMemoryTrailState({ restoreReveals: true });
     instruction.textContent = "Tap a target or name to show it. Tap it again to hide it.";
@@ -9448,20 +9553,24 @@ function startMemoryTrail(options = {}) {
   lastSpokenMemoryTrailInstructionKey = "";
   resetAudioInstructionState(`memory-trail:${activeStudySession.activityId}:${Date.now()}`);
   window.GeographyChipSpeech?.primeLocalAudio?.();
-  const memoryTrailSection = !isDailyTrail ? getActiveMemoryTrailSection(session.currentActivity) : null;
+  const memoryTrailSection = !isDailyTrail && !isUnitedStatesTrail ? getActiveMemoryTrailSection(session.currentActivity) : null;
   const sectionTargetIds = memoryTrailSection?.targetIds || null;
   activeStudySession.memoryTrail = createMemoryTrailSession(session.currentActivity, {
     newTargetIds: options.newTargetIds,
     source: options.source,
     targetIds: options.targetIds || sectionTargetIds,
-    dailyTrailSessionNumber: isDailyTrail ? activeDailyTrailSession?.state?.currentSessionNumber : 0,
+    dailyTrailSessionNumber: isDailyTrail
+      ? activeDailyTrailSession?.state?.currentSessionNumber
+      : isUnitedStatesTrail
+        ? activeUnitedStatesMemoryTrailSession?.state?.currentSessionNumber
+        : 0,
     maxNewTargets: memoryTrailSection?.targetIds?.length,
     sectionTitle: memoryTrailSection?.title,
     sectionIndex: memoryTrailSection?.sectionIndex,
     sectionCount: memoryTrailSection?.sectionCount,
     sectionQuizView: memoryTrailSection?.map?.quizView || session.currentActivity?.map?.quizView || null,
-    dailyTrailFixedCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailFixedCamera || null : null,
-    dailyTrailMobileSectionQuizCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailMobileSectionQuizCamera || null : null,
+    dailyTrailFixedCamera: (isDailyTrail || isUnitedStatesTrail) ? session.currentActivity?.map?.dailyTrailFixedCamera || null : null,
+    dailyTrailMobileSectionQuizCamera: (isDailyTrail || isUnitedStatesTrail) ? session.currentActivity?.map?.dailyTrailMobileSectionQuizCamera || null : null,
     dailyTrailNonLearnCamera: getDailyTrailMemoryTrailNonLearnCamera(session.currentActivity, options),
     dailyTrailQuizCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailQuizCamera || null : null,
     checkpointReview,
@@ -9498,6 +9607,7 @@ function startMemoryTrail(options = {}) {
 
 function updateDailyTrailMainMenuButton(isMainMenu = currentAppScreen === "main-menu") {
   if (!mainMenuDailyTrailButton) {
+    updateUnitedStatesMemoryTrailMainMenuButton(isMainMenu);
     return;
   }
 
@@ -9513,6 +9623,36 @@ function updateDailyTrailMainMenuButton(isMainMenu = currentAppScreen === "main-
   mainMenuDailyTrailButton.disabled = !isMainMenu;
   mainMenuDailyTrailButton.tabIndex = isMainMenu ? 0 : -1;
   mainMenuDailyTrailButton.setAttribute("aria-hidden", String(!isMainMenu));
+  updateUnitedStatesMemoryTrailMainMenuButton(isMainMenu);
+}
+
+function updateUnitedStatesMemoryTrailMainMenuButton(isMainMenu = currentAppScreen === "main-menu") {
+  if (!mainMenuUnitedStatesMemoryTrailButton) {
+    return;
+  }
+
+  const items = activityDataReady ? getUnitedStatesMemoryTrailItems() : [];
+  const state = createUnitedStatesMemoryTrailState(loadUnitedStatesMemoryTrailProgress(items), items);
+  const hasProgress = hasUnitedStatesMemoryTrailProgress(state);
+  const introducedCount = countUnitedStatesMemoryTrailIntroducedItems(state, items);
+  const masteredCount = countUnitedStatesMemoryTrailMasteredItems(state, items);
+  const weakCount = countUnitedStatesMemoryTrailWeakItems(state, items);
+
+  if (mainMenuUnitedStatesMemoryTrailAction) {
+    mainMenuUnitedStatesMemoryTrailAction.textContent = hasProgress ? "Continue" : "Start";
+  }
+
+  const description = mainMenuUnitedStatesMemoryTrailButton.querySelector(".main-menu-daily-trail-description");
+  if (description) {
+    description.textContent = hasProgress
+      ? `${introducedCount}/50 introduced | ${masteredCount} mastered | ${weakCount} review`
+      : "A continuous path through all 50 states with cumulative review.";
+  }
+
+  mainMenuUnitedStatesMemoryTrailButton.hidden = !isMainMenu;
+  mainMenuUnitedStatesMemoryTrailButton.disabled = !isMainMenu;
+  mainMenuUnitedStatesMemoryTrailButton.tabIndex = isMainMenu ? 0 : -1;
+  mainMenuUnitedStatesMemoryTrailButton.setAttribute("aria-hidden", String(!isMainMenu));
 }
 
 function restartMemoryTrail() {
@@ -9731,6 +9871,7 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
     targetSpeechPromise
   });
   scheduleMemoryTrailPromptResponseTimer(memoryTrail, selection, promptKey, promptActionablePromise);
+  persistActiveUnitedStatesMemoryTrailSnapshot(memoryTrail, "prompt");
 
   return true;
 }
@@ -9745,7 +9886,7 @@ function getMemoryTrailPromptActionablePromise(memoryTrail, selection = {}, wait
     pending.push(waitForCurrentMemoryTrailPrompt(memoryTrail, promptKey, targetId, cameraSettleMs));
   }
 
-  if (isDailyTrailMemoryTrail(memoryTrail)) {
+  if (isAdaptiveTrailMemoryTrail(memoryTrail)) {
     pending.push(waits.instructionSpeechPromise);
     pending.push(waits.learnCameraReadyPromise);
     pending.push(waits.targetSpeechPromise);
@@ -9756,7 +9897,7 @@ function getMemoryTrailPromptActionablePromise(memoryTrail, selection = {}, wait
 }
 
 function getMemoryTrailPromptStartCameraSettleMs(memoryTrail, selection = {}, waits = {}) {
-  if (!isDailyTrailMemoryTrail(memoryTrail) || isCompletedDailyTrailReviewMemoryTrail(memoryTrail)) {
+  if (!isAdaptiveTrailMemoryTrail(memoryTrail) || isCompletedDailyTrailReviewMemoryTrail(memoryTrail)) {
     return 0;
   }
 
@@ -11427,7 +11568,7 @@ function getReviewTargets(memoryTrail) {
 }
 
 function isDailyTrailPacingCapEnabled(memoryTrail) {
-  return isDailyTrailMemoryTrail(memoryTrail) && memoryTrail?.activityId !== continentsOceansActivityId;
+  return isAdaptiveTrailMemoryTrail(memoryTrail) && memoryTrail?.activityId !== continentsOceansActivityId;
 }
 
 function getCurrentPracticeWindowStats(memoryTrail) {
@@ -11554,7 +11695,7 @@ function shouldIntroduceNewTarget(memoryTrail) {
 
   const currentStats = memoryTrail.currentPracticeWindow.map((target) => memoryTrail.targetStats[target.id]).filter(Boolean);
   const currentWindowReady = currentStats.length > 0 && currentStats.every((stats) => {
-    if (isDailyTrailMemoryTrail(memoryTrail)) {
+    if (isAdaptiveTrailMemoryTrail(memoryTrail)) {
       return hasDailyTrailStatsMetRecallRequirement(stats, memoryTrail)
         || (isDailyTrailPacingCapEnabled(memoryTrail) && hasDailyTrailStatsSettledForCurrentSection(memoryTrail, stats));
     }
@@ -11569,7 +11710,7 @@ function shouldIntroduceNewTarget(memoryTrail) {
   const fiveCorrect = memoryTrail.recentRetrievalResults.slice(-5).length === 5
     && memoryTrail.recentRetrievalResults.slice(-5).every((result) => result === "correct");
 
-  if (isDailyTrailMemoryTrail(memoryTrail)) {
+  if (isAdaptiveTrailMemoryTrail(memoryTrail)) {
     return currentWindowReady || hasDailyTrailCurrentSectionMetExitRule(memoryTrail);
   }
 
@@ -11617,7 +11758,7 @@ function shouldEndMemoryTrailSession(memoryTrail) {
     return true;
   }
 
-  if (isDailyTrailMemoryTrail(memoryTrail)) {
+  if (isAdaptiveTrailMemoryTrail(memoryTrail)) {
     return shouldEndDailyTrailMemoryTrailSession(memoryTrail);
   }
 
@@ -11712,7 +11853,35 @@ function completeMemoryTrailSession(memoryTrail) {
     completeDailyTrailMemoryTrailSession(memoryTrail);
     return;
   }
+  if (activeUnitedStatesMemoryTrailSession && currentAppScreen === "united-states-trail-gameplay") {
+    completeUnitedStatesMemoryTrailSession(memoryTrail);
+    return;
+  }
   showMemoryTrailCompletionOverlay();
+}
+
+function completeUnitedStatesMemoryTrailSession(memoryTrail) {
+  if (!activeUnitedStatesMemoryTrailSession) {
+    return;
+  }
+
+  const items = getUnitedStatesMemoryTrailItems();
+  const result = getDailyTrailMemoryTrailResult(memoryTrail);
+  const nextState = applyUnitedStatesMemoryTrailSessionResults(
+    activeUnitedStatesMemoryTrailSession.state,
+    activeUnitedStatesMemoryTrailSession.plan,
+    result
+  );
+  const savedState = saveUnitedStatesMemoryTrailProgress(nextState, items);
+  lastUnitedStatesMemoryTrailSummary = savedState.lastSessionSummary;
+  activeUnitedStatesMemoryTrailSession = null;
+  clearMemoryTrailState({ restoreReveals: false });
+  activeStudySession = null;
+  runner?.setStudyPreviewMode(false);
+  runner?.setMemoryTrailHighlight([]);
+  runner?.setMemoryTrailStudyTargetEmphasisSuppressed?.(false);
+  resetActivityAttemptState();
+  showAppScreen("united-states-trail-summary", { pushHistory: false });
 }
 
 function completeDailyTrailMemoryTrailSession(memoryTrail) {
@@ -12666,6 +12835,7 @@ function handleMemoryTrailCorrectionTap(memoryTrail, candidateIds = [], mapPoint
     mapPoint
   }));
   renderStudyExplorePanel();
+  persistActiveUnitedStatesMemoryTrailSnapshot(memoryTrail, "correction");
 }
 
 function completeMemoryTrailCorrection(memoryTrail, expectedTargetId) {
@@ -12687,6 +12857,7 @@ function completeMemoryTrailCorrection(memoryTrail, expectedTargetId) {
   });
   showFeedback(memoryTrail.message, true);
   renderStudyExplorePanel();
+  persistActiveUnitedStatesMemoryTrailSnapshot(memoryTrail, "feedback");
 
   scheduleMemoryTrailStep(memoryTrail, () => {
     runner.setMemoryTrailHighlight([]);
@@ -12856,6 +13027,7 @@ function handleIncorrectMemoryTrailAnswer(memoryTrail, expectedTargetId, options
   recordOldReviewOutlineDebugVisualTrace("incorrect-answer:after-correction-highlight", { expectedTargetId, selectedTargetId });
   showFeedback(memoryTrail.message);
   renderStudyExplorePanel();
+  persistActiveUnitedStatesMemoryTrailSnapshot(memoryTrail, "correction");
   debugMemoryTrail("correction step started", getMemoryTrailClickDebugContext(memoryTrail, [selectedTargetId].filter(Boolean), {
     reason: "missed answer"
   }));
@@ -12969,6 +13141,7 @@ function updateMemoryTrailCorrectionCallout(memoryTrail = getActiveMemoryTrail()
 function getDailyTrailPromptPanelInstruction(memoryTrail) {
   const target = getMemoryTrailActivePromptTarget(memoryTrail);
   const singularNoun = getMemoryTrailInstructionNoun(session.currentActivity, memoryTrail) || "place";
+  const isUnitedStatesTrail = isUnitedStatesMemoryTrail(memoryTrail);
 
   if (isGuidedMemoryTrailPrompt(memoryTrail)) {
     return isContinentsOceansOceanLearnTarget(memoryTrail, target)
@@ -12977,10 +13150,18 @@ function getDailyTrailPromptPanelInstruction(memoryTrail) {
   }
 
   if (isPlaceToNameMemoryTrailPrompt(memoryTrail)) {
+    if (isUnitedStatesTrail) {
+      return singularNoun === "state" ? "What state is this?" : `What ${singularNoun} is this?`;
+    }
     return "Name the highlighted place.";
   }
 
   if (isNameToPlaceMemoryTrailPrompt(memoryTrail)) {
+    if (isUnitedStatesTrail) {
+      return singularNoun === "body of water"
+        ? "Tap the named body of water."
+        : `Tap the named ${singularNoun}.`;
+    }
     return singularNoun === "body of water"
       ? "Find the named body of water."
       : `Find the named ${singularNoun}.`;
@@ -13012,7 +13193,7 @@ function createDailyTrailPromptTargetChip(memoryTrail) {
   const chip = document.createElement("div");
   chip.className = "label-chip memory-trail-response-chip daily-trail-prompt-target-chip";
   chip.setAttribute("role", "status");
-  chip.setAttribute("aria-label", `Daily Trail target: ${labelText}`);
+  chip.setAttribute("aria-label", `Memory Trail target: ${labelText}`);
   chip.appendChild(createChipLabelText(labelText));
 
   const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(labelText);
@@ -13032,8 +13213,8 @@ function renderMemoryTrailPanel() {
 
   const panel = document.createElement("div");
   panel.className = "memory-trail-panel";
-  const isDailyTrail = isDailyTrailMemoryTrail(memoryTrail);
-  if (isDailyTrail) {
+  const usesCompactAdaptivePrompt = isAdaptiveTrailMemoryTrail(memoryTrail);
+  if (usesCompactAdaptivePrompt) {
     panel.classList.add("daily-trail-memory-trail-panel");
   }
 
@@ -13047,7 +13228,7 @@ function renderMemoryTrailPanel() {
   const promptGroup = document.createElement("div");
   promptGroup.className = "memory-trail-active-prompt";
 
-  if (isDailyTrail && memoryTrail.phase !== "complete") {
+  if (usesCompactAdaptivePrompt && memoryTrail.phase !== "complete") {
     const instructionLabel = document.createElement("p");
     instructionLabel.className = "memory-trail-instruction-label daily-trail-primary-instruction";
     instructionLabel.textContent = getDailyTrailPromptPanelInstruction(memoryTrail);
@@ -13120,7 +13301,7 @@ function renderMemoryTrailPanel() {
     status.appendChild(trayFeedback);
   }
 
-  const responseChip = isDailyTrail && shouldShowDailyTrailPromptTargetChip(memoryTrail)
+  const responseChip = usesCompactAdaptivePrompt && shouldShowDailyTrailPromptTargetChip(memoryTrail)
     ? null
     : createMemoryTrailResponseChip(memoryTrail);
   if (responseChip) {
@@ -13131,7 +13312,7 @@ function renderMemoryTrailPanel() {
     status.appendChild(choiceList);
   }
 
-  if (!isDailyTrail || memoryTrail.phase === "complete") {
+  if (!usesCompactAdaptivePrompt || memoryTrail.phase === "complete") {
     const stats = document.createElement("p");
     stats.className = "memory-trail-session-stats";
     stats.textContent = `${memoryTrail.correctCount} retrieval correct | ${getWeakTargets(memoryTrail).length} review`;
@@ -13141,7 +13322,7 @@ function renderMemoryTrailPanel() {
   const controls = document.createElement("div");
   controls.className = "study-explore-controls memory-trail-controls";
 
-  if (memoryTrail.phase !== "complete" && !isDailyTrail) {
+  if (memoryTrail.phase !== "complete" && !usesCompactAdaptivePrompt && currentAppScreen === "study-explore") {
     appendStudyControlButton(controls, "Exit Memory Trail", exitMemoryTrail, "Exit Trail");
   }
 
@@ -13663,6 +13844,11 @@ function renderJourneyShellContent(screenId) {
 
   if (screenId === "daily-trail-summary") {
     renderDailyTrailSummaryScreen();
+    return;
+  }
+
+  if (screenId === "united-states-trail-summary") {
+    renderUnitedStatesMemoryTrailSummary();
     return;
   }
 
@@ -17831,6 +18017,455 @@ function startDailyTrailMemoryTrailStepIfNeeded() {
   });
 }
 
+function getUnitedStatesMemoryTrailItems() {
+  const journey = journeyPresets.find((candidate) => candidate.id === unitedStatesMemoryTrailJourneyId);
+  return buildUnitedStatesMemoryTrailItems(journey, activities);
+}
+
+function countUnitedStatesMemoryTrailIntroducedItems(state, items = getUnitedStatesMemoryTrailItems()) {
+  return items.filter((item) => state?.itemProgress?.[item.id]?.status && state.itemProgress[item.id].status !== "unseen"
+    || state?.introducedItemIds?.includes(item.id)).length;
+}
+
+function countUnitedStatesMemoryTrailMasteredItems(state, items = getUnitedStatesMemoryTrailItems()) {
+  return items.filter((item) => state?.itemProgress?.[item.id]?.status === "mastered").length;
+}
+
+function countUnitedStatesMemoryTrailWeakItems(state, items = getUnitedStatesMemoryTrailItems()) {
+  return items.filter((item) => isUnitedStatesMemoryTrailWeakReviewItem(state, item)).length;
+}
+
+async function startOrContinueUnitedStatesMemoryTrail() {
+  await ensureMapRuntimeLoaded();
+  await ensureActivityDataLoaded();
+
+  const items = getUnitedStatesMemoryTrailItems();
+  const state = loadUnitedStatesMemoryTrailProgress(items);
+  if (state.activeSession?.plan) {
+    await resumeUnitedStatesMemoryTrailSession(state);
+    return;
+  }
+
+  pendingUnitedStatesMemoryTrailPlan = null;
+  await startUnitedStatesMemoryTrailSession();
+}
+
+async function startUnitedStatesMemoryTrailSession() {
+  await ensureMapReady();
+
+  const items = getUnitedStatesMemoryTrailItems();
+  const baseState = loadUnitedStatesMemoryTrailProgress(items);
+  const plan = pendingUnitedStatesMemoryTrailPlan || planUnitedStatesMemoryTrailSession(baseState, items);
+  const activity = getActivityById(plan.activeActivityId);
+
+  if (!activity || plan.playItems.length === 0) {
+    showFeedback("United States Memory Trail is not ready yet.");
+    return false;
+  }
+
+  const startedState = applyUnitedStatesMemoryTrailSessionStart(baseState, plan);
+  const savedState = saveUnitedStatesMemoryTrailProgress(startedState, items);
+  activeUnitedStatesMemoryTrailSession = {
+    trailId: "united-states-memory-trail",
+    journeyId: unitedStatesMemoryTrailJourneyId,
+    state: savedState,
+    plan,
+    activityId: activity.id
+  };
+  pendingUnitedStatesMemoryTrailPlan = null;
+  selectedJourneyId = unitedStatesMemoryTrailJourneyId;
+  return startUnitedStatesMemoryTrailActivity(activity.id);
+}
+
+async function resumeUnitedStatesMemoryTrailSession(state = null) {
+  await ensureMapReady();
+
+  const items = getUnitedStatesMemoryTrailItems();
+  const normalized = createUnitedStatesMemoryTrailState(state || loadUnitedStatesMemoryTrailProgress(items), items);
+  const activeSession = normalized.activeSession;
+  const plan = activeSession?.plan;
+  const activity = getActivityById(plan?.activeActivityId || plan?.activeSectionId || "");
+
+  if (!plan || !activity || !plan.playItems?.length) {
+    const recoveredState = {
+      ...normalized,
+      activeSession: null
+    };
+    saveUnitedStatesMemoryTrailProgress(recoveredState, items);
+    return startUnitedStatesMemoryTrailSession();
+  }
+
+  activeUnitedStatesMemoryTrailSession = {
+    trailId: "united-states-memory-trail",
+    journeyId: unitedStatesMemoryTrailJourneyId,
+    state: normalized,
+    plan,
+    activityId: activity.id
+  };
+  selectedJourneyId = unitedStatesMemoryTrailJourneyId;
+  return startUnitedStatesMemoryTrailActivity(activity.id, {
+    resumeSnapshot: activeSession.memoryTrailSnapshot || activeSession.promptSnapshot || null
+  });
+}
+
+async function startUnitedStatesMemoryTrailActivity(activityId, options = {}) {
+  const trailSession = activeUnitedStatesMemoryTrailSession;
+  const activity = getActivityById(activityId);
+  if (!trailSession || !activity) {
+    return false;
+  }
+
+  const plannedItems = getUnitedStatesMemoryTrailPlannedItemsForActivity(activity, trailSession.plan);
+  const targetIds = plannedItems.map((item) => item.targetId).filter(Boolean);
+  if (targetIds.length === 0) {
+    return false;
+  }
+
+  trailSession.activityId = activity.id;
+  currentPresentationSettings = getEffectivePresentationSettings(activity, {
+    presentationSettings: {
+      reviewMode: studyModes.sectionOnly,
+      adaptiveTrailTargetIds: targetIds,
+      adaptiveTrailTargetItems: plannedItems.map((item) => ({
+        targetId: item.targetId,
+        homeActivityId: item.homeActivityId
+      })),
+      adaptiveTrailVisualContextTargetIds: []
+    }
+  });
+
+  await openActivity(activity.id, {
+    appScreen: "united-states-trail-gameplay",
+    difficultyId: difficultyModes.easy,
+    disableActivityProgress: true,
+    forceGameplayVisible: true,
+    hierarchyNodeId: findHierarchyNodeForActivity(activity.id),
+    presentationSettings: currentPresentationSettings
+  });
+
+  setUnitedStatesMemoryTrailGameplayHeaderTitle();
+  if (activeUnitedStatesMemoryTrailSession === trailSession) {
+    startUnitedStatesMemoryTrailStepIfNeeded(options.resumeSnapshot);
+  }
+  return true;
+}
+
+function getUnitedStatesMemoryTrailPlannedItemsForActivity(activity, plan) {
+  const playItems = Array.isArray(plan?.playItems) ? plan.playItems.filter(Boolean) : [];
+  const directItems = playItems.filter((item) => item.homeActivityId === activity?.id);
+  const cumulativeItems = playItems.filter((item) => item.homeActivityId !== activity?.id);
+  return [...new Map([...directItems, ...cumulativeItems].map((item) => [item.id, item])).values()];
+}
+
+function startUnitedStatesMemoryTrailStepIfNeeded(resumeSnapshot = null) {
+  if (!activeUnitedStatesMemoryTrailSession || currentAppScreen !== "united-states-trail-gameplay") {
+    return false;
+  }
+
+  const activity = getActivityById(activeUnitedStatesMemoryTrailSession.activityId);
+  if (!activity) {
+    return false;
+  }
+
+  const plannedItems = getUnitedStatesMemoryTrailPlannedItemsForActivity(activity, activeUnitedStatesMemoryTrailSession.plan);
+  const targetIds = plannedItems.map((item) => item.targetId).filter(Boolean);
+  const newTargetIds = plannedItems
+    .filter((item) => isUnitedStatesMemoryTrailItemUnseen(activeUnitedStatesMemoryTrailSession.state, item))
+    .map((item) => item.targetId)
+    .filter(Boolean);
+  const weakReviewTargetIds = plannedItems
+    .filter((item) => isUnitedStatesMemoryTrailWeakReviewItem(activeUnitedStatesMemoryTrailSession.state, item))
+    .map((item) => item.targetId)
+    .filter(Boolean);
+
+  activeStudySession = {
+    journeyId: unitedStatesMemoryTrailJourneyId,
+    stepId: "united-states-memory-trail",
+    activityId: activity.id,
+    revealedTargetIds: [],
+    memoryTrail: null,
+    unitedStatesMemoryTrail: true,
+    retryReturnState: null,
+    journeyPlayReturn: null,
+    journeyActivityReturnState: null
+  };
+  setUnitedStatesMemoryTrailGameplayHeaderTitle();
+  if (studyCard) {
+    studyCard.hidden = true;
+  }
+
+  const hasUsTrailResumeSnapshot = resumeSnapshot?.source === UNITED_STATES_MEMORY_TRAIL_SOURCE
+    && Boolean(resumeSnapshot.currentPromptTargetId);
+  const didStart = startMemoryTrail({
+    newTargetIds,
+    maxNewTargets: targetIds.length,
+    source: UNITED_STATES_MEMORY_TRAIL_SOURCE,
+    targetIds,
+    insertedReviewTargetIds: plannedItems
+      .filter((item) => item.homeActivityId && item.homeActivityId !== activity.id)
+      .map((item) => item.targetId)
+      .filter(Boolean),
+    weakReviewTargetIds,
+    suppressInitialPrompt: hasUsTrailResumeSnapshot
+  });
+
+  if (didStart && hasUsTrailResumeSnapshot) {
+    const didRestore = restoreUnitedStatesMemoryTrailMemoryTrailSnapshot(activeStudySession.memoryTrail, resumeSnapshot);
+    if (!didRestore) {
+      promptNextMemoryTrailTarget(activeStudySession?.memoryTrail);
+    }
+  }
+
+  if (didStart) {
+    persistActiveUnitedStatesMemoryTrailSnapshot(activeStudySession.memoryTrail, "active");
+  }
+
+  return didStart;
+}
+
+function setUnitedStatesMemoryTrailGameplayHeaderTitle() {
+  setHeaderTitle("United States", { shortTitle: "United States" });
+}
+
+function createUnitedStatesMemoryTrailSnapshot(memoryTrail) {
+  if (!memoryTrail || memoryTrail.source !== UNITED_STATES_MEMORY_TRAIL_SOURCE) {
+    return null;
+  }
+
+  return {
+    source: memoryTrail.source,
+    activityId: memoryTrail.activityId,
+    phase: memoryTrail.phase,
+    sessionPhase: memoryTrail.sessionPhase,
+    currentPromptTargetId: memoryTrail.currentPromptTargetId,
+    currentPromptTargetLabel: memoryTrail.currentPromptTargetLabel,
+    currentPromptKey: memoryTrail.currentPromptKey,
+    currentPromptType: memoryTrail.currentPromptType,
+    currentPromptMode: memoryTrail.currentPromptMode,
+    currentPromptReason: memoryTrail.currentPromptReason,
+    promptName: memoryTrail.promptName,
+    message: memoryTrail.message,
+    responseChipTargetId: memoryTrail.responseChipTargetId,
+    correction: memoryTrail.correction,
+    answerChoices: memoryTrail.answerChoices,
+    introducedTargetIds: memoryTrail.introducedTargetIds,
+    currentWindowIndex: memoryTrail.currentWindowIndex,
+    currentPracticeWindowIds: (memoryTrail.currentPracticeWindow || []).map((target) => target.id),
+    promptCount: memoryTrail.promptCount,
+    retrievalPromptCount: memoryTrail.retrievalPromptCount,
+    correctCount: memoryTrail.correctCount,
+    incorrectCount: memoryTrail.incorrectCount,
+    recentResults: memoryTrail.recentResults,
+    recentRetrievalResults: memoryTrail.recentRetrievalResults,
+    promptHistory: memoryTrail.promptHistory,
+    targetStats: memoryTrail.targetStats,
+    lastPromptedTargetId: memoryTrail.lastPromptedTargetId,
+    trayFeedback: memoryTrail.trayFeedback || null
+  };
+}
+
+function restoreUnitedStatesMemoryTrailMemoryTrailSnapshot(memoryTrail, snapshot = {}) {
+  if (!memoryTrail || snapshot?.source !== UNITED_STATES_MEMORY_TRAIL_SOURCE) {
+    return false;
+  }
+
+  const byId = new Map((memoryTrail.targetPool || []).map((target) => [target.id, target]));
+  Object.assign(memoryTrail, {
+    phase: snapshot.phase || "answering",
+    sessionPhase: snapshot.sessionPhase || "practice",
+    currentPromptTargetId: snapshot.currentPromptTargetId || "",
+    currentPromptTargetLabel: snapshot.currentPromptTargetLabel || "",
+    currentPromptKey: snapshot.currentPromptKey || "",
+    currentPromptType: snapshot.currentPromptType || "name_to_place",
+    currentPromptMode: snapshot.currentPromptMode || "review",
+    currentPromptReason: snapshot.currentPromptReason || "restored prompt",
+    promptName: snapshot.promptName || "",
+    message: snapshot.message || "",
+    responseChipTargetId: snapshot.responseChipTargetId || null,
+    correction: snapshot.correction || null,
+    answerChoices: Array.isArray(snapshot.answerChoices) ? snapshot.answerChoices : [],
+    introducedTargetIds: Array.isArray(snapshot.introducedTargetIds) ? snapshot.introducedTargetIds : memoryTrail.introducedTargetIds,
+    currentWindowIndex: Math.max(0, Number(snapshot.currentWindowIndex) || 0),
+    promptCount: Math.max(0, Number(snapshot.promptCount) || 0),
+    retrievalPromptCount: Math.max(0, Number(snapshot.retrievalPromptCount) || 0),
+    correctCount: Math.max(0, Number(snapshot.correctCount) || 0),
+    incorrectCount: Math.max(0, Number(snapshot.incorrectCount) || 0),
+    recentResults: Array.isArray(snapshot.recentResults) ? snapshot.recentResults : [],
+    recentRetrievalResults: Array.isArray(snapshot.recentRetrievalResults) ? snapshot.recentRetrievalResults : [],
+    promptHistory: Array.isArray(snapshot.promptHistory) ? snapshot.promptHistory : [],
+    targetStats: snapshot.targetStats && typeof snapshot.targetStats === "object" ? snapshot.targetStats : memoryTrail.targetStats,
+    lastPromptedTargetId: snapshot.lastPromptedTargetId || null,
+    trayFeedback: snapshot.trayFeedback || null
+  });
+  memoryTrail.currentPracticeWindow = Array.isArray(snapshot.currentPracticeWindowIds)
+    ? snapshot.currentPracticeWindowIds.map((targetId) => byId.get(targetId)).filter(Boolean)
+    : memoryTrail.currentPracticeWindow;
+  memoryTrail.currentPromptStartedAtMs = null;
+  runner?.setMemoryTrailStudyTargetEmphasisSuppressed?.(
+    shouldSuppressDailyTrailStudyTargetEmphasis(memoryTrail),
+    "united-states-trail-restored-prompt"
+  );
+  runner?.setMemoryTrailHighlight(
+    memoryTrail.currentPromptType === "guided" || memoryTrail.currentPromptType === "place_to_name"
+      ? memoryTrail.currentPromptTargetId
+      : []
+  );
+  if (memoryTrail.currentPromptType === "guided") {
+    fitMapToPracticeWindow(memoryTrail.currentPracticeWindow, "united-states-trail-restore");
+  } else {
+    applyMemoryTrailSectionQuizCamera(memoryTrail, {
+      targetId: memoryTrail.currentPromptTargetId,
+      promptType: memoryTrail.currentPromptType,
+      mode: memoryTrail.currentPromptMode,
+      reason: memoryTrail.currentPromptReason
+    }, { duration: 0 });
+  }
+  renderStudyExplorePanel();
+  scheduleMemoryTrailPromptResponseTimer(
+    memoryTrail,
+    { targetId: memoryTrail.currentPromptTargetId, promptType: memoryTrail.currentPromptType },
+    memoryTrail.currentPromptKey,
+    Promise.resolve()
+  );
+
+  if (memoryTrail.phase === "feedback") {
+    scheduleMemoryTrailStep(memoryTrail, () => {
+      runner.setMemoryTrailHighlight([]);
+      promptNextMemoryTrailTarget(memoryTrail);
+    }, getMemoryTrailCorrectAnswerPauseMs(memoryTrail));
+  }
+
+  return true;
+}
+
+function persistActiveUnitedStatesMemoryTrailSnapshot(memoryTrail = getActiveMemoryTrail(), status = "active") {
+  if (!activeUnitedStatesMemoryTrailSession || !memoryTrail || memoryTrail.source !== UNITED_STATES_MEMORY_TRAIL_SOURCE) {
+    return null;
+  }
+
+  const items = getUnitedStatesMemoryTrailItems();
+  const snapshot = createUnitedStatesMemoryTrailSnapshot(memoryTrail);
+  const nextState = applyUnitedStatesMemoryTrailSessionSnapshot(
+    activeUnitedStatesMemoryTrailSession.state,
+    activeUnitedStatesMemoryTrailSession.plan,
+    {
+      sessionId: activeUnitedStatesMemoryTrailSession.plan?.sessionId,
+      status,
+      promptSnapshot: snapshot,
+      memoryTrailSnapshot: snapshot
+    }
+  );
+  activeUnitedStatesMemoryTrailSession.state = saveUnitedStatesMemoryTrailProgress(nextState, items);
+  return activeUnitedStatesMemoryTrailSession.state;
+}
+
+function exitUnitedStatesMemoryTrailGameplay() {
+  persistActiveUnitedStatesMemoryTrailSnapshot(getActiveMemoryTrail(), "exited");
+  trackMemoryTrailAbandoned();
+  clearMemoryTrailState({ restoreReveals: false });
+  activeStudySession = null;
+  activeUnitedStatesMemoryTrailSession = null;
+  document.body.classList.remove("study-mode", "study-explore-mode");
+  runner?.setStudyPreviewMode(false);
+  runner?.setMemoryTrailHighlight([]);
+  if (studyCard) {
+    studyCard.hidden = true;
+  }
+  if (answerBank) {
+    answerBank.innerHTML = "";
+  }
+  resetActivityAttemptState();
+  showAppScreen("main-menu", { pushHistory: false });
+}
+
+function resetUnitedStatesMemoryTrailProgress() {
+  resetUnitedStatesMemoryTrailPersistedProgress();
+  activeUnitedStatesMemoryTrailSession = null;
+  pendingUnitedStatesMemoryTrailPlan = null;
+  lastUnitedStatesMemoryTrailSummary = null;
+  unitedStatesMemoryTrailResetConfirmationVisible = false;
+  if (activeStudySession?.unitedStatesMemoryTrail) {
+    clearMemoryTrailState({ restoreReveals: false });
+    activeStudySession = null;
+    runner?.setStudyPreviewMode(false);
+    runner?.setMemoryTrailHighlight([]);
+    resetActivityAttemptState();
+  }
+  updateUnitedStatesMemoryTrailMainMenuButton();
+}
+
+async function continueUnitedStatesMemoryTrailFromSummary() {
+  pendingUnitedStatesMemoryTrailPlan = null;
+  lastUnitedStatesMemoryTrailSummary = null;
+  await startUnitedStatesMemoryTrailSession();
+}
+
+function finishUnitedStatesMemoryTrailFromSummary() {
+  lastUnitedStatesMemoryTrailSummary = null;
+  showAppScreen("main-menu", { pushHistory: false });
+}
+
+function renderUnitedStatesMemoryTrailSummary() {
+  const items = getUnitedStatesMemoryTrailItems();
+  const summary = lastUnitedStatesMemoryTrailSummary
+    || loadUnitedStatesMemoryTrailProgress(items).lastSessionSummary
+    || {
+      newCount: 0,
+      reviewCorrectCount: 0,
+      weakItems: [],
+      introducedCount: 0,
+      masteredCount: 0,
+      practicedCount: 0
+    };
+  const panel = document.createElement("section");
+  panel.className = "daily-trail-panel";
+
+  const heading = document.createElement("h2");
+  heading.textContent = "United States session complete";
+
+  const practiced = document.createElement("p");
+  practiced.textContent = `You practiced ${summary.practicedCount || 0} states.`;
+
+  const stats = document.createElement("div");
+  stats.className = "daily-trail-stat-grid";
+  [
+    ["New states introduced", summary.newCount || 0],
+    ["Review correct", summary.reviewCorrectCount || 0],
+    ["States introduced", `${summary.introducedCount || 0}/50`],
+    ["States mastered", summary.masteredCount || 0]
+  ].forEach(([label, value]) => {
+    const stat = document.createElement("p");
+    stat.className = "daily-trail-stat";
+    stat.textContent = `${label}: ${value}`;
+    stats.appendChild(stat);
+  });
+
+  const weak = document.createElement("p");
+  const weakLabels = (summary.weakItems || []).map((item) => item.label).filter(Boolean);
+  weak.textContent = weakLabels.length
+    ? `Needs practice: ${weakLabels.join(", ")}`
+    : "Needs practice: none this session";
+
+  const actions = document.createElement("div");
+  actions.className = "daily-trail-actions";
+
+  const keepGoingButton = document.createElement("button");
+  keepGoingButton.type = "button";
+  keepGoingButton.className = "main-menu-button main-menu-button-green";
+  keepGoingButton.textContent = "Keep Going";
+  keepGoingButton.addEventListener("click", continueUnitedStatesMemoryTrailFromSummary);
+
+  const finishButton = document.createElement("button");
+  finishButton.type = "button";
+  finishButton.className = "main-menu-button main-menu-button-quiet";
+  finishButton.textContent = "Finish";
+  finishButton.addEventListener("click", finishUnitedStatesMemoryTrailFromSummary);
+
+  actions.append(keepGoingButton, finishButton);
+  panel.append(heading, practiced, stats, weak, actions);
+  journeyShellContent.appendChild(panel);
+}
+
 function isDailyTrailPlannedWeakReviewItem(state, item) {
   if (!item?.id || isDailyTrailItemUnseen(state, item)) {
     return false;
@@ -18642,10 +19277,36 @@ function renderSettingsScreen() {
   const feedbackLink = createSettingsFeedbackLink();
   feedbackLink.classList.add("settings-hub-button");
 
+  const memoryTrailExitControl = createSettingsMemoryTrailExitControl();
+
   controls.append(customizeButton, audioToggle, feedbackLink);
+  if (memoryTrailExitControl) {
+    controls.appendChild(memoryTrailExitControl);
+  }
   panel.append(heading, description, controls);
   journeyShellContent.appendChild(panel);
   updateSettingsAudioToggleControl();
+}
+
+function createSettingsMemoryTrailExitControl() {
+  if (
+    !pendingUnitedStatesMemoryTrailGameplaySettingsReturn
+    || !activeUnitedStatesMemoryTrailSession
+    || activeStudySession?.memoryTrail?.source !== UNITED_STATES_MEMORY_TRAIL_SOURCE
+  ) {
+    return null;
+  }
+
+  const exitButton = document.createElement("button");
+  exitButton.type = "button";
+  exitButton.className = "settings-reset-button settings-hub-button";
+  exitButton.textContent = "Exit United States Memory Trail";
+  exitButton.dataset.settingsControl = "exit-us-memory-trail";
+  exitButton.addEventListener("click", () => {
+    pendingUnitedStatesMemoryTrailGameplaySettingsReturn = false;
+    exitUnitedStatesMemoryTrailGameplay();
+  });
+  return exitButton;
 }
 
 function renderCustomizeScreen() {
@@ -18673,7 +19334,11 @@ function renderCustomizeScreen() {
   studyTargetsSection.content.appendChild(renderStudyTargetHierarchy());
 
   const resetSection = createSettingsMenuSection("Reset / Defaults", "Restore the default map layer and study-target preferences.", false, "settings-menu-section", "reset-defaults");
-  resetSection.content.append(renderSettingsDefaultsControl(), renderDailyTrailResetControl());
+  resetSection.content.append(
+    renderSettingsDefaultsControl(),
+    renderDailyTrailResetControl(),
+    renderUnitedStatesMemoryTrailResetControl()
+  );
 
   panel.append(mapLayersSection.details, audioSection.details, studyTargetsSection.details, resetSection.details);
 
@@ -19299,6 +19964,78 @@ function renderDailyTrailResetConfirmation() {
     dailyTrailResetConfirmationVisible = false;
     rerenderSettingsPreservingUiState("reset-daily-trail-progress");
     showFeedback("Daily Trail progress reset.", true);
+  });
+
+  actions.append(cancelButton, confirmButton);
+  confirmation.append(title, body, actions);
+  return confirmation;
+}
+
+function renderUnitedStatesMemoryTrailResetControl() {
+  const wrapper = document.createElement("div");
+  wrapper.className = "settings-defaults-control settings-us-memory-trail-reset-control";
+
+  const copy = document.createElement("p");
+  copy.className = "settings-panel-copy";
+  copy.textContent = "Erase United States Memory Trail progress only. Daily Trail, journeys, regional activities, settings, and preferences stay as they are.";
+
+  const resetButton = document.createElement("button");
+  resetButton.type = "button";
+  resetButton.className = "settings-reset-button";
+  resetButton.textContent = "Reset United States Memory Trail";
+  resetButton.dataset.settingsControl = "reset-us-memory-trail-progress";
+  resetButton.addEventListener("click", () => {
+    unitedStatesMemoryTrailResetConfirmationVisible = true;
+    rerenderSettingsPreservingUiState("reset-us-memory-trail-cancel");
+  });
+
+  wrapper.append(copy, resetButton);
+
+  if (unitedStatesMemoryTrailResetConfirmationVisible) {
+    wrapper.appendChild(renderUnitedStatesMemoryTrailResetConfirmation());
+  }
+
+  return wrapper;
+}
+
+function renderUnitedStatesMemoryTrailResetConfirmation() {
+  const confirmation = document.createElement("section");
+  confirmation.className = "settings-reset-confirmation";
+  confirmation.setAttribute("role", "alertdialog");
+  confirmation.setAttribute("aria-labelledby", "us-memory-trail-reset-title");
+  confirmation.setAttribute("aria-describedby", "us-memory-trail-reset-copy");
+
+  const title = document.createElement("h3");
+  title.id = "us-memory-trail-reset-title";
+  title.textContent = "Reset United States Memory Trail?";
+
+  const body = document.createElement("p");
+  body.id = "us-memory-trail-reset-copy";
+  body.textContent = "This only clears the continuous United States trail. Daily Trail and regional journey progress are not affected.";
+
+  const actions = document.createElement("div");
+  actions.className = "settings-reset-confirmation-actions";
+
+  const cancelButton = document.createElement("button");
+  cancelButton.type = "button";
+  cancelButton.className = "settings-reset-button";
+  cancelButton.textContent = "Cancel";
+  cancelButton.dataset.settingsControl = "reset-us-memory-trail-cancel";
+  cancelButton.addEventListener("click", () => {
+    unitedStatesMemoryTrailResetConfirmationVisible = false;
+    rerenderSettingsPreservingUiState("reset-us-memory-trail-progress");
+  });
+
+  const confirmButton = document.createElement("button");
+  confirmButton.type = "button";
+  confirmButton.className = "settings-reset-button settings-reset-button-danger";
+  confirmButton.textContent = "Reset United States Trail";
+  confirmButton.dataset.settingsControl = "reset-us-memory-trail-confirm";
+  confirmButton.addEventListener("click", () => {
+    resetUnitedStatesMemoryTrailProgress();
+    unitedStatesMemoryTrailResetConfirmationVisible = false;
+    rerenderSettingsPreservingUiState("reset-us-memory-trail-progress");
+    showFeedback("United States Memory Trail reset.", true);
   });
 
   actions.append(cancelButton, confirmButton);
@@ -20975,7 +21712,11 @@ async function openActivity(activityId, options = {}) {
     difficulty: getEffectiveDifficulty(session.currentActivity)
   });
 
-  if (isActiveGameplayScreen() && options.appScreen !== "daily-trail-gameplay") {
+  if (
+    isActiveGameplayScreen()
+    && options.appScreen !== "daily-trail-gameplay"
+    && options.appScreen !== "united-states-trail-gameplay"
+  ) {
     playGameplayInstructionOnce("choose-label", audioInstructionPhrases.chooseLabel);
   }
 
@@ -21041,14 +21782,20 @@ function selectAnswerChipFromSpeaker(feature) {
 }
 
 function getDailyTrailPresentedActivity(activity, presentationSettings = {}) {
-  const targetIds = Array.isArray(presentationSettings.dailyTrailTargetIds)
-    ? presentationSettings.dailyTrailTargetIds.filter(Boolean)
+  const targetIds = Array.isArray(presentationSettings.adaptiveTrailTargetIds)
+    ? presentationSettings.adaptiveTrailTargetIds.filter(Boolean)
+    : Array.isArray(presentationSettings.dailyTrailTargetIds)
+      ? presentationSettings.dailyTrailTargetIds.filter(Boolean)
     : [];
-  const targetItems = Array.isArray(presentationSettings.dailyTrailTargetItems)
-    ? presentationSettings.dailyTrailTargetItems.filter(Boolean)
+  const targetItems = Array.isArray(presentationSettings.adaptiveTrailTargetItems)
+    ? presentationSettings.adaptiveTrailTargetItems.filter(Boolean)
+    : Array.isArray(presentationSettings.dailyTrailTargetItems)
+      ? presentationSettings.dailyTrailTargetItems.filter(Boolean)
     : [];
-  const visualContextTargetIds = Array.isArray(presentationSettings.dailyTrailVisualContextTargetIds)
-    ? presentationSettings.dailyTrailVisualContextTargetIds.filter(Boolean)
+  const visualContextTargetIds = Array.isArray(presentationSettings.adaptiveTrailVisualContextTargetIds)
+    ? presentationSettings.adaptiveTrailVisualContextTargetIds.filter(Boolean)
+    : Array.isArray(presentationSettings.dailyTrailVisualContextTargetIds)
+      ? presentationSettings.dailyTrailVisualContextTargetIds.filter(Boolean)
     : [];
 
   if (!activity || targetIds.length === 0) {
@@ -21211,8 +21958,18 @@ function getMemoryTrailMapTapPriorityTarget(memoryTrail = getActiveMemoryTrail()
   return targetId ? getTargetById(memoryTrail, targetId) : null;
 }
 
+function isActiveAdaptiveTrailMapResponseScreen(memoryTrail = getActiveMemoryTrail()) {
+  return Boolean(
+    memoryTrail
+    && isAdaptiveTrailMemoryTrail(memoryTrail)
+    && currentAppScreen === getAdaptiveTrailGameplayScreen(memoryTrail)
+  );
+}
+
 function handleTargetClick(targetIds) {
-  if (currentAppScreen === "daily-trail-gameplay" && isMemoryTrailActive()) {
+  const activeMemoryTrail = getActiveMemoryTrail();
+
+  if (isActiveAdaptiveTrailMapResponseScreen(activeMemoryTrail)) {
     const memoryTrailMapPoint = targetIds && !Array.isArray(targetIds) && typeof targetIds.x === "number"
       ? targetIds
       : null;
