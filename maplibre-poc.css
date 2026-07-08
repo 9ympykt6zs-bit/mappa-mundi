@@ -1921,6 +1921,38 @@ button.journey-card-action-control:disabled {
   width: 100%;
 }
 
+.settings-data-sources {
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid rgba(188, 211, 237, 0.86);
+  border-radius: 14px;
+  display: grid;
+  gap: 10px;
+  margin-top: 2px;
+  padding: 14px;
+}
+
+.settings-data-sources h3 {
+  color: var(--ink);
+  font-size: 1rem;
+  margin: 0;
+}
+
+.settings-data-sources ul {
+  color: var(--muted);
+  display: grid;
+  font-size: 0.88rem;
+  font-weight: 720;
+  gap: 8px;
+  line-height: 1.38;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.settings-data-sources a {
+  color: var(--brand-strong);
+  font-weight: 900;
+}
+
 .settings-audio-toggle {
   background: rgba(255, 255, 255, 0.78);
 }

@@ -582,6 +582,7 @@ export class MapLibreActivityRunner {
 
     this.map = new this.maplibregl.Map({
       container: this.container,
+      attributionControl: false,
       center: activity.map?.initialView?.center || [-18, 18],
       zoom: activity.map?.initialView?.zoom || 1.25,
       minZoom: 0.8,
@@ -6865,18 +6866,13 @@ export class MapLibreActivityRunner {
 
   getStateCapitalActiveHaloRadiusExpression() {
     return [
-      "case",
-      ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
-      [
-        "interpolate",
-        ["linear"],
-        ["zoom"],
-        3,
-        12,
-        7,
-        17
-      ],
-      0
+      "interpolate",
+      ["linear"],
+      ["zoom"],
+      3,
+      ["case", ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]], 12, 0],
+      7,
+      ["case", ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]], 17, 0]
     ];
   }
 

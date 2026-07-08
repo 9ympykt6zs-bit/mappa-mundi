@@ -3655,7 +3655,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260706-active-visual-suppression-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260708-attribution-control-off"),
       import("./chip-speech.js?v=20260622-prompt-audio-dedupe-1")
     ]).then(([
       ,
@@ -19283,9 +19283,75 @@ function renderSettingsScreen() {
   if (memoryTrailExitControl) {
     controls.appendChild(memoryTrailExitControl);
   }
-  panel.append(heading, description, controls);
+  panel.append(heading, description, controls, renderDataSourcesCreditsSection());
   journeyShellContent.appendChild(panel);
   updateSettingsAudioToggleControl();
+}
+
+function renderDataSourcesCreditsSection() {
+  const section = document.createElement("section");
+  section.className = "settings-data-sources";
+
+  const heading = document.createElement("h3");
+  heading.textContent = "Data Sources & Credits";
+
+  const description = document.createElement("p");
+  description.className = "settings-panel-copy";
+  description.textContent = "Map data and rendering credits used by Mappa Mundi.";
+
+  const list = document.createElement("ul");
+  getDataSourcesCreditEntries().forEach((entry) => {
+    list.appendChild(createDataSourcesCreditItem(entry));
+  });
+
+  section.append(heading, description, list);
+  return section;
+}
+
+function getDataSourcesCreditEntries() {
+  return [
+    {
+      label: "United States geography",
+      text: "U.S. Census Bureau cartographic boundary data via us-atlas, with display cleanup for map presentation.",
+      href: "https://cdn.jsdelivr.net/npm/us-atlas@3/states-albers-10m.json",
+      linkText: "us-atlas source"
+    },
+    {
+      label: "World and regional geography",
+      text: "Natural Earth public-domain data for countries, administrative regions, oceans, coastal display layers, and river source geometry.",
+      href: "https://www.naturalearthdata.com/",
+      linkText: "Natural Earth"
+    },
+    {
+      label: "Physical-feature learning regions",
+      text: "Project-authored approximate learning regions for U.S. mountain ranges and curated display repairs for selected U.S. river previews."
+    },
+    {
+      label: "Map rendering",
+      text: "MapLibre GL JS renders the interactive map.",
+      href: "https://maplibre.org/maplibre-gl-js/docs/",
+      linkText: "MapLibre GL JS"
+    }
+  ];
+}
+
+function createDataSourcesCreditItem({ label, text, href, linkText }) {
+  const item = document.createElement("li");
+  const title = document.createElement("strong");
+  title.textContent = `${label}: `;
+  item.append(title, document.createTextNode(text));
+
+  if (href) {
+    item.appendChild(document.createTextNode(" "));
+    const link = document.createElement("a");
+    link.href = href;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = linkText || "Source";
+    item.appendChild(link);
+  }
+
+  return item;
 }
 
 function createSettingsMemoryTrailExitControl() {
