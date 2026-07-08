@@ -10026,6 +10026,7 @@ function speakMemoryTrailPromptTargetAfterInstruction(
         isCurrentMemoryTrailState(memoryTrail)
         && memoryTrail.currentPromptTargetId === selection?.targetId
         && memoryTrail.currentPromptKey === promptKey
+        && memoryTrail.phase === "answering"
       ) {
         const activeTarget = getMemoryTrailActivePromptTarget(memoryTrail) || target;
         const targetLabel = getStudyPreviewSpeechLabel(activeTarget);
@@ -18321,11 +18322,12 @@ function restoreUnitedStatesMemoryTrailMemoryTrailSnapshot(memoryTrail, snapshot
     }, { duration: 0 });
   }
   renderStudyExplorePanel();
+  const resumeAudioPromise = replayCurrentMemoryTrailPromptInstructionOnResume(memoryTrail);
   scheduleMemoryTrailPromptResponseTimer(
     memoryTrail,
     { targetId: memoryTrail.currentPromptTargetId, promptType: memoryTrail.currentPromptType },
     memoryTrail.currentPromptKey,
-    Promise.resolve()
+    resumeAudioPromise
   );
 
   if (memoryTrail.phase === "feedback") {
@@ -18336,6 +18338,85 @@ function restoreUnitedStatesMemoryTrailMemoryTrailSnapshot(memoryTrail, snapshot
   }
 
   return true;
+}
+
+function isCurrentUnitedStatesMemoryTrailResumePrompt(memoryTrail, promptKey, targetId) {
+  return Boolean(
+    activeUnitedStatesMemoryTrailSession
+    && memoryTrail?.source === UNITED_STATES_MEMORY_TRAIL_SOURCE
+    && currentAppScreen === "united-states-trail-gameplay"
+    && isCurrentMemoryTrailState(memoryTrail)
+    && memoryTrail.currentPromptKey === promptKey
+    && memoryTrail.currentPromptTargetId === targetId
+  );
+}
+
+function getRestoredMemoryTrailPromptSelection(memoryTrail) {
+  return {
+    targetId: memoryTrail?.currentPromptTargetId || "",
+    promptType: memoryTrail?.currentPromptType || "name_to_place",
+    mode: memoryTrail?.currentPromptMode || "review",
+    reason: memoryTrail?.currentPromptReason || "restored prompt"
+  };
+}
+
+function replayCurrentMemoryTrailPromptInstructionOnResume(memoryTrail) {
+  const promptKey = memoryTrail?.currentPromptKey || "";
+  const targetId = memoryTrail?.currentPromptTargetId || "";
+
+  if (!promptKey || !targetId || !isCurrentUnitedStatesMemoryTrailResumePrompt(memoryTrail, promptKey, targetId)) {
+    return Promise.resolve(false);
+  }
+
+  const selection = getRestoredMemoryTrailPromptSelection(memoryTrail);
+
+  if (memoryTrail.phase === "correction") {
+    const correctionMessage = String(
+      memoryTrail.trayFeedback?.message
+      || memoryTrail.message
+      || "Not quite. Tap the correct place to continue."
+    ).trim();
+    memoryTrail.visibleInstructionText = correctionMessage;
+    memoryTrail.instructionLabel = correctionMessage;
+    return maybeSpeakMemoryTrailInstruction(
+      correctionMessage,
+      selection.promptType,
+      "correction",
+      `correction:${promptKey}`,
+      {
+        dedupeKey: `${memoryTrail.audioSessionId || "memory-trail"}:${promptKey}:resume-correction`
+      }
+    ).catch(() => false);
+  }
+
+  if (memoryTrail.phase !== "answering") {
+    return Promise.resolve(false);
+  }
+
+  const target = getTargetById(memoryTrail, targetId);
+  if (!target || !isCurrentUnitedStatesMemoryTrailResumePrompt(memoryTrail, promptKey, targetId)) {
+    return Promise.resolve(false);
+  }
+
+  const instructionSpeechPromise = updateMemoryTrailInstructionCue(memoryTrail, selection);
+  let targetSpeechPromise = Promise.resolve(false);
+
+  if (
+    isCurrentUnitedStatesMemoryTrailResumePrompt(memoryTrail, promptKey, targetId)
+    && shouldSpeakMemoryTrailTargetAtPromptStart(memoryTrail, target, selection)
+  ) {
+    targetSpeechPromise = speakMemoryTrailPromptTargetAfterInstruction(
+      memoryTrail,
+      target,
+      selection,
+      instructionSpeechPromise,
+      Promise.resolve(true)
+    );
+  }
+
+  return Promise.allSettled([instructionSpeechPromise, targetSpeechPromise])
+    .then(() => isCurrentUnitedStatesMemoryTrailResumePrompt(memoryTrail, promptKey, targetId))
+    .catch(() => false);
 }
 
 function persistActiveUnitedStatesMemoryTrailSnapshot(memoryTrail = getActiveMemoryTrail(), status = "active") {
