@@ -375,7 +375,10 @@
       const playResult = audio.play();
 
       if (playResult?.then) {
-        playResult.then(handlePlaying);
+        playResult.then(handlePlaying).catch(() => {
+          // The catch below owns fallback handling; this prevents the derived
+          // thenable from surfacing an unhandled rejection when playback stops.
+        });
       }
 
       if (playResult?.catch) {

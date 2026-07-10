@@ -20,8 +20,13 @@ const index = fs.readFileSync("index.html", "utf8");
   "isActiveAdaptiveTrailMapResponseScreen(activeMemoryTrail)",
   "handleMemoryTrailTargetTap(resolvedMemoryTrailTargetIds, memoryTrailMapPoint);",
   "adaptiveTrailTargetIds",
+  "sourceActivityId: item.sourceActivityId || item.homeActivityId",
+  "relatedStateTargetId: item.relatedStateTargetId || \"\"",
+  "const itemActivity = getActivityById(item.sourceActivityId || item.homeActivityId);",
   "isAdaptiveTrailMemoryTrail(memoryTrail)",
-  "shouldSuppressDailyTrailStudyTargetEmphasis(memoryTrail, selection)"
+  "shouldSuppressDailyTrailStudyTargetEmphasis(memoryTrail, selection)",
+  "function getUnitedStatesMemoryTrailInstructionNounForTarget(target)",
+  "function getUnitedStatesMemoryTrailAnswerChoiceCategory(memoryTrail, target)"
 ].forEach((needle) => {
   assert.ok(source.includes(needle), `Missing runtime integration: ${needle}`);
 });

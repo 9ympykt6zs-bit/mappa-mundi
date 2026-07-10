@@ -1,6 +1,6 @@
 export const unitedStatesMemoryTrailStorageKey = "mappaUnitedStatesMemoryTrailProgress";
 export const unitedStatesMemoryTrailId = "united-states-memory-trail";
-export const unitedStatesMemoryTrailCurriculumVersion = 1;
+export const unitedStatesMemoryTrailCurriculumVersion = 2;
 export const unitedStatesMemoryTrailJourneyId = "united-states";
 export const UNITED_STATES_MEMORY_TRAIL_SOURCE = "united-states-trail";
 
@@ -17,6 +17,7 @@ export const UNITED_STATES_MEMORY_TRAIL_CONFIG = Object.freeze({
 const validStatuses = new Set(["unseen", "introduced", "learning", "review", "mastered"]);
 const validMemoryStates = new Set(["new", "learning", "review", "relearning"]);
 const practiceEligibleStatuses = new Set(["introduced", "learning", "review", "mastered"]);
+const learnedEnoughForCapitalStatuses = new Set(["review", "mastered"]);
 const stateActivityIdPattern = /^us-states-\d{2}$/;
 const excludedPhaseOneTargetIds = new Set(["district-of-columbia", "washington-dc"]);
 const defaultMemoryDifficulty = 5;
@@ -26,13 +27,14 @@ export function createUnitedStatesMemoryTrailState(value = {}, items = []) {
   const currentSessionNumber = Math.max(1, Number(source.currentSessionNumber) || 1);
   const itemIdSet = new Set((Array.isArray(items) ? items : []).map((item) => item.id).filter(Boolean));
   const itemProgress = normalizeItemProgress(source.itemProgress, { currentSessionNumber, itemIdSet });
+  seedMigratedCapitalProgress(source, items, itemProgress);
   const introducedItemIds = normalizeStringArray(source.introducedItemIds)
     .filter((itemId) => itemIdSet.size === 0 || itemIdSet.has(itemId));
   const cursor = normalizeCurriculumCursor(source.curriculumCursor, items, itemProgress, introducedItemIds);
   const activeSession = normalizeActiveSession(source.activeSession, items);
 
   return {
-    version: 1,
+    version: 2,
     trailId: unitedStatesMemoryTrailId,
     curriculumVersion: unitedStatesMemoryTrailCurriculumVersion,
     hasStarted: Boolean(source.hasStarted || introducedItemIds.length > 0 || Object.keys(itemProgress).length > 0 || activeSession),
@@ -92,16 +94,25 @@ export function buildUnitedStatesMemoryTrailItems(journey, activities = []) {
   const steps = getUnitedStatesStateSteps(journey, activities);
   return steps.flatMap((step, sectionIndex) => {
     const activity = activities.find((candidate) => candidate?.id === step.activityId);
-    const targets = (activity?.targets || [])
+    const stateTargets = (activity?.targets || [])
       .filter((target) => isPhaseOneStateTarget(target))
       .filter((target) => !excludedPhaseOneTargetIds.has(target.id));
+    const sectionId = String(activity?.id || step.activityId || "").replace("us-states-", "");
+    const capitalActivityId = `us-capitals-${sectionId}`;
+    const capitalActivity = activities.find((candidate) => candidate?.id === capitalActivityId);
+    const stateTargetsByAbbreviation = new Map(stateTargets.map((target) => [target.state, target]));
+    const capitalTargets = (capitalActivity?.targets || [])
+      .filter((target) => isPhaseTwoCapitalTarget(target))
+      .filter((target) => !excludedPhaseOneTargetIds.has(target.id));
 
-    return targets.map((target, targetIndex) => ({
+    const stateItems = stateTargets.map((target, targetIndex) => ({
       id: `state:${target.id}`,
-      targetId: target.id,
-      label: target.name,
       type: "state",
       category: "states",
+      targetId: target.id,
+      targetKind: target.kind || "shape",
+      label: target.name,
+      sourceActivityId: activity.id,
       homeActivityId: activity.id,
       homeJourneyId: journey?.id || unitedStatesMemoryTrailJourneyId,
       homeStepId: step.id || activity.id,
@@ -113,27 +124,90 @@ export function buildUnitedStatesMemoryTrailItems(journey, activities = []) {
       cameraGroupId: activity.map?.region || activity.id,
       order: (sectionIndex * 1000) + targetIndex
     }));
+
+    const capitalItems = capitalTargets.flatMap((target, targetIndex) => {
+      const relatedStateTarget = stateTargetsByAbbreviation.get(target.state);
+      if (!relatedStateTarget) {
+        return [];
+      }
+
+      return {
+        id: `capital:${target.id}`,
+        type: "capital",
+        category: "capitals",
+        targetId: target.id,
+        targetKind: target.kind || "point",
+        label: target.city || target.name,
+        sourceActivityId: capitalActivity.id,
+        homeActivityId: activity.id,
+        homeJourneyId: journey?.id || unitedStatesMemoryTrailJourneyId,
+        homeStepId: step.id || activity.id,
+        homeStepIndex: sectionIndex,
+        sectionId: activity.id,
+        sectionIndex,
+        sectionTitle: activity.title || step.title || activity.id,
+        activityTitle: activity.title || step.title || activity.id,
+        cameraGroupId: activity.map?.region || activity.id,
+        relatedStateTargetId: relatedStateTarget.id,
+        relatedStateItemId: `state:${relatedStateTarget.id}`,
+        prerequisiteItemIds: [`state:${relatedStateTarget.id}`],
+        allowedPromptTypes: ["guided", "name_to_place", "place_to_name"],
+        order: (sectionIndex * 1000) + 500 + targetIndex
+      };
+    });
+
+    return [...stateItems, ...capitalItems];
   });
 }
 
 export function validateUnitedStatesMemoryTrailCurriculum(items = []) {
   const stateItems = items.filter((item) => item?.type === "state");
+  const capitalItems = items.filter((item) => item?.type === "capital");
   const targetIds = stateItems.map((item) => item.targetId);
   const uniqueTargetIds = [...new Set(targetIds)];
   const duplicateTargetIds = uniqueTargetIds.filter((targetId) => targetIds.filter((candidate) => candidate === targetId).length > 1);
+  const capitalTargetIds = capitalItems.map((item) => item.targetId);
+  const uniqueCapitalTargetIds = [...new Set(capitalTargetIds)];
+  const duplicateCapitalTargetIds = uniqueCapitalTargetIds.filter((targetId) => capitalTargetIds.filter((candidate) => candidate === targetId).length > 1);
+  const capitalItemIds = capitalItems.map((item) => item.id);
+  const uniqueCapitalItemIds = [...new Set(capitalItemIds)];
+  const linkedStateItemIds = new Set(stateItems.map((item) => item.id));
+  const invalidCapitalLinks = capitalItems.filter((item) => (
+    !item.relatedStateItemId
+    || !linkedStateItemIds.has(item.relatedStateItemId)
+    || !Array.isArray(item.prerequisiteItemIds)
+    || !item.prerequisiteItemIds.includes(item.relatedStateItemId)
+  ));
+  const statesWithCapital = new Set(capitalItems.map((item) => item.relatedStateItemId).filter(Boolean));
   const sectionIds = [...new Set(stateItems.map((item) => item.homeActivityId).filter(Boolean))];
 
   return {
     stateCount: stateItems.length,
     uniqueStateCount: uniqueTargetIds.length,
+    capitalCount: capitalItems.length,
+    uniqueCapitalCount: uniqueCapitalTargetIds.length,
+    uniqueCapitalItemCount: uniqueCapitalItemIds.length,
     sectionIds,
     duplicateTargetIds,
+    duplicateCapitalTargetIds,
+    invalidCapitalLinks: invalidCapitalLinks.map((item) => item.id),
+    statesWithoutCapital: stateItems
+      .filter((item) => !statesWithCapital.has(item.id))
+      .map((item) => item.id),
     excludedTargetIdsPresent: targetIds.filter((targetId) => excludedPhaseOneTargetIds.has(targetId)),
+    excludedCapitalTargetIdsPresent: capitalTargetIds.filter((targetId) => excludedPhaseOneTargetIds.has(targetId)),
     isValid: stateItems.length === 50
       && uniqueTargetIds.length === 50
+      && capitalItems.length === 50
+      && uniqueCapitalTargetIds.length === 50
+      && uniqueCapitalItemIds.length === 50
       && duplicateTargetIds.length === 0
+      && duplicateCapitalTargetIds.length === 0
+      && invalidCapitalLinks.length === 0
+      && statesWithCapital.size === 50
       && sectionIds.length === 11
       && !targetIds.some((targetId) => excludedPhaseOneTargetIds.has(targetId))
+      && !capitalTargetIds.some((targetId) => excludedPhaseOneTargetIds.has(targetId))
   };
 }
 
@@ -141,12 +215,13 @@ export function planUnitedStatesMemoryTrailSession(state, items = []) {
   const normalized = createUnitedStatesMemoryTrailState(state, items);
   const safeItems = [...items].sort((left, right) => left.order - right.order);
   const unseenItems = safeItems.filter((item) => getItemStatus(normalized, item) === "unseen");
+  const eligibleNewItems = getEligibleNewItems(normalized, safeItems);
 
-  if (unseenItems.length === 0) {
+  if (unseenItems.length === 0 || eligibleNewItems.length === 0) {
     return buildUnitedStatesCumulativeReviewPlan(normalized, safeItems);
   }
 
-  return buildUnitedStatesLearningPlan(normalized, safeItems, unseenItems);
+  return buildUnitedStatesLearningPlan(normalized, safeItems, eligibleNewItems);
 }
 
 export function applyUnitedStatesMemoryTrailSessionStart(state, plan) {
@@ -266,11 +341,21 @@ export function applyUnitedStatesMemoryTrailSessionResults(state, plan, result =
     weakItems: dedupeItems(weakItems).map((item) => ({ id: item.id, targetId: item.targetId, label: item.label })),
     introducedCount: getIntroducedCount(next, plan?.allItems || []),
     masteredCount: getMasteredCount(next, plan?.allItems || []),
+    stateIntroducedCount: getIntroducedCount(next, getStateItems(plan?.allItems || [])),
+    capitalIntroducedCount: getIntroducedCount(next, getCapitalItems(plan?.allItems || [])),
+    stateMasteredCount: getMasteredCount(next, getStateItems(plan?.allItems || [])),
+    capitalMasteredCount: getMasteredCount(next, getCapitalItems(plan?.allItems || [])),
+    newStateCount: (plan?.newItems || []).filter((item) => item.type === "state" && next.introducedItemIds.includes(item.id)).length,
+    newCapitalCount: (plan?.newItems || []).filter((item) => item.type === "capital" && next.introducedItemIds.includes(item.id)).length,
     practicedCount: practicedItems.length,
     correctCount: Math.max(0, Number(result.correctCount) || completedTargetIds.size),
     incorrectCount: Math.max(0, Number(result.incorrectCount) || Object.values(missesByTargetId).reduce((sum, count) => sum + Number(count || 0), 0)),
-    allStatesIntroduced: areAllUnitedStatesMemoryTrailItemsIntroduced(next, plan?.allItems || []),
-    allStatesMastered: areAllUnitedStatesMemoryTrailItemsMastered(next, plan?.allItems || [])
+    allStatesIntroduced: areAllUnitedStatesMemoryTrailItemsIntroduced(next, getStateItems(plan?.allItems || [])),
+    allStatesMastered: areAllUnitedStatesMemoryTrailItemsMastered(next, getStateItems(plan?.allItems || [])),
+    allCapitalsIntroduced: areAllUnitedStatesMemoryTrailItemsIntroduced(next, getCapitalItems(plan?.allItems || [])),
+    allCapitalsMastered: areAllUnitedStatesMemoryTrailItemsMastered(next, getCapitalItems(plan?.allItems || [])),
+    allItemsIntroduced: areAllUnitedStatesMemoryTrailItemsIntroduced(next, plan?.allItems || []),
+    allItemsMastered: areAllUnitedStatesMemoryTrailItemsMastered(next, plan?.allItems || [])
   };
 
   return next;
@@ -310,10 +395,19 @@ function isPhaseOneStateTarget(target) {
   return Boolean(target?.id && target?.kind === "shape" && target?.type === "state");
 }
 
-function buildUnitedStatesLearningPlan(state, items, unseenItems) {
-  const activeSectionId = getNextSectionIdWithUnseenItems(state, items, unseenItems);
+function isPhaseTwoCapitalTarget(target) {
+  return Boolean(target?.id && target?.kind === "point" && target?.type === "capital");
+}
+
+function buildUnitedStatesLearningPlan(state, items, eligibleNewItems) {
+  const activeSectionId = getNextSectionIdWithEligibleItems(state, items, eligibleNewItems);
   const playableItems = items.filter((item) => item.homeActivityId === activeSectionId);
-  const currentUnseenItems = playableItems.filter((item) => getItemStatus(state, item) === "unseen");
+  const eligibleSectionItems = playableItems
+    .filter((item) => getItemStatus(state, item) === "unseen")
+    .filter((item) => eligibleNewItems.some((candidate) => candidate.id === item.id));
+  const capitalItems = eligibleSectionItems.filter((item) => item.type === "capital");
+  const stateItems = eligibleSectionItems.filter((item) => item.type === "state");
+  const currentUnseenItems = capitalItems.length > 0 ? capitalItems : stateItems;
   const newItems = currentUnseenItems.slice(0, chooseNewItemBatchSize(currentUnseenItems.length));
   const excludeIds = new Set(newItems.map((item) => item.id));
   const weakReviewItems = selectWeakReviewItems(state, items, {
@@ -392,8 +486,12 @@ function createPlan({ state, sessionType, title, activeActivityId, newItems, rev
     playItems: dedupeItems(playItems),
     allItems,
     curriculumCursor: getNextCurriculumCursor(state, allItems),
-    allStatesIntroduced: areAllUnitedStatesMemoryTrailItemsIntroduced(state, allItems),
-    allStatesMastered: areAllUnitedStatesMemoryTrailItemsMastered(state, allItems)
+    allStatesIntroduced: areAllUnitedStatesMemoryTrailItemsIntroduced(state, getStateItems(allItems)),
+    allStatesMastered: areAllUnitedStatesMemoryTrailItemsMastered(state, getStateItems(allItems)),
+    allCapitalsIntroduced: areAllUnitedStatesMemoryTrailItemsIntroduced(state, getCapitalItems(allItems)),
+    allCapitalsMastered: areAllUnitedStatesMemoryTrailItemsMastered(state, getCapitalItems(allItems)),
+    allItemsIntroduced: areAllUnitedStatesMemoryTrailItemsIntroduced(state, allItems),
+    allItemsMastered: areAllUnitedStatesMemoryTrailItemsMastered(state, allItems)
   };
 }
 
@@ -419,13 +517,13 @@ function chooseNewItemBatchSize(unseenCount) {
   return preferred;
 }
 
-function getNextSectionIdWithUnseenItems(state, items, unseenItems) {
+function getNextSectionIdWithEligibleItems(state, items, eligibleNewItems) {
   const cursorSectionId = state.curriculumCursor?.sectionId || "";
-  if (cursorSectionId && items.some((item) => item.homeActivityId === cursorSectionId && getItemStatus(state, item) === "unseen")) {
+  if (cursorSectionId && eligibleNewItems.some((item) => item.homeActivityId === cursorSectionId && getItemStatus(state, item) === "unseen")) {
     return cursorSectionId;
   }
 
-  return unseenItems[0]?.homeActivityId || items[0]?.homeActivityId || "";
+  return eligibleNewItems[0]?.homeActivityId || items[0]?.homeActivityId || "";
 }
 
 function selectWeakReviewItems(state, items = [], options = {}) {
@@ -500,7 +598,8 @@ function isReviewDue(state, item) {
 }
 
 function getNextCurriculumCursor(state, items = []) {
-  const nextUnseen = items.find((item) => getItemStatus(state, item) === "unseen");
+  const eligibleNewItems = getEligibleNewItems(state, items);
+  const nextUnseen = eligibleNewItems.find((item) => getItemStatus(state, item) === "unseen");
   if (nextUnseen) {
     return {
       sectionId: nextUnseen.homeActivityId,
@@ -515,6 +614,80 @@ function getNextCurriculumCursor(state, items = []) {
     sectionIndex: Number.isFinite(Number(last?.homeStepIndex)) ? Number(last.homeStepIndex) : 0,
     itemIndex: last ? Math.max(0, last.order - (last.homeStepIndex * 1000)) : 0
   };
+}
+
+function getEligibleNewItems(state, items = []) {
+  const normalized = state?.itemProgress ? state : createUnitedStatesMemoryTrailState(state, items);
+  const safeItems = [...items].sort((left, right) => left.order - right.order);
+  const eligibleCapitalItems = safeItems
+    .filter((item) => item.type === "capital")
+    .filter((item) => getItemStatus(normalized, item) === "unseen")
+    .filter((item) => isCapitalItemEligible(normalized, item))
+    .filter((item) => !hasUnseenStateItemInSection(normalized, safeItems, item.homeActivityId));
+
+  if (eligibleCapitalItems.length > 0) {
+    return eligibleCapitalItems;
+  }
+
+  return safeItems
+    .filter((item) => item.type === "state")
+    .filter((item) => getItemStatus(normalized, item) === "unseen");
+}
+
+function isCapitalItemEligible(state, item) {
+  if (item?.type !== "capital" || !item.relatedStateItemId) {
+    return false;
+  }
+
+  const relatedStateItem = { id: item.relatedStateItemId };
+  const stateStatus = getItemStatus(state, relatedStateItem);
+  if (stateStatus === "unseen") {
+    return false;
+  }
+
+  const progress = state.itemProgress[item.relatedStateItemId] || {};
+  if ((Number(progress.correctCount) || 0) >= 1) {
+    return true;
+  }
+
+  return learnedEnoughForCapitalStatuses.has(stateStatus)
+    || ((Number(progress.correctStreak) || 0) >= 1 && (Number(progress.timesSeen) || 0) >= 1);
+}
+
+function hasUnseenStateItemInSection(state, items = [], sectionId = "") {
+  return items
+    .filter((item) => item.type === "state" && item.homeActivityId === sectionId)
+    .some((item) => getItemStatus(state, item) === "unseen");
+}
+
+function getStateItems(items = []) {
+  return items.filter((item) => item?.type === "state");
+}
+
+function getCapitalItems(items = []) {
+  return items.filter((item) => item?.type === "capital");
+}
+
+function seedMigratedCapitalProgress(source, items = [], itemProgress = {}) {
+  const sourceVersion = Number(source?.curriculumVersion || source?.version) || 0;
+  const hasExistingTrailProgress = Boolean(
+    source?.hasStarted
+    || source?.activeSession
+    || (Array.isArray(source?.introducedItemIds) && source.introducedItemIds.length > 0)
+    || (source?.itemProgress && Object.keys(source.itemProgress).length > 0)
+  );
+
+  if (!hasExistingTrailProgress || sourceVersion >= unitedStatesMemoryTrailCurriculumVersion) {
+    return itemProgress;
+  }
+
+  getCapitalItems(items).forEach((item) => {
+    if (!itemProgress[item.id]) {
+      itemProgress[item.id] = createDefaultItemProgress();
+    }
+  });
+
+  return itemProgress;
 }
 
 function normalizeCurriculumCursor(value, items = [], itemProgress = {}, introducedItemIds = []) {
@@ -576,11 +749,21 @@ function normalizeLastSessionSummary(summary) {
     weakItems: Array.isArray(summary.weakItems) ? summary.weakItems.filter(Boolean) : [],
     introducedCount: Math.max(0, Number(summary.introducedCount) || 0),
     masteredCount: Math.max(0, Number(summary.masteredCount) || 0),
+    stateIntroducedCount: Math.max(0, Number(summary.stateIntroducedCount ?? summary.introducedCount) || 0),
+    capitalIntroducedCount: Math.max(0, Number(summary.capitalIntroducedCount) || 0),
+    stateMasteredCount: Math.max(0, Number(summary.stateMasteredCount ?? summary.masteredCount) || 0),
+    capitalMasteredCount: Math.max(0, Number(summary.capitalMasteredCount) || 0),
+    newStateCount: Math.max(0, Number(summary.newStateCount ?? summary.newCount) || 0),
+    newCapitalCount: Math.max(0, Number(summary.newCapitalCount) || 0),
     practicedCount: Math.max(0, Number(summary.practicedCount) || 0),
     correctCount: Math.max(0, Number(summary.correctCount) || 0),
     incorrectCount: Math.max(0, Number(summary.incorrectCount) || 0),
     allStatesIntroduced: Boolean(summary.allStatesIntroduced),
-    allStatesMastered: Boolean(summary.allStatesMastered)
+    allStatesMastered: Boolean(summary.allStatesMastered),
+    allCapitalsIntroduced: Boolean(summary.allCapitalsIntroduced),
+    allCapitalsMastered: Boolean(summary.allCapitalsMastered),
+    allItemsIntroduced: Boolean(summary.allItemsIntroduced ?? summary.allStatesIntroduced),
+    allItemsMastered: Boolean(summary.allItemsMastered ?? summary.allStatesMastered)
   };
 }
 
@@ -620,25 +803,29 @@ function normalizeItemProgress(value, { currentSessionNumber = 1, itemIdSet = ne
 
 function getOrCreateItemProgress(state, item) {
   if (!state.itemProgress[item.id]) {
-    state.itemProgress[item.id] = {
-      status: "unseen",
-      timesSeen: 0,
-      correctCount: 0,
-      missCount: 0,
-      correctStreak: 0,
-      lastSeenSession: 0,
-      introducedSession: 0,
-      memoryState: "new",
-      difficulty: defaultMemoryDifficulty,
-      stability: 0,
-      retrievability: 0,
-      dueSession: null,
-      lastReviewedSession: 0,
-      lapseCount: 0
-    };
+    state.itemProgress[item.id] = createDefaultItemProgress();
   }
 
   return state.itemProgress[item.id];
+}
+
+function createDefaultItemProgress() {
+  return {
+    status: "unseen",
+    timesSeen: 0,
+    correctCount: 0,
+    missCount: 0,
+    correctStreak: 0,
+    lastSeenSession: 0,
+    introducedSession: 0,
+    memoryState: "new",
+    difficulty: defaultMemoryDifficulty,
+    stability: 0,
+    retrievability: 0,
+    dueSession: null,
+    lastReviewedSession: 0,
+    lapseCount: 0
+  };
 }
 
 function getItemStatus(state, item) {

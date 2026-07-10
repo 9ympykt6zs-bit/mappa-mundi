@@ -51,7 +51,7 @@ import {
   unitedStatesMemoryTrailJourneyId,
   unitedStatesMemoryTrailStorageKey,
   UNITED_STATES_MEMORY_TRAIL_SOURCE
-} from "./united-states-memory-trail-planner.js?v=20260707-phase-1a";
+} from "./united-states-memory-trail-planner.js?v=20260708-us-trail-capitals-phase2a-4";
 import { resolveMemoryTrailNewTargetLimit } from "./memory-trail-new-target-limit.js?v=20260621-daily-trail-co-progression-2";
 
 const APP_NAME = "Mappa Mundi";
@@ -3287,7 +3287,7 @@ function ensureChipSpeechLoaded() {
     return Promise.resolve(window.GeographyChipSpeech);
   }
 
-  return import("./chip-speech.js?v=20260622-prompt-audio-dedupe-1")
+  return import("./chip-speech.js?v=20260708-us-trail-capitals-phase2a-audio-1")
     .then(() => window.GeographyChipSpeech || null);
 }
 
@@ -3655,8 +3655,8 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260708-attribution-control-off"),
-      import("./chip-speech.js?v=20260622-prompt-audio-dedupe-1")
+      import("./maplibre/maplibre-activity-runner.js?v=20260708-us-trail-capitals-phase2a-4"),
+      import("./chip-speech.js?v=20260708-us-trail-capitals-phase2a-audio-1")
     ]).then(([
       ,
       ,
@@ -7957,7 +7957,7 @@ function shouldUseGenericMobileSectionQuizCamera(memoryTrail = getActiveMemoryTr
   const viewportWidth = window.innerWidth || document.documentElement?.clientWidth || 0;
   const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 0;
   const shortLandscape = viewportHeight > 0 && viewportWidth > viewportHeight && viewportHeight < 520;
-  return memoryTrail?.source === "daily-trail"
+  return isAdaptiveTrailMemoryTrail(memoryTrail)
     && isCompactTouchLayout()
     && !shortLandscape
     && memoryTrail?.sessionPhase !== "learn"
@@ -9154,14 +9154,18 @@ function buildMemoryTrailAnswerChoices(memoryTrail, correctTargetId, promptKey =
     return [];
   }
 
+  const choiceCategory = getUnitedStatesMemoryTrailAnswerChoiceCategory(memoryTrail, correctTarget);
   const byId = new Map([[correctTarget.id, correctTarget]]);
   const currentWindowDistractors = memoryTrail.currentPracticeWindow
-    .filter((target) => target.id !== correctTargetId);
+    .filter((target) => target.id !== correctTargetId)
+    .filter((target) => isMemoryTrailAnswerChoiceDistractorAllowed(memoryTrail, target, choiceCategory));
   const introducedDistractors = getIntroducedMemoryTrailStats(memoryTrail)
     .map((stats) => getTargetById(memoryTrail, stats.targetId))
-    .filter((target) => target?.id && target.id !== correctTargetId);
+    .filter((target) => target?.id && target.id !== correctTargetId)
+    .filter((target) => isMemoryTrailAnswerChoiceDistractorAllowed(memoryTrail, target, choiceCategory));
   const poolDistractors = memoryTrail.targetPool
     .filter((target) => target?.id && target.id !== correctTargetId)
+    .filter((target) => isMemoryTrailAnswerChoiceDistractorAllowed(memoryTrail, target, choiceCategory))
     .map((target) => ({
       target,
       distance: getTargetDistance(getTargetCentroid(correctTarget), getTargetCentroid(target))
@@ -9183,6 +9187,30 @@ function buildMemoryTrailAnswerChoices(memoryTrail, correctTargetId, promptKey =
       promptTargetId: correctTargetId,
       promptKey
     }));
+}
+
+function getUnitedStatesMemoryTrailAnswerChoiceCategory(memoryTrail, target) {
+  if (!isUnitedStatesMemoryTrail(memoryTrail)) {
+    return "";
+  }
+
+  if (target?.type === "capital") {
+    return "capital";
+  }
+
+  if (target?.type === "state" || target?.type === "federal-district") {
+    return "state";
+  }
+
+  return "";
+}
+
+function isMemoryTrailAnswerChoiceDistractorAllowed(memoryTrail, target, category = "") {
+  if (!category || !isUnitedStatesMemoryTrail(memoryTrail)) {
+    return true;
+  }
+
+  return getUnitedStatesMemoryTrailAnswerChoiceCategory(memoryTrail, target) === category;
 }
 
 function getMemoryTrailInstructionText(promptType, phase, mode = "", activity = session.currentActivity, memoryTrail = getActiveMemoryTrail()) {
@@ -9208,6 +9236,13 @@ function getMemoryTrailInstructionText(promptType, phase, mode = "", activity = 
     }
 
     const learnCount = getMemoryTrailLearnPromptCount(memoryTrail);
+    if (isUnitedStatesMemoryTrail(memoryTrail) && getMemoryTrailActivePromptTarget(memoryTrail)?.type === "capital") {
+      return {
+        banner: learnCount === 1 ? "Learn this capital" : "Learn these capitals",
+        label: "Tap the highlighted capital."
+      };
+    }
+
     return {
       banner: learnCount === 1
         ? `Learn this ${singularNoun || "place"}`
@@ -9634,8 +9669,8 @@ function updateUnitedStatesMemoryTrailMainMenuButton(isMainMenu = currentAppScre
   const items = activityDataReady ? getUnitedStatesMemoryTrailItems() : [];
   const state = createUnitedStatesMemoryTrailState(loadUnitedStatesMemoryTrailProgress(items), items);
   const hasProgress = hasUnitedStatesMemoryTrailProgress(state);
-  const introducedCount = countUnitedStatesMemoryTrailIntroducedItems(state, items);
-  const masteredCount = countUnitedStatesMemoryTrailMasteredItems(state, items);
+  const stateIntroducedCount = countUnitedStatesMemoryTrailIntroducedItems(state, items.filter((item) => item.type === "state"));
+  const capitalIntroducedCount = countUnitedStatesMemoryTrailIntroducedItems(state, items.filter((item) => item.type === "capital"));
   const weakCount = countUnitedStatesMemoryTrailWeakItems(state, items);
 
   if (mainMenuUnitedStatesMemoryTrailAction) {
@@ -9645,8 +9680,8 @@ function updateUnitedStatesMemoryTrailMainMenuButton(isMainMenu = currentAppScre
   const description = mainMenuUnitedStatesMemoryTrailButton.querySelector(".main-menu-daily-trail-description");
   if (description) {
     description.textContent = hasProgress
-      ? `${introducedCount}/50 introduced | ${masteredCount} mastered | ${weakCount} review`
-      : "A continuous path through all 50 states with cumulative review.";
+      ? `${stateIntroducedCount}/50 states | ${capitalIntroducedCount}/50 capitals | ${weakCount} review`
+      : "A continuous path through all 50 states and capitals with cumulative review.";
   }
 
   mainMenuUnitedStatesMemoryTrailButton.hidden = !isMainMenu;
@@ -11998,11 +12033,27 @@ function getMixedDailyTrailCheckpointCameraConfig(memoryTrail, selection = {}) {
 
 function getMemoryTrailInstructionNoun(activity = session.currentActivity, memoryTrail = getActiveMemoryTrail()) {
   const target = getMemoryTrailActivePromptTarget(memoryTrail);
+  if (isUnitedStatesMemoryTrail(memoryTrail) && target) {
+    return getUnitedStatesMemoryTrailInstructionNounForTarget(target) || getInstructionNoun(activity);
+  }
+
   if (isDailyTrailMemoryTrail(memoryTrail) && target) {
     return getInstructionNounForTarget(target) || getInstructionNoun(activity);
   }
 
   return getInstructionNoun(activity);
+}
+
+function getUnitedStatesMemoryTrailInstructionNounForTarget(target) {
+  if (target?.type === "capital") {
+    return "capital";
+  }
+
+  if (target?.type === "state" || target?.type === "federal-district") {
+    return "state";
+  }
+
+  return getInstructionNounForTarget(target);
 }
 
 function getInstructionNounForTarget(target) {
@@ -13145,6 +13196,10 @@ function getDailyTrailPromptPanelInstruction(memoryTrail) {
   const isUnitedStatesTrail = isUnitedStatesMemoryTrail(memoryTrail);
 
   if (isGuidedMemoryTrailPrompt(memoryTrail)) {
+    if (isUnitedStatesTrail && target?.type === "capital") {
+      return "Tap the highlighted capital.";
+    }
+
     return isContinentsOceansOceanLearnTarget(memoryTrail, target)
       ? "Tap the named place."
       : "Tap the highlighted place.";
@@ -13474,25 +13529,39 @@ function getEffectiveLayerSettings(activity, options = {}) {
 
     return {
       ...requestedSettings,
-      ...getRequiredTargetLayerOverrides(activity, requestedSettings)
+      ...getRequiredTargetLayerOverrides(activity, requestedSettings, options.presentationSettings)
     };
   }
 
   return {
     ...mapLayerSettings,
-    ...getRequiredTargetLayerOverrides(activity, mapLayerSettings)
+    ...getRequiredTargetLayerOverrides(activity, mapLayerSettings, options.presentationSettings)
   };
 }
 
-function getRequiredTargetLayerOverrides(activity, settings = mapLayerSettings) {
+function getRequiredTargetLayerOverrides(activity, settings = mapLayerSettings, presentationSettings = {}) {
   const overrides = {};
 
-  if (isPointOnlyActivity(activity)) {
+  if (isPointOnlyActivity(activity) || hasRequiredPointTargets(presentationSettings)) {
     overrides.showCities = true;
     overrides.showCapitals = true;
   }
 
   return overrides;
+}
+
+function hasRequiredPointTargets(presentationSettings = {}) {
+  const targetItems = Array.isArray(presentationSettings.adaptiveTrailTargetItems)
+    ? presentationSettings.adaptiveTrailTargetItems
+    : Array.isArray(presentationSettings.dailyTrailTargetItems)
+      ? presentationSettings.dailyTrailTargetItems
+      : [];
+
+  return targetItems.some((item) => (
+    item?.targetKind === "point"
+    || item?.type === "capital"
+    || item?.category === "capitals"
+  ));
 }
 
 function shouldShowCityCapitalLayer(settings = mapLayerSettings) {
@@ -18129,7 +18198,13 @@ async function startUnitedStatesMemoryTrailActivity(activityId, options = {}) {
       adaptiveTrailTargetIds: targetIds,
       adaptiveTrailTargetItems: plannedItems.map((item) => ({
         targetId: item.targetId,
-        homeActivityId: item.homeActivityId
+        targetKind: item.targetKind || "",
+        type: item.type || "",
+        category: item.category || "",
+        homeActivityId: item.homeActivityId,
+        sourceActivityId: item.sourceActivityId || item.homeActivityId,
+        relatedStateTargetId: item.relatedStateTargetId || "",
+        relatedStateItemId: item.relatedStateItemId || ""
       })),
       adaptiveTrailVisualContextTargetIds: []
     }
@@ -18207,6 +18282,9 @@ function startUnitedStatesMemoryTrailStepIfNeeded(resumeSnapshot = null) {
       .map((item) => item.targetId)
       .filter(Boolean),
     weakReviewTargetIds,
+    sectionTitle: activity.title || "",
+    sectionIndex: Number.isFinite(Number(activity.sequence)) ? Number(activity.sequence) - 1 : null,
+    sectionQuizView: activity.map?.regionView || null,
     suppressInitialPrompt: hasUsTrailResumeSnapshot
   });
 
@@ -18505,15 +18583,17 @@ function renderUnitedStatesMemoryTrailSummary() {
   heading.textContent = "United States session complete";
 
   const practiced = document.createElement("p");
-  practiced.textContent = `You practiced ${summary.practicedCount || 0} states.`;
+  practiced.textContent = `You practiced ${summary.practicedCount || 0} places.`;
 
   const stats = document.createElement("div");
   stats.className = "daily-trail-stat-grid";
   [
-    ["New states introduced", summary.newCount || 0],
+    ["New states introduced", summary.newStateCount ?? summary.newCount ?? 0],
+    ["New capitals introduced", summary.newCapitalCount || 0],
     ["Review correct", summary.reviewCorrectCount || 0],
-    ["States introduced", `${summary.introducedCount || 0}/50`],
-    ["States mastered", summary.masteredCount || 0]
+    ["States introduced", `${summary.stateIntroducedCount ?? summary.introducedCount ?? 0}/50`],
+    ["Capitals introduced", `${summary.capitalIntroducedCount || 0}/50`],
+    ["Total mastered", summary.masteredCount || 0]
   ].forEach(([label, value]) => {
     const stat = document.createElement("p");
     stat.className = "daily-trail-stat";
@@ -22000,10 +22080,16 @@ function getDailyTrailPresentationTargetCandidates(activity, targetItems = []) {
   }
 
   targetItems.forEach((item) => {
-    const itemActivity = getActivityById(item.homeActivityId);
+    const itemActivity = getActivityById(item.sourceActivityId || item.homeActivityId);
     const target = itemActivity?.targets?.find((candidate) => candidate.id === item.targetId);
     if (target) {
-      candidates.push(target);
+      candidates.push({
+        ...target,
+        unitedStatesMemoryTrailItemType: item.type || item.category || "",
+        unitedStatesMemoryTrailHomeActivityId: item.homeActivityId || "",
+        unitedStatesMemoryTrailSourceActivityId: item.sourceActivityId || item.homeActivityId || "",
+        relatedStateTargetId: item.relatedStateTargetId || target.relatedStateTargetId || target.easyAcceptShapeTargetId || ""
+      });
     }
   });
 

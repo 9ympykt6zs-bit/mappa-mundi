@@ -916,7 +916,18 @@ export class MapLibreActivityRunner {
       activeTargetVisualIds: this.getActiveTargetVisualIds(),
       blueOutlineSource: preAnswerOutlineSuppressed || suppressStudyTargetEmphasis ? "suppressed" : checkpointPreAnswerStyle ? "state-line:targetStroke" : "state-line:studyTargetLine",
       neutralizedOutlineLayerIds: checkpointPreAnswerStyle || suppressStudyTargetEmphasis
-        ? ["state-fill", "state-line", ...(this.isContinentsOceansActivity() ? ["ocean-region-line"] : [])]
+        ? [
+            "state-fill",
+            "state-line",
+            "capital-marker",
+            "capital-marker-halo",
+            "state-capital-active-halo",
+            "state-capital-star",
+            "national-capital-ring",
+            "national-capital-star",
+            "completed-label",
+            ...(this.isContinentsOceansActivity() ? ["ocean-region-line"] : [])
+          ]
         : []
     };
   }
@@ -1418,7 +1429,17 @@ export class MapLibreActivityRunner {
       if (offset) {
         fitOptions.offset = offset;
       }
-      this.map.fitBounds(requestedCamera.bounds, fitOptions);
+      try {
+        this.map.fitBounds(requestedCamera.bounds, fitOptions);
+      } catch (error) {
+        this.emitCameraTraceEvent({
+          ...traceBase,
+          status: "skipped",
+          reason: `fitBounds failed: ${error?.message || error}`,
+          resultingCamera: this.getCameraTraceMapState()
+        });
+        return false;
+      }
       this.activeCameraTraceToken = requestToken;
       this.emitCameraTraceEvent({
         ...traceBase,
@@ -1459,13 +1480,15 @@ export class MapLibreActivityRunner {
     const cameraOptions = {
       center,
       zoom: Number.isFinite(requestedCamera.zoom) ? requestedCamera.zoom : this.map.getZoom?.(),
-      padding: requestedCamera.padding,
       pitch: Number.isFinite(requestedCamera.pitch) ? requestedCamera.pitch : this.map.getPitch?.(),
       bearing: Number.isFinite(requestedCamera.bearing) ? requestedCamera.bearing : this.map.getBearing?.(),
       retainPadding: requestedCamera.retainPadding ?? false,
       duration,
       essential: true
     };
+    if (requestedCamera.padding) {
+      cameraOptions.padding = requestedCamera.padding;
+    }
     if (offset) {
       cameraOptions.offset = offset;
     }
@@ -5718,7 +5741,7 @@ export class MapLibreActivityRunner {
   }
 
   getCompletedLabelGeoJson() {
-    if (!this.getDifficultyVisualState().showsCompletedLabels) {
+    if (!this.getDifficultyVisualState().showsCompletedLabels || this.isMemoryTrailStudyTargetEmphasisSuppressed()) {
       return emptyFeatureCollection;
     }
 
@@ -6830,6 +6853,15 @@ export class MapLibreActivityRunner {
 
   getCapitalOpacityExpression() {
     if (this.studyPreviewMode) {
+      if (this.isMemoryTrailStudyTargetEmphasisSuppressed()) {
+        return [
+          "case",
+          ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
+          1,
+          0
+        ];
+      }
+
       return 1;
     }
 
@@ -6866,13 +6898,10 @@ export class MapLibreActivityRunner {
 
   getStateCapitalActiveHaloRadiusExpression() {
     return [
-      "interpolate",
-      ["linear"],
-      ["zoom"],
-      3,
-      ["case", ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]], 12, 0],
-      7,
-      ["case", ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]], 17, 0]
+      "case",
+      ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
+      14,
+      0
     ];
   }
 
@@ -6909,6 +6938,15 @@ export class MapLibreActivityRunner {
 
   getCapitalHaloOpacityExpression() {
     if (this.studyPreviewMode) {
+      if (this.isMemoryTrailStudyTargetEmphasisSuppressed()) {
+        return [
+          "case",
+          ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
+          0.28,
+          0
+        ];
+      }
+
       return [
         "case",
         ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
