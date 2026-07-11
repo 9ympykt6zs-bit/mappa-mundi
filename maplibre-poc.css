@@ -3491,6 +3491,126 @@ body.study-mode .map-shell {
   display: none;
 }
 
+.united-states-atlas-profile {
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(128, 153, 184, 0.42);
+  border-radius: 10px;
+  box-shadow: 0 18px 36px rgba(9, 22, 42, 0.22);
+  color: var(--ink);
+  max-height: min(680px, calc(100% - 112px));
+  overflow: auto;
+  padding: 16px;
+  pointer-events: auto;
+  position: absolute;
+  right: 20px;
+  top: 96px;
+  width: min(360px, calc(100% - 40px));
+  z-index: 22;
+}
+
+.united-states-atlas-profile[hidden] {
+  display: none;
+}
+
+.united-states-atlas-instruction,
+.united-states-atlas-empty {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.united-states-atlas-profile-header {
+  align-items: center;
+  display: grid;
+  gap: 6px 10px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.united-states-atlas-profile-header h2 {
+  font-size: 1.3rem;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.united-states-atlas-profile-header span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.united-states-atlas-close {
+  background: var(--control-bg);
+  border: 1px solid var(--control-border);
+  border-radius: 7px;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 800;
+  min-height: 34px;
+  padding: 6px 9px;
+}
+
+.united-states-atlas-facts {
+  border-bottom: 1px solid var(--panel-border);
+  border-top: 1px solid var(--panel-border);
+  display: grid;
+  gap: 5px 12px;
+  grid-template-columns: auto 1fr;
+  margin: 14px 0;
+  padding: 12px 0;
+}
+
+.united-states-atlas-facts dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.united-states-atlas-facts dd {
+  font-size: 0.9rem;
+  font-weight: 750;
+  margin: 0;
+}
+
+.united-states-atlas-profile-section + .united-states-atlas-profile-section {
+  border-top: 1px solid var(--panel-border);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.united-states-atlas-profile-section h3 {
+  font-size: 0.86rem;
+  margin: 0 0 6px;
+}
+
+.united-states-atlas-profile-section ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.united-states-atlas-profile-section li {
+  background: #edf4fb;
+  border: 1px solid #d2e0ef;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 7px;
+}
+
+.united-states-atlas-profile-section li small {
+  color: var(--muted);
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.3;
+  margin-top: 4px;
+}
+
 .audio-instruction-banner.daily-trail-transition-banner {
   animation: none;
   background: rgba(255, 255, 255, 0.95);
@@ -4995,6 +5115,18 @@ body.browse-mode .answer-panel-title {
   body.study-explore-mode .memory-trail-status-choice-prompt > p:not(.memory-trail-prompt):not(.memory-trail-visible-instruction):not(.memory-trail-instruction-label):not(.memory-trail-tray-feedback) {
     font-size: 0.82rem;
     line-height: 1.25;
+  }
+
+  .united-states-atlas-profile {
+    border-bottom: 0;
+    border-radius: 12px 12px 0 0;
+    bottom: 0;
+    left: 0;
+    max-height: min(45svh, 360px);
+    padding: 14px max(14px, env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+    right: 0;
+    top: auto;
+    width: 100%;
   }
 
   body.study-explore-mode .memory-trail-choice-list {

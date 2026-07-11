@@ -1,4 +1,5 @@
 import { journeyPresets } from "./journey-presets.js?v=20260621-us-rivers-menu-1";
+import { renderUnitedStatesAtlasProfile } from "./atlas/united-states-atlas-ui.js";
 import { trackEvent } from "./analytics.js?v=20260601-instruction-target-nouns";
 import {
   clearActiveJourney,
@@ -3073,6 +3074,7 @@ const mainMenuLearnButton = document.querySelector("#main-menu-learn-button");
 const mainMenuChallengeButton = document.querySelector("#main-menu-challenge-button");
 const mainMenuDailyTrailButton = document.querySelector("#main-menu-daily-trail-button");
 const mainMenuUnitedStatesMemoryTrailButton = document.querySelector("#main-menu-us-memory-trail-button");
+const mainMenuUnitedStatesAtlasButton = document.querySelector("#main-menu-united-states-atlas-button");
 const mainMenuMoreWaysButton = document.querySelector("#main-menu-more-ways-button");
 const mainMenuDailyTrailAction = document.querySelector("#main-menu-daily-trail-action");
 const mainMenuUnitedStatesMemoryTrailAction = document.querySelector("#main-menu-us-memory-trail-action");
@@ -3505,6 +3507,7 @@ const memoryTrailInfoButton = document.querySelector("#memory-trail-info-button"
 const memoryTrailInfoCopy = document.querySelector("#memory-trail-info-copy");
 const memoryTrailPrimaryButton = document.querySelector("#memory-trail-primary-button");
 const memoryTrailSecondaryButton = document.querySelector("#memory-trail-secondary-button");
+const unitedStatesAtlasProfile = document.querySelector("#united-states-atlas-profile");
 
 const journeyDifficultyOptions = [
   {
@@ -3655,7 +3658,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260708-us-trail-capitals-phase2a-4"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260710-us-atlas-2a-1"),
       import("./chip-speech.js?v=20260708-us-trail-capitals-phase2a-audio-1")
     ]).then(([
       ,
@@ -5246,6 +5249,11 @@ function bindUiEvents() {
   });
 
   homeButton?.addEventListener("click", () => {
+    if (currentAppScreen === "united-states-atlas") {
+      exitUnitedStatesAtlas();
+      return;
+    }
+
     if (currentAppScreen === "daily-trail-gameplay") {
       exitDailyTrailGameplay();
       return;
@@ -5273,6 +5281,11 @@ function bindUiEvents() {
     showAppScreen("main-menu");
   });
   backButton?.addEventListener("click", () => {
+    if (currentAppScreen === "united-states-atlas") {
+      exitUnitedStatesAtlas();
+      return;
+    }
+
     if (currentAppScreen === "study-explore") {
       exitStudyExplore();
       return;
@@ -5310,6 +5323,7 @@ function bindUiEvents() {
   journeyMemoryTrailButton?.addEventListener("click", startMemoryTrailFromJourneyGameplay);
   mainMenuDailyTrailButton?.addEventListener("click", openDailyTrailIntro);
   mainMenuUnitedStatesMemoryTrailButton?.addEventListener("click", startOrContinueUnitedStatesMemoryTrail);
+  mainMenuUnitedStatesAtlasButton?.addEventListener("click", () => { void openUnitedStatesAtlas(); });
   mainMenuMoreWaysButton?.addEventListener("click", () => showAppScreen("main-menu-more-ways"));
   audioMuteButton?.addEventListener("click", toggleAudioMute);
   window.addEventListener("atlas-quest-audio-muted-change", updateAudioMuteControl);
@@ -7559,6 +7573,58 @@ function isMemoryTrailActive() {
 
 function getActiveMemoryTrail() {
   return isMemoryTrailActive() ? activeStudySession.memoryTrail : null;
+}
+
+async function openUnitedStatesAtlas() {
+  await ensureMapReady();
+  saveCurrentActivityProgress();
+  cancelGrabbedAnswer();
+  clearFeedback();
+  closeBrowseDrawer();
+  activeStudySession = null;
+  activeStudyPracticeSession = null;
+  isCurrentActivityProgressDisabled = false;
+  currentAppScreen = "united-states-atlas";
+  activeHierarchyNodeId = "north-america-united-states";
+  activeMenuRoot = "north-america";
+  isNavigationBrowseMode = false;
+  document.body.classList.remove("launch-mode", "app-shell-mode", "study-mode", "browse-mode");
+  document.body.classList.add("overview-mode", "united-states-atlas-mode");
+
+  if (launchScreen) launchScreen.hidden = true;
+  if (appShellScreen) appShellScreen.hidden = true;
+
+  studyCard.hidden = true;
+  runner.setStudyPreviewMode(false);
+  runner.setMemoryTrailHighlight([]);
+  runner.setCompletedTargets([]);
+  runner.enterUnitedStatesAtlas();
+  setHeaderTitle("United States Atlas", { shortTitle: "U.S. Atlas" });
+  instruction.textContent = "Select a state to explore its geographic profile.";
+  renderUnitedStatesAtlasPanel();
+  renderActivityNavControls(null);
+  updateTopBarNavigation();
+}
+
+function selectUnitedStatesAtlasState(stateId) {
+  const normalizedStateId = String(stateId || "").trim().toLowerCase();
+  const profile = renderUnitedStatesAtlasPanel(normalizedStateId);
+  runner?.setUnitedStatesAtlasSelection(profile ? normalizedStateId : "");
+}
+
+function renderUnitedStatesAtlasPanel(stateId = "") {
+  if (!unitedStatesAtlasProfile) return null;
+  unitedStatesAtlasProfile.hidden = false;
+  return renderUnitedStatesAtlasProfile(unitedStatesAtlasProfile, stateId, {
+    onClearSelection: () => selectUnitedStatesAtlasState("")
+  });
+}
+
+function exitUnitedStatesAtlas() {
+  unitedStatesAtlasProfile.hidden = true;
+  runner?.setUnitedStatesAtlasSelection("");
+  document.body.classList.remove("united-states-atlas-mode", "overview-mode", "browse-mode");
+  showAppScreen("main-menu", { pushHistory: false });
 }
 
 function isDailyTrailCheckpointPlan(plan = activeDailyTrailSession?.plan) {
@@ -22200,6 +22266,15 @@ function isActiveAdaptiveTrailMapResponseScreen(memoryTrail = getActiveMemoryTra
 }
 
 function handleTargetClick(targetIds) {
+  if (currentAppScreen === "united-states-atlas") {
+    const mapPoint = targetIds && !Array.isArray(targetIds) && typeof targetIds.x === "number" ? targetIds : null;
+    const stateCandidate = mapPoint
+      ? runner.getNavigationCandidatesAtMapPoint(mapPoint).find((candidate) => candidate.kind === "us-state")
+      : null;
+    selectUnitedStatesAtlasState(stateCandidate?.stateId || stateCandidate?.targetId || "");
+    return;
+  }
+
   const activeMemoryTrail = getActiveMemoryTrail();
 
   if (isActiveAdaptiveTrailMapResponseScreen(activeMemoryTrail)) {
@@ -24230,9 +24305,10 @@ function renderActivityNavControls(activityId) {
 function updateTopBarNavigation() {
   const isHome = activeHierarchyNodeId === "world";
   const isDailyTrailGameplay = currentAppScreen === "daily-trail-gameplay";
+  const isUnitedStatesAtlas = currentAppScreen === "united-states-atlas";
 
   if (backButton) {
-    backButton.hidden = !isDailyTrailGameplay
+    backButton.hidden = !isUnitedStatesAtlas && !isDailyTrailGameplay
       && isHome
       && !["free-play", "journey-gameplay", "study-explore", "study-practice"].includes(currentAppScreen);
     backButton.textContent = isDailyTrailGameplay ? "Exit" : "Back";

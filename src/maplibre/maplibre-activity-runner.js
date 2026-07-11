@@ -466,6 +466,7 @@ export class MapLibreActivityRunner {
     this.visualPointTargets = [];
     this.overviewPreviewActivity = null;
     this.overviewPreviewCompletedIds = [];
+    this.unitedStatesAtlasSelectedStateId = "";
     this.overviewMapSet = "world-europe";
     this.overviewMapView = null;
     this.difficulty = difficultyModes.easy;
@@ -826,6 +827,38 @@ export class MapLibreActivityRunner {
       this.memoryTrailSuppressStudyTargetEmphasisReason = "";
     }
     this.refreshDifficultyVisuals();
+  }
+
+  enterUnitedStatesAtlas(options = {}) {
+    this.currentView = "united-states-atlas";
+    this.setPlacementInteractionState({ active: false, dragging: false });
+    this.resizeSoon();
+    this.setOverviewVisibility("none");
+    this.setStudyVisibility("none");
+    this.setUnitedStatesContextVisibility("visible");
+    this.setUnitedStatesAtlasSelection(options.selectedStateId || "");
+
+    this.moveCamera({
+      center: [-98, 39],
+      zoom: 3.1,
+      pitch: 0,
+      bearing: 0,
+      duration: options.duration ?? 750,
+      essential: true
+    }, {
+      cameraContext: "united-states-atlas-overview",
+      source: "enterUnitedStatesAtlas",
+      requestType: "flyTo",
+      activityId: this.activity?.id
+    }, "flyTo");
+  }
+
+  setUnitedStatesAtlasSelection(stateId = "") {
+    this.unitedStatesAtlasSelectedStateId = String(stateId || "");
+
+    if (this.map?.getLayer("us-state-context-fill")) {
+      this.map.setPaintProperty("us-state-context-fill", "fill-color", this.getUsStateContextFillExpression());
+    }
   }
 
   setMemoryTrailPreAnswerOutlinesSuppressed(isSuppressed = false) {
@@ -6562,6 +6595,15 @@ export class MapLibreActivityRunner {
   }
 
   getUsStateContextFillExpression() {
+    if (this.currentView === "united-states-atlas") {
+      return [
+        "case",
+        ["==", ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]], this.unitedStatesAtlasSelectedStateId],
+        "#f6c85f",
+        "#dce8f5"
+      ];
+    }
+
     return [
       "match",
       ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]],

@@ -16,6 +16,19 @@ const REGION_RECORDS = Object.freeze([
   { id: "west", name: "West" }
 ]);
 
+const STATE_ABBREVIATIONS = Object.freeze({
+  alabama: "AL", alaska: "AK", arizona: "AZ", arkansas: "AR", california: "CA",
+  colorado: "CO", connecticut: "CT", delaware: "DE", florida: "FL", georgia: "GA",
+  hawaii: "HI", idaho: "ID", illinois: "IL", indiana: "IN", iowa: "IA", kansas: "KS",
+  kentucky: "KY", louisiana: "LA", maine: "ME", maryland: "MD", massachusetts: "MA",
+  michigan: "MI", minnesota: "MN", mississippi: "MS", missouri: "MO", montana: "MT",
+  nebraska: "NE", nevada: "NV", "new-hampshire": "NH", "new-jersey": "NJ", "new-mexico": "NM",
+  "new-york": "NY", "north-carolina": "NC", "north-dakota": "ND", ohio: "OH", oklahoma: "OK",
+  oregon: "OR", pennsylvania: "PA", "rhode-island": "RI", "south-carolina": "SC", "south-dakota": "SD",
+  tennessee: "TN", texas: "TX", utah: "UT", vermont: "VT", virginia: "VA", washington: "WA",
+  "west-virginia": "WV", wisconsin: "WI", wyoming: "WY"
+});
+
 // Regions follow the four U.S. Census regions. D.C. is intentionally excluded:
 // this milestone models the 50 states only.
 const STATE_RECORDS = Object.freeze([
@@ -114,6 +127,32 @@ const MOUNTAIN_RANGE_RECORDS = Object.freeze([
   ["black-hills", "Black Hills", "south-dakota wyoming"]
 ]);
 
+const COUNTRY_RECORDS = Object.freeze([
+  ["canada", "Canada"],
+  ["mexico", "Mexico"],
+  ["russia", "Russia"]
+]);
+
+const WATER_RECORDS = Object.freeze([
+  ["atlantic-ocean", "Atlantic Ocean", "ocean"],
+  ["pacific-ocean", "Pacific Ocean", "ocean"],
+  ["arctic-ocean", "Arctic Ocean", "ocean"],
+  ["gulf-of-mexico", "Gulf of Mexico", "gulf", ["Gulf of America"], "Officially called the Gulf of America by the U.S. federal government."],
+  ["bering-strait", "Bering Strait", "strait"]
+]);
+
+const INTERNATIONAL_LAND_BORDER_RECORDS = Object.freeze([
+  ["canada", "alaska idaho maine minnesota montana new-hampshire new-york north-dakota vermont"],
+  ["mexico", "arizona california new-mexico texas"]
+]);
+
+const COAST_RECORDS = Object.freeze([
+  ["atlantic-ocean", "connecticut delaware florida georgia maine maryland massachusetts new-hampshire new-jersey new-york north-carolina rhode-island south-carolina virginia"],
+  ["pacific-ocean", "alaska california hawaii oregon washington"],
+  ["arctic-ocean", "alaska"],
+  ["gulf-of-mexico", "alabama florida louisiana mississippi texas"]
+]);
+
 function toIds(value) {
   return value ? value.split(" ") : [];
 }
@@ -140,12 +179,21 @@ function buildUnitedStatesAtlas({ states = STATE_RECORDS, rivers = RIVER_RECORDS
   const entities = [
     ...REGION_RECORDS.map((region) => ({ ...region, id: entityId("region", region.id), kind: "region" })),
     ...states.flatMap(([id, name, capitalId, capitalSourceId, regionId]) => [
-      { id: entityId("state", id), kind: "state", name, source: { asset: SOURCE_ASSETS.states, featureId: id } },
+      { id: entityId("state", id), kind: "state", name, abbreviation: STATE_ABBREVIATIONS[id], source: { asset: SOURCE_ASSETS.states, featureId: id } },
       { id: entityId("capital", capitalId), kind: "capital", name: displayNameFromId(capitalId), source: { asset: SOURCE_ASSETS.capitals, featureId: capitalSourceId } }
     ]),
     ...rivers.map(([id, name, sourceFeatureId]) => ({ id: entityId("river", id), kind: "river", name, source: { asset: SOURCE_ASSETS.rivers, featureId: sourceFeatureId } })),
     ...lakes.map(([id, name, sourceFeatureId]) => ({ id: entityId("lake", id), kind: "lake", name, source: { asset: SOURCE_ASSETS.lakes, featureId: sourceFeatureId } })),
-    ...mountainRanges.map(([id, name]) => ({ id: entityId("mountain-range", id), kind: "mountain-range", name, source: { asset: SOURCE_ASSETS.mountainRanges, featureId: id } }))
+    ...mountainRanges.map(([id, name]) => ({ id: entityId("mountain-range", id), kind: "mountain-range", name, source: { asset: SOURCE_ASSETS.mountainRanges, featureId: id } })),
+    ...COUNTRY_RECORDS.map(([id, name]) => ({ id: entityId("country", id), kind: "country", name })),
+    ...WATER_RECORDS.map(([id, name, waterType, alternateNames = [], namePolicyNote = ""]) => ({
+      id: entityId("water", id),
+      kind: "water",
+      waterType,
+      name,
+      alternateNames: Object.freeze([...alternateNames]),
+      namePolicyNote
+    }))
   ];
   assertNoDuplicateIds(entities);
 
@@ -162,20 +210,32 @@ function buildUnitedStatesAtlas({ states = STATE_RECORDS, rivers = RIVER_RECORDS
     for (const stateId of toIds(bordersState)) relationships.push({ type: "bordersState", from: entityId("river", id), to: entityId("state", stateId) });
   }
   for (const [id, , , stateIds] of lakes) {
-    for (const stateId of toIds(stateIds)) relationships.push({ type: "bordersState", from: entityId("lake", id), to: entityId("state", stateId) });
+    for (const stateId of toIds(stateIds)) {
+      relationships.push({ type: "bordersState", from: entityId("lake", id), to: entityId("state", stateId) });
+      if (id !== "great-salt-lake") relationships.push({ type: "majorBordersState", from: entityId("lake", id), to: entityId("state", stateId) });
+    }
   }
   for (const [id, , stateIds] of mountainRanges) {
     for (const stateId of toIds(stateIds)) relationships.push({ type: "locatedIn", from: entityId("mountain-range", id), to: entityId("state", stateId) });
   }
+  for (const [countryId, stateIds] of INTERNATIONAL_LAND_BORDER_RECORDS) {
+    for (const stateId of toIds(stateIds)) relationships.push({ type: "internationalBorder", from: entityId("state", stateId), to: entityId("country", countryId) });
+  }
+  for (const [waterId, stateIds] of COAST_RECORDS) {
+    for (const stateId of toIds(stateIds)) relationships.push({ type: "coast", from: entityId("state", stateId), to: entityId("water", waterId) });
+  }
+  relationships.push({ type: "majorBordersState", from: entityId("water", "bering-strait"), to: entityId("state", "alaska") });
+  relationships.push({ type: "maritimeNeighbor", from: entityId("state", "alaska"), to: entityId("country", "russia"), via: entityId("water", "bering-strait") });
 
   return Object.freeze({
-    version: 1,
+    version: 2,
     sourceAssets: SOURCE_ASSETS,
     entities: Object.freeze(entities.map(Object.freeze)),
     relationships: Object.freeze(relationships.map(Object.freeze)),
     notes: Object.freeze([
       "State borders are land borders between the 50 states; water-only adjacency is excluded.",
       "Physical-feature associations are curated from the existing playable feature inventory and describe direct flow, state-border, or range-location relationships only.",
+      "International neighbors are land-bordering countries only; Russia is represented solely as Alaska's maritime neighbor across the Bering Strait.",
       "Interstate water borders and broad mountain-system extents can be geographically nuanced; this foundation records only the named existing feature relationships listed here."
     ])
   });
@@ -207,6 +267,7 @@ function validateUnitedStatesAtlas(atlas) {
     outgoing.set(key, [...(outgoing.get(key) || []), relationship.to]);
   }
   for (const state of states) {
+    if (!/^[A-Z]{2}$/.test(state.abbreviation || "")) errors.push(`${state.id} must have a two-letter postal abbreviation.`);
     if ((outgoing.get(`capitalOf:${state.id}`) || []).length !== 0) errors.push(`States must not point outward with capitalOf: ${state.id}`);
     const capitalRelationships = atlas.relationships.filter((relationship) => relationship.type === "capitalOf" && relationship.to === state.id);
     const regionRelationships = atlas.relationships.filter((relationship) => relationship.type === "belongsToRegion" && relationship.from === state.id);
@@ -220,6 +281,11 @@ function validateUnitedStatesAtlas(atlas) {
     if (relationship.type !== "borders") continue;
     const reciprocal = atlas.relationships.some((candidate) => candidate.type === "borders" && candidate.from === relationship.to && candidate.to === relationship.from);
     if (!reciprocal) errors.push(`Asymmetric border relationship: ${relationship.from} -> ${relationship.to}`);
+  }
+  for (const relationship of atlas.relationships) {
+    if (relationship.type === "internationalBorder" && !relationship.to.startsWith("country:")) errors.push(`International border must reference a country: ${relationship.to}`);
+    if (relationship.type === "internationalBorder" && relationship.to === entityId("country", "russia")) errors.push("Russia must not be recorded as a U.S. state land-bordering country.");
+    if (relationship.type === "maritimeNeighbor" && !entitiesById.get(relationship.via)) errors.push(`Maritime neighbor requires a valid water context: ${relationship.via}`);
   }
   for (const entity of atlas.entities) {
     if (!["river", "lake", "mountain-range"].includes(entity.kind)) continue;

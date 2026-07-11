@@ -252,8 +252,8 @@ assert.equal(
   "20260624-daily-trail-curriculum-progression-1",
   "The runtime must load the checkpoint-aware planner under a new cache key."
 );
-assert.ok(appEntrySource.includes("./src/maplibre-poc.js?v=20260708-us-trail-capitals-phase2a-4"));
-assert.ok(previewEntrySource.includes("src/maplibre-poc.js?v=20260708-us-trail-capitals-phase2a-4"));
+assert.ok(appEntrySource.includes("./src/maplibre-poc.js?v=20260711-us-atlas-2b-1"));
+assert.ok(previewEntrySource.includes("src/maplibre-poc.js?v=20260711-us-atlas-2b-1"));
 [
   "checkpointActivityGroups",
   "function startDailyTrailActivity(activityId)",
@@ -321,7 +321,7 @@ assert.ok(
   "this.isMemoryTrailCheckpointPreAnswerStyleEnabled() ? \"\" : this.selectedTargetId"
 ].forEach((hook) => assert.ok(runnerSource.includes(hook), `Missing checkpoint pre-answer outline guard: ${hook}`));
 assert.ok(runtimeSource.includes("runner?.setMemoryTrailCheckpointPreAnswerStyle?.(checkpointPreAnswerStyle);"));
-assert.ok(runtimeSource.includes("import(\"./maplibre/maplibre-activity-runner.js?v=20260708-us-trail-capitals-phase2a-4\")"));
+assert.ok(runtimeSource.includes("import(\"./maplibre/maplibre-activity-runner.js?v=20260710-us-atlas-2a-1\")"));
 
 const queueSelectorIndex = runtimeSource.indexOf("if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {");
 const defaultLearnSelectorIndex = runtimeSource.indexOf("const unguidedCurrentTarget = memoryTrail.currentPracticeWindow");

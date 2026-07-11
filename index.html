@@ -128,6 +128,7 @@
               <span id="main-menu-us-memory-trail-action" class="main-menu-daily-trail-action">Start</span>
             </span>
           </button>
+          <button id="main-menu-united-states-atlas-button" class="main-menu-button main-menu-button-teal" type="button">United States Atlas</button>
           <p class="main-menu-more-ways-copy">Looking for something else?</p>
           <button id="main-menu-more-ways-button" class="main-menu-button main-menu-button-quiet main-menu-more-ways-button" type="button">More Ways to Learn</button>
         </section>
@@ -232,6 +233,7 @@
       <section class="map-shell" aria-label="Interactive MapLibre map">
         <div id="map"></div>
         <div id="audio-instruction-banner" class="audio-instruction-banner" role="status" aria-live="polite" hidden></div>
+        <aside id="united-states-atlas-profile" class="united-states-atlas-profile" aria-live="polite" hidden></aside>
         <div id="memory-trail-correction-callout" class="memory-trail-correction-callout" role="status" aria-live="polite" hidden></div>
         <div class="zoom-panel" aria-label="Map controls">
           <button id="zoom-in-button" type="button" title="Zoom in" aria-label="Zoom in">+</button>
@@ -334,7 +336,7 @@
 
         window.__mappaMundiLoadApp = () => {
           if (!appModulePromise) {
-            appModulePromise = import("./src/maplibre-poc.js?v=20260708-us-trail-capitals-phase2a-4");
+            appModulePromise = import("./src/maplibre-poc.js?v=20260711-us-atlas-2b-1");
           }
 
           return appModulePromise;

@@ -24,6 +24,10 @@ for (const entity of unitedStatesAtlas.entities) {
   if (!entity.source) continue;
   assert.ok(sourceFeatures.get(entity.source.asset)?.has(entity.source.featureId), `${entity.id} must reference an existing source feature.`);
 }
+for (const state of unitedStatesAtlas.entities.filter((entity) => entity.kind === "state")) {
+  const sourceState = JSON.parse(fs.readFileSync(SOURCE_ASSETS.states, "utf8")).features.find((feature) => feature.id === state.source.featureId);
+  assert.equal(state.abbreviation, sourceState.sourcePostal, `${state.id} must preserve its existing postal abbreviation.`);
+}
 
 assert.deepEqual(
   getRelatedEntities(unitedStatesAtlas, "tennessee", "borders").map((entity) => entity.id).sort(),
@@ -37,6 +41,10 @@ assert.deepEqual(
 );
 assert.deepEqual(getRelatedEntities(unitedStatesAtlas, "mississippi", "flowsThrough", "incoming").map((entity) => entity.name), ["Mississippi River"]);
 assert.ok(getRelatedEntities(unitedStatesAtlas, "colorado", "locatedIn", "incoming").some((entity) => entity.name === "Rocky Mountains"));
+const gulfOfMexico = unitedStatesAtlas.entities.find((entity) => entity.id === "water:gulf-of-mexico");
+assert.deepEqual(gulfOfMexico.alternateNames, ["Gulf of America"]);
+assert.equal(gulfOfMexico.namePolicyNote, "Officially called the Gulf of America by the U.S. federal government.");
+assert.equal(getRelatedEntities(unitedStatesAtlas, "alaska", "internationalBorder").some((entity) => entity.id === "country:russia"), false);
 
 assert.throws(
   () => buildUnitedStatesAtlas({ states: [["alabama", "Alabama", "montgomery", "capital-montgomery", "south", ""], ["alabama", "Alabama duplicate", "montgomery-two", "capital-montgomery", "south", ""]] }),
@@ -47,5 +55,6 @@ console.log("United States atlas data check passed:", JSON.stringify({
   states: 50,
   capitals: 50,
   relationships: unitedStatesAtlas.relationships.length,
-  physicalFeatures: unitedStatesAtlas.entities.filter((entity) => ["river", "lake", "mountain-range"].includes(entity.kind)).length
+  physicalFeatures: unitedStatesAtlas.entities.filter((entity) => ["river", "lake", "mountain-range"].includes(entity.kind)).length,
+  waters: unitedStatesAtlas.entities.filter((entity) => entity.kind === "water").length
 }));
