@@ -233,6 +233,7 @@
       <section class="map-shell" aria-label="Interactive MapLibre map">
         <div id="map"></div>
         <div id="audio-instruction-banner" class="audio-instruction-banner" role="status" aria-live="polite" hidden></div>
+        <aside id="united-states-atlas-overview" class="united-states-atlas-overview" aria-label="United States learning summary" hidden></aside>
         <aside id="united-states-atlas-profile" class="united-states-atlas-profile" aria-live="polite" hidden></aside>
         <div id="memory-trail-correction-callout" class="memory-trail-correction-callout" role="status" aria-live="polite" hidden></div>
         <div class="zoom-panel" aria-label="Map controls">
@@ -336,7 +337,7 @@
 
         window.__mappaMundiLoadApp = () => {
           if (!appModulePromise) {
-            appModulePromise = import("./src/maplibre-poc.js?v=20260711-us-atlas-2b-1");
+            appModulePromise = import("./src/maplibre-poc.js?v=20260711-us-atlas-2c-1");
           }
 
           return appModulePromise;

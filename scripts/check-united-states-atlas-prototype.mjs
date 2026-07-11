@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import { createUnitedStatesAtlasProgress } from "../src/atlas/united-states-atlas-progress.js";
 import { getUnitedStatesAtlasProfilePanelData } from "../src/atlas/united-states-atlas-ui.js";
 
 const louisiana = getUnitedStatesAtlasProfilePanelData("louisiana");
@@ -30,16 +31,23 @@ assert.equal(
 );
 assert.equal(getUnitedStatesAtlasProfilePanelData("unknown-state"), null);
 
+const learningProfile = getUnitedStatesAtlasProfilePanelData("louisiana", createUnitedStatesAtlasProgress({
+  unitedStatesMemoryTrailState: { itemProgress: { "state:louisiana": { status: "learning", timesSeen: 1 } } }
+}));
+assert.equal(learningProfile.learningStatus.status, "learning");
+
 const runtimeSource = fs.readFileSync("src/maplibre-poc.js", "utf8");
 const runnerSource = fs.readFileSync("src/maplibre/maplibre-activity-runner.js", "utf8");
 const markupSource = fs.readFileSync("index.html", "utf8");
 assert.ok(markupSource.includes('id="main-menu-united-states-atlas-button"'), "Main menu must expose the United States Atlas entry point.");
 assert.ok(markupSource.includes('id="united-states-atlas-profile"'), "Atlas profile panel host is missing.");
+assert.ok(markupSource.includes('id="united-states-atlas-overview"'), "Atlas learning overview host is missing.");
 assert.ok(runtimeSource.includes("function openUnitedStatesAtlas()"), "Atlas open handler is missing.");
 assert.ok(runtimeSource.includes("function selectUnitedStatesAtlasState(stateId)"), "Atlas state selection handler is missing.");
 assert.ok(runtimeSource.includes('currentAppScreen === "united-states-atlas"'), "Map taps must be scoped to the dedicated atlas screen.");
 assert.ok(runnerSource.includes("enterUnitedStatesAtlas(options = {})"), "Runner atlas overview method is missing.");
 assert.ok(runnerSource.includes("setUnitedStatesAtlasSelection(stateId = \"\")"), "Runner atlas selection method is missing.");
+assert.ok(runnerSource.includes("setUnitedStatesAtlasLearningStatuses(statuses = {})"), "Runner atlas learning-status method is missing.");
 
 console.log("United States atlas prototype check passed:", JSON.stringify({
   louisianaCapital: louisiana.capital.name,

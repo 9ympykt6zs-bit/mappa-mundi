@@ -467,6 +467,7 @@ export class MapLibreActivityRunner {
     this.overviewPreviewActivity = null;
     this.overviewPreviewCompletedIds = [];
     this.unitedStatesAtlasSelectedStateId = "";
+    this.unitedStatesAtlasLearningStatuses = {};
     this.overviewMapSet = "world-europe";
     this.overviewMapView = null;
     this.difficulty = difficultyModes.easy;
@@ -855,6 +856,16 @@ export class MapLibreActivityRunner {
 
   setUnitedStatesAtlasSelection(stateId = "") {
     this.unitedStatesAtlasSelectedStateId = String(stateId || "");
+
+    if (this.map?.getLayer("us-state-context-fill")) {
+      this.map.setPaintProperty("us-state-context-fill", "fill-color", this.getUsStateContextFillExpression());
+    }
+  }
+
+  setUnitedStatesAtlasLearningStatuses(statuses = {}) {
+    this.unitedStatesAtlasLearningStatuses = Object.fromEntries(
+      Object.entries(statuses).filter(([, status]) => ["unexplored", "discovered", "learning", "strong", "mastered"].includes(status))
+    );
 
     if (this.map?.getLayer("us-state-context-fill")) {
       this.map.setPaintProperty("us-state-context-fill", "fill-color", this.getUsStateContextFillExpression());
@@ -6600,7 +6611,12 @@ export class MapLibreActivityRunner {
         "case",
         ["==", ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]], this.unitedStatesAtlasSelectedStateId],
         "#f6c85f",
-        "#dce8f5"
+        [
+          "match",
+          ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]],
+          ...Object.entries(this.unitedStatesAtlasLearningStatuses).flatMap(([stateId, status]) => [stateId, this.getUnitedStatesAtlasLearningColor(status)]),
+          this.getUnitedStatesAtlasLearningColor("unexplored")
+        ]
       ];
     }
 
@@ -6923,6 +6939,16 @@ export class MapLibreActivityRunner {
     }
 
     return 0;
+  }
+
+  getUnitedStatesAtlasLearningColor(status) {
+    return {
+      unexplored: "#dce8f5",
+      discovered: "#b7dce8",
+      learning: "#77b8d4",
+      strong: "#3b83ad",
+      mastered: "#1f5f8d"
+    }[status] || "#dce8f5";
   }
 
   getStateCapitalStarOpacityExpression() {
