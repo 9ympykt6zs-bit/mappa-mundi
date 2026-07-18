@@ -3512,6 +3512,276 @@ body.study-mode .map-shell {
   display: none;
 }
 
+.mental-map-challenge-panel {
+  background: #f7f9fc;
+  color: var(--ink);
+  inset: 78px 0 0;
+  overflow: auto;
+  padding: 28px 24px 36px;
+  pointer-events: auto;
+  position: absolute;
+  z-index: 24;
+}
+
+.mental-map-challenge-panel[hidden] {
+  display: none;
+}
+
+body.mental-map-challenge-mode:not(.mental-map-result-mode) #map,
+body.mental-map-challenge-mode:not(.mental-map-result-mode) .zoom-panel {
+  display: none;
+}
+
+.mental-map-panel-inner {
+  margin: 0 auto;
+  max-width: 960px;
+}
+
+.mental-map-question-header {
+  border-bottom: 1px solid var(--panel-border);
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+}
+
+.mental-map-eyebrow {
+  color: #28745f;
+  font-size: 0.78rem;
+  font-weight: 850;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+
+.mental-map-question-header h2 {
+  font-size: 1.45rem;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.mental-map-request-count {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 750;
+  margin: 8px 0 0;
+}
+
+.mental-map-answer-workspace {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.6fr);
+}
+
+.mental-map-selected h3,
+.mental-map-answer-bank-section h3 {
+  font-size: 0.9rem;
+  margin: 0 0 9px;
+}
+
+.mental-map-empty {
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+.mental-map-selected-list {
+  display: grid;
+  gap: 6px;
+  list-style-position: inside;
+  margin: 0;
+  padding: 0;
+}
+
+.mental-map-selected-list li {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #d6e0eb;
+  border-radius: 6px;
+  display: flex;
+  font-size: 0.82rem;
+  font-weight: 750;
+  gap: 8px;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 7px 8px;
+}
+
+.mental-map-selected-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+}
+
+.mental-map-mini-action {
+  background: #f0f4f8;
+  border: 1px solid #cad6e2;
+  border-radius: 5px;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 750;
+  min-height: 30px;
+  padding: 4px 7px;
+}
+
+.mental-map-mini-action:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.mental-map-answer-bank {
+  display: grid;
+  gap: 7px;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+}
+
+.mental-map-answer-choice {
+  background: #fff;
+  border: 1px solid #bfcddd;
+  border-radius: 6px;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 750;
+  min-height: 44px;
+  padding: 8px 10px;
+}
+
+.mental-map-answer-choice:disabled {
+  background: #e9eef4;
+  color: #778596;
+  cursor: default;
+  opacity: 0.72;
+}
+
+.mental-map-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 22px;
+}
+
+.mental-map-primary-action,
+.mental-map-secondary-action {
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 850;
+  min-height: 42px;
+  padding: 8px 14px;
+}
+
+.mental-map-primary-action {
+  background: #1f6f5b;
+  border: 1px solid #185b4b;
+  color: #fff;
+}
+
+.mental-map-secondary-action {
+  background: #fff;
+  border: 1px solid #bdcad8;
+  color: var(--ink);
+}
+
+.mental-map-secondary-action:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+body.mental-map-result-mode .mental-map-challenge-panel {
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(128, 153, 184, 0.42);
+  border-radius: 8px;
+  box-shadow: 0 18px 36px rgba(9, 22, 42, 0.22);
+  inset: 96px 20px auto auto;
+  max-height: min(680px, calc(100% - 112px));
+  padding: 16px;
+  width: min(390px, calc(100% - 40px));
+}
+
+body.mental-map-result-mode .mental-map-question-header h2 {
+  font-size: 1.05rem;
+}
+
+.mental-map-result-content {
+  display: grid;
+  gap: 7px;
+}
+
+.mental-map-result-status {
+  border-radius: 5px;
+  display: inline-block;
+  font-size: 0.82rem;
+  font-weight: 900;
+  justify-self: start;
+  margin: 0;
+  padding: 4px 8px;
+}
+
+.mental-map-result-status.is-correct {
+  background: #d8f0e6;
+  color: #176947;
+}
+
+.mental-map-result-status.is-incorrect {
+  background: #f8e0df;
+  color: #9a3434;
+}
+
+.mental-map-result-line,
+.mental-map-alternative-note,
+.mental-map-explanation {
+  font-size: 0.79rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.mental-map-result-line.is-sequence {
+  word-spacing: 2px;
+}
+
+.mental-map-alternative-note {
+  color: #28745f;
+  font-weight: 750;
+}
+
+.mental-map-explanation {
+  border-top: 1px solid var(--panel-border);
+  color: var(--muted);
+  margin-top: 3px;
+  padding-top: 10px;
+}
+
+.mental-map-result-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 9px;
+  list-style: none;
+  margin: 5px 0 7px;
+  padding: 0;
+}
+
+.mental-map-result-legend li {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 0.68rem;
+  font-weight: 750;
+  gap: 4px;
+}
+
+.mental-map-result-legend span {
+  border: 1px solid rgba(24, 53, 78, 0.36);
+  border-radius: 2px;
+  height: 10px;
+  width: 13px;
+}
+
+.mental-map-result-selected-correct { background: #2f9d72; }
+.mental-map-result-correct { background: #4f88b5; }
+.mental-map-result-missing { background: #e6a23c; }
+.mental-map-result-misplaced { background: #8c6bb1; }
+.mental-map-result-incorrect { background: #d95151; }
+
 .united-states-atlas-overview {
   background: rgba(255, 255, 255, 0.97);
   border: 1px solid rgba(128, 153, 184, 0.42);
@@ -5209,6 +5479,36 @@ body.browse-mode .answer-panel-title {
     bottom: 0;
     left: 0;
     max-height: min(45svh, 360px);
+    padding: 14px max(14px, env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+    right: 0;
+    top: auto;
+    width: 100%;
+  }
+
+  .mental-map-challenge-panel {
+    top: var(--mobile-header-height);
+    padding: 20px 14px calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .mental-map-answer-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .mental-map-answer-bank {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mental-map-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.mental-map-result-mode .mental-map-challenge-panel {
+    border-bottom: 0;
+    border-radius: 12px 12px 0 0;
+    bottom: 0;
+    left: 0;
+    max-height: min(52svh, 430px);
     padding: 14px max(14px, env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
     right: 0;
     top: auto;

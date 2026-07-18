@@ -142,7 +142,7 @@ const WATER_RECORDS = Object.freeze([
 ]);
 
 const INTERNATIONAL_LAND_BORDER_RECORDS = Object.freeze([
-  ["canada", "alaska idaho maine minnesota montana new-hampshire new-york north-dakota vermont"],
+  ["canada", "alaska idaho maine minnesota montana new-hampshire new-york north-dakota vermont washington"],
   ["mexico", "arizona california new-mexico texas"]
 ]);
 

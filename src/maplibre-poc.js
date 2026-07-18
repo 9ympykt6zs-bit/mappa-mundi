@@ -1,4 +1,16 @@
 import { journeyPresets } from "./journey-presets.js?v=20260621-us-rivers-menu-1";
+import {
+  clearMentalMapAnswers,
+  createMentalMapChallengeState,
+  getMentalMapResultVisualState,
+  moveMentalMapAnswer,
+  removeMentalMapAnswer,
+  selectMentalMapAnswer,
+  submitMentalMapAnswer,
+  undoMentalMapAnswer
+} from "./atlas/mental-map-challenge-engine.js";
+import { getMentalMapChallenges } from "./atlas/mental-map-challenges.js";
+import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js";
 import { readUnitedStatesAtlasProgress } from "./atlas/united-states-atlas-progress.js";
 import { renderUnitedStatesAtlasOverview, renderUnitedStatesAtlasProfile } from "./atlas/united-states-atlas-ui.js";
 import { trackEvent } from "./analytics.js?v=20260601-instruction-target-nouns";
@@ -3076,6 +3088,7 @@ const mainMenuChallengeButton = document.querySelector("#main-menu-challenge-but
 const mainMenuDailyTrailButton = document.querySelector("#main-menu-daily-trail-button");
 const mainMenuUnitedStatesMemoryTrailButton = document.querySelector("#main-menu-us-memory-trail-button");
 const mainMenuUnitedStatesAtlasButton = document.querySelector("#main-menu-united-states-atlas-button");
+const mainMenuMentalMapChallengeButton = document.querySelector("#main-menu-mental-map-challenge-button");
 const mainMenuMoreWaysButton = document.querySelector("#main-menu-more-ways-button");
 const mainMenuDailyTrailAction = document.querySelector("#main-menu-daily-trail-action");
 const mainMenuUnitedStatesMemoryTrailAction = document.querySelector("#main-menu-us-memory-trail-action");
@@ -3510,7 +3523,12 @@ const memoryTrailPrimaryButton = document.querySelector("#memory-trail-primary-b
 const memoryTrailSecondaryButton = document.querySelector("#memory-trail-secondary-button");
 const unitedStatesAtlasProfile = document.querySelector("#united-states-atlas-profile");
 const unitedStatesAtlasOverview = document.querySelector("#united-states-atlas-overview");
+const mentalMapChallengePanel = document.querySelector("#mental-map-challenge-panel");
+const mapElement = document.querySelector("#map");
 let unitedStatesAtlasProgress = null;
+let activeMentalMapChallenge = null;
+let activeMentalMapChallengeState = null;
+let mentalMapUsedQuestionIds = new Set();
 
 const journeyDifficultyOptions = [
   {
@@ -3661,7 +3679,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260711-us-atlas-2c-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260712-mental-map-3a-1"),
       import("./chip-speech.js?v=20260708-us-trail-capitals-phase2a-audio-1")
     ]).then(([
       ,
@@ -5252,6 +5270,10 @@ function bindUiEvents() {
   });
 
   homeButton?.addEventListener("click", () => {
+    if (currentAppScreen === "mental-map-challenge") {
+      exitMentalMapChallenge();
+      return;
+    }
     if (currentAppScreen === "united-states-atlas") {
       exitUnitedStatesAtlas();
       return;
@@ -5284,6 +5306,10 @@ function bindUiEvents() {
     showAppScreen("main-menu");
   });
   backButton?.addEventListener("click", () => {
+    if (currentAppScreen === "mental-map-challenge") {
+      exitMentalMapChallenge();
+      return;
+    }
     if (currentAppScreen === "united-states-atlas") {
       exitUnitedStatesAtlas();
       return;
@@ -5327,6 +5353,7 @@ function bindUiEvents() {
   mainMenuDailyTrailButton?.addEventListener("click", openDailyTrailIntro);
   mainMenuUnitedStatesMemoryTrailButton?.addEventListener("click", startOrContinueUnitedStatesMemoryTrail);
   mainMenuUnitedStatesAtlasButton?.addEventListener("click", () => { void openUnitedStatesAtlas(); });
+  mainMenuMentalMapChallengeButton?.addEventListener("click", () => { void openMentalMapChallenge(); });
   mainMenuMoreWaysButton?.addEventListener("click", () => showAppScreen("main-menu-more-ways"));
   audioMuteButton?.addEventListener("click", toggleAudioMute);
   window.addEventListener("atlas-quest-audio-muted-change", updateAudioMuteControl);
@@ -7639,6 +7666,117 @@ function exitUnitedStatesAtlas() {
   runner?.setUnitedStatesAtlasLearningStatuses({});
   unitedStatesAtlasProgress = null;
   document.body.classList.remove("united-states-atlas-mode", "overview-mode", "browse-mode");
+  showAppScreen("main-menu", { pushHistory: false });
+}
+
+async function openMentalMapChallenge() {
+  await ensureMapReady();
+  saveCurrentActivityProgress();
+  cancelGrabbedAnswer();
+  clearFeedback();
+  closeBrowseDrawer();
+  activeStudySession = null;
+  activeStudyPracticeSession = null;
+  isCurrentActivityProgressDisabled = false;
+  currentAppScreen = "mental-map-challenge";
+  activeHierarchyNodeId = "north-america-united-states";
+  activeMenuRoot = "north-america";
+  isNavigationBrowseMode = false;
+  document.body.classList.remove("launch-mode", "app-shell-mode", "study-mode", "browse-mode", "united-states-atlas-mode", "mental-map-result-mode");
+  document.body.classList.add("mental-map-challenge-mode");
+
+  if (launchScreen) launchScreen.hidden = true;
+  if (appShellScreen) appShellScreen.hidden = true;
+  if (unitedStatesAtlasProfile) unitedStatesAtlasProfile.hidden = true;
+  if (unitedStatesAtlasOverview) unitedStatesAtlasOverview.hidden = true;
+
+  studyCard.hidden = true;
+  runner.setStudyPreviewMode(false);
+  runner.setMemoryTrailHighlight([]);
+  runner.setCompletedTargets([]);
+  runner.setUnitedStatesAtlasLearningStatuses({});
+  runner.prepareMentalMapChallenge();
+  mentalMapUsedQuestionIds = new Set();
+  startNextMentalMapQuestion();
+  setHeaderTitle("Mental Map Challenge", { shortTitle: "Mental Map" });
+  instruction.textContent = "Recall first. The map appears after you submit.";
+  renderActivityNavControls(null);
+  updateTopBarNavigation();
+}
+
+function chooseNextMentalMapChallenge() {
+  const challenges = getMentalMapChallenges();
+  let available = challenges.filter((challenge) => !mentalMapUsedQuestionIds.has(challenge.id));
+  if (!available.length) {
+    mentalMapUsedQuestionIds = new Set();
+    available = challenges;
+  }
+  const index = Math.min(available.length - 1, Math.max(0, Math.floor(Math.random() * available.length)));
+  const challenge = available[index] || null;
+  if (challenge) mentalMapUsedQuestionIds.add(challenge.id);
+  return challenge;
+}
+
+function startNextMentalMapQuestion() {
+  document.body.classList.remove("mental-map-result-mode");
+  if (mapElement) mapElement.setAttribute("aria-hidden", "true");
+  runner?.prepareMentalMapChallenge();
+  activeMentalMapChallenge = chooseNextMentalMapChallenge();
+  activeMentalMapChallengeState = activeMentalMapChallenge
+    ? createMentalMapChallengeState(activeMentalMapChallenge)
+    : null;
+  renderActiveMentalMapChallenge();
+}
+
+function renderActiveMentalMapChallenge() {
+  if (!mentalMapChallengePanel || !activeMentalMapChallenge || !activeMentalMapChallengeState) return;
+  mentalMapChallengePanel.hidden = false;
+  renderMentalMapChallenge(mentalMapChallengePanel, activeMentalMapChallenge, activeMentalMapChallengeState, {
+    onSelect: (stateId) => {
+      activeMentalMapChallengeState = selectMentalMapAnswer(activeMentalMapChallengeState, stateId);
+      renderActiveMentalMapChallenge();
+    },
+    onRemove: (stateId) => {
+      activeMentalMapChallengeState = removeMentalMapAnswer(activeMentalMapChallengeState, stateId);
+      renderActiveMentalMapChallenge();
+    },
+    onMove: (stateId, direction) => {
+      activeMentalMapChallengeState = moveMentalMapAnswer(activeMentalMapChallengeState, stateId, direction);
+      renderActiveMentalMapChallenge();
+    },
+    onUndo: () => {
+      activeMentalMapChallengeState = undoMentalMapAnswer(activeMentalMapChallengeState);
+      renderActiveMentalMapChallenge();
+    },
+    onClear: () => {
+      activeMentalMapChallengeState = clearMentalMapAnswers(activeMentalMapChallengeState);
+      renderActiveMentalMapChallenge();
+    },
+    onSubmit: submitActiveMentalMapChallenge,
+    onNewQuestion: startNextMentalMapQuestion,
+    onNextQuestion: startNextMentalMapQuestion
+  });
+}
+
+function submitActiveMentalMapChallenge() {
+  activeMentalMapChallengeState = submitMentalMapAnswer(activeMentalMapChallengeState, activeMentalMapChallenge);
+  if (!activeMentalMapChallengeState?.evaluation) return;
+  document.body.classList.add("mental-map-result-mode");
+  if (mapElement) mapElement.setAttribute("aria-hidden", "false");
+  runner?.enterMentalMapChallengeResult({
+    visualState: getMentalMapResultVisualState(activeMentalMapChallenge, activeMentalMapChallengeState.evaluation)
+  });
+  renderActiveMentalMapChallenge();
+}
+
+function exitMentalMapChallenge() {
+  if (mentalMapChallengePanel) mentalMapChallengePanel.hidden = true;
+  activeMentalMapChallenge = null;
+  activeMentalMapChallengeState = null;
+  mentalMapUsedQuestionIds = new Set();
+  runner?.prepareMentalMapChallenge();
+  if (mapElement) mapElement.removeAttribute("aria-hidden");
+  document.body.classList.remove("mental-map-challenge-mode", "mental-map-result-mode", "overview-mode", "browse-mode");
   showAppScreen("main-menu", { pushHistory: false });
 }
 
@@ -22281,6 +22419,10 @@ function isActiveAdaptiveTrailMapResponseScreen(memoryTrail = getActiveMemoryTra
 }
 
 function handleTargetClick(targetIds) {
+  if (currentAppScreen === "mental-map-challenge") {
+    return;
+  }
+
   if (currentAppScreen === "united-states-atlas") {
     const mapPoint = targetIds && !Array.isArray(targetIds) && typeof targetIds.x === "number" ? targetIds : null;
     const stateCandidate = mapPoint
@@ -24321,9 +24463,10 @@ function updateTopBarNavigation() {
   const isHome = activeHierarchyNodeId === "world";
   const isDailyTrailGameplay = currentAppScreen === "daily-trail-gameplay";
   const isUnitedStatesAtlas = currentAppScreen === "united-states-atlas";
+  const isMentalMapChallenge = currentAppScreen === "mental-map-challenge";
 
   if (backButton) {
-    backButton.hidden = !isUnitedStatesAtlas && !isDailyTrailGameplay
+    backButton.hidden = !isUnitedStatesAtlas && !isMentalMapChallenge && !isDailyTrailGameplay
       && isHome
       && !["free-play", "journey-gameplay", "study-explore", "study-practice"].includes(currentAppScreen);
     backButton.textContent = isDailyTrailGameplay ? "Exit" : "Back";

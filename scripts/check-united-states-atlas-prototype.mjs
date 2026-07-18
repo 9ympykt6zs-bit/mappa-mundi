@@ -40,14 +40,21 @@ const runtimeSource = fs.readFileSync("src/maplibre-poc.js", "utf8");
 const runnerSource = fs.readFileSync("src/maplibre/maplibre-activity-runner.js", "utf8");
 const markupSource = fs.readFileSync("index.html", "utf8");
 assert.ok(markupSource.includes('id="main-menu-united-states-atlas-button"'), "Main menu must expose the United States Atlas entry point.");
+assert.ok(markupSource.includes('id="main-menu-mental-map-challenge-button"'), "Main menu must expose the Mental Map Challenge entry point.");
 assert.ok(markupSource.includes('id="united-states-atlas-profile"'), "Atlas profile panel host is missing.");
 assert.ok(markupSource.includes('id="united-states-atlas-overview"'), "Atlas learning overview host is missing.");
+assert.ok(markupSource.includes('id="mental-map-challenge-panel"'), "Mental Map Challenge panel host is missing.");
 assert.ok(runtimeSource.includes("function openUnitedStatesAtlas()"), "Atlas open handler is missing.");
 assert.ok(runtimeSource.includes("function selectUnitedStatesAtlasState(stateId)"), "Atlas state selection handler is missing.");
+assert.ok(runtimeSource.includes("async function openMentalMapChallenge()"), "Mental Map Challenge open handler is missing.");
+assert.ok(runtimeSource.includes("function submitActiveMentalMapChallenge()"), "Mental Map Challenge submit handler is missing.");
 assert.ok(runtimeSource.includes('currentAppScreen === "united-states-atlas"'), "Map taps must be scoped to the dedicated atlas screen.");
 assert.ok(runnerSource.includes("enterUnitedStatesAtlas(options = {})"), "Runner atlas overview method is missing.");
 assert.ok(runnerSource.includes("setUnitedStatesAtlasSelection(stateId = \"\")"), "Runner atlas selection method is missing.");
 assert.ok(runnerSource.includes("setUnitedStatesAtlasLearningStatuses(statuses = {})"), "Runner atlas learning-status method is missing.");
+assert.ok(runnerSource.includes("enterBorderChain(options = {})"), "Reusable Border Chain map infrastructure is missing.");
+assert.ok(runnerSource.includes("setBorderChainVisualState(visualState = {})"), "Reusable Border Chain visual-state infrastructure is missing.");
+assert.ok(runnerSource.includes("enterMentalMapChallengeResult(options = {})"), "Mental Map Challenge result-map method is missing.");
 
 console.log("United States atlas prototype check passed:", JSON.stringify({
   louisianaCapital: louisiana.capital.name,

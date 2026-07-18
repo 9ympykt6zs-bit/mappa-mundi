@@ -129,6 +129,7 @@
             </span>
           </button>
           <button id="main-menu-united-states-atlas-button" class="main-menu-button main-menu-button-teal" type="button">United States Atlas</button>
+          <button id="main-menu-mental-map-challenge-button" class="main-menu-button main-menu-button-quiet" type="button">Mental Map Challenge</button>
           <p class="main-menu-more-ways-copy">Looking for something else?</p>
           <button id="main-menu-more-ways-button" class="main-menu-button main-menu-button-quiet main-menu-more-ways-button" type="button">More Ways to Learn</button>
         </section>
@@ -233,6 +234,7 @@
       <section class="map-shell" aria-label="Interactive MapLibre map">
         <div id="map"></div>
         <div id="audio-instruction-banner" class="audio-instruction-banner" role="status" aria-live="polite" hidden></div>
+        <section id="mental-map-challenge-panel" class="mental-map-challenge-panel" aria-live="polite" hidden></section>
         <aside id="united-states-atlas-overview" class="united-states-atlas-overview" aria-label="United States learning summary" hidden></aside>
         <aside id="united-states-atlas-profile" class="united-states-atlas-profile" aria-live="polite" hidden></aside>
         <div id="memory-trail-correction-callout" class="memory-trail-correction-callout" role="status" aria-live="polite" hidden></div>
@@ -337,7 +339,7 @@
 
         window.__mappaMundiLoadApp = () => {
           if (!appModulePromise) {
-            appModulePromise = import("./src/maplibre-poc.js?v=20260711-us-atlas-2c-1");
+            appModulePromise = import("./src/maplibre-poc.js?v=20260712-mental-map-3a-1");
           }
 
           return appModulePromise;
