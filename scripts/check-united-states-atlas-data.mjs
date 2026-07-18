@@ -45,6 +45,9 @@ const gulfOfMexico = unitedStatesAtlas.entities.find((entity) => entity.id === "
 assert.deepEqual(gulfOfMexico.alternateNames, ["Gulf of America"]);
 assert.equal(gulfOfMexico.namePolicyNote, "Officially called the Gulf of America by the U.S. federal government.");
 assert.equal(getRelatedEntities(unitedStatesAtlas, "alaska", "internationalBorder").some((entity) => entity.id === "country:russia"), false);
+["michigan", "ohio", "pennsylvania"].forEach((stateId) => {
+  assert.ok(getRelatedEntities(unitedStatesAtlas, stateId, "internationalBorder").some((entity) => entity.id === "country:canada"));
+});
 
 assert.throws(
   () => buildUnitedStatesAtlas({ states: [["alabama", "Alabama", "montgomery", "capital-montgomery", "south", ""], ["alabama", "Alabama duplicate", "montgomery-two", "capital-montgomery", "south", ""]] }),

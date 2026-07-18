@@ -141,8 +141,8 @@ const WATER_RECORDS = Object.freeze([
   ["bering-strait", "Bering Strait", "strait"]
 ]);
 
-const INTERNATIONAL_LAND_BORDER_RECORDS = Object.freeze([
-  ["canada", "alaska idaho maine minnesota montana new-hampshire new-york north-dakota vermont washington"],
+const INTERNATIONAL_BORDER_RECORDS = Object.freeze([
+  ["canada", "alaska idaho maine michigan minnesota montana new-hampshire new-york north-dakota ohio pennsylvania vermont washington"],
   ["mexico", "arizona california new-mexico texas"]
 ]);
 
@@ -218,7 +218,7 @@ function buildUnitedStatesAtlas({ states = STATE_RECORDS, rivers = RIVER_RECORDS
   for (const [id, , stateIds] of mountainRanges) {
     for (const stateId of toIds(stateIds)) relationships.push({ type: "locatedIn", from: entityId("mountain-range", id), to: entityId("state", stateId) });
   }
-  for (const [countryId, stateIds] of INTERNATIONAL_LAND_BORDER_RECORDS) {
+  for (const [countryId, stateIds] of INTERNATIONAL_BORDER_RECORDS) {
     for (const stateId of toIds(stateIds)) relationships.push({ type: "internationalBorder", from: entityId("state", stateId), to: entityId("country", countryId) });
   }
   for (const [waterId, stateIds] of COAST_RECORDS) {

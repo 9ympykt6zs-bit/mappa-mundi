@@ -7,6 +7,7 @@ import {
   oceanTextureSize
 } from "./ocean-textures.js?v=20260601-instruction-target-nouns";
 import { createCoastlineDisplayGeoJson } from "./coastline-display-geometry.js?v=20260623-coastline-visual-cleanup-2";
+import { buildMentalMapFeatureFeedback } from "../atlas/mental-map-feature-feedback.js?v=20260718-mental-map-partial-credit-1";
 
 const colors = {
   ink: "#172033",
@@ -470,6 +471,7 @@ export class MapLibreActivityRunner {
     this.unitedStatesAtlasLearningStatuses = {};
     this.borderChainVisualState = {};
     this.mentalMapChallengeResultVisualState = {};
+    this.mentalMapFeatureFeedback = null;
     this.overviewMapSet = "world-europe";
     this.overviewMapView = null;
     this.difficulty = difficultyModes.easy;
@@ -904,19 +906,11 @@ export class MapLibreActivityRunner {
     this.setBorderChainOverlayVisibility("visible");
     this.setMentalMapChallengeResultVisualState(options.visualState || {});
     this.resizeSoon();
-    this.moveCamera({
-      center: [-98, 39],
-      zoom: 3.1,
-      pitch: 0,
-      bearing: 0,
-      duration: options.duration ?? 650,
-      essential: true
-    }, {
-      cameraContext: "mental-map-result",
-      source: "enterMentalMapChallengeResult",
-      requestType: "flyTo",
-      activityId: this.activity?.id
-    }, "flyTo");
+    window.requestAnimationFrame(() => {
+      if (this.currentView !== "mental-map-challenge-result") return;
+      this.map?.resize();
+      this.fitMentalMapChallengeResultCamera(options);
+    });
   }
 
   setUnitedStatesAtlasSelection(stateId = "") {
@@ -960,11 +954,96 @@ export class MapLibreActivityRunner {
       missingStateIds: [...new Set(visualState.missingStateIds || [])],
       misplacedStateIds: [...new Set(visualState.misplacedStateIds || [])],
       expectedSequenceStateIds: [...new Set(visualState.expectedSequenceStateIds || [])],
-      learnerStateIds: [...new Set(visualState.learnerStateIds || [])]
+      learnerStateIds: [...new Set(visualState.learnerStateIds || [])],
+      associatedFeatures: (visualState.associatedFeatures || []).map((feature) => ({ ...feature }))
     };
     ["us-state-context-fill", "border-chain-state-fill"].forEach((layerId) => {
       if (this.map?.getLayer(layerId)) this.map.setPaintProperty(layerId, "fill-color", this.getUsStateContextFillExpression());
     });
+    this.refreshMentalMapFeatureFeedback();
+  }
+
+  refreshMentalMapFeatureFeedback() {
+    const visualState = this.mentalMapChallengeResultVisualState;
+    const answerStateIds = [...new Set([
+      ...(visualState.correctStateIds || []),
+      ...(visualState.learnerStateIds || [])
+    ])];
+    const feedback = buildMentalMapFeatureFeedback({
+      associatedFeatures: visualState.associatedFeatures || [],
+      answerStateIds,
+      orderedStateIds: visualState.expectedSequenceStateIds || [],
+      stateFeatures: this.usStatesAtlas,
+      collections: {
+        rivers: this.riverLines,
+        lakes: this.inlandWaters,
+        mountainRanges: this.mountainRanges,
+        waters: this.oceanZones,
+        countries: this.worldCountriesDisplay
+      }
+    });
+    this.mentalMapFeatureFeedback = feedback;
+    this.map?.getSource("mental-map-question-features")?.setData(feedback.featureCollection);
+    this.map?.getSource("mental-map-question-feature-labels")?.setData(feedback.labelCollection);
+    this.map?.getSource("mental-map-question-route")?.setData(feedback.routeCollection);
+
+    const resultVisible = this.currentView === "mental-map-challenge-result";
+    const hasFeatures = feedback.featureCollection.features.length > 0;
+    const hasLabels = feedback.labelCollection.features.length > 0;
+    const hasRoute = feedback.routeCollection.features.length > 0;
+    ["mental-map-question-feature-fill", "mental-map-question-feature-line"].forEach((layerId) => {
+      if (this.map?.getLayer(layerId)) this.map.setLayoutProperty(layerId, "visibility", resultVisible && hasFeatures ? "visible" : "none");
+    });
+    if (this.map?.getLayer("mental-map-question-feature-point-label")) {
+      this.map.setLayoutProperty("mental-map-question-feature-point-label", "visibility", resultVisible && hasLabels ? "visible" : "none");
+      if (resultVisible && hasLabels) this.map.moveLayer("mental-map-question-feature-point-label");
+    }
+    ["mental-map-question-route-halo", "mental-map-question-route-line"].forEach((layerId) => {
+      if (this.map?.getLayer(layerId)) this.map.setLayoutProperty(layerId, "visibility", resultVisible && hasRoute ? "visible" : "none");
+    });
+    if (this.map?.getLayer("mental-map-question-coastline")) {
+      this.map.setFilter("mental-map-question-coastline", [
+        "in",
+        ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]],
+        ["literal", feedback.coastStateIds]
+      ]);
+      this.map.setLayoutProperty("mental-map-question-coastline", "visibility", resultVisible && feedback.coastStateIds.length ? "visible" : "none");
+    }
+  }
+
+  fitMentalMapChallengeResultCamera(options = {}) {
+    const bounds = this.mentalMapFeatureFeedback?.cameraBounds;
+    if (this.hasValidBounds(bounds)) {
+      const compact = this.isCompactFocusLayout();
+      this.moveCamera({
+        bounds,
+        padding: this.normalizePadding(compact
+          ? { top: 68, right: 24, bottom: 300, left: 24 }
+          : { top: 108, right: 430, bottom: 64, left: 64 }),
+        maxZoom: compact ? 4.7 : 5.25,
+        duration: options.duration ?? 650,
+        essential: true
+      }, {
+        cameraContext: "mental-map-result",
+        source: "enterMentalMapChallengeResult:feature-fit",
+        requestType: "fitBounds",
+        activityId: this.activity?.id
+      }, "fitBounds");
+      return;
+    }
+    this.moveCamera({
+      center: [-98, 39],
+      zoom: 3.1,
+      pitch: 0,
+      bearing: 0,
+      duration: options.duration ?? 650,
+      essential: true
+    }, {
+      cameraContext: "mental-map-result",
+      source: "enterMentalMapChallengeResult:fallback",
+      requestType: "flyTo",
+      activityId: this.activity?.id
+    }, "flyTo");
   }
 
   setUnitedStatesContextFillOpacity(opacity) {
@@ -2897,6 +2976,21 @@ export class MapLibreActivityRunner {
       data: this.getCompletedLabelGeoJson()
     });
 
+    this.map.addSource("mental-map-question-features", {
+      type: "geojson",
+      data: emptyFeatureCollection
+    });
+
+    this.map.addSource("mental-map-question-feature-labels", {
+      type: "geojson",
+      data: emptyFeatureCollection
+    });
+
+    this.map.addSource("mental-map-question-route", {
+      type: "geojson",
+      data: emptyFeatureCollection
+    });
+
     this.map.addSource("ocean-target-raster", {
       type: "image",
       url: this.createOceanTargetHighlightImage(),
@@ -3022,6 +3116,119 @@ export class MapLibreActivityRunner {
         "line-color": this.getStateLineExpression(),
         "line-opacity": this.getShapeLineOpacityExpression(),
         "line-width": this.getShapeLineWidthExpression()
+      }
+    });
+
+    this.map.addLayer({
+      id: "mental-map-question-feature-fill",
+      type: "fill",
+      source: "mental-map-question-features",
+      filter: ["==", ["geometry-type"], "Polygon"],
+      layout: { visibility: "none" },
+      paint: {
+        "fill-color": "#22d3ee",
+        "fill-opacity": [
+          "match",
+          ["get", "questionFeatureKind"],
+          "lake", 0.58,
+          "mountain-range", 0.16,
+          "water", 0.18,
+          "country", 0.1,
+          0.14
+        ]
+      }
+    });
+
+    this.map.addLayer({
+      id: "mental-map-question-feature-line",
+      type: "line",
+      source: "mental-map-question-features",
+      layout: {
+        visibility: "none",
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": "#06b6d4",
+        "line-opacity": 0.94,
+        "line-width": [
+          "match",
+          ["get", "questionFeatureKind"],
+          "river", 7,
+          "mountain-range", 4,
+          "lake", 4.5,
+          "water", 3,
+          "country", 3.5,
+          3
+        ]
+      }
+    });
+
+    this.map.addLayer({
+      id: "mental-map-question-coastline",
+      type: "line",
+      source: "us-states-atlas-display",
+      filter: ["in", ["get", "id"], ["literal", []]],
+      layout: {
+        visibility: "none",
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": "#06b6d4",
+        "line-dasharray": [2, 1.2],
+        "line-opacity": 0.98,
+        "line-width": 3
+      }
+    });
+
+    this.map.addLayer({
+      id: "mental-map-question-route-halo",
+      type: "line",
+      source: "mental-map-question-route",
+      layout: {
+        visibility: "none",
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": "#ffffff",
+        "line-opacity": 0.9,
+        "line-width": 8
+      }
+    });
+
+    this.map.addLayer({
+      id: "mental-map-question-route-line",
+      type: "line",
+      source: "mental-map-question-route",
+      layout: {
+        visibility: "none",
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": "#083344",
+        "line-opacity": 1,
+        "line-width": 4
+      }
+    });
+
+    this.map.addLayer({
+      id: "mental-map-question-feature-point-label",
+      type: "symbol",
+      source: "mental-map-question-feature-labels",
+      layout: {
+        visibility: "none",
+        "text-field": ["get", "questionFeatureName"],
+        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+        "text-size": 13,
+        "text-allow-overlap": true
+      },
+      paint: {
+        "text-color": "#083344",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 2
       }
     });
 

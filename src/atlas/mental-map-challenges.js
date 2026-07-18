@@ -21,7 +21,7 @@ export const MENTAL_MAP_ANSWER_MODES = Object.freeze({
 
 export const MENTAL_MAP_GEOGRAPHIC_DECISIONS = Object.freeze({
   pacificCoast: "The Pacific question says U.S. states, so Alaska and Hawaii are included with California, Oregon, and Washington.",
-  canadaBorder: "The Canada question says contiguous U.S. states, so Alaska is excluded and maritime or Great Lakes proximity does not count.",
+  canadaBorder: "A state borders another political territory when their legal boundaries meet, including where the boundary runs through a river or lake. Alaska is excluded because the question specifies contiguous states.",
   mississippiAssociation: "The atlas records broad Mississippi River associations. The prompt says bordering or lying alongside, not that the river runs through every listed state.",
   rockyMountains: "Rocky Mountains answers use the atlas's broad locatedIn associations rather than an exact mapped mountain footprint.",
   coastlines: "Coast questions use the atlas coast relationships. Florida may belong to both Atlantic Ocean and Gulf of Mexico sets.",
@@ -66,12 +66,12 @@ const staticChallenges = Object.freeze([
   {
     id: "rocky-mountains-any-three",
     title: "Rocky Mountains",
-    prompt: "Name any three U.S. states associated with the Rocky Mountains.",
+    prompt: "Name any three U.S. states that include part of the Rocky Mountains.",
     answerMode: MENTAL_MAP_ANSWER_MODES.SELECT_COUNT,
     correctStateIds: rockyMountainStateIds,
     requiredSelectionCount: 3,
     distractorStateIds: ["arizona", "nevada", "oregon", "washington"],
-    explanation: "This uses the atlas's broad Rocky Mountains associations rather than an exact mountain-footprint boundary.",
+    explanation: "The Rocky Mountains extend through several western states, including Colorado, Wyoming, Montana, Idaho, Utah, and New Mexico.",
     associatedFeatureIds: ["mountain-range:rocky-mountains"]
   },
   {
@@ -88,12 +88,12 @@ const staticChallenges = Object.freeze([
   {
     id: "mississippi-river-any-three",
     title: "Mississippi River",
-    prompt: "Name any three U.S. states recorded as bordering or lying alongside the Mississippi River.",
+    prompt: "Name any three U.S. states that border or lie alongside the Mississippi River.",
     answerMode: MENTAL_MAP_ANSWER_MODES.SELECT_COUNT,
     correctStateIds: mississippiRiverStateIds,
     requiredSelectionCount: 3,
     distractorStateIds: ["alabama", "indiana", "kansas", "ohio"],
-    explanation: "The canonical atlas records these as Mississippi River associations; it does not claim the river runs through every state.",
+    explanation: "Ten states border or lie alongside the Mississippi River from Minnesota to Louisiana.",
     associatedFeatureIds: ["river:mississippi-river"]
   },
   {
@@ -109,21 +109,21 @@ const staticChallenges = Object.freeze([
   {
     id: "canada-contiguous-land-border-all",
     title: "Border with Canada",
-    prompt: "Select every contiguous U.S. state sharing a land border with Canada.",
+    prompt: "Name as many contiguous U.S. states as you can that border Canada.",
     answerMode: MENTAL_MAP_ANSWER_MODES.SELECT_ALL,
     correctStateIds: contiguousCanadaBorderStateIds,
-    distractorStateIds: ["alaska", "michigan", "ohio", "wisconsin"],
-    explanation: "Alaska is excluded by the word contiguous. Great Lakes boundaries and maritime proximity do not count as a state-to-country land border.",
+    distractorStateIds: ["alaska", "indiana", "south-dakota", "wisconsin"],
+    explanation: "Twelve contiguous U.S. states border Canada. Some boundaries cross dry land, while others run through the Great Lakes or connecting waterways.",
     associatedFeatureIds: ["country:canada"]
   },
   {
     id: "lake-erie-all",
     title: "Lake Erie",
-    prompt: "Select every U.S. state touching Lake Erie in the canonical atlas.",
+    prompt: "Select every U.S. state that borders Lake Erie.",
     answerMode: MENTAL_MAP_ANSWER_MODES.SELECT_ALL,
     correctStateIds: lakeErieStateIds,
     distractorStateIds: ["illinois", "indiana", "vermont", "wisconsin"],
-    explanation: "The atlas records Michigan, New York, Ohio, and Pennsylvania as touching Lake Erie.",
+    explanation: "Michigan, Ohio, Pennsylvania, and New York border Lake Erie.",
     associatedFeatureIds: ["lake:lake-erie"]
   },
   {
@@ -133,7 +133,7 @@ const staticChallenges = Object.freeze([
     answerMode: MENTAL_MAP_ANSWER_MODES.SELECT_ALL,
     correctStateIds: gulfCoastStateIds,
     distractorStateIds: ["arkansas", "georgia", "oklahoma", "south-carolina"],
-    explanation: "The atlas displays Gulf of Mexico and recognizes Gulf of America as the alternate U.S. federal name.",
+    explanation: "Texas, Louisiana, Mississippi, Alabama, and Florida have coastline along the Gulf of Mexico, also called the Gulf of America by the U.S. federal government.",
     associatedFeatureIds: ["water:gulf-of-mexico"]
   },
   {

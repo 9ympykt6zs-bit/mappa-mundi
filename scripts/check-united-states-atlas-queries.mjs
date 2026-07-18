@@ -24,6 +24,9 @@ assert.ok(getConnectedMountainRanges("colorado").some((range) => range.name === 
 assert.deepEqual(getConnectedRivers("mississippi"), [{ id: "mississippi-river", name: "Mississippi River" }]);
 assert.deepEqual(getInternationalNeighbors("texas").map((country) => country.name), ["Mexico"]);
 assert.deepEqual(getInternationalNeighbors("maine").map((country) => country.name), ["Canada"]);
+["michigan", "ohio", "pennsylvania"].forEach((stateId) => {
+  assert.deepEqual(getInternationalNeighbors(stateId).map((country) => country.name), ["Canada"]);
+});
 assert.deepEqual(getStateCoasts("florida").map((water) => water.name), ["Atlantic Ocean", "Gulf of Mexico"]);
 assert.deepEqual(getStateCoasts("california").map((water) => water.name), ["Pacific Ocean"]);
 assert.deepEqual(getStateCoasts("alaska").map((water) => water.name), ["Arctic Ocean", "Pacific Ocean"]);

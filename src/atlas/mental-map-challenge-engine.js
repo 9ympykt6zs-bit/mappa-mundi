@@ -1,4 +1,5 @@
 import { getStateById } from "./united-states-atlas-queries.js";
+import { getEntity, unitedStatesAtlas } from "./united-states-atlas-data.js";
 import { MENTAL_MAP_ANSWER_MODES, validateMentalMapChallenge } from "./mental-map-challenges.js";
 
 function copy(value) {
@@ -59,12 +60,18 @@ export function buildMentalMapAnswerBank(challenge, { random = Math.random } = {
 
 export function createMentalMapChallengeState(challenge, options = {}) {
   if (validateMentalMapChallenge(challenge).length) return null;
+  const maxSelections = challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_COUNT
+    ? challenge.requiredSelectionCount
+    : challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_ALL
+      ? challenge.correctStateIds.length
+      : null;
   return {
     challengeId: challenge.id,
     answerMode: challenge.answerMode,
     phase: "answering",
     answerBank: buildMentalMapAnswerBank(challenge, options),
     selectedStateIds: [],
+    maxSelections,
     evaluation: null
   };
 }
@@ -73,6 +80,7 @@ export function selectMentalMapAnswer(state, stateId) {
   const next = copy(state);
   if (!next || next.phase !== "answering") return next;
   if (!next.answerBank.some((item) => item.id === stateId)) return next;
+  if (Number.isInteger(next.maxSelections) && next.selectedStateIds.length >= next.maxSelections) return next;
   if (!next.selectedStateIds.includes(stateId)) next.selectedStateIds.push(stateId);
   return next;
 }
@@ -115,8 +123,12 @@ export function evaluateMentalMapAnswer(challenge, selectedStateIds = []) {
     const selectedValidStateIds = selected.filter((stateId) => eligible.has(stateId));
     const selectedInvalidStateIds = selected.filter((stateId) => !eligible.has(stateId));
     const requestedCountMet = selected.length === challenge.requiredSelectionCount;
+    const maxScore = challenge.requiredSelectionCount;
+    const score = Math.min(selectedValidStateIds.length, maxScore);
     return {
       isCorrect: requestedCountMet && selectedInvalidStateIds.length === 0,
+      score,
+      maxScore,
       selectedStateIds: selected,
       selectedValidStateIds,
       selectedInvalidStateIds,
@@ -136,8 +148,12 @@ export function evaluateMentalMapAnswer(challenge, selectedStateIds = []) {
     const selectedValidStateIds = selected.filter((stateId) => correct.has(stateId));
     const unnecessaryStateIds = selected.filter((stateId) => !correct.has(stateId));
     const missingStateIds = challenge.correctStateIds.filter((stateId) => !selectedSet.has(stateId));
+    const score = selectedValidStateIds.length;
+    const maxScore = challenge.correctStateIds.length;
     return {
       isCorrect: missingStateIds.length === 0 && unnecessaryStateIds.length === 0,
+      score,
+      maxScore,
       selectedStateIds: selected,
       selectedValidStateIds,
       selectedInvalidStateIds: unnecessaryStateIds,
@@ -176,6 +192,14 @@ export function evaluateMentalMapAnswer(challenge, selectedStateIds = []) {
   };
 }
 
+export function getMentalMapScoreLabel(evaluation = {}) {
+  const score = Number(evaluation.score);
+  const maxScore = Number(evaluation.maxScore);
+  return Number.isInteger(score) && Number.isInteger(maxScore) && maxScore > 0
+    ? `${score} of ${maxScore} correct`
+    : "";
+}
+
 export function submitMentalMapAnswer(state, challenge) {
   const next = copy(state);
   if (!next || next.phase !== "answering" || next.challengeId !== challenge?.id) return next;
@@ -191,6 +215,16 @@ export function getMentalMapResultVisualState(challenge, evaluation) {
   const correctStateIds = challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE
     ? unique([challenge.routeStartStateId, ...orderedCorrectIds, challenge.routeDestinationStateId])
     : [...challenge.correctStateIds];
+  const associatedFeatures = (challenge.associatedFeatureIds || []).map((entityId) => {
+    const entity = getEntity(unitedStatesAtlas, entityId);
+    return entity ? {
+      entityId: entity.id,
+      id: entity.id.split(":").slice(1).join(":"),
+      kind: entity.kind,
+      name: entity.name,
+      sourceFeatureId: entity.source?.featureId || ""
+    } : null;
+  }).filter(Boolean);
   return {
     correctStateIds,
     selectedCorrectStateIds: [...evaluation.selectedValidStateIds],
@@ -198,6 +232,7 @@ export function getMentalMapResultVisualState(challenge, evaluation) {
     missingStateIds: [...evaluation.missingStateIds],
     misplacedStateIds: [...evaluation.misplacedStateIds],
     expectedSequenceStateIds: unique([challenge.routeStartStateId, ...orderedCorrectIds, challenge.routeDestinationStateId]),
-    learnerStateIds: [...evaluation.selectedStateIds]
+    learnerStateIds: [...evaluation.selectedStateIds],
+    associatedFeatures
   };
 }

@@ -8,9 +8,9 @@ import {
   selectMentalMapAnswer,
   submitMentalMapAnswer,
   undoMentalMapAnswer
-} from "./atlas/mental-map-challenge-engine.js";
-import { getMentalMapChallenges } from "./atlas/mental-map-challenges.js";
-import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js";
+} from "./atlas/mental-map-challenge-engine.js?v=20260718-mental-map-partial-credit-1";
+import { getMentalMapChallenges } from "./atlas/mental-map-challenges.js?v=20260718-mental-map-partial-credit-1";
+import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=20260718-mental-map-partial-credit-1";
 import { readUnitedStatesAtlasProgress } from "./atlas/united-states-atlas-progress.js";
 import { renderUnitedStatesAtlasOverview, renderUnitedStatesAtlasProfile } from "./atlas/united-states-atlas-ui.js";
 import { trackEvent } from "./analytics.js?v=20260601-instruction-target-nouns";
@@ -3679,7 +3679,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260712-mental-map-3a-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260718-mental-map-partial-credit-1"),
       import("./chip-speech.js?v=20260708-us-trail-capitals-phase2a-audio-1")
     ]).then(([
       ,

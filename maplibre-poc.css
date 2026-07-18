@@ -3781,6 +3781,7 @@ body.mental-map-result-mode .mental-map-question-header h2 {
 .mental-map-result-missing { background: #e6a23c; }
 .mental-map-result-misplaced { background: #8c6bb1; }
 .mental-map-result-incorrect { background: #d95151; }
+.mental-map-result-question-feature { background: #22d3ee; border-color: #083344 !important; }
 
 .united-states-atlas-overview {
   background: rgba(255, 255, 255, 0.97);

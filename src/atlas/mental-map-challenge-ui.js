@@ -1,4 +1,5 @@
 import { getStateById } from "./united-states-atlas-queries.js";
+import { getMentalMapScoreLabel } from "./mental-map-challenge-engine.js";
 import { MENTAL_MAP_ANSWER_MODES } from "./mental-map-challenges.js";
 
 function stateName(stateId) {
@@ -94,9 +95,15 @@ function createAnswerBank(state, options) {
   bank.className = "mental-map-answer-bank";
   state.answerBank.forEach((answer) => {
     const isSelected = state.selectedStateIds.includes(answer.id);
+    const selectionLimitReached = Number.isInteger(state.maxSelections)
+      && state.selectedStateIds.length >= state.maxSelections;
     bank.appendChild(createButton(answer.name, "mental-map-answer-choice", () => options.onSelect?.(answer.id), {
-      disabled: isSelected,
-      ariaLabel: isSelected ? `${answer.name}, selected` : `Select ${answer.name}`
+      disabled: isSelected || selectionLimitReached,
+      ariaLabel: isSelected
+        ? `${answer.name}, selected`
+        : selectionLimitReached
+          ? `${answer.name}, selection limit reached`
+          : `Select ${answer.name}`
     }));
   });
   section.append(heading, bank);
@@ -138,7 +145,8 @@ function createResultLegend() {
     ["correct", "Correct answer"],
     ["missing", "Missing"],
     ["misplaced", "Misplaced"],
-    ["incorrect", "Incorrect or unnecessary"]
+    ["incorrect", "Incorrect or unnecessary"],
+    ["question-feature", "Question feature"]
   ].forEach(([kind, label]) => {
     const item = document.createElement("li");
     const swatch = document.createElement("span");
@@ -155,7 +163,19 @@ function createResultContent(challenge, state, options) {
   wrapper.className = "mental-map-result-content";
   const status = document.createElement("p");
   status.className = `mental-map-result-status ${evaluation.isCorrect ? "is-correct" : "is-incorrect"}`;
-  status.textContent = evaluation.isCorrect ? "Correct" : "Not quite";
+  if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE) {
+    status.textContent = evaluation.isCorrect ? "Correct" : "Not quite";
+  } else {
+    const scoreRatio = evaluation.maxScore > 0 ? evaluation.score / evaluation.maxScore : 0;
+    const encouragement = evaluation.isCorrect
+      ? "Excellent"
+      : scoreRatio >= (2 / 3)
+        ? "Good work"
+        : scoreRatio >= 0.34
+          ? "Keep going"
+          : "Good start";
+    status.textContent = `${getMentalMapScoreLabel(evaluation)} - ${encouragement}`;
+  }
   wrapper.appendChild(status);
   wrapper.appendChild(createResultLine("Your answer", evaluation.selectedStateIds,
     challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE ? "is-sequence" : ""));
@@ -221,5 +241,6 @@ export function renderMentalMapChallenge(container, challenge, state, options = 
     inner.append(workspace, createPreSubmitControls(challenge, state, options));
   }
   container.appendChild(inner);
+  if (state.phase === "result") container.scrollTop = 0;
   return state;
 }
