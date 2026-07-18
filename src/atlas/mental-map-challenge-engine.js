@@ -1,6 +1,13 @@
 import { getStateById } from "./united-states-atlas-queries.js";
 import { getEntity, unitedStatesAtlas } from "./united-states-atlas-data.js";
-import { MENTAL_MAP_ANSWER_MODES, validateMentalMapChallenge } from "./mental-map-challenges.js";
+import { findAllShortestBorderPaths, validateBorderRoute } from "./border-chain.js";
+import {
+  getMentalMapRouteRenderingMode,
+  isMentalMapBorderRouteChallenge,
+  MENTAL_MAP_ANSWER_MODES,
+  MENTAL_MAP_COUNT_RULES,
+  validateMentalMapChallenge
+} from "./mental-map-challenges.js";
 
 function copy(value) {
   return JSON.parse(JSON.stringify(value));
@@ -29,6 +36,12 @@ function appearsInExpectedRelativeOrder(bankIds, expectedIds) {
 }
 
 export function getMentalMapRequiredStateIds(challenge) {
+  if (isMentalMapBorderRouteChallenge(challenge)) {
+    return unique(findAllShortestBorderPaths(
+      challenge.routeStartStateId,
+      challenge.routeDestinationStateId
+    ).flatMap((path) => path.slice(1, -1)));
+  }
   if (challenge?.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE) {
     return unique([
       ...(challenge.orderedStateIds || []),
@@ -45,6 +58,7 @@ export function buildMentalMapAnswerBank(challenge, { random = Math.random } = {
   let shuffled = shuffle(bankIds, random);
 
   if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE
+    && !isMentalMapBorderRouteChallenge(challenge)
     && challenge.orderedStateIds.length > 1
     && appearsInExpectedRelativeOrder(shuffled, challenge.orderedStateIds)) {
     const firstIndex = shuffled.indexOf(challenge.orderedStateIds[0]);
@@ -61,10 +75,10 @@ export function buildMentalMapAnswerBank(challenge, { random = Math.random } = {
 export function createMentalMapChallengeState(challenge, options = {}) {
   if (validateMentalMapChallenge(challenge).length) return null;
   const maxSelections = challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_COUNT
-    ? challenge.requiredSelectionCount
-    : challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_ALL
+    ? challenge.countRule === MENTAL_MAP_COUNT_RULES.MINIMUM
       ? challenge.correctStateIds.length
-      : null;
+      : challenge.requiredSelectionCount
+    : null;
   return {
     challengeId: challenge.id,
     answerMode: challenge.answerMode,
@@ -74,6 +88,13 @@ export function createMentalMapChallengeState(challenge, options = {}) {
     maxSelections,
     evaluation: null
   };
+}
+
+export function isMentalMapAnswerChoiceDisabled(state, stateId) {
+  const isSelected = Boolean(state?.selectedStateIds?.includes(stateId));
+  const selectionLimitReached = Number.isInteger(state?.maxSelections)
+    && state.selectedStateIds.length >= state.maxSelections;
+  return isSelected || selectionLimitReached;
 }
 
 export function selectMentalMapAnswer(state, stateId) {
@@ -117,13 +138,19 @@ export function moveMentalMapAnswer(state, stateId, direction) {
 }
 
 export function evaluateMentalMapAnswer(challenge, selectedStateIds = []) {
-  const selected = unique(selectedStateIds);
+  const selected = isMentalMapBorderRouteChallenge(challenge)
+    ? (selectedStateIds || []).filter(Boolean)
+    : unique(selectedStateIds);
   if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_COUNT) {
     const eligible = new Set(challenge.correctStateIds);
     const selectedValidStateIds = selected.filter((stateId) => eligible.has(stateId));
     const selectedInvalidStateIds = selected.filter((stateId) => !eligible.has(stateId));
-    const requestedCountMet = selected.length === challenge.requiredSelectionCount;
-    const maxScore = challenge.requiredSelectionCount;
+    const requestedCountMet = challenge.countRule === MENTAL_MAP_COUNT_RULES.MINIMUM
+      ? selectedValidStateIds.length >= challenge.requiredSelectionCount
+      : selected.length === challenge.requiredSelectionCount;
+    const maxScore = challenge.countRule === MENTAL_MAP_COUNT_RULES.MINIMUM
+      ? challenge.correctStateIds.length
+      : challenge.requiredSelectionCount;
     const score = Math.min(selectedValidStateIds.length, maxScore);
     return {
       isCorrect: requestedCountMet && selectedInvalidStateIds.length === 0,
@@ -164,6 +191,45 @@ export function evaluateMentalMapAnswer(challenge, selectedStateIds = []) {
       correctlyPositionedStateIds: [],
       misplacedStateIds: [],
       expectedSequence: []
+    };
+  }
+
+  if (isMentalMapBorderRouteChallenge(challenge)) {
+    const routeEvaluation = validateBorderRoute([
+      challenge.routeStartStateId,
+      ...selected,
+      challenge.routeDestinationStateId
+    ], {
+      startStateId: challenge.routeStartStateId,
+      destinationStateId: challenge.routeDestinationStateId
+    });
+    const validSelectedIds = unique(routeEvaluation.validTransitions
+      .map((transition) => transition.toStateId)
+      .filter((stateId) => selected.includes(stateId)));
+    const invalidSelectedStateIds = unique([
+      routeEvaluation.firstInvalidTransition?.toStateId,
+      routeEvaluation.repeatedStateId
+    ].filter((stateId) => selected.includes(stateId)));
+    return {
+      isCorrect: routeEvaluation.isValid,
+      isBorderRoute: true,
+      isShortestRoute: routeEvaluation.isShortest,
+      selectedStateIds: [...selected],
+      selectedValidStateIds: routeEvaluation.isValid ? unique(selected) : validSelectedIds,
+      selectedInvalidStateIds: invalidSelectedStateIds,
+      requestedCountMet: routeEvaluation.isValid,
+      completeEligibleStateIds: [],
+      missingStateIds: [],
+      unnecessaryStateIds: [],
+      correctlyPositionedStateIds: [],
+      misplacedStateIds: [],
+      expectedSequence: [],
+      routeStateIds: routeEvaluation.routeStateIds,
+      validTransitions: routeEvaluation.validTransitions,
+      firstInvalidTransition: routeEvaluation.firstInvalidTransition,
+      repeatedStateId: routeEvaluation.repeatedStateId,
+      playerTransitionCount: routeEvaluation.playerTransitionCount,
+      shortestTransitionCount: routeEvaluation.shortestTransitionCount
     };
   }
 
@@ -209,20 +275,40 @@ export function submitMentalMapAnswer(state, challenge) {
 }
 
 export function getMentalMapResultVisualState(challenge, evaluation) {
+  const borderRouteStateIds = evaluation.isBorderRoute ? evaluation.routeStateIds || [] : [];
   const orderedCorrectIds = challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE
+    && !evaluation.isBorderRoute
     ? evaluation.expectedSequence
     : [];
+  const routeStateIds = evaluation.isBorderRoute
+    ? borderRouteStateIds
+    : unique([challenge.routeStartStateId, ...orderedCorrectIds, challenge.routeDestinationStateId]);
   const correctStateIds = challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE
-    ? unique([challenge.routeStartStateId, ...orderedCorrectIds, challenge.routeDestinationStateId])
+    ? routeStateIds
     : [...challenge.correctStateIds];
   const associatedFeatures = (challenge.associatedFeatureIds || []).map((entityId) => {
     const entity = getEntity(unitedStatesAtlas, entityId);
+    const coastStateIds = entity?.kind === "water"
+      ? correctStateIds.filter((stateId) => unitedStatesAtlas.relationships.some((relationship) => (
+        relationship.type === "coast"
+        && relationship.from === `state:${stateId}`
+        && relationship.to === entity.id
+      )))
+      : [];
+    const exclusiveCoastStateIds = coastStateIds.filter((stateId) => (
+      unitedStatesAtlas.relationships.filter((relationship) => (
+        relationship.type === "coast" && relationship.from === `state:${stateId}`
+      )).length === 1
+    ));
     return entity ? {
       entityId: entity.id,
       id: entity.id.split(":").slice(1).join(":"),
       kind: entity.kind,
       name: entity.name,
-      sourceFeatureId: entity.source?.featureId || ""
+      sourceFeatureId: entity.source?.featureId || "",
+      relationshipType: coastStateIds.length ? "coast" : "",
+      coastStateIds,
+      exclusiveCoastStateIds
     } : null;
   }).filter(Boolean);
   return {
@@ -231,8 +317,10 @@ export function getMentalMapResultVisualState(challenge, evaluation) {
     selectedIncorrectStateIds: [...evaluation.selectedInvalidStateIds],
     missingStateIds: [...evaluation.missingStateIds],
     misplacedStateIds: [...evaluation.misplacedStateIds],
-    expectedSequenceStateIds: unique([challenge.routeStartStateId, ...orderedCorrectIds, challenge.routeDestinationStateId]),
-    learnerStateIds: [...evaluation.selectedStateIds],
-    associatedFeatures
+    expectedSequenceStateIds: routeStateIds,
+    learnerStateIds: evaluation.isBorderRoute ? routeStateIds : [...evaluation.selectedStateIds],
+    associatedFeatures,
+    routeRenderingMode: getMentalMapRouteRenderingMode(challenge),
+    explicitRouteGeometry: challenge.explicitRouteGeometry || null
   };
 }

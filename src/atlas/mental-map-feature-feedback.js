@@ -1,7 +1,11 @@
+import { getUnitedStatesCoastlineSegmentGeometry } from "./united-states-coastline-segments.js";
+
 const EMPTY_FEATURE_COLLECTION = Object.freeze({
   type: "FeatureCollection",
   features: []
 });
+
+const geometryIndexCache = new WeakMap();
 
 function normalizeId(value = "") {
   return String(value || "")
@@ -159,6 +163,162 @@ function isPointInGeometry(point, geometry) {
   return false;
 }
 
+function getExteriorRings(geometry) {
+  if (geometry?.type === "Polygon") return geometry.coordinates?.[0] ? [geometry.coordinates[0]] : [];
+  if (geometry?.type === "MultiPolygon") {
+    return geometry.coordinates.map((polygon) => polygon?.[0]).filter(Boolean);
+  }
+  return [];
+}
+
+function createGeometryIndex(collection) {
+  if (!collection || typeof collection !== "object") return [];
+  if (geometryIndexCache.has(collection)) return geometryIndexCache.get(collection);
+  const index = copyFeatureCollection(collection).features.map((feature) => ({
+    geometry: feature.geometry,
+    bounds: getGeometryBounds(feature.geometry)
+  })).filter((item) => item.bounds);
+  geometryIndexCache.set(collection, index);
+  return index;
+}
+
+function isPointInGeometryIndex(point, index) {
+  return index.some(({ geometry, bounds }) => (
+    point[0] >= bounds[0] && point[0] <= bounds[2]
+    && point[1] >= bounds[1] && point[1] <= bounds[3]
+    && isPointInGeometry(point, geometry)
+  ));
+}
+
+function normalizeLongitude(longitude) {
+  let normalized = longitude;
+  while (normalized > 180) normalized -= 360;
+  while (normalized < -180) normalized += 360;
+  return normalized;
+}
+
+function getSegmentMidpoint(start, end) {
+  let endLongitude = end[0];
+  while (endLongitude - start[0] > 180) endLongitude -= 360;
+  while (start[0] - endLongitude > 180) endLongitude += 360;
+  return [normalizeLongitude((start[0] + endLongitude) / 2), (start[1] + end[1]) / 2];
+}
+
+function getRingSignedArea(ring) {
+  return (ring || []).slice(0, -1).reduce((sum, point, index) => {
+    const next = ring[index + 1] || ring[0];
+    return sum + (point[0] * next[1]) - (next[0] * point[1]);
+  }, 0) / 2;
+}
+
+function getSegmentWaterPoint(
+  start,
+  end,
+  stateGeometry,
+  landIndex,
+  inlandWaterIndex,
+  outwardDirection
+) {
+  let endLongitude = end[0];
+  while (endLongitude - start[0] > 180) endLongitude -= 360;
+  while (start[0] - endLongitude > 180) endLongitude += 360;
+  const deltaX = endLongitude - start[0];
+  const deltaY = end[1] - start[1];
+  const length = Math.hypot(deltaX, deltaY);
+  if (!length) return null;
+  const midpoint = [(start[0] + endLongitude) / 2, (start[1] + end[1]) / 2];
+  const normal = [-deltaY / length, deltaX / length];
+
+  for (const distance of [0.025, 0.075, 0.15]) {
+    const point = [
+      normalizeLongitude(midpoint[0] + normal[0] * distance * outwardDirection),
+      midpoint[1] + normal[1] * distance * outwardDirection
+    ];
+    if (!isPointInGeometry(point, stateGeometry)
+      && !isPointInGeometryIndex(point, landIndex)
+      && !isPointInGeometryIndex(point, inlandWaterIndex)) {
+      return point;
+    }
+  }
+  return null;
+}
+
+function isPointInNamedCoastalWater(point, waterId, waterGeometry) {
+  return isPointInGeometry(point, waterGeometry);
+}
+
+function createCoastlineFeatures(metadata, waterGeometry, stateFeatures, countries, inlandWaters) {
+  const landIndex = createGeometryIndex(countries);
+  const inlandWaterIndex = createGeometryIndex(inlandWaters);
+  if (!landIndex.length) return [];
+  const waterId = normalizeId(metadata.id || metadata.entityId);
+  const features = [];
+
+  (metadata.coastStateIds || []).forEach((stateId) => {
+    const explicitGeometry = getUnitedStatesCoastlineSegmentGeometry(stateId, waterId);
+    if (explicitGeometry) {
+      features.push({
+        type: "Feature",
+        properties: {
+          stateId,
+          questionFeatureEntityId: metadata.entityId,
+          questionFeatureKind: "coastline",
+          questionFeatureName: metadata.name,
+          renderingMode: "coastline-only"
+        },
+        geometry: explicitGeometry
+      });
+      return;
+    }
+    const stateFeature = getStateFeature(stateId, stateFeatures);
+    const usesExclusiveCanonicalCoast = (metadata.exclusiveCoastStateIds || []).includes(stateId);
+    getExteriorRings(stateFeature?.geometry).forEach((ring) => {
+      let activeCoordinates = [];
+      const outwardDirection = getRingSignedArea(ring) > 0 ? -1 : 1;
+      const flush = () => {
+        if (activeCoordinates.length > 1) {
+          features.push({
+            type: "Feature",
+            properties: {
+              stateId,
+              questionFeatureEntityId: metadata.entityId,
+              questionFeatureKind: "coastline",
+              questionFeatureName: metadata.name,
+              renderingMode: "coastline-only"
+            },
+            geometry: { type: "LineString", coordinates: activeCoordinates }
+          });
+        }
+        activeCoordinates = [];
+      };
+
+      for (let index = 1; index < ring.length; index += 1) {
+        const start = ring[index - 1];
+        const end = ring[index];
+        const inNamedWaterRegion = usesExclusiveCanonicalCoast || isPointInNamedCoastalWater(
+          getSegmentMidpoint(start, end), waterId, waterGeometry
+        );
+        const waterPoint = inNamedWaterRegion ? getSegmentWaterPoint(
+          start,
+          end,
+          stateFeature.geometry,
+          landIndex,
+          inlandWaterIndex,
+          outwardDirection
+        ) : null;
+        if (waterPoint) {
+          if (!activeCoordinates.length) activeCoordinates.push(start);
+          activeCoordinates.push(end);
+        } else {
+          flush();
+        }
+      }
+      flush();
+    });
+  });
+  return features;
+}
+
 function getReliableCountryLabelAnchor(feature) {
   const longitude = Number(feature?.properties?.LABEL_X);
   const latitude = Number(feature?.properties?.LABEL_Y);
@@ -201,14 +361,34 @@ function shouldIncludeFeatureBounds(kind, bounds) {
   return bounds[2] - bounds[0] <= 65 && bounds[3] - bounds[1] <= 45;
 }
 
-function createRouteFeature(stateIds, stateFeatures) {
+function getExplicitRouteGeometry(value) {
+  const geometry = value?.type === "Feature" ? value.geometry : value;
+  return ["LineString", "MultiLineString"].includes(geometry?.type)
+    ? geometry
+    : null;
+}
+
+function createRouteFeature(stateIds, stateFeatures, routeRenderingMode, explicitRouteGeometry) {
+  if (routeRenderingMode === "feature-only") return null;
+  if (routeRenderingMode === "explicit-route-geometry") {
+    const geometry = getExplicitRouteGeometry(explicitRouteGeometry);
+    return geometry ? {
+      type: "Feature",
+      properties: { featureRole: "ordered-route", routeRenderingMode },
+      geometry
+    } : null;
+  }
   const coordinates = (stateIds || []).map((stateId) => (
     getBoundsCenter(getGeometryBounds(getStateFeature(stateId, stateFeatures)?.geometry))
   )).filter(Boolean);
   if (coordinates.length < 2) return null;
   return {
     type: "Feature",
-    properties: { featureRole: "ordered-route", questionFeatureName: "Correct route" },
+    properties: {
+      featureRole: "ordered-route",
+      questionFeatureName: "Correct sequence",
+      routeRenderingMode: "state-centroid-sequence"
+    },
     geometry: { type: "LineString", coordinates }
   };
 }
@@ -217,6 +397,8 @@ export function buildMentalMapFeatureFeedback({
   associatedFeatures = [],
   answerStateIds = [],
   orderedStateIds = [],
+  routeRenderingMode = "state-centroid-sequence",
+  explicitRouteGeometry = null,
   stateFeatures = EMPTY_FEATURE_COLLECTION,
   collections = {}
 } = {}) {
@@ -225,12 +407,23 @@ export function buildMentalMapFeatureFeedback({
   let cameraBounds = stateBounds;
   const features = [];
   const labels = [];
+  const coastlines = [];
   const missingFeatureIds = [];
 
   associatedFeatures.forEach((metadata) => {
     const sourceFeature = findFeatureGeometry(metadata, collections);
     const geometry = sourceFeature?.geometry || null;
-    if (geometry) {
+    const coastlineOnly = metadata.relationshipType === "coast";
+    if (!geometry) missingFeatureIds.push(metadata.entityId);
+    if (coastlineOnly) {
+      coastlines.push(...createCoastlineFeatures(
+        metadata,
+        geometry,
+        stateFeatures,
+        collections.countries,
+        collections.lakes
+      ));
+    } else if (geometry) {
       features.push({
         type: "Feature",
         properties: {
@@ -245,8 +438,6 @@ export function buildMentalMapFeatureFeedback({
       if (shouldIncludeFeatureBounds(metadata.kind, featureBounds)) {
         cameraBounds = mergeBounds(cameraBounds, featureBounds);
       }
-    } else {
-      missingFeatureIds.push(metadata.entityId);
     }
 
     if (geometry || metadata.kind === "water") {
@@ -274,7 +465,13 @@ export function buildMentalMapFeatureFeedback({
     }
   });
 
-  const routeFeature = createRouteFeature(orderedStateIds, stateFeatures);
+  const routeFeature = createRouteFeature(
+    orderedStateIds,
+    stateFeatures,
+    routeRenderingMode,
+    explicitRouteGeometry
+  );
+  if (routeFeature) cameraBounds = mergeBounds(cameraBounds, getGeometryBounds(routeFeature.geometry));
   return {
     featureCollection: { type: "FeatureCollection", features },
     labelCollection: { type: "FeatureCollection", features: labels },
@@ -282,9 +479,8 @@ export function buildMentalMapFeatureFeedback({
       type: "FeatureCollection",
       features: routeFeature ? [routeFeature] : []
     },
-    coastStateIds: associatedFeatures.some((feature) => feature.kind === "water")
-      ? [...new Set(answerStateIds)]
-      : [],
+    coastlineCollection: { type: "FeatureCollection", features: coastlines },
+    coastStateIds: [...new Set(associatedFeatures.flatMap((feature) => feature.coastStateIds || []))],
     cameraBounds: cameraBounds ? [[cameraBounds[0], cameraBounds[1]], [cameraBounds[2], cameraBounds[3]]] : null,
     missingFeatureIds
   };

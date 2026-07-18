@@ -7,7 +7,7 @@ import {
   oceanTextureSize
 } from "./ocean-textures.js?v=20260601-instruction-target-nouns";
 import { createCoastlineDisplayGeoJson } from "./coastline-display-geometry.js?v=20260623-coastline-visual-cleanup-2";
-import { buildMentalMapFeatureFeedback } from "../atlas/mental-map-feature-feedback.js?v=20260718-mental-map-partial-credit-1";
+import { buildMentalMapFeatureFeedback } from "../atlas/mental-map-feature-feedback.js?v=20260718-mental-map-result-terminology-1";
 
 const colors = {
   ink: "#172033",
@@ -953,9 +953,11 @@ export class MapLibreActivityRunner {
       selectedIncorrectStateIds: [...new Set(visualState.selectedIncorrectStateIds || [])],
       missingStateIds: [...new Set(visualState.missingStateIds || [])],
       misplacedStateIds: [...new Set(visualState.misplacedStateIds || [])],
-      expectedSequenceStateIds: [...new Set(visualState.expectedSequenceStateIds || [])],
+      expectedSequenceStateIds: [...(visualState.expectedSequenceStateIds || [])],
       learnerStateIds: [...new Set(visualState.learnerStateIds || [])],
-      associatedFeatures: (visualState.associatedFeatures || []).map((feature) => ({ ...feature }))
+      associatedFeatures: (visualState.associatedFeatures || []).map((feature) => ({ ...feature })),
+      routeRenderingMode: visualState.routeRenderingMode || null,
+      explicitRouteGeometry: visualState.explicitRouteGeometry || null
     };
     ["us-state-context-fill", "border-chain-state-fill"].forEach((layerId) => {
       if (this.map?.getLayer(layerId)) this.map.setPaintProperty(layerId, "fill-color", this.getUsStateContextFillExpression());
@@ -973,6 +975,8 @@ export class MapLibreActivityRunner {
       associatedFeatures: visualState.associatedFeatures || [],
       answerStateIds,
       orderedStateIds: visualState.expectedSequenceStateIds || [],
+      routeRenderingMode: visualState.routeRenderingMode || "state-centroid-sequence",
+      explicitRouteGeometry: visualState.explicitRouteGeometry || null,
       stateFeatures: this.usStatesAtlas,
       collections: {
         rivers: this.riverLines,
@@ -986,6 +990,7 @@ export class MapLibreActivityRunner {
     this.map?.getSource("mental-map-question-features")?.setData(feedback.featureCollection);
     this.map?.getSource("mental-map-question-feature-labels")?.setData(feedback.labelCollection);
     this.map?.getSource("mental-map-question-route")?.setData(feedback.routeCollection);
+    this.map?.getSource("mental-map-question-coastlines")?.setData(feedback.coastlineCollection);
 
     const resultVisible = this.currentView === "mental-map-challenge-result";
     const hasFeatures = feedback.featureCollection.features.length > 0;
@@ -1002,12 +1007,11 @@ export class MapLibreActivityRunner {
       if (this.map?.getLayer(layerId)) this.map.setLayoutProperty(layerId, "visibility", resultVisible && hasRoute ? "visible" : "none");
     });
     if (this.map?.getLayer("mental-map-question-coastline")) {
-      this.map.setFilter("mental-map-question-coastline", [
-        "in",
-        ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]],
-        ["literal", feedback.coastStateIds]
-      ]);
-      this.map.setLayoutProperty("mental-map-question-coastline", "visibility", resultVisible && feedback.coastStateIds.length ? "visible" : "none");
+      this.map.setLayoutProperty(
+        "mental-map-question-coastline",
+        "visibility",
+        resultVisible && feedback.coastlineCollection.features.length ? "visible" : "none"
+      );
     }
   }
 
@@ -2991,6 +2995,11 @@ export class MapLibreActivityRunner {
       data: emptyFeatureCollection
     });
 
+    this.map.addSource("mental-map-question-coastlines", {
+      type: "geojson",
+      data: emptyFeatureCollection
+    });
+
     this.map.addSource("ocean-target-raster", {
       type: "image",
       url: this.createOceanTargetHighlightImage(),
@@ -3167,8 +3176,7 @@ export class MapLibreActivityRunner {
     this.map.addLayer({
       id: "mental-map-question-coastline",
       type: "line",
-      source: "us-states-atlas-display",
-      filter: ["in", ["get", "id"], ["literal", []]],
+      source: "mental-map-question-coastlines",
       layout: {
         visibility: "none",
         "line-cap": "round",
@@ -3194,6 +3202,7 @@ export class MapLibreActivityRunner {
       paint: {
         "line-color": "#ffffff",
         "line-opacity": 0.9,
+        "line-dasharray": [1.5, 1.1],
         "line-width": 8
       }
     });
@@ -3210,6 +3219,7 @@ export class MapLibreActivityRunner {
       paint: {
         "line-color": "#083344",
         "line-opacity": 1,
+        "line-dasharray": [1.5, 1.1],
         "line-width": 4
       }
     });

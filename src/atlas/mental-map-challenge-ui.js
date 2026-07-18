@@ -1,6 +1,12 @@
 import { getStateById } from "./united-states-atlas-queries.js";
-import { getMentalMapScoreLabel } from "./mental-map-challenge-engine.js";
-import { MENTAL_MAP_ANSWER_MODES } from "./mental-map-challenges.js";
+import {
+  getMentalMapScoreLabel,
+  isMentalMapAnswerChoiceDisabled
+} from "./mental-map-challenge-engine.js";
+import {
+  MENTAL_MAP_ANSWER_MODES,
+  MENTAL_MAP_COUNT_RULES
+} from "./mental-map-challenges.js";
 
 function stateName(stateId) {
   return getStateById(stateId)?.name || "Unknown state";
@@ -30,10 +36,18 @@ function createQuestionHeader(challenge) {
   const heading = document.createElement("h2");
   heading.textContent = challenge.prompt;
   header.append(eyebrow, heading);
+  if (challenge.secondaryInstruction) {
+    const instruction = document.createElement("p");
+    instruction.className = "mental-map-request-count mental-map-secondary-instruction";
+    instruction.textContent = challenge.secondaryInstruction;
+    header.appendChild(instruction);
+  }
   if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_COUNT) {
     const count = document.createElement("p");
     count.className = "mental-map-request-count";
-    count.textContent = `Choose exactly ${challenge.requiredSelectionCount}.`;
+    count.textContent = challenge.countRule === MENTAL_MAP_COUNT_RULES.MINIMUM
+      ? `Minimum required: ${challenge.requiredSelectionCount}.`
+      : `Choose exactly ${challenge.requiredSelectionCount}.`;
     header.appendChild(count);
   }
   return header;
@@ -95,10 +109,10 @@ function createAnswerBank(state, options) {
   bank.className = "mental-map-answer-bank";
   state.answerBank.forEach((answer) => {
     const isSelected = state.selectedStateIds.includes(answer.id);
-    const selectionLimitReached = Number.isInteger(state.maxSelections)
-      && state.selectedStateIds.length >= state.maxSelections;
+    const choiceDisabled = isMentalMapAnswerChoiceDisabled(state, answer.id);
+    const selectionLimitReached = choiceDisabled && !isSelected;
     bank.appendChild(createButton(answer.name, "mental-map-answer-choice", () => options.onSelect?.(answer.id), {
-      disabled: isSelected || selectionLimitReached,
+      disabled: choiceDisabled,
       ariaLabel: isSelected
         ? `${answer.name}, selected`
         : selectionLimitReached
@@ -145,7 +159,7 @@ function createResultLegend() {
     ["correct", "Correct answer"],
     ["missing", "Missing"],
     ["misplaced", "Misplaced"],
-    ["incorrect", "Incorrect or unnecessary"],
+    ["incorrect", "Incorrect"],
     ["question-feature", "Question feature"]
   ].forEach(([kind, label]) => {
     const item = document.createElement("li");
@@ -163,8 +177,27 @@ function createResultContent(challenge, state, options) {
   wrapper.className = "mental-map-result-content";
   const status = document.createElement("p");
   status.className = `mental-map-result-status ${evaluation.isCorrect ? "is-correct" : "is-incorrect"}`;
-  if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE) {
+  if (evaluation.isBorderRoute) {
+    status.textContent = evaluation.isCorrect
+      ? evaluation.isShortestRoute
+        ? "Correct - you found a shortest route."
+        : "Correct - your route works. A shorter route is possible."
+      : evaluation.firstInvalidTransition?.reason === "repeated-state"
+        ? `Not quite - ${stateName(evaluation.repeatedStateId)} appears more than once.`
+        : evaluation.firstInvalidTransition?.reason === "states-do-not-border"
+          ? `Not quite - ${stateName(evaluation.firstInvalidTransition.fromStateId)} and ${stateName(evaluation.firstInvalidTransition.toStateId)} do not share a border.`
+          : "Not quite - the route does not connect the start and destination.";
+  } else if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE) {
     status.textContent = evaluation.isCorrect ? "Correct" : "Not quite";
+  } else if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_COUNT
+    && challenge.countRule === MENTAL_MAP_COUNT_RULES.MINIMUM) {
+    status.textContent = evaluation.isCorrect
+      ? evaluation.score === evaluation.maxScore
+        ? `${evaluation.score} correct - all possible answers named`
+        : `${evaluation.score} correct - requirement met`
+      : evaluation.selectedInvalidStateIds.length
+        ? `${evaluation.score} correct - includes an invalid answer`
+        : `${evaluation.score} correct - name at least ${challenge.requiredSelectionCount}`;
   } else {
     const scoreRatio = evaluation.maxScore > 0 ? evaluation.score / evaluation.maxScore : 0;
     const encouragement = evaluation.isCorrect
@@ -177,27 +210,49 @@ function createResultContent(challenge, state, options) {
     status.textContent = `${getMentalMapScoreLabel(evaluation)} - ${encouragement}`;
   }
   wrapper.appendChild(status);
-  wrapper.appendChild(createResultLine("Your answer", evaluation.selectedStateIds,
-    challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE ? "is-sequence" : ""));
+  wrapper.appendChild(createResultLine(
+    evaluation.isBorderRoute && evaluation.isCorrect ? "Your valid route" : evaluation.isBorderRoute ? "Your route" : "Your answer",
+    evaluation.isBorderRoute ? evaluation.routeStateIds : evaluation.selectedStateIds,
+    challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE ? "is-sequence" : ""
+  ));
 
-  if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_COUNT) {
+  if (evaluation.isBorderRoute) {
+    const transitionCount = document.createElement("p");
+    transitionCount.className = "mental-map-result-line";
+    transitionCount.textContent = `Your route: ${evaluation.playerTransitionCount} border crossings. Shortest possible: ${evaluation.shortestTransitionCount} border crossings.`;
+    wrapper.appendChild(transitionCount);
+    if (!evaluation.isCorrect && evaluation.firstInvalidTransition) {
+      const invalid = document.createElement("p");
+      invalid.className = "mental-map-result-line";
+      invalid.textContent = evaluation.firstInvalidTransition.reason === "repeated-state"
+        ? `First invalid step: ${stateName(evaluation.repeatedStateId)} is repeated.`
+        : evaluation.firstInvalidTransition.reason === "states-do-not-border"
+          ? `First invalid transition: ${stateName(evaluation.firstInvalidTransition.fromStateId)} to ${stateName(evaluation.firstInvalidTransition.toStateId)}.`
+          : "The route must begin and end at the named states.";
+      wrapper.appendChild(invalid);
+    }
+  } else if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_COUNT) {
     wrapper.append(
-      createResultLine("Selected valid states", evaluation.selectedValidStateIds),
-      createResultLine("Selected invalid states", evaluation.selectedInvalidStateIds),
+      createResultLine("Correct selections", evaluation.selectedValidStateIds),
+      createResultLine("Incorrect", evaluation.selectedInvalidStateIds),
       createResultLine("Complete eligible set", evaluation.completeEligibleStateIds)
     );
     const count = document.createElement("p");
     count.className = "mental-map-result-line";
-    count.textContent = evaluation.requestedCountMet
-      ? `Requested count met: ${challenge.requiredSelectionCount}.`
-      : `Requested count not met: choose exactly ${challenge.requiredSelectionCount}.`;
+    count.textContent = challenge.countRule === MENTAL_MAP_COUNT_RULES.MINIMUM
+      ? evaluation.requestedCountMet
+        ? `Minimum met: ${evaluation.score} correct; ${challenge.requiredSelectionCount} required.`
+        : `Minimum not met: ${evaluation.score} correct; name at least ${challenge.requiredSelectionCount}.`
+      : evaluation.requestedCountMet
+        ? `Requested count met: ${challenge.requiredSelectionCount}.`
+        : `Requested count not met: choose exactly ${challenge.requiredSelectionCount}.`;
     wrapper.appendChild(count);
   } else if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_ALL) {
     wrapper.append(
       createResultLine("Correct answer", challenge.correctStateIds),
       createResultLine("Correct selections", evaluation.selectedValidStateIds),
       createResultLine("Missing", evaluation.missingStateIds),
-      createResultLine("Unnecessary", evaluation.unnecessaryStateIds)
+      createResultLine("Incorrect", evaluation.selectedInvalidStateIds)
     );
   } else {
     wrapper.append(
@@ -205,7 +260,7 @@ function createResultContent(challenge, state, options) {
       createResultLine("Correctly positioned", evaluation.correctlyPositionedStateIds),
       createResultLine("Misplaced", evaluation.misplacedStateIds),
       createResultLine("Missing", evaluation.missingStateIds),
-      createResultLine("Unnecessary", evaluation.unnecessaryStateIds)
+      createResultLine("Incorrect", evaluation.selectedInvalidStateIds)
     );
     if (evaluation.acceptedAlternativeIndex !== null) {
       const alternative = document.createElement("p");

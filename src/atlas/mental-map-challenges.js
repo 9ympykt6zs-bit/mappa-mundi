@@ -19,6 +19,36 @@ export const MENTAL_MAP_ANSWER_MODES = Object.freeze({
   ORDERED_SEQUENCE: "ordered-sequence"
 });
 
+export const MENTAL_MAP_COUNT_RULES = Object.freeze({
+  MINIMUM: "minimum",
+  EXACT: "exact"
+});
+
+export const MENTAL_MAP_ROUTE_RENDERING_MODES = Object.freeze({
+  FEATURE_ONLY: "feature-only",
+  STATE_CENTROID_SEQUENCE: "state-centroid-sequence",
+  EXPLICIT_ROUTE_GEOMETRY: "explicit-route-geometry"
+});
+
+export const MENTAL_MAP_ROUTE_VALIDATION_MODES = Object.freeze({
+  BORDER_GRAPH: "border-graph"
+});
+
+export function isMentalMapBorderRouteChallenge(challenge) {
+  return challenge?.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE
+    && challenge?.routeValidationMode === MENTAL_MAP_ROUTE_VALIDATION_MODES.BORDER_GRAPH;
+}
+
+export function getMentalMapRouteRenderingMode(challenge) {
+  if (challenge?.answerMode !== MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE) return null;
+  if (Object.values(MENTAL_MAP_ROUTE_RENDERING_MODES).includes(challenge.routeRenderingMode)) {
+    return challenge.routeRenderingMode;
+  }
+  if (challenge.explicitRouteGeometry) return MENTAL_MAP_ROUTE_RENDERING_MODES.EXPLICIT_ROUTE_GEOMETRY;
+  if (challenge.associatedFeatureIds?.length) return MENTAL_MAP_ROUTE_RENDERING_MODES.FEATURE_ONLY;
+  return MENTAL_MAP_ROUTE_RENDERING_MODES.STATE_CENTROID_SEQUENCE;
+}
+
 export const MENTAL_MAP_GEOGRAPHIC_DECISIONS = Object.freeze({
   pacificCoast: "The Pacific question says U.S. states, so Alaska and Hawaii are included with California, Oregon, and Washington.",
   canadaBorder: "A state borders another political territory when their legal boundaries meet, including where the boundary runs through a river or lake. Alaska is excluded because the question specifies contiguous states.",
@@ -26,7 +56,7 @@ export const MENTAL_MAP_GEOGRAPHIC_DECISIONS = Object.freeze({
   rockyMountains: "Rocky Mountains answers use the atlas's broad locatedIn associations rather than an exact mapped mountain footprint.",
   coastlines: "Coast questions use the atlas coast relationships. Florida may belong to both Atlantic Ocean and Gulf of Mexico sets.",
   mississippiWestSide: "The curated west-side route runs northward from Louisiana through Arkansas, Missouri, Iowa, and Minnesota.",
-  shortestRoutes: "Generated land-border routes exclude Alaska and Hawaii and use only pairs with one unique shortest path.",
+  shortestRoutes: "Generated neighboring-state route questions exclude Alaska and Hawaii. Every valid border-by-border route is accepted, and all shortest routes contribute states to the answer bank.",
   gulfNaming: "The atlas displays Gulf of Mexico and recognizes Gulf of America as the alternate U.S. federal name."
 });
 
@@ -57,6 +87,7 @@ const staticChallenges = Object.freeze([
     title: "Pacific Coast",
     prompt: "Name any three U.S. states with a Pacific Ocean coastline.",
     answerMode: MENTAL_MAP_ANSWER_MODES.SELECT_COUNT,
+    countRule: MENTAL_MAP_COUNT_RULES.MINIMUM,
     correctStateIds: pacificCoastStateIds,
     requiredSelectionCount: 3,
     distractorStateIds: ["arizona", "florida", "nevada", "texas"],
@@ -68,6 +99,7 @@ const staticChallenges = Object.freeze([
     title: "Rocky Mountains",
     prompt: "Name any three U.S. states that include part of the Rocky Mountains.",
     answerMode: MENTAL_MAP_ANSWER_MODES.SELECT_COUNT,
+    countRule: MENTAL_MAP_COUNT_RULES.MINIMUM,
     correctStateIds: rockyMountainStateIds,
     requiredSelectionCount: 3,
     distractorStateIds: ["arizona", "nevada", "oregon", "washington"],
@@ -79,6 +111,7 @@ const staticChallenges = Object.freeze([
     title: "Atlantic Coast",
     prompt: "Name any three U.S. states with an Atlantic Ocean coastline.",
     answerMode: MENTAL_MAP_ANSWER_MODES.SELECT_COUNT,
+    countRule: MENTAL_MAP_COUNT_RULES.MINIMUM,
     correctStateIds: atlanticCoastStateIds,
     requiredSelectionCount: 3,
     distractorStateIds: ["alabama", "ohio", "tennessee", "west-virginia"],
@@ -90,6 +123,7 @@ const staticChallenges = Object.freeze([
     title: "Mississippi River",
     prompt: "Name any three U.S. states that border or lie alongside the Mississippi River.",
     answerMode: MENTAL_MAP_ANSWER_MODES.SELECT_COUNT,
+    countRule: MENTAL_MAP_COUNT_RULES.MINIMUM,
     correctStateIds: mississippiRiverStateIds,
     requiredSelectionCount: 3,
     distractorStateIds: ["alabama", "indiana", "kansas", "ohio"],
@@ -141,6 +175,7 @@ const staticChallenges = Object.freeze([
     title: "Gulf Coast Order",
     prompt: "Travel eastward along the Gulf of Mexico coast from Texas to Florida.",
     answerMode: MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE,
+    routeRenderingMode: MENTAL_MAP_ROUTE_RENDERING_MODES.FEATURE_ONLY,
     orderedStateIds: ["texas", "louisiana", "mississippi", "alabama", "florida"],
     distractorStateIds: ["arkansas", "georgia", "oklahoma"],
     explanation: "From west to east, the Gulf Coast states are Texas, Louisiana, Mississippi, Alabama, and Florida.",
@@ -151,6 +186,7 @@ const staticChallenges = Object.freeze([
     title: "Mississippi River Order",
     prompt: "Follow the western side of the Mississippi River northward from Louisiana to Minnesota.",
     answerMode: MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE,
+    routeRenderingMode: MENTAL_MAP_ROUTE_RENDERING_MODES.FEATURE_ONLY,
     orderedStateIds: ["louisiana", "arkansas", "missouri", "iowa", "minnesota"],
     distractorStateIds: ["illinois", "kentucky", "mississippi", "wisconsin"],
     explanation: "This question follows the explicitly curated western side: Louisiana, Arkansas, Missouri, Iowa, then Minnesota.",
@@ -158,15 +194,17 @@ const staticChallenges = Object.freeze([
   },
   {
     id: "tennessee-pennsylvania-intermediates",
-    title: "Two Valid Land Routes",
-    prompt: "Choose the two intermediate states, in travel order, for a land-border route from Tennessee to Pennsylvania.",
+    title: "Neighboring State Route",
+    prompt: "Find a route from Tennessee to Pennsylvania by traveling only through states that share a border.",
+    secondaryInstruction: "Choose the intermediate states in order.",
     answerMode: MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE,
-    orderedStateIds: ["kentucky", "west-virginia"],
-    acceptedAlternatives: [["virginia", "west-virginia"]],
+    routeValidationMode: MENTAL_MAP_ROUTE_VALIDATION_MODES.BORDER_GRAPH,
+    routeRenderingMode: MENTAL_MAP_ROUTE_RENDERING_MODES.STATE_CENTROID_SEQUENCE,
+    orderedStateIds: [],
     distractorStateIds: ["maryland", "north-carolina", "ohio"],
     routeStartStateId: "tennessee",
     routeDestinationStateId: "pennsylvania",
-    explanation: "Both Tennessee-Kentucky-West Virginia-Pennsylvania and Tennessee-Virginia-West Virginia-Pennsylvania are valid land-border routes."
+    explanation: "A valid route moves from state to neighboring state until it reaches Pennsylvania."
   }
 ]);
 
@@ -174,9 +212,9 @@ function copyChallenge(challenge) {
   return JSON.parse(JSON.stringify(challenge));
 }
 
-function createGeneratedRouteDistractors(path) {
-  const routeIds = new Set(path);
-  return [...new Set(path.flatMap((stateId) => getBorderChainNeighbors(stateId)))]
+function createGeneratedRouteDistractors(paths) {
+  const routeIds = new Set(paths.flat());
+  return [...new Set(paths.flat().flatMap((stateId) => getBorderChainNeighbors(stateId)))]
     .filter((stateId) => !routeIds.has(stateId))
     .slice(0, 5);
 }
@@ -193,21 +231,23 @@ export function createGeneratedShortestRouteChallenge({ random = Math.random } =
 
   for (let offset = 0; offset < pairs.length; offset += 1) {
     const [startStateId, destinationStateId] = pairs[(startIndex + offset) % pairs.length];
-    const shortestPaths = findAllShortestBorderPaths(startStateId, destinationStateId, { limit: 2 });
-    if (shortestPaths.length !== 1 || shortestPaths[0].length < 4) continue;
-    const path = shortestPaths[0];
+    const shortestPaths = findAllShortestBorderPaths(startStateId, destinationStateId);
+    if (!shortestPaths.length || shortestPaths[0].length < 4) continue;
     const start = getStateById(startStateId);
     const destination = getStateById(destinationStateId);
     return {
       id: `generated-shortest-${startStateId}-${destinationStateId}`,
-      title: "Shortest State Route",
-      prompt: `Choose the intermediate states, in order, for the unique shortest land-border route from ${start.name} to ${destination.name}.`,
+      title: "Neighboring State Route",
+      prompt: `Find a route from ${start.name} to ${destination.name} by traveling only through states that share a border.`,
+      secondaryInstruction: "Choose the intermediate states in order.",
       answerMode: MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE,
-      orderedStateIds: path.slice(1, -1),
-      distractorStateIds: createGeneratedRouteDistractors(path),
+      routeValidationMode: MENTAL_MAP_ROUTE_VALIDATION_MODES.BORDER_GRAPH,
+      routeRenderingMode: MENTAL_MAP_ROUTE_RENDERING_MODES.STATE_CENTROID_SEQUENCE,
+      orderedStateIds: [],
+      distractorStateIds: createGeneratedRouteDistractors(shortestPaths),
       routeStartStateId: startStateId,
       routeDestinationStateId: destinationStateId,
-      explanation: `The unique shortest route uses ${path.length - 1} state-to-state land-border transitions.`,
+      explanation: `A valid route moves from state to neighboring state until it reaches ${destination.name}.`,
       generated: true
     };
   }
@@ -241,6 +281,29 @@ export function validateMentalMapChallenge(challenge) {
   if (mode === MENTAL_MAP_ANSWER_MODES.SELECT_COUNT) {
     const count = Number(challenge?.requiredSelectionCount);
     if (!Number.isInteger(count) || count < 1 || count > requiredIds.length) errors.push("Select-count requires a valid requested count.");
+    if (!Object.values(MENTAL_MAP_COUNT_RULES).includes(challenge?.countRule)) {
+      errors.push("Select-count requires a valid count rule.");
+    } else if (challenge.countRule === MENTAL_MAP_COUNT_RULES.MINIMUM && !/\b(any|at least)\b/i.test(challenge.prompt)) {
+      errors.push("Minimum-count prompt must say any or at least.");
+    } else if (challenge.countRule === MENTAL_MAP_COUNT_RULES.EXACT && !/\bexactly\b/i.test(challenge.prompt)) {
+      errors.push("Exact-count prompt must say exactly.");
+    }
+  }
+  if (challenge?.routeRenderingMode
+    && !Object.values(MENTAL_MAP_ROUTE_RENDERING_MODES).includes(challenge.routeRenderingMode)) {
+    errors.push(`Unknown route rendering mode: ${challenge.routeRenderingMode}`);
+  }
+  if (challenge?.routeRenderingMode === MENTAL_MAP_ROUTE_RENDERING_MODES.EXPLICIT_ROUTE_GEOMETRY
+    && !challenge.explicitRouteGeometry) {
+    errors.push("Explicit route rendering requires route geometry.");
+  }
+  if (challenge?.routeValidationMode
+    && !Object.values(MENTAL_MAP_ROUTE_VALIDATION_MODES).includes(challenge.routeValidationMode)) {
+    errors.push(`Unknown route validation mode: ${challenge.routeValidationMode}`);
+  }
+  if (challenge?.routeValidationMode === MENTAL_MAP_ROUTE_VALIDATION_MODES.BORDER_GRAPH
+    && (!challenge.routeStartStateId || !challenge.routeDestinationStateId)) {
+    errors.push("Border-route validation requires start and destination states.");
   }
   (challenge?.associatedFeatureIds || []).forEach((entityId) => {
     if (!getEntity(unitedStatesAtlas, entityId)) errors.push(`Unknown associated feature ID: ${entityId}`);

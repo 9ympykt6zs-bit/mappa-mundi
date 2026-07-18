@@ -60,7 +60,7 @@ export function getMinimumBorderTransitions(startStateId, destinationStateId) {
   return path ? Math.max(0, path.length - 1) : null;
 }
 
-export function findAllShortestBorderPaths(startStateId, destinationStateId, { limit = 16 } = {}) {
+export function findAllShortestBorderPaths(startStateId, destinationStateId, { limit = Number.POSITIVE_INFINITY } = {}) {
   const start = normalizeStateId(startStateId);
   const destination = normalizeStateId(destinationStateId);
   if (!start || !destination || limit < 1) return [];
@@ -96,6 +96,94 @@ export function findAllShortestBorderPaths(startStateId, destinationStateId, { l
   }
 
   return shortestPaths.filter((path) => path.length - 1 === shortestTransitions);
+}
+
+export function validateBorderRoute(routeStateIds = [], { startStateId, destinationStateId } = {}) {
+  const start = normalizeStateId(startStateId);
+  const destination = normalizeStateId(destinationStateId);
+  const route = Array.isArray(routeStateIds)
+    ? routeStateIds.map(normalizeStateId)
+    : [];
+  const startsAtStart = Boolean(start) && route[0] === start;
+  const endsAtDestination = Boolean(destination) && route.at(-1) === destination;
+  const seen = new Set();
+  const transitions = [];
+  let firstInvalidTransition = null;
+  let repeatedStateId = "";
+
+  route.forEach((stateId, index) => {
+    if (!stateId && !firstInvalidTransition) {
+      firstInvalidTransition = {
+        index,
+        fromStateId: index > 0 ? route[index - 1] : "",
+        toStateId: "",
+        reason: "unknown-state"
+      };
+    }
+    if (stateId && seen.has(stateId) && !repeatedStateId) {
+      repeatedStateId = stateId;
+      if (!firstInvalidTransition) {
+        firstInvalidTransition = {
+          index,
+          fromStateId: index > 0 ? route[index - 1] : "",
+          toStateId: stateId,
+          reason: "repeated-state"
+        };
+      }
+    }
+    if (stateId) seen.add(stateId);
+    if (index > 0) {
+      const fromStateId = route[index - 1];
+      const toStateId = stateId;
+      const isValid = Boolean(fromStateId && toStateId)
+        && getBorderChainNeighbors(fromStateId).includes(toStateId);
+      transitions.push({ index, fromStateId, toStateId, isValid });
+      if (!isValid && !firstInvalidTransition) {
+        firstInvalidTransition = { index, fromStateId, toStateId, reason: "states-do-not-border" };
+      }
+    }
+  });
+
+  if (!startsAtStart && !firstInvalidTransition) {
+    firstInvalidTransition = {
+      index: 0,
+      fromStateId: route[0] || "",
+      toStateId: start,
+      reason: "wrong-start"
+    };
+  }
+  if (!endsAtDestination && !firstInvalidTransition) {
+    firstInvalidTransition = {
+      index: route.length,
+      fromStateId: route.at(-1) || "",
+      toStateId: destination,
+      reason: "wrong-destination"
+    };
+  }
+
+  const shortestTransitionCount = start && destination
+    ? getMinimumBorderTransitions(start, destination)
+    : null;
+  const playerTransitionCount = Math.max(0, route.length - 1);
+  const isValid = startsAtStart
+    && endsAtDestination
+    && !repeatedStateId
+    && !firstInvalidTransition
+    && route.length >= 2;
+
+  return {
+    isValid,
+    isShortest: isValid && playerTransitionCount === shortestTransitionCount,
+    routeStateIds: [...route],
+    startsAtStart,
+    endsAtDestination,
+    repeatedStateId,
+    transitions,
+    validTransitions: transitions.filter((transition) => transition.isValid),
+    firstInvalidTransition,
+    playerTransitionCount,
+    shortestTransitionCount
+  };
 }
 
 export function createBorderChainRound({ startStateId, destinationStateId } = {}) {

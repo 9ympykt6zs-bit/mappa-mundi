@@ -1,13 +1,15 @@
 import assert from "node:assert/strict";
 import {
   createBorderChainRound,
+  findAllShortestBorderPaths,
   findShortestBorderPath,
   generateBorderChainRound,
   getBorderChainNeighbors,
   getMinimumBorderTransitions,
   restartBorderChainRound,
   selectBorderChainState,
-  undoBorderChainState
+  undoBorderChainState,
+  validateBorderRoute
 } from "../src/atlas/border-chain.js";
 
 assert.ok(getBorderChainNeighbors("tennessee").includes("kentucky"));
@@ -16,6 +18,65 @@ assert.deepEqual(findShortestBorderPath("california", "texas"), ["california", "
 assert.equal(getMinimumBorderTransitions("tennessee", "ohio"), 2);
 assert.equal(findShortestBorderPath("unknown-state", "tennessee"), null);
 assert.equal(createBorderChainRound({ startStateId: "tennessee", destinationStateId: "unknown-state" }), null);
+
+const tennesseePennsylvaniaRoutes = findAllShortestBorderPaths("tennessee", "pennsylvania");
+assert.ok(tennesseePennsylvaniaRoutes.some((route) => (
+  route.join(",") === "tennessee,kentucky,ohio,pennsylvania"
+)));
+assert.ok(tennesseePennsylvaniaRoutes.some((route) => (
+  route.join(",") === "tennessee,kentucky,west-virginia,pennsylvania"
+)));
+
+const kentuckyOhioRoute = validateBorderRoute(
+  ["tennessee", "kentucky", "ohio", "pennsylvania"],
+  { startStateId: "tennessee", destinationStateId: "pennsylvania" }
+);
+assert.equal(kentuckyOhioRoute.isValid, true);
+assert.equal(kentuckyOhioRoute.isShortest, true);
+
+const kentuckyWestVirginiaRoute = validateBorderRoute(
+  ["tennessee", "kentucky", "west-virginia", "pennsylvania"],
+  { startStateId: "tennessee", destinationStateId: "pennsylvania" }
+);
+assert.equal(kentuckyWestVirginiaRoute.isValid, true);
+assert.equal(kentuckyWestVirginiaRoute.isShortest, true);
+
+const longerRoute = validateBorderRoute(
+  ["tennessee", "north-carolina", "virginia", "maryland", "pennsylvania"],
+  { startStateId: "tennessee", destinationStateId: "pennsylvania" }
+);
+assert.equal(longerRoute.isValid, true);
+assert.equal(longerRoute.isShortest, false);
+assert.equal(longerRoute.playerTransitionCount, 4);
+assert.equal(longerRoute.shortestTransitionCount, 3);
+
+const invalidTransitionRoute = validateBorderRoute(
+  ["tennessee", "kentucky", "maryland", "pennsylvania"],
+  { startStateId: "tennessee", destinationStateId: "pennsylvania" }
+);
+assert.equal(invalidTransitionRoute.isValid, false);
+assert.deepEqual(invalidTransitionRoute.firstInvalidTransition, {
+  fromStateId: "kentucky",
+  toStateId: "maryland",
+  index: 2,
+  reason: "states-do-not-border"
+});
+
+const repeatedStateRoute = validateBorderRoute(
+  ["tennessee", "kentucky", "tennessee", "virginia", "maryland", "pennsylvania"],
+  { startStateId: "tennessee", destinationStateId: "pennsylvania" }
+);
+assert.equal(repeatedStateRoute.isValid, false);
+assert.equal(repeatedStateRoute.repeatedStateId, "tennessee");
+assert.equal(repeatedStateRoute.firstInvalidTransition.reason, "repeated-state");
+
+const routeWithoutDestination = validateBorderRoute(
+  ["tennessee", "kentucky", "ohio"],
+  { startStateId: "tennessee", destinationStateId: "pennsylvania" }
+);
+assert.equal(routeWithoutDestination.isValid, false);
+assert.equal(routeWithoutDestination.endsAtDestination, false);
+assert.equal(routeWithoutDestination.firstInvalidTransition.reason, "wrong-destination");
 
 let round = createBorderChainRound({ startStateId: "tennessee", destinationStateId: "ohio" });
 round = selectBorderChainState(round, "kentucky");
