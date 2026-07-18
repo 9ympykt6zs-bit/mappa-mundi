@@ -468,6 +468,8 @@ export class MapLibreActivityRunner {
     this.overviewPreviewCompletedIds = [];
     this.unitedStatesAtlasSelectedStateId = "";
     this.unitedStatesAtlasLearningStatuses = {};
+    this.borderChainVisualState = {};
+    this.mentalMapChallengeResultVisualState = {};
     this.overviewMapSet = "world-europe";
     this.overviewMapView = null;
     this.difficulty = difficultyModes.easy;
@@ -837,6 +839,8 @@ export class MapLibreActivityRunner {
     this.setOverviewVisibility("none");
     this.setStudyVisibility("none");
     this.setUnitedStatesContextVisibility("visible");
+    this.setBorderChainOverlayVisibility("none");
+    this.setUnitedStatesContextFillOpacity(0.86);
     this.setUnitedStatesAtlasSelection(options.selectedStateId || "");
 
     this.moveCamera({
@@ -849,6 +853,67 @@ export class MapLibreActivityRunner {
     }, {
       cameraContext: "united-states-atlas-overview",
       source: "enterUnitedStatesAtlas",
+      requestType: "flyTo",
+      activityId: this.activity?.id
+    }, "flyTo");
+  }
+
+  enterBorderChain(options = {}) {
+    this.currentView = "border-chain";
+    this.setPlacementInteractionState({ active: false, dragging: false });
+    this.resizeSoon();
+    this.setOverviewVisibility("none");
+    this.setStudyVisibility("none");
+    this.setUnitedStatesContextVisibility("visible");
+    this.setBorderChainOverlayVisibility("visible");
+    this.setUnitedStatesContextFillOpacity(1);
+    this.setBorderChainVisualState(options.visualState || {});
+
+    this.moveCamera({
+      center: [-98, 39],
+      zoom: 3.1,
+      pitch: 0,
+      bearing: 0,
+      duration: options.duration ?? 750,
+      essential: true
+    }, {
+      cameraContext: "border-chain-overview",
+      source: "enterBorderChain",
+      requestType: "flyTo",
+      activityId: this.activity?.id
+    }, "flyTo");
+  }
+
+  prepareMentalMapChallenge() {
+    this.currentView = "mental-map-challenge";
+    this.setPlacementInteractionState({ active: false, dragging: false });
+    this.setOverviewVisibility("none");
+    this.setStudyVisibility("none");
+    this.setUnitedStatesContextVisibility("none");
+    this.setBorderChainOverlayVisibility("none");
+    this.setMentalMapChallengeResultVisualState({});
+  }
+
+  enterMentalMapChallengeResult(options = {}) {
+    this.currentView = "mental-map-challenge-result";
+    this.setPlacementInteractionState({ active: false, dragging: false });
+    this.setOverviewVisibility("none");
+    this.setStudyVisibility("none");
+    this.setUnitedStatesContextVisibility("visible");
+    this.setUnitedStatesContextFillOpacity(1);
+    this.setBorderChainOverlayVisibility("visible");
+    this.setMentalMapChallengeResultVisualState(options.visualState || {});
+    this.resizeSoon();
+    this.moveCamera({
+      center: [-98, 39],
+      zoom: 3.1,
+      pitch: 0,
+      bearing: 0,
+      duration: options.duration ?? 650,
+      essential: true
+    }, {
+      cameraContext: "mental-map-result",
+      source: "enterMentalMapChallengeResult",
       requestType: "flyTo",
       activityId: this.activity?.id
     }, "flyTo");
@@ -869,6 +934,42 @@ export class MapLibreActivityRunner {
 
     if (this.map?.getLayer("us-state-context-fill")) {
       this.map.setPaintProperty("us-state-context-fill", "fill-color", this.getUsStateContextFillExpression());
+    }
+  }
+
+  setBorderChainVisualState(visualState = {}) {
+    this.borderChainVisualState = {
+      startStateId: String(visualState.startStateId || ""),
+      destinationStateId: String(visualState.destinationStateId || ""),
+      currentStateId: String(visualState.currentStateId || ""),
+      invalidStateId: String(visualState.invalidStateId || ""),
+      validStateIds: [...new Set(visualState.validStateIds || [])],
+      usedStateIds: [...new Set(visualState.usedStateIds || [])]
+    };
+
+    ["us-state-context-fill", "border-chain-state-fill"].forEach((layerId) => {
+      if (this.map?.getLayer(layerId)) this.map.setPaintProperty(layerId, "fill-color", this.getUsStateContextFillExpression());
+    });
+  }
+
+  setMentalMapChallengeResultVisualState(visualState = {}) {
+    this.mentalMapChallengeResultVisualState = {
+      correctStateIds: [...new Set(visualState.correctStateIds || [])],
+      selectedCorrectStateIds: [...new Set(visualState.selectedCorrectStateIds || [])],
+      selectedIncorrectStateIds: [...new Set(visualState.selectedIncorrectStateIds || [])],
+      missingStateIds: [...new Set(visualState.missingStateIds || [])],
+      misplacedStateIds: [...new Set(visualState.misplacedStateIds || [])],
+      expectedSequenceStateIds: [...new Set(visualState.expectedSequenceStateIds || [])],
+      learnerStateIds: [...new Set(visualState.learnerStateIds || [])]
+    };
+    ["us-state-context-fill", "border-chain-state-fill"].forEach((layerId) => {
+      if (this.map?.getLayer(layerId)) this.map.setPaintProperty(layerId, "fill-color", this.getUsStateContextFillExpression());
+    });
+  }
+
+  setUnitedStatesContextFillOpacity(opacity) {
+    if (this.map?.getLayer("us-state-context-fill")) {
+      this.map.setPaintProperty("us-state-context-fill", "fill-opacity", opacity);
     }
   }
 
@@ -2828,6 +2929,19 @@ export class MapLibreActivityRunner {
         "fill-color": this.getStateFillExpression(),
         "fill-opacity": this.getShapeFillOpacityExpression(),
         "fill-antialias": false
+      }
+    });
+
+    this.map.addLayer({
+      id: "border-chain-state-fill",
+      type: "fill",
+      source: "us-states-atlas",
+      layout: {
+        visibility: "none"
+      },
+      paint: {
+        "fill-color": this.getUsStateContextFillExpression(),
+        "fill-opacity": 1
       }
     });
 
@@ -6606,6 +6720,35 @@ export class MapLibreActivityRunner {
   }
 
   getUsStateContextFillExpression() {
+    if (this.currentView === "mental-map-challenge-result") {
+      const stateId = ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]];
+      const visualState = this.mentalMapChallengeResultVisualState;
+      return [
+        "case",
+        ["in", stateId, ["literal", visualState.selectedIncorrectStateIds]], "#d95151",
+        ["in", stateId, ["literal", visualState.misplacedStateIds]], "#8c6bb1",
+        ["in", stateId, ["literal", visualState.missingStateIds]], "#e6a23c",
+        ["in", stateId, ["literal", visualState.selectedCorrectStateIds]], "#2f9d72",
+        ["in", stateId, ["literal", visualState.correctStateIds]], "#4f88b5",
+        "#dce8f5"
+      ];
+    }
+
+    if (this.currentView === "border-chain") {
+      const stateId = ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]];
+      const visualState = this.borderChainVisualState;
+      return [
+        "case",
+        ["==", stateId, visualState.invalidStateId], "#d95151",
+        ["==", stateId, visualState.destinationStateId], "#e88769",
+        ["==", stateId, visualState.currentStateId], "#f2c14e",
+        ["==", stateId, visualState.startStateId], "#3f7ba5",
+        ["in", stateId, ["literal", visualState.validStateIds]], "#83cda9",
+        ["in", stateId, ["literal", visualState.usedStateIds]], "#af9acf",
+        "#dce8f5"
+      ];
+    }
+
     if (this.currentView === "united-states-atlas") {
       return [
         "case",
@@ -7105,6 +7248,12 @@ export class MapLibreActivityRunner {
         this.map.setLayoutProperty(layerId, "visibility", visibility);
       }
     });
+  }
+
+  setBorderChainOverlayVisibility(visibility) {
+    if (this.map?.getLayer("border-chain-state-fill")) {
+      this.map.setLayoutProperty("border-chain-state-fill", "visibility", visibility);
+    }
   }
 
   setOverviewVisibility(visibility) {
