@@ -691,10 +691,12 @@ assert.ok(challengeUiSource.includes('status.setAttribute("aria-live", "polite")
 assert.ok(cssSource.includes(".mental-map-drag-handle"));
 assert.ok(cssSource.includes("touch-action: none"));
 assert.ok(cssSource.includes("min-width: 44px"));
-assert.ok(challengeUiSource.includes("window.GeographyChipSpeech?.createChipSpeakerControl(labelText)"));
+assert.ok(challengeUiSource.includes("window.GeographyChipSpeech?.createChipSpeakerControl(labelText, options)"));
 assert.ok(challengeUiSource.includes('"mental-map-question-speaker"'));
 assert.ok(challengeUiSource.includes('"mental-map-answer-speaker"'));
-assert.ok(challengeUiSource.includes('[challenge.prompt, challenge.secondaryInstruction].filter(Boolean).join(" ")'));
+assert.ok(challengeUiSource.includes("getMentalMapAudioEntry(challenge, role)"));
+assert.ok(challengeUiSource.includes('"mental-map-instruction-speaker"'));
+assert.ok(challengeUiSource.includes('"mental-map-explanation-speaker"'));
 assert.ok(chipSpeechSource.includes('const audioMutedStorageKey = "atlasQuestAudioMuted"'));
 assert.ok(chipSpeechSource.includes("if (isAudioMuted)"));
 assert.ok(chipSpeechSource.includes("event.stopPropagation()"));

@@ -11,7 +11,7 @@ import {
   undoMentalMapAnswer
 } from "./atlas/mental-map-challenge-engine.js?v=20260720-mental-map-audio-1";
 import { getMentalMapChallenges } from "./atlas/mental-map-challenges.js?v=20260720-mental-map-audio-1";
-import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=20260720-mental-map-audio-1";
+import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=20260720-mental-map-prerecorded-audio-1";
 import { readUnitedStatesAtlasProgress } from "./atlas/united-states-atlas-progress.js";
 import { renderUnitedStatesAtlasOverview, renderUnitedStatesAtlasProfile } from "./atlas/united-states-atlas-ui.js";
 import { trackEvent } from "./analytics.js?v=20260601-instruction-target-nouns";
@@ -3304,7 +3304,7 @@ function ensureChipSpeechLoaded() {
     return Promise.resolve(window.GeographyChipSpeech);
   }
 
-  return import("./chip-speech.js?v=20260708-us-trail-capitals-phase2a-audio-1")
+  return import("./chip-speech.js?v=20260720-mental-map-prerecorded-audio-1")
     .then(() => window.GeographyChipSpeech || null);
 }
 
@@ -3682,7 +3682,7 @@ async function ensureMapRuntimeLoaded() {
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/maplibre-activity-runner.js?v=20260720-mental-map-audio-1"),
-      import("./chip-speech.js?v=20260708-us-trail-capitals-phase2a-audio-1")
+      import("./chip-speech.js?v=20260720-mental-map-prerecorded-audio-1")
     ]).then(([
       ,
       ,

@@ -340,6 +340,7 @@
         // fallback would duplicate it, so stop it before the MP3 becomes audible.
         stopBrowserSpeech();
         logChipSpeechDebug("local-audio-started", { audioPath });
+        options.onPlaybackStart?.();
       };
       const handleEnded = () => {
         cleanup();
@@ -537,6 +538,24 @@
     }
 
     return playback;
+  }
+
+  async function speakAudioPathAndWait(labelText, audioPath, options = {}) {
+    const speech = resolveSpeechText(labelText);
+    if (!speech.text || !isAudioOutputSupported() || isAudioMuted) return false;
+
+    if (audioPath) {
+      const didPlay = await playLocalAudio(audioPath, {
+        ...options,
+        timeoutMs: options.timeoutMs || getSpeechFallbackDurationMs(speech.text) + 2200
+      });
+      if (didPlay) return true;
+    } else {
+      warnMissingLocalAudio(speech.lookupText);
+    }
+
+    options.onFallbackStart?.();
+    return waitForBrowserSpeech(speech.text, speech);
   }
 
   async function playLabelAndWait(labelText, options = {}) {
@@ -751,14 +770,35 @@
     speaker.appendChild(createSpeakerIcon());
 
     let lastSpeechGestureAt = 0;
-    const speakFromGesture = (event) => {
-      stopChipInteraction(event);
-      lastSpeechGestureAt = Date.now();
+    let audioRequestId = 0;
+    const usesRegisteredAudio = Object.prototype.hasOwnProperty.call(options, "audioPath");
+    const setLoading = (isLoading, requestId) => {
+      if (requestId !== audioRequestId) return;
+      speaker.classList.toggle("is-loading", isLoading);
+      speaker.setAttribute("aria-busy", String(isLoading));
+    };
+    const activateSpeech = (event) => {
       options.onActivate?.(event);
       debugChipSpeech(labelText, event.type);
       primeLocalAudio();
-      getAudioManifest();
-      speakLabel(labelText);
+
+      if (!usesRegisteredAudio) {
+        getAudioManifest();
+        speakLabel(labelText);
+        return;
+      }
+
+      const requestId = ++audioRequestId;
+      setLoading(true, requestId);
+      void speakAudioPathAndWait(labelText, options.audioPath, {
+        onPlaybackStart: () => setLoading(false, requestId),
+        onFallbackStart: () => setLoading(false, requestId)
+      }).finally(() => setLoading(false, requestId));
+    };
+    const speakFromGesture = (event) => {
+      stopChipInteraction(event);
+      lastSpeechGestureAt = Date.now();
+      activateSpeech(event);
     };
 
     const speakFromFallbackClick = (event) => {
@@ -769,9 +809,7 @@
       }
 
       lastSpeechGestureAt = Date.now();
-      options.onActivate?.(event);
-      debugChipSpeech(labelText, event.type);
-      speakLabel(labelText);
+      activateSpeech(event);
     };
 
     speaker.addEventListener("pointerdown", stopChipGesture);
@@ -814,6 +852,7 @@
     speakLabel,
     speakLabelWithCompletion,
     speakLabelAndWait,
+    speakAudioPathAndWait,
     toggleAudioMuted,
     createChipSpeakerControl
   };

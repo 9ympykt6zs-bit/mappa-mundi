@@ -3569,7 +3569,9 @@ body.mental-map-challenge-mode:not(.mental-map-result-mode) .zoom-panel {
   min-width: 0;
 }
 
-.mental-map-question-speaker.chip-speaker-button {
+.mental-map-question-speaker.chip-speaker-button,
+.mental-map-instruction-speaker.chip-speaker-button,
+.mental-map-explanation-speaker.chip-speaker-button {
   background: #fff;
   border: 1px solid #bdcad8;
   flex: 0 0 auto;
@@ -3578,6 +3580,29 @@ body.mental-map-challenge-mode:not(.mental-map-result-mode) .zoom-panel {
   min-height: 40px;
   min-width: 40px;
   width: 40px;
+}
+
+.mental-map-instruction-row,
+.mental-map-explanation-row {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.mental-map-instruction-row .mental-map-request-count,
+.mental-map-explanation-row .mental-map-explanation {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mental-map-question-speaker.is-loading svg,
+.mental-map-instruction-speaker.is-loading svg,
+.mental-map-explanation-speaker.is-loading svg {
+  animation: mental-map-audio-loading 700ms ease-in-out infinite alternate;
+}
+
+@keyframes mental-map-audio-loading {
+  to { opacity: 0.35; }
 }
 
 .mental-map-request-count {
@@ -3884,11 +3909,14 @@ body.mental-map-result-mode .mental-map-question-header h2 {
   font-weight: 750;
 }
 
-.mental-map-explanation {
+.mental-map-explanation-row {
   border-top: 1px solid var(--panel-border);
-  color: var(--muted);
   margin-top: 3px;
   padding-top: 10px;
+}
+
+.mental-map-explanation {
+  color: var(--muted);
 }
 
 .mental-map-result-legend {
@@ -5640,6 +5668,8 @@ body.browse-mode .answer-panel-title {
   }
 
   .mental-map-question-speaker.chip-speaker-button,
+  .mental-map-instruction-speaker.chip-speaker-button,
+  .mental-map-explanation-speaker.chip-speaker-button,
   .mental-map-answer-speaker.chip-speaker-button {
     height: 44px;
     min-height: 44px;

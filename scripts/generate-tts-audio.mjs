@@ -20,11 +20,12 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-
-const OPENAI_SPEECH_URL = "https://api.openai.com/v1/audio/speech";
-const MODEL = "gpt-4o-mini-tts";
-const VOICE = "marin";
-const RESPONSE_FORMAT = "mp3";
+import {
+  generateOpenAiSpeechFile,
+  TTS_MODEL as MODEL,
+  TTS_RESPONSE_FORMAT as RESPONSE_FORMAT,
+  TTS_VOICE as VOICE
+} from "./lib/openai-tts.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
@@ -739,33 +740,12 @@ function matchesPronunciationHint(hint, entry) {
 }
 
 async function generateSpeechFile(text, outputPath, instructions = null) {
-  const requestBody = {
-    model: MODEL,
-    voice: VOICE,
-    input: text,
-    response_format: RESPONSE_FORMAT
-  };
-
-  if (instructions) {
-    requestBody.instructions = instructions;
-  }
-
-  const response = await fetch(OPENAI_SPEECH_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(requestBody)
+  await generateOpenAiSpeechFile({
+    text,
+    outputPath,
+    instructions,
+    apiKey: process.env.OPENAI_API_KEY
   });
-
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(`OpenAI TTS request failed (${response.status}): ${detail}`);
-  }
-
-  const audio = Buffer.from(await response.arrayBuffer());
-  await writeFile(outputPath, audio);
 }
 
 async function writeManifest({ chips, instructions }) {

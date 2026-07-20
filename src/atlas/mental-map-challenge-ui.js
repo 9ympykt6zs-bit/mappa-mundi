@@ -8,6 +8,11 @@ import {
   MENTAL_MAP_ANSWER_MODES,
   MENTAL_MAP_COUNT_RULES
 } from "./mental-map-challenges.js";
+import {
+  getMentalMapAudioEntry,
+  getMentalMapAudioText,
+  MENTAL_MAP_AUDIO_ROLES
+} from "./mental-map-audio.js";
 
 function stateName(stateId) {
   return getStateById(stateId)?.name || "Unknown state";
@@ -28,8 +33,8 @@ function createButton(label, className, callback, options = {}) {
   return button;
 }
 
-function createMentalMapSpeaker(labelText, className, accessibleLabel) {
-  const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(labelText);
+function createMentalMapSpeaker(labelText, className, accessibleLabel, options = {}) {
+  const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(labelText, options);
   if (!speaker) return null;
   speaker.classList.add(className);
   if (accessibleLabel) {
@@ -37,6 +42,15 @@ function createMentalMapSpeaker(labelText, className, accessibleLabel) {
     speaker.setAttribute("title", accessibleLabel);
   }
   return speaker;
+}
+
+function createChallengeSpeaker(challenge, role, className, accessibleLabel) {
+  const labelText = getMentalMapAudioText(challenge, role);
+  if (!labelText) return null;
+  const audioEntry = getMentalMapAudioEntry(challenge, role);
+  return createMentalMapSpeaker(labelText, className, accessibleLabel, {
+    audioPath: audioEntry?.audioPath || null
+  });
 }
 
 function attachOrderedAnswerDrag(handle, item, list, fromIndex, stateId, options) {
@@ -121,19 +135,29 @@ function createQuestionHeader(challenge) {
   const heading = document.createElement("h2");
   heading.textContent = challenge.prompt;
   headingRow.appendChild(heading);
-  const questionSpeechText = [challenge.prompt, challenge.secondaryInstruction].filter(Boolean).join(" ");
-  const questionSpeaker = createMentalMapSpeaker(
-    questionSpeechText,
+  const questionSpeaker = createChallengeSpeaker(
+    challenge,
+    MENTAL_MAP_AUDIO_ROLES.QUESTION,
     "mental-map-question-speaker",
     "Hear question"
   );
   if (questionSpeaker) headingRow.appendChild(questionSpeaker);
   header.append(eyebrow, headingRow);
   if (challenge.secondaryInstruction) {
+    const instructionRow = document.createElement("div");
+    instructionRow.className = "mental-map-instruction-row";
     const instruction = document.createElement("p");
     instruction.className = "mental-map-request-count mental-map-secondary-instruction";
     instruction.textContent = challenge.secondaryInstruction;
-    header.appendChild(instruction);
+    instructionRow.appendChild(instruction);
+    const instructionSpeaker = createChallengeSpeaker(
+      challenge,
+      MENTAL_MAP_AUDIO_ROLES.INSTRUCTION,
+      "mental-map-instruction-speaker",
+      "Hear instruction"
+    );
+    if (instructionSpeaker) instructionRow.appendChild(instructionSpeaker);
+    header.appendChild(instructionRow);
   }
   if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_COUNT) {
     const count = document.createElement("p");
@@ -412,10 +436,20 @@ function createResultContent(challenge, state, options) {
     }
   }
 
+  const explanationRow = document.createElement("div");
+  explanationRow.className = "mental-map-explanation-row";
   const explanation = document.createElement("p");
   explanation.className = "mental-map-explanation";
   explanation.textContent = challenge.explanation;
-  wrapper.append(explanation, createResultLegend(), createButton("Next Question", "mental-map-primary-action", options.onNextQuestion));
+  explanationRow.appendChild(explanation);
+  const explanationSpeaker = createChallengeSpeaker(
+    challenge,
+    MENTAL_MAP_AUDIO_ROLES.EXPLANATION,
+    "mental-map-explanation-speaker",
+    "Hear explanation"
+  );
+  if (explanationSpeaker) explanationRow.appendChild(explanationSpeaker);
+  wrapper.append(explanationRow, createResultLegend(), createButton("Next Question", "mental-map-primary-action", options.onNextQuestion));
   return wrapper;
 }
 
