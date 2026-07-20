@@ -3528,7 +3528,9 @@ body.study-mode .map-shell {
 }
 
 body.mental-map-challenge-mode:not(.mental-map-result-mode) #map,
-body.mental-map-challenge-mode:not(.mental-map-result-mode) .zoom-panel {
+body.mental-map-challenge-mode:not(.mental-map-result-mode) .zoom-panel,
+body.compass-challenge-mode:not(.compass-result-mode) #map,
+body.compass-challenge-mode:not(.compass-result-mode) .zoom-panel {
   display: none;
 }
 
@@ -3852,7 +3854,8 @@ body.mental-map-challenge-mode:not(.mental-map-result-mode) .zoom-panel {
   opacity: 0.45;
 }
 
-body.mental-map-result-mode .mental-map-challenge-panel {
+body.mental-map-result-mode .mental-map-challenge-panel,
+body.compass-result-mode .compass-challenge-panel {
   background: rgba(255, 255, 255, 0.97);
   border: 1px solid rgba(128, 153, 184, 0.42);
   border-radius: 8px;
@@ -3863,7 +3866,8 @@ body.mental-map-result-mode .mental-map-challenge-panel {
   width: min(390px, calc(100% - 40px));
 }
 
-body.mental-map-result-mode .mental-map-question-header h2 {
+body.mental-map-result-mode .mental-map-question-header h2,
+body.compass-result-mode .mental-map-question-header h2 {
   font-size: 1.05rem;
 }
 
@@ -3890,6 +3894,11 @@ body.mental-map-result-mode .mental-map-question-header h2 {
 .mental-map-result-status.is-incorrect {
   background: #f8e0df;
   color: #9a3434;
+}
+
+.mental-map-result-status.is-partial {
+  background: #fff0cf;
+  color: #7b5300;
 }
 
 .mental-map-result-line,
@@ -3950,6 +3959,7 @@ body.mental-map-result-mode .mental-map-question-header h2 {
 .mental-map-result-misplaced { background: #8c6bb1; }
 .mental-map-result-incorrect { background: #d95151; }
 .mental-map-result-question-feature { background: #22d3ee; border-color: #083344 !important; }
+.mental-map-result-direction { background: #0f766e; border-color: #ffffff !important; }
 
 .united-states-atlas-overview {
   background: rgba(255, 255, 255, 0.97);
@@ -5704,7 +5714,8 @@ body.browse-mode .answer-panel-title {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  body.mental-map-result-mode .mental-map-challenge-panel {
+  body.mental-map-result-mode .mental-map-challenge-panel,
+  body.compass-result-mode .compass-challenge-panel {
     border-bottom: 0;
     border-radius: 12px 12px 0 0;
     bottom: 0;

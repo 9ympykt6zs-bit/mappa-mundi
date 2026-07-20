@@ -894,6 +894,7 @@ export class MapLibreActivityRunner {
     this.setUnitedStatesContextVisibility("none");
     this.setBorderChainOverlayVisibility("none");
     this.setMentalMapChallengeResultVisualState({});
+    this.setCompassChallengeDirectionArrow({});
   }
 
   enterMentalMapChallengeResult(options = {}) {
@@ -908,6 +909,35 @@ export class MapLibreActivityRunner {
     this.resizeSoon();
     window.requestAnimationFrame(() => {
       if (this.currentView !== "mental-map-challenge-result") return;
+      this.map?.resize();
+      this.fitMentalMapChallengeResultCamera(options);
+    });
+  }
+
+  prepareCompassChallenge() {
+    this.currentView = "compass-challenge";
+    this.setPlacementInteractionState({ active: false, dragging: false });
+    this.setOverviewVisibility("none");
+    this.setStudyVisibility("none");
+    this.setUnitedStatesContextVisibility("none");
+    this.setBorderChainOverlayVisibility("none");
+    this.setMentalMapChallengeResultVisualState({});
+    this.setCompassChallengeDirectionArrow({});
+  }
+
+  enterCompassChallengeResult(options = {}) {
+    this.currentView = "compass-challenge-result";
+    this.setPlacementInteractionState({ active: false, dragging: false });
+    this.setOverviewVisibility("none");
+    this.setStudyVisibility("none");
+    this.setUnitedStatesContextVisibility("visible");
+    this.setUnitedStatesContextFillOpacity(1);
+    this.setBorderChainOverlayVisibility("visible");
+    this.setMentalMapChallengeResultVisualState(options.visualState || {});
+    this.setCompassChallengeDirectionArrow(options.visualState?.directionArrows || []);
+    this.resizeSoon();
+    window.requestAnimationFrame(() => {
+      if (this.currentView !== "compass-challenge-result") return;
       this.map?.resize();
       this.fitMentalMapChallengeResultCamera(options);
     });
@@ -955,6 +985,7 @@ export class MapLibreActivityRunner {
       misplacedStateIds: [...new Set(visualState.misplacedStateIds || [])],
       expectedSequenceStateIds: [...(visualState.expectedSequenceStateIds || [])],
       learnerStateIds: [...new Set(visualState.learnerStateIds || [])],
+      contextStateIds: [...new Set(visualState.contextStateIds || [])],
       associatedFeatures: (visualState.associatedFeatures || []).map((feature) => ({ ...feature })),
       routeRenderingMode: visualState.routeRenderingMode || null,
       explicitRouteGeometry: visualState.explicitRouteGeometry || null
@@ -965,11 +996,74 @@ export class MapLibreActivityRunner {
     this.refreshMentalMapFeatureFeedback();
   }
 
+  setCompassChallengeDirectionArrow(directionArrows = []) {
+    const arrows = Array.isArray(directionArrows) ? directionArrows : [directionArrows];
+    this.compassChallengeDirectionArrows = arrows.map((directionArrow) => ({
+      fromStateId: String(directionArrow.fromStateId || ""),
+      toStateId: String(directionArrow.toStateId || "")
+    })).filter(({ fromStateId, toStateId }) => fromStateId && toStateId);
+    this.refreshCompassChallengeDirectionArrow();
+  }
+
+  refreshCompassChallengeDirectionArrow() {
+    const features = (this.compassChallengeDirectionArrows || []).flatMap(({ fromStateId, toStateId }) => {
+      const fromCenter = this.getUnitedStatesAtlasStateCenter(fromStateId);
+      const toCenter = this.getUnitedStatesAtlasStateCenter(toStateId);
+      return fromCenter && toCenter ? this.createCompassChallengeArrowFeatures(fromCenter, toCenter) : [];
+    });
+    this.map?.getSource("compass-challenge-direction-arrow")?.setData({
+      type: "FeatureCollection",
+      features
+    });
+    const visible = this.currentView === "compass-challenge-result" && features.length > 0;
+    ["compass-challenge-direction-line", "compass-challenge-direction-head"].forEach((layerId) => {
+      if (!this.map?.getLayer(layerId)) return;
+      this.map.setLayoutProperty(layerId, "visibility", visible ? "visible" : "none");
+      if (visible) this.map.moveLayer(layerId);
+    });
+  }
+
+  getUnitedStatesAtlasStateCenter(stateId) {
+    if (!stateId) return null;
+    const feature = this.usStatesAtlas?.features?.find((candidate) => (
+      String(candidate.properties?.id || candidate.properties?.state || candidate.id || "").toLowerCase() === String(stateId).toLowerCase()
+    ));
+    return this.getBoundsCenter(this.getGeometryBounds(feature?.geometry));
+  }
+
+  createCompassChallengeArrowFeatures(fromCenter, toCenter) {
+    const longitudeScale = Math.cos(((fromCenter[1] + toCenter[1]) / 2) * Math.PI / 180);
+    const deltaLongitude = (toCenter[0] - fromCenter[0]) * longitudeScale;
+    const deltaLatitude = toCenter[1] - fromCenter[1];
+    const bearing = (Math.atan2(deltaLongitude, deltaLatitude) * 180 / Math.PI + 360) % 360;
+    const arrowPoint = [
+      fromCenter[0] + (toCenter[0] - fromCenter[0]) * 0.62,
+      fromCenter[1] + (toCenter[1] - fromCenter[1]) * 0.62
+    ];
+    return [
+      {
+        type: "Feature",
+        properties: { featureRole: "correct-direction" },
+        geometry: { type: "LineString", coordinates: [fromCenter, toCenter] }
+      },
+      {
+        type: "Feature",
+        properties: {
+          arrowGlyph: ">",
+          featureRole: "correct-direction-arrowhead",
+          rotation: bearing - 90
+        },
+        geometry: { type: "Point", coordinates: arrowPoint }
+      }
+    ];
+  }
+
   refreshMentalMapFeatureFeedback() {
     const visualState = this.mentalMapChallengeResultVisualState;
     const answerStateIds = [...new Set([
       ...(visualState.correctStateIds || []),
-      ...(visualState.learnerStateIds || [])
+      ...(visualState.learnerStateIds || []),
+      ...(visualState.contextStateIds || [])
     ])];
     const feedback = buildMentalMapFeatureFeedback({
       associatedFeatures: visualState.associatedFeatures || [],
@@ -992,7 +1086,7 @@ export class MapLibreActivityRunner {
     this.map?.getSource("mental-map-question-route")?.setData(feedback.routeCollection);
     this.map?.getSource("mental-map-question-coastlines")?.setData(feedback.coastlineCollection);
 
-    const resultVisible = this.currentView === "mental-map-challenge-result";
+    const resultVisible = ["mental-map-challenge-result", "compass-challenge-result"].includes(this.currentView);
     const hasFeatures = feedback.featureCollection.features.length > 0;
     const hasLabels = feedback.labelCollection.features.length > 0;
     const hasRoute = feedback.routeCollection.features.length > 0;
@@ -2995,6 +3089,11 @@ export class MapLibreActivityRunner {
       data: emptyFeatureCollection
     });
 
+    this.map.addSource("compass-challenge-direction-arrow", {
+      type: "geojson",
+      data: emptyFeatureCollection
+    });
+
     this.map.addSource("mental-map-question-coastlines", {
       type: "geojson",
       data: emptyFeatureCollection
@@ -3221,6 +3320,43 @@ export class MapLibreActivityRunner {
         "line-opacity": 1,
         "line-dasharray": [1.5, 1.1],
         "line-width": 4
+      }
+    });
+
+    this.map.addLayer({
+      id: "compass-challenge-direction-line",
+      type: "line",
+      source: "compass-challenge-direction-arrow",
+      filter: ["==", ["geometry-type"], "LineString"],
+      layout: {
+        visibility: "none",
+        "line-cap": "round"
+      },
+      paint: {
+        "line-color": "#0f766e",
+        "line-opacity": 0.95,
+        "line-width": 5
+      }
+    });
+
+    this.map.addLayer({
+      id: "compass-challenge-direction-head",
+      type: "symbol",
+      source: "compass-challenge-direction-arrow",
+      filter: ["==", ["geometry-type"], "Point"],
+      layout: {
+        visibility: "none",
+        "text-field": ["get", "arrowGlyph"],
+        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+        "text-size": 32,
+        "text-allow-overlap": true,
+        "text-rotate": ["get", "rotation"],
+        "text-rotation-alignment": "map"
+      },
+      paint: {
+        "text-color": "#0f766e",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 2
       }
     });
 
@@ -6937,7 +7073,7 @@ export class MapLibreActivityRunner {
   }
 
   getUsStateContextFillExpression() {
-    if (this.currentView === "mental-map-challenge-result") {
+    if (["mental-map-challenge-result", "compass-challenge-result"].includes(this.currentView)) {
       const stateId = ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]];
       const visualState = this.mentalMapChallengeResultVisualState;
       return [

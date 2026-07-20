@@ -12,6 +12,18 @@ import {
 } from "./atlas/mental-map-challenge-engine.js?v=20260720-mental-map-audio-1";
 import { getMentalMapChallenges } from "./atlas/mental-map-challenges.js?v=20260720-mental-map-audio-1";
 import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=20260720-mental-map-prerecorded-audio-1";
+import {
+  clearCompassAnswers,
+  createCompassChallengeState,
+  getCompassResultVisualState,
+  moveCompassAnswer,
+  removeCompassAnswer,
+  selectCompassAnswer,
+  submitCompassAnswer,
+  undoCompassAnswer
+} from "./atlas/compass-challenge-engine.js?v=20260720-compass-challenge-1";
+import { getCompassChallenges } from "./atlas/compass-challenges.js?v=20260720-compass-challenge-1";
+import { renderCompassChallenge } from "./atlas/compass-challenge-ui.js?v=20260720-compass-challenge-1";
 import { readUnitedStatesAtlasProgress } from "./atlas/united-states-atlas-progress.js";
 import { renderUnitedStatesAtlasOverview, renderUnitedStatesAtlasProfile } from "./atlas/united-states-atlas-ui.js";
 import { trackEvent } from "./analytics.js?v=20260601-instruction-target-nouns";
@@ -3090,6 +3102,7 @@ const mainMenuDailyTrailButton = document.querySelector("#main-menu-daily-trail-
 const mainMenuUnitedStatesMemoryTrailButton = document.querySelector("#main-menu-us-memory-trail-button");
 const mainMenuUnitedStatesAtlasButton = document.querySelector("#main-menu-united-states-atlas-button");
 const mainMenuMentalMapChallengeButton = document.querySelector("#main-menu-mental-map-challenge-button");
+const mainMenuCompassChallengeButton = document.querySelector("#main-menu-compass-challenge-button");
 const mainMenuMoreWaysButton = document.querySelector("#main-menu-more-ways-button");
 const mainMenuDailyTrailAction = document.querySelector("#main-menu-daily-trail-action");
 const mainMenuUnitedStatesMemoryTrailAction = document.querySelector("#main-menu-us-memory-trail-action");
@@ -3525,12 +3538,16 @@ const memoryTrailSecondaryButton = document.querySelector("#memory-trail-seconda
 const unitedStatesAtlasProfile = document.querySelector("#united-states-atlas-profile");
 const unitedStatesAtlasOverview = document.querySelector("#united-states-atlas-overview");
 const mentalMapChallengePanel = document.querySelector("#mental-map-challenge-panel");
+const compassChallengePanel = document.querySelector("#compass-challenge-panel");
 const mapElement = document.querySelector("#map");
 let unitedStatesAtlasProgress = null;
 let activeMentalMapChallenge = null;
 let activeMentalMapChallengeState = null;
 let mentalMapUsedQuestionIds = new Set();
 let mentalMapReorderAnnouncement = "";
+let activeCompassChallenge = null;
+let activeCompassChallengeState = null;
+let compassUsedQuestionIds = new Set();
 
 const journeyDifficultyOptions = [
   {
@@ -3681,7 +3698,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260720-mental-map-audio-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260720-compass-challenge-1"),
       import("./chip-speech.js?v=20260720-mental-map-prerecorded-audio-1")
     ]).then(([
       ,
@@ -5272,6 +5289,10 @@ function bindUiEvents() {
   });
 
   homeButton?.addEventListener("click", () => {
+    if (currentAppScreen === "compass-challenge") {
+      exitCompassChallenge();
+      return;
+    }
     if (currentAppScreen === "mental-map-challenge") {
       exitMentalMapChallenge();
       return;
@@ -5308,6 +5329,10 @@ function bindUiEvents() {
     showAppScreen("main-menu");
   });
   backButton?.addEventListener("click", () => {
+    if (currentAppScreen === "compass-challenge") {
+      exitCompassChallenge();
+      return;
+    }
     if (currentAppScreen === "mental-map-challenge") {
       exitMentalMapChallenge();
       return;
@@ -5356,6 +5381,7 @@ function bindUiEvents() {
   mainMenuUnitedStatesMemoryTrailButton?.addEventListener("click", startOrContinueUnitedStatesMemoryTrail);
   mainMenuUnitedStatesAtlasButton?.addEventListener("click", () => { void openUnitedStatesAtlas(); });
   mainMenuMentalMapChallengeButton?.addEventListener("click", () => { void openMentalMapChallenge(); });
+  mainMenuCompassChallengeButton?.addEventListener("click", () => { void openCompassChallenge(); });
   mainMenuMoreWaysButton?.addEventListener("click", () => showAppScreen("main-menu-more-ways"));
   audioMuteButton?.addEventListener("click", toggleAudioMute);
   window.addEventListener("atlas-quest-audio-muted-change", updateAudioMuteControl);
@@ -7810,6 +7836,127 @@ function exitMentalMapChallenge() {
   runner?.prepareMentalMapChallenge();
   if (mapElement) mapElement.removeAttribute("aria-hidden");
   document.body.classList.remove("mental-map-challenge-mode", "mental-map-result-mode", "overview-mode", "browse-mode");
+  showAppScreen("main-menu", { pushHistory: false });
+}
+
+async function openCompassChallenge() {
+  await ensureMapReady();
+  saveCurrentActivityProgress();
+  cancelGrabbedAnswer();
+  clearFeedback();
+  closeBrowseDrawer();
+  activeStudySession = null;
+  activeStudyPracticeSession = null;
+  isCurrentActivityProgressDisabled = false;
+  currentAppScreen = "compass-challenge";
+  activeHierarchyNodeId = "north-america-united-states";
+  activeMenuRoot = "north-america";
+  isNavigationBrowseMode = false;
+  document.body.classList.remove(
+    "launch-mode",
+    "app-shell-mode",
+    "study-mode",
+    "browse-mode",
+    "united-states-atlas-mode",
+    "mental-map-challenge-mode",
+    "mental-map-result-mode",
+    "compass-result-mode"
+  );
+  document.body.classList.add("compass-challenge-mode");
+
+  if (launchScreen) launchScreen.hidden = true;
+  if (appShellScreen) appShellScreen.hidden = true;
+  if (unitedStatesAtlasProfile) unitedStatesAtlasProfile.hidden = true;
+  if (unitedStatesAtlasOverview) unitedStatesAtlasOverview.hidden = true;
+  if (mentalMapChallengePanel) mentalMapChallengePanel.hidden = true;
+
+  studyCard.hidden = true;
+  runner.setStudyPreviewMode(false);
+  runner.setMemoryTrailHighlight([]);
+  runner.setCompletedTargets([]);
+  runner.setUnitedStatesAtlasLearningStatuses({});
+  runner.prepareCompassChallenge();
+  compassUsedQuestionIds = new Set();
+  startNextCompassQuestion();
+  setHeaderTitle("Compass Challenge", { shortTitle: "Compass" });
+  instruction.textContent = "Reason first. The map appears after you submit.";
+  renderActivityNavControls(null);
+  updateTopBarNavigation();
+}
+
+function chooseNextCompassChallenge() {
+  const challenges = getCompassChallenges();
+  let available = challenges.filter((challenge) => !compassUsedQuestionIds.has(challenge.id));
+  if (!available.length) {
+    compassUsedQuestionIds = new Set();
+    available = challenges;
+  }
+  const index = Math.min(available.length - 1, Math.max(0, Math.floor(Math.random() * available.length)));
+  const challenge = available[index] || null;
+  if (challenge) compassUsedQuestionIds.add(challenge.id);
+  return challenge;
+}
+
+function startNextCompassQuestion() {
+  document.body.classList.remove("compass-result-mode");
+  if (mapElement) mapElement.setAttribute("aria-hidden", "true");
+  runner?.prepareCompassChallenge();
+  activeCompassChallenge = chooseNextCompassChallenge();
+  activeCompassChallengeState = activeCompassChallenge
+    ? createCompassChallengeState(activeCompassChallenge)
+    : null;
+  renderActiveCompassChallenge();
+}
+
+function renderActiveCompassChallenge() {
+  if (!compassChallengePanel || !activeCompassChallenge || !activeCompassChallengeState) return;
+  compassChallengePanel.hidden = false;
+  renderCompassChallenge(compassChallengePanel, activeCompassChallenge, activeCompassChallengeState, {
+    onSelect: (stateId) => {
+      activeCompassChallengeState = selectCompassAnswer(activeCompassChallengeState, stateId);
+      renderActiveCompassChallenge();
+    },
+    onRemove: (stateId) => {
+      activeCompassChallengeState = removeCompassAnswer(activeCompassChallengeState, stateId);
+      renderActiveCompassChallenge();
+    },
+    onMove: (stateId, direction) => {
+      activeCompassChallengeState = moveCompassAnswer(activeCompassChallengeState, stateId, direction);
+      renderActiveCompassChallenge();
+    },
+    onUndo: () => {
+      activeCompassChallengeState = undoCompassAnswer(activeCompassChallengeState);
+      renderActiveCompassChallenge();
+    },
+    onClear: () => {
+      activeCompassChallengeState = clearCompassAnswers(activeCompassChallengeState);
+      renderActiveCompassChallenge();
+    },
+    onSubmit: submitActiveCompassChallenge,
+    onNewQuestion: startNextCompassQuestion,
+    onNextQuestion: startNextCompassQuestion
+  });
+}
+
+function submitActiveCompassChallenge() {
+  activeCompassChallengeState = submitCompassAnswer(activeCompassChallengeState, activeCompassChallenge);
+  if (!activeCompassChallengeState?.evaluation) return;
+  document.body.classList.add("compass-result-mode");
+  if (mapElement) mapElement.setAttribute("aria-hidden", "false");
+  runner?.enterCompassChallengeResult({
+    visualState: getCompassResultVisualState(activeCompassChallenge, activeCompassChallengeState.evaluation)
+  });
+  renderActiveCompassChallenge();
+}
+
+function exitCompassChallenge() {
+  if (compassChallengePanel) compassChallengePanel.hidden = true;
+  activeCompassChallenge = null;
+  activeCompassChallengeState = null;
+  compassUsedQuestionIds = new Set();
+  runner?.prepareCompassChallenge();
+  if (mapElement) mapElement.removeAttribute("aria-hidden");
+  document.body.classList.remove("compass-challenge-mode", "compass-result-mode", "overview-mode", "browse-mode");
   showAppScreen("main-menu", { pushHistory: false });
 }
 
@@ -24497,9 +24644,10 @@ function updateTopBarNavigation() {
   const isDailyTrailGameplay = currentAppScreen === "daily-trail-gameplay";
   const isUnitedStatesAtlas = currentAppScreen === "united-states-atlas";
   const isMentalMapChallenge = currentAppScreen === "mental-map-challenge";
+  const isCompassChallenge = currentAppScreen === "compass-challenge";
 
   if (backButton) {
-    backButton.hidden = !isUnitedStatesAtlas && !isMentalMapChallenge && !isDailyTrailGameplay
+    backButton.hidden = !isUnitedStatesAtlas && !isMentalMapChallenge && !isCompassChallenge && !isDailyTrailGameplay
       && isHome
       && !["free-play", "journey-gameplay", "study-explore", "study-practice"].includes(currentAppScreen);
     backButton.textContent = isDailyTrailGameplay ? "Exit" : "Back";

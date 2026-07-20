@@ -31,7 +31,7 @@
     <link rel="icon" type="image/png" href="/assets/icons/atlas-quest-icon-192.png" />
     <link rel="apple-touch-icon" href="/assets/icons/atlas-quest-icon-180.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="stylesheet" href="maplibre-poc.css?v=20260720-mental-map-prerecorded-audio-1" />
+    <link rel="stylesheet" href="maplibre-poc.css?v=20260720-compass-challenge-1" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -130,6 +130,7 @@
           </button>
           <button id="main-menu-united-states-atlas-button" class="main-menu-button main-menu-button-teal" type="button">United States Atlas</button>
           <button id="main-menu-mental-map-challenge-button" class="main-menu-button main-menu-button-quiet" type="button">Mental Map Challenge</button>
+          <button id="main-menu-compass-challenge-button" class="main-menu-button main-menu-button-quiet" type="button">Compass Challenge</button>
           <p class="main-menu-more-ways-copy">Looking for something else?</p>
           <button id="main-menu-more-ways-button" class="main-menu-button main-menu-button-quiet main-menu-more-ways-button" type="button">More Ways to Learn</button>
         </section>
@@ -235,6 +236,7 @@
         <div id="map"></div>
         <div id="audio-instruction-banner" class="audio-instruction-banner" role="status" aria-live="polite" hidden></div>
         <section id="mental-map-challenge-panel" class="mental-map-challenge-panel" aria-live="polite" hidden></section>
+        <section id="compass-challenge-panel" class="mental-map-challenge-panel compass-challenge-panel" aria-live="polite" hidden></section>
         <aside id="united-states-atlas-overview" class="united-states-atlas-overview" aria-label="United States learning summary" hidden></aside>
         <aside id="united-states-atlas-profile" class="united-states-atlas-profile" aria-live="polite" hidden></aside>
         <div id="memory-trail-correction-callout" class="memory-trail-correction-callout" role="status" aria-live="polite" hidden></div>
@@ -339,7 +341,7 @@
 
         window.__mappaMundiLoadApp = () => {
           if (!appModulePromise) {
-            appModulePromise = import("./src/maplibre-poc.js?v=20260720-mental-map-prerecorded-audio-1");
+            appModulePromise = import("./src/maplibre-poc.js?v=20260720-compass-challenge-1");
           }
 
           return appModulePromise;

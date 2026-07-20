@@ -657,7 +657,7 @@ assert.ok(cssSource.includes("body.mental-map-challenge-mode:not(.mental-map-res
 assert.ok(cssSource.includes("display: none"));
 assert.ok(runnerSource.includes("prepareMentalMapChallenge()"));
 assert.ok(runnerSource.includes("enterMentalMapChallengeResult(options = {})"));
-assert.ok(runnerSource.includes('this.currentView === "mental-map-challenge-result"'));
+assert.ok(runnerSource.includes('["mental-map-challenge-result", "compass-challenge-result"].includes(this.currentView)'));
 assert.ok(runnerSource.includes('id: "mental-map-question-feature-fill"'));
 assert.ok(runnerSource.includes('id: "mental-map-question-feature-line"'));
 assert.ok(runnerSource.includes('id: "mental-map-question-feature-point-label"'));
