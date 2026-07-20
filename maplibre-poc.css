@@ -3557,6 +3557,29 @@ body.mental-map-challenge-mode:not(.mental-map-result-mode) .zoom-panel {
   margin: 0;
 }
 
+.mental-map-question-title-row {
+  align-items: flex-start;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.mental-map-question-title-row h2 {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mental-map-question-speaker.chip-speaker-button {
+  background: #fff;
+  border: 1px solid #bdcad8;
+  flex: 0 0 auto;
+  height: 40px;
+  margin: 0;
+  min-height: 40px;
+  min-width: 40px;
+  width: 40px;
+}
+
 .mental-map-request-count {
   color: var(--muted);
   font-size: 0.9rem;
@@ -3604,6 +3627,95 @@ body.mental-map-challenge-mode:not(.mental-map-result-mode) .zoom-panel {
   padding: 7px 8px;
 }
 
+.mental-map-selected-list li.is-removable {
+  padding: 0;
+}
+
+.mental-map-selected-list.is-ordered {
+  list-style: none;
+}
+
+.mental-map-ordered-item {
+  position: relative;
+}
+
+.mental-map-ordered-item.is-dragging {
+  box-shadow: 0 5px 14px rgba(23, 32, 51, 0.18);
+  opacity: 0.78;
+  z-index: 1;
+}
+
+.mental-map-ordered-item.is-drop-target {
+  border-color: #237b65;
+  box-shadow: inset 0 2px 0 #237b65;
+}
+
+.mental-map-drag-handle {
+  align-items: center;
+  background: #f0f4f8;
+  border: 1px solid #cad6e2;
+  border-radius: 5px;
+  color: var(--muted);
+  cursor: grab;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  font-weight: 800;
+  justify-content: center;
+  min-height: 38px;
+  padding: 5px 7px;
+  touch-action: none;
+  user-select: none;
+}
+
+.mental-map-selected-list.is-reordering .mental-map-drag-handle,
+.mental-map-ordered-item.is-dragging .mental-map-drag-handle {
+  cursor: grabbing;
+}
+
+.mental-map-sequence-number {
+  color: var(--muted);
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  min-width: 1.4rem;
+  text-align: right;
+}
+
+.mental-map-ordered-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mental-map-reorder-status {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.mental-map-selected-choice {
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  min-height: 44px;
+  padding: 7px 8px;
+  text-align: left;
+  width: 100%;
+}
+
+.mental-map-selected-choice:hover,
+.mental-map-selected-choice:focus-visible {
+  background: #edf5f2;
+  outline: 2px solid #237b65;
+  outline-offset: -2px;
+}
+
 .mental-map-selected-actions {
   display: flex;
   flex: 0 0 auto;
@@ -3634,22 +3746,50 @@ body.mental-map-challenge-mode:not(.mental-map-result-mode) .zoom-panel {
 }
 
 .mental-map-answer-choice {
+  align-items: center;
   background: #fff;
   border: 1px solid #bfcddd;
   border-radius: 6px;
   color: var(--ink);
   cursor: pointer;
+  display: flex;
   font-size: 0.82rem;
   font-weight: 750;
+  gap: 6px;
+  justify-content: space-between;
   min-height: 44px;
   padding: 8px 10px;
+  text-align: left;
+}
+
+.mental-map-answer-speaker.chip-speaker-button {
+  height: 34px;
+  margin: -4px -6px -4px 0;
+  min-height: 34px;
+  min-width: 34px;
+  width: 34px;
+}
+
+.mental-map-answer-choice:disabled,
+.mental-map-answer-choice.is-selected {
+  background: #e9eef4;
+  color: #778596;
+  opacity: 0.72;
 }
 
 .mental-map-answer-choice:disabled {
-  background: #e9eef4;
-  color: #778596;
   cursor: default;
-  opacity: 0.72;
+}
+
+.mental-map-answer-choice.is-selected {
+  cursor: pointer;
+}
+
+.mental-map-answer-choice.is-selected:hover,
+.mental-map-answer-choice.is-selected:focus-visible {
+  border-color: #778596;
+  outline: 2px solid #778596;
+  outline-offset: 1px;
 }
 
 .mental-map-controls {
@@ -5497,6 +5637,36 @@ body.browse-mode .answer-panel-title {
 
   .mental-map-answer-bank {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mental-map-question-speaker.chip-speaker-button,
+  .mental-map-answer-speaker.chip-speaker-button {
+    height: 44px;
+    min-height: 44px;
+    min-width: 44px;
+    width: 44px;
+  }
+
+  .mental-map-question-speaker.chip-speaker-button {
+    margin: 0;
+  }
+
+  .mental-map-answer-speaker.chip-speaker-button {
+    margin-block: -6px;
+  }
+
+  .mental-map-ordered-item {
+    flex-wrap: wrap;
+  }
+
+  .mental-map-drag-handle,
+  .mental-map-mini-action {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .mental-map-selected-actions {
+    margin-left: auto;
   }
 
   .mental-map-controls {

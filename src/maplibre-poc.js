@@ -4,13 +4,14 @@ import {
   createMentalMapChallengeState,
   getMentalMapResultVisualState,
   moveMentalMapAnswer,
+  reorderMentalMapAnswers,
   removeMentalMapAnswer,
   selectMentalMapAnswer,
   submitMentalMapAnswer,
   undoMentalMapAnswer
-} from "./atlas/mental-map-challenge-engine.js?v=20260718-mental-map-result-terminology-1";
-import { getMentalMapChallenges } from "./atlas/mental-map-challenges.js?v=20260718-mental-map-result-terminology-1";
-import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=20260718-mental-map-result-terminology-1";
+} from "./atlas/mental-map-challenge-engine.js?v=20260720-mental-map-audio-1";
+import { getMentalMapChallenges } from "./atlas/mental-map-challenges.js?v=20260720-mental-map-audio-1";
+import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=20260720-mental-map-audio-1";
 import { readUnitedStatesAtlasProgress } from "./atlas/united-states-atlas-progress.js";
 import { renderUnitedStatesAtlasOverview, renderUnitedStatesAtlasProfile } from "./atlas/united-states-atlas-ui.js";
 import { trackEvent } from "./analytics.js?v=20260601-instruction-target-nouns";
@@ -3529,6 +3530,7 @@ let unitedStatesAtlasProgress = null;
 let activeMentalMapChallenge = null;
 let activeMentalMapChallengeState = null;
 let mentalMapUsedQuestionIds = new Set();
+let mentalMapReorderAnnouncement = "";
 
 const journeyDifficultyOptions = [
   {
@@ -3679,7 +3681,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260718-mental-map-result-terminology-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260720-mental-map-audio-1"),
       import("./chip-speech.js?v=20260708-us-trail-capitals-phase2a-audio-1")
     ]).then(([
       ,
@@ -7725,30 +7727,60 @@ function startNextMentalMapQuestion() {
   activeMentalMapChallengeState = activeMentalMapChallenge
     ? createMentalMapChallengeState(activeMentalMapChallenge)
     : null;
+  mentalMapReorderAnnouncement = "";
   renderActiveMentalMapChallenge();
+}
+
+function focusMentalMapOrderControl(stateId, action) {
+  requestAnimationFrame(() => {
+    const row = [...mentalMapChallengePanel.querySelectorAll("[data-mental-map-state-id]")]
+      .find((candidate) => candidate.dataset.mentalMapStateId === stateId);
+    row?.querySelector(`[data-mental-map-order-action="${action}"]`)?.focus();
+  });
+}
+
+function setMentalMapReorderAnnouncement(stateId) {
+  const position = activeMentalMapChallengeState?.selectedStateIds?.indexOf(stateId) ?? -1;
+  const name = activeMentalMapChallengeState?.answerBank?.find((answer) => answer.id === stateId)?.name;
+  mentalMapReorderAnnouncement = position >= 0 && name
+    ? `${name} moved to position ${position + 1} of ${activeMentalMapChallengeState.selectedStateIds.length}.`
+    : "";
 }
 
 function renderActiveMentalMapChallenge() {
   if (!mentalMapChallengePanel || !activeMentalMapChallenge || !activeMentalMapChallengeState) return;
   mentalMapChallengePanel.hidden = false;
   renderMentalMapChallenge(mentalMapChallengePanel, activeMentalMapChallenge, activeMentalMapChallengeState, {
+    reorderAnnouncement: mentalMapReorderAnnouncement,
     onSelect: (stateId) => {
+      mentalMapReorderAnnouncement = "";
       activeMentalMapChallengeState = selectMentalMapAnswer(activeMentalMapChallengeState, stateId);
       renderActiveMentalMapChallenge();
     },
     onRemove: (stateId) => {
+      mentalMapReorderAnnouncement = "";
       activeMentalMapChallengeState = removeMentalMapAnswer(activeMentalMapChallengeState, stateId);
       renderActiveMentalMapChallenge();
     },
     onMove: (stateId, direction) => {
       activeMentalMapChallengeState = moveMentalMapAnswer(activeMentalMapChallengeState, stateId, direction);
+      setMentalMapReorderAnnouncement(stateId);
       renderActiveMentalMapChallenge();
+      focusMentalMapOrderControl(stateId, direction);
+    },
+    onReorder: (fromIndex, toIndex, stateId) => {
+      activeMentalMapChallengeState = reorderMentalMapAnswers(activeMentalMapChallengeState, fromIndex, toIndex);
+      setMentalMapReorderAnnouncement(stateId);
+      renderActiveMentalMapChallenge();
+      focusMentalMapOrderControl(stateId, "drag");
     },
     onUndo: () => {
+      mentalMapReorderAnnouncement = "";
       activeMentalMapChallengeState = undoMentalMapAnswer(activeMentalMapChallengeState);
       renderActiveMentalMapChallenge();
     },
     onClear: () => {
+      mentalMapReorderAnnouncement = "";
       activeMentalMapChallengeState = clearMentalMapAnswers(activeMentalMapChallengeState);
       renderActiveMentalMapChallenge();
     },
@@ -7774,6 +7806,7 @@ function exitMentalMapChallenge() {
   activeMentalMapChallenge = null;
   activeMentalMapChallengeState = null;
   mentalMapUsedQuestionIds = new Set();
+  mentalMapReorderAnnouncement = "";
   runner?.prepareMentalMapChallenge();
   if (mapElement) mapElement.removeAttribute("aria-hidden");
   document.body.classList.remove("mental-map-challenge-mode", "mental-map-result-mode", "overview-mode", "browse-mode");

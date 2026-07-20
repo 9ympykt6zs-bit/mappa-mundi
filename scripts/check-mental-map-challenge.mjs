@@ -9,7 +9,9 @@ import {
   getMentalMapResultVisualState,
   getMentalMapScoreLabel,
   isMentalMapAnswerChoiceDisabled,
+  moveSelectedAnswer,
   moveMentalMapAnswer,
+  reorderMentalMapAnswers,
   removeMentalMapAnswer,
   selectMentalMapAnswer,
   submitMentalMapAnswer,
@@ -42,6 +44,17 @@ const geometryCollections = {
   countries: readJson("assets/maps/data/maplibre-world-countries.geojson")
 };
 const stateFeatures = readJson("assets/maps/data/maplibre-us-states-atlas.geojson");
+const audioManifest = readJson("assets/audio/audio-manifest.json");
+const stateNamesWithAudio = [...new Set(stateFeatures.features
+  .filter((feature) => feature.properties?.id !== "district-of-columbia")
+  .map((feature) => feature.properties?.name)
+  .filter(Boolean))];
+assert.equal(stateNamesWithAudio.length, 50);
+stateNamesWithAudio.forEach((name) => {
+  const audioPath = audioManifest.chips?.[name];
+  assert.ok(audioPath, `Missing generated state-name audio for ${name}.`);
+  assert.ok(fs.existsSync(audioPath), `Missing generated state-name MP3: ${audioPath}`);
+});
 
 function getFeatureFeedback(challenge, selectedStateIds = null) {
   const defaultSelection = challenge.correctStateIds?.slice(
@@ -134,6 +147,67 @@ challenges.filter((challenge) => challenge.answerMode === MENTAL_MAP_ANSWER_MODE
     assert.match(challenge.prompt, /\b(any|at least)\b/i);
   });
 
+const recallAllChallengeIds = [
+  "mississippi-river-any-three",
+  "mexico-land-border-all",
+  "canada-contiguous-land-border-all",
+  "lake-erie-all",
+  "gulf-of-mexico-coast-all"
+];
+recallAllChallengeIds.forEach((challengeId) => {
+  const challenge = byId.get(challengeId);
+  assert.equal(challenge.answerMode, MENTAL_MAP_ANSWER_MODES.RECALL_ALL);
+  assert.match(challenge.prompt, new RegExp(`There are ${challenge.correctStateIds.length} `));
+  assert.match(challenge.prompt, /Name as many as you can\./);
+  assert.doesNotMatch(challenge.prompt, /Name any three|Select every|Minimum required|canonical atlas/i);
+});
+
+const mississippiRecall = byId.get("mississippi-river-any-three");
+const expectedMississippiStateIds = [
+  "arkansas", "illinois", "iowa", "kentucky", "louisiana",
+  "minnesota", "mississippi", "missouri", "tennessee", "wisconsin"
+];
+assert.equal(
+  mississippiRecall.prompt,
+  "There are 10 U.S. states that border or lie alongside the Mississippi River. Name as many as you can."
+);
+assert.deepEqual(mississippiRecall.correctStateIds, expectedMississippiStateIds);
+assert.equal(mississippiRecall.correctStateIds.length, 10);
+const mississippiFour = evaluateMentalMapAnswer(mississippiRecall, expectedMississippiStateIds.slice(0, 4));
+assert.equal(mississippiFour.score, 4);
+assert.equal(mississippiFour.maxScore, 10);
+assert.equal(getMentalMapScoreLabel(mississippiFour), "4 of 10 correct");
+assert.equal(mississippiFour.isCorrect, false);
+assert.deepEqual(mississippiFour.missingStateIds, expectedMississippiStateIds.slice(4));
+const mississippiEight = evaluateMentalMapAnswer(mississippiRecall, expectedMississippiStateIds.slice(0, 8));
+assert.equal(getMentalMapScoreLabel(mississippiEight), "8 of 10 correct");
+assert.equal(mississippiEight.missingStateIds.length, 2);
+const mississippiFull = evaluateMentalMapAnswer(mississippiRecall, expectedMississippiStateIds);
+assert.equal(getMentalMapScoreLabel(mississippiFull), "10 of 10 correct");
+assert.equal(mississippiFull.isCorrect, true);
+const mississippiWithIncorrect = evaluateMentalMapAnswer(
+  mississippiRecall,
+  [...expectedMississippiStateIds, "alabama"]
+);
+assert.equal(mississippiWithIncorrect.score, 10);
+assert.deepEqual(mississippiWithIncorrect.selectedInvalidStateIds, ["alabama"]);
+assert.equal(mississippiWithIncorrect.isCorrect, false);
+
+let mississippiRecallState = createMentalMapChallengeState(mississippiRecall, { random: () => 0.4 });
+assert.equal(mississippiRecallState.maxSelections, null);
+assert.equal("correctStateIds" in mississippiRecallState, false);
+assert.ok(mississippiRecallState.answerBank.every((answer) => !("isCorrect" in answer)));
+[...mississippiRecall.correctStateIds, ...mississippiRecall.distractorStateIds].forEach((stateId) => {
+  mississippiRecallState = selectMentalMapAnswer(mississippiRecallState, stateId);
+});
+assert.ok(mississippiRecallState.selectedStateIds.length > mississippiRecall.correctStateIds.length);
+const mississippiVisualState = getMentalMapResultVisualState(mississippiRecall, mississippiFour);
+assert.deepEqual(mississippiVisualState.correctStateIds, expectedMississippiStateIds);
+assert.deepEqual(
+  mississippiVisualState.associatedFeatures.map((feature) => feature.entityId),
+  ["river:mississippi-river"]
+);
+
 const mexico = byId.get("mexico-land-border-all");
 assert.equal(evaluateMentalMapAnswer(mexico, [...mexico.correctStateIds].reverse()).isCorrect, true);
 const mexicoMissing = evaluateMentalMapAnswer(mexico, mexico.correctStateIds.slice(1));
@@ -191,7 +265,7 @@ const expectedCanadaStateIds = [
   "idaho", "maine", "michigan", "minnesota", "montana", "new-hampshire",
   "new-york", "north-dakota", "ohio", "pennsylvania", "vermont", "washington"
 ];
-assert.equal(canada.prompt, "Name as many contiguous U.S. states as you can that border Canada.");
+assert.equal(canada.prompt, "There are 12 contiguous U.S. states that border Canada. Name as many as you can.");
 assert.deepEqual(canada.correctStateIds, expectedCanadaStateIds);
 assert.equal(canada.correctStateIds.length, 12);
 ["michigan", "ohio", "pennsylvania"].forEach((stateId) => assert.ok(canada.correctStateIds.includes(stateId)));
@@ -249,12 +323,53 @@ assert.ok(mississippiOrderFeedback.labelCollection.features.some((feature) => (
 assert.ok(mississippiOrderFeedback.cameraBounds);
 
 let orderedState = createMentalMapChallengeState(gulfOrder, { random: () => 0.3 });
-orderedState = selectMentalMapAnswer(orderedState, "texas");
-orderedState = selectMentalMapAnswer(orderedState, "louisiana");
+const immutableOrder = ["louisiana", "mississippi", "arkansas", "iowa", "minnesota"];
+assert.deepEqual(moveSelectedAnswer(immutableOrder, 2, 1), [
+  "louisiana", "arkansas", "mississippi", "iowa", "minnesota"
+]);
+assert.deepEqual(immutableOrder, ["louisiana", "mississippi", "arkansas", "iowa", "minnesota"]);
+assert.deepEqual(moveSelectedAnswer(immutableOrder, 0, 1), [
+  "mississippi", "louisiana", "arkansas", "iowa", "minnesota"
+]);
+assert.deepEqual(moveSelectedAnswer(immutableOrder, 4, 3), [
+  "louisiana", "mississippi", "arkansas", "minnesota", "iowa"
+]);
+assert.deepEqual(moveSelectedAnswer(immutableOrder, 0, -1), immutableOrder);
+assert.deepEqual(moveSelectedAnswer(immutableOrder, 4, 5), immutableOrder);
+assert.deepEqual(moveSelectedAnswer(immutableOrder, 9, 1), immutableOrder);
+assert.deepEqual(moveSelectedAnswer(immutableOrder, 1, 1), immutableOrder);
+assert.equal(new Set(moveSelectedAnswer(immutableOrder, 2, 1)).size, immutableOrder.length);
+
+["texas", "louisiana", "mississippi", "alabama"].forEach((stateId) => {
+  orderedState = selectMentalMapAnswer(orderedState, stateId);
+});
+const orderedStateBeforeReorder = orderedState;
+orderedState = reorderMentalMapAnswers(orderedState, 2, 1);
+assert.deepEqual(orderedState.selectedStateIds, ["texas", "mississippi", "louisiana", "alabama"]);
+assert.deepEqual(orderedStateBeforeReorder.selectedStateIds, ["texas", "louisiana", "mississippi", "alabama"]);
+assert.equal(orderedState.evaluation, null);
 orderedState = moveMentalMapAnswer(orderedState, "louisiana", "up");
-assert.deepEqual(orderedState.selectedStateIds, ["louisiana", "texas"]);
+assert.deepEqual(orderedState.selectedStateIds, ["texas", "louisiana", "mississippi", "alabama"]);
+orderedState = moveMentalMapAnswer(orderedState, "louisiana", "down");
+assert.deepEqual(orderedState.selectedStateIds, ["texas", "mississippi", "louisiana", "alabama"]);
+assert.deepEqual(moveMentalMapAnswer(orderedState, "texas", "up").selectedStateIds, orderedState.selectedStateIds);
+assert.deepEqual(moveMentalMapAnswer(orderedState, "alabama", "down").selectedStateIds, orderedState.selectedStateIds);
+const reorderedSubmission = submitMentalMapAnswer(
+  reorderMentalMapAnswers(orderedState, 2, 1),
+  gulfOrder
+);
+assert.equal(reorderedSubmission.evaluation.isCorrect, false);
+assert.deepEqual(reorderedSubmission.evaluation.selectedStateIds, ["texas", "louisiana", "mississippi", "alabama"]);
 orderedState = undoMentalMapAnswer(orderedState);
-assert.deepEqual(orderedState.selectedStateIds, ["louisiana"]);
+assert.deepEqual(orderedState.selectedStateIds, ["texas", "mississippi", "louisiana"]);
+orderedState = clearMentalMapAnswers(orderedState);
+assert.deepEqual(orderedState.selectedStateIds, []);
+
+const unorderedStateBeforeReorder = createMentalMapChallengeState(pacific, { random: () => 0.3 });
+assert.deepEqual(
+  reorderMentalMapAnswers(unorderedStateBeforeReorder, 0, 1),
+  unorderedStateBeforeReorder
+);
 
 const alternatives = byId.get("tennessee-pennsylvania-intermediates");
 assert.equal(getMentalMapRouteRenderingMode(alternatives), MENTAL_MAP_ROUTE_RENDERING_MODES.STATE_CENTROID_SEQUENCE);
@@ -532,6 +647,7 @@ assert.equal(reset.evaluation, null);
 const runtimeSource = fs.readFileSync("src/maplibre-poc.js", "utf8");
 const runnerSource = fs.readFileSync("src/maplibre/maplibre-activity-runner.js", "utf8");
 const challengeUiSource = fs.readFileSync("src/atlas/mental-map-challenge-ui.js", "utf8");
+const chipSpeechSource = fs.readFileSync("src/chip-speech.js", "utf8");
 const cssSource = fs.readFileSync("maplibre-poc.css", "utf8");
 const markupSource = fs.readFileSync("index.html", "utf8");
 assert.ok(markupSource.includes("Mental Map Challenge"));
@@ -555,6 +671,38 @@ assert.ok(runnerSource.includes("setMentalMapChallengeResultVisualState({})"));
 assert.ok(runnerSource.includes('this.map.moveLayer("mental-map-question-feature-point-label")'));
 assert.ok(challengeUiSource.includes("getMentalMapScoreLabel(evaluation)"));
 assert.ok(challengeUiSource.includes("challenge.secondaryInstruction"));
+assert.ok(challengeUiSource.includes("Total possible answers: ${challenge.correctStateIds.length}."));
+assert.ok(challengeUiSource.includes("isMentalMapRecallAllChallenge(challenge)"));
+assert.ok(challengeUiSource.includes('item.classList.add("is-removable")'));
+assert.ok(challengeUiSource.includes('"mental-map-selected-choice"'));
+assert.ok(challengeUiSource.includes("isSelected ? options.onRemove?.(answer.id) : options.onSelect?.(answer.id)"));
+assert.ok(challengeUiSource.includes('choice.classList.toggle("is-selected", isSelected)'));
+assert.ok(challengeUiSource.includes('choice.setAttribute("aria-pressed", String(isSelected))'));
+assert.ok(cssSource.includes(".mental-map-selected-choice"));
+assert.ok(cssSource.includes(".mental-map-answer-choice.is-selected"));
+assert.ok(challengeUiSource.includes('handle.addEventListener("pointerdown"'));
+assert.ok(challengeUiSource.includes('handle.addEventListener("mousedown"'));
+assert.ok(challengeUiSource.includes("options.onReorder?.(fromIndex, dropIndex, stateId)"));
+assert.ok(challengeUiSource.includes('item.dataset.mentalMapOrderIndex = String(index)'));
+assert.ok(challengeUiSource.includes('number.textContent = `${index + 1}.`'));
+assert.ok(challengeUiSource.includes('ariaLabel: `Move ${stateName(stateId)} up`'));
+assert.ok(challengeUiSource.includes('ariaLabel: `Move ${stateName(stateId)} down`'));
+assert.ok(challengeUiSource.includes('status.setAttribute("aria-live", "polite")'));
+assert.ok(cssSource.includes(".mental-map-drag-handle"));
+assert.ok(cssSource.includes("touch-action: none"));
+assert.ok(cssSource.includes("min-width: 44px"));
+assert.ok(challengeUiSource.includes("window.GeographyChipSpeech?.createChipSpeakerControl(labelText)"));
+assert.ok(challengeUiSource.includes('"mental-map-question-speaker"'));
+assert.ok(challengeUiSource.includes('"mental-map-answer-speaker"'));
+assert.ok(challengeUiSource.includes('[challenge.prompt, challenge.secondaryInstruction].filter(Boolean).join(" ")'));
+assert.ok(chipSpeechSource.includes('const audioMutedStorageKey = "atlasQuestAudioMuted"'));
+assert.ok(chipSpeechSource.includes("if (isAudioMuted)"));
+assert.ok(chipSpeechSource.includes("event.stopPropagation()"));
+assert.ok(chipSpeechSource.includes('fallback: audioPath ? "" : "browser-speech"'));
+assert.ok(!challengeUiSource.includes("OPENAI_API_KEY"));
+assert.ok(!runtimeSource.includes("OPENAI_API_KEY"));
+assert.ok(cssSource.includes(".mental-map-question-speaker.chip-speaker-button"));
+assert.ok(cssSource.includes(".mental-map-answer-speaker.chip-speaker-button"));
 assert.ok(challengeUiSource.includes("Correct - you found a shortest route."));
 assert.ok(challengeUiSource.includes("Correct - your route works. A shorter route is possible."));
 assert.ok(challengeUiSource.includes('evaluation.isBorderRoute && evaluation.isCorrect ? "Your valid route"'));

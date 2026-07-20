@@ -4,6 +4,7 @@ import {
   isMentalMapAnswerChoiceDisabled
 } from "./mental-map-challenge-engine.js";
 import {
+  isMentalMapRecallAllChallenge,
   MENTAL_MAP_ANSWER_MODES,
   MENTAL_MAP_COUNT_RULES
 } from "./mental-map-challenges.js";
@@ -27,15 +28,107 @@ function createButton(label, className, callback, options = {}) {
   return button;
 }
 
+function createMentalMapSpeaker(labelText, className, accessibleLabel) {
+  const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(labelText);
+  if (!speaker) return null;
+  speaker.classList.add(className);
+  if (accessibleLabel) {
+    speaker.setAttribute("aria-label", accessibleLabel);
+    speaker.setAttribute("title", accessibleLabel);
+  }
+  return speaker;
+}
+
+function attachOrderedAnswerDrag(handle, item, list, fromIndex, stateId, options) {
+  const clearDropTarget = () => {
+    list.querySelectorAll(".is-drop-target").forEach((row) => row.classList.remove("is-drop-target"));
+  };
+  const beginDrag = () => {
+    item.classList.add("is-dragging");
+    list.classList.add("is-reordering");
+  };
+  const updateDropIndex = (clientX, clientY, currentDropIndex) => {
+    const target = document.elementFromPoint(clientX, clientY)
+      ?.closest?.("[data-mental-map-order-index]");
+    if (!target || !list.contains(target)) return currentDropIndex;
+    const targetIndex = Number(target.dataset.mentalMapOrderIndex);
+    if (!Number.isInteger(targetIndex)) return currentDropIndex;
+    clearDropTarget();
+    if (target !== item) target.classList.add("is-drop-target");
+    return targetIndex;
+  };
+  const endDrag = (dropIndex, shouldReorder) => {
+    clearDropTarget();
+    item.classList.remove("is-dragging");
+    list.classList.remove("is-reordering");
+    if (shouldReorder && dropIndex !== fromIndex) options.onReorder?.(fromIndex, dropIndex, stateId);
+  };
+
+  handle.addEventListener("mousedown", (event) => {
+    if (event.button !== 0) return;
+    let dropIndex = fromIndex;
+    const onMouseMove = (moveEvent) => {
+      moveEvent.preventDefault();
+      dropIndex = updateDropIndex(moveEvent.clientX, moveEvent.clientY, dropIndex);
+    };
+    const onMouseUp = () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+      endDrag(dropIndex, true);
+    };
+    event.preventDefault();
+    handle.focus();
+    beginDrag();
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  });
+
+  handle.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse") return;
+    let dropIndex = fromIndex;
+    const finish = (shouldReorder) => {
+      if (handle.hasPointerCapture?.(event.pointerId)) handle.releasePointerCapture(event.pointerId);
+      handle.removeEventListener("pointermove", onPointerMove);
+      handle.removeEventListener("pointerup", onPointerUp);
+      handle.removeEventListener("pointercancel", onPointerCancel);
+      endDrag(dropIndex, shouldReorder);
+    };
+    const onPointerMove = (moveEvent) => {
+      moveEvent.preventDefault();
+      dropIndex = updateDropIndex(moveEvent.clientX, moveEvent.clientY, dropIndex);
+    };
+    const onPointerUp = () => finish(true);
+    const onPointerCancel = () => finish(false);
+
+    event.preventDefault();
+    handle.focus();
+    handle.setPointerCapture?.(event.pointerId);
+    beginDrag();
+    handle.addEventListener("pointermove", onPointerMove);
+    handle.addEventListener("pointerup", onPointerUp);
+    handle.addEventListener("pointercancel", onPointerCancel);
+  });
+}
+
 function createQuestionHeader(challenge) {
   const header = document.createElement("header");
   header.className = "mental-map-question-header";
   const eyebrow = document.createElement("p");
   eyebrow.className = "mental-map-eyebrow";
   eyebrow.textContent = challenge.title;
+  const headingRow = document.createElement("div");
+  headingRow.className = "mental-map-question-title-row";
   const heading = document.createElement("h2");
   heading.textContent = challenge.prompt;
-  header.append(eyebrow, heading);
+  headingRow.appendChild(heading);
+  const questionSpeechText = [challenge.prompt, challenge.secondaryInstruction].filter(Boolean).join(" ");
+  const questionSpeaker = createMentalMapSpeaker(
+    questionSpeechText,
+    "mental-map-question-speaker",
+    "Hear question"
+  );
+  if (questionSpeaker) headingRow.appendChild(questionSpeaker);
+  header.append(eyebrow, headingRow);
   if (challenge.secondaryInstruction) {
     const instruction = document.createElement("p");
     instruction.className = "mental-map-request-count mental-map-secondary-instruction";
@@ -48,6 +141,12 @@ function createQuestionHeader(challenge) {
     count.textContent = challenge.countRule === MENTAL_MAP_COUNT_RULES.MINIMUM
       ? `Minimum required: ${challenge.requiredSelectionCount}.`
       : `Choose exactly ${challenge.requiredSelectionCount}.`;
+    header.appendChild(count);
+  }
+  if (isMentalMapRecallAllChallenge(challenge)) {
+    const count = document.createElement("p");
+    count.className = "mental-map-request-count";
+    count.textContent = `Total possible answers: ${challenge.correctStateIds.length}.`;
     header.appendChild(count);
   }
   return header;
@@ -72,31 +171,64 @@ function createSelectedAnswers(challenge, state, options) {
 
   const list = document.createElement(challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE ? "ol" : "ul");
   list.className = "mental-map-selected-list";
+  if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE) list.classList.add("is-ordered");
   state.selectedStateIds.forEach((stateId, index) => {
     const item = document.createElement("li");
-    const label = document.createElement("span");
-    label.textContent = stateName(stateId);
-    const actions = document.createElement("span");
-    actions.className = "mental-map-selected-actions";
     if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE) {
-      actions.append(
-        createButton("Up", "mental-map-mini-action", () => options.onMove?.(stateId, "up"), {
-          disabled: index === 0,
-          ariaLabel: `Move ${stateName(stateId)} earlier`
-        }),
-        createButton("Down", "mental-map-mini-action", () => options.onMove?.(stateId, "down"), {
-          disabled: index === state.selectedStateIds.length - 1,
-          ariaLabel: `Move ${stateName(stateId)} later`
-        })
-      );
+      item.classList.add("mental-map-ordered-item");
+      item.dataset.mentalMapOrderIndex = String(index);
+      item.dataset.mentalMapStateId = stateId;
+      const dragHandle = createButton("Drag", "mental-map-drag-handle", () => {}, {
+        ariaLabel: `Drag ${stateName(stateId)}, position ${index + 1} of ${state.selectedStateIds.length}`
+      });
+      dragHandle.dataset.mentalMapOrderAction = "drag";
+      dragHandle.title = "Drag to reorder";
+      const number = document.createElement("span");
+      number.className = "mental-map-sequence-number";
+      number.setAttribute("aria-hidden", "true");
+      number.textContent = `${index + 1}.`;
+      const label = document.createElement("span");
+      label.className = "mental-map-ordered-label";
+      label.textContent = stateName(stateId);
+      const actions = document.createElement("span");
+      actions.className = "mental-map-selected-actions";
+      const moveUp = createButton("Up", "mental-map-mini-action", () => options.onMove?.(stateId, "up"), {
+        disabled: index === 0,
+        ariaLabel: `Move ${stateName(stateId)} up`
+      });
+      moveUp.dataset.mentalMapOrderAction = "up";
+      const moveDown = createButton("Down", "mental-map-mini-action", () => options.onMove?.(stateId, "down"), {
+        disabled: index === state.selectedStateIds.length - 1,
+        ariaLabel: `Move ${stateName(stateId)} down`
+      });
+      moveDown.dataset.mentalMapOrderAction = "down";
+      const remove = createButton("Remove", "mental-map-mini-action", () => options.onRemove?.(stateId), {
+        ariaLabel: `Remove ${stateName(stateId)}`
+      });
+      remove.dataset.mentalMapOrderAction = "remove";
+      actions.append(moveUp, moveDown, remove);
+      item.append(dragHandle, number, label, actions);
+      attachOrderedAnswerDrag(dragHandle, item, list, index, stateId, options);
+    } else {
+      item.classList.add("is-removable");
+      item.appendChild(createButton(
+        stateName(stateId),
+        "mental-map-selected-choice",
+        () => options.onRemove?.(stateId),
+        { ariaLabel: `Remove ${stateName(stateId)}` }
+      ));
     }
-    actions.append(createButton("Remove", "mental-map-mini-action", () => options.onRemove?.(stateId), {
-      ariaLabel: `Remove ${stateName(stateId)}`
-    }));
-    item.append(label, actions);
     list.appendChild(item);
   });
   section.appendChild(list);
+  if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE) {
+    const status = document.createElement("p");
+    status.className = "mental-map-reorder-status";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    status.textContent = options.reorderAnnouncement || "";
+    section.appendChild(status);
+  }
   return section;
 }
 
@@ -109,16 +241,26 @@ function createAnswerBank(state, options) {
   bank.className = "mental-map-answer-bank";
   state.answerBank.forEach((answer) => {
     const isSelected = state.selectedStateIds.includes(answer.id);
-    const choiceDisabled = isMentalMapAnswerChoiceDisabled(state, answer.id);
-    const selectionLimitReached = choiceDisabled && !isSelected;
-    bank.appendChild(createButton(answer.name, "mental-map-answer-choice", () => options.onSelect?.(answer.id), {
-      disabled: choiceDisabled,
-      ariaLabel: isSelected
-        ? `${answer.name}, selected`
-        : selectionLimitReached
-          ? `${answer.name}, selection limit reached`
-          : `Select ${answer.name}`
-    }));
+    const choiceDisabled = !isSelected && isMentalMapAnswerChoiceDisabled(state, answer.id);
+    const selectionLimitReached = choiceDisabled;
+    const choice = createButton(
+      answer.name,
+      "mental-map-answer-choice",
+      () => isSelected ? options.onRemove?.(answer.id) : options.onSelect?.(answer.id),
+      {
+        disabled: choiceDisabled,
+        ariaLabel: isSelected
+          ? `Remove ${answer.name}`
+          : selectionLimitReached
+            ? `${answer.name}, selection limit reached`
+            : `Select ${answer.name}`
+      }
+    );
+    choice.classList.toggle("is-selected", isSelected);
+    choice.setAttribute("aria-pressed", String(isSelected));
+    const speaker = createMentalMapSpeaker(answer.name, "mental-map-answer-speaker");
+    if (speaker) choice.appendChild(speaker);
+    bank.appendChild(choice);
   });
   section.append(heading, bank);
   return section;
@@ -247,7 +389,7 @@ function createResultContent(challenge, state, options) {
         ? `Requested count met: ${challenge.requiredSelectionCount}.`
         : `Requested count not met: choose exactly ${challenge.requiredSelectionCount}.`;
     wrapper.appendChild(count);
-  } else if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_ALL) {
+  } else if (isMentalMapRecallAllChallenge(challenge)) {
     wrapper.append(
       createResultLine("Correct answer", challenge.correctStateIds),
       createResultLine("Correct selections", evaluation.selectedValidStateIds),

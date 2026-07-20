@@ -16,6 +16,7 @@ import {
 export const MENTAL_MAP_ANSWER_MODES = Object.freeze({
   SELECT_COUNT: "select-count",
   SELECT_ALL: "select-all",
+  RECALL_ALL: "recall-all",
   ORDERED_SEQUENCE: "ordered-sequence"
 });
 
@@ -37,6 +38,11 @@ export const MENTAL_MAP_ROUTE_VALIDATION_MODES = Object.freeze({
 export function isMentalMapBorderRouteChallenge(challenge) {
   return challenge?.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE
     && challenge?.routeValidationMode === MENTAL_MAP_ROUTE_VALIDATION_MODES.BORDER_GRAPH;
+}
+
+export function isMentalMapRecallAllChallenge(challenge) {
+  return challenge?.answerMode === MENTAL_MAP_ANSWER_MODES.RECALL_ALL
+    || challenge?.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_ALL;
 }
 
 export function getMentalMapRouteRenderingMode(challenge) {
@@ -121,11 +127,9 @@ const staticChallenges = Object.freeze([
   {
     id: "mississippi-river-any-three",
     title: "Mississippi River",
-    prompt: "Name any three U.S. states that border or lie alongside the Mississippi River.",
-    answerMode: MENTAL_MAP_ANSWER_MODES.SELECT_COUNT,
-    countRule: MENTAL_MAP_COUNT_RULES.MINIMUM,
+    prompt: `There are ${mississippiRiverStateIds.length} U.S. states that border or lie alongside the Mississippi River. Name as many as you can.`,
+    answerMode: MENTAL_MAP_ANSWER_MODES.RECALL_ALL,
     correctStateIds: mississippiRiverStateIds,
-    requiredSelectionCount: 3,
     distractorStateIds: ["alabama", "indiana", "kansas", "ohio"],
     explanation: "Ten states border or lie alongside the Mississippi River from Minnesota to Louisiana.",
     associatedFeatureIds: ["river:mississippi-river"]
@@ -133,8 +137,8 @@ const staticChallenges = Object.freeze([
   {
     id: "mexico-land-border-all",
     title: "Border with Mexico",
-    prompt: "Select every U.S. state sharing a land border with Mexico.",
-    answerMode: MENTAL_MAP_ANSWER_MODES.SELECT_ALL,
+    prompt: `There are ${mexicoBorderStateIds.length} U.S. states that share a land border with Mexico. Name as many as you can.`,
+    answerMode: MENTAL_MAP_ANSWER_MODES.RECALL_ALL,
     correctStateIds: mexicoBorderStateIds,
     distractorStateIds: ["colorado", "nevada", "oklahoma", "utah"],
     explanation: "Only state-to-country land boundaries count; coastline and nearby-state relationships do not.",
@@ -143,8 +147,8 @@ const staticChallenges = Object.freeze([
   {
     id: "canada-contiguous-land-border-all",
     title: "Border with Canada",
-    prompt: "Name as many contiguous U.S. states as you can that border Canada.",
-    answerMode: MENTAL_MAP_ANSWER_MODES.SELECT_ALL,
+    prompt: `There are ${contiguousCanadaBorderStateIds.length} contiguous U.S. states that border Canada. Name as many as you can.`,
+    answerMode: MENTAL_MAP_ANSWER_MODES.RECALL_ALL,
     correctStateIds: contiguousCanadaBorderStateIds,
     distractorStateIds: ["alaska", "indiana", "south-dakota", "wisconsin"],
     explanation: "Twelve contiguous U.S. states border Canada. Some boundaries cross dry land, while others run through the Great Lakes or connecting waterways.",
@@ -153,8 +157,8 @@ const staticChallenges = Object.freeze([
   {
     id: "lake-erie-all",
     title: "Lake Erie",
-    prompt: "Select every U.S. state that borders Lake Erie.",
-    answerMode: MENTAL_MAP_ANSWER_MODES.SELECT_ALL,
+    prompt: `There are ${lakeErieStateIds.length} U.S. states that border Lake Erie. Name as many as you can.`,
+    answerMode: MENTAL_MAP_ANSWER_MODES.RECALL_ALL,
     correctStateIds: lakeErieStateIds,
     distractorStateIds: ["illinois", "indiana", "vermont", "wisconsin"],
     explanation: "Michigan, Ohio, Pennsylvania, and New York border Lake Erie.",
@@ -163,8 +167,8 @@ const staticChallenges = Object.freeze([
   {
     id: "gulf-of-mexico-coast-all",
     title: "Gulf Coast",
-    prompt: "Select every U.S. state with a Gulf of Mexico coastline.",
-    answerMode: MENTAL_MAP_ANSWER_MODES.SELECT_ALL,
+    prompt: `There are ${gulfCoastStateIds.length} U.S. states with a Gulf of Mexico coastline. Name as many as you can.`,
+    answerMode: MENTAL_MAP_ANSWER_MODES.RECALL_ALL,
     correctStateIds: gulfCoastStateIds,
     distractorStateIds: ["arkansas", "georgia", "oklahoma", "south-carolina"],
     explanation: "Texas, Louisiana, Mississippi, Alabama, and Florida have coastline along the Gulf of Mexico, also called the Gulf of America by the U.S. federal government.",
@@ -287,6 +291,12 @@ export function validateMentalMapChallenge(challenge) {
       errors.push("Minimum-count prompt must say any or at least.");
     } else if (challenge.countRule === MENTAL_MAP_COUNT_RULES.EXACT && !/\bexactly\b/i.test(challenge.prompt)) {
       errors.push("Exact-count prompt must say exactly.");
+    }
+  }
+  if (mode === MENTAL_MAP_ANSWER_MODES.RECALL_ALL) {
+    if (!requiredIds.length) errors.push("Recall-all requires at least one correct answer.");
+    if (!challenge.prompt.includes(String(requiredIds.length)) || !/as many as you can/i.test(challenge.prompt)) {
+      errors.push("Recall-all prompt must state the total and ask for as many as possible.");
     }
   }
   if (challenge?.routeRenderingMode

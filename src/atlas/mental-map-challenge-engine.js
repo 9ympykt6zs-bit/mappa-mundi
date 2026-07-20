@@ -4,6 +4,7 @@ import { findAllShortestBorderPaths, validateBorderRoute } from "./border-chain.
 import {
   getMentalMapRouteRenderingMode,
   isMentalMapBorderRouteChallenge,
+  isMentalMapRecallAllChallenge,
   MENTAL_MAP_ANSWER_MODES,
   MENTAL_MAP_COUNT_RULES,
   validateMentalMapChallenge
@@ -127,14 +128,33 @@ export function clearMentalMapAnswers(state) {
   return next;
 }
 
-export function moveMentalMapAnswer(state, stateId, direction) {
-  const next = copy(state);
-  if (!next || next.phase !== "answering" || next.answerMode !== MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE) return next;
-  const index = next.selectedStateIds.indexOf(stateId);
-  const targetIndex = direction === "up" ? index - 1 : index + 1;
-  if (index < 0 || targetIndex < 0 || targetIndex >= next.selectedStateIds.length) return next;
-  [next.selectedStateIds[index], next.selectedStateIds[targetIndex]] = [next.selectedStateIds[targetIndex], next.selectedStateIds[index]];
+export function moveSelectedAnswer(selectedStateIds, fromIndex, toIndex) {
+  const next = Array.isArray(selectedStateIds) ? [...selectedStateIds] : [];
+  if (!Number.isInteger(fromIndex)
+    || !Number.isInteger(toIndex)
+    || fromIndex < 0
+    || toIndex < 0
+    || fromIndex >= next.length
+    || toIndex >= next.length
+    || fromIndex === toIndex) return next;
+  const [movedStateId] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, movedStateId);
   return next;
+}
+
+export function reorderMentalMapAnswers(state, fromIndex, toIndex) {
+  const next = copy(state);
+  if (!next
+    || next.phase !== "answering"
+    || next.answerMode !== MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE) return next;
+  next.selectedStateIds = moveSelectedAnswer(next.selectedStateIds, fromIndex, toIndex);
+  return next;
+}
+
+export function moveMentalMapAnswer(state, stateId, direction) {
+  const index = state?.selectedStateIds?.indexOf(stateId) ?? -1;
+  const targetIndex = direction === "up" ? index - 1 : index + 1;
+  return reorderMentalMapAnswers(state, index, targetIndex);
 }
 
 export function evaluateMentalMapAnswer(challenge, selectedStateIds = []) {
@@ -169,7 +189,7 @@ export function evaluateMentalMapAnswer(challenge, selectedStateIds = []) {
     };
   }
 
-  if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_ALL) {
+  if (isMentalMapRecallAllChallenge(challenge)) {
     const correct = new Set(challenge.correctStateIds);
     const selectedSet = new Set(selected);
     const selectedValidStateIds = selected.filter((stateId) => correct.has(stateId));
