@@ -18,6 +18,20 @@ import {
   getCompassChallenges,
   validateCompassChallenge
 } from "../src/atlas/compass-challenges.js";
+import {
+  createMentalMapChallengeState,
+  evaluateMentalMapAnswer,
+  getMentalMapResultVisualState,
+  selectMentalMapAnswer
+} from "../src/atlas/mental-map-challenge-engine.js";
+import { MENTAL_MAP_ANSWER_MODES } from "../src/atlas/mental-map-challenges.js";
+import {
+  getUnifiedMentalMapChallenges,
+  MENTAL_MAP_CHALLENGE_CATEGORIES,
+  selectNextUnifiedMentalMapChallenge,
+  validateUnifiedMentalMapChallenge
+} from "../src/atlas/mental-map-challenge-registry.js";
+import { getMentalMapAudioEntry, getMentalMapAudioText, MENTAL_MAP_AUDIO_ROLES } from "../src/atlas/mental-map-audio.js";
 
 const statesGeoJson = JSON.parse(
   fs.readFileSync("assets/maps/data/maplibre-us-states-atlas.geojson", "utf8").replace(/^\uFEFF/, "")
@@ -175,16 +189,25 @@ assert.deepEqual(orderedState.answerBank.map(({ id }) => id), initialOrderedBank
 const runtimeSource = fs.readFileSync("src/maplibre-poc.js", "utf8");
 const runnerSource = fs.readFileSync("src/maplibre/maplibre-activity-runner.js", "utf8");
 const uiSource = fs.readFileSync("src/atlas/compass-challenge-ui.js", "utf8");
+const sharedUiSource = fs.readFileSync("src/atlas/mental-map-challenge-ui.js", "utf8");
 const cssSource = fs.readFileSync("maplibre-poc.css", "utf8");
 const markupSource = fs.readFileSync("index.html", "utf8");
-assert.ok(markupSource.includes('id="main-menu-compass-challenge-button"'));
-assert.ok(markupSource.includes('id="compass-challenge-panel"'));
-assert.ok(runtimeSource.includes('currentAppScreen = "compass-challenge"'));
-assert.ok(runtimeSource.includes('document.body.classList.add("compass-result-mode")'));
+const previewMarkupSource = fs.readFileSync("maplibre-poc.html", "utf8");
+assert.equal((markupSource.match(/id="main-menu-mental-map-challenge-button"/g) || []).length, 1);
+assert.equal((previewMarkupSource.match(/id="main-menu-mental-map-challenge-button"/g) || []).length, 1);
+assert.ok(!markupSource.includes('id="main-menu-compass-challenge-button"'));
+assert.ok(!previewMarkupSource.includes('id="main-menu-compass-challenge-button"'));
+assert.ok(!markupSource.includes('id="compass-challenge-panel"'));
+assert.ok(!previewMarkupSource.includes('id="compass-challenge-panel"'));
+assert.ok(runtimeSource.includes("return openMentalMapChallenge();"));
+assert.ok(!runtimeSource.includes('currentAppScreen = "compass-challenge"'));
+assert.ok(!runtimeSource.includes("renderCompassChallenge"));
 assert.ok(runtimeSource.includes('mapElement.setAttribute("aria-hidden", "true")'));
 assert.ok(cssSource.includes("body.compass-challenge-mode:not(.compass-result-mode) #map"));
 assert.ok(runnerSource.includes("prepareCompassChallenge()"));
 assert.ok(runnerSource.includes("enterCompassChallengeResult(options = {})"));
+assert.ok(runnerSource.includes('this.setCompassChallengeDirectionArrow(options.visualState?.directionArrows || [])'));
+assert.ok(runnerSource.includes('["mental-map-challenge-result", "compass-challenge-result"].includes(this.currentView)'));
 assert.ok(runnerSource.includes('id: "compass-challenge-direction-line"'));
 assert.ok(runnerSource.includes('id: "compass-challenge-direction-head"'));
 assert.ok(runnerSource.includes("this.usStatesAtlas?.features?.find"));
@@ -196,7 +219,92 @@ assert.ok(runtimeSource.includes("onReorder: (fromIndex, toIndex, stateId)"));
 assert.ok(cssSource.includes(".mental-map-result-reference"));
 assert.ok(!uiSource.includes("score"));
 
-console.log("Compass Challenge validation passed:", JSON.stringify({
+const unifiedChallenges = getUnifiedMentalMapChallenges({ includeGenerated: false, random: () => 0 });
+assert.equal(new Set(unifiedChallenges.map(({ id }) => id)).size, unifiedChallenges.length);
+challenges.forEach((challenge) => {
+  const matches = unifiedChallenges.filter(({ id }) => id === challenge.id);
+  assert.equal(matches.length, 1, `${challenge.id} should appear once in the unified registry.`);
+  assert.deepEqual(validateUnifiedMentalMapChallenge(matches[0]), []);
+});
+
+const mergedSingle = unifiedChallenges.find(({ id }) => id === "east-of-nevada");
+assert.equal(mergedSingle.answerMode, MENTAL_MAP_ANSWER_MODES.SINGLE_SELECT);
+assert.equal(mergedSingle.category, MENTAL_MAP_CHALLENGE_CATEGORIES.CARDINAL_DIRECTION);
+let mergedSingleState = createMentalMapChallengeState(mergedSingle, { random: () => 0 });
+mergedSingleState = selectMentalMapAnswer(mergedSingleState, "arizona");
+mergedSingleState = selectMentalMapAnswer(mergedSingleState, "utah");
+assert.deepEqual(mergedSingleState.selectedStateIds, ["utah"]);
+const mergedSingleEvaluation = evaluateMentalMapAnswer(mergedSingle, mergedSingleState.selectedStateIds);
+assert.equal(mergedSingleEvaluation.isCorrect, true);
+const mergedSingleVisual = getMentalMapResultVisualState(mergedSingle, mergedSingleEvaluation);
+assert.deepEqual(mergedSingleVisual.referenceStateIds, ["nevada"]);
+assert.deepEqual(mergedSingleVisual.directionArrows, [{ fromStateId: "nevada", toStateId: "utah" }]);
+
+const mergedRelative = unifiedChallenges.find(({ id }) => id === "south-virginia-east-tennessee");
+assert.equal(mergedRelative.category, MENTAL_MAP_CHALLENGE_CATEGORIES.RELATIVE_POSITION);
+const mergedRelativeVisual = getMentalMapResultVisualState(
+  mergedRelative,
+  evaluateMentalMapAnswer(mergedRelative, ["north-carolina"])
+);
+assert.deepEqual(mergedRelativeVisual.referenceStateIds, ["virginia", "tennessee"]);
+assert.equal(mergedRelativeVisual.directionArrows.length, 2);
+
+const mergedOrdering = unifiedChallenges.find(({ id }) => id === "northern-us-west-to-east");
+assert.equal(mergedOrdering.answerMode, MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE);
+assert.equal(mergedOrdering.category, MENTAL_MAP_CHALLENGE_CATEGORIES.DIRECTIONAL_ORDERING);
+assert.ok(mergedOrdering.orderedStateIds.every((stateId) => !mergedOrdering.prompt.toLowerCase().includes(stateFeatures.get(stateId).properties.name.toLowerCase())));
+assert.equal(evaluateMentalMapAnswer(mergedOrdering, mergedOrdering.orderedStateIds).isCorrect, true);
+assert.equal(getMentalMapResultVisualState(
+  mergedOrdering,
+  evaluateMentalMapAnswer(mergedOrdering, mergedOrdering.orderedStateIds)
+).directionArrows.length, 1);
+
+assert.equal(getMentalMapAudioText(mergedSingle, MENTAL_MAP_AUDIO_ROLES.QUESTION), mergedSingle.prompt);
+assert.equal(getMentalMapAudioEntry(mergedSingle, MENTAL_MAP_AUDIO_ROLES.QUESTION), null);
+assert.ok(sharedUiSource.includes("window.GeographyChipSpeech?.createChipSpeakerControl"));
+assert.ok(sharedUiSource.includes('["reference", "Reference state"]'));
+assert.ok(sharedUiSource.includes('["direction", "Correct direction"]'));
+
+const malformed = { id: "malformed", category: "cardinal-direction" };
+const selectedWithoutMalformed = selectNextUnifiedMentalMapChallenge([malformed, mergedSingle], { random: () => 0 });
+assert.equal(selectedWithoutMalformed.id, mergedSingle.id);
+
+let usedQuestionIds = new Set();
+let lastQuestionId = "";
+let lastCategory = "";
+let recentAnswerModes = [];
+for (let index = 0; index < 12; index += 1) {
+  let next = selectNextUnifiedMentalMapChallenge(unifiedChallenges, {
+    usedQuestionIds,
+    lastQuestionId,
+    lastCategory,
+    recentAnswerModes,
+    random: () => 0
+  });
+  if (!next) {
+    usedQuestionIds = new Set();
+    next = selectNextUnifiedMentalMapChallenge(unifiedChallenges, {
+      usedQuestionIds,
+      lastQuestionId,
+      lastCategory,
+      recentAnswerModes,
+      random: () => 0
+    });
+  }
+  assert.ok(next);
+  assert.notEqual(next.id, lastQuestionId);
+  if (lastCategory) assert.notEqual(next.category, lastCategory);
+  if (recentAnswerModes.slice(-2).includes(MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE)) {
+    assert.notEqual(next.answerMode, MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE);
+  }
+  usedQuestionIds.add(next.id);
+  lastQuestionId = next.id;
+  lastCategory = next.category;
+  recentAnswerModes = [...recentAnswerModes, next.answerMode].slice(-2);
+}
+
+console.log("Compass infrastructure and Mental Map consolidation validation passed:", JSON.stringify({
   challenges: challenges.length,
+  unifiedChallenges: unifiedChallenges.length,
   questionTypes: Object.values(COMPASS_QUESTION_TYPES)
 }));

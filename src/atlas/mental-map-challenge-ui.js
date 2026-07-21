@@ -2,12 +2,12 @@ import { getStateById } from "./united-states-atlas-queries.js";
 import {
   getMentalMapScoreLabel,
   isMentalMapAnswerChoiceDisabled
-} from "./mental-map-challenge-engine.js";
+} from "./mental-map-challenge-engine.js?v=20260721-mental-map-consolidation-1";
 import {
   isMentalMapRecallAllChallenge,
   MENTAL_MAP_ANSWER_MODES,
   MENTAL_MAP_COUNT_RULES
-} from "./mental-map-challenges.js";
+} from "./mental-map-challenges.js?v=20260721-mental-map-consolidation-1";
 import {
   getMentalMapAudioEntry,
   getMentalMapAudioText,
@@ -182,7 +182,9 @@ function createSelectedAnswers(challenge, state, options) {
   const heading = document.createElement("h3");
   heading.textContent = challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE
     ? "Your sequence"
-    : "Your choices";
+    : challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SINGLE_SELECT
+      ? "Your answer"
+      : "Your choices";
   section.appendChild(heading);
 
   if (!state.selectedStateIds.length) {
@@ -317,17 +319,24 @@ function createResultLine(label, stateIds, className = "") {
   return row;
 }
 
-function createResultLegend() {
+function createResultLegend(challenge) {
   const list = document.createElement("ul");
   list.className = "mental-map-result-legend";
-  [
+  const categories = [
     ["selected-correct", "Selected and correct"],
     ["correct", "Correct answer"],
+  ];
+  if (challenge.referenceStateId || challenge.referenceStateIds?.length) {
+    categories.push(["reference", "Reference state"]);
+  }
+  categories.push(
     ["missing", "Missing"],
     ["misplaced", "Misplaced"],
     ["incorrect", "Incorrect"],
     ["question-feature", "Question feature"]
-  ].forEach(([kind, label]) => {
+  );
+  if (challenge.directionRelationships?.length) categories.push(["direction", "Correct direction"]);
+  categories.forEach(([kind, label]) => {
     const item = document.createElement("li");
     const swatch = document.createElement("span");
     swatch.className = `mental-map-result-${kind}`;
@@ -354,6 +363,8 @@ function createResultContent(challenge, state, options) {
           ? `Not quite - ${stateName(evaluation.firstInvalidTransition.fromStateId)} and ${stateName(evaluation.firstInvalidTransition.toStateId)} do not share a border.`
           : "Not quite - the route does not connect the start and destination.";
   } else if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE) {
+    status.textContent = evaluation.isCorrect ? "Correct" : "Not quite";
+  } else if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SINGLE_SELECT) {
     status.textContent = evaluation.isCorrect ? "Correct" : "Not quite";
   } else if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_COUNT
     && challenge.countRule === MENTAL_MAP_COUNT_RULES.MINIMUM) {
@@ -396,6 +407,20 @@ function createResultContent(challenge, state, options) {
           ? `First invalid transition: ${stateName(evaluation.firstInvalidTransition.fromStateId)} to ${stateName(evaluation.firstInvalidTransition.toStateId)}.`
           : "The route must begin and end at the named states.";
       wrapper.appendChild(invalid);
+    }
+  } else if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SINGLE_SELECT) {
+    const referenceStateIds = challenge.referenceStateId
+      ? [challenge.referenceStateId]
+      : challenge.referenceStateIds || [];
+    wrapper.append(createResultLine("Correct answer", challenge.correctStateIds));
+    if (referenceStateIds.length) {
+      wrapper.append(createResultLine(
+        referenceStateIds.length === 1 ? "Reference state" : "Reference states",
+        referenceStateIds
+      ));
+    }
+    if (evaluation.selectedInvalidStateIds.length) {
+      wrapper.append(createResultLine("Incorrect", evaluation.selectedInvalidStateIds));
     }
   } else if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_COUNT) {
     wrapper.append(
@@ -449,7 +474,7 @@ function createResultContent(challenge, state, options) {
     "Hear explanation"
   );
   if (explanationSpeaker) explanationRow.appendChild(explanationSpeaker);
-  wrapper.append(explanationRow, createResultLegend(), createButton("Next Question", "mental-map-primary-action", options.onNextQuestion));
+  wrapper.append(explanationRow, createResultLegend(challenge), createButton("Next Question", "mental-map-primary-action", options.onNextQuestion));
   return wrapper;
 }
 

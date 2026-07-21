@@ -906,6 +906,7 @@ export class MapLibreActivityRunner {
     this.setUnitedStatesContextFillOpacity(1);
     this.setBorderChainOverlayVisibility("visible");
     this.setMentalMapChallengeResultVisualState(options.visualState || {});
+    this.setCompassChallengeDirectionArrow(options.visualState?.directionArrows || []);
     this.resizeSoon();
     window.requestAnimationFrame(() => {
       if (this.currentView !== "mental-map-challenge-result") return;
@@ -1016,7 +1017,8 @@ export class MapLibreActivityRunner {
       type: "FeatureCollection",
       features
     });
-    const visible = this.currentView === "compass-challenge-result" && features.length > 0;
+    const visible = ["mental-map-challenge-result", "compass-challenge-result"].includes(this.currentView)
+      && features.length > 0;
     ["compass-challenge-direction-line", "compass-challenge-direction-head"].forEach((layerId) => {
       if (!this.map?.getLayer(layerId)) return;
       this.map.setLayoutProperty(layerId, "visibility", visible ? "visible" : "none");
@@ -7077,13 +7079,13 @@ export class MapLibreActivityRunner {
     if (["mental-map-challenge-result", "compass-challenge-result"].includes(this.currentView)) {
       const stateId = ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]];
       const visualState = this.mentalMapChallengeResultVisualState;
-      if (this.currentView === "compass-challenge-result" && visualState.referenceStateIds.length) {
+      if (visualState.referenceStateIds.length) {
         return [
           "case",
           ["in", stateId, ["literal", visualState.selectedIncorrectStateIds]], "#d95151",
           ["in", stateId, ["literal", visualState.selectedCorrectStateIds]], "#2f9d72",
-          ["in", stateId, ["literal", visualState.correctStateIds]], "#4f88b5",
           ["in", stateId, ["literal", visualState.referenceStateIds]], "#9aa9b8",
+          ["in", stateId, ["literal", visualState.correctStateIds]], "#4f88b5",
           "#dce8f5"
         ];
       }

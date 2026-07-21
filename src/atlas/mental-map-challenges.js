@@ -14,6 +14,7 @@ import {
 } from "./border-chain.js";
 
 export const MENTAL_MAP_ANSWER_MODES = Object.freeze({
+  SINGLE_SELECT: "single-select",
   SELECT_COUNT: "select-count",
   SELECT_ALL: "select-all",
   RECALL_ALL: "recall-all",
@@ -292,6 +293,9 @@ export function validateMentalMapChallenge(challenge) {
     } else if (challenge.countRule === MENTAL_MAP_COUNT_RULES.EXACT && !/\bexactly\b/i.test(challenge.prompt)) {
       errors.push("Exact-count prompt must say exactly.");
     }
+  }
+  if (mode === MENTAL_MAP_ANSWER_MODES.SINGLE_SELECT && requiredIds.length !== 1) {
+    errors.push("Single-select requires exactly one correct answer.");
   }
   if (mode === MENTAL_MAP_ANSWER_MODES.RECALL_ALL) {
     if (!requiredIds.length) errors.push("Recall-all requires at least one correct answer.");

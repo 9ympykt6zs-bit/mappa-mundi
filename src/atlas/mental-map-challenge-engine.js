@@ -8,7 +8,7 @@ import {
   MENTAL_MAP_ANSWER_MODES,
   MENTAL_MAP_COUNT_RULES,
   validateMentalMapChallenge
-} from "./mental-map-challenges.js";
+} from "./mental-map-challenges.js?v=20260721-mental-map-consolidation-1";
 
 function copy(value) {
   return JSON.parse(JSON.stringify(value));
@@ -102,6 +102,10 @@ export function selectMentalMapAnswer(state, stateId) {
   const next = copy(state);
   if (!next || next.phase !== "answering") return next;
   if (!next.answerBank.some((item) => item.id === stateId)) return next;
+  if (next.answerMode === MENTAL_MAP_ANSWER_MODES.SINGLE_SELECT) {
+    next.selectedStateIds = [stateId];
+    return next;
+  }
   if (Number.isInteger(next.maxSelections) && next.selectedStateIds.length >= next.maxSelections) return next;
   if (!next.selectedStateIds.includes(stateId)) next.selectedStateIds.push(stateId);
   return next;
@@ -161,6 +165,27 @@ export function evaluateMentalMapAnswer(challenge, selectedStateIds = []) {
   const selected = isMentalMapBorderRouteChallenge(challenge)
     ? (selectedStateIds || []).filter(Boolean)
     : unique(selectedStateIds);
+  if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SINGLE_SELECT) {
+    const correctStateId = challenge.correctStateIds[0];
+    const selectedStateId = selected[0] || null;
+    const isCorrect = selectedStateId === correctStateId;
+    return {
+      isCorrect,
+      score: isCorrect ? 1 : 0,
+      maxScore: 1,
+      selectedStateIds: selectedStateId ? [selectedStateId] : [],
+      selectedValidStateIds: isCorrect ? [selectedStateId] : [],
+      selectedInvalidStateIds: selectedStateId && !isCorrect ? [selectedStateId] : [],
+      requestedCountMet: Boolean(selectedStateId),
+      completeEligibleStateIds: [correctStateId],
+      missingStateIds: isCorrect ? [] : [correctStateId],
+      unnecessaryStateIds: [],
+      correctlyPositionedStateIds: [],
+      misplacedStateIds: [],
+      expectedSequence: []
+    };
+  }
+
   if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_COUNT) {
     const eligible = new Set(challenge.correctStateIds);
     const selectedValidStateIds = selected.filter((stateId) => eligible.has(stateId));
@@ -306,6 +331,11 @@ export function getMentalMapResultVisualState(challenge, evaluation) {
   const correctStateIds = challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE
     ? routeStateIds
     : [...challenge.correctStateIds];
+  const referenceStateIds = challenge.referenceStateId
+    ? [challenge.referenceStateId]
+    : [...(challenge.referenceStateIds || [])];
+  const directionArrows = (challenge.directionRelationships || [])
+    .map(({ fromStateId, toStateId }) => ({ fromStateId, toStateId }));
   const associatedFeatures = (challenge.associatedFeatureIds || []).map((entityId) => {
     const entity = getEntity(unitedStatesAtlas, entityId);
     const coastStateIds = entity?.kind === "water"
@@ -339,8 +369,14 @@ export function getMentalMapResultVisualState(challenge, evaluation) {
     misplacedStateIds: [...evaluation.misplacedStateIds],
     expectedSequenceStateIds: routeStateIds,
     learnerStateIds: evaluation.isBorderRoute ? routeStateIds : [...evaluation.selectedStateIds],
+    referenceStateIds,
+    contextStateIds: unique([
+      ...referenceStateIds,
+      ...directionArrows.flatMap(({ fromStateId, toStateId }) => [fromStateId, toStateId])
+    ]),
     associatedFeatures,
     routeRenderingMode: getMentalMapRouteRenderingMode(challenge),
-    explicitRouteGeometry: challenge.explicitRouteGeometry || null
+    explicitRouteGeometry: challenge.explicitRouteGeometry || null,
+    directionArrows
   };
 }

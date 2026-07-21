@@ -18,7 +18,7 @@ The vertical slice should include:
 - Personal U.S. atlas with place entries and visible learning states.
 - U.S. relationship model for borders, capitals, regions, and physical-feature connections.
 - Mastery model for recognition, naming, locating, and relationships.
-- Mental Map Challenge, Compass Challenge, and Map Reconstruction mechanics, with border-graph utilities shared across route questions.
+- Mental Map Challenge and Map Reconstruction mechanics, with directional and border-graph utilities shared across Mental Map question categories.
 - "Across the United States" Expedition.
 - Daily Trail and Memory Trail integration.
 - Practical onboarding and public-beta readiness checks.
@@ -32,10 +32,10 @@ The vertical slice should include:
 | 2A. Read-only U.S. atlas prototype | Weeks 3-4 | Complete | Add a dedicated U.S. atlas browsing surface with neutral state selection and read-only geographic profiles from the canonical atlas query adapter. | A user can open the United States Atlas, select a state, and browse its capital, region, neighbors, and existing connected physical features on desktop or mobile. |
 | 2B. Atlas geographic context | Weeks 3-4 | Complete | Expand state profiles with typed international land neighbors, coasts, maritime neighbors, and major bordering waters. | The atlas distinguishes land borders from coasts and maritime relationships, including Alaska's Bering Strait relationship to Russia. |
 | 2C. Personal U.S. atlas learning state | Weeks 3-4 | Complete | Read existing Daily Trail and United States Memory Trail state progress into the atlas as a read-only learning snapshot. | Every state has an unexplored, discovered, learning, strong, or mastered atlas status; the map, profile, and summary update without changing either learning system. |
-| 3A. Mental Map Challenge prototype | Week 5 | Complete | Replace the map-first Border Chain player with recall-first select-count, select-all, and ordered-sequence questions while retaining border graph and shortest-path utilities. | The learner answers without geographic hints, submits, and then sees the atlas as visual correction and explanation. |
+| 3A. Mental Map Challenge prototype | Week 5 | Complete | Provide one recall-first activity for geographic recall, relationship recall, directional reasoning, ordered spatial reasoning, and route reasoning while retaining border graph, shortest-path, and Compass direction utilities. | The learner answers without geographic hints, submits, and then sees the atlas, reference states, physical features, and directional guides as visual correction and explanation. |
 | 3. Meaningful mastery | Weeks 5-6 | Not started | Track separate mastery dimensions for recognition, naming, locating, and relationships. Add a U.S. knowledge-map overview and regional/national summaries. | A place cannot be mastered from one correct identification. The app can show what the learner knows, what is weak, and what should be practiced next. |
 | 4. Relationship challenge expansion | Week 7 | Not started | Expand Mental Map Challenge with adjacency and relationship questions powered by the retained Border Chain graph utilities. Feed future results into relationship mastery. | Questions teach adjacency without exposing the map before recall; feedback clearly explains missed and extra relationships afterward. |
-| 5. Compass Challenge | Week 8 | Complete (first version) | Added map-hidden single-direction, relative-position, and west-to-east questions with answer banks, post-submit state feedback, and geometry-backed direction arrows. | The learner reasons spatially before the map appears, then uses the revealed map and explanation as corrective feedback. |
+| 5. Directional Mental Map categories | Week 8 | Complete (consolidated) | Fold single-direction, relative-position, and directional-ordering questions into Mental Map Challenge while retaining Compass definitions, evaluation utilities, and geometry-backed arrows as internal infrastructure. | Direction questions rotate with other Mental Map categories in the same map-hidden answer flow and reveal reference states and arrows after submission. |
 | 6. Map Reconstruction | Weeks 9-10 | Not started | Add a reconstruction mechanic for one U.S. region first, with snapping, tolerance, and correction feedback. Expand only if the regional version is reliable. | A child and an adult can understand the interaction without outside explanation. It works on mobile without fragile dragging or layout problems. |
 | 7. Expedition framework | Week 11 | Not started | Build a reusable Expedition sequence model that supports introduction, atlas discovery, teaching moments, multiple mechanics, checkpoints, and a final mission. | A new Expedition can be created mostly from structured content instead of custom JavaScript. |
 | 8. Across the United States Expedition | Week 12 | Not started | Create one polished Expedition crossing the country through regions, states, capitals, rivers, lakes, mountain ranges, borders, and directional reasoning. | A new user can play for 20-30 minutes and describe the experience as exploration or a game, not only a sequence of quizzes. |
@@ -82,7 +82,7 @@ The finished U.S. experience should become the permanent free edition:
 - All 50 states and capitals.
 - Existing U.S. physical features.
 - Daily Trail and Memory Trail.
-- Mental Map Challenge, Compass Challenge, and Map Reconstruction.
+- Mental Map Challenge, including directional reasoning, and Map Reconstruction.
 - "Across the United States" Expedition.
 - Genuine mastery tracking.
 

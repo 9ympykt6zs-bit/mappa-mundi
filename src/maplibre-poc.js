@@ -9,22 +9,12 @@ import {
   selectMentalMapAnswer,
   submitMentalMapAnswer,
   undoMentalMapAnswer
-} from "./atlas/mental-map-challenge-engine.js?v=20260720-mental-map-audio-1";
-import { getMentalMapChallenges } from "./atlas/mental-map-challenges.js?v=20260720-mental-map-audio-1";
-import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=20260720-mental-map-prerecorded-audio-1";
+} from "./atlas/mental-map-challenge-engine.js?v=20260721-mental-map-consolidation-1";
 import {
-  clearCompassAnswers,
-  createCompassChallengeState,
-  getCompassResultVisualState,
-  moveCompassAnswer,
-  reorderCompassAnswers,
-  removeCompassAnswer,
-  selectCompassAnswer,
-  submitCompassAnswer,
-  undoCompassAnswer
-} from "./atlas/compass-challenge-engine.js?v=20260720-compass-challenge-1";
-import { getCompassChallenges } from "./atlas/compass-challenges.js?v=20260720-compass-challenge-1";
-import { renderCompassChallenge } from "./atlas/compass-challenge-ui.js?v=20260720-compass-challenge-1";
+  getUnifiedMentalMapChallenges,
+  selectNextUnifiedMentalMapChallenge
+} from "./atlas/mental-map-challenge-registry.js";
+import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=20260721-mental-map-consolidation-1";
 import { readUnitedStatesAtlasProgress } from "./atlas/united-states-atlas-progress.js";
 import { renderUnitedStatesAtlasOverview, renderUnitedStatesAtlasProfile } from "./atlas/united-states-atlas-ui.js";
 import { trackEvent } from "./analytics.js?v=20260601-instruction-target-nouns";
@@ -3103,7 +3093,7 @@ const mainMenuDailyTrailButton = document.querySelector("#main-menu-daily-trail-
 const mainMenuUnitedStatesMemoryTrailButton = document.querySelector("#main-menu-us-memory-trail-button");
 const mainMenuUnitedStatesAtlasButton = document.querySelector("#main-menu-united-states-atlas-button");
 const mainMenuMentalMapChallengeButton = document.querySelector("#main-menu-mental-map-challenge-button");
-const mainMenuCompassChallengeButton = document.querySelector("#main-menu-compass-challenge-button");
+const legacyCompassChallengeButton = document.querySelector("#main-menu-compass-challenge-button");
 const mainMenuMoreWaysButton = document.querySelector("#main-menu-more-ways-button");
 const mainMenuDailyTrailAction = document.querySelector("#main-menu-daily-trail-action");
 const mainMenuUnitedStatesMemoryTrailAction = document.querySelector("#main-menu-us-memory-trail-action");
@@ -3539,17 +3529,16 @@ const memoryTrailSecondaryButton = document.querySelector("#memory-trail-seconda
 const unitedStatesAtlasProfile = document.querySelector("#united-states-atlas-profile");
 const unitedStatesAtlasOverview = document.querySelector("#united-states-atlas-overview");
 const mentalMapChallengePanel = document.querySelector("#mental-map-challenge-panel");
-const compassChallengePanel = document.querySelector("#compass-challenge-panel");
 const mapElement = document.querySelector("#map");
 let unitedStatesAtlasProgress = null;
 let activeMentalMapChallenge = null;
 let activeMentalMapChallengeState = null;
+let mentalMapChallengePool = [];
 let mentalMapUsedQuestionIds = new Set();
 let mentalMapReorderAnnouncement = "";
-let activeCompassChallenge = null;
-let activeCompassChallengeState = null;
-let compassUsedQuestionIds = new Set();
-let compassReorderAnnouncement = "";
+let mentalMapLastQuestionId = "";
+let mentalMapLastCategory = "";
+let mentalMapRecentAnswerModes = [];
 
 const journeyDifficultyOptions = [
   {
@@ -3700,7 +3689,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260720-compass-challenge-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260721-mental-map-consolidation-1"),
       import("./chip-speech.js?v=20260720-mental-map-prerecorded-audio-1")
     ]).then(([
       ,
@@ -5292,7 +5281,7 @@ function bindUiEvents() {
 
   homeButton?.addEventListener("click", () => {
     if (currentAppScreen === "compass-challenge") {
-      exitCompassChallenge();
+      exitMentalMapChallenge();
       return;
     }
     if (currentAppScreen === "mental-map-challenge") {
@@ -5332,7 +5321,7 @@ function bindUiEvents() {
   });
   backButton?.addEventListener("click", () => {
     if (currentAppScreen === "compass-challenge") {
-      exitCompassChallenge();
+      exitMentalMapChallenge();
       return;
     }
     if (currentAppScreen === "mental-map-challenge") {
@@ -5383,7 +5372,7 @@ function bindUiEvents() {
   mainMenuUnitedStatesMemoryTrailButton?.addEventListener("click", startOrContinueUnitedStatesMemoryTrail);
   mainMenuUnitedStatesAtlasButton?.addEventListener("click", () => { void openUnitedStatesAtlas(); });
   mainMenuMentalMapChallengeButton?.addEventListener("click", () => { void openMentalMapChallenge(); });
-  mainMenuCompassChallengeButton?.addEventListener("click", () => { void openCompassChallenge(); });
+  legacyCompassChallengeButton?.addEventListener("click", () => { void openCompassChallenge(); });
   mainMenuMoreWaysButton?.addEventListener("click", () => showAppScreen("main-menu-more-ways"));
   audioMuteButton?.addEventListener("click", toggleAudioMute);
   window.addEventListener("atlas-quest-audio-muted-change", updateAudioMuteControl);
@@ -7726,7 +7715,11 @@ async function openMentalMapChallenge() {
   runner.setCompletedTargets([]);
   runner.setUnitedStatesAtlasLearningStatuses({});
   runner.prepareMentalMapChallenge();
+  mentalMapChallengePool = getUnifiedMentalMapChallenges();
   mentalMapUsedQuestionIds = new Set();
+  mentalMapLastQuestionId = "";
+  mentalMapLastCategory = "";
+  mentalMapRecentAnswerModes = [];
   startNextMentalMapQuestion();
   setHeaderTitle("Mental Map Challenge", { shortTitle: "Mental Map" });
   instruction.textContent = "Recall first. The map appears after you submit.";
@@ -7735,15 +7728,29 @@ async function openMentalMapChallenge() {
 }
 
 function chooseNextMentalMapChallenge() {
-  const challenges = getMentalMapChallenges();
-  let available = challenges.filter((challenge) => !mentalMapUsedQuestionIds.has(challenge.id));
-  if (!available.length) {
+  let challenge = selectNextUnifiedMentalMapChallenge(mentalMapChallengePool, {
+    usedQuestionIds: mentalMapUsedQuestionIds,
+    lastQuestionId: mentalMapLastQuestionId,
+    lastCategory: mentalMapLastCategory,
+    recentAnswerModes: mentalMapRecentAnswerModes,
+    random: Math.random
+  });
+  if (!challenge) {
     mentalMapUsedQuestionIds = new Set();
-    available = challenges;
+    challenge = selectNextUnifiedMentalMapChallenge(mentalMapChallengePool, {
+      usedQuestionIds: mentalMapUsedQuestionIds,
+      lastQuestionId: mentalMapLastQuestionId,
+      lastCategory: mentalMapLastCategory,
+      recentAnswerModes: mentalMapRecentAnswerModes,
+      random: Math.random
+    });
   }
-  const index = Math.min(available.length - 1, Math.max(0, Math.floor(Math.random() * available.length)));
-  const challenge = available[index] || null;
-  if (challenge) mentalMapUsedQuestionIds.add(challenge.id);
+  if (challenge) {
+    mentalMapUsedQuestionIds.add(challenge.id);
+    mentalMapLastQuestionId = challenge.id;
+    mentalMapLastCategory = challenge.category;
+    mentalMapRecentAnswerModes = [...mentalMapRecentAnswerModes, challenge.answerMode].slice(-2);
+  }
   return challenge;
 }
 
@@ -7833,8 +7840,12 @@ function exitMentalMapChallenge() {
   if (mentalMapChallengePanel) mentalMapChallengePanel.hidden = true;
   activeMentalMapChallenge = null;
   activeMentalMapChallengeState = null;
+  mentalMapChallengePool = [];
   mentalMapUsedQuestionIds = new Set();
   mentalMapReorderAnnouncement = "";
+  mentalMapLastQuestionId = "";
+  mentalMapLastCategory = "";
+  mentalMapRecentAnswerModes = [];
   runner?.prepareMentalMapChallenge();
   if (mapElement) mapElement.removeAttribute("aria-hidden");
   document.body.classList.remove("mental-map-challenge-mode", "mental-map-result-mode", "overview-mode", "browse-mode");
@@ -7842,155 +7853,7 @@ function exitMentalMapChallenge() {
 }
 
 async function openCompassChallenge() {
-  await ensureMapReady();
-  saveCurrentActivityProgress();
-  cancelGrabbedAnswer();
-  clearFeedback();
-  closeBrowseDrawer();
-  activeStudySession = null;
-  activeStudyPracticeSession = null;
-  isCurrentActivityProgressDisabled = false;
-  currentAppScreen = "compass-challenge";
-  activeHierarchyNodeId = "north-america-united-states";
-  activeMenuRoot = "north-america";
-  isNavigationBrowseMode = false;
-  document.body.classList.remove(
-    "launch-mode",
-    "app-shell-mode",
-    "study-mode",
-    "browse-mode",
-    "united-states-atlas-mode",
-    "mental-map-challenge-mode",
-    "mental-map-result-mode",
-    "compass-result-mode"
-  );
-  document.body.classList.add("compass-challenge-mode");
-
-  if (launchScreen) launchScreen.hidden = true;
-  if (appShellScreen) appShellScreen.hidden = true;
-  if (unitedStatesAtlasProfile) unitedStatesAtlasProfile.hidden = true;
-  if (unitedStatesAtlasOverview) unitedStatesAtlasOverview.hidden = true;
-  if (mentalMapChallengePanel) mentalMapChallengePanel.hidden = true;
-
-  studyCard.hidden = true;
-  runner.setStudyPreviewMode(false);
-  runner.setMemoryTrailHighlight([]);
-  runner.setCompletedTargets([]);
-  runner.setUnitedStatesAtlasLearningStatuses({});
-  runner.prepareCompassChallenge();
-  compassUsedQuestionIds = new Set();
-  startNextCompassQuestion();
-  setHeaderTitle("Compass Challenge", { shortTitle: "Compass" });
-  instruction.textContent = "Reason first. The map appears after you submit.";
-  renderActivityNavControls(null);
-  updateTopBarNavigation();
-}
-
-function chooseNextCompassChallenge() {
-  const challenges = getCompassChallenges();
-  let available = challenges.filter((challenge) => !compassUsedQuestionIds.has(challenge.id));
-  if (!available.length) {
-    compassUsedQuestionIds = new Set();
-    available = challenges;
-  }
-  const index = Math.min(available.length - 1, Math.max(0, Math.floor(Math.random() * available.length)));
-  const challenge = available[index] || null;
-  if (challenge) compassUsedQuestionIds.add(challenge.id);
-  return challenge;
-}
-
-function startNextCompassQuestion() {
-  document.body.classList.remove("compass-result-mode");
-  if (mapElement) mapElement.setAttribute("aria-hidden", "true");
-  runner?.prepareCompassChallenge();
-  activeCompassChallenge = chooseNextCompassChallenge();
-  activeCompassChallengeState = activeCompassChallenge
-    ? createCompassChallengeState(activeCompassChallenge)
-    : null;
-  compassReorderAnnouncement = "";
-  renderActiveCompassChallenge();
-}
-
-function focusCompassOrderControl(stateId, action) {
-  requestAnimationFrame(() => {
-    const row = [...compassChallengePanel.querySelectorAll("[data-mental-map-state-id]")]
-      .find((candidate) => candidate.dataset.mentalMapStateId === stateId);
-    row?.querySelector(`[data-mental-map-order-action="${action}"]`)?.focus();
-  });
-}
-
-function setCompassReorderAnnouncement(stateId) {
-  const position = activeCompassChallengeState?.selectedStateIds?.indexOf(stateId) ?? -1;
-  const name = activeCompassChallengeState?.answerBank?.find((answer) => answer.id === stateId)?.name;
-  compassReorderAnnouncement = position >= 0 && name
-    ? `${name} moved to position ${position + 1} of ${activeCompassChallengeState.selectedStateIds.length}.`
-    : "";
-}
-
-function renderActiveCompassChallenge() {
-  if (!compassChallengePanel || !activeCompassChallenge || !activeCompassChallengeState) return;
-  compassChallengePanel.hidden = false;
-  renderCompassChallenge(compassChallengePanel, activeCompassChallenge, activeCompassChallengeState, {
-    reorderAnnouncement: compassReorderAnnouncement,
-    onSelect: (stateId) => {
-      compassReorderAnnouncement = "";
-      activeCompassChallengeState = selectCompassAnswer(activeCompassChallengeState, stateId);
-      renderActiveCompassChallenge();
-    },
-    onRemove: (stateId) => {
-      compassReorderAnnouncement = "";
-      activeCompassChallengeState = removeCompassAnswer(activeCompassChallengeState, stateId);
-      renderActiveCompassChallenge();
-    },
-    onMove: (stateId, direction) => {
-      activeCompassChallengeState = moveCompassAnswer(activeCompassChallengeState, stateId, direction);
-      setCompassReorderAnnouncement(stateId);
-      renderActiveCompassChallenge();
-      focusCompassOrderControl(stateId, direction);
-    },
-    onReorder: (fromIndex, toIndex, stateId) => {
-      activeCompassChallengeState = reorderCompassAnswers(activeCompassChallengeState, fromIndex, toIndex);
-      setCompassReorderAnnouncement(stateId);
-      renderActiveCompassChallenge();
-      focusCompassOrderControl(stateId, "drag");
-    },
-    onUndo: () => {
-      compassReorderAnnouncement = "";
-      activeCompassChallengeState = undoCompassAnswer(activeCompassChallengeState);
-      renderActiveCompassChallenge();
-    },
-    onClear: () => {
-      compassReorderAnnouncement = "";
-      activeCompassChallengeState = clearCompassAnswers(activeCompassChallengeState);
-      renderActiveCompassChallenge();
-    },
-    onSubmit: submitActiveCompassChallenge,
-    onNewQuestion: startNextCompassQuestion,
-    onNextQuestion: startNextCompassQuestion
-  });
-}
-
-function submitActiveCompassChallenge() {
-  activeCompassChallengeState = submitCompassAnswer(activeCompassChallengeState, activeCompassChallenge);
-  if (!activeCompassChallengeState?.evaluation) return;
-  document.body.classList.add("compass-result-mode");
-  if (mapElement) mapElement.setAttribute("aria-hidden", "false");
-  runner?.enterCompassChallengeResult({
-    visualState: getCompassResultVisualState(activeCompassChallenge, activeCompassChallengeState.evaluation)
-  });
-  renderActiveCompassChallenge();
-}
-
-function exitCompassChallenge() {
-  if (compassChallengePanel) compassChallengePanel.hidden = true;
-  activeCompassChallenge = null;
-  activeCompassChallengeState = null;
-  compassUsedQuestionIds = new Set();
-  compassReorderAnnouncement = "";
-  runner?.prepareCompassChallenge();
-  if (mapElement) mapElement.removeAttribute("aria-hidden");
-  document.body.classList.remove("compass-challenge-mode", "compass-result-mode", "overview-mode", "browse-mode");
-  showAppScreen("main-menu", { pushHistory: false });
+  return openMentalMapChallenge();
 }
 
 function isDailyTrailCheckpointPlan(plan = activeDailyTrailSession?.plan) {
