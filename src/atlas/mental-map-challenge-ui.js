@@ -53,7 +53,7 @@ function createChallengeSpeaker(challenge, role, className, accessibleLabel) {
   });
 }
 
-function attachOrderedAnswerDrag(handle, item, list, fromIndex, stateId, options) {
+export function attachOrderedAnswerDrag(handle, item, list, fromIndex, stateId, options) {
   const clearDropTarget = () => {
     list.querySelectorAll(".is-drop-target").forEach((row) => row.classList.remove("is-drop-target"));
   };

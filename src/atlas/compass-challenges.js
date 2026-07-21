@@ -13,6 +13,7 @@ const challenges = Object.freeze([
     prompt: "Which state lies immediately west of Arkansas?",
     questionType: COMPASS_QUESTION_TYPES.SINGLE_DIRECTION,
     correctStateId: "oklahoma",
+    referenceStateId: "arkansas",
     distractorStateIds: ["louisiana", "missouri", "tennessee"],
     directionRelationships: [{ fromStateId: "arkansas", toStateId: "oklahoma", direction: "west" }],
     explanation: "Oklahoma lies directly west of Arkansas along most of Arkansas's western border."
@@ -23,6 +24,7 @@ const challenges = Object.freeze([
     prompt: "Which state lies directly north of Oklahoma?",
     questionType: COMPASS_QUESTION_TYPES.SINGLE_DIRECTION,
     correctStateId: "kansas",
+    referenceStateId: "oklahoma",
     distractorStateIds: ["arkansas", "colorado", "texas"],
     directionRelationships: [{ fromStateId: "oklahoma", toStateId: "kansas", direction: "north" }],
     explanation: "Kansas lies directly north of Oklahoma across Oklahoma's northern border."
@@ -33,6 +35,7 @@ const challenges = Object.freeze([
     prompt: "Which state lies directly east of Nevada?",
     questionType: COMPASS_QUESTION_TYPES.SINGLE_DIRECTION,
     correctStateId: "utah",
+    referenceStateId: "nevada",
     distractorStateIds: ["arizona", "california", "oregon"],
     directionRelationships: [{ fromStateId: "nevada", toStateId: "utah", direction: "east" }],
     explanation: "Utah lies directly east of Nevada along Nevada's eastern border."
@@ -43,6 +46,7 @@ const challenges = Object.freeze([
     prompt: "Which state is west of Tennessee and north of Louisiana?",
     questionType: COMPASS_QUESTION_TYPES.RELATIVE_POSITION,
     correctStateId: "arkansas",
+    referenceStateIds: ["tennessee", "louisiana"],
     distractorStateIds: ["alabama", "mississippi", "missouri"],
     directionRelationships: [
       { fromStateId: "tennessee", toStateId: "arkansas", direction: "west" },
@@ -56,6 +60,7 @@ const challenges = Object.freeze([
     prompt: "Which state is south of Virginia and east of Tennessee?",
     questionType: COMPASS_QUESTION_TYPES.RELATIVE_POSITION,
     correctStateId: "north-carolina",
+    referenceStateIds: ["virginia", "tennessee"],
     distractorStateIds: ["georgia", "kentucky", "west-virginia"],
     directionRelationships: [
       { fromStateId: "virginia", toStateId: "north-carolina", direction: "south" },
@@ -69,6 +74,7 @@ const challenges = Object.freeze([
     prompt: "Which state is east of Arizona and south of Colorado?",
     questionType: COMPASS_QUESTION_TYPES.RELATIVE_POSITION,
     correctStateId: "new-mexico",
+    referenceStateIds: ["arizona", "colorado"],
     distractorStateIds: ["nevada", "texas", "utah"],
     directionRelationships: [
       { fromStateId: "arizona", toStateId: "new-mexico", direction: "east" },
@@ -79,7 +85,7 @@ const challenges = Object.freeze([
   {
     id: "southwest-west-to-east",
     title: "West To East",
-    prompt: "Put California, Nevada, Utah, and Colorado in west-to-east order.",
+    prompt: "Put these states in west-to-east order.",
     secondaryInstruction: "Choose the states in order, starting with the westernmost.",
     questionType: COMPASS_QUESTION_TYPES.WEST_TO_EAST,
     orderedStateIds: ["california", "nevada", "utah", "colorado"],
@@ -88,7 +94,7 @@ const challenges = Object.freeze([
   {
     id: "northern-us-west-to-east",
     title: "West To East",
-    prompt: "Put Washington, Montana, Minnesota, and Maine in west-to-east order.",
+    prompt: "Put these states in west-to-east order.",
     secondaryInstruction: "Choose the states in order, starting with the westernmost.",
     questionType: COMPASS_QUESTION_TYPES.WEST_TO_EAST,
     orderedStateIds: ["washington", "montana", "minnesota", "maine"],
@@ -97,7 +103,7 @@ const challenges = Object.freeze([
   {
     id: "gulf-states-west-to-east",
     title: "West To East",
-    prompt: "Put Texas, Louisiana, Mississippi, Alabama, and Florida in west-to-east order.",
+    prompt: "Put these states in west-to-east order.",
     secondaryInstruction: "Choose the states in order, starting with the westernmost.",
     questionType: COMPASS_QUESTION_TYPES.WEST_TO_EAST,
     orderedStateIds: ["texas", "louisiana", "mississippi", "alabama", "florida"],
@@ -139,6 +145,34 @@ export function validateCompassChallenge(challenge) {
     if (!(challenge?.directionRelationships || []).length) errors.push("Directional relationships are required.");
     if ((challenge.directionRelationships || []).some((relationship) => relationship.toStateId !== challenge.correctStateId)) {
       errors.push("Every directional relationship must point to the correct answer state.");
+    }
+    if (challenge.questionType === COMPASS_QUESTION_TYPES.SINGLE_DIRECTION) {
+      const relationshipReferenceIds = (challenge.directionRelationships || []).map(({ fromStateId }) => fromStateId);
+      if (!challenge.referenceStateId || !getStateById(challenge.referenceStateId)) {
+        errors.push("Single-direction questions need a valid reference state.");
+      }
+      if (challenge.referenceStateId === challenge.correctStateId) errors.push("The answer state cannot also be the reference state.");
+      if ((challenge.distractorStateIds || []).includes(challenge.referenceStateId)) {
+        errors.push("The reference state cannot be an answer-bank distractor.");
+      }
+      if (relationshipReferenceIds.length !== 1 || relationshipReferenceIds[0] !== challenge.referenceStateId) {
+        errors.push("The directional relationship must start from the reference state.");
+      }
+    }
+    if (challenge.questionType === COMPASS_QUESTION_TYPES.RELATIVE_POSITION) {
+      const referenceStateIds = challenge.referenceStateIds || [];
+      const relationshipReferenceIds = (challenge.directionRelationships || []).map(({ fromStateId }) => fromStateId);
+      if (!referenceStateIds.length) errors.push("Relative-position questions need reference states.");
+      if (new Set(referenceStateIds).size !== referenceStateIds.length) errors.push("Reference state IDs must be unique.");
+      if (referenceStateIds.includes(challenge.correctStateId)) errors.push("The answer state cannot also be a reference state.");
+      if (referenceStateIds.some((stateId) => !getStateById(stateId))) errors.push("Relative-position questions contain an unknown reference state.");
+      if (referenceStateIds.some((stateId) => (challenge.distractorStateIds || []).includes(stateId))) {
+        errors.push("Reference states cannot be answer-bank distractors.");
+      }
+      if (referenceStateIds.length !== relationshipReferenceIds.length
+        || referenceStateIds.some((stateId) => !relationshipReferenceIds.includes(stateId))) {
+        errors.push("Directional relationships must start from every reference state.");
+      }
     }
   }
   return errors;

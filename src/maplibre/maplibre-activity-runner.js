@@ -985,6 +985,7 @@ export class MapLibreActivityRunner {
       misplacedStateIds: [...new Set(visualState.misplacedStateIds || [])],
       expectedSequenceStateIds: [...(visualState.expectedSequenceStateIds || [])],
       learnerStateIds: [...new Set(visualState.learnerStateIds || [])],
+      referenceStateIds: [...new Set(visualState.referenceStateIds || [])],
       contextStateIds: [...new Set(visualState.contextStateIds || [])],
       associatedFeatures: (visualState.associatedFeatures || []).map((feature) => ({ ...feature })),
       routeRenderingMode: visualState.routeRenderingMode || null,
@@ -3335,7 +3336,7 @@ export class MapLibreActivityRunner {
       paint: {
         "line-color": "#0f766e",
         "line-opacity": 0.95,
-        "line-width": 5
+        "line-width": 4
       }
     });
 
@@ -3348,7 +3349,7 @@ export class MapLibreActivityRunner {
         visibility: "none",
         "text-field": ["get", "arrowGlyph"],
         "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
-        "text-size": 32,
+        "text-size": 25,
         "text-allow-overlap": true,
         "text-rotate": ["get", "rotation"],
         "text-rotation-alignment": "map"
@@ -3356,7 +3357,7 @@ export class MapLibreActivityRunner {
       paint: {
         "text-color": "#0f766e",
         "text-halo-color": "#ffffff",
-        "text-halo-width": 2
+        "text-halo-width": 1.5
       }
     });
 
@@ -7076,6 +7077,16 @@ export class MapLibreActivityRunner {
     if (["mental-map-challenge-result", "compass-challenge-result"].includes(this.currentView)) {
       const stateId = ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]];
       const visualState = this.mentalMapChallengeResultVisualState;
+      if (this.currentView === "compass-challenge-result" && visualState.referenceStateIds.length) {
+        return [
+          "case",
+          ["in", stateId, ["literal", visualState.selectedIncorrectStateIds]], "#d95151",
+          ["in", stateId, ["literal", visualState.selectedCorrectStateIds]], "#2f9d72",
+          ["in", stateId, ["literal", visualState.correctStateIds]], "#4f88b5",
+          ["in", stateId, ["literal", visualState.referenceStateIds]], "#9aa9b8",
+          "#dce8f5"
+        ];
+      }
       return [
         "case",
         ["in", stateId, ["literal", visualState.selectedIncorrectStateIds]], "#d95151",

@@ -1,5 +1,6 @@
 import { getStateById } from "./united-states-atlas-queries.js";
 import { COMPASS_QUESTION_TYPES } from "./compass-challenges.js";
+import { attachOrderedAnswerDrag } from "./mental-map-challenge-ui.js";
 
 function stateName(stateId) {
   return getStateById(stateId)?.name || "Unknown state";
@@ -7,6 +8,11 @@ function stateName(stateId) {
 
 function stateNames(stateIds = [], separator = ", ") {
   return stateIds.length ? stateIds.map(stateName).join(separator) : "None";
+}
+
+function getReferenceStateIds(challenge) {
+  if (challenge.referenceStateId) return [challenge.referenceStateId];
+  return challenge.referenceStateIds || [];
 }
 
 function createButton(label, className, callback, options = {}) {
@@ -43,7 +49,7 @@ function createSelectedAnswers(challenge, state, options) {
   section.className = "mental-map-selected";
   const heading = document.createElement("h3");
   heading.textContent = challenge.questionType === COMPASS_QUESTION_TYPES.WEST_TO_EAST
-    ? "Your order"
+    ? "Your choices"
     : "Your answer";
   section.appendChild(heading);
 
@@ -60,31 +66,61 @@ function createSelectedAnswers(challenge, state, options) {
   if (challenge.questionType === COMPASS_QUESTION_TYPES.WEST_TO_EAST) list.classList.add("is-ordered");
   state.selectedStateIds.forEach((stateId, index) => {
     const item = document.createElement("li");
-    const remove = createButton(
-      challenge.questionType === COMPASS_QUESTION_TYPES.WEST_TO_EAST ? `${index + 1}. ${stateName(stateId)}` : stateName(stateId),
-      "mental-map-selected-choice",
-      () => options.onRemove?.(stateId),
-      { ariaLabel: `Remove ${stateName(stateId)}` }
-    );
-    item.appendChild(remove);
     if (challenge.questionType === COMPASS_QUESTION_TYPES.WEST_TO_EAST) {
+      item.classList.add("mental-map-ordered-item");
+      item.dataset.mentalMapOrderIndex = String(index);
+      item.dataset.mentalMapStateId = stateId;
+      const dragHandle = createButton("Drag", "mental-map-drag-handle", () => {}, {
+        ariaLabel: `Drag ${stateName(stateId)}, position ${index + 1} of ${state.selectedStateIds.length}`
+      });
+      dragHandle.dataset.mentalMapOrderAction = "drag";
+      dragHandle.title = "Drag to reorder";
+      const number = document.createElement("span");
+      number.className = "mental-map-sequence-number";
+      number.setAttribute("aria-hidden", "true");
+      number.textContent = `${index + 1}.`;
+      const label = document.createElement("span");
+      label.className = "mental-map-ordered-label";
+      label.textContent = stateName(stateId);
       const actions = document.createElement("span");
       actions.className = "mental-map-selected-actions";
-      actions.append(
-        createButton("Up", "mental-map-mini-action", () => options.onMove?.(stateId, "up"), {
-          ariaLabel: `Move ${stateName(stateId)} up`,
-          disabled: index === 0
-        }),
-        createButton("Down", "mental-map-mini-action", () => options.onMove?.(stateId, "down"), {
-          ariaLabel: `Move ${stateName(stateId)} down`,
-          disabled: index === state.selectedStateIds.length - 1
-        })
-      );
-      item.appendChild(actions);
+      const moveUp = createButton("Up", "mental-map-mini-action", () => options.onMove?.(stateId, "up"), {
+        ariaLabel: `Move ${stateName(stateId)} up`,
+        disabled: index === 0
+      });
+      moveUp.dataset.mentalMapOrderAction = "up";
+      const moveDown = createButton("Down", "mental-map-mini-action", () => options.onMove?.(stateId, "down"), {
+        ariaLabel: `Move ${stateName(stateId)} down`,
+        disabled: index === state.selectedStateIds.length - 1
+      });
+      moveDown.dataset.mentalMapOrderAction = "down";
+      const remove = createButton("Remove", "mental-map-mini-action", () => options.onRemove?.(stateId), {
+        ariaLabel: `Remove ${stateName(stateId)}`
+      });
+      remove.dataset.mentalMapOrderAction = "remove";
+      actions.append(moveUp, moveDown, remove);
+      item.append(dragHandle, number, label, actions);
+      attachOrderedAnswerDrag(dragHandle, item, list, index, stateId, options);
+    } else {
+      item.classList.add("is-removable");
+      item.appendChild(createButton(
+        stateName(stateId),
+        "mental-map-selected-choice",
+        () => options.onRemove?.(stateId),
+        { ariaLabel: `Remove ${stateName(stateId)}` }
+      ));
     }
     list.appendChild(item);
   });
   section.appendChild(list);
+  if (challenge.questionType === COMPASS_QUESTION_TYPES.WEST_TO_EAST) {
+    const status = document.createElement("p");
+    status.className = "mental-map-reorder-status";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    status.textContent = options.reorderAnnouncement || "";
+    section.appendChild(status);
+  }
   return section;
 }
 
@@ -130,17 +166,19 @@ function createResultLine(label, stateIds, className = "") {
   return line;
 }
 
-function createResultLegend() {
+function createResultLegend(challenge) {
   const legend = document.createElement("ul");
   legend.className = "mental-map-result-legend";
-  [
+  const categories = [
     ["selected-correct", "Selected and correct"],
-    ["correct", "Correct answer"],
-    ["missing", "Missing"],
-    ["misplaced", "Misplaced"],
-    ["incorrect", "Incorrect"],
-    ["direction", "Correct direction"]
-  ].forEach(([className, label]) => {
+    ["correct", "Correct answer"]
+  ];
+  if (getReferenceStateIds(challenge).length) categories.push(["reference", "Reference state"]);
+  if (challenge.questionType === COMPASS_QUESTION_TYPES.WEST_TO_EAST) {
+    categories.push(["missing", "Missing"], ["misplaced", "Misplaced"]);
+  }
+  categories.push(["incorrect", "Incorrect"], ["direction", "Correct direction"]);
+  categories.forEach(([className, label]) => {
     const item = document.createElement("li");
     const swatch = document.createElement("span");
     swatch.className = `mental-map-result-${className}`;
@@ -174,11 +212,15 @@ function createResult(challenge, state, options) {
       createResultLine("Correct answer", evaluation.expectedStateIds),
       createResultLine("Incorrect", evaluation.selectedIncorrectStateIds)
     );
+    const referenceStateIds = getReferenceStateIds(challenge);
+    if (referenceStateIds.length) {
+      wrapper.append(createResultLine(referenceStateIds.length === 1 ? "Reference state" : "Reference states", referenceStateIds));
+    }
   }
   const explanation = document.createElement("p");
   explanation.className = "mental-map-explanation";
   explanation.textContent = challenge.explanation;
-  wrapper.append(explanation, createResultLegend(), createButton("Next Question", "mental-map-primary-action", options.onNextQuestion));
+  wrapper.append(explanation, createResultLegend(challenge), createButton("Next Question", "mental-map-primary-action", options.onNextQuestion));
   return wrapper;
 }
 

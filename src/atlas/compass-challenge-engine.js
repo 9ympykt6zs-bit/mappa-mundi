@@ -76,10 +76,23 @@ export function clearCompassAnswers(state) {
 }
 
 export function moveCompassAnswer(state, stateId, direction) {
-  const next = copy(state);
-  const fromIndex = next?.selectedStateIds?.indexOf(stateId) ?? -1;
+  const fromIndex = state?.selectedStateIds?.indexOf(stateId) ?? -1;
   const toIndex = direction === "up" ? fromIndex - 1 : fromIndex + 1;
-  if (!next || next.phase !== "answering" || fromIndex < 0 || toIndex < 0 || toIndex >= next.selectedStateIds.length) return next;
+  return reorderCompassAnswers(state, fromIndex, toIndex);
+}
+
+export function reorderCompassAnswers(state, fromIndex, toIndex) {
+  const next = copy(state);
+  if (!next
+    || next.phase !== "answering"
+    || next.questionType !== COMPASS_QUESTION_TYPES.WEST_TO_EAST
+    || !Number.isInteger(fromIndex)
+    || !Number.isInteger(toIndex)
+    || fromIndex < 0
+    || toIndex < 0
+    || fromIndex >= next.selectedStateIds.length
+    || toIndex >= next.selectedStateIds.length
+    || fromIndex === toIndex) return next;
   const [moved] = next.selectedStateIds.splice(fromIndex, 1);
   next.selectedStateIds.splice(toIndex, 0, moved);
   return next;
@@ -141,6 +154,11 @@ export function getCompassResultVisualState(challenge, evaluation) {
         fromStateId: correctStateIds[0],
         toStateId: correctStateIds[correctStateIds.length - 1]
       }];
+  const referenceStateIds = challenge.questionType === COMPASS_QUESTION_TYPES.SINGLE_DIRECTION
+    ? [challenge.referenceStateId]
+    : challenge.questionType === COMPASS_QUESTION_TYPES.RELATIVE_POSITION
+      ? [...challenge.referenceStateIds]
+      : [];
   return {
     correctStateIds,
     selectedCorrectStateIds: [...evaluation.selectedCorrectStateIds],
@@ -149,6 +167,7 @@ export function getCompassResultVisualState(challenge, evaluation) {
     misplacedStateIds: [...evaluation.misplacedStateIds],
     expectedSequenceStateIds: challenge.questionType === COMPASS_QUESTION_TYPES.WEST_TO_EAST ? correctStateIds : [],
     learnerStateIds: [...evaluation.selectedStateIds],
+    referenceStateIds,
     contextStateIds: [...new Set(directionArrows.flatMap(({ fromStateId, toStateId }) => [fromStateId, toStateId]))],
     routeRenderingMode: "feature-only",
     directionArrows: directionArrows.map(({ fromStateId, toStateId }) => ({ fromStateId, toStateId }))

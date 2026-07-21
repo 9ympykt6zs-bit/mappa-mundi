@@ -3955,6 +3955,7 @@ body.compass-result-mode .mental-map-question-header h2 {
 
 .mental-map-result-selected-correct { background: #2f9d72; }
 .mental-map-result-correct { background: #4f88b5; }
+.mental-map-result-reference { background: #9aa9b8; }
 .mental-map-result-missing { background: #e6a23c; }
 .mental-map-result-misplaced { background: #8c6bb1; }
 .mental-map-result-incorrect { background: #d95151; }

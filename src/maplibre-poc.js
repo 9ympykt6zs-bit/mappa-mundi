@@ -17,6 +17,7 @@ import {
   createCompassChallengeState,
   getCompassResultVisualState,
   moveCompassAnswer,
+  reorderCompassAnswers,
   removeCompassAnswer,
   selectCompassAnswer,
   submitCompassAnswer,
@@ -3548,6 +3549,7 @@ let mentalMapReorderAnnouncement = "";
 let activeCompassChallenge = null;
 let activeCompassChallengeState = null;
 let compassUsedQuestionIds = new Set();
+let compassReorderAnnouncement = "";
 
 const journeyDifficultyOptions = [
   {
@@ -7905,30 +7907,60 @@ function startNextCompassQuestion() {
   activeCompassChallengeState = activeCompassChallenge
     ? createCompassChallengeState(activeCompassChallenge)
     : null;
+  compassReorderAnnouncement = "";
   renderActiveCompassChallenge();
+}
+
+function focusCompassOrderControl(stateId, action) {
+  requestAnimationFrame(() => {
+    const row = [...compassChallengePanel.querySelectorAll("[data-mental-map-state-id]")]
+      .find((candidate) => candidate.dataset.mentalMapStateId === stateId);
+    row?.querySelector(`[data-mental-map-order-action="${action}"]`)?.focus();
+  });
+}
+
+function setCompassReorderAnnouncement(stateId) {
+  const position = activeCompassChallengeState?.selectedStateIds?.indexOf(stateId) ?? -1;
+  const name = activeCompassChallengeState?.answerBank?.find((answer) => answer.id === stateId)?.name;
+  compassReorderAnnouncement = position >= 0 && name
+    ? `${name} moved to position ${position + 1} of ${activeCompassChallengeState.selectedStateIds.length}.`
+    : "";
 }
 
 function renderActiveCompassChallenge() {
   if (!compassChallengePanel || !activeCompassChallenge || !activeCompassChallengeState) return;
   compassChallengePanel.hidden = false;
   renderCompassChallenge(compassChallengePanel, activeCompassChallenge, activeCompassChallengeState, {
+    reorderAnnouncement: compassReorderAnnouncement,
     onSelect: (stateId) => {
+      compassReorderAnnouncement = "";
       activeCompassChallengeState = selectCompassAnswer(activeCompassChallengeState, stateId);
       renderActiveCompassChallenge();
     },
     onRemove: (stateId) => {
+      compassReorderAnnouncement = "";
       activeCompassChallengeState = removeCompassAnswer(activeCompassChallengeState, stateId);
       renderActiveCompassChallenge();
     },
     onMove: (stateId, direction) => {
       activeCompassChallengeState = moveCompassAnswer(activeCompassChallengeState, stateId, direction);
+      setCompassReorderAnnouncement(stateId);
       renderActiveCompassChallenge();
+      focusCompassOrderControl(stateId, direction);
+    },
+    onReorder: (fromIndex, toIndex, stateId) => {
+      activeCompassChallengeState = reorderCompassAnswers(activeCompassChallengeState, fromIndex, toIndex);
+      setCompassReorderAnnouncement(stateId);
+      renderActiveCompassChallenge();
+      focusCompassOrderControl(stateId, "drag");
     },
     onUndo: () => {
+      compassReorderAnnouncement = "";
       activeCompassChallengeState = undoCompassAnswer(activeCompassChallengeState);
       renderActiveCompassChallenge();
     },
     onClear: () => {
+      compassReorderAnnouncement = "";
       activeCompassChallengeState = clearCompassAnswers(activeCompassChallengeState);
       renderActiveCompassChallenge();
     },
@@ -7954,6 +7986,7 @@ function exitCompassChallenge() {
   activeCompassChallenge = null;
   activeCompassChallengeState = null;
   compassUsedQuestionIds = new Set();
+  compassReorderAnnouncement = "";
   runner?.prepareCompassChallenge();
   if (mapElement) mapElement.removeAttribute("aria-hidden");
   document.body.classList.remove("compass-challenge-mode", "compass-result-mode", "overview-mode", "browse-mode");
