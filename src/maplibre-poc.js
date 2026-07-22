@@ -17,6 +17,12 @@ import {
 import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=20260721-mental-map-consolidation-1";
 import { readUnitedStatesAtlasProgress } from "./atlas/united-states-atlas-progress.js";
 import { renderUnitedStatesAtlasOverview, renderUnitedStatesAtlasProfile } from "./atlas/united-states-atlas-ui.js";
+import {
+  MAP_RECONSTRUCTION_REGION_IDS,
+  getMapReconstructionRegion
+} from "./atlas/map-reconstruction-regions.js";
+import { prepareMapReconstructionGeometry } from "./atlas/map-reconstruction-geometry.js";
+import { createMapReconstructionActivity } from "./atlas/map-reconstruction-ui.js";
 import { trackEvent } from "./analytics.js?v=20260601-instruction-target-nouns";
 import {
   clearActiveJourney,
@@ -3093,6 +3099,7 @@ const mainMenuDailyTrailButton = document.querySelector("#main-menu-daily-trail-
 const mainMenuUnitedStatesMemoryTrailButton = document.querySelector("#main-menu-us-memory-trail-button");
 const mainMenuUnitedStatesAtlasButton = document.querySelector("#main-menu-united-states-atlas-button");
 const mainMenuMentalMapChallengeButton = document.querySelector("#main-menu-mental-map-challenge-button");
+const mainMenuMapReconstructionButton = document.querySelector("#main-menu-map-reconstruction-button");
 const legacyCompassChallengeButton = document.querySelector("#main-menu-compass-challenge-button");
 const mainMenuMoreWaysButton = document.querySelector("#main-menu-more-ways-button");
 const mainMenuDailyTrailAction = document.querySelector("#main-menu-daily-trail-action");
@@ -3529,6 +3536,7 @@ const memoryTrailSecondaryButton = document.querySelector("#memory-trail-seconda
 const unitedStatesAtlasProfile = document.querySelector("#united-states-atlas-profile");
 const unitedStatesAtlasOverview = document.querySelector("#united-states-atlas-overview");
 const mentalMapChallengePanel = document.querySelector("#mental-map-challenge-panel");
+const mapReconstructionPanel = document.querySelector("#map-reconstruction-panel");
 const mapElement = document.querySelector("#map");
 let unitedStatesAtlasProgress = null;
 let activeMentalMapChallenge = null;
@@ -3539,6 +3547,8 @@ let mentalMapReorderAnnouncement = "";
 let mentalMapLastQuestionId = "";
 let mentalMapLastCategory = "";
 let mentalMapRecentAnswerModes = [];
+let mapReconstructionController = null;
+let mapReconstructionGeometryPromise = null;
 
 const journeyDifficultyOptions = [
   {
@@ -5280,6 +5290,10 @@ function bindUiEvents() {
   });
 
   homeButton?.addEventListener("click", () => {
+    if (currentAppScreen === "map-reconstruction") {
+      exitMapReconstruction();
+      return;
+    }
     if (currentAppScreen === "compass-challenge") {
       exitMentalMapChallenge();
       return;
@@ -5320,6 +5334,10 @@ function bindUiEvents() {
     showAppScreen("main-menu");
   });
   backButton?.addEventListener("click", () => {
+    if (currentAppScreen === "map-reconstruction") {
+      exitMapReconstruction();
+      return;
+    }
     if (currentAppScreen === "compass-challenge") {
       exitMentalMapChallenge();
       return;
@@ -5372,6 +5390,7 @@ function bindUiEvents() {
   mainMenuUnitedStatesMemoryTrailButton?.addEventListener("click", startOrContinueUnitedStatesMemoryTrail);
   mainMenuUnitedStatesAtlasButton?.addEventListener("click", () => { void openUnitedStatesAtlas(); });
   mainMenuMentalMapChallengeButton?.addEventListener("click", () => { void openMentalMapChallenge(); });
+  mainMenuMapReconstructionButton?.addEventListener("click", () => { void openMapReconstruction(); });
   legacyCompassChallengeButton?.addEventListener("click", () => { void openCompassChallenge(); });
   mainMenuMoreWaysButton?.addEventListener("click", () => showAppScreen("main-menu-more-ways"));
   audioMuteButton?.addEventListener("click", toggleAudioMute);
@@ -7685,6 +7704,88 @@ function exitUnitedStatesAtlas() {
   runner?.setUnitedStatesAtlasLearningStatuses({});
   unitedStatesAtlasProgress = null;
   document.body.classList.remove("united-states-atlas-mode", "overview-mode", "browse-mode");
+  showAppScreen("main-menu", { pushHistory: false });
+}
+
+function loadMapReconstructionGeometry() {
+  if (!mapReconstructionGeometryPromise) {
+    const region = getMapReconstructionRegion(MAP_RECONSTRUCTION_REGION_IDS.REBUILD_NEW_ENGLAND);
+    mapReconstructionGeometryPromise = fetchJson(usStatesAtlasPath)
+      .then((featureCollection) => prepareMapReconstructionGeometry(featureCollection, region))
+      .catch((error) => {
+        mapReconstructionGeometryPromise = null;
+        throw error;
+      });
+  }
+  return mapReconstructionGeometryPromise;
+}
+
+async function openMapReconstruction() {
+  saveCurrentActivityProgress();
+  cancelGrabbedAnswer();
+  clearFeedback();
+  closeBrowseDrawer();
+  activeStudySession = null;
+  activeStudyPracticeSession = null;
+  isCurrentActivityProgressDisabled = false;
+  currentAppScreen = "map-reconstruction";
+  activeHierarchyNodeId = "north-america-united-states";
+  activeMenuRoot = "north-america";
+  isNavigationBrowseMode = false;
+  document.body.classList.remove(
+    "launch-mode",
+    "app-shell-mode",
+    "study-mode",
+    "browse-mode",
+    "united-states-atlas-mode",
+    "mental-map-challenge-mode",
+    "mental-map-result-mode"
+  );
+  document.body.classList.add("map-reconstruction-mode");
+
+  if (launchScreen) launchScreen.hidden = true;
+  if (appShellScreen) appShellScreen.hidden = true;
+  if (mentalMapChallengePanel) mentalMapChallengePanel.hidden = true;
+  if (unitedStatesAtlasProfile) unitedStatesAtlasProfile.hidden = true;
+  if (unitedStatesAtlasOverview) unitedStatesAtlasOverview.hidden = true;
+  if (studyCard) studyCard.hidden = true;
+  if (mapElement) mapElement.setAttribute("aria-hidden", "true");
+  mapReconstructionController?.destroy();
+  mapReconstructionController = null;
+
+  setHeaderTitle("Rebuild New England", { shortTitle: "Rebuild" });
+  instruction.textContent = "Build the region from memory, then compare.";
+  renderActivityNavControls(null);
+  updateTopBarNavigation();
+
+  if (!mapReconstructionPanel) return;
+  mapReconstructionPanel.hidden = false;
+  mapReconstructionPanel.innerHTML = '<p class="map-reconstruction-loading" role="status">Preparing state pieces...</p>';
+  try {
+    const region = getMapReconstructionRegion(MAP_RECONSTRUCTION_REGION_IDS.REBUILD_NEW_ENGLAND);
+    const geometry = await loadMapReconstructionGeometry();
+    if (currentAppScreen !== "map-reconstruction") return;
+    mapReconstructionController = createMapReconstructionActivity(mapReconstructionPanel, {
+      region,
+      geometry
+    });
+  } catch (error) {
+    if (currentAppScreen !== "map-reconstruction") return;
+    mapReconstructionPanel.replaceChildren();
+    const message = document.createElement("p");
+    message.className = "map-reconstruction-loading is-error";
+    message.setAttribute("role", "alert");
+    message.textContent = `State pieces could not be loaded. ${error.message}`;
+    mapReconstructionPanel.appendChild(message);
+  }
+}
+
+function exitMapReconstruction() {
+  mapReconstructionController?.destroy();
+  mapReconstructionController = null;
+  if (mapReconstructionPanel) mapReconstructionPanel.hidden = true;
+  if (mapElement) mapElement.removeAttribute("aria-hidden");
+  document.body.classList.remove("map-reconstruction-mode", "overview-mode", "browse-mode");
   showAppScreen("main-menu", { pushHistory: false });
 }
 
@@ -24541,9 +24642,10 @@ function updateTopBarNavigation() {
   const isUnitedStatesAtlas = currentAppScreen === "united-states-atlas";
   const isMentalMapChallenge = currentAppScreen === "mental-map-challenge";
   const isCompassChallenge = currentAppScreen === "compass-challenge";
+  const isMapReconstruction = currentAppScreen === "map-reconstruction";
 
   if (backButton) {
-    backButton.hidden = !isUnitedStatesAtlas && !isMentalMapChallenge && !isCompassChallenge && !isDailyTrailGameplay
+    backButton.hidden = !isUnitedStatesAtlas && !isMentalMapChallenge && !isCompassChallenge && !isMapReconstruction && !isDailyTrailGameplay
       && isHome
       && !["free-play", "journey-gameplay", "study-explore", "study-practice"].includes(currentAppScreen);
     backButton.textContent = isDailyTrailGameplay ? "Exit" : "Back";
