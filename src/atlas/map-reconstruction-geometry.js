@@ -284,3 +284,18 @@ export function isPointInMapReconstructionPiece(piece, point) {
     pointInRing(polygon[0]) && !polygon.slice(1).some(pointInRing)
   ));
 }
+
+export function getTopmostMapReconstructionPieceAtPoint(entries, point) {
+  if (!Array.isArray(entries) || !Number.isFinite(point?.x) || !Number.isFinite(point?.y)) return null;
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    const entry = entries[index];
+    if (!entry?.piece || !Number.isFinite(entry.position?.x) || !Number.isFinite(entry.position?.y)) continue;
+    if (isPointInMapReconstructionPiece(entry.piece, {
+      x: point.x - entry.position.x,
+      y: point.y - entry.position.y
+    })) {
+      return entry.stateId || entry.piece.stateId || null;
+    }
+  }
+  return null;
+}

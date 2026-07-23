@@ -3550,6 +3550,12 @@ body.map-reconstruction-mode .zoom-panel {
   display: none;
 }
 
+body.overview-mode.map-reconstruction-mode .map-shell {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+}
+
 .map-reconstruction-loading {
   align-items: center;
   display: flex;
@@ -3569,17 +3575,17 @@ body.map-reconstruction-mode .zoom-panel {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   height: 100%;
-  margin: 0 auto;
-  max-width: 1500px;
+  max-width: none;
   min-height: 0;
+  width: 100%;
 }
 
 .map-reconstruction-content {
   display: grid;
-  gap: 14px;
-  grid-template-columns: minmax(0, 1fr) 286px;
+  gap: clamp(6px, 0.7vw, 10px);
+  grid-template-columns: minmax(0, 1fr) clamp(220px, 15vw, 260px);
   min-height: 0;
-  padding: 14px;
+  padding: clamp(6px, 0.7vw, 10px);
 }
 
 .map-reconstruction-workspace-section {
@@ -3587,6 +3593,7 @@ body.map-reconstruction-mode .zoom-panel {
   grid-template-rows: auto minmax(0, 1fr);
   min-height: 0;
   min-width: 0;
+  overflow: hidden;
 }
 
 .map-reconstruction-workspace-title,
@@ -3600,27 +3607,29 @@ body.map-reconstruction-mode .zoom-panel {
 
 .map-reconstruction-workspace-title {
   color: #34445a;
-  padding: 0 2px 9px;
+  padding: 0 2px 6px;
 }
 
 .map-reconstruction-workspace {
-  align-self: center;
-  aspect-ratio: 1000 / 720;
+  align-self: stretch;
+  aspect-ratio: auto;
   background: #fbfcfd;
   border: 1px solid #bfcbd7;
   border-radius: 6px;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
   display: block;
   height: 100%;
-  justify-self: center;
+  justify-self: stretch;
   max-height: 100%;
   max-width: 100%;
-  width: auto;
+  min-height: 0;
+  width: 100%;
 }
 
 .map-reconstruction-piece {
   cursor: grab;
   outline: none;
+  pointer-events: none;
   touch-action: none;
 }
 
@@ -3631,6 +3640,7 @@ body.map-reconstruction-mode .zoom-panel {
 
 .map-reconstruction-piece-shape {
   fill: #d7e1e8;
+  pointer-events: visiblePainted;
   stroke: #52687a;
   stroke-linejoin: round;
   stroke-width: 2.4;
@@ -3643,13 +3653,6 @@ body.map-reconstruction-mode .zoom-panel {
   filter: drop-shadow(0 3px 4px rgba(23, 32, 51, 0.22));
   stroke: #155bb8;
   stroke-width: 4;
-}
-
-.map-reconstruction-piece-hit-target {
-  fill: transparent;
-  pointer-events: all;
-  stroke: transparent;
-  stroke-width: 44px;
 }
 
 .map-reconstruction-piece-label {
@@ -3713,43 +3716,31 @@ body.map-reconstruction-mode .zoom-panel {
 
 @media (prefers-reduced-motion: reduce) {
   .map-reconstruction-success-snap,
-  .map-reconstruction-success-shimmer {
+  .map-reconstruction-success-shimmer,
+  .map-reconstruction-correction-move {
     display: none;
   }
 }
 
-.map-reconstruction-correct-piece {
+.map-reconstruction-shell.is-result .map-reconstruction-piece-shape {
   pointer-events: none;
 }
 
-.map-reconstruction-correct-piece .map-reconstruction-piece-shape {
-  fill: #dceaf0;
-  fill-opacity: 0.75;
-  stroke: #2189a2;
-  stroke-linejoin: round;
-  stroke-width: 3;
-  vector-effect: non-scaling-stroke;
-}
-
-.map-reconstruction-correct-layer.is-overlay .map-reconstruction-piece-shape {
-  fill: none;
-  stroke-dasharray: 7 5;
-  stroke-width: 3;
-}
-
-.map-reconstruction-piece-label.is-correct-label {
-  fill: #184c59;
+.map-reconstruction-learner-layer.is-corrected .map-reconstruction-piece-shape {
+  fill: #8fd3b2;
+  stroke: #245f4e;
+  stroke-width: 2.5;
 }
 
 .map-reconstruction-bank {
   background: #e8eef3;
   border-left: 1px solid #cbd5df;
   display: grid;
-  gap: 10px;
+  gap: 8px;
   grid-template-rows: auto minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
-  padding: 12px;
+  padding: 10px;
 }
 
 .map-reconstruction-bank-list {
@@ -3769,9 +3760,9 @@ body.map-reconstruction-mode .zoom-panel {
   color: var(--ink);
   cursor: grab;
   display: grid;
-  grid-template-rows: 76px auto;
+  grid-template-rows: 66px auto;
   justify-items: center;
-  min-height: 112px;
+  min-height: 100px;
   min-width: 0;
   padding: 5px 6px 8px;
   touch-action: none;
@@ -3786,7 +3777,7 @@ body.map-reconstruction-mode .zoom-panel {
 }
 
 .map-reconstruction-bank-thumbnail {
-  height: 76px;
+  height: 66px;
   width: 100%;
 }
 
@@ -3843,19 +3834,22 @@ body.map-reconstruction-mode .zoom-panel {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
-  min-height: 62px;
-  padding: 9px 14px calc(9px + env(safe-area-inset-bottom));
+  min-height: 54px;
+  padding: 6px 10px calc(6px + env(safe-area-inset-bottom));
 }
 
 .map-reconstruction-primary-action,
-.map-reconstruction-secondary-action,
-.map-reconstruction-view-button {
+.map-reconstruction-secondary-action {
   border-radius: 7px;
   cursor: pointer;
   font-size: 0.82rem;
   font-weight: 850;
-  min-height: 42px;
-  padding: 8px 14px;
+  min-height: 44px;
+  padding: 7px 12px;
+}
+
+.map-reconstruction-shell.is-result.is-success .map-reconstruction-content {
+  grid-template-columns: minmax(0, 1fr) clamp(210px, 14vw, 240px);
 }
 
 .map-reconstruction-primary-action {
@@ -3864,8 +3858,7 @@ body.map-reconstruction-mode .zoom-panel {
   color: #fff;
 }
 
-.map-reconstruction-secondary-action,
-.map-reconstruction-view-button {
+.map-reconstruction-secondary-action {
   background: #fff;
   border: 1px solid #b8c6d3;
   color: var(--ink);
@@ -3876,31 +3869,9 @@ body.map-reconstruction-mode .zoom-panel {
   opacity: 0.45;
 }
 
-.map-reconstruction-view-controls {
-  display: flex;
-  margin-right: auto;
-}
-
-.map-reconstruction-view-button {
-  border-radius: 0;
-  margin-left: -1px;
-}
-
-.map-reconstruction-view-button:first-child {
-  border-radius: 7px 0 0 7px;
-  margin-left: 0;
-}
-
-.map-reconstruction-view-button:last-child {
-  border-radius: 0 7px 7px 0;
-}
-
-.map-reconstruction-view-button[aria-pressed="true"] {
-  background: #dceaf0;
-  border-color: #2189a2;
-  color: #184c59;
-  position: relative;
-  z-index: 1;
+.map-reconstruction-primary-action:disabled {
+  cursor: progress;
+  opacity: 0.72;
 }
 
 .map-reconstruction-result-summary {
@@ -3923,6 +3894,14 @@ body.map-reconstruction-mode .zoom-panel {
   color: #185b4b;
   font-size: 0.88rem;
   font-weight: 850;
+  line-height: 1.35;
+  margin: 8px 0 0;
+}
+
+.map-reconstruction-correction-message {
+  color: #34445a;
+  font-size: 0.82rem;
+  font-weight: 750;
   line-height: 1.35;
   margin: 8px 0 0;
 }
@@ -6147,23 +6126,23 @@ body.browse-mode .answer-panel-title {
   }
 
   .map-reconstruction-content {
-    gap: 8px;
+    gap: 4px;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) auto;
-    padding: 8px;
+    padding: 4px;
   }
 
   .map-reconstruction-workspace-title {
     font-size: 0.78rem;
-    padding-bottom: 5px;
+    padding: 0 2px 3px;
   }
 
   .map-reconstruction-bank {
     border-left: 0;
     border-top: 1px solid #cbd5df;
-    gap: 5px;
+    gap: 4px;
     grid-template-rows: auto auto;
-    padding: 7px 8px;
+    padding: 5px 4px;
   }
 
   .map-reconstruction-bank > h2 {
@@ -6181,15 +6160,15 @@ body.browse-mode .answer-panel-title {
   }
 
   .map-reconstruction-bank-piece {
-    flex: 0 0 118px;
-    grid-template-rows: 58px auto;
-    min-height: 92px;
+    flex: 0 0 106px;
+    grid-template-rows: 50px auto;
+    min-height: 80px;
     scroll-snap-align: start;
     touch-action: pan-x;
   }
 
   .map-reconstruction-bank-thumbnail {
-    height: 58px;
+    height: 50px;
   }
 
   .map-reconstruction-bank-name {
@@ -6197,25 +6176,23 @@ body.browse-mode .answer-panel-title {
   }
 
   .map-reconstruction-actions {
-    min-height: 56px;
-    overflow-x: auto;
-    padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
+    gap: 4px;
+    min-height: 52px;
+    overflow-x: hidden;
+    padding: 4px 5px calc(4px + env(safe-area-inset-bottom));
   }
 
   .map-reconstruction-primary-action,
-  .map-reconstruction-secondary-action,
-  .map-reconstruction-view-button {
+  .map-reconstruction-secondary-action {
     flex: 0 0 auto;
-    min-height: 42px;
-    padding: 7px 10px;
-  }
-
-  .map-reconstruction-view-controls {
-    flex: 0 0 auto;
+    font-size: 0.74rem;
+    min-height: 44px;
+    padding: 6px 7px;
   }
 
   .map-reconstruction-shell.is-result .map-reconstruction-content {
-    grid-template-rows: minmax(210px, 1fr) minmax(145px, 38vh);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(120px, 30svh);
   }
 
   .map-reconstruction-shell.is-result.is-success .map-reconstruction-content {

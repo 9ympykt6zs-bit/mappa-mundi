@@ -7,16 +7,22 @@ import {
 } from "../src/atlas/map-reconstruction-regions.js";
 import {
   getMapReconstructionThumbnailTransform,
+  getTopmostMapReconstructionPieceAtPoint,
+  isPointInMapReconstructionPiece,
   prepareMapReconstructionGeometry
 } from "../src/atlas/map-reconstruction-geometry.js";
 import {
+  completeMapReconstructionCorrection,
   createMapReconstructionSession,
   createSeededMapReconstructionRandom,
   moveMapReconstructionPieceByKeyboard,
   placeMapReconstructionPiece,
+  prepareMapReconstructionCorrectionReplay,
   resetMapReconstructionSession,
+  restoreMapReconstructionSubmittedMap,
   returnMapReconstructionPieceToBank,
   setMapReconstructionViewMode,
+  showMapReconstructionCorrectPlacement,
   submitMapReconstructionSession
 } from "../src/atlas/map-reconstruction-engine.js";
 import {
@@ -27,8 +33,10 @@ import {
 import {
   MAP_RECONSTRUCTION_SUCCESS_TIMING,
   getDefaultMapReconstructionPlacement,
+  getMapReconstructionCorrectionStartPosition,
   getMapReconstructionResultVisualPlan,
   getMapReconstructionSuccessViewBox,
+  mapClientPointToReconstructionWorkspace,
   shouldRenderMapReconstructionCorrectLayout
 } from "../src/atlas/map-reconstruction-ui.js";
 
@@ -59,8 +67,21 @@ assert.match(indexHtml, /id="main-menu-map-reconstruction-button"/);
 assert.match(indexHtml, /id="map-reconstruction-panel"/);
 assert.match(runtimeSource, /function openMapReconstruction\(\)/);
 assert.match(uiSource, /viewBox: visualPlan\.viewBox/);
-assert.match(uiSource, /data-map-reconstruction-correct-layout/);
+assert.doesNotMatch(uiSource, /data-map-reconstruction-correct-layout/);
+assert.doesNotMatch(uiSource, /map-reconstruction-correct-layer/);
+assert.doesNotMatch(uiSource, /map-reconstruction-view-button/);
+assert.doesNotMatch(stylesheet, /map-reconstruction-view-button/);
+assert.doesNotMatch(stylesheet, /stroke-dasharray/);
+assert.match(uiSource, /Show correct placement/);
+assert.match(uiSource, /Replay correction/);
+assert.match(uiSource, /Back to my map/);
 assert.match(stylesheet, /@media \(max-width: 760px\)/);
+assert.match(stylesheet, /body\.overview-mode\.map-reconstruction-mode\s+\.map-shell\s*\{[^}]*height:\s*100dvh;[^}]*min-height:\s*0;/s);
+assert.match(stylesheet, /\.map-reconstruction-shell\s*\{[^}]*max-width:\s*none;[^}]*width:\s*100%;/s);
+assert.match(stylesheet, /\.map-reconstruction-content\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*clamp\(/s);
+assert.match(stylesheet, /\.map-reconstruction-workspace\s*\{[^}]*aspect-ratio:\s*auto;[^}]*height:\s*100%;[^}]*width:\s*100%;/s);
+assert.match(stylesheet, /\.map-reconstruction-shell\.is-result\.is-success\s+\.map-reconstruction-content\s*\{[^}]*clamp\(210px,\s*14vw,\s*240px\)/s);
+assert.match(stylesheet, /grid-template-rows:\s*minmax\(0,\s*1fr\)\s*minmax\(120px,\s*30svh\)/);
 
 const geometry = prepareMapReconstructionGeometry(featureCollection, region);
 assert.deepEqual(geometry.stateIds, expectedStateIds);
@@ -78,6 +99,99 @@ for (const stateId of expectedStateIds) {
 assert.equal(geometry.piecesById.maine.geometryType, "MultiPolygon");
 assert.ok(geometry.piecesById.maine.polygonCount > 1, "Maine islands should be preserved");
 assert.equal(geometry.piecesById.vermont.geometryType, "Polygon");
+
+function createScaledWorkspaceSvg(scale, offsetX, offsetY) {
+  return {
+    getScreenCTM: () => ({
+      inverse: () => ({ scale, offsetX, offsetY })
+    }),
+    createSVGPoint: () => ({
+      x: 0,
+      y: 0,
+      matrixTransform(matrix) {
+        return {
+          x: (this.x - matrix.offsetX) / matrix.scale,
+          y: (this.y - matrix.offsetY) / matrix.scale
+        };
+      }
+    })
+  };
+}
+
+const logicalResizePoint = { x: 420, y: 315 };
+for (const viewport of [
+  { scale: 0.5, offsetX: 12, offsetY: 76 },
+  { scale: 1.35, offsetX: 48, offsetY: 92 }
+]) {
+  assert.deepEqual(mapClientPointToReconstructionWorkspace(
+    createScaledWorkspaceSvg(viewport.scale, viewport.offsetX, viewport.offsetY),
+    viewport.offsetX + logicalResizePoint.x * viewport.scale,
+    viewport.offsetY + logicalResizePoint.y * viewport.scale
+  ), logicalResizePoint, "pointer conversion should preserve logical coordinates after resize");
+}
+
+function findPiecePoint(piece, shouldBeInside) {
+  const columns = 24;
+  const rows = 24;
+  for (let row = 0; row <= rows; row += 1) {
+    for (let column = 0; column <= columns; column += 1) {
+      const point = {
+        x: piece.localBounds.minX + (piece.localBounds.maxX - piece.localBounds.minX) * column / columns,
+        y: piece.localBounds.minY + (piece.localBounds.maxY - piece.localBounds.minY) * row / rows
+      };
+      if (isPointInMapReconstructionPiece(piece, point) === shouldBeInside) return point;
+    }
+  }
+  return null;
+}
+
+const rhodeIslandPiece = geometry.piecesById["rhode-island"];
+const massachusettsPiece = geometry.piecesById.massachusetts;
+const rhodeIslandInteriorPoint = findPiecePoint(rhodeIslandPiece, true);
+const massachusettsInteriorPoint = findPiecePoint(massachusettsPiece, true);
+const massachusettsTransparentPoint = findPiecePoint(massachusettsPiece, false);
+assert.ok(rhodeIslandInteriorPoint);
+assert.ok(massachusettsInteriorPoint);
+assert.ok(massachusettsTransparentPoint);
+assert.equal(isPointInMapReconstructionPiece(rhodeIslandPiece, rhodeIslandInteriorPoint), true);
+assert.equal(isPointInMapReconstructionPiece(rhodeIslandPiece, {
+  x: rhodeIslandPiece.localBounds.maxX + 1,
+  y: rhodeIslandPiece.localBounds.maxY + 1
+}), false);
+assert.equal(isPointInMapReconstructionPiece(massachusettsPiece, massachusettsTransparentPoint), false);
+
+const canonicalHitEntries = region.stateIds.map((stateId) => ({
+  stateId,
+  piece: geometry.piecesById[stateId],
+  position: geometry.piecesById[stateId].correctPosition
+}));
+const rhodeIslandGlobalPoint = {
+  x: rhodeIslandPiece.correctPosition.x + rhodeIslandInteriorPoint.x,
+  y: rhodeIslandPiece.correctPosition.y + rhodeIslandInteriorPoint.y
+};
+assert.equal(getTopmostMapReconstructionPieceAtPoint(canonicalHitEntries, rhodeIslandGlobalPoint), "rhode-island");
+assert.notEqual(getTopmostMapReconstructionPieceAtPoint(canonicalHitEntries, rhodeIslandGlobalPoint), "massachusetts");
+const massachusettsGlobalPoint = {
+  x: massachusettsPiece.correctPosition.x + massachusettsInteriorPoint.x,
+  y: massachusettsPiece.correctPosition.y + massachusettsInteriorPoint.y
+};
+assert.equal(getTopmostMapReconstructionPieceAtPoint(canonicalHitEntries, massachusettsGlobalPoint), "massachusetts");
+assert.equal(getTopmostMapReconstructionPieceAtPoint([{
+  stateId: "massachusetts",
+  piece: massachusettsPiece,
+  position: massachusettsPiece.correctPosition
+}], {
+  x: massachusettsPiece.correctPosition.x + massachusettsTransparentPoint.x,
+  y: massachusettsPiece.correctPosition.y + massachusettsTransparentPoint.y
+}), null, "transparent bounding-box space must not select Massachusetts");
+assert.equal(getTopmostMapReconstructionPieceAtPoint([
+  { stateId: "massachusetts", piece: massachusettsPiece, position: { x: 500, y: 300 } },
+  { stateId: "rhode-island", piece: rhodeIslandPiece, position: { x: 500, y: 300 } }
+], { x: 500, y: 300 }), "rhode-island", "topmost painted geometry should win an overlap");
+assert.equal(getTopmostMapReconstructionPieceAtPoint([
+  { stateId: "rhode-island", piece: rhodeIslandPiece, position: { x: 500, y: 300 } },
+  { stateId: "massachusetts", piece: massachusettsPiece, position: { x: 500, y: 300 } }
+], { x: 500, y: 300 }), "massachusetts", "z-order should remain predictable");
 
 const duplicateRegion = { ...region, stateIds: [...region.stateIds, "maine"] };
 assert.ok(validateMapReconstructionRegion(duplicateRegion).some((error) => error.includes("unique")));
@@ -267,13 +381,108 @@ assert.deepEqual(
   swappedPositions,
   "incorrect submissions should preserve the learner arrangement"
 );
-assert.equal(swappedSubmittedSession.viewMode, "overlay");
+assert.equal(swappedSubmittedSession.viewMode, "learner");
+assert.equal(swappedSubmittedSession.correctionState, "idle");
+assert.deepEqual(
+  Object.fromEntries(region.stateIds.map((stateId) => [
+    stateId,
+    swappedSubmittedSession.piecesById[stateId].submittedPosition
+  ])),
+  swappedPositions,
+  "the immutable submitted-position snapshot should match the learner map"
+);
 const incorrectVisualPlan = getMapReconstructionResultVisualPlan(swappedSubmittedSession, geometry, {
   reducedMotion: false,
   playSuccessAnimation: true
 });
-assert.equal(incorrectVisualPlan.showComparisonControls, true);
+assert.equal(incorrectVisualPlan.showComparisonControls, false);
+assert.equal(incorrectVisualPlan.showCorrectLayout, false);
+assert.equal(incorrectVisualPlan.isCorrectPlacement, false);
 assert.equal(incorrectVisualPlan.playShimmer, false);
+
+const correctionPlayingSession = showMapReconstructionCorrectPlacement(swappedSubmittedSession);
+assert.equal(correctionPlayingSession.viewMode, "correct");
+assert.equal(correctionPlayingSession.correctionState, "playing");
+for (const stateId of region.stateIds) {
+  assert.deepEqual(correctionPlayingSession.piecesById[stateId].position, geometry.piecesById[stateId].correctPosition);
+  assert.deepEqual(correctionPlayingSession.piecesById[stateId].submittedPosition, swappedPositions[stateId]);
+}
+assert.deepEqual(
+  Object.fromEntries(region.stateIds.map((stateId) => [stateId, swappedSubmittedSession.piecesById[stateId].position])),
+  swappedPositions,
+  "starting correction must not mutate the submitted result session"
+);
+const correctionPlayingPlan = getMapReconstructionResultVisualPlan(correctionPlayingSession, geometry, {
+  reducedMotion: false,
+  playSuccessAnimation: false
+});
+assert.equal(correctionPlayingPlan.animateCorrection, true);
+assert.equal(correctionPlayingPlan.playShimmer, false);
+assert.equal(correctionPlayingPlan.viewBox, `0 0 ${geometry.workspace.width} ${geometry.workspace.height}`);
+
+const correctionCompleteSession = completeMapReconstructionCorrection(correctionPlayingSession);
+assert.equal(correctionCompleteSession.correctionState, "complete");
+const correctionCompletePlan = getMapReconstructionResultVisualPlan(correctionCompleteSession, geometry, {
+  reducedMotion: false,
+  playSuccessAnimation: false
+});
+assert.equal(correctionCompletePlan.animateCorrection, false);
+assert.equal(correctionCompletePlan.isCorrectionComplete, true);
+assert.equal(correctionCompletePlan.viewBox, getMapReconstructionSuccessViewBox(geometry).value);
+
+const replayPreparingSession = prepareMapReconstructionCorrectionReplay(correctionCompleteSession);
+assert.equal(replayPreparingSession.viewMode, "learner");
+assert.equal(replayPreparingSession.correctionState, "preparing");
+assert.deepEqual(
+  Object.fromEntries(region.stateIds.map((stateId) => [stateId, replayPreparingSession.piecesById[stateId].position])),
+  swappedPositions,
+  "replay should visibly restore the submitted map before movement"
+);
+assert.deepEqual(replayPreparingSession.evaluation, correctionCompleteSession.evaluation);
+for (const stateId of region.stateIds) {
+  assert.deepEqual(replayPreparingSession.piecesById[stateId].submittedPosition, swappedPositions[stateId]);
+}
+assert.deepEqual(
+  prepareMapReconstructionCorrectionReplay(replayPreparingSession),
+  replayPreparingSession,
+  "repeated replay requests should be ignored while preparing"
+);
+assert.deepEqual(
+  showMapReconstructionCorrectPlacement(correctionPlayingSession),
+  correctionPlayingSession,
+  "repeated correction requests should be ignored while animation is active"
+);
+
+const restoredSubmittedSession = restoreMapReconstructionSubmittedMap(correctionCompleteSession);
+assert.equal(restoredSubmittedSession.viewMode, "learner");
+assert.equal(restoredSubmittedSession.correctionState, "complete");
+assert.deepEqual(
+  Object.fromEntries(region.stateIds.map((stateId) => [stateId, restoredSubmittedSession.piecesById[stateId].position])),
+  swappedPositions
+);
+assert.deepEqual(restoredSubmittedSession.evaluation, swappedSubmittedSession.evaluation);
+const replayedCorrectionSession = showMapReconstructionCorrectPlacement(replayPreparingSession);
+assert.equal(replayedCorrectionSession.correctionState, "playing");
+for (const stateId of region.stateIds) {
+  assert.deepEqual(replayedCorrectionSession.piecesById[stateId].position, geometry.piecesById[stateId].correctPosition);
+  assert.deepEqual(replayedCorrectionSession.piecesById[stateId].submittedPosition, swappedPositions[stateId]);
+}
+assert.equal(getMapReconstructionResultVisualPlan(replayedCorrectionSession, geometry, {
+  reducedMotion: false,
+  playSuccessAnimation: false
+}).animateCorrection, true);
+const reducedMotionCorrectionSession = showMapReconstructionCorrectPlacement(swappedSubmittedSession, {
+  reducedMotion: true
+});
+assert.equal(reducedMotionCorrectionSession.correctionState, "complete");
+assert.equal(getMapReconstructionResultVisualPlan(reducedMotionCorrectionSession, geometry, {
+  reducedMotion: true,
+  playSuccessAnimation: false
+}).animateCorrection, false);
+assert.ok(MAP_RECONSTRUCTION_SUCCESS_TIMING.correctionDurationMs >= 800);
+assert.ok(MAP_RECONSTRUCTION_SUCCESS_TIMING.correctionDurationMs <= 1400);
+assert.ok(MAP_RECONSTRUCTION_SUCCESS_TIMING.correctionReplayPauseMs >= 180);
+assert.ok(MAP_RECONSTRUCTION_SUCCESS_TIMING.correctionReplayPauseMs <= 400);
 
 const misplacedMaineSession = sessionAtCorrectPositions();
 misplacedMaineSession.piecesById.maine.position.x -= geometry.medianStateDiagonal;
@@ -286,6 +495,24 @@ missingSession.piecesById["rhode-island"].position = null;
 missingSession.piecesById["rhode-island"].placementStatus = "unplaced";
 const missingEvaluation = evaluateMapReconstruction(missingSession, region, geometry);
 assert.equal(missingEvaluation.placements["rhode-island"].status, MAP_RECONSTRUCTION_PLACEMENT_STATUSES.UNPLACED);
+const missingSubmittedSession = submitMapReconstructionSession(missingSession, missingEvaluation);
+assert.equal(missingSubmittedSession.piecesById["rhode-island"].submittedPosition, null);
+const missingCorrectionStart = getMapReconstructionCorrectionStartPosition(
+  missingSubmittedSession.piecesById["rhode-island"],
+  geometry.piecesById["rhode-island"],
+  geometry
+);
+assert.ok(missingCorrectionStart.x > 0 && missingCorrectionStart.x < geometry.workspace.width);
+assert.ok(missingCorrectionStart.y > 0 && missingCorrectionStart.y < geometry.workspace.height);
+const missingCorrectedSession = showMapReconstructionCorrectPlacement(missingSubmittedSession);
+assert.deepEqual(
+  missingCorrectedSession.piecesById["rhode-island"].position,
+  geometry.piecesById["rhode-island"].correctPosition
+);
+assert.equal(
+  restoreMapReconstructionSubmittedMap(missingCorrectedSession).piecesById["rhode-island"].position,
+  null
+);
 
 const overlapSession = sessionAtCorrectPositions();
 overlapSession.piecesById.connecticut.position = { ...overlapSession.piecesById.massachusetts.position };
@@ -323,9 +550,22 @@ for (const stateId of region.stateIds) {
 assert.match(uiSource, /mapReconstructionCompletedLayout/);
 assert.match(uiSource, /map-reconstruction-success-shimmer/);
 assert.match(uiSource, /repeatCount: MAP_RECONSTRUCTION_SUCCESS_TIMING\.shimmerRepeatCount/);
+assert.match(uiSource, /class: "map-reconstruction-correction-move"/);
+assert.match(uiSource, /repeatCount: 1/);
+assert.match(uiSource, /completeMapReconstructionCorrection/);
+assert.match(uiSource, /prepareMapReconstructionCorrectionReplay/);
+assert.match(uiSource, /correctionReplayPauseMs/);
+assert.match(uiSource, /prefers-reduced-motion: reduce/);
 assert.match(uiSource, /map-reconstruction-drag-proxy.*proxy\.remove/s);
 assert.match(uiSource, /MAP_RECONSTRUCTION_COMPLETED_LABEL_OFFSETS/);
+assert.doesNotMatch(uiSource, /map-reconstruction-piece-hit-target/);
+assert.match(uiSource, /isPointInMapReconstructionPiece/);
 assert.match(stylesheet, /prefers-reduced-motion: reduce/);
+assert.match(stylesheet, /map-reconstruction-correction-move/);
 assert.match(stylesheet, /map-reconstruction-learner-layer\.is-completed/);
+assert.match(stylesheet, /map-reconstruction-learner-layer\.is-corrected/);
+assert.match(stylesheet, /\.map-reconstruction-actions\s*\{[^}]*overflow-x:\s*hidden;/s);
+assert.match(stylesheet, /pointer-events: visiblePainted/);
+assert.doesNotMatch(stylesheet, /map-reconstruction-piece-hit-target/);
 
 console.log("Map Reconstruction validation passed.");

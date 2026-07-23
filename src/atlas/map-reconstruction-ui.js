@@ -1,23 +1,31 @@
 import {
   beginMapReconstructionDrag,
+  completeMapReconstructionCorrection,
   createMapReconstructionSession,
   endMapReconstructionDrag,
   moveMapReconstructionPieceByKeyboard,
   placeMapReconstructionPiece,
+  prepareMapReconstructionCorrectionReplay,
   resetMapReconstructionSession,
+  restoreMapReconstructionSubmittedMap,
   returnMapReconstructionPieceToBank,
-  setMapReconstructionViewMode,
+  showMapReconstructionCorrectPlacement,
   submitMapReconstructionSession
 } from "./map-reconstruction-engine.js";
 import { evaluateMapReconstruction } from "./map-reconstruction-evaluation.js";
-import { getMapReconstructionThumbnailTransform } from "./map-reconstruction-geometry.js";
+import {
+  getMapReconstructionThumbnailTransform,
+  isPointInMapReconstructionPiece
+} from "./map-reconstruction-geometry.js";
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 export const MAP_RECONSTRUCTION_SUCCESS_TIMING = Object.freeze({
   snapDurationMs: 560,
   shimmerDurationMs: 820,
   shimmerDelayAfterSnapMs: 80,
-  shimmerRepeatCount: 1
+  shimmerRepeatCount: 1,
+  correctionDurationMs: 1050,
+  correctionReplayPauseMs: 280
 });
 
 let mapReconstructionVisualSequence = 0;
@@ -91,7 +99,7 @@ export function getDefaultMapReconstructionPlacement(pieceState, geometry) {
 }
 
 export function shouldRenderMapReconstructionCorrectLayout(phase, viewMode) {
-  return phase === "result" && ["overlay", "correct"].includes(viewMode);
+  return false;
 }
 
 export function getMapReconstructionSuccessViewBox(geometry, padding = 54) {
@@ -114,6 +122,10 @@ export function getMapReconstructionSuccessViewBox(geometry, padding = 54) {
 
 export function getMapReconstructionResultVisualPlan(session, geometry, options = {}) {
   const isSuccess = session?.phase === "result" && session.evaluation?.isComplete === true;
+  const isIncorrectResult = session?.phase === "result" && !isSuccess;
+  const isCorrectPlacement = isIncorrectResult && session.viewMode === "correct";
+  const isCorrectionPlaying = isCorrectPlacement && session.correctionState === "playing";
+  const isCorrectionComplete = isCorrectPlacement && session.correctionState === "complete";
   const reducedMotion = options.reducedMotion === true;
   const playSuccessAnimation = options.playSuccessAnimation !== false;
   const hasSnapMovement = isSuccess && Object.values(session.piecesById || {}).some((piece) => (
@@ -121,14 +133,20 @@ export function getMapReconstructionResultVisualPlan(session, geometry, options 
       && (piece.submittedPosition.x !== piece.position?.x || piece.submittedPosition.y !== piece.position?.y)
   ));
   const animateSnap = isSuccess && playSuccessAnimation && !reducedMotion && hasSnapMovement;
-  const successViewBox = isSuccess ? getMapReconstructionSuccessViewBox(geometry) : null;
+  const completedViewBox = isSuccess || isCorrectionComplete
+    ? getMapReconstructionSuccessViewBox(geometry)
+    : null;
   return {
     isSuccess,
-    viewBox: successViewBox?.value || `0 0 ${geometry.workspace.width} ${geometry.workspace.height}`,
-    showComparisonControls: session?.phase === "result" && !isSuccess,
-    showCorrectLayout: !isSuccess && shouldRenderMapReconstructionCorrectLayout(session?.phase, session?.viewMode),
-    showLearnerLayout: session?.phase === "arranging" || isSuccess || ["learner", "overlay"].includes(session?.viewMode),
+    isCorrectPlacement,
+    isCorrectionPlaying,
+    isCorrectionComplete,
+    viewBox: completedViewBox?.value || `0 0 ${geometry.workspace.width} ${geometry.workspace.height}`,
+    showComparisonControls: false,
+    showCorrectLayout: false,
+    showLearnerLayout: session?.phase === "arranging" || session?.phase === "result",
     animateSnap,
+    animateCorrection: isCorrectionPlaying && !reducedMotion,
     playShimmer: isSuccess && playSuccessAnimation && !reducedMotion,
     useStaticGlow: isSuccess && playSuccessAnimation && reducedMotion,
     shimmerDelayMs: animateSnap
@@ -142,9 +160,7 @@ function createPieceLabel(piece, options = {}) {
     ? MAP_RECONSTRUCTION_COMPLETED_LABEL_OFFSETS[piece.stateId]
     : null;
   const label = createSvgElement("text", {
-    class: options.correct
-      ? "map-reconstruction-piece-label is-correct-label"
-      : `map-reconstruction-piece-label${options.completed ? " is-completed-label" : ""}`,
+    class: `map-reconstruction-piece-label${options.completed ? " is-completed-label" : ""}`,
     x: completedOffset?.x || 0,
     y: completedOffset?.y ?? 5,
     "text-anchor": "middle",
@@ -161,14 +177,13 @@ function createPieceGroup(piece, position, options = {}) {
     transform: `translate(${position.x} ${position.y})`,
     "data-map-reconstruction-state-id": piece.stateId
   });
-  if (options.correct) group.dataset.mapReconstructionCorrectPiece = piece.stateId;
   const path = createSvgElement("path", {
     d: piece.path,
     "fill-rule": "evenodd",
     class: "map-reconstruction-piece-shape"
   });
   group.appendChild(path);
-  if (!options.outlineOnly && !options.hideLabel) group.appendChild(createPieceLabel(piece, options));
+  if (!options.hideLabel) group.appendChild(createPieceLabel(piece, options));
   return group;
 }
 
@@ -186,6 +201,38 @@ function addSuccessSnapAnimation(group, from, to) {
     calcMode: "spline",
     keyTimes: "0;1",
     keySplines: "0.22 0.75 0.3 1"
+  }));
+}
+
+export function getMapReconstructionCorrectionStartPosition(pieceState, pieceGeometry, geometry) {
+  if (pieceState?.submittedPosition) return { ...pieceState.submittedPosition };
+  if (!pieceState || !pieceGeometry || !geometry?.workspace) return null;
+  const margin = 28;
+  const desiredY = 100 + (pieceState.initialPlacement?.slotIndex || 0) * 100;
+  return {
+    x: geometry.workspace.width - pieceGeometry.localBounds.maxX - margin,
+    y: Math.min(
+      geometry.workspace.height - pieceGeometry.localBounds.maxY - margin,
+      Math.max(-pieceGeometry.localBounds.minY + margin, desiredY)
+    )
+  };
+}
+
+function addCorrectionAnimation(group, from, to) {
+  if (!from || !to) return;
+  group.appendChild(createSvgElement("animateTransform", {
+    class: "map-reconstruction-correction-move",
+    attributeName: "transform",
+    type: "translate",
+    from: `${from.x} ${from.y}`,
+    to: `${to.x} ${to.y}`,
+    dur: `${MAP_RECONSTRUCTION_SUCCESS_TIMING.correctionDurationMs}ms`,
+    begin: "0s",
+    fill: "remove",
+    calcMode: "spline",
+    keyTimes: "0;1",
+    keySplines: "0.22 0.75 0.3 1",
+    repeatCount: 1
   }));
 }
 
@@ -262,24 +309,6 @@ function appendSuccessShimmer(svg, geometry, visualId, delayMs) {
   svg.appendChild(shimmer);
 }
 
-function addPieceHitTarget(group, piece) {
-  const hitWidth = Math.max(58, piece.width + 18);
-  const hitHeight = Math.max(58, piece.height + 18);
-  const centerX = (piece.localBounds.minX + piece.localBounds.maxX) / 2;
-  const centerY = (piece.localBounds.minY + piece.localBounds.maxY) / 2;
-  const hitTarget = createSvgElement("rect", {
-    class: "map-reconstruction-piece-hit-target",
-    x: centerX - hitWidth / 2,
-    y: centerY - hitHeight / 2,
-    width: hitWidth,
-    height: hitHeight,
-    rx: 8,
-    "vector-effect": "non-scaling-stroke",
-    "aria-hidden": "true"
-  });
-  group.insertBefore(hitTarget, group.firstChild);
-}
-
 function createBankThumbnail(piece) {
   const svg = createSvgElement("svg", {
     class: "map-reconstruction-bank-thumbnail",
@@ -339,7 +368,10 @@ function createStatusLegend() {
 function createResultSummary(session, geometry) {
   const section = createElement("section", "map-reconstruction-result-summary");
   const heading = createElement("h2");
-  heading.textContent = session.evaluation?.isComplete ? "Region rebuilt" : "Compare your map";
+  const isCorrectPlacement = !session.evaluation?.isComplete && session.viewMode === "correct";
+  heading.textContent = session.evaluation?.isComplete
+    ? "Region rebuilt"
+    : isCorrectPlacement ? "Correct placement" : "Your placement";
   const counts = session.evaluation?.counts || {};
   const countText = createElement("p", "map-reconstruction-result-counts");
   if (session.evaluation?.isComplete) {
@@ -347,6 +379,13 @@ function createResultSummary(session, geometry) {
     const successMessage = createElement("p", "map-reconstruction-success-message");
     successMessage.textContent = "You rebuilt New England correctly.";
     section.append(heading, countText, successMessage);
+    return section;
+  }
+  if (isCorrectPlacement) {
+    countText.textContent = `${geometry.stateIds.length} states shown in their correct positions.`;
+    const correctionMessage = createElement("p", "map-reconstruction-correction-message");
+    correctionMessage.textContent = "This is how New England fits together.";
+    section.append(heading, countText, correctionMessage);
     return section;
   }
   countText.textContent = `${counts["well-placed"] || 0} well placed, ${counts.close || 0} close, ${counts.misplaced || 0} misplaced, ${counts.unplaced || 0} unplaced.`;
@@ -372,22 +411,6 @@ function createResultSummary(session, geometry) {
   return section;
 }
 
-function createViewControls(session, onChange) {
-  const group = createElement("div", "map-reconstruction-view-controls");
-  group.setAttribute("role", "group");
-  group.setAttribute("aria-label", "Map comparison view");
-  [
-    ["learner", "Your map"],
-    ["overlay", "Overlay"],
-    ["correct", "Correct map"]
-  ].forEach(([mode, label]) => {
-    group.appendChild(createButton(label, "map-reconstruction-view-button", () => onChange(mode), {
-      ariaPressed: session.viewMode === mode
-    }));
-  });
-  return group;
-}
-
 export function createMapReconstructionActivity(container, options) {
   const { region, geometry } = options || {};
   if (!container || !region || !geometry) return null;
@@ -396,7 +419,13 @@ export function createMapReconstructionActivity(container, options) {
   let destroyed = false;
   let workspaceSvg = null;
   let successVisualPending = false;
+  let correctionTimer = null;
   const successVisualId = ++mapReconstructionVisualSequence;
+
+  const clearCorrectionTimer = () => {
+    if (correctionTimer != null) window.clearTimeout(correctionTimer);
+    correctionTimer = null;
+  };
 
   const focusPiece = (stateId) => requestAnimationFrame(() => {
     container.querySelector(`[data-map-reconstruction-state-id="${stateId}"]`)?.focus();
@@ -492,11 +521,16 @@ export function createMapReconstructionActivity(container, options) {
     });
     group.addEventListener("pointerdown", (event) => {
       if (event.button != null && event.button !== 0) return;
-      event.preventDefault();
       const startPoint = mapClientPointToReconstructionWorkspace(workspaceSvg, event.clientX, event.clientY);
-      if (!startPoint) return;
+      const pieceGeometry = geometry.piecesById[stateId];
+      if (!startPoint || !isPointInMapReconstructionPiece(pieceGeometry, {
+        x: startPoint.x - pieceState.position.x,
+        y: startPoint.y - pieceState.position.y
+      })) return;
+      event.preventDefault();
       const startPosition = { ...pieceState.position };
       session = beginMapReconstructionDrag(session, stateId, event.pointerId, startPoint, startPosition);
+      group.parentNode?.appendChild(group);
       group.setPointerCapture?.(event.pointerId);
       group.classList.add("is-dragging");
       group.focus();
@@ -541,7 +575,9 @@ export function createMapReconstructionActivity(container, options) {
     });
     title.textContent = session.phase === "arranging"
       ? region.prompt
-      : visualPlan.isSuccess ? "Completed New England" : "Your reconstruction";
+      : visualPlan.isSuccess
+        ? "Completed New England"
+        : visualPlan.isCorrectPlacement ? "Correct placement" : "Your reconstruction";
     workspaceSvg = createSvgElement("svg", {
       class: "map-reconstruction-workspace",
       viewBox: visualPlan.viewBox,
@@ -551,29 +587,15 @@ export function createMapReconstructionActivity(container, options) {
         ? "Blank New England reconstruction workspace"
         : visualPlan.isSuccess
           ? "Completed New England reconstruction"
-          : "Submitted New England reconstruction and correction"
+          : visualPlan.isCorrectPlacement
+            ? "Correct New England placement"
+            : "Submitted New England reconstruction"
     });
     workspaceSvg.dataset.mapReconstructionPhase = session.phase;
     if (visualPlan.isSuccess) workspaceSvg.dataset.mapReconstructionSuccessful = "true";
-    if (visualPlan.showCorrectLayout) {
-      const correctLayer = createSvgElement("g", {
-        class: `map-reconstruction-correct-layer is-${session.viewMode}`,
-        "data-map-reconstruction-correct-layout": "visible",
-        "aria-hidden": "true"
-      });
-      region.stateIds.forEach((stateId) => {
-        const piece = geometry.piecesById[stateId];
-        correctLayer.appendChild(createPieceGroup(piece, piece.correctPosition, {
-          correct: true,
-          outlineOnly: session.viewMode === "overlay",
-          className: "map-reconstruction-correct-piece"
-        }));
-      });
-      workspaceSvg.appendChild(correctLayer);
-    }
     if (visualPlan.showLearnerLayout) {
       const learnerLayer = createSvgElement("g", {
-        class: `map-reconstruction-learner-layer${visualPlan.isSuccess ? " is-completed" : ""}${visualPlan.useStaticGlow ? " is-static-success" : ""}`,
+        class: `map-reconstruction-learner-layer${visualPlan.isSuccess ? " is-completed" : ""}${visualPlan.isCorrectPlacement ? " is-corrected" : ""}${visualPlan.useStaticGlow ? " is-static-success" : ""}`,
         "data-map-reconstruction-learner-layout": "visible"
       });
       if (visualPlan.isSuccess) learnerLayer.dataset.mapReconstructionCompletedLayout = "visible";
@@ -582,6 +604,8 @@ export function createMapReconstructionActivity(container, options) {
         if (!pieceState.position) return;
         const status = visualPlan.isSuccess
           ? "completed"
+          : visualPlan.isCorrectPlacement
+            ? "corrected"
           : session.phase === "result"
           ? session.evaluation?.placements?.[stateId]?.status || "misplaced"
           : "arranging";
@@ -593,8 +617,14 @@ export function createMapReconstructionActivity(container, options) {
         if (visualPlan.animateSnap) {
           addSuccessSnapAnimation(group, pieceState.submittedPosition, pieceState.position);
         }
+        if (visualPlan.animateCorrection) {
+          addCorrectionAnimation(
+            group,
+            getMapReconstructionCorrectionStartPosition(pieceState, geometry.piecesById[stateId], geometry),
+            pieceState.position
+          );
+        }
         if (session.phase === "arranging") {
-          addPieceHitTarget(group, geometry.piecesById[stateId]);
           attachPlacedPieceInteraction(group, stateId);
         }
         learnerLayer.appendChild(group);
@@ -656,32 +686,115 @@ export function createMapReconstructionActivity(container, options) {
     return bank;
   };
 
+  const beginCorrectionMovement = (reducedMotion) => {
+    session = showMapReconstructionCorrectPlacement(session, { reducedMotion });
+    announcement = reducedMotion
+      ? "Correct placement shown."
+      : "Showing how each state moves into its correct position.";
+    render();
+    if (session.correctionState !== "playing") {
+      container.querySelector(".map-reconstruction-replay-action")?.focus();
+      return;
+    }
+    correctionTimer = window.setTimeout(() => {
+      correctionTimer = null;
+      if (destroyed) return;
+      session = completeMapReconstructionCorrection(session);
+      announcement = "Correct placement complete.";
+      render();
+      container.querySelector(".map-reconstruction-replay-action")?.focus();
+    }, MAP_RECONSTRUCTION_SUCCESS_TIMING.correctionDurationMs);
+  };
+
+  const startCorrection = (options = {}) => {
+    if (["preparing", "playing"].includes(session.correctionState)) return;
+    clearCorrectionTimer();
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+    if (options.replay === true && !reducedMotion) {
+      session = prepareMapReconstructionCorrectionReplay(session);
+      announcement = "Your submitted reconstruction is restored. Replaying the correction.";
+      render();
+      correctionTimer = window.setTimeout(() => {
+        correctionTimer = null;
+        if (destroyed) return;
+        beginCorrectionMovement(false);
+      }, MAP_RECONSTRUCTION_SUCCESS_TIMING.correctionReplayPauseMs);
+      return;
+    }
+    beginCorrectionMovement(reducedMotion);
+  };
+
+  const restoreSubmittedMap = () => {
+    clearCorrectionTimer();
+    session = restoreMapReconstructionSubmittedMap(session);
+    announcement = "Your submitted reconstruction is shown.";
+    render();
+    container.querySelector(".map-reconstruction-replay-action, .map-reconstruction-show-correction-action")?.focus();
+  };
+
+  const resetAttempt = () => {
+    clearCorrectionTimer();
+    successVisualPending = false;
+    session = resetMapReconstructionSession(session);
+    announce("Reconstruction reset.");
+    render();
+    container.querySelector(".map-reconstruction-bank-piece")?.focus();
+  };
+
   const createActions = () => {
     const actions = createElement("footer", "map-reconstruction-actions");
     if (session.phase === "result") {
-      if (!session.evaluation?.isComplete) {
-        actions.appendChild(createViewControls(session, (viewMode) => {
-          session = setMapReconstructionViewMode(session, viewMode);
-          render();
-          container.querySelector(`.map-reconstruction-view-button[aria-pressed="true"]`)?.focus();
-        }));
+      if (session.evaluation?.isComplete) {
+        actions.appendChild(createButton("Try again", "map-reconstruction-primary-action", resetAttempt));
+        return actions;
       }
-      actions.appendChild(createButton("Try again", "map-reconstruction-primary-action", () => {
-        successVisualPending = false;
-        session = resetMapReconstructionSession(session);
-        announce("Reconstruction reset.");
-        render();
-        container.querySelector(".map-reconstruction-bank-piece")?.focus();
-      }));
+      if (["preparing", "playing"].includes(session.correctionState)) {
+        actions.append(
+          createButton(
+            session.correctionState === "preparing"
+              ? "Preparing correction..."
+              : "Showing correct placement...",
+            "map-reconstruction-primary-action map-reconstruction-correction-progress-action",
+            () => {},
+            { disabled: true }
+          ),
+          createButton("Try again", "map-reconstruction-secondary-action", resetAttempt)
+        );
+        return actions;
+      }
+      if (session.viewMode === "learner") {
+        const hasSeenCorrection = session.correctionState === "complete";
+        actions.append(
+          createButton(
+            hasSeenCorrection ? "Replay correction" : "Show correct placement",
+            `map-reconstruction-primary-action ${hasSeenCorrection
+              ? "map-reconstruction-replay-action"
+              : "map-reconstruction-show-correction-action"}`,
+            () => startCorrection({ replay: hasSeenCorrection })
+          ),
+          createButton("Try again", "map-reconstruction-secondary-action", resetAttempt)
+        );
+        return actions;
+      }
+      actions.append(
+        createButton(
+          "Back to my map",
+          "map-reconstruction-secondary-action map-reconstruction-back-to-map-action",
+          restoreSubmittedMap
+        ),
+        createButton(
+          "Replay correction",
+          "map-reconstruction-primary-action map-reconstruction-replay-action",
+          () => startCorrection({ replay: true })
+        ),
+        createButton("Try again", "map-reconstruction-secondary-action", resetAttempt)
+      );
       return actions;
     }
     const selectedPiece = session.selectedStateId ? session.piecesById[session.selectedStateId] : null;
     actions.append(
       createButton("Reset", "map-reconstruction-secondary-action", () => {
-        session = resetMapReconstructionSession(session);
-        announce("Reconstruction reset.");
-        render();
-        container.querySelector(".map-reconstruction-bank-piece")?.focus();
+        resetAttempt();
       }),
       createButton("Return piece", "map-reconstruction-secondary-action", () => {
         const stateId = session.selectedStateId;
@@ -702,7 +815,7 @@ export function createMapReconstructionActivity(container, options) {
         render();
         container.querySelector(evaluation.isComplete
           ? ".map-reconstruction-primary-action"
-          : ".map-reconstruction-view-button[aria-pressed=\"true\"]")?.focus();
+          : ".map-reconstruction-show-correction-action")?.focus();
       })
     );
     return actions;
@@ -729,11 +842,13 @@ export function createMapReconstructionActivity(container, options) {
   return {
     getState: () => JSON.parse(JSON.stringify(session)),
     reset: () => {
+      clearCorrectionTimer();
       session = resetMapReconstructionSession(session);
       render();
     },
     destroy: () => {
       destroyed = true;
+      clearCorrectionTimer();
       container.replaceChildren();
     }
   };

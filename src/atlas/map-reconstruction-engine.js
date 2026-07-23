@@ -59,7 +59,8 @@ export function createMapReconstructionSession(region, geometry, options = {}) {
   return {
     regionId: region.id,
     phase: "arranging",
-    viewMode: "overlay",
+    viewMode: "learner",
+    correctionState: "idle",
     bankOrder,
     piecesById,
     selectedStateId: null,
@@ -138,7 +139,8 @@ export function resetMapReconstructionSession(session) {
   const next = copy(session);
   if (!next) return next;
   next.phase = "arranging";
-  next.viewMode = "overlay";
+  next.viewMode = "learner";
+  next.correctionState = "idle";
   next.selectedStateId = null;
   next.activeDrag = null;
   next.evaluation = null;
@@ -158,10 +160,13 @@ export function submitMapReconstructionSession(session, evaluation) {
   next.activeDrag = null;
   next.selectedStateId = null;
   next.evaluation = copy(evaluation);
-  next.viewMode = evaluation?.isComplete ? "completed" : "overlay";
+  next.viewMode = evaluation?.isComplete ? "completed" : "learner";
+  next.correctionState = "idle";
+  Object.values(next.piecesById).forEach((piece) => {
+    piece.submittedPosition = piece.position ? { ...piece.position } : null;
+  });
   if (evaluation?.isComplete) {
     Object.values(next.piecesById).forEach((piece) => {
-      piece.submittedPosition = piece.position ? { ...piece.position } : null;
       piece.position = { ...piece.correctPosition };
     });
   }
@@ -169,10 +174,54 @@ export function submitMapReconstructionSession(session, evaluation) {
 }
 
 export function setMapReconstructionViewMode(session, viewMode) {
+  if (viewMode === "learner") return restoreMapReconstructionSubmittedMap(session);
+  if (viewMode === "correct") {
+    return showMapReconstructionCorrectPlacement(session, { reducedMotion: true });
+  }
+  const next = copy(session);
+  return next;
+}
+
+export function showMapReconstructionCorrectPlacement(session, options = {}) {
   const next = copy(session);
   if (!next || next.phase !== "result" || next.evaluation?.isComplete
-    || !["learner", "overlay", "correct"].includes(viewMode)) return next;
-  next.viewMode = viewMode;
+    || next.correctionState === "playing") return next;
+  next.viewMode = "correct";
+  next.correctionState = options.reducedMotion === true ? "complete" : "playing";
+  Object.values(next.piecesById).forEach((piece) => {
+    piece.position = { ...piece.correctPosition };
+  });
+  return next;
+}
+
+export function prepareMapReconstructionCorrectionReplay(session) {
+  const next = copy(session);
+  if (!next || next.phase !== "result" || next.evaluation?.isComplete
+    || ["preparing", "playing"].includes(next.correctionState)) return next;
+  next.viewMode = "learner";
+  next.correctionState = "preparing";
+  Object.values(next.piecesById).forEach((piece) => {
+    piece.position = piece.submittedPosition ? { ...piece.submittedPosition } : null;
+  });
+  return next;
+}
+
+export function completeMapReconstructionCorrection(session) {
+  const next = copy(session);
+  if (!next || next.phase !== "result" || next.evaluation?.isComplete
+    || next.viewMode !== "correct" || next.correctionState !== "playing") return next;
+  next.correctionState = "complete";
+  return next;
+}
+
+export function restoreMapReconstructionSubmittedMap(session) {
+  const next = copy(session);
+  if (!next || next.phase !== "result" || next.evaluation?.isComplete) return next;
+  next.viewMode = "learner";
+  next.correctionState = session.correctionState === "idle" ? "idle" : "complete";
+  Object.values(next.piecesById).forEach((piece) => {
+    piece.position = piece.submittedPosition ? { ...piece.submittedPosition } : null;
+  });
   return next;
 }
 
