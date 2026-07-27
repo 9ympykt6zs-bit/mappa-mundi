@@ -28,6 +28,16 @@ function getPieceBoundsAtPosition(pieceGeometry, position) {
   };
 }
 
+function bringPieceToFront(pieceZOrder, stateId) {
+  return [...(Array.isArray(pieceZOrder) ? pieceZOrder : []).filter((id) => id !== stateId), stateId];
+}
+
+function getBoundsOverlapArea(first, second) {
+  const width = Math.max(0, Math.min(first.maxX, second.maxX) - Math.max(first.minX, second.minX));
+  const height = Math.max(0, Math.min(first.maxY, second.maxY) - Math.max(first.minY, second.minY));
+  return width * height;
+}
+
 export function clampMapReconstructionPosition(position, pieceGeometry, workspace) {
   if (!validPosition(position) || !pieceGeometry || !workspace) return null;
   const minX = -pieceGeometry.localBounds.minX;
@@ -62,6 +72,7 @@ export function createMapReconstructionSession(region, geometry, options = {}) {
     viewMode: "learner",
     correctionState: "idle",
     bankOrder,
+    pieceZOrder: [],
     piecesById,
     selectedStateId: null,
     activeDrag: null,
@@ -79,7 +90,66 @@ export function placeMapReconstructionPiece(session, stateId, position, geometry
   piece.placementStatus = "placed";
   piece.hasMoved = true;
   next.selectedStateId = stateId;
+  next.pieceZOrder = bringPieceToFront(next.pieceZOrder, stateId);
   return next;
+}
+
+export function getMapReconstructionPieceRenderOrder(session) {
+  const stateIds = Array.isArray(session?.bankOrder) ? session.bankOrder : [];
+  const placedIds = new Set((session?.pieceZOrder || []).filter((stateId) => (
+    stateIds.includes(stateId) && session?.piecesById?.[stateId]?.position
+  )));
+  return [
+    ...stateIds.filter((stateId) => session?.piecesById?.[stateId]?.position && !placedIds.has(stateId)),
+    ...(session?.pieceZOrder || []).filter((stateId) => placedIds.has(stateId))
+  ];
+}
+
+export function findMapReconstructionAutomaticPlacement(session, stateId, geometry) {
+  const pieceGeometry = geometry?.piecesById?.[stateId];
+  const workspace = geometry?.workspace;
+  if (!pieceGeometry || !workspace || !session?.piecesById?.[stateId]) return null;
+
+  const centerPosition = {
+    x: workspace.width / 2 - (pieceGeometry.localBounds.minX + pieceGeometry.localBounds.maxX) / 2,
+    y: workspace.height / 2 - (pieceGeometry.localBounds.minY + pieceGeometry.localBounds.maxY) / 2
+  };
+  const stepX = workspace.width * 0.18;
+  const stepY = workspace.height * 0.2;
+  const offsets = [
+    [0, 0],
+    [-1, 0], [1, 0], [0, -1], [0, 1],
+    [-1, -1], [1, -1], [-1, 1], [1, 1],
+    [-2, 0], [2, 0], [0, -2], [0, 2],
+    [-2, -1], [2, -1], [-2, 1], [2, 1]
+  ];
+  const placedBounds = Object.entries(session.piecesById)
+    .filter(([otherStateId, piece]) => otherStateId !== stateId && piece.position)
+    .map(([otherStateId, piece]) => ({
+      stateId: otherStateId,
+      bounds: getPieceBoundsAtPosition(geometry.piecesById[otherStateId], piece.position)
+    }))
+    .filter((entry) => entry.bounds);
+
+  return offsets
+    .map(([column, row], index) => {
+      const position = clampMapReconstructionPosition({
+        x: centerPosition.x + column * stepX,
+        y: centerPosition.y + row * stepY
+      }, pieceGeometry, workspace);
+      const bounds = getPieceBoundsAtPosition(pieceGeometry, position);
+      const overlapArea = placedBounds.reduce(
+        (total, entry) => total + getBoundsOverlapArea(bounds, entry.bounds),
+        0
+      );
+      const distance = Math.hypot(position.x - centerPosition.x, position.y - centerPosition.y);
+      return { position, overlapArea, distance, index };
+    })
+    .sort((first, second) => (
+      first.overlapArea - second.overlapArea
+      || first.distance - second.distance
+      || first.index - second.index
+    ))[0]?.position || clampMapReconstructionPosition(centerPosition, pieceGeometry, workspace);
 }
 
 export function moveMapReconstructionPiece(session, stateId, delta, geometry) {
@@ -98,6 +168,7 @@ export function returnMapReconstructionPieceToBank(session, stateId) {
   piece.position = null;
   piece.placementStatus = "unplaced";
   piece.hasMoved = false;
+  next.pieceZOrder = (next.pieceZOrder || []).filter((id) => id !== stateId);
   if (next.selectedStateId === stateId) next.selectedStateId = null;
   if (next.activeDrag?.stateId === stateId) next.activeDrag = null;
   return next;
@@ -107,6 +178,7 @@ export function beginMapReconstructionDrag(session, stateId, pointerId, pointer,
   const next = copy(session);
   if (!next?.piecesById?.[stateId] || next.phase !== "arranging" || !validPosition(pointer)) return next;
   next.selectedStateId = stateId;
+  next.pieceZOrder = bringPieceToFront(next.pieceZOrder, stateId);
   next.activeDrag = {
     stateId,
     pointerId,
@@ -142,6 +214,7 @@ export function resetMapReconstructionSession(session) {
   next.viewMode = "learner";
   next.correctionState = "idle";
   next.selectedStateId = null;
+  next.pieceZOrder = [];
   next.activeDrag = null;
   next.evaluation = null;
   Object.values(next.piecesById).forEach((piece) => {

@@ -3,6 +3,8 @@ import {
   completeMapReconstructionCorrection,
   createMapReconstructionSession,
   endMapReconstructionDrag,
+  findMapReconstructionAutomaticPlacement,
+  getMapReconstructionPieceRenderOrder,
   moveMapReconstructionPieceByKeyboard,
   placeMapReconstructionPiece,
   prepareMapReconstructionCorrectionReplay,
@@ -30,14 +32,6 @@ export const MAP_RECONSTRUCTION_SUCCESS_TIMING = Object.freeze({
 
 let mapReconstructionVisualSequence = 0;
 
-const MAP_RECONSTRUCTION_COMPLETED_LABEL_OFFSETS = Object.freeze({
-  vermont: Object.freeze({ x: -50, y: -10 }),
-  "new-hampshire": Object.freeze({ x: 45, y: 15 }),
-  massachusetts: Object.freeze({ x: 70, y: 10 }),
-  connecticut: Object.freeze({ x: -65, y: 30 }),
-  "rhode-island": Object.freeze({ x: 70, y: 35 })
-});
-
 function createElement(tagName, className = "") {
   const element = document.createElement(tagName);
   if (className) element.className = className;
@@ -59,6 +53,17 @@ function createButton(label, className, onClick, options = {}) {
   if (options.ariaLabel) button.setAttribute("aria-label", options.ariaLabel);
   button.addEventListener("click", onClick);
   return button;
+}
+
+function createReconstructionSpeaker(labelText, className, accessibleLabel) {
+  const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(labelText);
+  if (!speaker) return null;
+  speaker.classList.add(className);
+  if (accessibleLabel) {
+    speaker.setAttribute("aria-label", accessibleLabel);
+    speaker.setAttribute("title", accessibleLabel);
+  }
+  return speaker;
 }
 
 function formatStatus(status) {
@@ -84,6 +89,25 @@ export function mapClientPointToReconstructionWorkspace(svg, clientX, clientY) {
   return {
     x: viewBox.x + (clientX - rect.left) / rect.width * viewBox.width,
     y: viewBox.y + (clientY - rect.top) / rect.height * viewBox.height
+  };
+}
+
+function mapClientPointToSvgGeometry(element, clientX, clientY) {
+  const matrix = element?.getScreenCTM?.();
+  const svg = element?.ownerSVGElement;
+  if (!matrix?.inverse || !svg?.createSVGPoint) return null;
+  const point = svg.createSVGPoint();
+  point.x = clientX;
+  point.y = clientY;
+  const transformed = point.matrixTransform(matrix.inverse());
+  return { x: transformed.x, y: transformed.y };
+}
+
+export function getMapReconstructionShelfDropPosition(workspacePoint, pointerOffset) {
+  if (!Number.isFinite(workspacePoint?.x) || !Number.isFinite(workspacePoint?.y)) return null;
+  return {
+    x: workspacePoint.x - (Number.isFinite(pointerOffset?.x) ? pointerOffset.x : 0),
+    y: workspacePoint.y - (Number.isFinite(pointerOffset?.y) ? pointerOffset.y : 0)
   };
 }
 
@@ -156,9 +180,7 @@ export function getMapReconstructionResultVisualPlan(session, geometry, options 
 }
 
 function createPieceLabel(piece, options = {}) {
-  const completedOffset = options.completed
-    ? MAP_RECONSTRUCTION_COMPLETED_LABEL_OFFSETS[piece.stateId]
-    : null;
+  const completedOffset = options.completed ? options.completedOffset : null;
   const label = createSvgElement("text", {
     class: `map-reconstruction-piece-label${options.completed ? " is-completed-label" : ""}`,
     x: completedOffset?.x || 0,
@@ -167,7 +189,7 @@ function createPieceLabel(piece, options = {}) {
     "aria-hidden": "true"
   });
   label.textContent = piece.name;
-  if (piece.stateId === "rhode-island") label.classList.add("is-small-state-label");
+  if (options.smallLabel) label.classList.add("is-small-state-label");
   return label;
 }
 
@@ -365,7 +387,7 @@ function createStatusLegend() {
   return legend;
 }
 
-function createResultSummary(session, geometry) {
+function createResultSummary(session, region, geometry) {
   const section = createElement("section", "map-reconstruction-result-summary");
   const heading = createElement("h2");
   const isCorrectPlacement = !session.evaluation?.isComplete && session.viewMode === "correct";
@@ -377,14 +399,26 @@ function createResultSummary(session, geometry) {
   if (session.evaluation?.isComplete) {
     countText.textContent = `${geometry.stateIds.length} of ${geometry.stateIds.length} states placed correctly.`;
     const successMessage = createElement("p", "map-reconstruction-success-message");
-    successMessage.textContent = "You rebuilt New England correctly.";
+    successMessage.textContent = region.successMessage;
+    const speaker = createReconstructionSpeaker(
+      region.successMessage,
+      "map-reconstruction-result-speaker",
+      "Hear the reconstruction result"
+    );
+    if (speaker) successMessage.appendChild(speaker);
     section.append(heading, countText, successMessage);
     return section;
   }
   if (isCorrectPlacement) {
     countText.textContent = `${geometry.stateIds.length} states shown in their correct positions.`;
     const correctionMessage = createElement("p", "map-reconstruction-correction-message");
-    correctionMessage.textContent = "This is how New England fits together.";
+    correctionMessage.textContent = region.correctPlacementMessage;
+    const speaker = createReconstructionSpeaker(
+      region.correctPlacementMessage,
+      "map-reconstruction-result-speaker",
+      "Hear the correct-placement explanation"
+    );
+    if (speaker) correctionMessage.appendChild(speaker);
     section.append(heading, countText, correctionMessage);
     return section;
   }
@@ -409,6 +443,41 @@ function createResultSummary(session, geometry) {
   });
   section.appendChild(stateList);
   return section;
+}
+
+export function createMapReconstructionRegionSelection(container, options = {}) {
+  const regions = Array.isArray(options.regions) ? options.regions : [];
+  if (!container) return null;
+  const shell = createElement("section", "map-reconstruction-region-selection");
+  const heading = createElement("h2");
+  heading.textContent = "Choose a region to rebuild";
+  const description = createElement("p");
+  description.textContent = "Build each region from memory. The correct map stays hidden until you submit.";
+  const list = createElement("div", "map-reconstruction-region-list");
+  regions.forEach((region) => {
+    const button = createElement("button", "map-reconstruction-region-option");
+    button.type = "button";
+    button.dataset.mapReconstructionRegionId = region.id;
+    const title = createElement("strong");
+    title.textContent = region.title;
+    const speaker = createReconstructionSpeaker(
+      region.title,
+      "map-reconstruction-region-speaker",
+      `Hear ${region.title}`
+    );
+    const count = createElement("span");
+    count.textContent = `${region.stateIds.length} states`;
+    button.append(title);
+    if (speaker) button.appendChild(speaker);
+    button.append(count);
+    button.addEventListener("click", () => options.onSelect?.(region.id));
+    list.appendChild(button);
+  });
+  shell.append(heading, description, list);
+  container.replaceChildren(shell);
+  return {
+    destroy: () => container.replaceChildren()
+  };
 }
 
 export function createMapReconstructionActivity(container, options) {
@@ -437,8 +506,9 @@ export function createMapReconstructionActivity(container, options) {
 
   const placePiece = (stateId, position, shouldFocus = true) => {
     session = placeMapReconstructionPiece(session, stateId, position, geometry);
+    if (!session.piecesById[stateId]?.position) return;
     const name = geometry.piecesById[stateId]?.name || stateId;
-    announce(`${name} placed in the workspace.`);
+    announce(`${name} placed in the workspace and selected.`);
     render();
     if (shouldFocus) focusPiece(stateId);
   };
@@ -449,6 +519,10 @@ export function createMapReconstructionActivity(container, options) {
       if (event.button != null && event.button !== 0) return;
       event.preventDefault();
       const start = { x: event.clientX, y: event.clientY };
+      const thumbnailPath = button.querySelector(".map-reconstruction-bank-thumbnail path");
+      const pointerOffset = event.target === thumbnailPath
+        ? mapClientPointToSvgGeometry(thumbnailPath, event.clientX, event.clientY)
+        : null;
       let moved = false;
       const proxy = createDragProxy(piece);
       setProxyPosition(proxy, event.clientX, event.clientY);
@@ -461,10 +535,12 @@ export function createMapReconstructionActivity(container, options) {
         if (cancelled || destroyed) return;
         if (moved && pointIsInsideElement(workspaceSvg, upEvent.clientX, upEvent.clientY)) {
           const point = mapClientPointToReconstructionWorkspace(workspaceSvg, upEvent.clientX, upEvent.clientY);
-          if (point) placePiece(stateId, point);
+          if (point) {
+            placePiece(stateId, getMapReconstructionShelfDropPosition(point, pointerOffset));
+          }
           return;
         }
-        placePiece(stateId, getDefaultMapReconstructionPlacement(session.piecesById[stateId], geometry));
+        placePiece(stateId, findMapReconstructionAutomaticPlacement(session, stateId, geometry));
       };
       const move = (moveEvent) => {
         moveEvent.preventDefault();
@@ -480,11 +556,11 @@ export function createMapReconstructionActivity(container, options) {
     button.addEventListener("keydown", (event) => {
       if (!["Enter", " "].includes(event.key) || session.piecesById[stateId]?.position) return;
       event.preventDefault();
-      placePiece(stateId, getDefaultMapReconstructionPlacement(session.piecesById[stateId], geometry));
+      placePiece(stateId, findMapReconstructionAutomaticPlacement(session, stateId, geometry));
     });
     button.addEventListener("click", (event) => {
       if (event.detail !== 0 || session.piecesById[stateId]?.position) return;
-      placePiece(stateId, getDefaultMapReconstructionPlacement(session.piecesById[stateId], geometry));
+      placePiece(stateId, findMapReconstructionAutomaticPlacement(session, stateId, geometry));
     });
   };
 
@@ -576,20 +652,28 @@ export function createMapReconstructionActivity(container, options) {
     title.textContent = session.phase === "arranging"
       ? region.prompt
       : visualPlan.isSuccess
-        ? "Completed New England"
+        ? `Completed ${region.regionName}`
         : visualPlan.isCorrectPlacement ? "Correct placement" : "Your reconstruction";
+    if (session.phase === "arranging") {
+      const speaker = createReconstructionSpeaker(
+        region.prompt,
+        "map-reconstruction-prompt-speaker",
+        "Hear the reconstruction instruction"
+      );
+      if (speaker) title.appendChild(speaker);
+    }
     workspaceSvg = createSvgElement("svg", {
       class: "map-reconstruction-workspace",
       viewBox: visualPlan.viewBox,
       preserveAspectRatio: "xMidYMid meet",
       role: "group",
       "aria-label": session.phase === "arranging"
-        ? "Blank New England reconstruction workspace"
+        ? `Blank ${region.regionName} reconstruction workspace`
         : visualPlan.isSuccess
-          ? "Completed New England reconstruction"
+          ? `Completed ${region.regionName} reconstruction`
           : visualPlan.isCorrectPlacement
-            ? "Correct New England placement"
-            : "Submitted New England reconstruction"
+            ? `Correct ${region.regionName} placement`
+            : `Submitted ${region.regionName} reconstruction`
     });
     workspaceSvg.dataset.mapReconstructionPhase = session.phase;
     if (visualPlan.isSuccess) workspaceSvg.dataset.mapReconstructionSuccessful = "true";
@@ -599,7 +683,7 @@ export function createMapReconstructionActivity(container, options) {
         "data-map-reconstruction-learner-layout": "visible"
       });
       if (visualPlan.isSuccess) learnerLayer.dataset.mapReconstructionCompletedLayout = "visible";
-      session.bankOrder.forEach((stateId) => {
+      getMapReconstructionPieceRenderOrder(session).forEach((stateId) => {
         const pieceState = session.piecesById[stateId];
         if (!pieceState.position) return;
         const status = visualPlan.isSuccess
@@ -612,6 +696,8 @@ export function createMapReconstructionActivity(container, options) {
         const group = createPieceGroup(geometry.piecesById[stateId], pieceState.position, {
           className: `map-reconstruction-piece is-${status}${session.selectedStateId === stateId ? " is-selected" : ""}`,
           completed: visualPlan.isSuccess,
+          completedOffset: region.completedLabelOffsets?.[stateId],
+          smallLabel: region.smallLabelStateIds?.includes(stateId),
           hideLabel: visualPlan.isSuccess
         });
         if (visualPlan.animateSnap) {
@@ -644,7 +730,11 @@ export function createMapReconstructionActivity(container, options) {
         const labelGroup = createSvgElement("g", {
           transform: `translate(${piece.correctPosition.x} ${piece.correctPosition.y})`
         });
-        labelGroup.appendChild(createPieceLabel(piece, { completed: true }));
+        labelGroup.appendChild(createPieceLabel(piece, {
+          completed: true,
+          completedOffset: region.completedLabelOffsets?.[stateId],
+          smallLabel: region.smallLabelStateIds?.includes(stateId)
+        }));
         labelLayer.appendChild(labelGroup);
       });
       workspaceSvg.appendChild(labelLayer);
@@ -660,7 +750,7 @@ export function createMapReconstructionActivity(container, options) {
     heading.textContent = session.phase === "arranging" ? "State pieces" : "Placement results";
     bank.appendChild(heading);
     if (session.phase === "result") {
-      bank.appendChild(createResultSummary(session, geometry));
+      bank.appendChild(createResultSummary(session, region, geometry));
       return bank;
     }
     const list = createElement("div", "map-reconstruction-bank-list");
@@ -673,13 +763,19 @@ export function createMapReconstructionActivity(container, options) {
       button.setAttribute("aria-label", `Place ${piece.name}`);
       const name = createElement("span", "map-reconstruction-bank-name");
       name.textContent = piece.name;
+      const speaker = createReconstructionSpeaker(
+        piece.name,
+        "map-reconstruction-state-speaker",
+        `Hear ${piece.name}`
+      );
       button.append(createBankThumbnail(piece), name);
+      if (speaker) button.appendChild(speaker);
       attachBankPointerInteraction(button, stateId);
       list.appendChild(button);
     });
     if (!list.children.length) {
       const empty = createElement("p", "map-reconstruction-bank-empty");
-      empty.textContent = "All six states are in the workspace.";
+      empty.textContent = `All ${geometry.stateIds.length} states are in the workspace.`;
       list.appendChild(empty);
     }
     bank.appendChild(list);
@@ -810,7 +906,7 @@ export function createMapReconstructionActivity(container, options) {
         session = submitMapReconstructionSession(session, evaluation);
         successVisualPending = evaluation.isComplete;
         announce(evaluation.isComplete
-          ? "You rebuilt New England correctly. The completed map is now shown."
+          ? `${region.successMessage} The completed map is now shown.`
           : "Reconstruction submitted. The correct structure is now available for comparison.");
         render();
         container.querySelector(evaluation.isComplete

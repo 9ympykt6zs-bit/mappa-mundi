@@ -150,6 +150,41 @@ function getSwappedPair(session, alignedPositions, leftId, rightId, referenceSca
     && distance(alignedPositions[rightId], session.piecesById[leftId].correctPosition) < referenceScale * 0.28;
 }
 
+function violatesRelativePosition(rule, alignedPositions, referenceScale) {
+  const subject = alignedPositions[rule.subjectId];
+  const references = (rule.referenceIds || []).map((stateId) => alignedPositions[stateId]);
+  if (!subject || !references.length || references.some((position) => !position)) return false;
+  const margin = referenceScale * 0.04;
+  const isNorth = references.every((position) => subject.y < position.y - margin);
+  const isSouth = references.every((position) => subject.y > position.y + margin);
+  const isEast = references.every((position) => subject.x > position.x + margin);
+  const isWest = references.every((position) => subject.x < position.x - margin);
+  return {
+    north: !isNorth,
+    south: !isSouth,
+    east: !isEast,
+    west: !isWest,
+    northeast: !(isNorth && isEast),
+    northwest: !(isNorth && isWest),
+    southeast: !(isSouth && isEast),
+    southwest: !(isSouth && isWest)
+  }[rule.direction] ?? false;
+}
+
+function getFeedbackRuleViolations(session, region, alignedPositions, referenceScale) {
+  return (region.feedbackRules || []).filter((rule) => {
+    if (rule.type === "swapped-pair") {
+      const [leftId, rightId] = rule.stateIds || [];
+      return leftId && rightId
+        ? getSwappedPair(session, alignedPositions, leftId, rightId, referenceScale)
+        : false;
+    }
+    return rule.type === "relative-position"
+      ? violatesRelativePosition(rule, alignedPositions, referenceScale)
+      : false;
+  });
+}
+
 export function evaluateMapReconstruction(session, region, geometry) {
   if (!session || !region || !geometry || session.regionId !== region.id) return null;
   const settings = region.evaluation;
@@ -251,16 +286,19 @@ export function evaluateMapReconstruction(session, region, geometry) {
     };
   }
 
-  const vermontNewHampshireSwapped = getSwappedPair(
+  const feedbackRuleViolations = getFeedbackRuleViolations(
     session,
+    region,
     alignedPositions,
-    "vermont",
-    "new-hampshire",
     referenceScale
   );
-  if (vermontNewHampshireSwapped) {
-    placements.vermont.status = MAP_RECONSTRUCTION_PLACEMENT_STATUSES.MISPLACED;
-    placements["new-hampshire"].status = MAP_RECONSTRUCTION_PLACEMENT_STATUSES.MISPLACED;
+  for (const rule of feedbackRuleViolations) {
+    const affectedIds = rule.type === "swapped-pair" ? rule.stateIds || [] : [rule.subjectId];
+    affectedIds.forEach((stateId) => {
+      if (placements[stateId]?.status !== MAP_RECONSTRUCTION_PLACEMENT_STATUSES.UNPLACED) {
+        placements[stateId].status = MAP_RECONSTRUCTION_PLACEMENT_STATUSES.MISPLACED;
+      }
+    });
   }
 
   const counts = Object.values(MAP_RECONSTRUCTION_PLACEMENT_STATUSES).reduce((result, status) => {
@@ -268,9 +306,7 @@ export function evaluateMapReconstruction(session, region, geometry) {
     return result;
   }, {});
   const feedback = [];
-  if (vermontNewHampshireSwapped) {
-    feedback.push("Vermont and New Hampshire are reversed.");
-  }
+  feedbackRuleViolations.forEach((rule) => feedback.push(rule.message));
   for (const stateId of region.stateIds) {
     const placement = placements[stateId];
     if (placement.status === MAP_RECONSTRUCTION_PLACEMENT_STATUSES.UNPLACED) {
@@ -279,7 +315,11 @@ export function evaluateMapReconstruction(session, region, geometry) {
       const name = getStateById(stateId)?.name || stateId;
       if (placement.overlapRatio > 0) feedback.push(`${name} overlaps another state too much.`);
       else if (placement.outsideWorkspace) feedback.push(`${name} falls outside the workspace.`);
-      else if (placement.directionFeedback) feedback.push(`${name} is ${placement.directionFeedback}.`);
+      else if (placement.directionFeedback && !feedbackRuleViolations.some((rule) => (
+        rule.subjectId === stateId || rule.stateIds?.includes(stateId)
+      ))) {
+        feedback.push(`${name} is ${placement.directionFeedback}.`);
+      }
     }
   }
   if (!feedback.length && counts[MAP_RECONSTRUCTION_PLACEMENT_STATUSES.WELL_PLACED] === region.stateIds.length) {

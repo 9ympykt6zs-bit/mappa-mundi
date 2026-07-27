@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import {
   MAP_RECONSTRUCTION_REGION_IDS,
   getMapReconstructionRegion,
+  listMapReconstructionRegions,
   validateMapReconstructionRegion
 } from "../src/atlas/map-reconstruction-regions.js";
 import {
@@ -12,9 +13,12 @@ import {
   prepareMapReconstructionGeometry
 } from "../src/atlas/map-reconstruction-geometry.js";
 import {
+  beginMapReconstructionDrag,
   completeMapReconstructionCorrection,
   createMapReconstructionSession,
   createSeededMapReconstructionRandom,
+  findMapReconstructionAutomaticPlacement,
+  getMapReconstructionPieceRenderOrder,
   moveMapReconstructionPieceByKeyboard,
   placeMapReconstructionPiece,
   prepareMapReconstructionCorrectionReplay,
@@ -35,6 +39,7 @@ import {
   getDefaultMapReconstructionPlacement,
   getMapReconstructionCorrectionStartPosition,
   getMapReconstructionResultVisualPlan,
+  getMapReconstructionShelfDropPosition,
   getMapReconstructionSuccessViewBox,
   mapClientPointToReconstructionWorkspace,
   shouldRenderMapReconstructionCorrectLayout
@@ -44,12 +49,14 @@ const featureCollection = JSON.parse((await readFile(
   new URL("../assets/maps/data/maplibre-us-states-atlas.geojson", import.meta.url),
   "utf8"
 )).replace(/^\uFEFF/, ""));
-const [indexHtml, runtimeSource, uiSource, stylesheet] = await Promise.all([
+const [indexHtml, runtimeSource, uiSource, stylesheet, audioManifestSource] = await Promise.all([
   readFile(new URL("../index.html", import.meta.url), "utf8"),
   readFile(new URL("../src/maplibre-poc.js", import.meta.url), "utf8"),
   readFile(new URL("../src/atlas/map-reconstruction-ui.js", import.meta.url), "utf8"),
-  readFile(new URL("../maplibre-poc.css", import.meta.url), "utf8")
+  readFile(new URL("../maplibre-poc.css", import.meta.url), "utf8"),
+  readFile(new URL("../assets/audio/audio-manifest.json", import.meta.url), "utf8")
 ]);
+const audioManifest = JSON.parse(audioManifestSource);
 const region = getMapReconstructionRegion(MAP_RECONSTRUCTION_REGION_IDS.REBUILD_NEW_ENGLAND);
 const expectedStateIds = [
   "maine",
@@ -66,6 +73,8 @@ assert.equal(new Set(region.stateIds).size, 6);
 assert.match(indexHtml, /id="main-menu-map-reconstruction-button"/);
 assert.match(indexHtml, /id="map-reconstruction-panel"/);
 assert.match(runtimeSource, /function openMapReconstruction\(\)/);
+assert.match(runtimeSource, /showMapReconstructionRegionSelection/);
+assert.match(uiSource, /createMapReconstructionRegionSelection/);
 assert.match(uiSource, /viewBox: visualPlan\.viewBox/);
 assert.doesNotMatch(uiSource, /data-map-reconstruction-correct-layout/);
 assert.doesNotMatch(uiSource, /map-reconstruction-correct-layer/);
@@ -231,9 +240,70 @@ const placedSession = placeMapReconstructionPiece(firstSession, "maine", { x: 50
 assert.deepEqual(firstSession, originalSession, "placement should not mutate its input");
 assert.deepEqual(placedSession.piecesById.maine.position, { x: 500, y: 300 });
 assert.equal(placedSession.piecesById.maine.placementStatus, "placed");
+assert.equal(placedSession.selectedStateId, "maine");
+assert.deepEqual(getMapReconstructionPieceRenderOrder(placedSession), ["maine"]);
+const overlappingConnecticut = placeMapReconstructionPiece(
+  placedSession,
+  "connecticut",
+  placedSession.piecesById.maine.position,
+  geometry
+);
+assert.deepEqual(
+  getMapReconstructionPieceRenderOrder(overlappingConnecticut),
+  ["maine", "connecticut"],
+  "a newly placed overlapping piece should render on top"
+);
+const raisedMaine = beginMapReconstructionDrag(
+  overlappingConnecticut,
+  "maine",
+  1,
+  { x: 500, y: 300 },
+  overlappingConnecticut.piecesById.maine.position
+);
+assert.deepEqual(
+  getMapReconstructionPieceRenderOrder(raisedMaine),
+  ["connecticut", "maine"],
+  "interacting with a placed piece should bring it to the front"
+);
+assert.deepEqual(
+  getMapReconstructionShelfDropPosition({ x: 440, y: 330 }, { x: 20, y: -10 }),
+  { x: 420, y: 340 },
+  "shelf dragging should preserve the pointer-to-piece offset"
+);
+let automaticPlacementSession = firstSession;
+const automaticPositions = [];
+for (const stateId of firstSession.bankOrder.slice(0, 4)) {
+  const position = findMapReconstructionAutomaticPlacement(
+    automaticPlacementSession,
+    stateId,
+    geometry
+  );
+  automaticPositions.push(`${position.x.toFixed(3)},${position.y.toFixed(3)}`);
+  automaticPlacementSession = placeMapReconstructionPiece(
+    automaticPlacementSession,
+    stateId,
+    position,
+    geometry
+  );
+}
+assert.ok(
+  new Set(automaticPositions).size > 1,
+  "automatic placement should not stack every clicked piece at identical coordinates"
+);
+assert.equal(
+  getMapReconstructionPieceRenderOrder(automaticPlacementSession).at(-1),
+  firstSession.bankOrder[3]
+);
+assert.equal(
+  Object.values(automaticPlacementSession.piecesById).filter((piece) => piece.position).length,
+  4,
+  "automatic placement should retain every placed piece exactly once"
+);
 const returnedSession = returnMapReconstructionPieceToBank(placedSession, "maine");
 assert.equal(returnedSession.piecesById.maine.position, null);
+assert.deepEqual(returnedSession.pieceZOrder, []);
 assert.deepEqual(resetMapReconstructionSession(placedSession).bankOrder, firstSession.bankOrder);
+assert.deepEqual(resetMapReconstructionSession(placedSession).pieceZOrder, []);
 assert.deepEqual(
   placeMapReconstructionPiece(firstSession, "unknown", { x: 400, y: 300 }, geometry),
   firstSession,
@@ -557,7 +627,7 @@ assert.match(uiSource, /prepareMapReconstructionCorrectionReplay/);
 assert.match(uiSource, /correctionReplayPauseMs/);
 assert.match(uiSource, /prefers-reduced-motion: reduce/);
 assert.match(uiSource, /map-reconstruction-drag-proxy.*proxy\.remove/s);
-assert.match(uiSource, /MAP_RECONSTRUCTION_COMPLETED_LABEL_OFFSETS/);
+assert.match(uiSource, /region\.completedLabelOffsets/);
 assert.doesNotMatch(uiSource, /map-reconstruction-piece-hit-target/);
 assert.match(uiSource, /isPointInMapReconstructionPiece/);
 assert.match(stylesheet, /prefers-reduced-motion: reduce/);
@@ -567,5 +637,236 @@ assert.match(stylesheet, /map-reconstruction-learner-layer\.is-corrected/);
 assert.match(stylesheet, /\.map-reconstruction-actions\s*\{[^}]*overflow-x:\s*hidden;/s);
 assert.match(stylesheet, /pointer-events: visiblePainted/);
 assert.doesNotMatch(stylesheet, /map-reconstruction-piece-hit-target/);
+
+const regions = listMapReconstructionRegions();
+assert.deepEqual(regions.map((entry) => entry.id), [
+  MAP_RECONSTRUCTION_REGION_IDS.REBUILD_NEW_ENGLAND,
+  MAP_RECONSTRUCTION_REGION_IDS.REBUILD_MID_ATLANTIC
+]);
+assert.notStrictEqual(regions[0].stateIds, getMapReconstructionRegion(regions[0].id).stateIds);
+
+const midAtlanticRegion = getMapReconstructionRegion(
+  MAP_RECONSTRUCTION_REGION_IDS.REBUILD_MID_ATLANTIC
+);
+const midAtlanticStateIds = [
+  "new-york",
+  "pennsylvania",
+  "new-jersey",
+  "delaware",
+  "maryland",
+  "west-virginia",
+  "virginia"
+];
+assert.deepEqual(validateMapReconstructionRegion(midAtlanticRegion), []);
+assert.equal(midAtlanticRegion.title, "Rebuild the Mid-Atlantic");
+assert.deepEqual(midAtlanticRegion.stateIds, midAtlanticStateIds);
+assert.equal(new Set(midAtlanticRegion.stateIds).size, 7);
+assert.equal(midAtlanticRegion.successMessage, "You rebuilt the Mid-Atlantic correctly.");
+
+const midAtlanticGeometry = prepareMapReconstructionGeometry(featureCollection, midAtlanticRegion);
+assert.deepEqual(midAtlanticGeometry.stateIds, midAtlanticStateIds);
+assert.equal(midAtlanticGeometry.pieces.length, 7);
+for (const stateId of midAtlanticStateIds) {
+  const piece = midAtlanticGeometry.piecesById[stateId];
+  assert.ok(piece?.path.startsWith("M"), `${stateId} should have prepared SVG geometry`);
+  assert.ok(piece.correctBounds.minX >= 0 && piece.correctBounds.maxX <= midAtlanticGeometry.workspace.width);
+  assert.ok(piece.correctBounds.minY >= 0 && piece.correctBounds.maxY <= midAtlanticGeometry.workspace.height);
+}
+assert.equal(midAtlanticGeometry.piecesById["new-york"].geometryType, "MultiPolygon");
+assert.ok(midAtlanticGeometry.piecesById["new-york"].polygonCount > 1, "New York islands should be preserved");
+assert.equal(midAtlanticGeometry.piecesById.delaware.geometryType, "MultiPolygon");
+assert.equal(midAtlanticGeometry.piecesById["new-jersey"].geometryType, "MultiPolygon");
+
+const delawareInteriorPoint = findPiecePoint(midAtlanticGeometry.piecesById.delaware, true);
+const newJerseyInteriorPoint = findPiecePoint(midAtlanticGeometry.piecesById["new-jersey"], true);
+assert.ok(delawareInteriorPoint);
+assert.ok(newJerseyInteriorPoint);
+assert.equal(isPointInMapReconstructionPiece(
+  midAtlanticGeometry.piecesById.delaware,
+  delawareInteriorPoint
+), true);
+assert.equal(isPointInMapReconstructionPiece(
+  midAtlanticGeometry.piecesById["new-jersey"],
+  newJerseyInteriorPoint
+), true);
+const midAtlanticHitEntries = midAtlanticStateIds.map((stateId) => ({
+  stateId,
+  piece: midAtlanticGeometry.piecesById[stateId],
+  position: midAtlanticGeometry.piecesById[stateId].correctPosition
+}));
+const delawareGlobalPoint = {
+  x: midAtlanticGeometry.piecesById.delaware.correctPosition.x + delawareInteriorPoint.x,
+  y: midAtlanticGeometry.piecesById.delaware.correctPosition.y + delawareInteriorPoint.y
+};
+assert.equal(
+  getTopmostMapReconstructionPieceAtPoint(midAtlanticHitEntries, delawareGlobalPoint),
+  "delaware",
+  "Delaware should be selected by its painted geometry"
+);
+
+const firstMidAtlanticSession = createMapReconstructionSession(
+  midAtlanticRegion,
+  midAtlanticGeometry,
+  { random: createSeededMapReconstructionRandom(91) }
+);
+assert.notDeepEqual(firstMidAtlanticSession.bankOrder, midAtlanticStateIds);
+assert.deepEqual(new Set(firstMidAtlanticSession.bankOrder), new Set(midAtlanticStateIds));
+const firstMidAtlanticStateId = firstMidAtlanticSession.bankOrder[0];
+const secondMidAtlanticStateId = firstMidAtlanticSession.bankOrder[1];
+const firstMidAtlanticPlacement = findMapReconstructionAutomaticPlacement(
+  firstMidAtlanticSession,
+  firstMidAtlanticStateId,
+  midAtlanticGeometry
+);
+const midAtlanticWithFirstPiece = placeMapReconstructionPiece(
+  firstMidAtlanticSession,
+  firstMidAtlanticStateId,
+  firstMidAtlanticPlacement,
+  midAtlanticGeometry
+);
+const secondMidAtlanticPlacement = findMapReconstructionAutomaticPlacement(
+  midAtlanticWithFirstPiece,
+  secondMidAtlanticStateId,
+  midAtlanticGeometry
+);
+const midAtlanticWithTwoPieces = placeMapReconstructionPiece(
+  midAtlanticWithFirstPiece,
+  secondMidAtlanticStateId,
+  secondMidAtlanticPlacement,
+  midAtlanticGeometry
+);
+assert.notDeepEqual(secondMidAtlanticPlacement, firstMidAtlanticPlacement);
+assert.equal(
+  getMapReconstructionPieceRenderOrder(midAtlanticWithTwoPieces).at(-1),
+  secondMidAtlanticStateId
+);
+assert.deepEqual(
+  resetMapReconstructionSession(placeMapReconstructionPiece(
+    firstMidAtlanticSession,
+    "delaware",
+    { x: 500, y: 420 },
+    midAtlanticGeometry
+  )).bankOrder,
+  firstMidAtlanticSession.bankOrder
+);
+
+function midAtlanticSessionAtCorrectPositions(offset = { x: 0, y: 0 }) {
+  const candidate = createMapReconstructionSession(
+    midAtlanticRegion,
+    midAtlanticGeometry,
+    { random: createSeededMapReconstructionRandom(33) }
+  );
+  for (const stateId of midAtlanticStateIds) {
+    candidate.piecesById[stateId].position = {
+      x: candidate.piecesById[stateId].correctPosition.x + offset.x,
+      y: candidate.piecesById[stateId].correctPosition.y + offset.y
+    };
+    candidate.piecesById[stateId].placementStatus = "placed";
+    candidate.piecesById[stateId].hasMoved = true;
+  }
+  return candidate;
+}
+
+const midAtlanticCorrectEvaluation = evaluateMapReconstruction(
+  midAtlanticSessionAtCorrectPositions(),
+  midAtlanticRegion,
+  midAtlanticGeometry
+);
+assert.equal(midAtlanticCorrectEvaluation.isComplete, true);
+assert.equal(midAtlanticCorrectEvaluation.counts["well-placed"], 7);
+const midAtlanticTranslatedEvaluation = evaluateMapReconstruction(
+  midAtlanticSessionAtCorrectPositions({ x: 28, y: -22 }),
+  midAtlanticRegion,
+  midAtlanticGeometry
+);
+assert.equal(midAtlanticTranslatedEvaluation.alignment.applied, true);
+assert.equal(midAtlanticTranslatedEvaluation.isComplete, true);
+
+const midAtlanticImperfectSession = midAtlanticSessionAtCorrectPositions();
+const midAtlanticNudge = midAtlanticGeometry.medianStateDiagonal * 0.04;
+midAtlanticImperfectSession.piecesById.delaware.position.y += midAtlanticNudge;
+midAtlanticImperfectSession.piecesById["new-jersey"].position.x += midAtlanticNudge;
+assert.equal(
+  evaluateMapReconstruction(
+    midAtlanticImperfectSession,
+    midAtlanticRegion,
+    midAtlanticGeometry
+  ).isComplete,
+  true,
+  "slightly imperfect Mid-Atlantic spacing should pass"
+);
+
+const swappedPennsylvaniaNewJersey = midAtlanticSessionAtCorrectPositions();
+const pennsylvaniaPosition = swappedPennsylvaniaNewJersey.piecesById.pennsylvania.position;
+swappedPennsylvaniaNewJersey.piecesById.pennsylvania.position =
+  swappedPennsylvaniaNewJersey.piecesById["new-jersey"].position;
+swappedPennsylvaniaNewJersey.piecesById["new-jersey"].position = pennsylvaniaPosition;
+const swappedPennsylvaniaNewJerseyEvaluation = evaluateMapReconstruction(
+  swappedPennsylvaniaNewJersey,
+  midAtlanticRegion,
+  midAtlanticGeometry
+);
+assert.equal(swappedPennsylvaniaNewJerseyEvaluation.isComplete, false);
+assert.ok(swappedPennsylvaniaNewJerseyEvaluation.feedback.includes(
+  "New Jersey belongs east of Pennsylvania."
+));
+
+const delawareNorthSession = midAtlanticSessionAtCorrectPositions();
+delawareNorthSession.piecesById.delaware.position.y =
+  delawareNorthSession.piecesById["new-jersey"].position.y - midAtlanticGeometry.medianStateDiagonal;
+assert.ok(evaluateMapReconstruction(
+  delawareNorthSession,
+  midAtlanticRegion,
+  midAtlanticGeometry
+).feedback.includes("Delaware belongs south of New Jersey."));
+
+const westVirginiaEastSession = midAtlanticSessionAtCorrectPositions();
+westVirginiaEastSession.piecesById["west-virginia"].position.x =
+  westVirginiaEastSession.piecesById.virginia.position.x + midAtlanticGeometry.medianStateDiagonal;
+assert.ok(evaluateMapReconstruction(
+  westVirginiaEastSession,
+  midAtlanticRegion,
+  midAtlanticGeometry
+).feedback.includes("West Virginia belongs west of Virginia."));
+
+const midAtlanticMissingSession = midAtlanticSessionAtCorrectPositions();
+midAtlanticMissingSession.piecesById.delaware.position = null;
+midAtlanticMissingSession.piecesById.delaware.placementStatus = "unplaced";
+const midAtlanticMissingEvaluation = evaluateMapReconstruction(
+  midAtlanticMissingSession,
+  midAtlanticRegion,
+  midAtlanticGeometry
+);
+assert.equal(midAtlanticMissingEvaluation.placements.delaware.status, "unplaced");
+assert.ok(midAtlanticMissingEvaluation.feedback.includes("Delaware was not placed."));
+
+assert.deepEqual(getMapReconstructionAdjacencyPairs(midAtlanticRegion), [
+  ["delaware", "maryland"],
+  ["delaware", "pennsylvania"],
+  ["maryland", "pennsylvania"],
+  ["maryland", "virginia"],
+  ["maryland", "west-virginia"],
+  ["new-jersey", "new-york"],
+  ["new-jersey", "pennsylvania"],
+  ["new-york", "pennsylvania"],
+  ["pennsylvania", "west-virginia"],
+  ["virginia", "west-virginia"]
+]);
+assert.match(stylesheet, /map-reconstruction-region-selection/);
+assert.match(stylesheet, /map-reconstruction-region-list/);
+assert.match(runtimeSource, /activeMapReconstructionRegionId/);
+assert.match(runtimeSource, /listMapReconstructionRegions/);
+assert.match(uiSource, /createChipSpeakerControl/);
+for (const stateName of [
+  "New York",
+  "Pennsylvania",
+  "New Jersey",
+  "Delaware",
+  "Maryland",
+  "West Virginia",
+  "Virginia"
+]) {
+  assert.match(audioManifest.chips?.[stateName] || "", /^assets\/audio\/chips\/.+\.mp3$/);
+}
 
 console.log("Map Reconstruction validation passed.");

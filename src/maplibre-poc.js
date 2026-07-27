@@ -18,11 +18,14 @@ import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=2
 import { readUnitedStatesAtlasProgress } from "./atlas/united-states-atlas-progress.js";
 import { renderUnitedStatesAtlasOverview, renderUnitedStatesAtlasProfile } from "./atlas/united-states-atlas-ui.js";
 import {
-  MAP_RECONSTRUCTION_REGION_IDS,
-  getMapReconstructionRegion
+  getMapReconstructionRegion,
+  listMapReconstructionRegions
 } from "./atlas/map-reconstruction-regions.js";
 import { prepareMapReconstructionGeometry } from "./atlas/map-reconstruction-geometry.js";
-import { createMapReconstructionActivity } from "./atlas/map-reconstruction-ui.js";
+import {
+  createMapReconstructionActivity,
+  createMapReconstructionRegionSelection
+} from "./atlas/map-reconstruction-ui.js";
 import { trackEvent } from "./analytics.js?v=20260601-instruction-target-nouns";
 import {
   clearActiveJourney,
@@ -3548,7 +3551,9 @@ let mentalMapLastQuestionId = "";
 let mentalMapLastCategory = "";
 let mentalMapRecentAnswerModes = [];
 let mapReconstructionController = null;
-let mapReconstructionGeometryPromise = null;
+let activeMapReconstructionRegionId = "";
+let mapReconstructionFeatureCollectionPromise = null;
+const mapReconstructionGeometryPromises = new Map();
 
 const journeyDifficultyOptions = [
   {
@@ -5335,7 +5340,11 @@ function bindUiEvents() {
   });
   backButton?.addEventListener("click", () => {
     if (currentAppScreen === "map-reconstruction") {
-      exitMapReconstruction();
+      if (activeMapReconstructionRegionId) {
+        showMapReconstructionRegionSelection();
+      } else {
+        exitMapReconstruction();
+      }
       return;
     }
     if (currentAppScreen === "compass-challenge") {
@@ -7707,17 +7716,68 @@ function exitUnitedStatesAtlas() {
   showAppScreen("main-menu", { pushHistory: false });
 }
 
-function loadMapReconstructionGeometry() {
-  if (!mapReconstructionGeometryPromise) {
-    const region = getMapReconstructionRegion(MAP_RECONSTRUCTION_REGION_IDS.REBUILD_NEW_ENGLAND);
-    mapReconstructionGeometryPromise = fetchJson(usStatesAtlasPath)
-      .then((featureCollection) => prepareMapReconstructionGeometry(featureCollection, region))
-      .catch((error) => {
-        mapReconstructionGeometryPromise = null;
+function loadMapReconstructionGeometry(regionId) {
+  if (!mapReconstructionGeometryPromises.has(regionId)) {
+    const region = getMapReconstructionRegion(regionId);
+    if (!region) return Promise.reject(new Error(`Unknown reconstruction region: ${regionId}`));
+    if (!mapReconstructionFeatureCollectionPromise) {
+      mapReconstructionFeatureCollectionPromise = fetchJson(usStatesAtlasPath).catch((error) => {
+        mapReconstructionFeatureCollectionPromise = null;
         throw error;
       });
+    }
+    const geometryPromise = mapReconstructionFeatureCollectionPromise
+      .then((featureCollection) => prepareMapReconstructionGeometry(featureCollection, region))
+      .catch((error) => {
+        mapReconstructionGeometryPromises.delete(regionId);
+        throw error;
+      });
+    mapReconstructionGeometryPromises.set(regionId, geometryPromise);
   }
-  return mapReconstructionGeometryPromise;
+  return mapReconstructionGeometryPromises.get(regionId);
+}
+
+function showMapReconstructionRegionSelection() {
+  if (!mapReconstructionPanel || currentAppScreen !== "map-reconstruction") return;
+  mapReconstructionController?.destroy();
+  mapReconstructionController = null;
+  activeMapReconstructionRegionId = "";
+  setHeaderTitle("Map Reconstruction", { shortTitle: "Rebuild" });
+  instruction.textContent = "Choose a region, then rebuild it from memory.";
+  mapReconstructionController = createMapReconstructionRegionSelection(mapReconstructionPanel, {
+    regions: listMapReconstructionRegions(),
+    onSelect: (regionId) => {
+      void startMapReconstructionRegion(regionId);
+    }
+  });
+  updateTopBarNavigation();
+}
+
+async function startMapReconstructionRegion(regionId) {
+  const region = getMapReconstructionRegion(regionId);
+  if (!mapReconstructionPanel || !region || currentAppScreen !== "map-reconstruction") return;
+  mapReconstructionController?.destroy();
+  mapReconstructionController = null;
+  activeMapReconstructionRegionId = region.id;
+  setHeaderTitle(region.title, { shortTitle: "Rebuild" });
+  instruction.textContent = "Build the region from memory, then compare.";
+  mapReconstructionPanel.innerHTML = '<p class="map-reconstruction-loading" role="status">Preparing state pieces...</p>';
+  try {
+    const geometry = await loadMapReconstructionGeometry(region.id);
+    if (currentAppScreen !== "map-reconstruction" || activeMapReconstructionRegionId !== region.id) return;
+    mapReconstructionController = createMapReconstructionActivity(mapReconstructionPanel, {
+      region,
+      geometry
+    });
+  } catch (error) {
+    if (currentAppScreen !== "map-reconstruction" || activeMapReconstructionRegionId !== region.id) return;
+    mapReconstructionPanel.replaceChildren();
+    const message = document.createElement("p");
+    message.className = "map-reconstruction-loading is-error";
+    message.setAttribute("role", "alert");
+    message.textContent = `State pieces could not be loaded. ${error.message}`;
+    mapReconstructionPanel.appendChild(message);
+  }
 }
 
 async function openMapReconstruction() {
@@ -7752,37 +7812,28 @@ async function openMapReconstruction() {
   if (mapElement) mapElement.setAttribute("aria-hidden", "true");
   mapReconstructionController?.destroy();
   mapReconstructionController = null;
-
-  setHeaderTitle("Rebuild New England", { shortTitle: "Rebuild" });
-  instruction.textContent = "Build the region from memory, then compare.";
+  activeMapReconstructionRegionId = "";
+  setHeaderTitle("Map Reconstruction", { shortTitle: "Rebuild" });
+  instruction.textContent = "Choose a region, then rebuild it from memory.";
   renderActivityNavControls(null);
   updateTopBarNavigation();
 
   if (!mapReconstructionPanel) return;
   mapReconstructionPanel.hidden = false;
-  mapReconstructionPanel.innerHTML = '<p class="map-reconstruction-loading" role="status">Preparing state pieces...</p>';
+  mapReconstructionPanel.innerHTML = '<p class="map-reconstruction-loading" role="status">Preparing reconstruction...</p>';
   try {
-    const region = getMapReconstructionRegion(MAP_RECONSTRUCTION_REGION_IDS.REBUILD_NEW_ENGLAND);
-    const geometry = await loadMapReconstructionGeometry();
-    if (currentAppScreen !== "map-reconstruction") return;
-    mapReconstructionController = createMapReconstructionActivity(mapReconstructionPanel, {
-      region,
-      geometry
-    });
+    await ensureChipSpeechLoaded();
   } catch (error) {
-    if (currentAppScreen !== "map-reconstruction") return;
-    mapReconstructionPanel.replaceChildren();
-    const message = document.createElement("p");
-    message.className = "map-reconstruction-loading is-error";
-    message.setAttribute("role", "alert");
-    message.textContent = `State pieces could not be loaded. ${error.message}`;
-    mapReconstructionPanel.appendChild(message);
+    console.warn("[map-reconstruction] Audio controls could not be prepared.", error);
   }
+  if (currentAppScreen !== "map-reconstruction") return;
+  showMapReconstructionRegionSelection();
 }
 
 function exitMapReconstruction() {
   mapReconstructionController?.destroy();
   mapReconstructionController = null;
+  activeMapReconstructionRegionId = "";
   if (mapReconstructionPanel) mapReconstructionPanel.hidden = true;
   if (mapElement) mapElement.removeAttribute("aria-hidden");
   document.body.classList.remove("map-reconstruction-mode", "overview-mode", "browse-mode");
