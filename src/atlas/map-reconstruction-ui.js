@@ -16,6 +16,7 @@ import {
 } from "./map-reconstruction-engine.js";
 import { evaluateMapReconstruction } from "./map-reconstruction-evaluation.js";
 import {
+  getMapReconstructionInteractionLayout,
   getMapReconstructionThumbnailTransform,
   isPointInMapReconstructionPiece
 } from "./map-reconstruction-geometry.js";
@@ -29,6 +30,7 @@ export const MAP_RECONSTRUCTION_SUCCESS_TIMING = Object.freeze({
   correctionDurationMs: 1050,
   correctionReplayPauseMs: 280
 });
+export const MAP_RECONSTRUCTION_WORKSPACE_INSET_CSS_PIXELS = 12;
 
 let mapReconstructionVisualSequence = 0;
 
@@ -489,6 +491,8 @@ export function createMapReconstructionActivity(container, options) {
   let workspaceSvg = null;
   let successVisualPending = false;
   let correctionTimer = null;
+  let interactionGeometry = geometry;
+  let workspaceResizeObserver = null;
   const successVisualId = ++mapReconstructionVisualSequence;
 
   const clearCorrectionTimer = () => {
@@ -504,8 +508,29 @@ export function createMapReconstructionActivity(container, options) {
     announcement = message;
   };
 
+  const getInteractionGeometry = () => (
+    session.phase === "arranging" ? interactionGeometry : geometry
+  );
+
+  const refreshWorkspaceInteractionLayout = () => {
+    if (!workspaceSvg || session.phase !== "arranging") {
+      interactionGeometry = geometry;
+      return;
+    }
+    const rect = workspaceSvg.getBoundingClientRect();
+    const layout = getMapReconstructionInteractionLayout(geometry.workspace, rect, {
+      insetCssPixels: MAP_RECONSTRUCTION_WORKSPACE_INSET_CSS_PIXELS
+    });
+    if (!layout) return;
+    workspaceSvg.setAttribute("viewBox", layout.viewBox.value);
+    interactionGeometry = {
+      ...geometry,
+      workspace: layout.workspace
+    };
+  };
+
   const placePiece = (stateId, position, shouldFocus = true) => {
-    session = placeMapReconstructionPiece(session, stateId, position, geometry);
+    session = placeMapReconstructionPiece(session, stateId, position, getInteractionGeometry());
     if (!session.piecesById[stateId]?.position) return;
     const name = geometry.piecesById[stateId]?.name || stateId;
     announce(`${name} placed in the workspace and selected.`);
@@ -540,7 +565,11 @@ export function createMapReconstructionActivity(container, options) {
           }
           return;
         }
-        placePiece(stateId, findMapReconstructionAutomaticPlacement(session, stateId, geometry));
+        placePiece(stateId, findMapReconstructionAutomaticPlacement(
+          session,
+          stateId,
+          getInteractionGeometry()
+        ));
       };
       const move = (moveEvent) => {
         moveEvent.preventDefault();
@@ -556,11 +585,19 @@ export function createMapReconstructionActivity(container, options) {
     button.addEventListener("keydown", (event) => {
       if (!["Enter", " "].includes(event.key) || session.piecesById[stateId]?.position) return;
       event.preventDefault();
-      placePiece(stateId, findMapReconstructionAutomaticPlacement(session, stateId, geometry));
+      placePiece(stateId, findMapReconstructionAutomaticPlacement(
+        session,
+        stateId,
+        getInteractionGeometry()
+      ));
     });
     button.addEventListener("click", (event) => {
       if (event.detail !== 0 || session.piecesById[stateId]?.position) return;
-      placePiece(stateId, findMapReconstructionAutomaticPlacement(session, stateId, geometry));
+      placePiece(stateId, findMapReconstructionAutomaticPlacement(
+        session,
+        stateId,
+        getInteractionGeometry()
+      ));
     });
   };
 
@@ -582,7 +619,7 @@ export function createMapReconstructionActivity(container, options) {
           session,
           stateId,
           directions[event.key],
-          geometry,
+          getInteractionGeometry(),
           { large: event.shiftKey }
         );
         announce(`${geometry.piecesById[stateId].name} moved ${directions[event.key]}.`);
@@ -615,7 +652,12 @@ export function createMapReconstructionActivity(container, options) {
         group.removeEventListener("pointerup", up);
         group.removeEventListener("pointercancel", cancel);
         if (cancelled) {
-          session = placeMapReconstructionPiece(session, stateId, startPosition, geometry);
+          session = placeMapReconstructionPiece(
+            session,
+            stateId,
+            startPosition,
+            getInteractionGeometry()
+          );
         }
         session = endMapReconstructionDrag(session);
         if (!cancelled) announce(`${geometry.piecesById[stateId].name} moved.`);
@@ -629,7 +671,7 @@ export function createMapReconstructionActivity(container, options) {
         session = placeMapReconstructionPiece(session, stateId, {
           x: startPosition.x + current.x - startPoint.x,
           y: startPosition.y + current.y - startPoint.y
-        }, geometry);
+        }, getInteractionGeometry());
         const position = session.piecesById[stateId].position;
         group.setAttribute("transform", `translate(${position.x} ${position.y})`);
       };
@@ -902,7 +944,11 @@ export function createMapReconstructionActivity(container, options) {
         container.querySelector(`[data-map-reconstruction-bank-state-id="${stateId}"]`)?.focus();
       }, { disabled: !selectedPiece?.position }),
       createButton("Submit", "map-reconstruction-primary-action", () => {
-        const evaluation = evaluateMapReconstruction(session, region, geometry);
+        const evaluation = evaluateMapReconstruction(
+          session,
+          region,
+          getInteractionGeometry()
+        );
         session = submitMapReconstructionSession(session, evaluation);
         successVisualPending = evaluation.isComplete;
         announce(evaluation.isComplete
@@ -919,6 +965,7 @@ export function createMapReconstructionActivity(container, options) {
 
   function render() {
     if (destroyed) return;
+    workspaceResizeObserver?.disconnect();
     document.querySelectorAll(".map-reconstruction-drag-proxy").forEach((proxy) => proxy.remove());
     const successClass = session.phase === "result" && session.evaluation?.isComplete ? " is-success" : "";
     const shell = createElement("div", `map-reconstruction-shell is-${session.phase}${successClass}`);
@@ -931,9 +978,15 @@ export function createMapReconstructionActivity(container, options) {
     content.append(createWorkspace(), createBank());
     shell.append(liveRegion, content, createActions());
     container.replaceChildren(shell);
+    refreshWorkspaceInteractionLayout();
+    workspaceResizeObserver?.observe(workspaceSvg);
     options.onStateChange?.(session);
   }
 
+  if (typeof ResizeObserver === "function") {
+    workspaceResizeObserver = new ResizeObserver(refreshWorkspaceInteractionLayout);
+  }
+  window.addEventListener("resize", refreshWorkspaceInteractionLayout);
   render();
   return {
     getState: () => JSON.parse(JSON.stringify(session)),
@@ -945,6 +998,8 @@ export function createMapReconstructionActivity(container, options) {
     destroy: () => {
       destroyed = true;
       clearCorrectionTimer();
+      workspaceResizeObserver?.disconnect();
+      window.removeEventListener("resize", refreshWorkspaceInteractionLayout);
       container.replaceChildren();
     }
   };

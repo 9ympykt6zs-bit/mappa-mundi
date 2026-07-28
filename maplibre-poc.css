@@ -6226,12 +6226,18 @@ body.browse-mode .answer-panel-title {
   }
 
   .map-reconstruction-region-list {
-    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .map-reconstruction-region-option {
-    min-height: 76px;
-    padding: 14px;
+    min-height: 88px;
+    padding: 12px 40px 12px 12px;
+  }
+
+  .map-reconstruction-region-option strong {
+    font-size: 0.88rem;
+    line-height: 1.2;
   }
 
   .map-reconstruction-workspace-title {

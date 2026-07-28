@@ -4,9 +4,12 @@ import {
   MAP_RECONSTRUCTION_REGION_IDS,
   getMapReconstructionRegion,
   listMapReconstructionRegions,
+  validateMapReconstructionCoverage,
   validateMapReconstructionRegion
 } from "../src/atlas/map-reconstruction-regions.js";
+import { unitedStatesAtlas } from "../src/atlas/united-states-atlas-data.js";
 import {
+  getMapReconstructionInteractionLayout,
   getMapReconstructionThumbnailTransform,
   getTopmostMapReconstructionPieceAtPoint,
   isPointInMapReconstructionPiece,
@@ -14,6 +17,7 @@ import {
 } from "../src/atlas/map-reconstruction-geometry.js";
 import {
   beginMapReconstructionDrag,
+  clampMapReconstructionPosition,
   completeMapReconstructionCorrection,
   createMapReconstructionSession,
   createSeededMapReconstructionRandom,
@@ -49,12 +53,20 @@ const featureCollection = JSON.parse((await readFile(
   new URL("../assets/maps/data/maplibre-us-states-atlas.geojson", import.meta.url),
   "utf8"
 )).replace(/^\uFEFF/, ""));
-const [indexHtml, runtimeSource, uiSource, stylesheet, audioManifestSource] = await Promise.all([
+const [
+  indexHtml,
+  runtimeSource,
+  uiSource,
+  stylesheet,
+  audioManifestSource,
+  ttsGeneratorSource
+] = await Promise.all([
   readFile(new URL("../index.html", import.meta.url), "utf8"),
   readFile(new URL("../src/maplibre-poc.js", import.meta.url), "utf8"),
   readFile(new URL("../src/atlas/map-reconstruction-ui.js", import.meta.url), "utf8"),
   readFile(new URL("../maplibre-poc.css", import.meta.url), "utf8"),
-  readFile(new URL("../assets/audio/audio-manifest.json", import.meta.url), "utf8")
+  readFile(new URL("../assets/audio/audio-manifest.json", import.meta.url), "utf8"),
+  readFile(new URL("./generate-tts-audio.mjs", import.meta.url), "utf8")
 ]);
 const audioManifest = JSON.parse(audioManifestSource);
 const region = getMapReconstructionRegion(MAP_RECONSTRUCTION_REGION_IDS.REBUILD_NEW_ENGLAND);
@@ -138,6 +150,107 @@ for (const viewport of [
     viewport.offsetY + logicalResizePoint.y * viewport.scale
   ), logicalResizePoint, "pointer conversion should preserve logical coordinates after resize");
 }
+
+const wideInteractionLayout = getMapReconstructionInteractionLayout(
+  geometry.workspace,
+  { width: 1600, height: 700 },
+  { insetCssPixels: 12 }
+);
+assert.ok(wideInteractionLayout.viewBox.x < 0);
+assert.ok(wideInteractionLayout.viewBox.width > geometry.workspace.width);
+assert.equal(wideInteractionLayout.viewBox.height, geometry.workspace.height);
+assert.ok(Math.abs(
+  wideInteractionLayout.workspace.dragPadding / wideInteractionLayout.unitsPerCssPixel - 12
+) < 0.000001, "interaction padding should remain 12 CSS pixels after SVG scaling");
+
+const tallInteractionLayout = getMapReconstructionInteractionLayout(
+  geometry.workspace,
+  { width: 500, height: 900 },
+  { insetCssPixels: 12 }
+);
+assert.ok(tallInteractionLayout.viewBox.y < 0);
+assert.ok(tallInteractionLayout.viewBox.height > geometry.workspace.height);
+assert.equal(tallInteractionLayout.viewBox.width, geometry.workspace.width);
+assert.notDeepEqual(
+  wideInteractionLayout.workspace,
+  tallInteractionLayout.workspace,
+  "workspace bounds should recalculate when the visible aspect ratio changes"
+);
+
+const wideInteractionGeometry = {
+  ...geometry,
+  workspace: wideInteractionLayout.workspace
+};
+const edgePiece = geometry.piecesById.maine;
+const leftEdgePosition = clampMapReconstructionPosition(
+  { x: Number.NEGATIVE_INFINITY, y: 300 },
+  edgePiece,
+  wideInteractionGeometry.workspace
+);
+const rightEdgePosition = clampMapReconstructionPosition(
+  { x: Number.POSITIVE_INFINITY, y: 300 },
+  edgePiece,
+  wideInteractionGeometry.workspace
+);
+const topEdgePosition = clampMapReconstructionPosition(
+  { x: 500, y: Number.NEGATIVE_INFINITY },
+  edgePiece,
+  tallInteractionLayout.workspace
+);
+const bottomEdgePosition = clampMapReconstructionPosition(
+  { x: 500, y: Number.POSITIVE_INFINITY },
+  edgePiece,
+  tallInteractionLayout.workspace
+);
+assert.equal(leftEdgePosition, null, "non-finite positions should still fail safely");
+assert.equal(rightEdgePosition, null, "non-finite positions should still fail safely");
+assert.equal(topEdgePosition, null, "non-finite positions should still fail safely");
+assert.equal(bottomEdgePosition, null, "non-finite positions should still fail safely");
+
+const clampedLeft = clampMapReconstructionPosition(
+  { x: -100000, y: 300 },
+  edgePiece,
+  wideInteractionGeometry.workspace
+);
+const clampedRight = clampMapReconstructionPosition(
+  { x: 100000, y: 300 },
+  edgePiece,
+  wideInteractionGeometry.workspace
+);
+const clampedTop = clampMapReconstructionPosition(
+  { x: 500, y: -100000 },
+  edgePiece,
+  tallInteractionLayout.workspace
+);
+const clampedBottom = clampMapReconstructionPosition(
+  { x: 500, y: 100000 },
+  edgePiece,
+  tallInteractionLayout.workspace
+);
+assert.ok(Math.abs(
+  clampedLeft.x + edgePiece.localBounds.minX
+    - (wideInteractionLayout.workspace.x + wideInteractionLayout.workspace.dragPadding)
+) < 0.000001, "piece geometry should reach the visible left inset");
+assert.ok(Math.abs(
+  clampedRight.x + edgePiece.localBounds.maxX
+    - (
+      wideInteractionLayout.workspace.x
+      + wideInteractionLayout.workspace.width
+      - wideInteractionLayout.workspace.dragPadding
+    )
+) < 0.000001, "piece geometry should reach the visible right inset");
+assert.ok(Math.abs(
+  clampedTop.y + edgePiece.localBounds.minY
+    - (tallInteractionLayout.workspace.y + tallInteractionLayout.workspace.dragPadding)
+) < 0.000001, "piece geometry should reach the visible top inset");
+assert.ok(Math.abs(
+  clampedBottom.y + edgePiece.localBounds.maxY
+    - (
+      tallInteractionLayout.workspace.y
+      + tallInteractionLayout.workspace.height
+      - tallInteractionLayout.workspace.dragPadding
+    )
+) < 0.000001, "piece geometry should reach the visible bottom inset");
 
 function findPiecePoint(piece, shouldBeInside) {
   const columns = 24;
@@ -641,9 +754,52 @@ assert.doesNotMatch(stylesheet, /map-reconstruction-piece-hit-target/);
 const regions = listMapReconstructionRegions();
 assert.deepEqual(regions.map((entry) => entry.id), [
   MAP_RECONSTRUCTION_REGION_IDS.REBUILD_NEW_ENGLAND,
-  MAP_RECONSTRUCTION_REGION_IDS.REBUILD_MID_ATLANTIC
+  MAP_RECONSTRUCTION_REGION_IDS.REBUILD_MID_ATLANTIC,
+  MAP_RECONSTRUCTION_REGION_IDS.REBUILD_SOUTHEAST_ATLANTIC,
+  MAP_RECONSTRUCTION_REGION_IDS.REBUILD_GULF_COAST,
+  MAP_RECONSTRUCTION_REGION_IDS.REBUILD_GREAT_LAKES,
+  MAP_RECONSTRUCTION_REGION_IDS.REBUILD_UPPER_MIDWEST_PLAINS,
+  MAP_RECONSTRUCTION_REGION_IDS.REBUILD_SOUTH_CENTRAL,
+  MAP_RECONSTRUCTION_REGION_IDS.REBUILD_NORTHERN_ROCKIES,
+  MAP_RECONSTRUCTION_REGION_IDS.REBUILD_SOUTHWEST,
+  MAP_RECONSTRUCTION_REGION_IDS.REBUILD_PACIFIC_COAST
 ]);
 assert.notStrictEqual(regions[0].stateIds, getMapReconstructionRegion(regions[0].id).stateIds);
+const canonicalStates = unitedStatesAtlas.entities.filter((entity) => entity.kind === "state");
+const contiguousStateIds = canonicalStates
+  .map((state) => state.source.featureId)
+  .filter((stateId) => !["alaska", "hawaii"].includes(stateId))
+  .sort();
+const reconstructionStateMemberships = regions.flatMap((entry) => entry.stateIds);
+assert.equal(regions.length, 10);
+assert.equal(reconstructionStateMemberships.length, 48);
+assert.equal(new Set(reconstructionStateMemberships).size, 48);
+assert.deepEqual([...new Set(reconstructionStateMemberships)].sort(), contiguousStateIds);
+assert.equal(reconstructionStateMemberships.includes("alaska"), false);
+assert.equal(reconstructionStateMemberships.includes("hawaii"), false);
+assert.deepEqual(validateMapReconstructionCoverage(regions, contiguousStateIds), []);
+const duplicateCoverageRegions = structuredClone(regions);
+duplicateCoverageRegions[1].stateIds.push(duplicateCoverageRegions[0].stateIds[0]);
+assert.ok(validateMapReconstructionCoverage(
+  duplicateCoverageRegions,
+  contiguousStateIds
+).some((message) => message.includes("multiple reconstruction regions")));
+const missingCoverageRegions = structuredClone(regions);
+missingCoverageRegions[0].stateIds.pop();
+assert.ok(validateMapReconstructionCoverage(
+  missingCoverageRegions,
+  contiguousStateIds
+).some((message) => message.includes("missing from Map Reconstruction")));
+regions.forEach((entry) => {
+  assert.deepEqual(validateMapReconstructionRegion(entry), []);
+  assert.ok(entry.title);
+  assert.ok(entry.successMessage);
+});
+canonicalStates
+  .filter((state) => contiguousStateIds.includes(state.source.featureId))
+  .forEach((state) => {
+    assert.match(audioManifest.chips?.[state.name] || "", /^assets\/audio\/chips\/.+\.mp3$/);
+  });
 
 const midAtlanticRegion = getMapReconstructionRegion(
   MAP_RECONSTRUCTION_REGION_IDS.REBUILD_MID_ATLANTIC
@@ -852,11 +1008,236 @@ assert.deepEqual(getMapReconstructionAdjacencyPairs(midAtlanticRegion), [
   ["pennsylvania", "west-virginia"],
   ["virginia", "west-virginia"]
 ]);
+
+const addedRegionCases = [
+  {
+    id: MAP_RECONSTRUCTION_REGION_IDS.REBUILD_SOUTHEAST_ATLANTIC,
+    stateIds: ["north-carolina", "south-carolina", "georgia", "florida"],
+    swap: ["south-carolina", "georgia"],
+    feedback: "South Carolina belongs between North Carolina and Georgia."
+  },
+  {
+    id: MAP_RECONSTRUCTION_REGION_IDS.REBUILD_GULF_COAST,
+    stateIds: ["alabama", "mississippi", "louisiana", "texas"],
+    swap: ["louisiana", "mississippi"],
+    feedback: "Mississippi belongs between Louisiana and Alabama."
+  },
+  {
+    id: MAP_RECONSTRUCTION_REGION_IDS.REBUILD_GREAT_LAKES,
+    stateIds: ["ohio", "michigan", "indiana", "illinois", "wisconsin"],
+    swap: ["michigan", "ohio"],
+    feedback: "Michigan belongs north of Indiana and Ohio."
+  },
+  {
+    id: MAP_RECONSTRUCTION_REGION_IDS.REBUILD_UPPER_MIDWEST_PLAINS,
+    stateIds: ["minnesota", "iowa", "missouri", "north-dakota", "south-dakota", "nebraska", "kansas"],
+    swap: ["north-dakota", "south-dakota"],
+    feedback: "North Dakota belongs north of South Dakota."
+  },
+  {
+    id: MAP_RECONSTRUCTION_REGION_IDS.REBUILD_SOUTH_CENTRAL,
+    stateIds: ["kentucky", "tennessee", "arkansas", "oklahoma"],
+    swap: ["kentucky", "tennessee"],
+    feedback: "Kentucky belongs north of Tennessee."
+  },
+  {
+    id: MAP_RECONSTRUCTION_REGION_IDS.REBUILD_NORTHERN_ROCKIES,
+    stateIds: ["montana", "idaho", "wyoming"],
+    swap: ["idaho", "montana"],
+    feedback: "Idaho belongs west of Montana and Wyoming."
+  },
+  {
+    id: MAP_RECONSTRUCTION_REGION_IDS.REBUILD_SOUTHWEST,
+    stateIds: ["colorado", "utah", "nevada", "arizona", "new-mexico"],
+    swap: ["utah", "arizona"],
+    feedback: "Utah belongs north of Arizona."
+  },
+  {
+    id: MAP_RECONSTRUCTION_REGION_IDS.REBUILD_PACIFIC_COAST,
+    stateIds: ["washington", "oregon", "california"],
+    swap: ["washington", "oregon"],
+    feedback: "Oregon belongs between Washington and California."
+  }
+];
+
+function createPlacedRegionSession(regionEntry, regionGeometry, offset = { x: 0, y: 0 }) {
+  const candidate = createMapReconstructionSession(regionEntry, regionGeometry, {
+    random: createSeededMapReconstructionRandom(117)
+  });
+  regionEntry.stateIds.forEach((stateId) => {
+    candidate.piecesById[stateId].position = {
+      x: candidate.piecesById[stateId].correctPosition.x + offset.x,
+      y: candidate.piecesById[stateId].correctPosition.y + offset.y
+    };
+    candidate.piecesById[stateId].placementStatus = "placed";
+    candidate.piecesById[stateId].hasMoved = true;
+  });
+  return candidate;
+}
+
+for (const testCase of addedRegionCases) {
+  const regionEntry = getMapReconstructionRegion(testCase.id);
+  assert.deepEqual(regionEntry.stateIds, testCase.stateIds);
+  const regionGeometry = prepareMapReconstructionGeometry(featureCollection, regionEntry);
+  assert.equal(regionGeometry.pieces.length, testCase.stateIds.length);
+  testCase.stateIds.forEach((stateId) => {
+    assert.ok(canonicalStates.some((state) => state.source.featureId === stateId));
+    assert.ok(regionGeometry.piecesById[stateId]?.path.startsWith("M"));
+    assert.match(audioManifest.chips?.[regionGeometry.piecesById[stateId].name] || "", /^assets\/audio\/chips\/.+\.mp3$/);
+  });
+
+  const initialized = createMapReconstructionSession(regionEntry, regionGeometry, {
+    random: createSeededMapReconstructionRandom(43)
+  });
+  assert.notDeepEqual(initialized.bankOrder, regionEntry.stateIds);
+  assert.deepEqual(new Set(initialized.bankOrder), new Set(regionEntry.stateIds));
+
+  const translated = createPlacedRegionSession(regionEntry, regionGeometry, { x: 24, y: -18 });
+  assert.equal(evaluateMapReconstruction(
+    translated,
+    regionEntry,
+    regionGeometry
+  ).isComplete, true, `${testCase.id} should accept a uniformly translated arrangement`);
+
+  const imperfect = createPlacedRegionSession(regionEntry, regionGeometry);
+  const imperfectStateId = regionEntry.stateIds.at(-1);
+  imperfect.piecesById[imperfectStateId].position.x += regionGeometry.medianStateDiagonal * 0.025;
+  imperfect.piecesById[imperfectStateId].position.y += regionGeometry.medianStateDiagonal * 0.02;
+  assert.equal(evaluateMapReconstruction(
+    imperfect,
+    regionEntry,
+    regionGeometry
+  ).isComplete, true, `${testCase.id} should accept a slightly imperfect arrangement`);
+
+  const swapped = createPlacedRegionSession(regionEntry, regionGeometry);
+  const [firstSwapId, secondSwapId] = testCase.swap;
+  const firstSwapPosition = swapped.piecesById[firstSwapId].position;
+  swapped.piecesById[firstSwapId].position = swapped.piecesById[secondSwapId].position;
+  swapped.piecesById[secondSwapId].position = firstSwapPosition;
+  const swappedEvaluation = evaluateMapReconstruction(swapped, regionEntry, regionGeometry);
+  assert.equal(swappedEvaluation.isComplete, false, `${testCase.id} should reject an obvious swap`);
+  assert.ok(swappedEvaluation.feedback.includes(testCase.feedback), `${testCase.id} should provide focused feedback`);
+
+  const missing = createPlacedRegionSession(regionEntry, regionGeometry);
+  const missingStateId = regionEntry.stateIds[0];
+  missing.piecesById[missingStateId].position = null;
+  missing.piecesById[missingStateId].placementStatus = "unplaced";
+  const missingEvaluation = evaluateMapReconstruction(missing, regionEntry, regionGeometry);
+  assert.equal(missingEvaluation.isComplete, false);
+  assert.equal(missingEvaluation.placements[missingStateId].status, "unplaced");
+
+  const overlapping = createPlacedRegionSession(regionEntry, regionGeometry);
+  const overlapStateId = regionEntry.stateIds[1];
+  overlapping.piecesById[overlapStateId].position = {
+    ...overlapping.piecesById[regionEntry.stateIds[0]].position
+  };
+  const overlapEvaluationForRegion = evaluateMapReconstruction(
+    overlapping,
+    regionEntry,
+    regionGeometry
+  );
+  assert.equal(overlapEvaluationForRegion.isComplete, false);
+  assert.ok(
+    overlapEvaluationForRegion.placements[overlapStateId].overlapRatio > 0
+      || overlapEvaluationForRegion.placements[regionEntry.stateIds[0]].overlapRatio > 0,
+    `${testCase.id} should detect a gross overlap`
+  );
+}
+
+const southeastRegion = getMapReconstructionRegion(
+  MAP_RECONSTRUCTION_REGION_IDS.REBUILD_SOUTHEAST_ATLANTIC
+);
+const southeastGeometry = prepareMapReconstructionGeometry(featureCollection, southeastRegion);
+const southeastWideLayout = getMapReconstructionInteractionLayout(
+  southeastGeometry.workspace,
+  { width: 1500, height: 650 },
+  { insetCssPixels: 12 }
+);
+const southeastInteractionGeometry = {
+  ...southeastGeometry,
+  workspace: southeastWideLayout.workspace
+};
+const floridaPiece = southeastGeometry.piecesById.florida;
+const southCarolinaPiece = southeastGeometry.piecesById["south-carolina"];
+const oldFloridaRight = clampMapReconstructionPosition(
+  { x: 100000, y: floridaPiece.correctPosition.y },
+  floridaPiece,
+  southeastGeometry.workspace
+);
+const visibleFloridaRight = clampMapReconstructionPosition(
+  { x: 100000, y: floridaPiece.correctPosition.y },
+  floridaPiece,
+  southeastInteractionGeometry.workspace
+);
+const oldSouthCarolinaLeft = clampMapReconstructionPosition(
+  { x: -100000, y: southCarolinaPiece.correctPosition.y },
+  southCarolinaPiece,
+  southeastGeometry.workspace
+);
+const visibleSouthCarolinaLeft = clampMapReconstructionPosition(
+  { x: -100000, y: southCarolinaPiece.correctPosition.y },
+  southCarolinaPiece,
+  southeastInteractionGeometry.workspace
+);
+assert.ok(
+  visibleFloridaRight.x > oldFloridaRight.x,
+  "Southeast Atlantic Florida should reach farther right in the full visible workspace"
+);
+assert.ok(
+  visibleSouthCarolinaLeft.x < oldSouthCarolinaLeft.x,
+  "Southeast Atlantic South Carolina should reach farther left in the full visible workspace"
+);
+const southeastLeftOffset = southeastInteractionGeometry.workspace.x
+  + southeastInteractionGeometry.workspace.dragPadding
+  - southeastGeometry.combinedBounds.minX;
+const southeastLeftArrangement = createPlacedRegionSession(
+  southeastRegion,
+  southeastGeometry,
+  { x: southeastLeftOffset, y: 0 }
+);
+assert.equal(
+  evaluateMapReconstruction(
+    southeastLeftArrangement,
+    southeastRegion,
+    southeastInteractionGeometry
+  ).isComplete,
+  true,
+  "translation-tolerant evaluation should accept a correct map built in the expanded workspace"
+);
+const southeastAutomaticSession = createMapReconstructionSession(
+  southeastRegion,
+  southeastGeometry,
+  { random: createSeededMapReconstructionRandom(91) }
+);
+const southeastAutomaticPosition = findMapReconstructionAutomaticPlacement(
+  southeastAutomaticSession,
+  "florida",
+  southeastInteractionGeometry
+);
+assert.deepEqual(
+  clampMapReconstructionPosition(
+    southeastAutomaticPosition,
+    floridaPiece,
+    southeastInteractionGeometry.workspace
+  ),
+  southeastAutomaticPosition,
+  "automatic placement should use the active visible workspace bounds"
+);
+
+const greatLakesGeometry = prepareMapReconstructionGeometry(
+  featureCollection,
+  getMapReconstructionRegion(MAP_RECONSTRUCTION_REGION_IDS.REBUILD_GREAT_LAKES)
+);
+assert.equal(greatLakesGeometry.piecesById.michigan.geometryType, "MultiPolygon");
+assert.ok(greatLakesGeometry.piecesById.michigan.polygonCount > 1);
+
 assert.match(stylesheet, /map-reconstruction-region-selection/);
 assert.match(stylesheet, /map-reconstruction-region-list/);
 assert.match(runtimeSource, /activeMapReconstructionRegionId/);
 assert.match(runtimeSource, /listMapReconstructionRegions/);
 assert.match(uiSource, /createChipSpeakerControl/);
+assert.match(ttsGeneratorSource, /listMapReconstructionRegions/);
+assert.match(ttsGeneratorSource, /mapReconstructionInstructionPhrases/);
 for (const stateName of [
   "New York",
   "Pennsylvania",

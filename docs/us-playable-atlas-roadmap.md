@@ -36,7 +36,7 @@ The vertical slice should include:
 | 3. Meaningful mastery | Weeks 5-6 | Not started | Track separate mastery dimensions for recognition, naming, locating, and relationships. Add a U.S. knowledge-map overview and regional/national summaries. | A place cannot be mastered from one correct identification. The app can show what the learner knows, what is weak, and what should be practiced next. |
 | 4. Relationship challenge expansion | Week 7 | Not started | Expand Mental Map Challenge with adjacency and relationship questions powered by the retained Border Chain graph utilities. Feed future results into relationship mastery. | Questions teach adjacency without exposing the map before recall; feedback clearly explains missed and extra relationships afterward. |
 | 5. Directional Mental Map categories | Week 8 | Complete (consolidated) | Fold single-direction, relative-position, and directional-ordering questions into Mental Map Challenge while retaining Compass definitions, evaluation utilities, and geometry-backed arrows as internal infrastructure. | Direction questions rotate with other Mental Map categories in the same map-hidden answer flow and reveal reference states and arrows after submission. |
-| 6. Map Reconstruction | Weeks 9-10 | In progress (two regions) | Rebuild New England is complete, and Rebuild the Mid-Atlantic now reuses the same tolerant placement, correction, and accessible interaction system. Develop the Southeast Atlantic next; defer the Gulf Coast until the Atlantic regions are further developed. | A child and an adult can understand the interaction without outside explanation. New England and the Mid-Atlantic work on mobile without fragile dragging or layout problems. |
+| 6. Map Reconstruction | Weeks 9-10 | Complete (Lower 48) | Ten regional reconstruction activities now cover every contiguous state exactly once using the shared tolerant placement, correction, and accessible interaction system. | A child and an adult can rebuild any Lower 48 region without outside explanation, including mobile interaction, correction replay, and geometry-aware piece selection. |
 | 7. Expedition framework | Week 11 | Not started | Build a reusable Expedition sequence model that supports introduction, atlas discovery, teaching moments, multiple mechanics, checkpoints, and a final mission. | A new Expedition can be created mostly from structured content instead of custom JavaScript. |
 | 8. Across the United States Expedition | Week 12 | Not started | Create one polished Expedition crossing the country through regions, states, capitals, rivers, lakes, mountain ranges, borders, and directional reasoning. | A new user can play for 20-30 minutes and describe the experience as exploration or a game, not only a sequence of quizzes. |
 | 9. Onboarding and navigation | Week 13 | Not started | Make the first-run path and main navigation coherent around Atlas, Daily Trail, and Expeditions. Update wording for curious learners of all ages. | A new user understands the next action within about 30 seconds and can resume in the right place later. |
@@ -73,6 +73,12 @@ Do not include these in the first U.S. vertical slice:
 - Native mobile apps.
 - Large batches of new conventional quiz activities.
 - Elaborate achievements, streak systems, or cosmetic reward economies.
+
+## Beyond The Lower 48
+
+Alaska and Hawaii are intentionally excluded from regional Map Reconstruction. Their geographic separation, Alaska's true scale, and the arbitrary inset layouts used by standard U.S. maps would teach cartographic convention rather than meaningful relative placement.
+
+A future activity tentatively titled **Beyond the Lower 48** may teach silhouette recognition, correct orientation, Alaska's relationship to Canada and the continental United States, Hawaii's central-Pacific location, true state-scale comparisons, and why conventional maps use insets. Alaska and Hawaii should not be reduced to an artificial two-piece reconstruction region.
 
 ## Free Edition Direction
 

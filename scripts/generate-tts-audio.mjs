@@ -26,6 +26,7 @@ import {
   TTS_RESPONSE_FORMAT as RESPONSE_FORMAT,
   TTS_VOICE as VOICE
 } from "./lib/openai-tts.mjs";
+import { listMapReconstructionRegions } from "../src/atlas/map-reconstruction-regions.js";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
@@ -125,6 +126,13 @@ const continentsOceansOceanLearnInstructionPhrases = [
   "Now tap the Southern Ocean."
 ];
 
+const mapReconstructionInstructionPhrases = listMapReconstructionRegions().flatMap((region) => [
+  region.title,
+  region.prompt,
+  region.successMessage,
+  region.correctPlacementMessage
+]);
+
 const proofSheetMountainRangeLabels = [
   "Adirondack Mountains",
   "Allegheny Mountains",
@@ -205,6 +213,7 @@ const instructionPhrases = [
   ...mountainRangeInstructionPhrases,
   ...riverInstructionPhrases,
   ...continentsOceansOceanLearnInstructionPhrases,
+  ...mapReconstructionInstructionPhrases,
   "Learn these continents and oceans",
   "Tap the highlighted place. Then repeat its name.",
   ...createMemoryTrailInstructionPhrases(memoryTrailInstructionNouns)

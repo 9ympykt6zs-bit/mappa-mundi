@@ -171,6 +171,15 @@ function violatesRelativePosition(rule, alignedPositions, referenceScale) {
   }[rule.direction] ?? false;
 }
 
+function violatesAxisOrder(rule, alignedPositions, referenceScale) {
+  const positions = (rule.stateIds || []).map((stateId) => alignedPositions[stateId]);
+  if (positions.length < 2 || positions.some((position) => !position)) return false;
+  const margin = referenceScale * 0.04;
+  return positions.some((position, index) => (
+    index > 0 && position[rule.axis] <= positions[index - 1][rule.axis] + margin
+  ));
+}
+
 function getFeedbackRuleViolations(session, region, alignedPositions, referenceScale) {
   return (region.feedbackRules || []).filter((rule) => {
     if (rule.type === "swapped-pair") {
@@ -178,6 +187,9 @@ function getFeedbackRuleViolations(session, region, alignedPositions, referenceS
       return leftId && rightId
         ? getSwappedPair(session, alignedPositions, leftId, rightId, referenceScale)
         : false;
+    }
+    if (rule.type === "axis-order") {
+      return violatesAxisOrder(rule, alignedPositions, referenceScale);
     }
     return rule.type === "relative-position"
       ? violatesRelativePosition(rule, alignedPositions, referenceScale)
@@ -259,8 +271,12 @@ export function evaluateMapReconstruction(session, region, geometry) {
       ? adjacencyErrors.reduce((sum, value) => sum + value, 0) / adjacencyErrors.length
       : 0;
     const bounds = positionBounds(pieceGeometry, pieceState.position);
-    const outsideWorkspace = bounds.minX < 0 || bounds.minY < 0
-      || bounds.maxX > geometry.workspace.width || bounds.maxY > geometry.workspace.height;
+    const workspaceMinX = Number.isFinite(geometry.workspace.x) ? geometry.workspace.x : 0;
+    const workspaceMinY = Number.isFinite(geometry.workspace.y) ? geometry.workspace.y : 0;
+    const workspaceMaxX = workspaceMinX + geometry.workspace.width;
+    const workspaceMaxY = workspaceMinY + geometry.workspace.height;
+    const outsideWorkspace = bounds.minX < workspaceMinX || bounds.minY < workspaceMinY
+      || bounds.maxX > workspaceMaxX || bounds.maxY > workspaceMaxY;
     const hasExcessiveOverlap = overlapById[stateId] > 0;
     let status = MAP_RECONSTRUCTION_PLACEMENT_STATUSES.CLOSE;
     if (outsideWorkspace
@@ -293,7 +309,7 @@ export function evaluateMapReconstruction(session, region, geometry) {
     referenceScale
   );
   for (const rule of feedbackRuleViolations) {
-    const affectedIds = rule.type === "swapped-pair" ? rule.stateIds || [] : [rule.subjectId];
+    const affectedIds = rule.stateIds || [rule.subjectId];
     affectedIds.forEach((stateId) => {
       if (placements[stateId]?.status !== MAP_RECONSTRUCTION_PLACEMENT_STATUSES.UNPLACED) {
         placements[stateId].status = MAP_RECONSTRUCTION_PLACEMENT_STATUSES.MISPLACED;
@@ -306,7 +322,9 @@ export function evaluateMapReconstruction(session, region, geometry) {
     return result;
   }, {});
   const feedback = [];
-  feedbackRuleViolations.forEach((rule) => feedback.push(rule.message));
+  feedbackRuleViolations.forEach((rule) => {
+    if (!feedback.includes(rule.message)) feedback.push(rule.message);
+  });
   for (const stateId of region.stateIds) {
     const placement = placements[stateId];
     if (placement.status === MAP_RECONSTRUCTION_PLACEMENT_STATUSES.UNPLACED) {

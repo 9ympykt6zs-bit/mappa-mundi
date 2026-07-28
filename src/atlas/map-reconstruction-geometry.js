@@ -7,6 +7,62 @@ export function normalizeMapReconstructionStateId(value) {
     .replace(/^state:/, "");
 }
 
+export function getMapReconstructionInteractionLayout(workspace, viewport, options = {}) {
+  const baseWidth = Number(workspace?.width);
+  const baseHeight = Number(workspace?.height);
+  const viewportWidth = Number(viewport?.width);
+  const viewportHeight = Number(viewport?.height);
+  if (
+    !Number.isFinite(baseWidth)
+    || !Number.isFinite(baseHeight)
+    || !Number.isFinite(viewportWidth)
+    || !Number.isFinite(viewportHeight)
+    || baseWidth <= 0
+    || baseHeight <= 0
+    || viewportWidth <= 0
+    || viewportHeight <= 0
+  ) {
+    return null;
+  }
+
+  const baseX = Number.isFinite(workspace?.x) ? workspace.x : 0;
+  const baseY = Number.isFinite(workspace?.y) ? workspace.y : 0;
+  const viewportAspect = viewportWidth / viewportHeight;
+  const baseAspect = baseWidth / baseHeight;
+  let width = baseWidth;
+  let height = baseHeight;
+  if (viewportAspect > baseAspect) {
+    width = baseHeight * viewportAspect;
+  } else {
+    height = baseWidth / viewportAspect;
+  }
+  const x = baseX + (baseWidth - width) / 2;
+  const y = baseY + (baseHeight - height) / 2;
+  const unitsPerCssPixel = width / viewportWidth;
+  const insetCssPixels = Number.isFinite(options.insetCssPixels)
+    ? Math.max(0, options.insetCssPixels)
+    : 12;
+  const dragPadding = insetCssPixels * unitsPerCssPixel;
+  return {
+    viewBox: {
+      x,
+      y,
+      width,
+      height,
+      value: `${round(x)} ${round(y)} ${round(width)} ${round(height)}`
+    },
+    workspace: {
+      ...workspace,
+      x,
+      y,
+      width,
+      height,
+      dragPadding
+    },
+    unitsPerCssPixel
+  };
+}
+
 function getFeatureStateId(feature) {
   return normalizeMapReconstructionStateId(
     feature?.properties?.id || feature?.properties?.state || feature?.id

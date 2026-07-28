@@ -40,13 +40,18 @@ function getBoundsOverlapArea(first, second) {
 
 export function clampMapReconstructionPosition(position, pieceGeometry, workspace) {
   if (!validPosition(position) || !pieceGeometry || !workspace) return null;
-  const minX = -pieceGeometry.localBounds.minX;
-  const maxX = workspace.width - pieceGeometry.localBounds.maxX;
-  const minY = -pieceGeometry.localBounds.minY;
-  const maxY = workspace.height - pieceGeometry.localBounds.maxY;
+  const workspaceX = Number.isFinite(workspace.x) ? workspace.x : 0;
+  const workspaceY = Number.isFinite(workspace.y) ? workspace.y : 0;
+  const dragPadding = Number.isFinite(workspace.dragPadding)
+    ? Math.max(0, workspace.dragPadding)
+    : 0;
+  const minX = workspaceX + dragPadding - pieceGeometry.localBounds.minX;
+  const maxX = workspaceX + workspace.width - dragPadding - pieceGeometry.localBounds.maxX;
+  const minY = workspaceY + dragPadding - pieceGeometry.localBounds.minY;
+  const maxY = workspaceY + workspace.height - dragPadding - pieceGeometry.localBounds.maxY;
   return {
-    x: Math.min(maxX, Math.max(minX, position.x)),
-    y: Math.min(maxY, Math.max(minY, position.y))
+    x: minX > maxX ? (minX + maxX) / 2 : Math.min(maxX, Math.max(minX, position.x)),
+    y: minY > maxY ? (minY + maxY) / 2 : Math.min(maxY, Math.max(minY, position.y))
   };
 }
 
@@ -110,9 +115,13 @@ export function findMapReconstructionAutomaticPlacement(session, stateId, geomet
   const workspace = geometry?.workspace;
   if (!pieceGeometry || !workspace || !session?.piecesById?.[stateId]) return null;
 
+  const workspaceX = Number.isFinite(workspace.x) ? workspace.x : 0;
+  const workspaceY = Number.isFinite(workspace.y) ? workspace.y : 0;
   const centerPosition = {
-    x: workspace.width / 2 - (pieceGeometry.localBounds.minX + pieceGeometry.localBounds.maxX) / 2,
-    y: workspace.height / 2 - (pieceGeometry.localBounds.minY + pieceGeometry.localBounds.maxY) / 2
+    x: workspaceX + workspace.width / 2
+      - (pieceGeometry.localBounds.minX + pieceGeometry.localBounds.maxX) / 2,
+    y: workspaceY + workspace.height / 2
+      - (pieceGeometry.localBounds.minY + pieceGeometry.localBounds.maxY) / 2
   };
   const stepX = workspace.width * 0.18;
   const stepY = workspace.height * 0.2;
