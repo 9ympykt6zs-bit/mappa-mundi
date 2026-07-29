@@ -61,6 +61,14 @@ import {
   getMapReconstructionDefaultGrabAnchor,
   getMapReconstructionDragPreviewLayout
 } from "../src/atlas/map-reconstruction-drag-preview.js";
+import {
+  animateMapReconstructionMobileValue,
+  getMapReconstructionMagnifierPosition,
+  getMapReconstructionMobilePieceSize,
+  getMapReconstructionMobileSnapTarget,
+  getMapReconstructionMobileSnapThreshold,
+  isMapReconstructionMobileAssistanceEnabled
+} from "../src/atlas/map-reconstruction-mobile-assistance.js";
 
 const featureCollection = JSON.parse((await readFile(
   new URL("../assets/maps/data/maplibre-us-states-atlas.geojson", import.meta.url),
@@ -102,6 +110,11 @@ assert.match(indexHtml, /id="map-reconstruction-panel"/);
 assert.match(runtimeSource, /function openMapReconstruction\(\)/);
 assert.match(runtimeSource, /showMapReconstructionRegionSelection/);
 assert.match(uiSource, /createMapReconstructionRegionSelection/);
+assert.match(uiSource, /isMapReconstructionMobileAssistanceEnabled/);
+assert.match(uiSource, /createMapReconstructionFingerMagnifier/);
+assert.match(uiSource, /pointerType === "mouse"/);
+assert.match(uiSource, /restoreMobileDragAssistance/);
+assert.match(uiSource, /cancelMobileAssistance/);
 assert.match(uiSource, /viewBox: visualPlan\.viewBox/);
 assert.doesNotMatch(uiSource, /data-map-reconstruction-correct-layout/);
 assert.doesNotMatch(uiSource, /map-reconstruction-correct-layer/);
@@ -116,6 +129,7 @@ assert.match(stylesheet, /body\.overview-mode\.map-reconstruction-mode\s+\.map-s
 assert.match(stylesheet, /\.map-reconstruction-shell\s*\{[^}]*max-width:\s*none;[^}]*width:\s*100%;/s);
 assert.match(stylesheet, /\.map-reconstruction-content\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*clamp\(/s);
 assert.match(stylesheet, /\.map-reconstruction-workspace\s*\{[^}]*aspect-ratio:\s*auto;[^}]*height:\s*100%;[^}]*width:\s*100%;/s);
+assert.match(stylesheet, /\.map-reconstruction-finger-magnifier\s*\{[^}]*pointer-events:\s*none;/s);
 assert.match(stylesheet, /\.map-reconstruction-shell\.is-result\.is-success\s+\.map-reconstruction-content\s*\{[^}]*clamp\(210px,\s*14vw,\s*240px\)/s);
 assert.match(stylesheet, /grid-template-rows:\s*minmax\(0,\s*1fr\)\s*minmax\(120px,\s*30svh\)/);
 
@@ -123,6 +137,121 @@ const geometry = prepareMapReconstructionGeometry(featureCollection, region);
 assert.deepEqual(geometry.stateIds, expectedStateIds);
 assert.equal(geometry.pieces.length, 6);
 assert.ok(geometry.medianStateDiagonal > 0);
+
+const coarsePointerWindow = {
+  matchMedia: (query) => ({ matches: query === "(pointer: coarse)" })
+};
+const finePointerWindow = {
+  matchMedia: () => ({ matches: false }),
+  innerWidth: 390
+};
+assert.equal(isMapReconstructionMobileAssistanceEnabled(coarsePointerWindow), true);
+assert.equal(isMapReconstructionMobileAssistanceEnabled(finePointerWindow), false);
+[
+  { viewport: { width: 360, height: 640 }, point: { x: 18, y: 170 } },
+  { viewport: { width: 640, height: 360 }, point: { x: 625, y: 75 } },
+  { viewport: { width: 430, height: 932 }, point: { x: 215, y: 900 } },
+  { viewport: { width: 1024, height: 600 }, point: { x: 1000, y: 300 } }
+].forEach(({ viewport, point }) => {
+  const lens = getMapReconstructionMagnifierPosition(point, viewport);
+  assert.ok(lens.left >= 8);
+  assert.ok(lens.top >= 8);
+  assert.ok(lens.left + 112 <= viewport.width - 8);
+  assert.ok(lens.top + 112 <= viewport.height - 8);
+});
+const mobilePieceSizes = new Set();
+for (const piece of geometry.pieces) {
+  const size = getMapReconstructionMobilePieceSize(piece, geometry);
+  mobilePieceSizes.add(size);
+  const threshold = getMapReconstructionMobileSnapThreshold(piece, geometry);
+  assert.ok(["large", "medium", "small"].includes(size));
+  assert.equal(threshold.cssPixels, { large: 5, medium: 7, small: 9 }[size]);
+  const inside = getMapReconstructionMobileSnapTarget({
+    position: {
+      x: piece.correctPosition.x + threshold.cssPixels - 0.1,
+      y: piece.correctPosition.y
+    },
+    piece,
+    geometry,
+    selectedPieceCount: 1,
+    cssPixelsPerWorldUnit: 1,
+    targetWindow: coarsePointerWindow
+  });
+  const outside = getMapReconstructionMobileSnapTarget({
+    position: {
+      x: piece.correctPosition.x + threshold.cssPixels + 0.1,
+      y: piece.correctPosition.y
+    },
+    piece,
+    geometry,
+    selectedPieceCount: 1,
+    cssPixelsPerWorldUnit: 1,
+    targetWindow: coarsePointerWindow
+  });
+  assert.deepEqual(inside?.position, piece.correctPosition);
+  assert.equal(outside, null);
+}
+assert.deepEqual([...mobilePieceSizes].sort(), ["large", "medium", "small"]);
+assert.equal(getMapReconstructionMobileSnapTarget({
+  position: geometry.pieces[0].correctPosition,
+  piece: geometry.pieces[0],
+  geometry,
+  selectedPieceCount: 2,
+  cssPixelsPerWorldUnit: 1,
+  targetWindow: coarsePointerWindow
+}), null);
+let queuedAnimationFrame = null;
+let animationFrameCancelled = false;
+let animationUpdateCount = 0;
+const animationWindow = {
+  matchMedia: () => ({ matches: false }),
+  performance: { now: () => 0 },
+  requestAnimationFrame: (callback) => {
+    queuedAnimationFrame = callback;
+    return 17;
+  },
+  cancelAnimationFrame: (frameId) => {
+    animationFrameCancelled = frameId === 17;
+  }
+};
+const cancelMobileAnimation = animateMapReconstructionMobileValue({
+  from: { x: 0 },
+  to: { x: 10 },
+  durationMs: 100,
+  targetWindow: animationWindow,
+  onUpdate: () => {
+    animationUpdateCount += 1;
+  }
+});
+cancelMobileAnimation();
+queuedAnimationFrame?.(100);
+assert.equal(animationFrameCancelled, true);
+assert.equal(animationUpdateCount, 0);
+let reducedMotionUpdate = null;
+let reducedMotionFinished = false;
+const reducedMotionWindow = {
+  matchMedia: (query) => ({ matches: query === "(prefers-reduced-motion: reduce)" }),
+  performance: { now: () => 0 },
+  requestAnimationFrame: (callback) => {
+    callback(0);
+    return 1;
+  },
+  cancelAnimationFrame: () => {}
+};
+animateMapReconstructionMobileValue({
+  from: { x: 0 },
+  to: { x: 10 },
+  durationMs: 180,
+  targetWindow: reducedMotionWindow,
+  onUpdate: (value) => {
+    reducedMotionUpdate = value;
+  },
+  onFinish: () => {
+    reducedMotionFinished = true;
+  }
+});
+assert.deepEqual(reducedMotionUpdate, { x: 10 });
+assert.equal(reducedMotionFinished, true);
 for (const stateId of expectedStateIds) {
   const piece = geometry.piecesById[stateId];
   assert.ok(piece.path.startsWith("M"), `${stateId} should have an SVG path`);

@@ -34,6 +34,13 @@ import {
   getMapReconstructionStatesIntersectingBounds,
   getMapReconstructionWorldTouchTolerance
 } from "./map-reconstruction-connectivity.js";
+import {
+  MAP_RECONSTRUCTION_MOBILE_ASSISTANCE,
+  animateMapReconstructionMobileValue,
+  createMapReconstructionFingerMagnifier,
+  getMapReconstructionMobileSnapTarget,
+  isMapReconstructionMobileAssistanceEnabled
+} from "./map-reconstruction-mobile-assistance.js";
 import { getActivityAudioEntryByText } from "./activity-audio-registry.js";
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
@@ -560,9 +567,16 @@ export function createMapReconstructionActivity(container, options) {
   let interactionGeometry = geometry;
   let workspaceResizeObserver = null;
   let activeBankPointerCancel = null;
+  let activePiecePointerCancel = null;
   let selectionMode = false;
   let lastPieceClick = null;
   let lastConnectedSelectionAt = -Infinity;
+  let mobileCameraHomeView = null;
+  let mobileCameraAnimationCancel = null;
+  let mobileMagnifier = null;
+  let mobileDragPointerType = null;
+  let mobileSnapAnimationCancel = null;
+  let mobileSnapPending = false;
   const successVisualId = ++mapReconstructionVisualSequence;
 
   const clearCorrectionTimer = () => {
@@ -584,6 +598,155 @@ export function createMapReconstructionActivity(container, options) {
   };
 
   const getSelectedStateIds = () => getMapReconstructionSelectedStateIds(session);
+
+  const getWorkspaceView = () => {
+    const view = workspaceSvg?.viewBox?.baseVal;
+    return view?.width && view?.height
+      ? { x: view.x, y: view.y, width: view.width, height: view.height }
+      : null;
+  };
+
+  const setWorkspaceView = (view) => {
+    if (!workspaceSvg || !view) return;
+    workspaceSvg.setAttribute("viewBox", `${view.x} ${view.y} ${view.width} ${view.height}`);
+  };
+
+  const animateWorkspaceView = (from, to, onFinish) => {
+    mobileCameraAnimationCancel?.();
+    mobileCameraAnimationCancel = animateMapReconstructionMobileValue({
+      from,
+      to,
+      durationMs: MAP_RECONSTRUCTION_MOBILE_ASSISTANCE.cameraDurationMs,
+      onUpdate: setWorkspaceView,
+      onFinish: () => {
+        mobileCameraAnimationCancel = null;
+        onFinish?.();
+      }
+    });
+  };
+
+  const beginMobileDragAssistance = (
+    clientPoint,
+    worldPoint,
+    piece,
+    position,
+    pointerType
+  ) => {
+    if (pointerType === "mouse"
+      || !isMapReconstructionMobileAssistanceEnabled()
+      || !workspaceSvg) return;
+    mobileDragPointerType = pointerType || "touch";
+    const currentView = getWorkspaceView();
+    if (!currentView) return;
+    if (!mobileCameraHomeView) mobileCameraHomeView = { ...currentView };
+    mobileMagnifier?.destroy();
+    mobileMagnifier = createMapReconstructionFingerMagnifier(workspaceSvg);
+    const scale = MAP_RECONSTRUCTION_MOBILE_ASSISTANCE.cameraScale;
+    const targetWidth = Math.max(currentView.width / scale, geometry.workspace.width / 3.2);
+    const targetHeight = Math.max(currentView.height / scale, geometry.workspace.height / 3.2);
+    const centerX = Number.isFinite(position?.x) ? position.x : worldPoint.x;
+    const centerY = Number.isFinite(position?.y) ? position.y : worldPoint.y;
+    const workspaceX = Number.isFinite(geometry.workspace.x) ? geometry.workspace.x : 0;
+    const workspaceY = Number.isFinite(geometry.workspace.y) ? geometry.workspace.y : 0;
+    const target = {
+      x: Math.min(
+        workspaceX + geometry.workspace.width - targetWidth,
+        Math.max(workspaceX, centerX - targetWidth / 2)
+      ),
+      y: Math.min(
+        workspaceY + geometry.workspace.height - targetHeight,
+        Math.max(workspaceY, centerY - targetHeight / 2)
+      ),
+      width: targetWidth,
+      height: targetHeight
+    };
+    animateWorkspaceView(currentView, target);
+    mobileMagnifier.update(clientPoint, worldPoint, { piece, position });
+  };
+
+  const updateMobileDragAssistance = (clientPoint, worldPoint, piece, position) => {
+    mobileMagnifier?.update(clientPoint, worldPoint, { piece, position });
+  };
+
+  const restoreMobileDragAssistance = () => {
+    mobileMagnifier?.destroy();
+    mobileMagnifier = null;
+    mobileDragPointerType = null;
+    const currentView = getWorkspaceView();
+    const homeView = mobileCameraHomeView;
+    if (!currentView || !homeView) return;
+    animateWorkspaceView(currentView, homeView, () => {
+      mobileCameraHomeView = null;
+    });
+  };
+
+  const cancelMobileAssistance = () => {
+    mobileCameraAnimationCancel?.();
+    mobileCameraAnimationCancel = null;
+    mobileMagnifier?.destroy();
+    mobileMagnifier = null;
+    mobileDragPointerType = null;
+    if (mobileCameraHomeView) setWorkspaceView(mobileCameraHomeView);
+    mobileCameraHomeView = null;
+    mobileSnapAnimationCancel?.();
+    mobileSnapAnimationCancel = null;
+    mobileSnapPending = false;
+  };
+
+  const getMobileSnap = (stateId, position) => {
+    if (!mobileDragPointerType) return null;
+    const view = getWorkspaceView();
+    const rect = workspaceSvg?.getBoundingClientRect?.();
+    if (!view || !rect?.width || !rect?.height) return null;
+    return getMapReconstructionMobileSnapTarget({
+      position,
+      piece: geometry.piecesById[stateId],
+      geometry,
+      selectedPieceCount: getSelectedStateIds().length,
+      cssPixelsPerWorldUnit: Math.min(rect.width / view.width, rect.height / view.height)
+    });
+  };
+
+  const startMobileSnap = (stateId, fromPosition, snap, shouldFocus = true) => {
+    if (!snap || mobileSnapPending) return false;
+    mobileSnapPending = true;
+    session = endMapReconstructionDrag(session);
+    render();
+    requestAnimationFrame(() => {
+      if (destroyed || !mobileSnapPending) return;
+      const group = container.querySelector(
+        `[data-map-reconstruction-state-id="${stateId}"]`
+      );
+      group?.classList.add("is-mobile-snapping");
+      mobileSnapAnimationCancel = animateMapReconstructionMobileValue({
+        from: fromPosition,
+        to: snap.position,
+        durationMs: MAP_RECONSTRUCTION_MOBILE_ASSISTANCE.snapDurationMs,
+        onUpdate: (position) => {
+          group?.setAttribute("transform", `translate(${position.x} ${position.y})`);
+        },
+        onFinish: () => {
+          mobileSnapAnimationCancel = null;
+          if (destroyed || !mobileSnapPending) return;
+          session = placeMapReconstructionPiece(
+            session,
+            stateId,
+            snap.position,
+            getInteractionGeometry()
+          );
+          mobileSnapPending = false;
+          try {
+            window.navigator?.vibrate?.(18);
+          } catch {
+            // Haptics are optional.
+          }
+          render();
+          if (shouldFocus) focusPiece(stateId);
+        }
+      });
+    });
+    return true;
+  };
 
   const selectConnectedGroup = (stateId, options = {}) => {
     const component = getMapReconstructionConnectedComponent(
@@ -654,9 +817,12 @@ export function createMapReconstructionActivity(container, options) {
 
   const placePiece = (stateId, position, shouldFocus = true) => {
     session = placeMapReconstructionPiece(session, stateId, position, getInteractionGeometry());
-    if (!session.piecesById[stateId]?.position) return;
+    const placedPosition = session.piecesById[stateId]?.position;
+    if (!placedPosition) return;
     const name = geometry.piecesById[stateId]?.name || stateId;
     announce(`${name} placed in the workspace and selected.`);
+    const snap = getMobileSnap(stateId, placedPosition);
+    if (snap && startMobileSnap(stateId, placedPosition, snap, shouldFocus)) return;
     render();
     if (shouldFocus) focusPiece(stateId);
   };
@@ -665,6 +831,7 @@ export function createMapReconstructionActivity(container, options) {
     const piece = geometry.piecesById[stateId];
     let ignoreNextClick = false;
     button.addEventListener("pointerdown", (event) => {
+      if (mobileSnapPending) return;
       if (event.button != null && event.button !== 0) return;
       if (event.target.closest?.(".chip-speaker-button")) return;
       if (event.pointerType === "touch"
@@ -692,7 +859,10 @@ export function createMapReconstructionActivity(container, options) {
         if (finished) return;
         finished = true;
         cleanup();
-        if (cancelled || destroyed) return;
+        if (cancelled || destroyed) {
+          restoreMobileDragAssistance();
+          return;
+        }
         ignoreNextClick = true;
         if (moved) {
           if (pointIsInsideElement(workspaceSvg, upEvent.clientX, upEvent.clientY)) {
@@ -705,8 +875,10 @@ export function createMapReconstructionActivity(container, options) {
               placePiece(stateId, getMapReconstructionShelfDropPosition(point, pointerOffset));
             }
           }
+          restoreMobileDragAssistance();
           return;
         }
+        restoreMobileDragAssistance();
         placePiece(stateId, findMapReconstructionAutomaticPlacement(
           session,
           stateId,
@@ -725,9 +897,37 @@ export function createMapReconstructionActivity(container, options) {
           });
           button.classList.add("is-dragging-source");
           button.setPointerCapture?.(event.pointerId);
+          const worldPoint = mapClientPointToReconstructionWorkspace(
+            workspaceSvg,
+            moveEvent.clientX,
+            moveEvent.clientY
+          ) || {
+            x: (Number(geometry.workspace.x) || 0) + geometry.workspace.width / 2,
+            y: (Number(geometry.workspace.y) || 0) + geometry.workspace.height / 2
+          };
+          beginMobileDragAssistance(
+            { x: moveEvent.clientX, y: moveEvent.clientY },
+            worldPoint,
+            piece,
+            getMapReconstructionShelfDropPosition(worldPoint, pointerOffset),
+            moveEvent.pointerType
+          );
         }
         moveEvent.preventDefault();
         proxy?.position(moveEvent.clientX, moveEvent.clientY);
+        const worldPoint = mapClientPointToReconstructionWorkspace(
+          workspaceSvg,
+          moveEvent.clientX,
+          moveEvent.clientY
+        );
+        if (worldPoint) {
+          updateMobileDragAssistance(
+            { x: moveEvent.clientX, y: moveEvent.clientY },
+            worldPoint,
+            piece,
+            getMapReconstructionShelfDropPosition(worldPoint, pointerOffset)
+          );
+        }
       };
       const up = (upEvent) => {
         if (upEvent.pointerId === event.pointerId) finish(upEvent, false);
@@ -828,6 +1028,7 @@ export function createMapReconstructionActivity(container, options) {
       focusPiece(stateId);
     });
     group.addEventListener("pointerdown", (event) => {
+      if (mobileSnapPending) return;
       if (event.button != null && event.button !== 0) return;
       const startPoint = mapClientPointToReconstructionWorkspace(workspaceSvg, event.clientX, event.clientY);
       const pieceGeometry = geometry.piecesById[stateId];
@@ -837,6 +1038,7 @@ export function createMapReconstructionActivity(container, options) {
       })) return;
       event.preventDefault();
       event.stopPropagation();
+      activePiecePointerCancel?.();
       const originalSession = session;
       const canDrag = !(event.ctrlKey || event.metaKey || event.shiftKey);
       if (canDrag) {
@@ -861,16 +1063,22 @@ export function createMapReconstructionActivity(container, options) {
         group.removeEventListener("pointerup", up);
         group.removeEventListener("pointercancel", cancel);
         group.removeEventListener("lostpointercapture", lostCapture);
+        if (activePiecePointerCancel === cancelActive) activePiecePointerCancel = null;
         if (cancelled) {
           session = originalSession;
         } else if (moved) {
           session = endMapReconstructionDrag(session);
           const count = getSelectedStateIds().length;
           announce(count > 1 ? `${count} selected states moved.` : `${geometry.piecesById[stateId].name} moved.`);
+          const position = session.piecesById[stateId]?.position;
+          const snap = getMobileSnap(stateId, position);
+          restoreMobileDragAssistance();
+          if (snap && startMobileSnap(stateId, position, snap)) return;
         } else {
           if (canDrag) session = endMapReconstructionDrag(session);
           applyPieceClickSelection(stateId, finishEvent);
         }
+        restoreMobileDragAssistance();
         render();
         focusPiece(stateId);
       };
@@ -879,9 +1087,34 @@ export function createMapReconstructionActivity(container, options) {
         moveEvent.preventDefault();
         const current = mapClientPointToReconstructionWorkspace(workspaceSvg, moveEvent.clientX, moveEvent.clientY);
         if (!current) return;
-        const delta = { x: current.x - startPoint.x, y: current.y - startPoint.y };
-        if (!moved && Math.hypot(delta.x, delta.y) <= 4) return;
-        moved = true;
+        const clientDistance = Math.hypot(
+          moveEvent.clientX - event.clientX,
+          moveEvent.clientY - event.clientY
+        );
+        if (!moved && clientDistance <= 4) return;
+        if (!moved) {
+          moved = true;
+          beginMobileDragAssistance(
+            { x: moveEvent.clientX, y: moveEvent.clientY },
+            current,
+            pieceGeometry,
+            session.piecesById[stateId]?.position,
+            moveEvent.pointerType
+          );
+        }
+        const view = getWorkspaceView();
+        const rect = workspaceSvg.getBoundingClientRect();
+        const useScreenDelta = isMapReconstructionMobileAssistanceEnabled()
+          && Boolean(mobileMagnifier)
+          && view
+          && rect.width
+          && rect.height;
+        const delta = useScreenDelta
+          ? {
+              x: (moveEvent.clientX - event.clientX) / rect.width * view.width,
+              y: (moveEvent.clientY - event.clientY) / rect.height * view.height
+            }
+          : { x: current.x - startPoint.x, y: current.y - startPoint.y };
         session = moveMapReconstructionSelectedPieces(
           dragStartSession,
           stateId,
@@ -895,6 +1128,12 @@ export function createMapReconstructionActivity(container, options) {
           )?.setAttribute("transform", `translate(${position.x} ${position.y})`);
         });
         group.classList.add("is-dragging");
+        updateMobileDragAssistance(
+          { x: moveEvent.clientX, y: moveEvent.clientY },
+          current,
+          pieceGeometry,
+          session.piecesById[stateId]?.position
+        );
       };
       const up = (upEvent) => {
         if (upEvent.pointerId === event.pointerId) finish(upEvent, false);
@@ -907,6 +1146,8 @@ export function createMapReconstructionActivity(container, options) {
           finish(captureEvent, true);
         }
       };
+      const cancelActive = () => finish(event, true);
+      activePiecePointerCancel = cancelActive;
       group.addEventListener("pointermove", move);
       group.addEventListener("pointerup", up);
       group.addEventListener("pointercancel", cancel);
@@ -1198,6 +1439,9 @@ export function createMapReconstructionActivity(container, options) {
   };
 
   const resetAttempt = () => {
+    activeBankPointerCancel?.();
+    activePiecePointerCancel?.();
+    cancelMobileAssistance();
     clearCorrectionTimer();
     successVisualPending = false;
     session = resetMapReconstructionSession(session);
@@ -1364,6 +1608,9 @@ export function createMapReconstructionActivity(container, options) {
   return {
     getState: () => JSON.parse(JSON.stringify(session)),
     reset: () => {
+      activeBankPointerCancel?.();
+      activePiecePointerCancel?.();
+      cancelMobileAssistance();
       clearCorrectionTimer();
       session = resetMapReconstructionSession(session);
       render();
@@ -1372,6 +1619,8 @@ export function createMapReconstructionActivity(container, options) {
       destroyed = true;
       window.GeographyChipSpeech?.stopAudio?.();
       activeBankPointerCancel?.();
+      activePiecePointerCancel?.();
+      cancelMobileAssistance();
       clearCorrectionTimer();
       workspaceResizeObserver?.disconnect();
       window.removeEventListener("resize", refreshWorkspaceInteractionLayout);

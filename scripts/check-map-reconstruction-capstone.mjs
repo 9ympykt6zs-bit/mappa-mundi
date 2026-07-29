@@ -412,6 +412,11 @@ assert.match(uiSource, /data-capstone-piece-path/);
 assert.match(uiSource, /isPointInMapReconstructionPiece/);
 assert.match(uiSource, /pointers\.size >= 2/);
 assert.match(uiSource, /activePieceDrag = null/);
+assert.match(uiSource, /isMapReconstructionMobileAssistanceEnabled/);
+assert.match(uiSource, /createMapReconstructionFingerMagnifier/);
+assert.match(uiSource, /pointerType === "mouse"/);
+assert.match(uiSource, /restoreMobileDragAssistance/);
+assert.match(uiSource, /cancelMobileAssistance/);
 assert.match(uiSource, /max-width: 720px/);
 assert.match(uiSource, /getLower48DrawerDropPosition/);
 assert.match(uiSource, /placeDrawerStateAtPoint/);
@@ -429,5 +434,6 @@ assert.match(uiSource, /lostpointercapture/);
 assert.match(uiSource, /keyEvent\.key === "Escape"/);
 assert.doesNotMatch(uiSource, /\["shuffled", "Shuffled"\]/);
 assert.match(cssSource, /map-reconstruction-capstone-thumbnail[\s\S]*touch-action:\s*none/);
+assert.match(cssSource, /\.map-reconstruction-finger-magnifier\s*\{[^}]*pointer-events:\s*none;/s);
 
 console.log("Map Reconstruction Lower 48 capstone validation passed.");
