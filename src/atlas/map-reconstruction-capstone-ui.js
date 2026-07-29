@@ -43,7 +43,6 @@ import {
 import {
   MAP_RECONSTRUCTION_MOBILE_ASSISTANCE,
   animateMapReconstructionMobileValue,
-  createMapReconstructionFingerMagnifier,
   getMapReconstructionMobileSnapTarget,
   isMapReconstructionMobileAssistanceEnabled
 } from "./map-reconstruction-mobile-assistance.js";
@@ -255,7 +254,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
   let correctionTimer = null;
   let workspaceSvg = null;
   let workspaceWrap = null;
-  let announcement = options.resumeSnapshot ? "Lower 48 reconstruction restored." : "";
   let hoveredStateId = "";
   let activePieceDrag = null;
   let activeDrawerPointerCancel = null;
@@ -265,7 +263,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
   let lastConnectedSelectionAt = -Infinity;
   let mobileCameraHome = null;
   let mobileCameraAnimationCancel = null;
-  let mobileMagnifier = null;
   let mobileDragPointerType = null;
   let mobileSnapAnimationCancel = null;
   let mobileSnapPending = false;
@@ -289,15 +286,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
     if (saveTimer != null) window.clearTimeout(saveTimer);
     saveTimer = window.setTimeout(flushSave, SAVE_DELAY_MS);
   };
-  const announce = (message, options = {}) => {
-    announcement = message;
-    if (options.speak === false) return;
-    const audioEntry = getActivityAudioEntryByText(message);
-    void window.GeographyChipSpeech?.speakAudioPathAndWait?.(
-      message,
-      audioEntry?.audioPath || null
-    );
-  };
   const getSelectedStateIds = () => getMapReconstructionSelectedStateIds(session);
   const selectConnectedGroup = (stateId, options = {}) => {
     const component = getMapReconstructionConnectedComponent(
@@ -311,11 +299,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       primaryStateId: stateId
     });
     lastConnectedSelectionAt = Number(options.timeStamp) || 0;
-    if (component.length <= 1) {
-      announce(`No connected states found. ${geometry.piecesById[stateId].name} selected.`);
-    } else {
-      announce(`Selected a connected group of ${component.length} states.`);
-    }
   };
   const applyPieceClickSelection = (stateId, event) => {
     const timeStamp = Number(event.timeStamp) || Date.now();
@@ -336,10 +319,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       });
     }
     lastPieceClick = { stateId, timeStamp };
-    const count = getSelectedStateIds().length;
-    announce(count === 1
-      ? `${geometry.piecesById[stateId].name} selected.`
-      : `${count} states selected.`);
   };
   const viewport = () => ({
     width: Math.max(1, workspaceWrap?.clientWidth || 900),
@@ -375,43 +354,21 @@ export function createLower48ReconstructionActivity(container, options = {}) {
     });
   };
 
-  const beginMobileDragAssistance = (
-    clientPoint,
-    worldPoint,
-    piece,
-    position,
-    pointerType,
-    pointerOffset = null
-  ) => {
+  const beginMobileDragAssistance = (worldPoint, position, pointerType) => {
     if (pointerType === "mouse"
       || !isMapReconstructionMobileAssistanceEnabled()
       || !workspaceSvg) return;
     mobileDragPointerType = pointerType || "touch";
     if (!mobileCameraHome) mobileCameraHome = { ...camera };
-    mobileMagnifier?.destroy();
-    mobileMagnifier = createMapReconstructionFingerMagnifier(workspaceSvg);
     const target = clampMapReconstructionCamera({
       centerX: Number.isFinite(position?.x) ? position.x : worldPoint.x,
       centerY: Number.isFinite(position?.y) ? position.y : worldPoint.y,
       zoom: camera.zoom * MAP_RECONSTRUCTION_MOBILE_ASSISTANCE.cameraScale
     }, geometry.workspace, capstone.camera);
     animateCamera({ ...camera }, target);
-    mobileMagnifier.update(clientPoint, worldPoint, { piece, position, pointerOffset });
-  };
-
-  const updateMobileDragAssistance = (
-    clientPoint,
-    worldPoint,
-    piece,
-    position,
-    pointerOffset = null
-  ) => {
-    mobileMagnifier?.update(clientPoint, worldPoint, { piece, position, pointerOffset });
   };
 
   const restoreMobileDragAssistance = () => {
-    mobileMagnifier?.destroy();
-    mobileMagnifier = null;
     mobileDragPointerType = null;
     const home = mobileCameraHome;
     if (!home) return;
@@ -423,8 +380,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
   const cancelMobileAssistance = () => {
     mobileCameraAnimationCancel?.();
     mobileCameraAnimationCancel = null;
-    mobileMagnifier?.destroy();
-    mobileMagnifier = null;
     mobileDragPointerType = null;
     if (mobileCameraHome) camera = { ...mobileCameraHome };
     mobileCameraHome = null;
@@ -518,7 +473,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       centerY: (bounds.minY + bounds.maxY) / 2,
       zoom: Math.min(baseView.width / desiredWidth, baseView.height / desiredHeight)
     }, geometry.workspace, capstone.camera);
-    announce(`Fit ${selectedStateIds.length} selected states.`);
     updateCameraOnly();
   };
 
@@ -532,7 +486,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
         geometry.workspace,
         capstone.camera
       );
-      announce(`${geometry.piecesById[stateId].name} focused at its current position.`);
     } else {
       const placementGeometry = getVisiblePlacementGeometry(
         geometry,
@@ -545,9 +498,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
         placementGeometry
       );
       session = placeMapReconstructionPiece(session, stateId, position, geometry);
-      announce(`${geometry.piecesById[stateId].name} placed in the workspace.`, {
-        speak: false
-      });
     }
     render();
     requestAnimationFrame(() => {
@@ -562,9 +512,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
     session = placeMapReconstructionPiece(session, stateId, position, geometry);
     const placedPosition = session.piecesById[stateId]?.position;
     if (!placedPosition) return false;
-    announce(`${geometry.piecesById[stateId].name} placed in the workspace and selected.`, {
-      speak: false
-    });
     const snap = getMobileSnap(stateId, placedPosition);
     if (snap && startMobileSnap(stateId, placedPosition, snap)) return true;
     render();
@@ -651,30 +598,13 @@ export function createLower48ReconstructionActivity(container, options = {}) {
             moveEvent.clientY
           ) || { x: camera.centerX, y: camera.centerY };
           beginMobileDragAssistance(
-            { x: moveEvent.clientX, y: moveEvent.clientY },
             worldPoint,
-            piece,
             getLower48DrawerDropPosition(worldPoint, pointerOffset),
-            moveEvent.pointerType,
-            pointerOffset
+            moveEvent.pointerType
           );
         }
         moveEvent.preventDefault();
         proxy?.position(moveEvent.clientX, moveEvent.clientY);
-        const worldPoint = mapClientPointToWorld(
-          workspaceSvg,
-          moveEvent.clientX,
-          moveEvent.clientY
-        );
-        if (worldPoint) {
-          updateMobileDragAssistance(
-            { x: moveEvent.clientX, y: moveEvent.clientY },
-            worldPoint,
-            piece,
-            getLower48DrawerDropPosition(worldPoint, pointerOffset),
-            pointerOffset
-          );
-        }
       };
       const up = (upEvent) => {
         if (upEvent.pointerId === event.pointerId) finish(upEvent, false);
@@ -720,13 +650,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       geometry,
       { large }
     );
-    const count = getSelectedStateIds().length;
-    announce(
-      count > 1
-        ? `${count} selected states moved ${direction}.`
-        : `${geometry.piecesById[stateId].name} moved ${direction}.`,
-      { speak: false }
-    );
     render();
     requestAnimationFrame(() => {
       container.querySelector(`[data-capstone-piece-id="${stateId}"]`)?.focus();
@@ -735,7 +658,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
 
   const returnState = (stateId) => {
     session = returnMapReconstructionPieceToBank(session, stateId);
-    announce(`${geometry.piecesById[stateId].name} returned to the drawer.`);
     render();
     requestAnimationFrame(() => {
       container.querySelector(`[data-capstone-drawer-state-id="${stateId}"]`)?.focus();
@@ -778,7 +700,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       } else if (event.key === "Escape") {
         event.preventDefault();
         session = clearMapReconstructionSelection(session);
-        announce("Selection cleared.");
         render();
       } else if (["Delete", "Backspace"].includes(event.key)) {
         event.preventDefault();
@@ -808,7 +729,7 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       })) return;
       event.preventDefault();
       event.stopPropagation();
-      if (mobileMagnifier && isMapReconstructionMobileAssistanceEnabled()) return;
+      if (mobileDragPointerType && isMapReconstructionMobileAssistanceEnabled()) return;
       pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
       workspaceSvg.setPointerCapture?.(event.pointerId);
       if (pointers.size >= 2) {
@@ -922,7 +843,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       createButton("Fit", "", () => {
         camera = fitMapReconstructionCamera(geometry.workspace, capstone.camera);
         updateCameraOnly();
-        announce("All of the workspace is visible.");
       }, { "aria-label": "Fit all states", title: "Fit all" })
     );
     return toolbar;
@@ -1187,15 +1107,11 @@ export function createLower48ReconstructionActivity(container, options = {}) {
     session = showMapReconstructionCorrectPlacement(session, { reducedMotion });
     correctionShown = true;
     camera = fitMapReconstructionCamera(geometry.workspace, capstone.camera);
-    announce(reducedMotion
-      ? "Correct Lower 48 placement shown."
-      : "Showing correct placement.");
     render();
     if (!reducedMotion) {
       correctionTimer = window.setTimeout(() => {
         correctionTimer = null;
         session = completeMapReconstructionCorrection(session);
-        announce("Correct placement complete.");
         render();
       }, CORRECTION_DURATION_MS);
     }
@@ -1236,7 +1152,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
         actions.append(
           createButton("Back to my map", "map-reconstruction-secondary-action", () => {
             session = restoreMapReconstructionSubmittedMap(session);
-            announce("Your submitted reconstruction is restored.");
             render();
           }),
           createButton("Replay correction", "map-reconstruction-primary-action", () => startCorrection(true))
@@ -1261,9 +1176,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
         "map-reconstruction-secondary-action map-reconstruction-selection-mode-action",
         () => {
           selectionMode = !selectionMode;
-          announce(selectionMode
-            ? "Select multiple mode on. Select states, then choose Done selecting."
-            : "Select multiple mode off.");
           render();
         },
         { "aria-pressed": selectionMode }
@@ -1293,7 +1205,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
         "map-reconstruction-secondary-action map-reconstruction-clear-selection-action",
         () => {
           session = clearMapReconstructionSelection(session);
-          announce("Selection cleared.");
           render();
         },
         { disabled: !selectedStateIds.length }
@@ -1305,7 +1216,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
         cancelMobileAssistance();
         session = resetMapReconstructionSession(session);
         camera = fitMapReconstructionCamera(geometry.workspace, capstone.camera);
-        announce("Lower 48 reconstruction reset.");
         render();
       }),
       createButton("Return piece", "map-reconstruction-secondary-action", () => {
@@ -1318,9 +1228,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
         if (evaluation.isComplete) {
           camera = fitMapReconstructionCamera(geometry.workspace, capstone.camera);
         }
-        announce(evaluation.isComplete
-          ? capstone.successMessage
-          : "Reconstruction submitted. Review your placement feedback.");
         render();
       })
     );
@@ -1329,7 +1236,7 @@ export function createLower48ReconstructionActivity(container, options = {}) {
 
   const handleWorkspacePointerDown = (event) => {
     if (session.phase !== "arranging" || event.button != null && event.button !== 0) return;
-    if (mobileMagnifier && isMapReconstructionMobileAssistanceEnabled()) {
+    if (mobileDragPointerType && isMapReconstructionMobileAssistanceEnabled()) {
       event.preventDefault();
       return;
     }
@@ -1431,9 +1338,7 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       if (!activePieceDrag.moved) {
         activePieceDrag.moved = true;
         beginMobileDragAssistance(
-          { x: event.clientX, y: event.clientY },
           world,
-          null,
           session.piecesById[activePieceDrag.stateId]?.position,
           event.pointerType
         );
@@ -1444,7 +1349,7 @@ export function createLower48ReconstructionActivity(container, options = {}) {
         viewport()
       );
       const useScreenDelta = isMapReconstructionMobileAssistanceEnabled()
-        && Boolean(mobileMagnifier);
+        && Boolean(mobileDragPointerType);
       const delta = useScreenDelta
         ? {
             x: (event.clientX - activePieceDrag.startClient.x)
@@ -1469,12 +1374,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
         group?.classList.add("is-dragging");
       });
       renderLabels();
-      updateMobileDragAssistance(
-        { x: event.clientX, y: event.clientY },
-        world,
-        null,
-        session.piecesById[activePieceDrag.stateId]?.position
-      );
       return;
     }
     if (panGesture?.type === "pan" && panGesture.pointerId === event.pointerId) {
@@ -1508,13 +1407,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
         session = drag.originalSession;
       } else if (drag.moved) {
         session = endMapReconstructionDrag(session);
-        const count = getSelectedStateIds().length;
-        announce(
-          count > 1
-            ? `${count} selected states moved.`
-            : `${geometry.piecesById[stateId].name} moved.`,
-          { speak: false }
-        );
         const position = session.piecesById[stateId]?.position;
         const snap = getMobileSnap(stateId, position);
         restoreMobileDragAssistance();
@@ -1546,10 +1438,8 @@ export function createLower48ReconstructionActivity(container, options = {}) {
           additive: marquee.additive,
           primaryStateId: stateIds[stateIds.length - 1]
         });
-        announce(`${getSelectedStateIds().length} states selected.`);
       } else if (event.type !== "pointercancel" && !marquee.moved) {
         session = clearMapReconstructionSelection(session);
-        announce("Selection cleared.");
       }
       render();
       return;
@@ -1560,7 +1450,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       panGesture = null;
       if (clearSelection) {
         session = clearMapReconstructionSelection(session);
-        announce("Selection cleared.");
         render();
         return;
       }
@@ -1590,7 +1479,6 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       if (event.key === "Escape") {
         event.preventDefault();
         session = clearMapReconstructionSelection(session);
-        announce("Selection cleared.");
         render();
         return;
       }
@@ -1641,13 +1529,9 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       + `${session.correctionState === "playing" ? " is-correction-playing" : ""}`
     );
     shell.dataset.mapReconstructionCapstoneId = capstone.id;
-    const live = createElement("p", "map-reconstruction-live-region");
-    live.setAttribute("role", "status");
-    live.setAttribute("aria-live", "polite");
-    live.textContent = announcement;
     const content = createElement("div", "map-reconstruction-capstone-content");
     content.append(createWorkspace(), createDrawer());
-    shell.append(live, content, createActions());
+    shell.append(content, createActions());
     container.replaceChildren(shell);
     attachWorkspaceEvents();
     requestAnimationFrame(renderLabels);

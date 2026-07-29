@@ -4244,32 +4244,6 @@ body.overview-mode.map-reconstruction-mode .map-shell {
   width: 100%;
 }
 
-.map-reconstruction-finger-magnifier {
-  background: #fbfcfd;
-  border: 3px solid #155bb8;
-  border-radius: 50%;
-  box-shadow: 0 6px 18px rgba(9, 22, 42, 0.3);
-  height: 112px;
-  left: 0;
-  overflow: hidden;
-  pointer-events: none;
-  position: fixed;
-  top: 0;
-  width: 112px;
-  z-index: 140;
-}
-
-.map-reconstruction-finger-magnifier > svg {
-  display: block;
-  height: 100%;
-  overflow: hidden;
-  width: 100%;
-}
-
-.map-reconstruction-finger-magnifier-piece {
-  pointer-events: none;
-}
-
 .map-reconstruction-piece.is-mobile-snapping {
   pointer-events: none;
 }
@@ -4444,16 +4418,6 @@ body.overview-mode.map-reconstruction-mode .map-shell {
 .map-reconstruction-state-results li.is-well-placed { border-color: #29956b; }
 .map-reconstruction-state-results li.is-close { border-color: #d69722; }
 .map-reconstruction-state-results li.is-misplaced { border-color: #c34a44; }
-
-.map-reconstruction-live-region {
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  height: 1px;
-  overflow: hidden;
-  position: absolute;
-  white-space: nowrap;
-  width: 1px;
-}
 
 body.mental-map-challenge-mode:not(.mental-map-result-mode) #map,
 body.mental-map-challenge-mode:not(.mental-map-result-mode) .zoom-panel,

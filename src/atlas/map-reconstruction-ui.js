@@ -37,7 +37,6 @@ import {
 import {
   MAP_RECONSTRUCTION_MOBILE_ASSISTANCE,
   animateMapReconstructionMobileValue,
-  createMapReconstructionFingerMagnifier,
   getMapReconstructionMobileSnapTarget,
   isMapReconstructionMobileAssistanceEnabled
 } from "./map-reconstruction-mobile-assistance.js";
@@ -559,7 +558,6 @@ export function createMapReconstructionActivity(container, options) {
   const { region, geometry } = options || {};
   if (!container || !region || !geometry) return null;
   let session = createMapReconstructionSession(region, geometry, { random: options.random });
-  let announcement = "";
   let destroyed = false;
   let workspaceSvg = null;
   let successVisualPending = false;
@@ -573,7 +571,6 @@ export function createMapReconstructionActivity(container, options) {
   let lastConnectedSelectionAt = -Infinity;
   let mobileCameraHomeView = null;
   let mobileCameraAnimationCancel = null;
-  let mobileMagnifier = null;
   let mobileDragPointerType = null;
   let mobileSnapAnimationCancel = null;
   let mobileSnapPending = false;
@@ -587,16 +584,6 @@ export function createMapReconstructionActivity(container, options) {
   const focusPiece = (stateId) => requestAnimationFrame(() => {
     container.querySelector(`[data-map-reconstruction-state-id="${stateId}"]`)?.focus();
   });
-
-  const announce = (message, options = {}) => {
-    announcement = message;
-    if (options.speak === false) return;
-    const audioEntry = getActivityAudioEntryByText(message);
-    void window.GeographyChipSpeech?.speakAudioPathAndWait?.(
-      message,
-      audioEntry?.audioPath || null
-    );
-  };
 
   const getSelectedStateIds = () => getMapReconstructionSelectedStateIds(session);
 
@@ -626,14 +613,7 @@ export function createMapReconstructionActivity(container, options) {
     });
   };
 
-  const beginMobileDragAssistance = (
-    clientPoint,
-    worldPoint,
-    piece,
-    position,
-    pointerType,
-    pointerOffset = null
-  ) => {
+  const beginMobileDragAssistance = (worldPoint, position, pointerType) => {
     if (pointerType === "mouse"
       || !isMapReconstructionMobileAssistanceEnabled()
       || !workspaceSvg) return;
@@ -641,8 +621,6 @@ export function createMapReconstructionActivity(container, options) {
     const currentView = getWorkspaceView();
     if (!currentView) return;
     if (!mobileCameraHomeView) mobileCameraHomeView = { ...currentView };
-    mobileMagnifier?.destroy();
-    mobileMagnifier = createMapReconstructionFingerMagnifier(workspaceSvg);
     const scale = MAP_RECONSTRUCTION_MOBILE_ASSISTANCE.cameraScale;
     const targetWidth = Math.max(currentView.width / scale, geometry.workspace.width / 3.2);
     const targetHeight = Math.max(currentView.height / scale, geometry.workspace.height / 3.2);
@@ -663,22 +641,9 @@ export function createMapReconstructionActivity(container, options) {
       height: targetHeight
     };
     animateWorkspaceView(currentView, target);
-    mobileMagnifier.update(clientPoint, worldPoint, { piece, position, pointerOffset });
-  };
-
-  const updateMobileDragAssistance = (
-    clientPoint,
-    worldPoint,
-    piece,
-    position,
-    pointerOffset = null
-  ) => {
-    mobileMagnifier?.update(clientPoint, worldPoint, { piece, position, pointerOffset });
   };
 
   const restoreMobileDragAssistance = () => {
-    mobileMagnifier?.destroy();
-    mobileMagnifier = null;
     mobileDragPointerType = null;
     const currentView = getWorkspaceView();
     const homeView = mobileCameraHomeView;
@@ -691,8 +656,6 @@ export function createMapReconstructionActivity(container, options) {
   const cancelMobileAssistance = () => {
     mobileCameraAnimationCancel?.();
     mobileCameraAnimationCancel = null;
-    mobileMagnifier?.destroy();
-    mobileMagnifier = null;
     mobileDragPointerType = null;
     if (mobileCameraHomeView) setWorkspaceView(mobileCameraHomeView);
     mobileCameraHomeView = null;
@@ -768,11 +731,6 @@ export function createMapReconstructionActivity(container, options) {
       primaryStateId: stateId
     });
     lastConnectedSelectionAt = Number(options.timeStamp) || 0;
-    if (component.length <= 1) {
-      announce(`No connected states found. ${geometry.piecesById[stateId].name} selected.`);
-    } else {
-      announce(`Selected a connected group of ${component.length} states.`);
-    }
   };
 
   const applyPieceClickSelection = (stateId, event) => {
@@ -796,10 +754,6 @@ export function createMapReconstructionActivity(container, options) {
       });
     }
     lastPieceClick = { stateId, timeStamp };
-    const count = getSelectedStateIds().length;
-    announce(count === 1
-      ? `${geometry.piecesById[stateId].name} selected.`
-      : `${count} states selected.`);
   };
 
   const getInteractionGeometry = () => (
@@ -827,8 +781,6 @@ export function createMapReconstructionActivity(container, options) {
     session = placeMapReconstructionPiece(session, stateId, position, getInteractionGeometry());
     const placedPosition = session.piecesById[stateId]?.position;
     if (!placedPosition) return;
-    const name = geometry.piecesById[stateId]?.name || stateId;
-    announce(`${name} placed in the workspace and selected.`, { speak: false });
     const snap = getMobileSnap(stateId, placedPosition);
     if (snap && startMobileSnap(stateId, placedPosition, snap, shouldFocus)) return;
     render();
@@ -914,30 +866,13 @@ export function createMapReconstructionActivity(container, options) {
             y: (Number(geometry.workspace.y) || 0) + geometry.workspace.height / 2
           };
           beginMobileDragAssistance(
-            { x: moveEvent.clientX, y: moveEvent.clientY },
             worldPoint,
-            piece,
             getMapReconstructionShelfDropPosition(worldPoint, pointerOffset),
-            moveEvent.pointerType,
-            pointerOffset
+            moveEvent.pointerType
           );
         }
         moveEvent.preventDefault();
         proxy?.position(moveEvent.clientX, moveEvent.clientY);
-        const worldPoint = mapClientPointToReconstructionWorkspace(
-          workspaceSvg,
-          moveEvent.clientX,
-          moveEvent.clientY
-        );
-        if (worldPoint) {
-          updateMobileDragAssistance(
-            { x: moveEvent.clientX, y: moveEvent.clientY },
-            worldPoint,
-            piece,
-            getMapReconstructionShelfDropPosition(worldPoint, pointerOffset),
-            pointerOffset
-          );
-        }
       };
       const up = (upEvent) => {
         if (upEvent.pointerId === event.pointerId) finish(upEvent, false);
@@ -1007,9 +942,6 @@ export function createMapReconstructionActivity(container, options) {
           getInteractionGeometry(),
           { large: event.shiftKey }
         );
-        announce(`${geometry.piecesById[stateId].name} moved ${directions[event.key]}.`, {
-          speak: false
-        });
         render();
         focusPiece(stateId);
       } else if (event.key.toLowerCase() === "g") {
@@ -1020,12 +952,10 @@ export function createMapReconstructionActivity(container, options) {
       } else if (event.key === "Escape") {
         event.preventDefault();
         session = clearMapReconstructionSelection(session);
-        announce("Selection cleared.");
         render();
       } else if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault();
         session = returnMapReconstructionPieceToBank(session, stateId);
-        announce(`${geometry.piecesById[stateId].name} returned to the state bank.`);
         render();
       }
     });
@@ -1080,13 +1010,6 @@ export function createMapReconstructionActivity(container, options) {
           session = originalSession;
         } else if (moved) {
           session = endMapReconstructionDrag(session);
-          const count = getSelectedStateIds().length;
-          announce(
-            count > 1
-              ? `${count} selected states moved.`
-              : `${geometry.piecesById[stateId].name} moved.`,
-            { speak: false }
-          );
           const position = session.piecesById[stateId]?.position;
           const snap = getMobileSnap(stateId, position);
           restoreMobileDragAssistance();
@@ -1112,9 +1035,7 @@ export function createMapReconstructionActivity(container, options) {
         if (!moved) {
           moved = true;
           beginMobileDragAssistance(
-            { x: moveEvent.clientX, y: moveEvent.clientY },
             current,
-            null,
             session.piecesById[stateId]?.position,
             moveEvent.pointerType
           );
@@ -1122,7 +1043,7 @@ export function createMapReconstructionActivity(container, options) {
         const view = getWorkspaceView();
         const rect = workspaceSvg.getBoundingClientRect();
         const useScreenDelta = isMapReconstructionMobileAssistanceEnabled()
-          && Boolean(mobileMagnifier)
+          && Boolean(mobileDragPointerType)
           && view
           && rect.width
           && rect.height;
@@ -1145,12 +1066,6 @@ export function createMapReconstructionActivity(container, options) {
           )?.setAttribute("transform", `translate(${position.x} ${position.y})`);
         });
         group.classList.add("is-dragging");
-        updateMobileDragAssistance(
-          { x: moveEvent.clientX, y: moveEvent.clientY },
-          current,
-          null,
-          session.piecesById[stateId]?.position
-        );
       };
       const up = (upEvent) => {
         if (upEvent.pointerId === event.pointerId) finish(upEvent, false);
@@ -1347,10 +1262,8 @@ export function createMapReconstructionActivity(container, options) {
             additive: activePointer.additive,
             primaryStateId: stateIds[stateIds.length - 1]
           });
-          announce(`${getSelectedStateIds().length} states selected.`);
         } else {
           session = clearMapReconstructionSelection(session);
-          announce("Selection cleared.");
         }
         render();
       });
@@ -1362,7 +1275,6 @@ export function createMapReconstructionActivity(container, options) {
         if (event.key !== "Escape") return;
         event.preventDefault();
         session = clearMapReconstructionSelection(session);
-        announce("Selection cleared.");
         render();
       });
     }
@@ -1411,9 +1323,6 @@ export function createMapReconstructionActivity(container, options) {
 
   const beginCorrectionMovement = (reducedMotion) => {
     session = showMapReconstructionCorrectPlacement(session, { reducedMotion });
-    announcement = reducedMotion
-      ? "Correct placement shown."
-      : "Showing how each state moves into its correct position.";
     render();
     if (session.correctionState !== "playing") {
       container.querySelector(".map-reconstruction-replay-action")?.focus();
@@ -1423,7 +1332,6 @@ export function createMapReconstructionActivity(container, options) {
       correctionTimer = null;
       if (destroyed) return;
       session = completeMapReconstructionCorrection(session);
-      announcement = "Correct placement complete.";
       render();
       container.querySelector(".map-reconstruction-replay-action")?.focus();
     }, MAP_RECONSTRUCTION_SUCCESS_TIMING.correctionDurationMs);
@@ -1435,7 +1343,6 @@ export function createMapReconstructionActivity(container, options) {
     const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
     if (options.replay === true && !reducedMotion) {
       session = prepareMapReconstructionCorrectionReplay(session);
-      announcement = "Your submitted reconstruction is restored. Replaying the correction.";
       render();
       correctionTimer = window.setTimeout(() => {
         correctionTimer = null;
@@ -1450,7 +1357,6 @@ export function createMapReconstructionActivity(container, options) {
   const restoreSubmittedMap = () => {
     clearCorrectionTimer();
     session = restoreMapReconstructionSubmittedMap(session);
-    announcement = "Your submitted reconstruction is shown.";
     render();
     container.querySelector(".map-reconstruction-replay-action, .map-reconstruction-show-correction-action")?.focus();
   };
@@ -1462,7 +1368,6 @@ export function createMapReconstructionActivity(container, options) {
     clearCorrectionTimer();
     successVisualPending = false;
     session = resetMapReconstructionSession(session);
-    announce("Reconstruction reset.");
     render();
     container.querySelector(".map-reconstruction-bank-piece")?.focus();
   };
@@ -1535,9 +1440,6 @@ export function createMapReconstructionActivity(container, options) {
         "map-reconstruction-secondary-action map-reconstruction-selection-mode-action",
         () => {
           selectionMode = !selectionMode;
-          announce(selectionMode
-            ? "Select multiple mode on. Select states, then choose Done selecting."
-            : "Select multiple mode off.");
           render();
         },
         { ariaPressed: selectionMode }
@@ -1558,7 +1460,6 @@ export function createMapReconstructionActivity(container, options) {
         "map-reconstruction-secondary-action map-reconstruction-clear-selection-action",
         () => {
           session = clearMapReconstructionSelection(session);
-          announce("Selection cleared.");
           render();
         },
         { disabled: !selectedStateIds.length }
@@ -1571,9 +1472,7 @@ export function createMapReconstructionActivity(container, options) {
       createButton("Return piece", "map-reconstruction-secondary-action", () => {
         const stateId = session.selectedStateId;
         if (!stateId) return;
-        const name = geometry.piecesById[stateId].name;
         session = returnMapReconstructionPieceToBank(session, stateId);
-        announce(`${name} returned to the state bank.`);
         render();
         container.querySelector(`[data-map-reconstruction-bank-state-id="${stateId}"]`)?.focus();
       }, { disabled: !selectedPiece?.position }),
@@ -1585,9 +1484,6 @@ export function createMapReconstructionActivity(container, options) {
         );
         session = submitMapReconstructionSession(session, evaluation);
         successVisualPending = evaluation.isComplete;
-        announce(evaluation.isComplete
-          ? `${region.successMessage} The completed map is now shown.`
-          : "Reconstruction submitted. The correct structure is now available for comparison.");
         render();
         container.querySelector(evaluation.isComplete
           ? ".map-reconstruction-primary-action"
@@ -1604,13 +1500,9 @@ export function createMapReconstructionActivity(container, options) {
     const successClass = session.phase === "result" && session.evaluation?.isComplete ? " is-success" : "";
     const shell = createElement("div", `map-reconstruction-shell is-${session.phase}${successClass}`);
     shell.dataset.mapReconstructionRegionId = region.id;
-    const liveRegion = createElement("p", "map-reconstruction-live-region");
-    liveRegion.setAttribute("role", "status");
-    liveRegion.setAttribute("aria-live", "polite");
-    liveRegion.textContent = announcement;
     const content = createElement("div", "map-reconstruction-content");
     content.append(createWorkspace(), createBank());
-    shell.append(liveRegion, content, createActions());
+    shell.append(content, createActions());
     container.replaceChildren(shell);
     refreshWorkspaceInteractionLayout();
     workspaceResizeObserver?.observe(workspaceSvg);

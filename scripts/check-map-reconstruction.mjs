@@ -63,12 +63,10 @@ import {
 } from "../src/atlas/map-reconstruction-drag-preview.js";
 import {
   animateMapReconstructionMobileValue,
-  getMapReconstructionMagnifierPosition,
   getMapReconstructionMobilePieceSize,
   getMapReconstructionMobileSnapTarget,
   getMapReconstructionMobileSnapThreshold,
-  isMapReconstructionMobileAssistanceEnabled,
-  startMapReconstructionMagnifierFrameLoop
+  isMapReconstructionMobileAssistanceEnabled
 } from "../src/atlas/map-reconstruction-mobile-assistance.js";
 
 const featureCollection = JSON.parse((await readFile(
@@ -93,10 +91,6 @@ const [
   readFile(new URL("./generate-tts-audio.mjs", import.meta.url), "utf8")
 ]);
 const audioManifest = JSON.parse(audioManifestSource);
-const mobileAssistanceSource = await readFile(
-  new URL("../src/atlas/map-reconstruction-mobile-assistance.js", import.meta.url),
-  "utf8"
-);
 const region = getMapReconstructionRegion(MAP_RECONSTRUCTION_REGION_IDS.REBUILD_NEW_ENGLAND);
 const expectedStateIds = [
   "maine",
@@ -116,15 +110,10 @@ assert.match(runtimeSource, /function openMapReconstruction\(\)/);
 assert.match(runtimeSource, /showMapReconstructionRegionSelection/);
 assert.match(uiSource, /createMapReconstructionRegionSelection/);
 assert.match(uiSource, /isMapReconstructionMobileAssistanceEnabled/);
-assert.match(uiSource, /createMapReconstructionFingerMagnifier/);
 assert.match(uiSource, /pointerType === "mouse"/);
 assert.match(uiSource, /restoreMobileDragAssistance/);
 assert.match(uiSource, /cancelMobileAssistance/);
-assert.match(uiSource, /placed in the workspace and selected\.`?,\s*\{\s*speak:\s*false\s*\}/s);
-assert.match(uiSource, /selected states moved\.[\s\S]*speak:\s*false/);
-assert.match(mobileAssistanceSource, /requestAnimationFrame\(renderFrame\)/);
-assert.match(mobileAssistanceSource, /sourceSvg\.childNodes[\s\S]*cloneNode\(true\)/);
-assert.doesNotMatch(mobileAssistanceSource, /createElementNS\(SVG_NAMESPACE,\s*"use"\)/);
+assert.doesNotMatch(uiSource, /announce\(|aria-live|map-reconstruction-live-region|speakAudioPathAndWait/);
 assert.match(uiSource, /viewBox: visualPlan\.viewBox/);
 assert.doesNotMatch(uiSource, /data-map-reconstruction-correct-layout/);
 assert.doesNotMatch(uiSource, /map-reconstruction-correct-layer/);
@@ -139,7 +128,6 @@ assert.match(stylesheet, /body\.overview-mode\.map-reconstruction-mode\s+\.map-s
 assert.match(stylesheet, /\.map-reconstruction-shell\s*\{[^}]*max-width:\s*none;[^}]*width:\s*100%;/s);
 assert.match(stylesheet, /\.map-reconstruction-content\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*clamp\(/s);
 assert.match(stylesheet, /\.map-reconstruction-workspace\s*\{[^}]*aspect-ratio:\s*auto;[^}]*height:\s*100%;[^}]*width:\s*100%;/s);
-assert.match(stylesheet, /\.map-reconstruction-finger-magnifier\s*\{[^}]*pointer-events:\s*none;/s);
 assert.match(stylesheet, /\.map-reconstruction-shell\.is-result\.is-success\s+\.map-reconstruction-content\s*\{[^}]*clamp\(210px,\s*14vw,\s*240px\)/s);
 assert.match(stylesheet, /grid-template-rows:\s*minmax\(0,\s*1fr\)\s*minmax\(120px,\s*30svh\)/);
 
@@ -157,18 +145,6 @@ const finePointerWindow = {
 };
 assert.equal(isMapReconstructionMobileAssistanceEnabled(coarsePointerWindow), true);
 assert.equal(isMapReconstructionMobileAssistanceEnabled(finePointerWindow), false);
-[
-  { viewport: { width: 360, height: 640 }, point: { x: 18, y: 170 } },
-  { viewport: { width: 640, height: 360 }, point: { x: 625, y: 75 } },
-  { viewport: { width: 430, height: 932 }, point: { x: 215, y: 900 } },
-  { viewport: { width: 1024, height: 600 }, point: { x: 1000, y: 300 } }
-].forEach(({ viewport, point }) => {
-  const lens = getMapReconstructionMagnifierPosition(point, viewport);
-  assert.ok(lens.left >= 8);
-  assert.ok(lens.top >= 8);
-  assert.ok(lens.left + 112 <= viewport.width - 8);
-  assert.ok(lens.top + 112 <= viewport.height - 8);
-});
 const mobilePieceSizes = new Set();
 for (const piece of geometry.pieces) {
   const size = getMapReconstructionMobilePieceSize(piece, geometry);
@@ -262,32 +238,6 @@ animateMapReconstructionMobileValue({
 });
 assert.deepEqual(reducedMotionUpdate, { x: 10 });
 assert.equal(reducedMotionFinished, true);
-const magnifierFrames = [];
-const magnifierFrameQueue = [];
-const cancelledMagnifierFrames = [];
-let magnifierFrameId = 0;
-const magnifierWindow = {
-  requestAnimationFrame: (callback) => {
-    magnifierFrameId += 1;
-    magnifierFrameQueue.push({ id: magnifierFrameId, callback });
-    return magnifierFrameId;
-  },
-  cancelAnimationFrame: (frameId) => {
-    cancelledMagnifierFrames.push(frameId);
-  }
-};
-const stopMagnifierFrames = startMapReconstructionMagnifierFrameLoop(
-  () => magnifierFrames.push(magnifierFrames.length + 1),
-  magnifierWindow
-);
-magnifierFrameQueue.shift().callback(16);
-magnifierFrameQueue.shift().callback(32);
-assert.deepEqual(magnifierFrames, [1, 2]);
-stopMagnifierFrames();
-const pendingMagnifierFrame = magnifierFrameQueue.shift();
-pendingMagnifierFrame.callback(48);
-assert.deepEqual(magnifierFrames, [1, 2]);
-assert.deepEqual(cancelledMagnifierFrames, [pendingMagnifierFrame.id]);
 for (const stateId of expectedStateIds) {
   const piece = geometry.piecesById[stateId];
   assert.ok(piece.path.startsWith("M"), `${stateId} should have an SVG path`);

@@ -128,8 +128,13 @@ function validatePlaybackWiring() {
     assert.ok(source.includes("getActivityAudioEntryByText"));
     assert.ok(source.includes("audioPath:"));
   });
-  assert.ok(regionalUi.includes("speakAudioPathAndWait"));
-  assert.ok(capstoneUi.includes("speakAudioPathAndWait"));
+  [regionalUi, capstoneUi].forEach((source) => {
+    assert.ok(source.includes("createChipSpeakerControl"));
+    assert.doesNotMatch(
+      source,
+      /speakAudioPathAndWait|speechSynthesis|announce\(|aria-live|map-reconstruction-live-region/
+    );
+  });
   assert.ok(regionalUi.includes("stopAudio"));
   assert.ok(capstoneUi.includes("stopAudio"));
   assert.match(player, /stopCurrentAudio\(\);\r?\n\s+stopBrowserSpeech\(\);/);
