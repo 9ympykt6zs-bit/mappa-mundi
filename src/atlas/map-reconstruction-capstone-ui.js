@@ -289,8 +289,9 @@ export function createLower48ReconstructionActivity(container, options = {}) {
     if (saveTimer != null) window.clearTimeout(saveTimer);
     saveTimer = window.setTimeout(flushSave, SAVE_DELAY_MS);
   };
-  const announce = (message) => {
+  const announce = (message, options = {}) => {
     announcement = message;
+    if (options.speak === false) return;
     const audioEntry = getActivityAudioEntryByText(message);
     void window.GeographyChipSpeech?.speakAudioPathAndWait?.(
       message,
@@ -379,7 +380,8 @@ export function createLower48ReconstructionActivity(container, options = {}) {
     worldPoint,
     piece,
     position,
-    pointerType
+    pointerType,
+    pointerOffset = null
   ) => {
     if (pointerType === "mouse"
       || !isMapReconstructionMobileAssistanceEnabled()
@@ -394,11 +396,17 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       zoom: camera.zoom * MAP_RECONSTRUCTION_MOBILE_ASSISTANCE.cameraScale
     }, geometry.workspace, capstone.camera);
     animateCamera({ ...camera }, target);
-    mobileMagnifier.update(clientPoint, worldPoint, { piece, position });
+    mobileMagnifier.update(clientPoint, worldPoint, { piece, position, pointerOffset });
   };
 
-  const updateMobileDragAssistance = (clientPoint, worldPoint, piece, position) => {
-    mobileMagnifier?.update(clientPoint, worldPoint, { piece, position });
+  const updateMobileDragAssistance = (
+    clientPoint,
+    worldPoint,
+    piece,
+    position,
+    pointerOffset = null
+  ) => {
+    mobileMagnifier?.update(clientPoint, worldPoint, { piece, position, pointerOffset });
   };
 
   const restoreMobileDragAssistance = () => {
@@ -537,7 +545,9 @@ export function createLower48ReconstructionActivity(container, options = {}) {
         placementGeometry
       );
       session = placeMapReconstructionPiece(session, stateId, position, geometry);
-      announce(`${geometry.piecesById[stateId].name} placed in the workspace.`);
+      announce(`${geometry.piecesById[stateId].name} placed in the workspace.`, {
+        speak: false
+      });
     }
     render();
     requestAnimationFrame(() => {
@@ -552,7 +562,9 @@ export function createLower48ReconstructionActivity(container, options = {}) {
     session = placeMapReconstructionPiece(session, stateId, position, geometry);
     const placedPosition = session.piecesById[stateId]?.position;
     if (!placedPosition) return false;
-    announce(`${geometry.piecesById[stateId].name} placed in the workspace and selected.`);
+    announce(`${geometry.piecesById[stateId].name} placed in the workspace and selected.`, {
+      speak: false
+    });
     const snap = getMobileSnap(stateId, placedPosition);
     if (snap && startMobileSnap(stateId, placedPosition, snap)) return true;
     render();
@@ -643,7 +655,8 @@ export function createLower48ReconstructionActivity(container, options = {}) {
             worldPoint,
             piece,
             getLower48DrawerDropPosition(worldPoint, pointerOffset),
-            moveEvent.pointerType
+            moveEvent.pointerType,
+            pointerOffset
           );
         }
         moveEvent.preventDefault();
@@ -658,7 +671,8 @@ export function createLower48ReconstructionActivity(container, options = {}) {
             { x: moveEvent.clientX, y: moveEvent.clientY },
             worldPoint,
             piece,
-            getLower48DrawerDropPosition(worldPoint, pointerOffset)
+            getLower48DrawerDropPosition(worldPoint, pointerOffset),
+            pointerOffset
           );
         }
       };
@@ -707,9 +721,12 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       { large }
     );
     const count = getSelectedStateIds().length;
-    announce(count > 1
-      ? `${count} selected states moved ${direction}.`
-      : `${geometry.piecesById[stateId].name} moved ${direction}.`);
+    announce(
+      count > 1
+        ? `${count} selected states moved ${direction}.`
+        : `${geometry.piecesById[stateId].name} moved ${direction}.`,
+      { speak: false }
+    );
     render();
     requestAnimationFrame(() => {
       container.querySelector(`[data-capstone-piece-id="${stateId}"]`)?.focus();
@@ -1416,7 +1433,7 @@ export function createLower48ReconstructionActivity(container, options = {}) {
         beginMobileDragAssistance(
           { x: event.clientX, y: event.clientY },
           world,
-          geometry.piecesById[activePieceDrag.stateId],
+          null,
           session.piecesById[activePieceDrag.stateId]?.position,
           event.pointerType
         );
@@ -1455,7 +1472,7 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       updateMobileDragAssistance(
         { x: event.clientX, y: event.clientY },
         world,
-        geometry.piecesById[activePieceDrag.stateId],
+        null,
         session.piecesById[activePieceDrag.stateId]?.position
       );
       return;
@@ -1492,9 +1509,12 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       } else if (drag.moved) {
         session = endMapReconstructionDrag(session);
         const count = getSelectedStateIds().length;
-        announce(count > 1
-          ? `${count} selected states moved.`
-          : `${geometry.piecesById[stateId].name} moved.`);
+        announce(
+          count > 1
+            ? `${count} selected states moved.`
+            : `${geometry.piecesById[stateId].name} moved.`,
+          { speak: false }
+        );
         const position = session.piecesById[stateId]?.position;
         const snap = getMobileSnap(stateId, position);
         restoreMobileDragAssistance();

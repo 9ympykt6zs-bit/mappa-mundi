@@ -417,6 +417,8 @@ assert.match(uiSource, /createMapReconstructionFingerMagnifier/);
 assert.match(uiSource, /pointerType === "mouse"/);
 assert.match(uiSource, /restoreMobileDragAssistance/);
 assert.match(uiSource, /cancelMobileAssistance/);
+assert.match(uiSource, /placed in the workspace\.`?,\s*\{\s*speak:\s*false\s*\}/s);
+assert.match(uiSource, /selected states moved\.[\s\S]*speak:\s*false/);
 assert.match(uiSource, /max-width: 720px/);
 assert.match(uiSource, /getLower48DrawerDropPosition/);
 assert.match(uiSource, /placeDrawerStateAtPoint/);

@@ -67,7 +67,8 @@ import {
   getMapReconstructionMobilePieceSize,
   getMapReconstructionMobileSnapTarget,
   getMapReconstructionMobileSnapThreshold,
-  isMapReconstructionMobileAssistanceEnabled
+  isMapReconstructionMobileAssistanceEnabled,
+  startMapReconstructionMagnifierFrameLoop
 } from "../src/atlas/map-reconstruction-mobile-assistance.js";
 
 const featureCollection = JSON.parse((await readFile(
@@ -92,6 +93,10 @@ const [
   readFile(new URL("./generate-tts-audio.mjs", import.meta.url), "utf8")
 ]);
 const audioManifest = JSON.parse(audioManifestSource);
+const mobileAssistanceSource = await readFile(
+  new URL("../src/atlas/map-reconstruction-mobile-assistance.js", import.meta.url),
+  "utf8"
+);
 const region = getMapReconstructionRegion(MAP_RECONSTRUCTION_REGION_IDS.REBUILD_NEW_ENGLAND);
 const expectedStateIds = [
   "maine",
@@ -115,6 +120,11 @@ assert.match(uiSource, /createMapReconstructionFingerMagnifier/);
 assert.match(uiSource, /pointerType === "mouse"/);
 assert.match(uiSource, /restoreMobileDragAssistance/);
 assert.match(uiSource, /cancelMobileAssistance/);
+assert.match(uiSource, /placed in the workspace and selected\.`?,\s*\{\s*speak:\s*false\s*\}/s);
+assert.match(uiSource, /selected states moved\.[\s\S]*speak:\s*false/);
+assert.match(mobileAssistanceSource, /requestAnimationFrame\(renderFrame\)/);
+assert.match(mobileAssistanceSource, /sourceSvg\.childNodes[\s\S]*cloneNode\(true\)/);
+assert.doesNotMatch(mobileAssistanceSource, /createElementNS\(SVG_NAMESPACE,\s*"use"\)/);
 assert.match(uiSource, /viewBox: visualPlan\.viewBox/);
 assert.doesNotMatch(uiSource, /data-map-reconstruction-correct-layout/);
 assert.doesNotMatch(uiSource, /map-reconstruction-correct-layer/);
@@ -252,6 +262,32 @@ animateMapReconstructionMobileValue({
 });
 assert.deepEqual(reducedMotionUpdate, { x: 10 });
 assert.equal(reducedMotionFinished, true);
+const magnifierFrames = [];
+const magnifierFrameQueue = [];
+const cancelledMagnifierFrames = [];
+let magnifierFrameId = 0;
+const magnifierWindow = {
+  requestAnimationFrame: (callback) => {
+    magnifierFrameId += 1;
+    magnifierFrameQueue.push({ id: magnifierFrameId, callback });
+    return magnifierFrameId;
+  },
+  cancelAnimationFrame: (frameId) => {
+    cancelledMagnifierFrames.push(frameId);
+  }
+};
+const stopMagnifierFrames = startMapReconstructionMagnifierFrameLoop(
+  () => magnifierFrames.push(magnifierFrames.length + 1),
+  magnifierWindow
+);
+magnifierFrameQueue.shift().callback(16);
+magnifierFrameQueue.shift().callback(32);
+assert.deepEqual(magnifierFrames, [1, 2]);
+stopMagnifierFrames();
+const pendingMagnifierFrame = magnifierFrameQueue.shift();
+pendingMagnifierFrame.callback(48);
+assert.deepEqual(magnifierFrames, [1, 2]);
+assert.deepEqual(cancelledMagnifierFrames, [pendingMagnifierFrame.id]);
 for (const stateId of expectedStateIds) {
   const piece = geometry.piecesById[stateId];
   assert.ok(piece.path.startsWith("M"), `${stateId} should have an SVG path`);

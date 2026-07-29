@@ -588,8 +588,9 @@ export function createMapReconstructionActivity(container, options) {
     container.querySelector(`[data-map-reconstruction-state-id="${stateId}"]`)?.focus();
   });
 
-  const announce = (message) => {
+  const announce = (message, options = {}) => {
     announcement = message;
+    if (options.speak === false) return;
     const audioEntry = getActivityAudioEntryByText(message);
     void window.GeographyChipSpeech?.speakAudioPathAndWait?.(
       message,
@@ -630,7 +631,8 @@ export function createMapReconstructionActivity(container, options) {
     worldPoint,
     piece,
     position,
-    pointerType
+    pointerType,
+    pointerOffset = null
   ) => {
     if (pointerType === "mouse"
       || !isMapReconstructionMobileAssistanceEnabled()
@@ -661,11 +663,17 @@ export function createMapReconstructionActivity(container, options) {
       height: targetHeight
     };
     animateWorkspaceView(currentView, target);
-    mobileMagnifier.update(clientPoint, worldPoint, { piece, position });
+    mobileMagnifier.update(clientPoint, worldPoint, { piece, position, pointerOffset });
   };
 
-  const updateMobileDragAssistance = (clientPoint, worldPoint, piece, position) => {
-    mobileMagnifier?.update(clientPoint, worldPoint, { piece, position });
+  const updateMobileDragAssistance = (
+    clientPoint,
+    worldPoint,
+    piece,
+    position,
+    pointerOffset = null
+  ) => {
+    mobileMagnifier?.update(clientPoint, worldPoint, { piece, position, pointerOffset });
   };
 
   const restoreMobileDragAssistance = () => {
@@ -820,7 +828,7 @@ export function createMapReconstructionActivity(container, options) {
     const placedPosition = session.piecesById[stateId]?.position;
     if (!placedPosition) return;
     const name = geometry.piecesById[stateId]?.name || stateId;
-    announce(`${name} placed in the workspace and selected.`);
+    announce(`${name} placed in the workspace and selected.`, { speak: false });
     const snap = getMobileSnap(stateId, placedPosition);
     if (snap && startMobileSnap(stateId, placedPosition, snap, shouldFocus)) return;
     render();
@@ -910,7 +918,8 @@ export function createMapReconstructionActivity(container, options) {
             worldPoint,
             piece,
             getMapReconstructionShelfDropPosition(worldPoint, pointerOffset),
-            moveEvent.pointerType
+            moveEvent.pointerType,
+            pointerOffset
           );
         }
         moveEvent.preventDefault();
@@ -925,7 +934,8 @@ export function createMapReconstructionActivity(container, options) {
             { x: moveEvent.clientX, y: moveEvent.clientY },
             worldPoint,
             piece,
-            getMapReconstructionShelfDropPosition(worldPoint, pointerOffset)
+            getMapReconstructionShelfDropPosition(worldPoint, pointerOffset),
+            pointerOffset
           );
         }
       };
@@ -997,7 +1007,9 @@ export function createMapReconstructionActivity(container, options) {
           getInteractionGeometry(),
           { large: event.shiftKey }
         );
-        announce(`${geometry.piecesById[stateId].name} moved ${directions[event.key]}.`);
+        announce(`${geometry.piecesById[stateId].name} moved ${directions[event.key]}.`, {
+          speak: false
+        });
         render();
         focusPiece(stateId);
       } else if (event.key.toLowerCase() === "g") {
@@ -1069,7 +1081,12 @@ export function createMapReconstructionActivity(container, options) {
         } else if (moved) {
           session = endMapReconstructionDrag(session);
           const count = getSelectedStateIds().length;
-          announce(count > 1 ? `${count} selected states moved.` : `${geometry.piecesById[stateId].name} moved.`);
+          announce(
+            count > 1
+              ? `${count} selected states moved.`
+              : `${geometry.piecesById[stateId].name} moved.`,
+            { speak: false }
+          );
           const position = session.piecesById[stateId]?.position;
           const snap = getMobileSnap(stateId, position);
           restoreMobileDragAssistance();
@@ -1097,7 +1114,7 @@ export function createMapReconstructionActivity(container, options) {
           beginMobileDragAssistance(
             { x: moveEvent.clientX, y: moveEvent.clientY },
             current,
-            pieceGeometry,
+            null,
             session.piecesById[stateId]?.position,
             moveEvent.pointerType
           );
@@ -1131,7 +1148,7 @@ export function createMapReconstructionActivity(container, options) {
         updateMobileDragAssistance(
           { x: moveEvent.clientX, y: moveEvent.clientY },
           current,
-          pieceGeometry,
+          null,
           session.piecesById[stateId]?.position
         );
       };

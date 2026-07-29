@@ -146,33 +146,67 @@ export function animateMapReconstructionMobileValue(options = {}) {
   };
 }
 
+export function startMapReconstructionMagnifierFrameLoop(
+  onFrame,
+  targetWindow = globalThis.window
+) {
+  let frameId = null;
+  let active = true;
+  const renderFrame = () => {
+    if (!active) return;
+    onFrame?.();
+    frameId = targetWindow.requestAnimationFrame(renderFrame);
+  };
+  frameId = targetWindow.requestAnimationFrame(renderFrame);
+  return () => {
+    active = false;
+    if (frameId != null) targetWindow.cancelAnimationFrame(frameId);
+    frameId = null;
+  };
+}
+
+function mapClientPointToSourceSvg(sourceSvg, clientPoint) {
+  const matrix = sourceSvg?.getScreenCTM?.();
+  if (!matrix?.inverse || !sourceSvg.createSVGPoint) return null;
+  const point = sourceSvg.createSVGPoint();
+  point.x = clientPoint.x;
+  point.y = clientPoint.y;
+  const transformed = point.matrixTransform(matrix.inverse());
+  return { x: transformed.x, y: transformed.y };
+}
+
 export function createMapReconstructionFingerMagnifier(sourceSvg, options = {}) {
   if (!sourceSvg || !isMapReconstructionMobileAssistanceEnabled(options.targetWindow)) {
     return null;
   }
   const targetWindow = options.targetWindow || globalThis.window;
   const targetDocument = sourceSvg.ownerDocument || targetWindow.document;
-  const assignedSourceId = !sourceSvg.id;
-  if (assignedSourceId) {
-    magnifierSequence += 1;
-    sourceSvg.id = `map-reconstruction-magnifier-source-${magnifierSequence}`;
-  }
+  magnifierSequence += 1;
   const lens = targetDocument.createElement("div");
   lens.className = "map-reconstruction-finger-magnifier";
   lens.setAttribute("aria-hidden", "true");
   const lensSvg = targetDocument.createElementNS(SVG_NAMESPACE, "svg");
   lensSvg.setAttribute("preserveAspectRatio", "xMidYMid slice");
-  const sourceUse = targetDocument.createElementNS(SVG_NAMESPACE, "use");
-  sourceUse.setAttribute("href", `#${sourceSvg.id}`);
+  const sourceLayer = targetDocument.createElementNS(SVG_NAMESPACE, "g");
+  sourceLayer.classList.add("map-reconstruction-finger-magnifier-source");
+  sourceLayer.dataset.magnifierSequence = String(magnifierSequence);
   const pieceLayer = targetDocument.createElementNS(SVG_NAMESPACE, "g");
   pieceLayer.classList.add("map-reconstruction-finger-magnifier-piece");
-  lensSvg.append(sourceUse, pieceLayer);
+  lensSvg.append(sourceLayer, pieceLayer);
   lens.appendChild(lensSvg);
   targetDocument.body.appendChild(lens);
+  let latestFrame = null;
 
-  const update = (clientPoint, worldPoint, draggedPiece = null) => {
+  const renderFrame = () => {
+    const clientPoint = latestFrame?.clientPoint;
     if (!Number.isFinite(clientPoint?.x) || !Number.isFinite(clientPoint?.y)
-      || !Number.isFinite(worldPoint?.x) || !Number.isFinite(worldPoint?.y)) return;
+      || !sourceSvg.isConnected) return;
+    const worldPoint = mapClientPointToSourceSvg(sourceSvg, clientPoint)
+      || latestFrame.worldPoint;
+    if (!Number.isFinite(worldPoint?.x) || !Number.isFinite(worldPoint?.y)) return;
+    sourceLayer.replaceChildren(
+      ...Array.from(sourceSvg.childNodes, (child) => child.cloneNode(true))
+    );
     const diameter = MAP_RECONSTRUCTION_MOBILE_ASSISTANCE.lensDiameterCssPixels;
     const { left, top } = getMapReconstructionMagnifierPosition(clientPoint, {
       width: targetWindow.innerWidth,
@@ -196,25 +230,53 @@ export function createMapReconstructionFingerMagnifier(sourceSvg, options = {}) 
     ].join(" "));
 
     pieceLayer.replaceChildren();
-    if (draggedPiece?.piece?.path && Number.isFinite(draggedPiece.position?.x)
-      && Number.isFinite(draggedPiece.position?.y)) {
+    const draggedPiece = latestFrame.draggedPiece;
+    const draggedPosition = draggedPiece?.pointerOffset
+      ? {
+          x: worldPoint.x - finiteNumber(draggedPiece.pointerOffset.x),
+          y: worldPoint.y - finiteNumber(draggedPiece.pointerOffset.y)
+        }
+      : draggedPiece?.position;
+    if (draggedPiece?.piece?.path && Number.isFinite(draggedPosition?.x)
+      && Number.isFinite(draggedPosition?.y)) {
       const path = targetDocument.createElementNS(SVG_NAMESPACE, "path");
       path.setAttribute("class", "map-reconstruction-drag-preview-shape");
       path.setAttribute("d", draggedPiece.piece.path);
       path.setAttribute("fill-rule", "evenodd");
       pieceLayer.setAttribute(
         "transform",
-        `translate(${draggedPiece.position.x} ${draggedPiece.position.y})`
+        `translate(${draggedPosition.x} ${draggedPosition.y})`
+          + (Number.isFinite(draggedPiece.rotation)
+            ? ` rotate(${draggedPiece.rotation})`
+            : "")
       );
       pieceLayer.appendChild(path);
     }
+  };
+  const stopFrameLoop = startMapReconstructionMagnifierFrameLoop(renderFrame, targetWindow);
+
+  const update = (clientPoint, worldPoint, draggedPiece = null) => {
+    latestFrame = {
+      clientPoint: { ...clientPoint },
+      worldPoint: { ...worldPoint },
+      draggedPiece: draggedPiece
+        ? {
+            ...draggedPiece,
+            position: draggedPiece.position ? { ...draggedPiece.position } : null,
+            pointerOffset: draggedPiece.pointerOffset
+              ? { ...draggedPiece.pointerOffset }
+              : null
+          }
+        : null
+    };
   };
 
   return {
     update,
     destroy: () => {
+      stopFrameLoop();
+      latestFrame = null;
       lens.remove();
-      if (assignedSourceId) sourceSvg.removeAttribute("id");
     }
   };
 }
