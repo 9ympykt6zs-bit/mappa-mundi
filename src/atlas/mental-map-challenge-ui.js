@@ -13,6 +13,7 @@ import {
   getMentalMapAudioText,
   MENTAL_MAP_AUDIO_ROLES
 } from "./mental-map-audio.js";
+import { getActivityAudioEntryByText } from "./activity-audio-registry.js";
 
 function stateName(stateId) {
   return getStateById(stateId)?.name || "Unknown state";
@@ -51,6 +52,14 @@ function createChallengeSpeaker(challenge, role, className, accessibleLabel) {
   return createMentalMapSpeaker(labelText, className, accessibleLabel, {
     audioPath: audioEntry?.audioPath || null
   });
+}
+
+function appendResultSpeaker(element, text, accessibleLabel = "Hear result feedback") {
+  const entry = getActivityAudioEntryByText(text);
+  const speaker = createMentalMapSpeaker(text, "mental-map-result-speaker", accessibleLabel, {
+    audioPath: entry?.audioPath || null
+  });
+  if (speaker) element.appendChild(speaker);
 }
 
 export function attachOrderedAnswerDrag(handle, item, list, fromIndex, stateId, options) {
@@ -316,6 +325,7 @@ function createResultLine(label, stateIds, className = "") {
   const strong = document.createElement("strong");
   strong.textContent = `${label}: `;
   row.append(strong, document.createTextNode(stateNames(stateIds)));
+  appendResultSpeaker(row, `${label}: ${stateNames(stateIds)}`);
   return row;
 }
 
@@ -386,6 +396,7 @@ function createResultContent(challenge, state, options) {
           : "Good start";
     status.textContent = `${getMentalMapScoreLabel(evaluation)} - ${encouragement}`;
   }
+  appendResultSpeaker(status, status.textContent);
   wrapper.appendChild(status);
   wrapper.appendChild(createResultLine(
     evaluation.isBorderRoute && evaluation.isCorrect ? "Your valid route" : evaluation.isBorderRoute ? "Your route" : "Your answer",
@@ -397,6 +408,7 @@ function createResultContent(challenge, state, options) {
     const transitionCount = document.createElement("p");
     transitionCount.className = "mental-map-result-line";
     transitionCount.textContent = `Your route: ${evaluation.playerTransitionCount} border crossings. Shortest possible: ${evaluation.shortestTransitionCount} border crossings.`;
+    appendResultSpeaker(transitionCount, transitionCount.textContent);
     wrapper.appendChild(transitionCount);
     if (!evaluation.isCorrect && evaluation.firstInvalidTransition) {
       const invalid = document.createElement("p");
@@ -406,6 +418,7 @@ function createResultContent(challenge, state, options) {
         : evaluation.firstInvalidTransition.reason === "states-do-not-border"
           ? `First invalid transition: ${stateName(evaluation.firstInvalidTransition.fromStateId)} to ${stateName(evaluation.firstInvalidTransition.toStateId)}.`
           : "The route must begin and end at the named states.";
+      appendResultSpeaker(invalid, invalid.textContent);
       wrapper.appendChild(invalid);
     }
   } else if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SINGLE_SELECT) {
@@ -437,6 +450,7 @@ function createResultContent(challenge, state, options) {
       : evaluation.requestedCountMet
         ? `Requested count met: ${challenge.requiredSelectionCount}.`
         : `Requested count not met: choose exactly ${challenge.requiredSelectionCount}.`;
+    appendResultSpeaker(count, count.textContent);
     wrapper.appendChild(count);
   } else if (isMentalMapRecallAllChallenge(challenge)) {
     wrapper.append(
@@ -457,6 +471,7 @@ function createResultContent(challenge, state, options) {
       const alternative = document.createElement("p");
       alternative.className = "mental-map-alternative-note";
       alternative.textContent = "Your answer matches a configured legitimate alternative route.";
+      appendResultSpeaker(alternative, alternative.textContent);
       wrapper.appendChild(alternative);
     }
   }

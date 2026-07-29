@@ -14,6 +14,7 @@ const args = process.argv.slice(2);
 const listMissing = args.includes("--list-missing");
 const force = args.includes("--force");
 const challengeId = readOption("--challenge");
+const concurrency = Math.max(1, Math.min(6, Number(readOption("--concurrency") || 3)));
 const allAssets = getMentalMapAudioAssets();
 const challengeAssetIds = new Set(
   getMentalMapAudioEntries()
@@ -54,9 +55,10 @@ async function main() {
     throw new Error("OPENAI_API_KEY is required locally to generate Mental Map audio. No key is read or used by browser code.");
   }
 
-  console.log(`Generating ${toGenerate.length} recording(s) with ${TTS_MODEL}, voice ${TTS_VOICE}, format ${TTS_RESPONSE_FORMAT}.`);
+  console.log(`Generating ${toGenerate.length} recording(s) with ${TTS_MODEL}, voice ${TTS_VOICE}, format ${TTS_RESPONSE_FORMAT}, concurrency ${concurrency}.`);
   const failures = [];
-  for (const item of toGenerate) {
+  let generated = 0;
+  await runPool(toGenerate, concurrency, async (item) => {
     try {
       await mkdir(path.dirname(item.absolutePath), { recursive: true });
       await generateOpenAiSpeechFile({
@@ -64,12 +66,21 @@ async function main() {
         outputPath: item.absolutePath,
         apiKey: process.env.OPENAI_API_KEY
       });
+      generated += 1;
       console.log(`Created ${item.audioPath}`);
     } catch (error) {
       failures.push(`${item.assetId}: ${error.message}`);
       console.error(`Failed ${item.audioPath}: ${error.message}`);
     }
-  }
+  });
+
+  console.log(JSON.stringify({
+    generated,
+    skipped: force ? 0 : items.length - toGenerate.length,
+    reused: items.length - toGenerate.length,
+    missing: items.filter((item) => !isValidMp3(item.absolutePath)).length,
+    failed: failures.length
+  }));
 
   if (failures.length) {
     throw new Error(`${failures.length} Mental Map recording(s) failed.\n${failures.join("\n")}`);
@@ -94,4 +105,16 @@ function isValidMp3(filePath) {
   } finally {
     closeSync(descriptor);
   }
+}
+
+async function runPool(items, limit, worker) {
+  let index = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (index < items.length) {
+      const current = items[index];
+      index += 1;
+      await worker(current);
+    }
+  });
+  await Promise.all(workers);
 }

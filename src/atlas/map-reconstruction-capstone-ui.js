@@ -41,6 +41,7 @@ import {
   getMapReconstructionWorldTouchTolerance
 } from "./map-reconstruction-connectivity.js";
 import { evaluateLower48Reconstruction } from "./map-reconstruction-national-evaluation.js";
+import { getActivityAudioEntryByText } from "./activity-audio-registry.js";
 import {
   clearLower48ReconstructionSnapshot,
   createLower48ReconstructionSnapshot,
@@ -80,12 +81,20 @@ function createButton(label, className, handler, attributes = {}) {
 }
 
 function createSpeaker(text, label) {
-  const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(text);
+  const audioEntry = getActivityAudioEntryByText(text);
+  const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(text, {
+    audioPath: audioEntry?.audioPath || null
+  });
   if (!speaker) return null;
   speaker.classList.add("map-reconstruction-capstone-speaker");
   speaker.setAttribute("aria-label", label);
   speaker.setAttribute("title", label);
   return speaker;
+}
+
+function appendSpeaker(element, text, label = "Hear reconstruction feedback") {
+  const speaker = createSpeaker(text, label);
+  if (speaker) element.appendChild(speaker);
 }
 
 function mapClientPointToWorld(svg, clientX, clientY) {
@@ -269,6 +278,11 @@ export function createLower48ReconstructionActivity(container, options = {}) {
   };
   const announce = (message) => {
     announcement = message;
+    const audioEntry = getActivityAudioEntryByText(message);
+    void window.GeographyChipSpeech?.speakAudioPathAndWait?.(
+      message,
+      audioEntry?.audioPath || null
+    );
   };
   const getSelectedStateIds = () => getMapReconstructionSelectedStateIds(session);
   const selectConnectedGroup = (stateId, options = {}) => {
@@ -938,13 +952,16 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       + `${session.evaluation?.counts?.close || 0} close | `
       + `${session.evaluation?.counts?.misplaced || 0} misplaced | `
       + `${session.evaluation?.counts?.unplaced || 0} unplaced`;
+    appendSpeaker(metrics, metrics.textContent, "Hear the placement summary");
     const components = createElement("p");
     components.textContent = `Adjacency ${scores.adjacency || 0}% | Regional structure ${scores.regionalStructure || 0}%`;
+    appendSpeaker(components, components.textContent, "Hear the structure summary");
     summary.append(title, metrics, components);
     const priorities = createElement("ol");
     (session.evaluation?.feedback || []).forEach((message) => {
       const item = createElement("li");
       item.textContent = message;
+      appendSpeaker(item, message);
       priorities.appendChild(item);
     });
     summary.appendChild(priorities);
@@ -961,6 +978,7 @@ export function createLower48ReconstructionActivity(container, options = {}) {
         const item = createElement("li");
         const status = session.evaluation?.placements?.[stateId]?.status || "unplaced";
         item.textContent = `${geometry.piecesById[stateId].name}: ${status.replace("-", " ")}`;
+        appendSpeaker(item, item.textContent, `Hear ${geometry.piecesById[stateId].name} result`);
         detailList.appendChild(item);
       });
     details.append(detailsTitle, detailList);
@@ -1416,6 +1434,7 @@ export function createLower48ReconstructionActivity(container, options = {}) {
     },
     destroy: () => {
       destroyed = true;
+      window.GeographyChipSpeech?.stopAudio?.();
       activeDrawerPointerCancel?.();
       flushSave();
       clearTimers();

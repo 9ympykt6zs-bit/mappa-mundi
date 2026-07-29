@@ -1,5 +1,5 @@
 (function attachChipSpeech(global) {
-  const audioManifestUrl = "assets/audio/audio-manifest.json?v=20260621-washington-dc-audio-1";
+  const audioManifestUrl = "assets/audio/audio-manifest.json?v=20260728-activity-audio-1";
   const audioMutedStorageKey = "atlasQuestAudioMuted";
   let audioManifestPromise = null;
   let audioManifestLookup = null;

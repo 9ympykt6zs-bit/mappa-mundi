@@ -6,6 +6,13 @@
     "audio:mental-map:generate": "node scripts/generate-mental-map-audio.mjs",
     "audio:mental-map:list": "node scripts/generate-mental-map-audio.mjs --list-missing",
     "check:mental-map-audio": "node scripts/check-mental-map-audio.mjs",
+    "audio:map-reconstruction:generate": "node scripts/generate-activity-audio.mjs --activity map-reconstruction",
+    "audio:map-reconstruction:list": "node scripts/generate-activity-audio.mjs --activity map-reconstruction --list-missing",
+    "audio:activities:generate": "node scripts/generate-activity-audio.mjs",
+    "audio:activities:list": "node scripts/generate-activity-audio.mjs --list-missing",
+    "audio:activities:fallbacks": "node scripts/generate-activity-audio.mjs --fallback-report",
+    "check:map-reconstruction-audio": "node scripts/check-activity-audio.mjs --activity map-reconstruction",
+    "check:activity-audio": "node scripts/check-activity-audio.mjs",
     "generate:co-land": "node scripts/generate-co-continent-land.mjs"
   },
   "devDependencies": {

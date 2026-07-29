@@ -34,6 +34,7 @@ import {
   getMapReconstructionStatesIntersectingBounds,
   getMapReconstructionWorldTouchTolerance
 } from "./map-reconstruction-connectivity.js";
+import { getActivityAudioEntryByText } from "./activity-audio-registry.js";
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 export const MAP_RECONSTRUCTION_SUCCESS_TIMING = Object.freeze({
@@ -72,7 +73,10 @@ function createButton(label, className, onClick, options = {}) {
 }
 
 function createReconstructionSpeaker(labelText, className, accessibleLabel) {
-  const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(labelText);
+  const audioEntry = getActivityAudioEntryByText(labelText);
+  const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(labelText, {
+    audioPath: audioEntry?.audioPath || null
+  });
   if (!speaker) return null;
   speaker.classList.add(className);
   if (accessibleLabel) {
@@ -80,6 +84,15 @@ function createReconstructionSpeaker(labelText, className, accessibleLabel) {
     speaker.setAttribute("title", accessibleLabel);
   }
   return speaker;
+}
+
+function appendReconstructionSpeaker(element, text, accessibleLabel = "Hear reconstruction feedback") {
+  const speaker = createReconstructionSpeaker(
+    text,
+    "map-reconstruction-result-speaker",
+    accessibleLabel
+  );
+  if (speaker) element.appendChild(speaker);
 }
 
 function formatStatus(status) {
@@ -399,6 +412,7 @@ function createResultSummary(session, region, geometry) {
   const countText = createElement("p", "map-reconstruction-result-counts");
   if (session.evaluation?.isComplete) {
     countText.textContent = `${geometry.stateIds.length} of ${geometry.stateIds.length} states placed correctly.`;
+    appendReconstructionSpeaker(countText, countText.textContent, "Hear the placement count");
     const successMessage = createElement("p", "map-reconstruction-success-message");
     successMessage.textContent = region.successMessage;
     const speaker = createReconstructionSpeaker(
@@ -412,6 +426,7 @@ function createResultSummary(session, region, geometry) {
   }
   if (isCorrectPlacement) {
     countText.textContent = `${geometry.stateIds.length} states shown in their correct positions.`;
+    appendReconstructionSpeaker(countText, countText.textContent, "Hear the correction summary");
     const correctionMessage = createElement("p", "map-reconstruction-correction-message");
     correctionMessage.textContent = region.correctPlacementMessage;
     const speaker = createReconstructionSpeaker(
@@ -424,12 +439,14 @@ function createResultSummary(session, region, geometry) {
     return section;
   }
   countText.textContent = `${counts["well-placed"] || 0} well placed, ${counts.close || 0} close, ${counts.misplaced || 0} misplaced, ${counts.unplaced || 0} unplaced.`;
+  appendReconstructionSpeaker(countText, countText.textContent, "Hear the placement summary");
   section.append(heading, countText, createStatusLegend());
   if (session.evaluation?.feedback?.length) {
     const list = createElement("ul", "map-reconstruction-feedback-list");
     session.evaluation.feedback.forEach((message) => {
       const item = createElement("li");
       item.textContent = message;
+      appendReconstructionSpeaker(item, message);
       list.appendChild(item);
     });
     section.appendChild(list);
@@ -440,6 +457,7 @@ function createResultSummary(session, region, geometry) {
     const status = session.evaluation?.placements?.[stateId]?.status || "unplaced";
     item.className = `is-${status}`;
     item.textContent = `${geometry.piecesById[stateId].name}: ${formatStatus(status)}`;
+    appendReconstructionSpeaker(item, item.textContent, `Hear ${geometry.piecesById[stateId].name} result`);
     stateList.appendChild(item);
   });
   section.appendChild(stateList);
@@ -523,7 +541,10 @@ export function createMapReconstructionRegionSelection(container, options = {}) 
   }
   container.replaceChildren(shell);
   return {
-    destroy: () => container.replaceChildren()
+    destroy: () => {
+      window.GeographyChipSpeech?.stopAudio?.();
+      container.replaceChildren();
+    }
   };
 }
 
@@ -555,6 +576,11 @@ export function createMapReconstructionActivity(container, options) {
 
   const announce = (message) => {
     announcement = message;
+    const audioEntry = getActivityAudioEntryByText(message);
+    void window.GeographyChipSpeech?.speakAudioPathAndWait?.(
+      message,
+      audioEntry?.audioPath || null
+    );
   };
 
   const getSelectedStateIds = () => getMapReconstructionSelectedStateIds(session);
@@ -1344,6 +1370,7 @@ export function createMapReconstructionActivity(container, options) {
     },
     destroy: () => {
       destroyed = true;
+      window.GeographyChipSpeech?.stopAudio?.();
       activeBankPointerCancel?.();
       clearCorrectionTimer();
       workspaceResizeObserver?.disconnect();

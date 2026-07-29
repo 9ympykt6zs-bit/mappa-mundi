@@ -3327,7 +3327,7 @@ function ensureChipSpeechLoaded() {
     return Promise.resolve(window.GeographyChipSpeech);
   }
 
-  return import("./chip-speech.js?v=20260720-mental-map-prerecorded-audio-1")
+  return import("./chip-speech.js?v=20260728-activity-audio-1")
     .then(() => window.GeographyChipSpeech || null);
 }
 
@@ -3714,7 +3714,7 @@ async function ensureMapRuntimeLoaded() {
       import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
       import("./maplibre/maplibre-activity-runner.js?v=20260721-mental-map-consolidation-1"),
-      import("./chip-speech.js?v=20260720-mental-map-prerecorded-audio-1")
+      import("./chip-speech.js?v=20260728-activity-audio-1")
     ]).then(([
       ,
       ,
@@ -7966,6 +7966,7 @@ function chooseNextMentalMapChallenge() {
 }
 
 function startNextMentalMapQuestion() {
+  window.GeographyChipSpeech?.stopAudio?.();
   document.body.classList.remove("mental-map-result-mode");
   if (mapElement) mapElement.setAttribute("aria-hidden", "true");
   runner?.prepareMentalMapChallenge();
@@ -8048,6 +8049,7 @@ function submitActiveMentalMapChallenge() {
 }
 
 function exitMentalMapChallenge() {
+  window.GeographyChipSpeech?.stopAudio?.();
   if (mentalMapChallengePanel) mentalMapChallengePanel.hidden = true;
   activeMentalMapChallenge = null;
   activeMentalMapChallengeState = null;

@@ -11,15 +11,15 @@ import {
 } from "../src/atlas/mental-map-audio.js";
 import {
   createGeneratedShortestRouteChallenge,
-  getMentalMapChallenges
 } from "../src/atlas/mental-map-challenges.js";
+import { getUnifiedMentalMapChallenges } from "../src/atlas/mental-map-challenge-registry.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const fixedChallenges = getMentalMapChallenges({ includeGenerated: false });
+const fixedChallenges = getUnifiedMentalMapChallenges({ includeGenerated: false });
 const entries = getMentalMapAudioEntries();
 const assets = getMentalMapAudioAssets();
 
-assert.equal(fixedChallenges.length, 11);
+assert.equal(fixedChallenges.length, 20);
 fixedChallenges.forEach((challenge) => {
   assert.ok(getMentalMapAudioEntry(challenge, MENTAL_MAP_AUDIO_ROLES.QUESTION), `${challenge.id} needs question audio.`);
   assert.ok(getMentalMapAudioEntry(challenge, MENTAL_MAP_AUDIO_ROLES.EXPLANATION), `${challenge.id} needs explanation audio.`);
@@ -27,12 +27,14 @@ fixedChallenges.forEach((challenge) => {
     assert.ok(getMentalMapAudioEntry(challenge, MENTAL_MAP_AUDIO_ROLES.INSTRUCTION), `${challenge.id} needs instruction audio.`);
   }
 });
-assert.equal(entries.length, 23, "The current fixed catalog should expose 11 questions, 11 explanations, and one instruction.");
+assert.equal(entries.length, fixedChallenges.reduce((count, challenge) => (
+  count + 2 + (challenge.secondaryInstruction ? 1 : 0)
+), 0), "Every unified fixed challenge role should have a registry entry.");
 assert.equal(new Set(assets.map((asset) => asset.text)).size, assets.length, "Identical spoken text must map to one asset.");
 assert.equal(new Set(assets.map((asset) => asset.audioPath)).size, assets.length, "Generated asset paths must be unique.");
 assets.forEach((asset) => {
-  assert.match(asset.assetId, /^mental-map-(question|instruction|explanation)-[a-z0-9-]+$/);
-  assert.match(asset.audioPath, /^assets\/audio\/mental-map\/mental-map-(question|instruction|explanation)-[a-z0-9-]+\.mp3$/);
+  assert.match(asset.assetId, /^mental-map-(question|instruction|explanation|feedback)-[a-z0-9-]+$/);
+  assert.match(asset.audioPath, /^assets\/audio\/mental-map\/mental-map-(question|instruction|explanation|feedback)-[a-z0-9-]+\.mp3$/);
 });
 
 const generated = createGeneratedShortestRouteChallenge({ random: () => 0 });
