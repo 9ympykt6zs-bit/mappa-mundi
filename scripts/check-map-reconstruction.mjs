@@ -23,16 +23,25 @@ import {
   createSeededMapReconstructionRandom,
   findMapReconstructionAutomaticPlacement,
   getMapReconstructionPieceRenderOrder,
+  getMapReconstructionSelectedStateIds,
   moveMapReconstructionPieceByKeyboard,
+  moveMapReconstructionSelectedPieces,
   placeMapReconstructionPiece,
   prepareMapReconstructionCorrectionReplay,
   resetMapReconstructionSession,
   restoreMapReconstructionSubmittedMap,
   returnMapReconstructionPieceToBank,
+  selectMapReconstructionStates,
   setMapReconstructionViewMode,
   showMapReconstructionCorrectPlacement,
+  sortMapReconstructionStateIdsByName,
   submitMapReconstructionSession
 } from "../src/atlas/map-reconstruction-engine.js";
+import {
+  areMapReconstructionPiecesTouching,
+  getMapReconstructionConnectedComponent,
+  getMapReconstructionStatesIntersectingBounds
+} from "../src/atlas/map-reconstruction-connectivity.js";
 import {
   MAP_RECONSTRUCTION_PLACEMENT_STATUSES,
   evaluateMapReconstruction,
@@ -48,6 +57,10 @@ import {
   mapClientPointToReconstructionWorkspace,
   shouldRenderMapReconstructionCorrectLayout
 } from "../src/atlas/map-reconstruction-ui.js";
+import {
+  getMapReconstructionDefaultGrabAnchor,
+  getMapReconstructionDragPreviewLayout
+} from "../src/atlas/map-reconstruction-drag-preview.js";
 
 const featureCollection = JSON.parse((await readFile(
   new URL("../assets/maps/data/maplibre-us-states-atlas.geojson", import.meta.url),
@@ -57,6 +70,7 @@ const [
   indexHtml,
   runtimeSource,
   uiSource,
+  dragPreviewSource,
   stylesheet,
   audioManifestSource,
   ttsGeneratorSource
@@ -64,6 +78,7 @@ const [
   readFile(new URL("../index.html", import.meta.url), "utf8"),
   readFile(new URL("../src/maplibre-poc.js", import.meta.url), "utf8"),
   readFile(new URL("../src/atlas/map-reconstruction-ui.js", import.meta.url), "utf8"),
+  readFile(new URL("../src/atlas/map-reconstruction-drag-preview.js", import.meta.url), "utf8"),
   readFile(new URL("../maplibre-poc.css", import.meta.url), "utf8"),
   readFile(new URL("../assets/audio/audio-manifest.json", import.meta.url), "utf8"),
   readFile(new URL("./generate-tts-audio.mjs", import.meta.url), "utf8")
@@ -120,6 +135,106 @@ for (const stateId of expectedStateIds) {
 assert.equal(geometry.piecesById.maine.geometryType, "MultiPolygon");
 assert.ok(geometry.piecesById.maine.polygonCount > 1, "Maine islands should be preserved");
 assert.equal(geometry.piecesById.vermont.geometryType, "Polygon");
+
+function testPiece(stateId, polygons) {
+  const points = polygons.flatMap((polygon) => polygon.flat());
+  const localBounds = points.reduce((bounds, [x, y]) => ({
+    minX: Math.min(bounds.minX, x),
+    minY: Math.min(bounds.minY, y),
+    maxX: Math.max(bounds.maxX, x),
+    maxY: Math.max(bounds.maxY, y)
+  }), { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
+  return {
+    stateId,
+    polygons,
+    localBounds,
+    width: localBounds.maxX - localBounds.minX,
+    height: localBounds.maxY - localBounds.minY
+  };
+}
+
+const square = (size = 10) => [[[
+  [0, 0], [size, 0], [size, size], [0, size], [0, 0]
+]]];
+const squarePieceA = testPiece("a", square());
+const squarePieceB = testPiece("b", square());
+assert.equal(areMapReconstructionPiecesTouching(
+  squarePieceA, { x: 0, y: 0 }, squarePieceB, { x: 10.5, y: 0 }, 1
+), true, "A narrow learner gap should fall within the configured tolerance");
+assert.equal(areMapReconstructionPiecesTouching(
+  squarePieceA, { x: 0, y: 0 }, squarePieceB, { x: 13, y: 0 }, 1
+), false, "A clearly visible learner gap should remain disconnected");
+assert.equal(areMapReconstructionPiecesTouching(
+  squarePieceA, { x: 0, y: 0 }, squarePieceB, { x: 9.8, y: 0 }, 0
+), true, "Slight actual geometry overlap should connect pieces");
+assert.equal(areMapReconstructionPiecesTouching(
+  squarePieceA, { x: 0, y: 0 }, squarePieceB, { x: 10, y: 10 }, 0
+), true, "Genuine Four Corners-style point contact should connect pieces");
+
+const lowerTriangle = testPiece("lower", [[[
+  [0, 0], [10, 0], [0, 10], [0, 0]
+]]]);
+const upperTriangle = testPiece("upper", [[[
+  [10, 10], [10, 6], [6, 10], [10, 10]
+]]]);
+assert.equal(areMapReconstructionPiecesTouching(
+  lowerTriangle, { x: 0, y: 0 }, upperTriangle, { x: 0, y: 0 }, 1
+), false, "Overlapping wrapper bounds alone must not connect pieces");
+
+const donut = testPiece("donut", [[
+  [[0, 0], [20, 0], [20, 20], [0, 20], [0, 0]],
+  [[5, 5], [5, 15], [15, 15], [15, 5], [5, 5]]
+]]);
+const insideHole = testPiece("inside-hole", [[[
+  [7, 7], [9, 7], [9, 9], [7, 9], [7, 7]
+]]]);
+assert.equal(areMapReconstructionPiecesTouching(
+  donut, { x: 0, y: 0 }, insideHole, { x: 0, y: 0 }, 1
+), false, "A state inside a wrapper and polygon hole should remain disconnected");
+
+const multiPolygon = testPiece("multi", [
+  [[[0, 0], [4, 0], [4, 4], [0, 4], [0, 0]]],
+  [[[20, 0], [24, 0], [24, 4], [20, 4], [20, 0]]]
+]);
+const islandNeighbor = testPiece("island-neighbor", [[[
+  [24.5, 0], [28.5, 0], [28.5, 4], [24.5, 4], [24.5, 0]
+]]]);
+assert.equal(areMapReconstructionPiecesTouching(
+  multiPolygon, { x: 0, y: 0 }, islandNeighbor, { x: 0, y: 0 }, 1
+), true, "MultiPolygon boundaries should participate in connected detection");
+
+const chainGeometry = {
+  stateIds: ["a", "b", "c", "far"],
+  piecesById: {
+    a: squarePieceA,
+    b: squarePieceB,
+    c: testPiece("c", square()),
+    far: testPiece("far", square())
+  }
+};
+const chainSession = {
+  piecesById: {
+    a: { position: { x: 0, y: 0 } },
+    b: { position: { x: 10.5, y: 0 } },
+    c: { position: { x: 21, y: 0 } },
+    far: { position: { x: 60, y: 0 } }
+  }
+};
+assert.deepEqual(
+  getMapReconstructionConnectedComponent(chainSession, chainGeometry, "a", 1),
+  ["a", "b", "c"],
+  "Connected selection should traverse the full learner-positioned chain"
+);
+assert.deepEqual(
+  getMapReconstructionStatesIntersectingBounds(chainSession, chainGeometry, {
+    minX: -2,
+    minY: -2,
+    maxX: 19,
+    maxY: 12
+  }),
+  ["a", "b"],
+  "Marquee selection should use learner-positioned geometry"
+);
 
 function createScaledWorkspaceSvg(scale, offsetX, offsetY) {
   return {
@@ -341,7 +456,10 @@ const secondSession = createMapReconstructionSession(region, geometry, {
   random: createSeededMapReconstructionRandom(42)
 });
 assert.deepEqual(firstSession.bankOrder, secondSession.bankOrder);
-assert.notDeepEqual(firstSession.bankOrder, region.stateIds);
+assert.deepEqual(
+  firstSession.bankOrder,
+  sortMapReconstructionStateIdsByName(region.stateIds, geometry)
+);
 assert.deepEqual(new Set(firstSession.bankOrder), new Set(region.stateIds));
 assert.equal(shouldRenderMapReconstructionCorrectLayout(firstSession.phase, firstSession.viewMode), false);
 const defaultPlacement = getDefaultMapReconstructionPlacement(firstSession.piecesById.maine, geometry);
@@ -366,8 +484,30 @@ assert.deepEqual(
   ["maine", "connecticut"],
   "a newly placed overlapping piece should render on top"
 );
-const raisedMaine = beginMapReconstructionDrag(
+const multiSelected = selectMapReconstructionStates(
   overlappingConnecticut,
+  ["maine", "connecticut"],
+  { primaryStateId: "maine" }
+);
+assert.deepEqual(getMapReconstructionSelectedStateIds(multiSelected), [
+  "maine",
+  "connecticut"
+]);
+assert.equal(multiSelected.selectedStateId, "maine");
+const groupMoved = moveMapReconstructionSelectedPieces(
+  multiSelected,
+  "maine",
+  { x: 10, y: 5 },
+  geometry
+);
+assert.deepEqual(groupMoved.piecesById.maine.position, { x: 510, y: 305 });
+assert.deepEqual(groupMoved.piecesById.connecticut.position, { x: 510, y: 305 });
+assert.deepEqual(getMapReconstructionSelectedStateIds(groupMoved), [
+  "maine",
+  "connecticut"
+]);
+const raisedMaine = beginMapReconstructionDrag(
+  multiSelected,
   "maine",
   1,
   { x: 500, y: 300 },
@@ -375,8 +515,8 @@ const raisedMaine = beginMapReconstructionDrag(
 );
 assert.deepEqual(
   getMapReconstructionPieceRenderOrder(raisedMaine),
-  ["connecticut", "maine"],
-  "interacting with a placed piece should bring it to the front"
+  ["maine", "connecticut"],
+  "interacting with a selected group should preserve its relative z-order"
 );
 assert.deepEqual(
   getMapReconstructionShelfDropPosition({ x: 440, y: 330 }, { x: 20, y: -10 }),
@@ -739,7 +879,32 @@ assert.match(uiSource, /completeMapReconstructionCorrection/);
 assert.match(uiSource, /prepareMapReconstructionCorrectionReplay/);
 assert.match(uiSource, /correctionReplayPauseMs/);
 assert.match(uiSource, /prefers-reduced-motion: reduce/);
-assert.match(uiSource, /map-reconstruction-drag-proxy.*proxy\.remove/s);
+const mainePreview = getMapReconstructionDragPreviewLayout(
+  geometry.piecesById.maine,
+  { x: 0.75, y: 0.75 },
+  { x: geometry.piecesById.maine.localBounds.minX, y: 0 }
+);
+assert.equal(mainePreview.width, geometry.piecesById.maine.width * 0.75);
+assert.equal(mainePreview.height, geometry.piecesById.maine.height * 0.75);
+assert.equal(mainePreview.grabOffsetX, 0);
+assert.deepEqual(getMapReconstructionDefaultGrabAnchor(), { x: 0, y: 0 });
+assert.match(uiSource, /createMapReconstructionDragPreview\(piece, workspaceSvg/);
+assert.match(dragPreviewSource, /map-reconstruction-drag-proxy/);
+assert.match(dragPreviewSource, /getMapReconstructionSvgScreenScale\(workspaceSvg\)/);
+assert.doesNotMatch(dragPreviewSource, /viewBox: "0 0 120 84"/);
+assert.match(stylesheet, /map-reconstruction-bank-piece\.is-dragging-source/);
+assert.match(uiSource, /addEventListener\("dblclick"/);
+assert.match(uiSource, /Select connected group/);
+assert.match(uiSource, /Double-click a state to select all connected pieces\./);
+assert.match(uiSource, /clearMapReconstructionSelection/);
+assert.match(uiSource, /moveMapReconstructionSelectedPieces/);
+assert.match(uiSource, /getMapReconstructionStatesIntersectingBounds/);
+assert.match(uiSource, /map-reconstruction-marquee/);
+assert.doesNotMatch(uiSource, /triple|detail\s*===\s*3/i);
+assert.match(uiSource, /if \(moved\) \{[\s\S]*pointIsInsideElement[\s\S]*return;/);
+assert.match(uiSource, /lostpointercapture/);
+assert.match(uiSource, /keyEvent\.key === "Escape"/);
+assert.match(stylesheet, /map-reconstruction-bank-thumbnail[\s\S]*touch-action:\s*none/);
 assert.match(uiSource, /region\.completedLabelOffsets/);
 assert.doesNotMatch(uiSource, /map-reconstruction-piece-hit-target/);
 assert.match(uiSource, /isPointInMapReconstructionPiece/);
@@ -865,7 +1030,10 @@ const firstMidAtlanticSession = createMapReconstructionSession(
   midAtlanticGeometry,
   { random: createSeededMapReconstructionRandom(91) }
 );
-assert.notDeepEqual(firstMidAtlanticSession.bankOrder, midAtlanticStateIds);
+assert.deepEqual(
+  firstMidAtlanticSession.bankOrder,
+  sortMapReconstructionStateIdsByName(midAtlanticStateIds, midAtlanticGeometry)
+);
 assert.deepEqual(new Set(firstMidAtlanticSession.bankOrder), new Set(midAtlanticStateIds));
 const firstMidAtlanticStateId = firstMidAtlanticSession.bankOrder[0];
 const secondMidAtlanticStateId = firstMidAtlanticSession.bankOrder[1];
@@ -1089,7 +1257,10 @@ for (const testCase of addedRegionCases) {
   const initialized = createMapReconstructionSession(regionEntry, regionGeometry, {
     random: createSeededMapReconstructionRandom(43)
   });
-  assert.notDeepEqual(initialized.bankOrder, regionEntry.stateIds);
+  assert.deepEqual(
+    initialized.bankOrder,
+    sortMapReconstructionStateIdsByName(regionEntry.stateIds, regionGeometry)
+  );
   assert.deepEqual(new Set(initialized.bankOrder), new Set(regionEntry.stateIds));
 
   const translated = createPlacedRegionSession(regionEntry, regionGeometry, { x: 24, y: -18 });

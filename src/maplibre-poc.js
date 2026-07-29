@@ -21,11 +21,20 @@ import {
   getMapReconstructionRegion,
   listMapReconstructionRegions
 } from "./atlas/map-reconstruction-regions.js";
+import {
+  getMapReconstructionCapstone,
+  listMapReconstructionCapstones
+} from "./atlas/map-reconstruction-capstones.js";
 import { prepareMapReconstructionGeometry } from "./atlas/map-reconstruction-geometry.js";
 import {
   createMapReconstructionActivity,
   createMapReconstructionRegionSelection
 } from "./atlas/map-reconstruction-ui.js";
+import { createLower48ReconstructionActivity } from "./atlas/map-reconstruction-capstone-ui.js";
+import {
+  clearLower48ReconstructionSnapshot,
+  readLower48ReconstructionSnapshot
+} from "./atlas/map-reconstruction-persistence.js";
 import { trackEvent } from "./analytics.js?v=20260601-instruction-target-nouns";
 import {
   clearActiveJourney,
@@ -7718,7 +7727,8 @@ function exitUnitedStatesAtlas() {
 
 function loadMapReconstructionGeometry(regionId) {
   if (!mapReconstructionGeometryPromises.has(regionId)) {
-    const region = getMapReconstructionRegion(regionId);
+    const region = getMapReconstructionRegion(regionId)
+      || getMapReconstructionCapstone(regionId);
     if (!region) return Promise.reject(new Error(`Unknown reconstruction region: ${regionId}`));
     if (!mapReconstructionFeatureCollectionPromise) {
       mapReconstructionFeatureCollectionPromise = fetchJson(usStatesAtlasPath).catch((error) => {
@@ -7744,13 +7754,62 @@ function showMapReconstructionRegionSelection() {
   activeMapReconstructionRegionId = "";
   setHeaderTitle("Map Reconstruction", { shortTitle: "Rebuild" });
   instruction.textContent = "Choose a region, then rebuild it from memory.";
+  const capstones = listMapReconstructionCapstones();
+  const capstoneResumeById = Object.fromEntries(capstones.map((capstone) => [
+    capstone.id,
+    readLower48ReconstructionSnapshot(window.localStorage, capstone)
+  ]));
   mapReconstructionController = createMapReconstructionRegionSelection(mapReconstructionPanel, {
     regions: listMapReconstructionRegions(),
+    capstones,
+    capstoneResumeById,
     onSelect: (regionId) => {
       void startMapReconstructionRegion(regionId);
+    },
+    onSelectCapstone: (capstoneId, selectionOptions) => {
+      void startMapReconstructionCapstone(capstoneId, selectionOptions);
     }
   });
   updateTopBarNavigation();
+}
+
+async function startMapReconstructionCapstone(capstoneId, selectionOptions = {}) {
+  const capstone = getMapReconstructionCapstone(capstoneId);
+  if (!mapReconstructionPanel || !capstone || currentAppScreen !== "map-reconstruction") return;
+  mapReconstructionController?.destroy();
+  mapReconstructionController = null;
+  activeMapReconstructionRegionId = capstone.id;
+  setHeaderTitle(capstone.title, { shortTitle: "Lower 48" });
+  instruction.textContent = "Build the contiguous United States from memory, then compare.";
+  mapReconstructionPanel.innerHTML = '<p class="map-reconstruction-loading" role="status">Preparing 48 state pieces...</p>';
+  if (selectionOptions.startOver) {
+    clearLower48ReconstructionSnapshot(window.localStorage);
+  }
+  const resumeSnapshot = selectionOptions.resume
+    ? readLower48ReconstructionSnapshot(window.localStorage, capstone)
+    : null;
+  try {
+    const geometry = await loadMapReconstructionGeometry(capstone.id);
+    if (currentAppScreen !== "map-reconstruction"
+      || activeMapReconstructionRegionId !== capstone.id) return;
+    mapReconstructionController = createLower48ReconstructionActivity(
+      mapReconstructionPanel,
+      {
+        capstone,
+        geometry,
+        resumeSnapshot
+      }
+    );
+  } catch (error) {
+    if (currentAppScreen !== "map-reconstruction"
+      || activeMapReconstructionRegionId !== capstone.id) return;
+    mapReconstructionPanel.replaceChildren();
+    const message = document.createElement("p");
+    message.className = "map-reconstruction-loading is-error";
+    message.setAttribute("role", "alert");
+    message.textContent = `Lower 48 pieces could not be loaded. ${error.message}`;
+    mapReconstructionPanel.appendChild(message);
+  }
 }
 
 async function startMapReconstructionRegion(regionId) {

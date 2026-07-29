@@ -15,6 +15,17 @@ function shuffle(values, random) {
   return shuffled;
 }
 
+export function sortMapReconstructionStateIdsByName(stateIds, geometry) {
+  return [...(Array.isArray(stateIds) ? stateIds : [])].sort((leftId, rightId) => {
+    const leftName = String(geometry?.piecesById?.[leftId]?.name || leftId);
+    const rightName = String(geometry?.piecesById?.[rightId]?.name || rightId);
+    return leftName.localeCompare(rightName, "en", {
+      sensitivity: "base",
+      numeric: true
+    }) || String(leftId).localeCompare(String(rightId), "en");
+  });
+}
+
 function validPosition(position) {
   return Number.isFinite(position?.x) && Number.isFinite(position?.y);
 }
@@ -32,10 +43,45 @@ function bringPieceToFront(pieceZOrder, stateId) {
   return [...(Array.isArray(pieceZOrder) ? pieceZOrder : []).filter((id) => id !== stateId), stateId];
 }
 
+function getPlacedSelectionIds(session) {
+  const requested = Array.isArray(session?.selectedStateIds)
+    ? session.selectedStateIds
+    : session?.selectedStateId ? [session.selectedStateId] : [];
+  return [...new Set(requested)].filter((stateId) => (
+    session?.piecesById?.[stateId]?.position
+  ));
+}
+
+function bringPiecesToFront(pieceZOrder, stateIds) {
+  const selected = new Set(stateIds);
+  return [
+    ...(Array.isArray(pieceZOrder) ? pieceZOrder : []).filter((id) => !selected.has(id)),
+    ...stateIds
+  ];
+}
+
+function setSelection(next, stateIds, primaryStateId = null) {
+  const selectedStateIds = [...new Set(stateIds || [])].filter((stateId) => (
+    next?.piecesById?.[stateId]?.position
+  ));
+  const primary = selectedStateIds.includes(primaryStateId)
+    ? primaryStateId
+    : selectedStateIds[selectedStateIds.length - 1] || null;
+  next.selectedStateIds = selectedStateIds;
+  next.selectedStateId = primary;
+  return next;
+}
+
 function getBoundsOverlapArea(first, second) {
   const width = Math.max(0, Math.min(first.maxX, second.maxX) - Math.max(first.minX, second.minX));
   const height = Math.max(0, Math.min(first.maxY, second.maxY) - Math.max(first.minY, second.minY));
   return width * height;
+}
+
+function clampDelta(value, minimum, maximum) {
+  return minimum > maximum
+    ? (minimum + maximum) / 2
+    : Math.min(maximum, Math.max(minimum, value));
 }
 
 export function clampMapReconstructionPosition(position, pieceGeometry, workspace) {
@@ -57,8 +103,12 @@ export function clampMapReconstructionPosition(position, pieceGeometry, workspac
 
 export function createMapReconstructionSession(region, geometry, options = {}) {
   if (!region || geometry?.regionId !== region.id) return null;
-  const random = typeof options.random === "function" ? options.random : Math.random;
-  const bankOrder = shuffle(region.stateIds, random);
+  const bankOrder = options.order === "shuffled"
+    ? shuffle(
+      region.stateIds,
+      typeof options.random === "function" ? options.random : Math.random
+    )
+    : sortMapReconstructionStateIdsByName(region.stateIds, geometry);
   const piecesById = Object.fromEntries(bankOrder.map((stateId, bankIndex) => {
     const pieceGeometry = geometry.piecesById[stateId];
     if (!pieceGeometry) throw new Error(`Missing prepared geometry: ${stateId}`);
@@ -80,6 +130,7 @@ export function createMapReconstructionSession(region, geometry, options = {}) {
     pieceZOrder: [],
     piecesById,
     selectedStateId: null,
+    selectedStateIds: [],
     activeDrag: null,
     evaluation: null
   };
@@ -94,8 +145,48 @@ export function placeMapReconstructionPiece(session, stateId, position, geometry
   piece.position = clamped;
   piece.placementStatus = "placed";
   piece.hasMoved = true;
-  next.selectedStateId = stateId;
+  setSelection(next, [stateId], stateId);
   next.pieceZOrder = bringPieceToFront(next.pieceZOrder, stateId);
+  return next;
+}
+
+export function getMapReconstructionSelectedStateIds(session) {
+  return getPlacedSelectionIds(session);
+}
+
+export function selectMapReconstructionStates(session, stateIds, options = {}) {
+  const next = copy(session);
+  if (!next || next.phase !== "arranging") return next;
+  const requested = [...new Set(Array.isArray(stateIds) ? stateIds : [])].filter((stateId) => (
+    next.piecesById?.[stateId]?.position
+  ));
+  const existing = getPlacedSelectionIds(next);
+  const selected = options.additive
+    ? [...existing, ...requested.filter((stateId) => !existing.includes(stateId))]
+    : requested;
+  setSelection(next, selected, options.primaryStateId);
+  if (requested.length) {
+    next.pieceZOrder = bringPiecesToFront(next.pieceZOrder, requested);
+  }
+  return next;
+}
+
+export function toggleMapReconstructionStateSelection(session, stateId) {
+  const next = copy(session);
+  if (!next?.piecesById?.[stateId]?.position || next.phase !== "arranging") return next;
+  const selected = getPlacedSelectionIds(next);
+  if (selected.includes(stateId)) {
+    setSelection(next, selected.filter((id) => id !== stateId));
+  } else {
+    setSelection(next, [...selected, stateId], stateId);
+    next.pieceZOrder = bringPieceToFront(next.pieceZOrder, stateId);
+  }
+  return next;
+}
+
+export function clearMapReconstructionSelection(session) {
+  const next = copy(session);
+  if (next) setSelection(next, []);
   return next;
 }
 
@@ -178,7 +269,7 @@ export function returnMapReconstructionPieceToBank(session, stateId) {
   piece.placementStatus = "unplaced";
   piece.hasMoved = false;
   next.pieceZOrder = (next.pieceZOrder || []).filter((id) => id !== stateId);
-  if (next.selectedStateId === stateId) next.selectedStateId = null;
+  setSelection(next, getPlacedSelectionIds(next).filter((id) => id !== stateId));
   if (next.activeDrag?.stateId === stateId) next.activeDrag = null;
   return next;
 }
@@ -186,13 +277,20 @@ export function returnMapReconstructionPieceToBank(session, stateId) {
 export function beginMapReconstructionDrag(session, stateId, pointerId, pointer, origin) {
   const next = copy(session);
   if (!next?.piecesById?.[stateId] || next.phase !== "arranging" || !validPosition(pointer)) return next;
-  next.selectedStateId = stateId;
-  next.pieceZOrder = bringPieceToFront(next.pieceZOrder, stateId);
+  const existing = getPlacedSelectionIds(next);
+  const selectedStateIds = existing.includes(stateId) ? existing : [stateId];
+  setSelection(next, selectedStateIds, stateId);
+  next.pieceZOrder = bringPiecesToFront(next.pieceZOrder, selectedStateIds);
   next.activeDrag = {
     stateId,
+    stateIds: selectedStateIds,
     pointerId,
     startPointer: { ...pointer },
-    startPosition: validPosition(origin) ? { ...origin } : null
+    startPosition: validPosition(origin) ? { ...origin } : null,
+    startPositions: Object.fromEntries(selectedStateIds.map((id) => [
+      id,
+      { ...next.piecesById[id].position }
+    ]))
   };
   return next;
 }
@@ -212,8 +310,61 @@ export function moveMapReconstructionPieceByKeyboard(session, stateId, direction
     down: { x: 0, y: step }
   };
   return deltas[direction]
-    ? moveMapReconstructionPiece(session, stateId, deltas[direction], geometry)
+    ? moveMapReconstructionSelectedPieces(session, stateId, deltas[direction], geometry)
     : copy(session);
+}
+
+export function moveMapReconstructionSelectedPieces(
+  session,
+  primaryStateId,
+  delta,
+  geometry
+) {
+  if (!validPosition(delta) || !session?.piecesById?.[primaryStateId]?.position) {
+    return copy(session);
+  }
+  const selected = getPlacedSelectionIds(session);
+  const stateIds = selected.includes(primaryStateId) ? selected : [primaryStateId];
+  const bounds = stateIds.map((stateId) => getPieceBoundsAtPosition(
+    geometry?.piecesById?.[stateId],
+    session.piecesById[stateId].position
+  ));
+  if (bounds.some((entry) => !entry) || !geometry?.workspace) return copy(session);
+  const workspace = geometry.workspace;
+  const workspaceX = Number.isFinite(workspace.x) ? workspace.x : 0;
+  const workspaceY = Number.isFinite(workspace.y) ? workspace.y : 0;
+  const padding = Number.isFinite(workspace.dragPadding)
+    ? Math.max(0, workspace.dragPadding)
+    : 0;
+  const groupBounds = bounds.reduce((combined, entry) => ({
+    minX: Math.min(combined.minX, entry.minX),
+    minY: Math.min(combined.minY, entry.minY),
+    maxX: Math.max(combined.maxX, entry.maxX),
+    maxY: Math.max(combined.maxY, entry.maxY)
+  }), { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
+  const clampedDelta = {
+    x: clampDelta(
+      delta.x,
+      workspaceX + padding - groupBounds.minX,
+      workspaceX + workspace.width - padding - groupBounds.maxX
+    ),
+    y: clampDelta(
+      delta.y,
+      workspaceY + padding - groupBounds.minY,
+      workspaceY + workspace.height - padding - groupBounds.maxY
+    )
+  };
+  const next = copy(session);
+  stateIds.forEach((stateId) => {
+    const piece = next.piecesById[stateId];
+    piece.position.x += clampedDelta.x;
+    piece.position.y += clampedDelta.y;
+    piece.placementStatus = "placed";
+    piece.hasMoved = true;
+  });
+  setSelection(next, stateIds, primaryStateId);
+  next.pieceZOrder = bringPiecesToFront(next.pieceZOrder, stateIds);
+  return next;
 }
 
 export function resetMapReconstructionSession(session) {
@@ -222,7 +373,7 @@ export function resetMapReconstructionSession(session) {
   next.phase = "arranging";
   next.viewMode = "learner";
   next.correctionState = "idle";
-  next.selectedStateId = null;
+  setSelection(next, []);
   next.pieceZOrder = [];
   next.activeDrag = null;
   next.evaluation = null;
@@ -240,7 +391,7 @@ export function submitMapReconstructionSession(session, evaluation) {
   if (!next || next.phase !== "arranging") return next;
   next.phase = "result";
   next.activeDrag = null;
-  next.selectedStateId = null;
+  setSelection(next, []);
   next.evaluation = copy(evaluation);
   next.viewMode = evaluation?.isComplete ? "completed" : "learner";
   next.correctionState = "idle";

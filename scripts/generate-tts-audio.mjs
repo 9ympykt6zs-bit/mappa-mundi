@@ -27,6 +27,7 @@ import {
   TTS_VOICE as VOICE
 } from "./lib/openai-tts.mjs";
 import { listMapReconstructionRegions } from "../src/atlas/map-reconstruction-regions.js";
+import { listMapReconstructionCapstones } from "../src/atlas/map-reconstruction-capstones.js";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
@@ -126,7 +127,10 @@ const continentsOceansOceanLearnInstructionPhrases = [
   "Now tap the Southern Ocean."
 ];
 
-const mapReconstructionInstructionPhrases = listMapReconstructionRegions().flatMap((region) => [
+const mapReconstructionInstructionPhrases = [
+  ...listMapReconstructionRegions(),
+  ...listMapReconstructionCapstones()
+].flatMap((region) => [
   region.title,
   region.prompt,
   region.successMessage,
