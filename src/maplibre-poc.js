@@ -89,6 +89,7 @@ import {
   UNITED_STATES_MEMORY_TRAIL_SOURCE
 } from "./united-states-memory-trail-planner.js?v=20260708-us-trail-capitals-phase2a-4";
 import { resolveMemoryTrailNewTargetLimit } from "./memory-trail-new-target-limit.js?v=20260621-daily-trail-co-progression-2";
+import { createMasteryDebugController } from "./mastery-debug.js?v=20260805-mastery-debug-1";
 
 const APP_NAME = "Mappa Mundi";
 const LANDING_PAGE_TITLE = "Mappa Mundi \u2013 Geography Game for Learning the World";
@@ -3016,6 +3017,7 @@ let studyTargetSettings = loadStudyTargetSettings();
 let audioSettings = loadAudioSettings();
 let currentPresentationSettings = {};
 let isCurrentActivityProgressDisabled = false;
+let masteryDebugController = null;
 
 const incorrectRevealThreshold = 3;
 const activityRetryThreshold = 5;
@@ -3890,6 +3892,7 @@ async function init() {
   }
 
   bindLaunchStartEvents();
+  masteryDebugController = createMasteryDebugController();
 
   bindLaunchScreenEvents();
   bindDailyTrailDevCheatListener();
@@ -10306,6 +10309,7 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
   memoryTrail.currentPromptType = selection.promptType || "name_to_place";
   memoryTrail.currentPromptMode = selection.mode;
   memoryTrail.currentPromptReason = selection.reason;
+  masteryDebugController?.setCurrentPlace(getMasteryDebugPlace(memoryTrail, selection.targetId));
   memoryTrail.sessionPhase = selection.promptType === "guided" ? "learn" : "practice";
   memoryTrail.correction = null;
   memoryTrail.promptName = selection.promptType === "place_to_name" ? "" : memoryTrail.currentPromptTargetLabel;
@@ -12005,6 +12009,12 @@ function updateMemoryTrailStats(memoryTrail, targetId, result, options = {}) {
     return;
   }
 
+  masteryDebugController?.recordAttempt(
+    getMasteryDebugPlace(memoryTrail, targetId),
+    promptType,
+    isCorrect
+  );
+
   stats.totalRetrievalAttempts += 1;
   memoryTrail.retrievalPromptCount += 1;
   if (isDailyTrailPacingCapEnabled(memoryTrail) && hadRetrievalMissBeforeAttempt) {
@@ -12070,6 +12080,25 @@ function updateMemoryTrailStats(memoryTrail, targetId, result, options = {}) {
     successRate: getMemoryTrailSuccessRate(memoryTrail)
   });
   updateMemoryTrailDebugObject(memoryTrail);
+}
+
+function getMasteryDebugPlace(memoryTrail, targetId) {
+  const normalizedTargetId = String(targetId || "").trim();
+  if (!normalizedTargetId) return null;
+  const target = getTargetById(memoryTrail, normalizedTargetId);
+  const planItems = [
+    ...(activeDailyTrailSession?.plan?.allItems || []),
+    ...(activeUnitedStatesMemoryTrailSession?.plan?.allItems || [])
+  ];
+  const planItem = planItems.find((item) => item?.targetId === normalizedTargetId);
+  const placeType = String(planItem?.type || target?.type || "place").trim().toLowerCase();
+  const placeId = normalizedTargetId.includes(":")
+    ? normalizedTargetId
+    : `${placeType}:${normalizedTargetId}`;
+  return {
+    placeId,
+    label: getMemoryTrailTargetLabel(target || normalizedTargetId, memoryTrail) || placeId
+  };
 }
 
 function getMemoryTrailAccuracySummary(memoryTrail) {
@@ -22815,6 +22844,11 @@ function tryShowFreePlaySelectedMapFeature(navigationCandidates) {
   }
 
   freePlaySelectedMapFeature = candidate;
+  const masteryPlaceId = getNavigationCandidateNormalizedId(candidate);
+  masteryDebugController?.setCurrentPlace(masteryPlaceId ? {
+    placeId: `country:${masteryPlaceId}`,
+    label: getNavigationCandidateDisplayName(candidate)
+  } : null);
   updateOverviewPreview();
   renderNavigationAnswerBank(activeHierarchyNodeId);
 

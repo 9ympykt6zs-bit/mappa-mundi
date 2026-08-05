@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "check:mastery-debug": "node scripts/check-mastery-debug.mjs",
+    "check:place-mastery": "node scripts/check-place-mastery.mjs",
     "audio:mental-map:generate": "node scripts/generate-mental-map-audio.mjs",
     "audio:mental-map:list": "node scripts/generate-mental-map-audio.mjs --list-missing",
     "check:mental-map-audio": "node scripts/check-mental-map-audio.mjs",
