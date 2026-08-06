@@ -3604,7 +3604,8 @@ const defaultQuickStartDifficulty = difficultyModes.easy;
 
 function createActivityShellCatalog() {
   const shellActivities = activityDataPaths.map((path, index) => {
-    const id = path.split("/").pop().replace(/\.json$/i, "");
+    const filename = path.split("/").pop().split(/[?#]/, 1)[0];
+    const id = filename.replace(/\.json$/i, "");
     const node = getHierarchyNode(findHierarchyNodeForActivity(id));
 
     return {
@@ -5498,6 +5499,12 @@ function bindLaunchScreenEvents() {
     showAppScreen("choose-journey");
   });
   mainMenuChallengeButton?.addEventListener("click", () => {
+    atlasProgress = loadProgress();
+    if (getQuickStartTarget(atlasProgress)?.isResume) {
+      showAppScreen("challenge-menu");
+      return;
+    }
+
     journeyPickerIntent = "challenge";
     showAppScreen("choose-journey");
   });
