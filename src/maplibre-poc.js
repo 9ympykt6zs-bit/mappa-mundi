@@ -24883,6 +24883,113 @@ function clearFeedback() {
   feedback.classList.remove("success");
 }
 
+function isMappaTestMode() {
+  const localHostnames = new Set(["localhost", "127.0.0.1", "::1", ""]);
+  return localHostnames.has(window.location.hostname)
+    && new URLSearchParams(window.location.search).get("test") === "1";
+}
+
+function getCurrentJourneyForTest() {
+  const journey = journeyPresets.find((preset) => preset.id === activeJourneySession?.journeyId)
+    || getSelectedJourney();
+  return journey
+    ? {
+        id: journey.id,
+        title: journey.title,
+        difficulty: activeJourneySession?.difficulty || getSelectedJourneyDifficultyId()
+      }
+    : null;
+}
+
+function getCurrentJourneyStepForTest() {
+  const journey = journeyPresets.find((preset) => preset.id === activeJourneySession?.journeyId);
+  const index = activeJourneySession?.currentStepIndex;
+  const step = Number.isInteger(index) ? getValidJourneySteps(journey)[index] : null;
+  return step
+    ? {
+        index,
+        id: step.id,
+        activityId: step.activityId,
+        title: step.title
+      }
+    : null;
+}
+
+function getCurrentActivityForTest() {
+  const activity = session?.currentActivity;
+  return activity
+    ? {
+        id: activity.id,
+        title: activity.title,
+        targetCount: session.allAvailableTargets?.length || 0,
+        completedCount: session.completedIds?.length || 0
+      }
+    : null;
+}
+
+function getCorrectTargetsForTest() {
+  return (session?.allAvailableTargets || []).map((target) => ({
+    id: target.id,
+    name: target.name
+  }));
+}
+
+function answerCurrentPromptForTest(targetId) {
+  if (!session || isActivityInputLocked()) {
+    return false;
+  }
+
+  const nextTarget = session.allAvailableTargets.find((target) => (
+    !session.isCompleted(target.id) && (!targetId || target.id === targetId)
+  ));
+  if (!nextTarget) {
+    return false;
+  }
+
+  session.toggleAnswer(nextTarget.id);
+  placeGrabbedAnswer([nextTarget.id]);
+  return session.isCompleted(nextTarget.id);
+}
+
+function completeCurrentActivityForTest() {
+  if (!session?.currentActivity || currentAppScreen !== "journey-gameplay") {
+    return false;
+  }
+
+  session.setCompletedIds(session.allAvailableTargets.map((target) => target.id));
+  runner?.setCompletedTargets(session.completedIds);
+  saveCurrentActivityProgress();
+  renderAnswerBank();
+  updateProgress();
+  updateCompletedActivityState();
+  handleJourneyActivityCompletion();
+  ensureActivityNavControls();
+  return journeyCompletionState?.isVisible === true;
+}
+
+function installMappaTestApi() {
+  if (!isMappaTestMode()) {
+    return;
+  }
+
+  Object.defineProperty(window, "__MAPPA_TEST_API__", {
+    configurable: false,
+    enumerable: false,
+    writable: false,
+    value: Object.freeze({
+      getCurrentActivity: getCurrentActivityForTest,
+      getCurrentJourney: getCurrentJourneyForTest,
+      getCurrentJourneyStep: getCurrentJourneyStepForTest,
+      getCorrectTargets: getCorrectTargetsForTest,
+      answerCurrentPrompt: answerCurrentPromptForTest,
+      completeCurrentActivity: completeCurrentActivityForTest,
+      getSavedJourneyProgress: () => loadProgress()
+    })
+  });
+}
+
+installMappaTestApi();
+
 init().catch((error) => {
   setHeaderTitle("Geography Memory could not load", { shortTitle: "Load Error" });
   instruction.textContent = error.message;

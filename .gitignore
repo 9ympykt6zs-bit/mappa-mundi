@@ -4,6 +4,8 @@
 !.env.example
 .DS_Store
 dist/
+test-results/
+playwright-report/
 .vscode/
 
 # Local Netlify folder

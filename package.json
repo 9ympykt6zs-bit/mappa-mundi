@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:us": "playwright test tests/e2e/us-journey-smoke.spec.js",
     "check:mastery-debug": "node scripts/check-mastery-debug.mjs",
     "check:place-mastery": "node scripts/check-place-mastery.mjs",
     "audio:mental-map:generate": "node scripts/generate-mental-map-audio.mjs",
@@ -18,6 +21,7 @@
     "generate:co-land": "node scripts/generate-co-continent-land.mjs"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "polygon-clipping": "^0.15.7"
   }
 }
