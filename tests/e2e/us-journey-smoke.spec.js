@@ -1,4 +1,38 @@
 import { expect, test } from "@playwright/test";
+import { journeyPresets } from "../../src/journey-presets.js";
+
+const unitedStatesJourney = journeyPresets.find((journey) => journey.id === "united-states");
+const unitedStatesStepIds = unitedStatesJourney.steps.map((step) => step.id);
+
+async function seedUnitedStatesFinalActivity(page) {
+  await page.addInitScript(({ stepIds }) => {
+    const storageKey = "atlasQuestProgress";
+    if (localStorage.getItem(storageKey)) {
+      return;
+    }
+
+    const completedSteps = Object.fromEntries(stepIds.map((stepId, index) => [stepId, {
+      easy: false,
+      medium: index < stepIds.length - 1,
+      hard: false
+    }]));
+    localStorage.setItem(storageKey, JSON.stringify({
+      version: 1,
+      activeJourneyId: "united-states",
+      activeStepIndex: stepIds.length - 1,
+      activeDifficulty: "medium",
+      recentJourneyId: "united-states",
+      recentDifficulty: "medium",
+      journeys: {
+        "united-states": {
+          currentStepIndex: stepIds.length - 1,
+          completedSteps,
+          completedDifficulties: { easy: false, medium: false, hard: false }
+        }
+      }
+    }));
+  }, { stepIds: unitedStatesStepIds });
+}
 
 async function passLaunchScreen(page) {
   await expect(page.locator("#launch-screen")).toBeVisible();
@@ -44,6 +78,7 @@ async function getUnitedStatesProgress(page) {
       activeStepIndex: saved.activeStepIndex,
       activeDifficulty: saved.activeDifficulty,
       journeyStepIndex: journey?.currentStepIndex,
+      mediumComplete: journey?.completedDifficulties?.medium || false,
       completedMediumStepIds
     };
   });
@@ -101,6 +136,7 @@ test("United States Journey resumes activity two after a full reload", async ({ 
     activeStepIndex: 1,
     activeDifficulty: "medium",
     journeyStepIndex: 1,
+    mediumComplete: false,
     completedMediumStepIds: ["us-states-01"]
   });
 
@@ -134,6 +170,7 @@ test("United States Journey resumes activity two after a full reload", async ({ 
     activeStepIndex: 1,
     activeDifficulty: "medium",
     journeyStepIndex: 1,
+    mediumComplete: false,
     completedMediumStepIds: ["us-states-01"]
   });
 
@@ -143,6 +180,7 @@ test("United States Journey resumes activity two after a full reload", async ({ 
     activeStepIndex: 2,
     activeDifficulty: "medium",
     journeyStepIndex: 2,
+    mediumComplete: false,
     completedMediumStepIds: ["us-states-01", "us-states-02"]
   });
 
@@ -162,8 +200,70 @@ test("United States Journey resumes activity two after a full reload", async ({ 
     activeStepIndex: 2,
     activeDifficulty: "medium",
     journeyStepIndex: 2,
+    mediumComplete: false,
     completedMediumStepIds: ["us-states-01", "us-states-02"]
   });
+});
+
+test("completed United States Journey remains complete after a full reload", async ({ page }) => {
+  await seedUnitedStatesFinalActivity(page);
+  await page.goto("/?test=1");
+  await passLaunchScreen(page);
+
+  await page.getByRole("button", { name: "More Ways to Learn" }).click();
+  await page.getByRole("button", { name: /Challenge Yourself/ }).click();
+  await expect(page.locator("#app-shell-title")).toHaveText("Challenge Yourself");
+  await expect(page.locator("#quick-start-kicker")).toHaveText("Continue Journey");
+  await expect(page.locator("#quick-start-title")).toHaveText("United States");
+  await expect(page.locator("#quick-start-detail")).toContainText("U.S. Rivers");
+  await expect(page.locator("#quick-start-meta")).toHaveText("Difficulty: Medium");
+  await page.locator("#main-menu-quick-start-button").click();
+
+  const finalStepId = unitedStatesStepIds.at(-1);
+  await expect.poll(
+    () => page.evaluate(() => window.__MAPPA_TEST_API__.getCurrentActivity()?.id),
+    { timeout: 20_000 }
+  ).toBe(finalStepId);
+  await page.evaluate(() => window.__MAPPA_TEST_API__.completeCurrentActivity());
+
+  const completionOverlay = page.locator("#journey-completion-overlay");
+  await expect(completionOverlay).toBeVisible();
+  await expect(page.locator("#journey-completion-kicker")).toHaveText("Journey Complete");
+  await expect(page.locator("#journey-completion-title")).toHaveText("Journey Complete!");
+  await expect(page.locator("#journey-completion-message")).toHaveText("You finished United States.");
+  await expect(page.locator("#journey-completion-primary")).toHaveText("Back to Journeys");
+  await expect(page.locator("#journey-completion-secondary")).toHaveText("Play Again");
+
+  const completedProgress = {
+    activeJourneyId: null,
+    activeStepIndex: 0,
+    activeDifficulty: "medium",
+    journeyStepIndex: unitedStatesStepIds.length - 1,
+    mediumComplete: true,
+    completedMediumStepIds: [...unitedStatesStepIds].sort()
+  };
+  await expect.poll(() => getUnitedStatesProgress(page)).toEqual(completedProgress);
+
+  await page.reload();
+  await passLaunchScreen(page);
+
+  await expect(page.locator("#quick-start-kicker")).toHaveText("Start Learning");
+  await expect(page.locator("#quick-start-kicker")).not.toHaveText("Continue Journey");
+
+  await page.getByRole("button", { name: "More Ways to Learn" }).click();
+  await page.getByRole("button", { name: /Challenge Yourself/ }).click();
+  await expect(page.locator("#app-shell-title")).toHaveText("Choose Journey");
+  await page.locator('[data-journey-id="united-states"]').first().click();
+
+  await expect(page.locator("#app-shell-title")).toHaveText("United States");
+  await expect(page.getByText(
+    `Progress: ${unitedStatesStepIds.length} of ${unitedStatesStepIds.length} activities completed`,
+    { exact: true }
+  )).toBeVisible();
+  await expect(page.getByText("Medium is complete. Review this journey from the beginning without deleting your progress.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Review From Beginning" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Pick Up Where You Left Off/ })).toHaveCount(0);
+  expect(await getUnitedStatesProgress(page)).toEqual(completedProgress);
 });
 
 test("test API is absent without local test mode", async ({ page }) => {
