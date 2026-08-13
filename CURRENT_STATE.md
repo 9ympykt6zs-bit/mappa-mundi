@@ -22,6 +22,10 @@ Current verification performed for this snapshot:
 
 ## Executive summary
 
+Completion of the U.S. reference implementation is defined by the acceptance criteria in [`docs/US_DEFINITION_OF_DONE.md`](docs/US_DEFINITION_OF_DONE.md); this snapshot records current evidence against that target without treating implemented-but-unverified behavior as complete.
+
+The accompanying [`docs/US_CONTENT_TAXONOMY.md`](docs/US_CONTENT_TAXONOMY.md) defines what counts as meaningful contextual U.S. content for content creation and coverage measurement.
+
 The United States is the clearest reference implementation, but it is not one finished, reusable vertical slice. It currently consists of several adjacent systems:
 
 - a 14-step U.S. Journey (11 state sections plus lakes, mountain ranges, and rivers);
