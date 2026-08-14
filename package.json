@@ -5,6 +5,7 @@
   "scripts": {
     "test": "node scripts/run-fast-checks.mjs",
     "report:us-content": "node scripts/report-us-content-coverage.mjs",
+    "report:learner-simulations": "node scripts/run-learner-simulations.mjs",
     "check:us-content": "node scripts/check-us-content-coverage.mjs",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",

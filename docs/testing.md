@@ -102,3 +102,13 @@ Deterministic mode does not freeze browser timers, animation timing, response du
 ## Learning Inspector data-layer check
 
 `scripts/check-learning-inspector.mjs` exercises the read-only Inspector adapters documented in [`learning-inspector.md`](learning-inspector.md). Fixtures cover place mastery, Daily Trail, U.S. Memory Trail, Journey progress, Mental Map results, reconstruction results, planner selection explanations, deterministic-context export, and before/after transitions. The check verifies that adapters do not mutate input state, equivalent inputs produce stable JSON, missing evidence remains explicitly unavailable, and deterministic planner replays produce equivalent Inspector output.
+
+## Deterministic learner simulations
+
+Run the O4 synthetic learner evidence generator with:
+
+```sh
+npm run report:learner-simulations
+```
+
+It drives the existing U.S. Memory Trail planner with six deterministic learner profiles and adds a controlled Daily Trail return probe. The command writes human-readable Markdown and machine-readable JSON under `reports/`. The fast baseline's `check-learner-simulations.mjs` verifies deterministic replay, different-seed variation, all profile scripts, Inspector serialization, and fixture immutability. See [`learner-simulations.md`](learner-simulations.md) for profiles, interpretation, and measurement limits.
