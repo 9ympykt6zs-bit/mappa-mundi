@@ -122,3 +122,15 @@ npm run report:selection-trace
 ```
 
 See [`learning-inspector.md`](learning-inspector.md) for the trace schema, evidence boundaries, and interpretation limits.
+
+## Eligibility delay report check
+
+`scripts/check-eligibility-delay-report.mjs` verifies deterministic O6.1 report replay, stable item IDs, explicit unavailable eligibility, correct separation of eligibility and selection, JSON serialization, fixture immutability, and unchanged planner/simulation output. It also preserves the known Wyoming eight-session deferral and Ohio zero-delay/consecutive-selection observations as regression evidence.
+
+Generate the Markdown and JSON reports with:
+
+```sh
+npm run report:eligibility-delays
+```
+
+See [`eligibility-delay-report.md`](eligibility-delay-report.md) for the measurement model and limits.

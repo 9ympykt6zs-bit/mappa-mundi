@@ -68,6 +68,8 @@ Compared with O5, a U.S. trace can now show that repeated Ohio selection came fr
 
 A trace explains a current decision path. It does not prove the adaptive algorithm, curriculum, or amount of repetition is pedagogically correct.
 
+O6.1 aggregates these U.S. Memory Trail candidate pools across deterministic sessions to measure eligibility delay. See [`eligibility-delay-report.md`](eligibility-delay-report.md).
+
 Deterministic context can be attached to a selection explanation:
 
 ```js

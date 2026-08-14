@@ -62,3 +62,7 @@ A warning is a prompt for investigation, not an assertion that the algorithm is 
 - **Implemented:** runner, production-derived fixture adapter, six profiles, Daily Trail return probe, Markdown/JSON report generation, and Inspector capture exist.
 - **Automatically tested:** same-input replay, seed variation, all required profiles, JSON serialization, fixture immutability, and the return probe run in the fast baseline.
 - **Verified:** not implied by passing checks. A human must review generated behavior against the Definition of Done and record acceptance or defects.
+
+## Eligibility delay analysis
+
+O6.1 reuses the full in-memory Selection Traces from these simulations to measure candidate deferral without changing planner behavior. Run `npm run report:eligibility-delays` and see [`eligibility-delay-report.md`](eligibility-delay-report.md) for definitions and limitations.
