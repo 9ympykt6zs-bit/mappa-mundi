@@ -2182,7 +2182,7 @@ function logDailyTrailDebug(eventName, details = {}) {
   console.log(`[DailyTrail] ${eventName}`, details);
 }
 
-function getDailyTrailPlanReasonMap(state, plan = {}) {
+export function getDailyTrailPlanReasonMap(state, plan = {}) {
   const reasonByItemId = new Map();
   const sessionType = plan.sessionType || "";
 
@@ -2233,10 +2233,13 @@ function getDailyTrailReviewDebugReason(state, item) {
     : DAILY_TRAIL_DEBUG_REASONS.RECENT_REVIEW;
 }
 
-function createDailyTrailPlannerItemDebug(state, item, reason = DAILY_TRAIL_DEBUG_REASONS.UNKNOWN) {
-  const progress = state.itemProgress?.[item.id] || {};
-  const reviewPriority = isItemPracticeEligible(state, item)
-    ? getReviewPriority(state, item).overdueScore
+export function createDailyTrailPlannerItemDebug(state, item, reason = DAILY_TRAIL_DEBUG_REASONS.UNKNOWN, options = {}) {
+  const inspectionState = typeof options?.now === "function"
+    ? attachPlannerContext(createDailyTrailState(state, options), [item], options)
+    : state;
+  const progress = inspectionState.itemProgress?.[item.id] || {};
+  const reviewPriority = isItemPracticeEligible(inspectionState, item)
+    ? getReviewPriority(inspectionState, item).overdueScore
     : null;
   return {
     itemId: item.id || "",

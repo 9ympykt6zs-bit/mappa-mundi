@@ -98,3 +98,7 @@ The audit found no planner use of `Math.random`: Daily Trail previously used cur
 Deterministic mode does not freeze browser timers, animation timing, response duration, audio scheduling, map behavior, localStorage, or unrelated runtime calls to `Date.now()`/`Math.random()`. It does not make learner responses deterministic, seed answer-bank shuffling automatically, or create a simulation framework. Callers that need deterministic answer-bank order can pass `createSeededRandom(seed)` through the answer-bank API's existing `random` option.
 
 `scripts/check-deterministic-planning.mjs` proves same-seed replay, different-seed valid variation, fixed-time scheduling/session metadata, generated Mental Map replay, and working no-options production paths for the scoped systems.
+
+## Learning Inspector data-layer check
+
+`scripts/check-learning-inspector.mjs` exercises the read-only Inspector adapters documented in [`learning-inspector.md`](learning-inspector.md). Fixtures cover place mastery, Daily Trail, U.S. Memory Trail, Journey progress, Mental Map results, reconstruction results, planner selection explanations, deterministic-context export, and before/after transitions. The check verifies that adapters do not mutate input state, equivalent inputs produce stable JSON, missing evidence remains explicitly unavailable, and deterministic planner replays produce equivalent Inspector output.
