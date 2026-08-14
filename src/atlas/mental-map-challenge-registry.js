@@ -9,6 +9,7 @@ import {
   getCompassChallenges,
   validateCompassChallenge
 } from "./compass-challenges.js";
+import { resolveRandomSource } from "../deterministic-dependencies.js";
 
 export const MENTAL_MAP_CHALLENGE_CATEGORIES = Object.freeze({
   BORDERS_AND_NEIGHBORS: "borders-and-neighbors",
@@ -84,9 +85,10 @@ export function validateUnifiedMentalMapChallenge(challenge) {
   return errors;
 }
 
-export function getUnifiedMentalMapChallenges({ includeGenerated = true, random = Math.random } = {}) {
+export function getUnifiedMentalMapChallenges(options = {}) {
+  const { includeGenerated = true } = options;
   const candidates = [
-    ...getMentalMapChallenges({ includeGenerated, random }).map((challenge) => ({
+    ...getMentalMapChallenges(options).map((challenge) => ({
       ...challenge,
       category: getBaseChallengeCategory(challenge),
       sourceModule: "mental-map-challenges"
@@ -120,6 +122,6 @@ export function selectNextUnifiedMentalMapChallenge(challenges, options = {}) {
   if (options.lastCategory && preferred.some(({ category }) => category !== options.lastCategory)) {
     preferred = preferred.filter(({ category }) => category !== options.lastCategory);
   }
-  const randomValue = Math.max(0, Math.min(0.999999, Number(options.random?.() ?? Math.random())));
+  const randomValue = Math.max(0, Math.min(0.999999, Number(resolveRandomSource(options)())));
   return preferred[Math.floor(randomValue * preferred.length)] || null;
 }

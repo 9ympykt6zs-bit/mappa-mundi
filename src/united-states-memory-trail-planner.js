@@ -1,3 +1,5 @@
+import { buildSeededTieBreakers, resolveNow } from "./deterministic-dependencies.js";
+
 export const unitedStatesMemoryTrailStorageKey = "mappaUnitedStatesMemoryTrailProgress";
 export const unitedStatesMemoryTrailId = "united-states-memory-trail";
 export const unitedStatesMemoryTrailCurriculumVersion = 2;
@@ -21,8 +23,9 @@ const learnedEnoughForCapitalStatuses = new Set(["review", "mastered"]);
 const stateActivityIdPattern = /^us-states-\d{2}$/;
 const excludedPhaseOneTargetIds = new Set(["district-of-columbia", "washington-dc"]);
 const defaultMemoryDifficulty = 5;
+const plannerContextKey = Symbol("unitedStatesMemoryTrailPlannerContext");
 
-export function createUnitedStatesMemoryTrailState(value = {}, items = []) {
+export function createUnitedStatesMemoryTrailState(value = {}, items = [], options = {}) {
   const source = value && typeof value === "object" ? value : {};
   const currentSessionNumber = Math.max(1, Number(source.currentSessionNumber) || 1);
   const itemIdSet = new Set((Array.isArray(items) ? items : []).map((item) => item.id).filter(Boolean));
@@ -31,7 +34,7 @@ export function createUnitedStatesMemoryTrailState(value = {}, items = []) {
   const introducedItemIds = normalizeStringArray(source.introducedItemIds)
     .filter((itemId) => itemIdSet.size === 0 || itemIdSet.has(itemId));
   const cursor = normalizeCurriculumCursor(source.curriculumCursor, items, itemProgress, introducedItemIds);
-  const activeSession = normalizeActiveSession(source.activeSession, items);
+  const activeSession = normalizeActiveSession(source.activeSession, items, options);
 
   return {
     version: 2,
@@ -211,9 +214,10 @@ export function validateUnitedStatesMemoryTrailCurriculum(items = []) {
   };
 }
 
-export function planUnitedStatesMemoryTrailSession(state, items = []) {
-  const normalized = createUnitedStatesMemoryTrailState(state, items);
-  const safeItems = [...items].sort((left, right) => left.order - right.order);
+export function planUnitedStatesMemoryTrailSession(state, items = [], options = {}) {
+  const normalized = attachPlannerContext(createUnitedStatesMemoryTrailState(state, items, options), items, options);
+  const safeItems = [...items].sort((left, right) => left.order - right.order
+    || comparePlannerTie(normalized, left, right));
   const unseenItems = safeItems.filter((item) => getItemStatus(normalized, item) === "unseen");
   const eligibleNewItems = getEligibleNewItems(normalized, safeItems);
 
@@ -224,22 +228,22 @@ export function planUnitedStatesMemoryTrailSession(state, items = []) {
   return buildUnitedStatesLearningPlan(normalized, safeItems, eligibleNewItems);
 }
 
-export function applyUnitedStatesMemoryTrailSessionStart(state, plan) {
-  const next = createUnitedStatesMemoryTrailState(state, plan?.allItems || []);
+export function applyUnitedStatesMemoryTrailSessionStart(state, plan, options = {}) {
+  const next = createUnitedStatesMemoryTrailState(state, plan?.allItems || [], options);
   next.hasStarted = true;
   next.activeSession = {
-    sessionId: plan?.sessionId || createSessionId(next.currentSessionNumber),
+    sessionId: plan?.sessionId || createSessionId(next.currentSessionNumber, options),
     plan,
     status: "starting",
     promptSnapshot: null,
     memoryTrailSnapshot: null,
-    updatedAt: Date.now()
+    updatedAt: resolveNow(options).getTime()
   };
   return next;
 }
 
-export function applyUnitedStatesMemoryTrailSessionSnapshot(state, plan, snapshot = {}) {
-  const next = createUnitedStatesMemoryTrailState(state, plan?.allItems || []);
+export function applyUnitedStatesMemoryTrailSessionSnapshot(state, plan, snapshot = {}, options = {}) {
+  const next = createUnitedStatesMemoryTrailState(state, plan?.allItems || [], options);
   if (!plan) {
     next.activeSession = null;
     return next;
@@ -247,12 +251,12 @@ export function applyUnitedStatesMemoryTrailSessionSnapshot(state, plan, snapsho
 
   next.hasStarted = true;
   next.activeSession = {
-    sessionId: snapshot.sessionId || plan.sessionId || createSessionId(next.currentSessionNumber),
+    sessionId: snapshot.sessionId || plan.sessionId || createSessionId(next.currentSessionNumber, options),
     plan,
     status: snapshot.status || "active",
     promptSnapshot: snapshot.promptSnapshot || null,
     memoryTrailSnapshot: snapshot.memoryTrailSnapshot || null,
-    updatedAt: Date.now()
+    updatedAt: resolveNow(options).getTime()
   };
   return next;
 }
@@ -472,7 +476,7 @@ function createPlan({ state, sessionType, title, activeActivityId, newItems, rev
   return {
     trailId: unitedStatesMemoryTrailId,
     source: UNITED_STATES_MEMORY_TRAIL_SOURCE,
-    sessionId: createSessionId(state.currentSessionNumber),
+    sessionId: createSessionId(state.currentSessionNumber, getPlannerClockOptions(state)),
     sessionType,
     title,
     activeActivityId,
@@ -552,6 +556,7 @@ function selectRecentReviewItems(state, items = [], options = {}) {
     .filter((item) => !excludeIds.has(item.id))
     .filter((item) => practiceEligibleStatuses.has(getItemStatus(state, item)))
     .sort((left, right) => (state.itemProgress[right.id]?.lastSeenSession || 0) - (state.itemProgress[left.id]?.lastSeenSession || 0)
+      || comparePlannerTie(state, left, right)
       || left.order - right.order)
     .slice(0, limit);
 }
@@ -589,6 +594,7 @@ function compareReviewPriority(state, left, right) {
     || Number(isReviewDue(state, right)) - Number(isReviewDue(state, left))
     || (rightProgress.missCount || 0) - (leftProgress.missCount || 0)
     || (leftProgress.lastSeenSession || 0) - (rightProgress.lastSeenSession || 0)
+    || comparePlannerTie(state, left, right)
     || left.order - right.order;
 }
 
@@ -707,7 +713,7 @@ function normalizeCurriculumCursor(value, items = [], itemProgress = {}, introdu
   };
 }
 
-function normalizeActiveSession(value, items = []) {
+function normalizeActiveSession(value, items = [], options = {}) {
   if (!value || typeof value !== "object") {
     return null;
   }
@@ -724,7 +730,7 @@ function normalizeActiveSession(value, items = []) {
   }
 
   return {
-    sessionId: String(value.sessionId || plan.sessionId || "").trim() || createSessionId(Number(plan.currentSessionNumber) || 1),
+    sessionId: String(value.sessionId || plan.sessionId || "").trim() || createSessionId(Number(plan.currentSessionNumber) || 1, options),
     plan: {
       ...plan,
       playItems,
@@ -933,6 +939,32 @@ function normalizeOptionalSession(value) {
   return Number.isFinite(number) && number >= 0 ? Math.floor(number) : null;
 }
 
-function createSessionId(sessionNumber) {
-  return `us-trail-${Math.max(1, Number(sessionNumber) || 1)}-${Date.now().toString(36)}`;
+function attachPlannerContext(state, items, options) {
+  const hasInjectedClock = typeof options?.now === "function";
+  Object.defineProperty(state, plannerContextKey, {
+    value: {
+      now: hasInjectedClock ? resolveNow(options) : null,
+      tieBreakers: buildSeededTieBreakers(items, options)
+    },
+    enumerable: false
+  });
+  return state;
+}
+
+function getPlannerClockOptions(state) {
+  const now = state?.[plannerContextKey]?.now;
+  return now ? { now: () => now } : {};
+}
+
+function comparePlannerTie(state, left, right) {
+  const tieBreakers = state?.[plannerContextKey]?.tieBreakers;
+  if (!tieBreakers) {
+    return 0;
+  }
+  return (tieBreakers.get(left?.id) ?? 0) - (tieBreakers.get(right?.id) ?? 0)
+    || String(left?.id || "").localeCompare(String(right?.id || ""));
+}
+
+function createSessionId(sessionNumber, options = {}) {
+  return `us-trail-${Math.max(1, Number(sessionNumber) || 1)}-${resolveNow(options).getTime().toString(36)}`;
 }

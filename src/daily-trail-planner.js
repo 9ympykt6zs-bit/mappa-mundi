@@ -1,3 +1,5 @@
+import { buildSeededTieBreakers, resolveNow } from "./deterministic-dependencies.js";
+
 export const dailyTrailStorageKey = "mappaDailyTrailProgress";
 export const dailyTrailId = "world-core";
 export const dailyTrailJourneyId = "world-geography-core";
@@ -72,6 +74,7 @@ const maxMemoryDifficulty = 10;
 const minMemoryDifficulty = 1;
 const maxRetrievability = 1;
 const minRetrievability = 0;
+const plannerContextKey = Symbol("dailyTrailPlannerContext");
 export const DAILY_TRAIL_DEBUG_REASONS = Object.freeze({
   NEW: "new",
   RECENT_REVIEW: "recent-review",
@@ -85,7 +88,7 @@ export const DAILY_TRAIL_DEBUG_REASONS = Object.freeze({
   UNKNOWN: "unknown"
 });
 
-export function createDailyTrailState(value = {}) {
+export function createDailyTrailState(value = {}, options = {}) {
   const source = value && typeof value === "object" ? value : {};
   const activeTrailGoal = getDailyTrailGoal(source.activeTrailGoal).id;
   const completedGoalIds = normalizeCompletedGoalIds(source.completedGoalIds, source.pathCompleted);
@@ -118,7 +121,8 @@ export function createDailyTrailState(value = {}) {
       : null,
     itemProgress: normalizeItemProgress(source.itemProgress, {
       currentSessionNumber,
-      lastDailyTrailSessionDate
+      lastDailyTrailSessionDate,
+      currentDate: getLocalDateString(resolveNow(options))
     })
   };
 }
@@ -316,8 +320,8 @@ export function isDailyTrailCheckpointReviewPlan(plan = {}) {
   );
 }
 
-export function planDailyTrailSession(state, items) {
-  const normalized = createDailyTrailState(state);
+export function planDailyTrailSession(state, items, options = {}) {
+  const normalized = attachPlannerContext(createDailyTrailState(state, options), items, options);
   const safeItems = Array.isArray(items) ? items : [];
   const activeGoalItems = getActiveDailyTrailGoalItems(normalized, safeItems);
   const planningItems = activeGoalItems.length > 0 ? activeGoalItems : safeItems;
@@ -360,8 +364,8 @@ export function planDailyTrailSession(state, items) {
 // A completed trail deliberately has no automatic follow-up session. This
 // explicit plan is only used after the learner chooses to review, which keeps
 // terminal completion from falling back to an unbounded global review queue.
-export function planCompletedDailyTrailReviewSession(state, items) {
-  const normalized = createDailyTrailState(state);
+export function planCompletedDailyTrailReviewSession(state, items, options = {}) {
+  const normalized = attachPlannerContext(createDailyTrailState(state, options), items, options);
   const safeItems = Array.isArray(items) ? items : [];
   const completedItems = safeItems.filter((item) => isItemPracticeEligible(normalized, item));
   const reviewItems = selectCompletedDailyTrailReviewItems(normalized, completedItems, {
@@ -434,18 +438,18 @@ export function applyDailyTrailSessionStart(state, plan) {
   return saveDailyTrailState(next);
 }
 
-export function applyDailyTrailTeachingProgress(state, plan, taughtTargetId) {
-  const next = createDailyTrailState(state);
+export function applyDailyTrailTeachingProgress(state, plan, taughtTargetId, options = {}) {
+  const next = createDailyTrailState(state, options);
   const taughtItem = (plan?.newItems || []).find((item) => item.targetId === taughtTargetId);
 
   if (taughtItem) {
-    markDailyTrailItemIntroduced(next, taughtItem);
+    markDailyTrailItemIntroduced(next, taughtItem, getLocalDateString(resolveNow(options)));
   }
 
   return saveDailyTrailState(next);
 }
 
-function markDailyTrailItemIntroduced(state, item) {
+function markDailyTrailItemIntroduced(state, item, introducedDate) {
   const progress = getOrCreateItemProgress(state, item);
 
   if (progress.status === "unseen") {
@@ -455,7 +459,7 @@ function markDailyTrailItemIntroduced(state, item) {
     progress.stability = Math.max(0.5, Number(progress.stability) || 0);
     progress.retrievability = Math.max(0.35, Number(progress.retrievability) || 0);
     progress.dueSession = state.currentSessionNumber;
-    progress.dueDate = getLocalDateString();
+    progress.dueDate = introducedDate;
     state.introducedItemIds = addUnique(state.introducedItemIds, item.id);
     state.newSinceLastCheckpoint = addUnique(state.newSinceLastCheckpoint, item.id);
   }
@@ -474,15 +478,15 @@ function isNormalNewLearningBatchPlan(plan = {}) {
   );
 }
 
-export function applyDailyTrailSessionResults(state, plan, result = {}) {
-  const next = createDailyTrailState(state);
+export function applyDailyTrailSessionResults(state, plan, result = {}, options = {}) {
+  const next = createDailyTrailState(state, options);
   const itemsByTargetId = new Map((plan?.playItems || []).map((item) => [item.targetId, item]));
   const completedTargetIds = new Set(result.completedTargetIds || []);
   const missesByTargetId = result.missesByTargetId || {};
   const slowCorrectMsByTargetId = result.slowCorrectMsByTargetId || {};
   const practicedItems = [];
   const weakItems = [];
-  const completedDate = getLocalDateString();
+  const completedDate = getLocalDateString(resolveNow(options));
   const newItemIds = new Set((plan?.newItems || []).map((item) => item.id).filter(Boolean));
 
   completedTargetIds.forEach((targetId) => {
@@ -748,7 +752,7 @@ function chooseDailyTrailNewItemBatchSize(unseenCount) {
 function findCarryForwardNewItemBatch(state, { activeActivityId = "", availableItems = [] } = {}) {
   const candidateActivities = groupUnseenItemsByActivity(state, availableItems)
     .filter((group) => group.homeActivityId !== activeActivityId)
-    .sort((left, right) => left.earliestOrder - right.earliestOrder);
+    .sort((left, right) => comparePlannerTie(state, left.items[0], right.items[0], left.earliestOrder - right.earliestOrder));
   const candidate = candidateActivities.find((group) => group.items.length >= dailyTrailMinNewItemBatchCount)
     || candidateActivities.find((group) => group.items.length >= 2);
 
@@ -913,7 +917,7 @@ function selectMixedCheckpointReviewItems(state, availableItems, options = {}) {
       right.recentCount - left.recentCount
       || right.weakCount - left.weakCount
       || right.dueCount - left.dueCount
-      || left.earliestOrder - right.earliestOrder
+      || comparePlannerTie(state, left.items[0], right.items[0], left.earliestOrder - right.earliestOrder)
     ));
   const maxPerActivity = checkpointGroups.length >= 3
     ? Math.max(2, Math.ceil(limit / checkpointGroups.length))
@@ -977,7 +981,12 @@ function sortCheckpointItems(state, items, recentIds) {
       || rightRecent - leftRecent
       || rightPriority.overdueScore - leftPriority.overdueScore
       || leftPriority.retrievability - rightPriority.retrievability
-      || getRotatingOrder(left, state.currentSessionNumber) - getRotatingOrder(right, state.currentSessionNumber);
+      || comparePlannerTie(
+        state,
+        left,
+        right,
+        getRotatingOrder(left, state.currentSessionNumber) - getRotatingOrder(right, state.currentSessionNumber)
+      );
   });
 }
 
@@ -1210,7 +1219,12 @@ function sortItemsForCompletedTrailReview(state, items = []) {
       || rightPriority.isDue - leftPriority.isDue
       || rightPriority.overdueScore - leftPriority.overdueScore
       || (rightProgress.missCount || 0) - (leftProgress.missCount || 0)
-      || getRotatingOrder(left, state.currentSessionNumber) - getRotatingOrder(right, state.currentSessionNumber)
+      || comparePlannerTie(
+        state,
+        left,
+        right,
+        getRotatingOrder(left, state.currentSessionNumber) - getRotatingOrder(right, state.currentSessionNumber)
+      )
       || left.order - right.order;
   });
 }
@@ -1226,7 +1240,12 @@ function compareCompletedTrailReviewGroups(state, left = [], right = []) {
   const rightPriority = getGroupPriority(right);
 
   return rightPriority - leftPriority
-    || getRotatingOrder(leftFirst, state.currentSessionNumber) - getRotatingOrder(rightFirst, state.currentSessionNumber)
+    || comparePlannerTie(
+      state,
+      leftFirst,
+      rightFirst,
+      getRotatingOrder(leftFirst, state.currentSessionNumber) - getRotatingOrder(rightFirst, state.currentSessionNumber)
+    )
     || (leftFirst.order || 0) - (rightFirst.order || 0);
 }
 
@@ -1294,7 +1313,12 @@ function sortItemsForWeakReview(state, items = []) {
       || rightPriority.isDue - leftPriority.isDue
       || rightPriority.overdueScore - leftPriority.overdueScore
       || (rightProgress.lastSeenSession || rightProgress.lastReviewedSession || 0) - (leftProgress.lastSeenSession || leftProgress.lastReviewedSession || 0)
-      || getRotatingOrder(left, state.currentSessionNumber) - getRotatingOrder(right, state.currentSessionNumber);
+      || comparePlannerTie(
+        state,
+        left,
+        right,
+        getRotatingOrder(left, state.currentSessionNumber) - getRotatingOrder(right, state.currentSessionNumber)
+      );
   });
 }
 
@@ -1331,7 +1355,12 @@ function sortItemsForReviewVariety(state, items) {
       || (leftProgress.lastReviewedSession || leftProgress.lastSeenSession || 0) - (rightProgress.lastReviewedSession || rightProgress.lastSeenSession || 0)
       || (rightProgress.missCount || 0) - (leftProgress.missCount || 0)
       || (leftProgress.timesSeen || 0) - (rightProgress.timesSeen || 0)
-      || getRotatingOrder(left, state.currentSessionNumber) - getRotatingOrder(right, state.currentSessionNumber);
+      || comparePlannerTie(
+        state,
+        left,
+        right,
+        getRotatingOrder(left, state.currentSessionNumber) - getRotatingOrder(right, state.currentSessionNumber)
+      );
   });
 }
 
@@ -1351,7 +1380,7 @@ function isDailyTrailItemDue(state, item) {
 
   const currentSessionNumber = Math.max(1, Number(state.currentSessionNumber) || 1);
   const sessionDue = Number.isFinite(Number(progress.dueSession)) && Number(progress.dueSession) <= currentSessionNumber;
-  const dateDue = Boolean(progress.dueDate) && getDateGapInDays(progress.dueDate, getLocalDateString()) >= 0;
+  const dateDue = Boolean(progress.dueDate) && getDateGapInDays(progress.dueDate, getPlannerLocalDate(state)) >= 0;
 
   if (sessionDue || dateDue) {
     return true;
@@ -1369,7 +1398,7 @@ function getReviewPriority(state, item) {
   const currentSessionNumber = Math.max(1, Number(state.currentSessionNumber) || 1);
   const dueSession = Number.isFinite(Number(progress.dueSession)) ? Number(progress.dueSession) : null;
   const sessionOverdue = dueSession === null ? 0 : Math.max(0, currentSessionNumber - dueSession);
-  const dateOverdue = progress.dueDate ? Math.max(0, getDateGapInDays(progress.dueDate, getLocalDateString())) : 0;
+  const dateOverdue = progress.dueDate ? Math.max(0, getDateGapInDays(progress.dueDate, getPlannerLocalDate(state))) : 0;
 
   return {
     isDue: isDailyTrailItemDue(state, item) ? 1 : 0,
@@ -1448,7 +1477,7 @@ function isContinentsOceansSmallReviewEligible(state) {
     : continentsOceansSmallReviewSessionCooldown;
 
   return sessionGap >= requiredSessionGap
-    && isDateCooldownReady(state.lastContinentsOceansSmallReviewDate, 1);
+    && isDateCooldownReady(state.lastContinentsOceansSmallReviewDate, 1, state);
 }
 
 function isContinentsOceansFullReviewEligible(state) {
@@ -1463,7 +1492,7 @@ function isContinentsOceansFullReviewEligible(state) {
   }
 
   return getSessionGap(state.currentSessionNumber, progress.lastFullReviewSession) >= continentsOceansFullReviewSessionCooldown
-    && isDateCooldownReady(state.lastContinentsOceansFullReviewDate, continentsOceansFullReviewDayCooldown);
+    && isDateCooldownReady(state.lastContinentsOceansFullReviewDate, continentsOceansFullReviewDayCooldown, state);
 }
 
 function selectContinentsOceansReviewItems(state, items, count) {
@@ -1478,7 +1507,7 @@ function selectContinentsOceansReviewItems(state, items, count) {
       || getReviewPriority(state, right.item).overdueScore - getReviewPriority(state, left.item).overdueScore
       || (right.progress.missCount || 0) - (left.progress.missCount || 0)
       || (left.progress.lastReviewedSession || left.progress.lastSeenSession || 0) - (right.progress.lastReviewedSession || right.progress.lastSeenSession || 0)
-      || left.item.order - right.item.order
+      || comparePlannerTie(state, left.item, right.item, left.item.order - right.item.order)
     ))
     .slice(0, count)
     .map(({ item }) => item);
@@ -1623,7 +1652,7 @@ function getDefaultMemoryFields(progress = {}, stateContext = {}) {
       stability: 0.5,
       retrievability: 0.35,
       dueSession: currentSessionNumber,
-      dueDate: getLocalDateString(),
+      dueDate: stateContext.currentDate || getLocalDateString(),
       lastReviewedSession: reviewedSession,
       lastReviewedDate: reviewedDate,
       lapseCount: Math.max(0, Number(progress.lapseCount) || 0)
@@ -1637,7 +1666,7 @@ function getDefaultMemoryFields(progress = {}, stateContext = {}) {
       stability: 0.5,
       retrievability: 0.25,
       dueSession: currentSessionNumber,
-      dueDate: getLocalDateString(),
+      dueDate: stateContext.currentDate || getLocalDateString(),
       lastReviewedSession: reviewedSession,
       lastReviewedDate: reviewedDate,
       lapseCount: Math.max(0, Number(progress.lapseCount) || 0)
@@ -1831,7 +1860,8 @@ function getWeakItems(state, items) {
       const leftProgress = state.itemProgress[left.id] || {};
       const rightProgress = state.itemProgress[right.id] || {};
       return (rightProgress.missCount || 0) - (leftProgress.missCount || 0)
-        || (leftProgress.lastSeenSession || 0) - (rightProgress.lastSeenSession || 0);
+        || (leftProgress.lastSeenSession || 0) - (rightProgress.lastSeenSession || 0)
+        || comparePlannerTie(state, left, right);
     });
 }
 
@@ -2036,12 +2066,36 @@ function getSessionGap(currentSessionNumber, previousSessionNumber) {
   return Math.max(0, currentSessionNumber - previousSessionNumber);
 }
 
-function isDateCooldownReady(lastDate, requiredDays) {
+function attachPlannerContext(state, items, options) {
+  Object.defineProperty(state, plannerContextKey, {
+    value: {
+      localDate: typeof options?.now === "function" ? getLocalDateString(resolveNow(options)) : null,
+      tieBreakers: buildSeededTieBreakers(Array.isArray(items) ? items : [], options)
+    },
+    enumerable: false
+  });
+  return state;
+}
+
+function getPlannerLocalDate(state) {
+  return state?.[plannerContextKey]?.localDate || getLocalDateString();
+}
+
+function comparePlannerTie(state, left, right, fallback = 0) {
+  const tieBreakers = state?.[plannerContextKey]?.tieBreakers;
+  if (!tieBreakers) {
+    return fallback;
+  }
+  return (tieBreakers.get(left?.id) ?? 0) - (tieBreakers.get(right?.id) ?? 0)
+    || String(left?.id || "").localeCompare(String(right?.id || ""));
+}
+
+function isDateCooldownReady(lastDate, requiredDays, state) {
   if (!lastDate) {
     return true;
   }
 
-  return getDateGapInDays(lastDate, getLocalDateString()) >= requiredDays;
+  return getDateGapInDays(lastDate, getPlannerLocalDate(state)) >= requiredDays;
 }
 
 function getLocalDateString(date = new Date()) {

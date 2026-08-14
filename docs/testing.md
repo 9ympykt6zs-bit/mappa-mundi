@@ -67,3 +67,34 @@ The six checks previously recorded as stale or uncertain in `CURRENT_STATE.md` w
 | `check-daily-trail-us-states-03-camera.mjs` | Stale assertion | Camera data was valid; the wiring assertion still expected Daily Trail only. It now verifies the intentional shared integration. | No |
 
 The camera checks still combine exact fixture validation with narrow source-wiring assertions. They prove that approved configuration and expected integration hooks are present; they do not prove rendered camera framing. Rendered desktop/mobile camera behavior remains an E2E or manual acceptance concern.
+
+## Deterministic planner and challenge mode
+
+Adaptive planning and generated Mental Map selection accept optional deterministic dependencies for replay-oriented checks and debugging. Production callers do not pass these options, so their existing clock, random, curriculum-order, and rotating-order behavior remains unchanged.
+
+```js
+const options = {
+  seed: "learner-scenario-01",
+  now: () => new Date("2030-01-15T18:30:00.000Z")
+};
+
+const dailyPlan = planDailyTrailSession(dailyState, dailyItems, options);
+const usPlan = planUnitedStatesMemoryTrailSession(usState, usItems, options);
+const challenge = createGeneratedShortestRouteChallenge({ seed: options.seed });
+```
+
+The shared helpers in `src/deterministic-dependencies.js` provide `createSeededRandom(seed)` for APIs that already accept a raw random function, `resolveRandomSource()`, fixed-clock resolution, and stable seeded tie ranks. A seed may be any repeatable serializable value; strings are recommended for readable test scenarios. A clock is a function returning a `Date`, timestamp, or other value accepted by the `Date` constructor.
+
+Deterministic coverage by system:
+
+| System | Seeded | Fixed time |
+| --- | --- | --- |
+| Daily Trail | Equal-priority review candidates and groups receive reproducible tie ranks. With no seed, existing rotating/curriculum fallbacks are used. | Planning uses the injected local date for due/cooldown decisions. State normalization, teaching updates, and session-result scheduling also accept the injected clock. |
+| U.S. Memory Trail | Equal-priority review candidates receive reproducible tie ranks. New-item curriculum order is intentionally unchanged. | Plans, recovered session IDs, session starts, and snapshots can use the injected timestamp. |
+| Mental Map | Generated shortest-route choice, unified challenge-pool generation, and next-challenge selection accept `seed` or an explicit `random` function. | Generated challenges currently have no time-dependent behavior. |
+
+The audit found no planner use of `Math.random`: Daily Trail previously used curriculum order, input-stable sorting, and a session-number-derived rotating hash, while U.S. Memory Trail used curriculum order as its final priority tie-break. Seeded mode is deliberately opt-in so it does not alter those production defaults. U.S. Memory Trail used `Date.now()` for plan/session IDs and active-session timestamps. Daily Trail read the current local date for due items, review cooldowns, normalized legacy progress, teaching progress, and result scheduling. Mental Map generation and selection used `Math.random` defaults with optional raw random callbacks.
+
+Deterministic mode does not freeze browser timers, animation timing, response duration, audio scheduling, map behavior, localStorage, or unrelated runtime calls to `Date.now()`/`Math.random()`. It does not make learner responses deterministic, seed answer-bank shuffling automatically, or create a simulation framework. Callers that need deterministic answer-bank order can pass `createSeededRandom(seed)` through the answer-bank API's existing `random` option.
+
+`scripts/check-deterministic-planning.mjs` proves same-seed replay, different-seed valid variation, fixed-time scheduling/session metadata, generated Mental Map replay, and working no-options production paths for the scoped systems.

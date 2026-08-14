@@ -25,6 +25,10 @@ Automated-baseline update on 2026-08-14:
 - The six stale or uncertain standalone checks identified below were investigated and corrected without production-code changes. The consolidated `npm test` command ran all 56 current `scripts/check-*.mjs` checks in isolated Node processes: **56 passed and 0 failed**. See [`docs/testing.md`](docs/testing.md) for the command, scope, limitations, and per-check disposition.
 - Playwright again discovered 10 project/test combinations. The two Node-side spatial-question cases passed; the eight browser cases could not launch Chromium because the restricted macOS environment denied Mach-port registration before page launch. This remains an environment limitation, not an application assertion failure.
 
+Determinism update on 2026-08-14:
+
+- Daily Trail, U.S. Memory Trail, and generated Mental Map selection now accept opt-in seeded randomness and/or injected time at their planner/selection boundaries. No-options production calls retain their prior behavior. `scripts/check-deterministic-planning.mjs` verifies same-seed replay, different-seed valid variation, fixed-time behavior, and default call paths. The current fast baseline is **57 passed and 0 failed**. Evidence: `src/deterministic-dependencies.js`, `src/daily-trail-planner.js`, `src/united-states-memory-trail-planner.js`, `src/atlas/mental-map-challenges.js`, `src/atlas/mental-map-challenge-registry.js`, and [`docs/testing.md`](docs/testing.md).
+
 ## Executive summary
 
 Completion of the U.S. reference implementation is defined by the acceptance criteria in [`docs/US_DEFINITION_OF_DONE.md`](docs/US_DEFINITION_OF_DONE.md); this snapshot records current evidence against that target without treating implemented-but-unverified behavior as complete.
@@ -91,7 +95,7 @@ Items in this section have current automated module-level evidence. They should 
 - Playwright is configured for desktop Chromium and an iPhone 13-sized Chromium project. The U.S. Journey spec covers launch/menu navigation, starting Medium, forced completion of the first activity, save/advance, reload/resume, final completion/reload, and test-API gating. Evidence: `playwright.config.js`, `tests/e2e/us-journey-smoke.spec.js`, and `docs/testing.md`.
 - The deterministic `completeCurrentActivity()` hook directly marks every current target complete and invokes completion handling. This is appropriate for progress-flow regression coverage, but it bypasses real learner input, correctness, miss/remediation logic, map hit testing, and actual adaptive prompt selection. Evidence: `installMappaTestApi()` in `src/maplibre-poc.js`.
 - The tracked `test-results/.last-run.json` says `passed`, and recent commits specifically added U.S. Journey Playwright regressions. That artifact has no timestamp or test inventory, so it is evidence of a prior pass, not proof of the current checkout in this environment.
-- The 56 standalone checks provide broad low-level coverage through the consolidated `npm test` command. They remain executable assertion scripts rather than a uniform test framework, and the repository still has no executed-JavaScript coverage report or `.github` CI workflow. Evidence: `package.json`, `scripts/run-fast-checks.mjs`, `scripts/check-*.mjs`, and the absence of `.github` files.
+- The 57 standalone checks provide broad low-level coverage through the consolidated `npm test` command. They remain executable assertion scripts rather than a uniform test framework, and the repository still has no executed-JavaScript coverage report or `.github` CI workflow. Evidence: `package.json`, `scripts/run-fast-checks.mjs`, `scripts/check-*.mjs`, and the absence of `.github` files.
 
 ## Unverified / Needs Evidence
 

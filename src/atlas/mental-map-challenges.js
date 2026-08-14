@@ -12,6 +12,7 @@ import {
   getBorderChainEligibleStateIds,
   getBorderChainNeighbors
 } from "./border-chain.js";
+import { resolveRandomSource } from "../deterministic-dependencies.js";
 
 export const MENTAL_MAP_ANSWER_MODES = Object.freeze({
   SINGLE_SELECT: "single-select",
@@ -224,7 +225,8 @@ function createGeneratedRouteDistractors(paths) {
     .slice(0, 5);
 }
 
-export function createGeneratedShortestRouteChallenge({ random = Math.random } = {}) {
+export function createGeneratedShortestRouteChallenge(options = {}) {
+  const random = resolveRandomSource(options);
   const eligibleIds = getBorderChainEligibleStateIds();
   const pairs = [];
   eligibleIds.forEach((startStateId) => {
@@ -259,9 +261,10 @@ export function createGeneratedShortestRouteChallenge({ random = Math.random } =
   return null;
 }
 
-export function getMentalMapChallenges({ includeGenerated = true, random = Math.random } = {}) {
+export function getMentalMapChallenges(options = {}) {
+  const { includeGenerated = true } = options;
   const challenges = staticChallenges.map(copyChallenge);
-  const generated = includeGenerated ? createGeneratedShortestRouteChallenge({ random }) : null;
+  const generated = includeGenerated ? createGeneratedShortestRouteChallenge(options) : null;
   return generated ? [...challenges, generated] : challenges;
 }
 
