@@ -252,8 +252,16 @@ assert.equal(
   "20260624-daily-trail-curriculum-progression-1",
   "The runtime must load the checkpoint-aware planner under a new cache key."
 );
-assert.ok(appEntrySource.includes("./src/maplibre-poc.js?v=20260721-mental-map-consolidation-1"));
-assert.ok(previewEntrySource.includes("src/maplibre-poc.js?v=20260721-mental-map-consolidation-1"));
+assert.match(
+  appEntrySource,
+  /import\("\.\/src\/maplibre-poc\.js\?v=[^"]+"\)/,
+  "The root app shell must load the production module with a cache key."
+);
+assert.match(
+  previewEntrySource,
+  /src="src\/maplibre-poc\.js\?v=[^"]+"/,
+  "The preview app shell must load the production module with a cache key."
+);
 [
   "checkpointActivityGroups",
   "function startDailyTrailActivity(activityId)",

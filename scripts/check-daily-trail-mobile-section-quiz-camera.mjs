@@ -65,12 +65,12 @@ assert.ok(
   "Generic section camera must be mobile-only."
 );
 assert.ok(
-  shouldUseSource.includes('memoryTrail?.source === "daily-trail"')
+  shouldUseSource.includes("isAdaptiveTrailMemoryTrail(memoryTrail)")
     && shouldUseSource.includes('memoryTrail?.sessionPhase !== "learn"')
     && shouldUseSource.includes("!isGuidedMemoryTrailPrompt(memoryTrail)")
     && decisionSource.includes("isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)")
     && shouldUseSource.includes("!isCompletedDailyTrailReviewMemoryTrail(memoryTrail)"),
-  "Generic section camera must exclude Learn, checkpoint, completed review, and non-Daily Trail contexts."
+  "Generic section camera must cover adaptive trails while excluding Learn, checkpoint, and completed review contexts."
 );
 assert.ok(
   decisionSource.includes("getActiveDailyTrailFixedCamera(memoryTrail) || getActiveDailyTrailNonLearnCamera(memoryTrail)")

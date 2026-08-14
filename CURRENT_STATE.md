@@ -20,6 +20,11 @@ Current verification performed for this snapshot:
 - Playwright discovered 10 project/test combinations (five logical tests across desktop and mobile). The two non-browser spatial-question cases passed. The eight browser cases could not launch Chromium because the inspection sandbox denied Chromium's macOS Mach-port registration. This was an environment failure before application interaction, not an application assertion failure. Browser output was redirected to `/tmp`, so it did not alter the repository.
 - No current real-device, visual, audio-quality, accessibility, or manual learner-flow pass was performed.
 
+Automated-baseline update on 2026-08-14:
+
+- The six stale or uncertain standalone checks identified below were investigated and corrected without production-code changes. The consolidated `npm test` command ran all 56 current `scripts/check-*.mjs` checks in isolated Node processes: **56 passed and 0 failed**. See [`docs/testing.md`](docs/testing.md) for the command, scope, limitations, and per-check disposition.
+- Playwright again discovered 10 project/test combinations. The two Node-side spatial-question cases passed; the eight browser cases could not launch Chromium because the restricted macOS environment denied Mach-port registration before page launch. This remains an environment limitation, not an application assertion failure.
+
 ## Executive summary
 
 Completion of the U.S. reference implementation is defined by the acceptance criteria in [`docs/US_DEFINITION_OF_DONE.md`](docs/US_DEFINITION_OF_DONE.md); this snapshot records current evidence against that target without treating implemented-but-unverified behavior as complete.
@@ -86,7 +91,7 @@ Items in this section have current automated module-level evidence. They should 
 - Playwright is configured for desktop Chromium and an iPhone 13-sized Chromium project. The U.S. Journey spec covers launch/menu navigation, starting Medium, forced completion of the first activity, save/advance, reload/resume, final completion/reload, and test-API gating. Evidence: `playwright.config.js`, `tests/e2e/us-journey-smoke.spec.js`, and `docs/testing.md`.
 - The deterministic `completeCurrentActivity()` hook directly marks every current target complete and invokes completion handling. This is appropriate for progress-flow regression coverage, but it bypasses real learner input, correctness, miss/remediation logic, map hit testing, and actual adaptive prompt selection. Evidence: `installMappaTestApi()` in `src/maplibre-poc.js`.
 - The tracked `test-results/.last-run.json` says `passed`, and recent commits specifically added U.S. Journey Playwright regressions. That artifact has no timestamp or test inventory, so it is evidence of a prior pass, not proof of the current checkout in this environment.
-- The 55 standalone checks provide broad low-level coverage, but only a few are exposed as npm scripts. There is no `npm test`, no consolidated Node-check command, no coverage report for executed JavaScript, and no `.github` CI workflow in the repository. Evidence: `package.json`, `scripts/check-*.mjs`, and the absence of `.github` files.
+- The 56 standalone checks provide broad low-level coverage through the consolidated `npm test` command. They remain executable assertion scripts rather than a uniform test framework, and the repository still has no executed-JavaScript coverage report or `.github` CI workflow. Evidence: `package.json`, `scripts/run-fast-checks.mjs`, `scripts/check-*.mjs`, and the absence of `.github` files.
 
 ## Unverified / Needs Evidence
 
@@ -94,7 +99,7 @@ Items in this section have current automated module-level evidence. They should 
 - **Adaptive behavior end to end:** planner checks establish selection/state algorithms, but there is no Playwright coverage that plays Daily Trail or U.S. Memory Trail, makes misses/slow correct answers, reloads mid-session, and confirms the next selected content from persisted state.
 - **Atlas integration:** the read-only status adapter is checked, but there is no browser test proving map/profile rendering or that real learning sessions update the visible atlas correctly.
 - **Mental Map and Map Reconstruction UX:** engines have extensive assertion scripts, but browser interaction, geometry feel, persistence under real input, and mobile behavior are not covered by Playwright.
-- **Camera correctness:** camera behavior is largely validated by source-text assertions and approved numeric configurations rather than rendered visual assertions. Several camera checks are currently red (see Known Problems).
+- **Camera correctness:** camera behavior is largely validated by source-text wiring assertions and approved numeric configurations rather than rendered visual assertions. The checks are green, but rendered framing remains unverified.
 - **Audio and narration:** registries and asset checks exist, but narration timing, intelligibility, browser autoplay behavior, mute/resume behavior, and audio/visual sequencing remain manual by `docs/testing.md` and `docs/activity-audio.md`.
 - **Mobile and accessibility:** the Playwright viewport project is not a real iPhone/Safari test. Touch drag/drop, trackpad interaction, small hit areas, screen-reader flow, keyboard-only use, reduced-motion completeness, and contrast have no current acceptance evidence. `docs/CODEX_PROJECT_HISTORY.md` also identifies mobile/touch QA as insufficient.
 - **Production/offline loading:** the root app dynamically loads MapLibre JS/CSS from unpkg. Behavior with that CDN blocked, slow, or unavailable is not verified. Evidence: `mapLibreScriptUrl` and `mapLibreStylesheetUrl` in `src/maplibre-poc.js`.
@@ -102,16 +107,16 @@ Items in this section have current automated module-level evidence. They should 
 
 ## Known Problems
 
-### Red automated checks on 2026-08-12
+### Automated-check drift found on 2026-08-12
 
-Six of 55 standalone checks failed:
+Six of 55 standalone checks failed in the original snapshot:
 
-1. `scripts/check-daily-trail-mixed-checkpoint.mjs` expects older `index.html`/`maplibre-poc.html` module cache-buster strings. The current root entry uses `20260728-activity-audio-1`. This is clear test drift.
-2. `scripts/check-compass-challenge.mjs` expects no recorded audio entry for `east-of-nevada`, but the registry now returns one. This is an outdated expectation or an undocumented behavior change; the check cannot currently guard Compass audio.
-3. `scripts/check-daily-trail-mobile-section-quiz-camera.mjs` expects a Daily-Trail-only source gate, while runtime code now uses `isAdaptiveTrailMemoryTrail()` to include U.S. Memory Trail. The intended scope must be reconciled before the red check can be interpreted as a product regression.
-4. `scripts/check-daily-trail-us-states-01-camera.mjs`, `-02-camera.mjs`, and `-03-camera.mjs` look for the old exact source string that attached fixed cameras only to Daily Trail. Runtime now attaches those cameras to Daily Trail or U.S. Memory Trail. The configured camera data still passed those scripts' earlier comparisons, but their integration assertion is stale or the generalized behavior lacks an updated test.
+1. `scripts/check-daily-trail-mixed-checkpoint.mjs` expected older `index.html`/`maplibre-poc.html` module cache-buster strings even though the cache key had legitimately advanced.
+2. `scripts/check-compass-challenge.mjs` expected no recorded audio entry for `east-of-nevada` after that audio had been registered and added to the repository.
+3. `scripts/check-daily-trail-mobile-section-quiz-camera.mjs` expected a Daily-Trail-only source gate after runtime had intentionally generalized the path through `isAdaptiveTrailMemoryTrail()` to include U.S. Memory Trail.
+4. `scripts/check-daily-trail-us-states-01-camera.mjs`, `-02-camera.mjs`, and `-03-camera.mjs` looked for the old exact source string that attached fixed cameras only to Daily Trail. Their camera-data comparisons passed, while the intended runtime now attaches those cameras to Daily Trail or U.S. Memory Trail.
 
-Because these checks fail, there is no single green repository-wide automated baseline.
+These six failures were resolved during the 2026-08-14 baseline stabilization. Repository history and current wiring showed test drift rather than application defects: prerecorded Compass audio had been added, U.S. Memory Trail intentionally reused adaptive-trail camera behavior, and app-shell cache keys had advanced. The updated checks and full dispositions are documented in [`docs/testing.md`](docs/testing.md). The current fast baseline is green at 56/56, while browser E2E remains unverified in this restricted environment.
 
 ### Architecture and state risks
 

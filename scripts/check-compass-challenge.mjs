@@ -260,7 +260,14 @@ assert.equal(getMentalMapResultVisualState(
 ).directionArrows.length, 1);
 
 assert.equal(getMentalMapAudioText(mergedSingle, MENTAL_MAP_AUDIO_ROLES.QUESTION), mergedSingle.prompt);
-assert.equal(getMentalMapAudioEntry(mergedSingle, MENTAL_MAP_AUDIO_ROLES.QUESTION), null);
+const mergedSingleQuestionAudio = getMentalMapAudioEntry(mergedSingle, MENTAL_MAP_AUDIO_ROLES.QUESTION);
+assert.equal(mergedSingleQuestionAudio?.challengeId, mergedSingle.id);
+assert.equal(mergedSingleQuestionAudio?.role, MENTAL_MAP_AUDIO_ROLES.QUESTION);
+assert.equal(
+  mergedSingleQuestionAudio?.audioPath,
+  "assets/audio/mental-map/mental-map-question-east-of-nevada.mp3"
+);
+assert.ok(fs.existsSync(new URL(`../${mergedSingleQuestionAudio.audioPath}`, import.meta.url)));
 assert.ok(sharedUiSource.includes("window.GeographyChipSpeech?.createChipSpeakerControl"));
 assert.ok(sharedUiSource.includes('["reference", "Reference state"]'));
 assert.ok(sharedUiSource.includes('["direction", "Correct direction"]'));

@@ -31,8 +31,8 @@ if (JSON.stringify(mobileSectionQuizCamera) !== JSON.stringify(expectedMobileSec
 }
 
 const requiredHooks = [
-  "dailyTrailFixedCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailFixedCamera || null : null",
-  "dailyTrailMobileSectionQuizCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailMobileSectionQuizCamera || null : null",
+  "dailyTrailFixedCamera: (isDailyTrail || isUnitedStatesTrail) ? session.currentActivity?.map?.dailyTrailFixedCamera || null : null",
+  "dailyTrailMobileSectionQuizCamera: (isDailyTrail || isUnitedStatesTrail) ? session.currentActivity?.map?.dailyTrailMobileSectionQuizCamera || null : null",
   "function getActiveDailyTrailMobileSectionQuizCamera(memoryTrail)",
   "lockDailyTrailFixedCameraAfterLearn(memoryTrail, targetId);",
   "targetId !== fixedCamera.afterLearnTargetId",

@@ -18,7 +18,7 @@ if (JSON.stringify(fixedCamera) !== JSON.stringify(expected)) {
 }
 
 const requiredHooks = [
-  "dailyTrailFixedCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailFixedCamera || null : null",
+  "dailyTrailFixedCamera: (isDailyTrail || isUnitedStatesTrail) ? session.currentActivity?.map?.dailyTrailFixedCamera || null : null",
   "lockDailyTrailFixedCameraAfterLearn(memoryTrail, targetId);",
   "targetId !== fixedCamera.afterLearnTargetId",
   "getActiveDailyTrailFixedCamera(memoryTrail)",
