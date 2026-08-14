@@ -112,3 +112,13 @@ npm run report:learner-simulations
 ```
 
 It drives the existing U.S. Memory Trail planner with six deterministic learner profiles and adds a controlled Daily Trail return probe. The command writes human-readable Markdown and machine-readable JSON under `reports/`. The fast baseline's `check-learner-simulations.mjs` verifies deterministic replay, different-seed variation, all profile scripts, Inspector serialization, and fixture immutability. See [`learner-simulations.md`](learner-simulations.md) for profiles, interpretation, and measurement limits.
+
+## Selection Trace check
+
+`scripts/check-selection-trace.mjs` verifies that O5.5 tracing leaves Daily Trail, U.S. Memory Trail, and Mental Map selection outputs and state unchanged; reproduces equivalent traces under deterministic inputs; accurately reports available pool metadata; labels unavailable information; and remains JSON serializable. Generate the controlled Ohio example with:
+
+```sh
+npm run report:selection-trace
+```
+
+See [`learning-inspector.md`](learning-inspector.md) for the trace schema, evidence boundaries, and interpretation limits.

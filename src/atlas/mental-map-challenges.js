@@ -226,6 +226,10 @@ function createGeneratedRouteDistractors(paths) {
 }
 
 export function createGeneratedShortestRouteChallenge(options = {}) {
+  return createGeneratedShortestRouteChallengeWithDebug(options).selected;
+}
+
+export function createGeneratedShortestRouteChallengeWithDebug(options = {}) {
   const random = resolveRandomSource(options);
   const eligibleIds = getBorderChainEligibleStateIds();
   const pairs = [];
@@ -235,14 +239,22 @@ export function createGeneratedShortestRouteChallenge(options = {}) {
     });
   });
   const startIndex = Math.min(pairs.length - 1, Math.max(0, Math.floor(Number(random()) * pairs.length)));
+  const considered = [];
 
   for (let offset = 0; offset < pairs.length; offset += 1) {
     const [startStateId, destinationStateId] = pairs[(startIndex + offset) % pairs.length];
     const shortestPaths = findAllShortestBorderPaths(startStateId, destinationStateId);
-    if (!shortestPaths.length || shortestPaths[0].length < 4) continue;
+    if (!shortestPaths.length || shortestPaths[0].length < 4) {
+      considered.push({
+        id: `${startStateId}:${destinationStateId}`,
+        status: "considered-not-selected",
+        reason: !shortestPaths.length ? "no-route" : "route-too-short"
+      });
+      continue;
+    }
     const start = getStateById(startStateId);
     const destination = getStateById(destinationStateId);
-    return {
+    const selected = {
       id: `generated-shortest-${startStateId}-${destinationStateId}`,
       title: "Neighboring State Route",
       prompt: `Find a route from ${start.name} to ${destination.name} by traveling only through states that share a border.`,
@@ -257,8 +269,26 @@ export function createGeneratedShortestRouteChallenge(options = {}) {
       explanation: `A valid route moves from state to neighboring state until it reaches ${destination.name}.`,
       generated: true
     };
+    considered.push({
+      id: `${startStateId}:${destinationStateId}`,
+      status: "selected",
+      reason: "first-eligible-pair-from-seeded-start"
+    });
+    return {
+      selected,
+      debug: {
+        pairCount: pairs.length,
+        startIndex,
+        selectedPairIndex: (startIndex + offset) % pairs.length,
+        selectedPair: [startStateId, destinationStateId],
+        considered
+      }
+    };
   }
-  return null;
+  return {
+    selected: null,
+    debug: { pairCount: pairs.length, startIndex, selectedPairIndex: -1, selectedPair: null, considered }
+  };
 }
 
 export function getMentalMapChallenges(options = {}) {

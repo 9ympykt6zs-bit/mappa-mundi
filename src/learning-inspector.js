@@ -4,6 +4,11 @@ import {
   DAILY_TRAIL_DEBUG_REASONS,
   getDailyTrailPlanReasonMap
 } from "./daily-trail-planner.js";
+import {
+  createDailyTrailSelectionTrace,
+  createMentalMapSelectionTrace,
+  createUnitedStatesMemoryTrailSelectionTrace
+} from "./selection-trace.js";
 
 export const LEARNING_INSPECTOR_SCHEMA_VERSION = 1;
 export const LEARNING_INSPECTOR_AVAILABILITY = Object.freeze({
@@ -315,7 +320,8 @@ export function createDailyTrailSelectionExplanation({ state = {}, plan = {}, it
     priorityFactors: inferred(priority, "existing Daily Trail planner debug projection"),
     whyWon: unavailable("The planner does not retain a comparison trace or rejected-alternative ranking."),
     selectionIndex: isSelected ? observed(plan.playItems.findIndex((candidate) => candidate.id === item.id), "plan.playItems") : unavailable("Item was not selected."),
-    deterministicContext: createDeterministicContext(deterministicContext)
+    deterministicContext: createDeterministicContext(deterministicContext),
+    selectionTrace: createDailyTrailSelectionTrace({ state, plan, item, deterministicContext })
   };
 }
 
@@ -357,12 +363,15 @@ export function createUnitedStatesMemoryTrailSelectionExplanation({ state = {}, 
       : unavailable("No item progress exists for this selection."),
     whyWon: unavailable("The U.S. planner does not retain rejected alternatives or comparison results."),
     selectionIndex: selectionIndex >= 0 ? observed(selectionIndex, "plan.playItems") : unavailable("Item was not selected."),
-    deterministicContext: createDeterministicContext(deterministicContext)
+    deterministicContext: createDeterministicContext(deterministicContext),
+    selectionTrace: createUnitedStatesMemoryTrailSelectionTrace({ state, plan, item, deterministicContext })
   };
 }
 
-export function createMentalMapSelectionExplanation({ challenge = {}, pool = [], deterministicContext = {} } = {}) {
+export function createMentalMapSelectionExplanation({ challenge = {}, pool = [], selectionDebug = null, generatedSelectionDebug = null, deterministicContext = {} } = {}) {
   const poolIndex = pool.findIndex((candidate) => candidate.id === challenge.id);
+  const trace = createMentalMapSelectionTrace({ challenge, pool, selectionDebug, generatedSelectionDebug, deterministicContext });
+  const debug = selectionDebug || generatedSelectionDebug;
   return {
     schemaVersion: LEARNING_INSPECTOR_SCHEMA_VERSION,
     kind: "selection-explanation",
@@ -373,10 +382,15 @@ export function createMentalMapSelectionExplanation({ challenge = {}, pool = [],
       : unavailable("The supplied pool does not establish that this challenge was eligible."),
     reasonCode: inferred(hasOwn(deterministicContext, "seed") ? "seeded-random-selection" : "random-selection", "selector inputs"),
     reason: inferred("Selected from the filtered preferred challenge pool using the configured random source.", "Mental Map selector behavior"),
-    priorityFactors: unavailable("The selector does not emit its filtered pool, random draw, or category/mode exclusion trace."),
-    whyWon: unavailable("The exact random draw and rejected alternatives are not retained."),
+    priorityFactors: debug
+      ? inferred(trace.priorityFactors.value, "selectionTrace priority factors", "Decision-time debug metadata was supplied.")
+      : unavailable("The selector does not emit its filtered pool, random draw, or category/mode exclusion trace unless debug metadata is requested."),
+    whyWon: debug
+      ? inferred("The selected item occupied the recorded index in the recorded filtered or generated candidate sequence.", "selectionTrace decision metadata")
+      : unavailable("The exact random draw and rejected alternatives are not available without decision-time debug metadata."),
     selectionIndex: poolIndex >= 0 ? observed(poolIndex, "supplied challenge pool") : unavailable("Challenge was not found in the supplied pool."),
-    deterministicContext: createDeterministicContext(deterministicContext)
+    deterministicContext: createDeterministicContext(deterministicContext),
+    selectionTrace: trace
   };
 }
 

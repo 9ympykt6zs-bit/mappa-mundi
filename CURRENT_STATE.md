@@ -37,6 +37,10 @@ Synthetic-learner simulation update on 2026-08-14:
 
 - Deterministic evidence infrastructure now runs six explicit learner profiles against the production U.S. Memory Trail planner and production-derived 50-state/50-capital curriculum, plus a controlled Daily Trail date-return probe. It records session summaries, representative selection explanations, and before/event/after Inspector transitions in generated Markdown and JSON reports. `scripts/check-learner-simulations.mjs` verifies replay, seed variation, all required profiles, JSON serialization, and fixture immutability. This verifies that the harness executes reproducibly; it does **not** verify that adaptive behavior is correct. The current fast baseline is **59 passed and 0 failed**. Evidence: `scripts/lib/learner-simulation.mjs`, [`docs/learner-simulations.md`](docs/learner-simulations.md), and `reports/us-learning-simulations.md`.
 
+Selection Trace v1 update on 2026-08-14:
+
+- Learning Inspector selection explanations now include JSON-safe traces. U.S. Memory Trail reconstructs the relevant candidate bucket through its existing eligibility/priority helpers; Mental Map has opt-in debug selectors that expose the exact filtered pool and random index; Daily Trail exposes reason/factor metadata and other emitted selections while honestly leaving its discarded full candidate pool unavailable. The feature is read-only and not automatically persisted from production gameplay. `scripts/check-selection-trace.mjs` verifies output preservation, immutability, deterministic replay, candidate metadata, unavailable labels, and serialization. The current fast baseline is **60 passed and 0 failed**. Evidence: `src/selection-trace.js`, `src/learning-inspector.js`, [`docs/learning-inspector.md`](docs/learning-inspector.md), and `reports/selection-trace-example.json`.
+
 ## Executive summary
 
 Completion of the U.S. reference implementation is defined by the acceptance criteria in [`docs/US_DEFINITION_OF_DONE.md`](docs/US_DEFINITION_OF_DONE.md); this snapshot records current evidence against that target without treating implemented-but-unverified behavior as complete.

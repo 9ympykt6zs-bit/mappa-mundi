@@ -228,6 +228,85 @@ export function planUnitedStatesMemoryTrailSession(state, items = [], options = 
   return buildUnitedStatesLearningPlan(normalized, safeItems, eligibleNewItems);
 }
 
+// Read-only projection of the candidate pool that the existing planner used.
+// It deliberately calls the same eligibility and priority helpers as planning;
+// it does not rank or select anything independently.
+export function getUnitedStatesMemoryTrailSelectionDebug(state, plan = {}, selectedItem = {}, options = {}) {
+  const items = Array.isArray(plan.allItems) ? plan.allItems : [];
+  const normalized = attachPlannerContext(createUnitedStatesMemoryTrailState(state, items, options), items, options);
+  const selectedId = selectedItem.id || "";
+  const newIds = new Set((plan.newItems || []).map((item) => item.id));
+  const weakIds = new Set((plan.weakReviewItems || []).map((item) => item.id));
+  const oldIds = new Set((plan.oldReviewItems || []).map((item) => item.id));
+  const membership = newIds.has(selectedId) ? "new"
+    : weakIds.has(selectedId) ? "weak-review"
+      : oldIds.has(selectedId) ? "older-review"
+        : (plan.recentReviewItems || []).some((item) => item.id === selectedId) ? "recent-review"
+          : (plan.reviewItems || []).some((item) => item.id === selectedId) ? "review"
+            : "unknown";
+  let candidates = [];
+
+  if (membership === "new") {
+    const eligibleNewItems = getEligibleNewItems(normalized, items);
+    const sectionItems = items
+      .filter((item) => item.homeActivityId === plan.activeActivityId)
+      .filter((item) => getItemStatus(normalized, item) === "unseen")
+      .filter((item) => eligibleNewItems.some((candidate) => candidate.id === item.id));
+    const capitalItems = sectionItems.filter((item) => item.type === "capital");
+    candidates = capitalItems.length > 0 ? capitalItems : sectionItems.filter((item) => item.type === "state");
+  } else if (plan.sessionType === "cumulative-review") {
+    candidates = items
+      .filter((item) => practiceEligibleStatuses.has(getItemStatus(normalized, item)))
+      .sort((left, right) => compareReviewPriority(normalized, left, right));
+  } else if (membership === "weak-review") {
+    candidates = items
+      .filter((item) => !newIds.has(item.id))
+      .filter((item) => practiceEligibleStatuses.has(getItemStatus(normalized, item)))
+      .filter((item) => isWeakProgress(normalized.itemProgress[item.id] || {}))
+      .sort((left, right) => compareReviewPriority(normalized, left, right));
+  } else if (membership === "older-review") {
+    const activeSectionIndex = Number(items.find((item) => item.homeActivityId === plan.activeActivityId)?.homeStepIndex);
+    candidates = items
+      .filter((item) => !newIds.has(item.id) && !weakIds.has(item.id))
+      .filter((item) => practiceEligibleStatuses.has(getItemStatus(normalized, item)))
+      .filter((item) => Number(item.homeStepIndex) < activeSectionIndex)
+      .sort((left, right) => compareReviewPriority(normalized, left, right));
+  } else if (membership === "recent-review") {
+    candidates = items
+      .filter((item) => !newIds.has(item.id) && !weakIds.has(item.id) && !oldIds.has(item.id))
+      .filter((item) => practiceEligibleStatuses.has(getItemStatus(normalized, item)))
+      .sort((left, right) => (normalized.itemProgress[right.id]?.lastSeenSession || 0) - (normalized.itemProgress[left.id]?.lastSeenSession || 0)
+        || comparePlannerTie(normalized, left, right)
+        || left.order - right.order);
+  }
+
+  return {
+    reasonBucket: membership,
+    candidatePoolKind: membership === "unknown" ? null : plan.sessionType === "cumulative-review" ? "cumulative-review" : membership,
+    candidateCount: membership === "unknown" ? null : candidates.length,
+    selectedCandidateIndex: candidates.findIndex((item) => item.id === selectedId),
+    candidates: candidates.map((item) => {
+      const progress = normalized.itemProgress[item.id] || {};
+      return {
+        id: item.id,
+        targetId: item.targetId,
+        type: item.type,
+        category: item.category,
+        censusRegion: item.censusRegion || null,
+        homeActivityId: item.homeActivityId,
+        status: item.id === selectedId ? "selected" : "considered-not-selected",
+        progressStatus: getItemStatus(normalized, item),
+        weak: isWeakProgress(progress),
+        due: isReviewDue(normalized, item),
+        missCount: Number(progress.missCount) || 0,
+        lapseCount: Number(progress.lapseCount) || 0,
+        lastSeenSession: Number(progress.lastSeenSession) || 0,
+        dueSession: Number(progress.dueSession) || null
+      };
+    })
+  };
+}
+
 export function applyUnitedStatesMemoryTrailSessionStart(state, plan, options = {}) {
   const next = createUnitedStatesMemoryTrailState(state, plan?.allItems || [], options);
   next.hasStarted = true;

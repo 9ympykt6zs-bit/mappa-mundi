@@ -38,9 +38,35 @@ Daily Trail explanations use the existing planner reason projection and debug-it
 
 U.S. Memory Trail does not currently emit reason codes. Its adapter reports observed plan membership and infers a narrow bucket such as `new`, `weak-review`, `older-review`, or `recent-review`. It also exposes observed priority inputs from the item's current progress.
 
-Mental Map reports whether the selected challenge is present in the supplied pool and whether the caller supplied a deterministic seed. The selector does not retain its random draw or intermediate preferred pool.
+Mental Map reports whether the selected challenge is present in the supplied pool and whether the caller supplied a deterministic seed. The opt-in debug-returning selector also exposes its filtered preferred pool and random draw at decision time.
 
-All three selection adapters report exact winner-over-alternative reasoning as unavailable. Daily Trail and U.S. Memory Trail do not retain rejected candidate rankings or comparison traces, and Mental Map does not retain its random draw. The Inspector does not recreate those missing traces after the fact.
+Every selection explanation now includes a `selectionTrace`. The trace records what the current source can support and labels reconstructed fields as inferred rather than presenting them as retained historical evidence.
+
+## Selection traces
+
+Selection Trace v1 is implemented in `src/selection-trace.js`. It is a read-only decision-path projection, not a second selector. Calling a trace adapter does not update learner state or rerun selection.
+
+Common fields include a stable trace identifier, supplied deterministic timestamp/seed, planner, selected item, reason bucket, priority factors, candidate-pool metadata, alternatives, and an explicit `unavailableFields` map. As elsewhere in the Inspector, each field is labeled `observed`, `inferred`, or `unavailable`.
+
+Current system boundaries:
+
+| System | Trace evidence | Limits |
+| --- | --- | --- |
+| Daily Trail | Existing reason projection, item debug factors, emitted new/review counts, and other items emitted in the same plan. | The emitted plan does not retain the full discarded candidate pool. Eligible-candidate count, rejected alternatives, and exact comparator steps remain unavailable. |
+| U.S. Memory Trail | New/weak/older/recent bucket, current progress factors, and a read-only reconstruction of that bucket using the planner's existing eligibility and priority helpers. | Comparator clauses are ordered but the planner does not retain which clause broke every pairwise tie. Separate slot buckets are not one shared numeric ranking. |
+| Mental Map | The opt-in debug selectors expose valid/preferred counts, applied diversity filters, deterministic random draw/index, and alternatives in the preferred pool. Generated shortest-route tracing also records the seeded starting pair and pairs examined before the first eligible route. | Generated-route selection stops at the first eligible pair, so it does not calculate the total eligible-pair count. Mental Map selection does not currently use learner mastery evidence, so the trace cannot supply pedagogical priority or mastery scores. |
+
+Generate the tracked Ohio example with:
+
+```sh
+npm run report:selection-trace
+```
+
+The output is `reports/selection-trace-example.json`. Programmatic callers normally receive the trace through `createDailyTrailSelectionExplanation()`, `createUnitedStatesMemoryTrailSelectionExplanation()`, or `createMentalMapSelectionExplanation()`. Mental Map callers that need exact decision-time metadata use `selectNextUnifiedMentalMapChallengeWithDebug()` or `createGeneratedShortestRouteChallengeWithDebug()` and pass the returned `debug` object to the Inspector.
+
+Compared with O5, a U.S. trace can now show that repeated Ohio selection came from the weak-review bucket, whether recorded misses/weak/due predicates applied, the reconstructed alternatives in that bucket, and whether West-tagged fixture items were present. A deterministic replay can compare the entire JSON trace. Daily Trail cannot yet prove that an unselected West item was eligible, because its full rejected pool is not retained; that limitation is explicit rather than guessed.
+
+A trace explains a current decision path. It does not prove the adaptive algorithm, curriculum, or amount of repetition is pedagogically correct.
 
 Deterministic context can be attached to a selection explanation:
 
@@ -81,10 +107,11 @@ const transition = createLearningInspectorTransition({
 
 - A unified learner identity or evidence stream across the existing stores.
 - Durable event history tying each answer to every resulting store write.
-- Exact rejected-alternative ranking or random draw for past selections.
+- Exact rejected-alternative ranking for past selections that were not captured with trace inputs; Daily Trail's full rejected pool remains unavailable even at trace time.
 - Shared naming/locating/relationship evidence across all modes.
 - Cumulative Mental Map and reconstruction evidence.
 - Production-wide capture of deterministic seed/time context.
+- Automatic durable storage of selection traces from production gameplay.
 - Cross-device state, backend records, migrations, or transaction boundaries.
 - A visual Learning Inspector panel and automatic production-runtime wiring.
 

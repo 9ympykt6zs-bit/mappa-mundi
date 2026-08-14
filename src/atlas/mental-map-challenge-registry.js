@@ -104,24 +104,63 @@ export function getUnifiedMentalMapChallenges(options = {}) {
 }
 
 export function selectNextUnifiedMentalMapChallenge(challenges, options = {}) {
+  return selectNextUnifiedMentalMapChallengeWithDebug(challenges, options).selected;
+}
+
+export function selectNextUnifiedMentalMapChallengeWithDebug(challenges, options = {}) {
   const valid = (challenges || []).filter((challenge) => (
     challenge
     && !validateUnifiedMentalMapChallenge(challenge).length
     && challenge.id !== options.lastQuestionId
     && !(options.usedQuestionIds || new Set()).has(challenge.id)
   ));
-  if (!valid.length) return null;
+  if (!valid.length) {
+    return {
+      selected: null,
+      debug: {
+        suppliedCount: (challenges || []).length,
+        eligibleCount: 0,
+        preferredCount: 0,
+        selectedIndex: -1,
+        randomValue: null,
+        filters: [],
+        candidates: []
+      }
+    };
+  }
 
   let preferred = valid;
+  const filters = [];
   const orderedRecently = (options.recentAnswerModes || [])
     .slice(-2)
     .includes(MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE);
   if (orderedRecently && preferred.some(({ answerMode }) => answerMode !== MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE)) {
     preferred = preferred.filter(({ answerMode }) => answerMode !== MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE);
+    filters.push("avoid-recent-ordered-sequence");
   }
   if (options.lastCategory && preferred.some(({ category }) => category !== options.lastCategory)) {
     preferred = preferred.filter(({ category }) => category !== options.lastCategory);
+    filters.push("avoid-last-category");
   }
   const randomValue = Math.max(0, Math.min(0.999999, Number(resolveRandomSource(options)())));
-  return preferred[Math.floor(randomValue * preferred.length)] || null;
+  const selectedIndex = Math.floor(randomValue * preferred.length);
+  const selected = preferred[selectedIndex] || null;
+  return {
+    selected,
+    debug: {
+      suppliedCount: (challenges || []).length,
+      eligibleCount: valid.length,
+      preferredCount: preferred.length,
+      selectedIndex,
+      randomValue,
+      filters,
+      candidates: preferred.map((challenge, index) => ({
+        id: challenge.id,
+        category: challenge.category || null,
+        answerMode: challenge.answerMode || null,
+        generated: Boolean(challenge.generated),
+        status: index === selectedIndex ? "selected" : "considered-not-selected"
+      }))
+    }
+  };
 }
