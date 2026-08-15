@@ -78,3 +78,13 @@ npm run report:matched-seed-simulations
 ```
 
 This generates `reports/us-matched-seed-simulations.md` and `reports/us-matched-seed-simulations.json`. See [`matched-seed-simulations.md`](matched-seed-simulations.md) for measurements, interpretation, and limits.
+
+## Long-horizon mastery
+
+O6.3 extends the same deterministic U.S. Memory Trail profiles through sessions 25, 50, 75, 100, 150, and 200:
+
+```sh
+npm run report:long-horizon-mastery
+```
+
+It generates `reports/us-long-horizon-mastery.md` and `reports/us-long-horizon-mastery.json`. The report measures the current item-level status model, milestone timing, diagnostic item histories, post-introduction review load, and regional mastery without changing or endorsing the model. See [`long-horizon-mastery.md`](long-horizon-mastery.md).
