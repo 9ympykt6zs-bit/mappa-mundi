@@ -6,6 +6,8 @@ The baseline includes `scripts/check-matched-seed-simulation-matrix.mjs`, which 
 
 The baseline also includes `scripts/check-long-horizon-mastery-report.mjs`. It checks O6.3 milestone and percentage calculations, status-count invariants, ordered diagnostic histories, exact replay, JSON serialization, fixture immutability, and unchanged planner output. Generate the six-seed 200-session analysis with `npm run report:long-horizon-mastery`; see [`long-horizon-mastery.md`](long-horizon-mastery.md).
 
+The baseline includes `scripts/check-progress-score-comparison.mjs` for the isolated progress-score experiment. It checks deterministic formula replay, bounds, input immutability, Bayesian and BKT calculations, no response-free time decay, JSON serialization, fixture immutability, current-counter projection, and unchanged planner output. Generate the comparison with `npm run report:progress-score-experiment`; see [`experimental-progress-scores.md`](experimental-progress-scores.md).
+
 ## Setup
 
 Install JavaScript dependencies and the Chromium browser used by the test projects:

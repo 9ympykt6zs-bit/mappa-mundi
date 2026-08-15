@@ -88,3 +88,13 @@ npm run report:long-horizon-mastery
 ```
 
 It generates `reports/us-long-horizon-mastery.md` and `reports/us-long-horizon-mastery.json`. The report measures the current item-level status model, milestone timing, diagnostic item histories, post-introduction review load, and regional mastery without changing or endorsing the model. See [`long-horizon-mastery.md`](long-horizon-mastery.md).
+
+## Experimental demonstrated-progress scores
+
+The isolated progress-score experiment replays canonical histories and the five deterministic learner profiles through four non-production scoring candidates:
+
+```sh
+npm run report:progress-score-experiment
+```
+
+This produces `reports/experimental-progress-score-comparison.md` and `.json`. These candidate scores are conceptually separate from scheduler mastery and never feed back into planner behavior. See [`experimental-progress-scores.md`](experimental-progress-scores.md).

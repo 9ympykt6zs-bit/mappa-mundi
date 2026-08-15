@@ -1,0 +1,6489 @@
+{
+  "schemaVersion": 1,
+  "kind": "experimental-progress-score-comparison",
+  "productionAuthoritative": false,
+  "scoreMeaning": "Experimental estimate of currently demonstrated skill; separate from scheduler mastery, retention priority, and due state.",
+  "scoreBands": {
+    "unknown": null,
+    "low": [
+      0,
+      0.3
+    ],
+    "medium": [
+      0.3,
+      0.65
+    ],
+    "high": [
+      0.65,
+      0.9
+    ],
+    "complete": [
+      0.9,
+      1
+    ]
+  },
+  "models": [
+    {
+      "id": "weighted-evidence",
+      "label": "Model A — Simple weighted evidence",
+      "assumptions": "Correct and incorrect answers add or subtract fixed evidence; consecutive correct answers add a small bonus; the result is clamped to 0–1.",
+      "defaultParameters": {
+        "correctIncrement": 0.34,
+        "incorrectDecrement": 0.24,
+        "streakBonus": 0.04,
+        "maximumStreakBonus": 0.12
+      }
+    },
+    {
+      "id": "bayesian-evidence",
+      "label": "Model B — Bayesian evidence",
+      "assumptions": "A provisional Beta(1,2) prior is updated with one unit of evidence per correct or incorrect answer; the posterior mean is shown after evidence exists.",
+      "defaultParameters": {
+        "priorAlpha": 1,
+        "priorBeta": 2,
+        "correctWeight": 1,
+        "incorrectWeight": 1
+      }
+    },
+    {
+      "id": "bkt-inspired",
+      "label": "Model C — BKT-inspired",
+      "assumptions": "A latent-knowledge probability is updated using explicit guess/slip likelihoods and a learning transition after each response. There is no forgetting transition.",
+      "defaultParameters": {
+        "priorKnowledge": 0.2,
+        "guessProbability": 0.25,
+        "slipProbability": 0.1,
+        "learningProbability": 0.12
+      }
+    },
+    {
+      "id": "current-system-proxy",
+      "label": "Model D — Current-system-derived proxy",
+      "assumptions": "Existing correct-count, times-seen, and correct-streak fields are projected into a visible 0–1 score. Scheduler status, stability, difficulty, and retrievability are deliberately excluded rather than pretending they measure demonstrated skill.",
+      "defaultParameters": {
+        "correctnessWeight": 0.45,
+        "streakWeight": 0.3,
+        "evidenceVolumeWeight": 0.25,
+        "streakTarget": 4,
+        "correctEvidenceTarget": 7
+      }
+    }
+  ],
+  "canonicalSequences": [
+    {
+      "id": "never-attempted",
+      "label": "Never attempted",
+      "evidence": [],
+      "models": {
+        "weighted-evidence": {
+          "score": null,
+          "band": "unknown",
+          "trajectory": []
+        },
+        "bayesian-evidence": {
+          "score": null,
+          "band": "unknown",
+          "trajectory": []
+        },
+        "bkt-inspired": {
+          "score": null,
+          "band": "unknown",
+          "trajectory": []
+        },
+        "current-system-proxy": {
+          "score": null,
+          "band": "unknown",
+          "trajectory": []
+        }
+      }
+    },
+    {
+      "id": "c",
+      "label": "✓",
+      "evidence": [
+        true
+      ],
+      "models": {
+        "weighted-evidence": {
+          "score": 0.34,
+          "band": "medium",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.34,
+              "bandAfter": "medium"
+            }
+          ]
+        },
+        "bayesian-evidence": {
+          "score": 0.5,
+          "band": "medium",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.5,
+              "bandAfter": "medium"
+            }
+          ]
+        },
+        "bkt-inspired": {
+          "score": 0.536842,
+          "band": "medium",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.536842,
+              "bandAfter": "medium"
+            }
+          ]
+        },
+        "current-system-proxy": {
+          "score": 0.560714,
+          "band": "medium",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.560714,
+              "bandAfter": "medium"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cc",
+      "label": "✓ ✓",
+      "evidence": [
+        true,
+        true
+      ],
+      "models": {
+        "weighted-evidence": {
+          "score": 0.72,
+          "band": "high",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.34,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.72,
+              "bandAfter": "high"
+            }
+          ]
+        },
+        "bayesian-evidence": {
+          "score": 0.6,
+          "band": "medium",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.5,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.6,
+              "bandAfter": "medium"
+            }
+          ]
+        },
+        "bkt-inspired": {
+          "score": 0.829877,
+          "band": "high",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.536842,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.829877,
+              "bandAfter": "high"
+            }
+          ]
+        },
+        "current-system-proxy": {
+          "score": 0.671429,
+          "band": "high",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.560714,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.671429,
+              "bandAfter": "high"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cccc",
+      "label": "✓ ✓ ✓ ✓",
+      "evidence": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "models": {
+        "weighted-evidence": {
+          "score": 1,
+          "band": "complete",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.34,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.72,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            }
+          ]
+        },
+        "bayesian-evidence": {
+          "score": 0.714286,
+          "band": "high",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.5,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.6,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.666667,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.714286,
+              "bandAfter": "high"
+            }
+          ]
+        },
+        "bkt-inspired": {
+          "score": 0.988,
+          "band": "complete",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.536842,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.829877,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.952589,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.988,
+              "bandAfter": "complete"
+            }
+          ]
+        },
+        "current-system-proxy": {
+          "score": 0.892857,
+          "band": "high",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.560714,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.671429,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.782143,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.892857,
+              "bandAfter": "high"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ci",
+      "label": "✓ ✗",
+      "evidence": [
+        true,
+        false
+      ],
+      "models": {
+        "weighted-evidence": {
+          "score": 0.1,
+          "band": "low",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.34,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.1,
+              "bandAfter": "low"
+            }
+          ]
+        },
+        "bayesian-evidence": {
+          "score": 0.4,
+          "band": "medium",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.5,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.4,
+              "bandAfter": "medium"
+            }
+          ]
+        },
+        "bkt-inspired": {
+          "score": 0.237795,
+          "band": "low",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.536842,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.237795,
+              "bandAfter": "low"
+            }
+          ]
+        },
+        "current-system-proxy": {
+          "score": 0.260714,
+          "band": "low",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.560714,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.260714,
+              "bandAfter": "low"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ciii",
+      "label": "✓ ✗ ✗ ✗",
+      "evidence": [
+        true,
+        false,
+        false,
+        false
+      ],
+      "models": {
+        "weighted-evidence": {
+          "score": 0,
+          "band": "low",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.34,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.1,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0,
+              "bandAfter": "low"
+            }
+          ]
+        },
+        "bayesian-evidence": {
+          "score": 0.285714,
+          "band": "low",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.5,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.4,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.333333,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.285714,
+              "bandAfter": "low"
+            }
+          ]
+        },
+        "bkt-inspired": {
+          "score": 0.141031,
+          "band": "low",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.536842,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.237795,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.155144,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.141031,
+              "bandAfter": "low"
+            }
+          ]
+        },
+        "current-system-proxy": {
+          "score": 0.148214,
+          "band": "low",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.560714,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.260714,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.185714,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.148214,
+              "bandAfter": "low"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ccccc-i",
+      "label": "✓ ✓ ✓ ✓ ✓ ✗",
+      "evidence": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        false
+      ],
+      "models": {
+        "weighted-evidence": {
+          "score": 0.76,
+          "band": "high",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.34,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.72,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.76,
+              "bandAfter": "high"
+            }
+          ]
+        },
+        "bayesian-evidence": {
+          "score": 0.666667,
+          "band": "high",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.5,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.6,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.666667,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.714286,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.75,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.666667,
+              "bandAfter": "high"
+            }
+          ]
+        },
+        "bkt-inspired": {
+          "score": 0.980839,
+          "band": "complete",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.536842,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.829877,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.952589,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.988,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.997041,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.980839,
+              "bandAfter": "complete"
+            }
+          ]
+        },
+        "current-system-proxy": {
+          "score": 0.553571,
+          "band": "medium",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.560714,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.671429,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.782143,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.892857,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.928571,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.553571,
+              "bandAfter": "medium"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cccccccc",
+      "label": "✓ × 8",
+      "evidence": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "models": {
+        "weighted-evidence": {
+          "score": 1,
+          "band": "complete",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.34,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.72,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            }
+          ]
+        },
+        "bayesian-evidence": {
+          "score": 0.818182,
+          "band": "high",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.5,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.6,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.666667,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.714286,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.75,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.777778,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.8,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.818182,
+              "bandAfter": "high"
+            }
+          ]
+        },
+        "bkt-inspired": {
+          "score": 0.999957,
+          "band": "complete",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.536842,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.829877,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.952589,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.988,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.997041,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.999275,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.999823,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.999957,
+              "bandAfter": "complete"
+            }
+          ]
+        },
+        "current-system-proxy": {
+          "score": 1,
+          "band": "complete",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.560714,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.671429,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.782143,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.892857,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.928571,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.964286,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "i",
+      "label": "✗",
+      "evidence": [
+        false
+      ],
+      "models": {
+        "weighted-evidence": {
+          "score": 0,
+          "band": "low",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0,
+              "bandAfter": "low"
+            }
+          ]
+        },
+        "bayesian-evidence": {
+          "score": 0.25,
+          "band": "low",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.25,
+              "bandAfter": "low"
+            }
+          ]
+        },
+        "bkt-inspired": {
+          "score": 0.148387,
+          "band": "low",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.148387,
+              "bandAfter": "low"
+            }
+          ]
+        },
+        "current-system-proxy": {
+          "score": 0,
+          "band": "low",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0,
+              "bandAfter": "low"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "iic",
+      "label": "✗ ✗ ✓",
+      "evidence": [
+        false,
+        false,
+        true
+      ],
+      "models": {
+        "weighted-evidence": {
+          "score": 0.34,
+          "band": "medium",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.34,
+              "bandAfter": "medium"
+            }
+          ]
+        },
+        "bayesian-evidence": {
+          "score": 0.333333,
+          "band": "medium",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.25,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.2,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.333333,
+              "bandAfter": "medium"
+            }
+          ]
+        },
+        "bkt-inspired": {
+          "score": 0.445128,
+          "band": "medium",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.148387,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.13998,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.445128,
+              "bandAfter": "medium"
+            }
+          ]
+        },
+        "current-system-proxy": {
+          "score": 0.260714,
+          "band": "low",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.260714,
+              "bandAfter": "low"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "iiccc",
+      "label": "✗ ✗ ✓ ✓ ✓",
+      "evidence": [
+        false,
+        false,
+        true,
+        true,
+        true
+      ],
+      "models": {
+        "weighted-evidence": {
+          "score": 1,
+          "band": "complete",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.34,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.72,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            }
+          ]
+        },
+        "bayesian-evidence": {
+          "score": 0.5,
+          "band": "medium",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.25,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.2,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.333333,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.428571,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.5,
+              "bandAfter": "medium"
+            }
+          ]
+        },
+        "bkt-inspired": {
+          "score": 0.933861,
+          "band": "complete",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.148387,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.13998,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.445128,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.773661,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.933861,
+              "bandAfter": "complete"
+            }
+          ]
+        },
+        "current-system-proxy": {
+          "score": 0.602143,
+          "band": "medium",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.260714,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.446429,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.602143,
+              "bandAfter": "medium"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ccc-gap-c",
+      "label": "✓ ✓ ✓, long absence, ✓",
+      "evidence": [
+        true,
+        true,
+        true,
+        {
+          "type": "gap",
+          "days": 365
+        },
+        true
+      ],
+      "models": {
+        "weighted-evidence": {
+          "score": 1,
+          "band": "complete",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.34,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.72,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "gap",
+                "days": 365
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            }
+          ]
+        },
+        "bayesian-evidence": {
+          "score": 0.714286,
+          "band": "high",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.5,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.6,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.666667,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "gap",
+                "days": 365
+              },
+              "scoreAfter": 0.666667,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.714286,
+              "bandAfter": "high"
+            }
+          ]
+        },
+        "bkt-inspired": {
+          "score": 0.988,
+          "band": "complete",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.536842,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.829877,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.952589,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "gap",
+                "days": 365
+              },
+              "scoreAfter": 0.952589,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.988,
+              "bandAfter": "complete"
+            }
+          ]
+        },
+        "current-system-proxy": {
+          "score": 0.892857,
+          "band": "high",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.560714,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.671429,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.782143,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "gap",
+                "days": 365
+              },
+              "scoreAfter": 0.782143,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.892857,
+              "bandAfter": "high"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ccc-gap-i",
+      "label": "✓ ✓ ✓, long absence, ✗",
+      "evidence": [
+        true,
+        true,
+        true,
+        {
+          "type": "gap",
+          "days": 365
+        },
+        false
+      ],
+      "models": {
+        "weighted-evidence": {
+          "score": 0.76,
+          "band": "high",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.34,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.72,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "gap",
+                "days": 365
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.76,
+              "bandAfter": "high"
+            }
+          ]
+        },
+        "bayesian-evidence": {
+          "score": 0.571429,
+          "band": "medium",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.5,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.6,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.666667,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "gap",
+                "days": 365
+              },
+              "scoreAfter": 0.666667,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.571429,
+              "bandAfter": "medium"
+            }
+          ]
+        },
+        "bkt-inspired": {
+          "score": 0.760802,
+          "band": "high",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.536842,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.829877,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.952589,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "gap",
+                "days": 365
+              },
+              "scoreAfter": 0.952589,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.760802,
+              "bandAfter": "high"
+            }
+          ]
+        },
+        "current-system-proxy": {
+          "score": 0.444643,
+          "band": "medium",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.560714,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.671429,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.782143,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "gap",
+                "days": 365
+              },
+              "scoreAfter": 0.782143,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.444643,
+              "bandAfter": "medium"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ten-c-i",
+      "label": "✓ × 10, then ✗",
+      "evidence": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false
+      ],
+      "models": {
+        "weighted-evidence": {
+          "score": 0.76,
+          "band": "high",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.34,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.72,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.76,
+              "bandAfter": "high"
+            }
+          ]
+        },
+        "bayesian-evidence": {
+          "score": 0.785714,
+          "band": "high",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.5,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.6,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.666667,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.714286,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.75,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.777778,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.8,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.818182,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.833333,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.846154,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.785714,
+              "bandAfter": "high"
+            }
+          ]
+        },
+        "bkt-inspired": {
+          "score": 0.999983,
+          "band": "complete",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.536842,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.829877,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.952589,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.988,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.997041,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.999275,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.999823,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.999957,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.999989,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.999997,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.999983,
+              "bandAfter": "complete"
+            }
+          ]
+        },
+        "current-system-proxy": {
+          "score": 0.659091,
+          "band": "high",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.560714,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.671429,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.782143,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.892857,
+              "bandAfter": "high"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.928571,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.964286,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 1,
+              "bandAfter": "complete"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.659091,
+              "bandAfter": "high"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "c-five-i",
+      "label": "✓, then ✗ × 5",
+      "evidence": [
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "models": {
+        "weighted-evidence": {
+          "score": 0,
+          "band": "low",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.34,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.1,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0,
+              "bandAfter": "low"
+            }
+          ]
+        },
+        "bayesian-evidence": {
+          "score": 0.222222,
+          "band": "low",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.5,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.4,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.333333,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.285714,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.25,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.222222,
+              "bandAfter": "low"
+            }
+          ]
+        },
+        "bkt-inspired": {
+          "score": 0.138521,
+          "band": "low",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.536842,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.237795,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.155144,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.141031,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.138852,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.138521,
+              "bandAfter": "low"
+            }
+          ]
+        },
+        "current-system-proxy": {
+          "score": 0.110714,
+          "band": "low",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.560714,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.260714,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.185714,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.148214,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.125714,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.110714,
+              "bandAfter": "low"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "alternating",
+      "label": "✓ ✗ ✓ ✗ ✓ ✗",
+      "evidence": [
+        true,
+        false,
+        true,
+        false,
+        true,
+        false
+      ],
+      "models": {
+        "weighted-evidence": {
+          "score": 0.3,
+          "band": "medium",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.34,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.1,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.44,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.2,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.54,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.3,
+              "bandAfter": "medium"
+            }
+          ]
+        },
+        "bayesian-evidence": {
+          "score": 0.444444,
+          "band": "medium",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.5,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.4,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.5,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.428571,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.5,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.444444,
+              "bandAfter": "medium"
+            }
+          ]
+        },
+        "bkt-inspired": {
+          "score": 0.272313,
+          "band": "low",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.536842,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.237795,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.58552,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.25948,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.610869,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.272313,
+              "bandAfter": "low"
+            }
+          ]
+        },
+        "current-system-proxy": {
+          "score": 0.332143,
+          "band": "medium",
+          "trajectory": [
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.560714,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.260714,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.446429,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.296429,
+              "bandAfter": "low"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": true
+              },
+              "scoreAfter": 0.452143,
+              "bandAfter": "medium"
+            },
+            {
+              "event": {
+                "type": "response",
+                "correct": false
+              },
+              "scoreAfter": 0.332143,
+              "bandAfter": "medium"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "focusedAnalysis": {
+    "luckyGuess": {
+      "firstCorrect": {
+        "weighted-evidence": 0.34,
+        "bayesian-evidence": 0.5,
+        "bkt-inspired": 0.536842,
+        "current-system-proxy": 0.560714
+      },
+      "oneCorrectThreeMisses": {
+        "weighted-evidence": 0,
+        "bayesian-evidence": 0.285714,
+        "bkt-inspired": 0.141031,
+        "current-system-proxy": 0.148214
+      },
+      "oneCorrectFiveMisses": {
+        "weighted-evidence": 0,
+        "bayesian-evidence": 0.222222,
+        "bkt-inspired": 0.138521,
+        "current-system-proxy": 0.110714
+      }
+    },
+    "strongEvidence": {
+      "fiveCorrect": {
+        "weighted-evidence": 1,
+        "bayesian-evidence": 0.75,
+        "bkt-inspired": 0.997041,
+        "current-system-proxy": 0.928571
+      },
+      "fiveCorrectOneMiss": {
+        "weighted-evidence": 0.76,
+        "bayesian-evidence": 0.666667,
+        "bkt-inspired": 0.980839,
+        "current-system-proxy": 0.553571
+      },
+      "tenCorrectOneMiss": {
+        "weighted-evidence": 0.76,
+        "bayesian-evidence": 0.785714,
+        "bkt-inspired": 0.999983,
+        "current-system-proxy": 0.659091
+      }
+    },
+    "recoveryAfterTwoMisses": {
+      "weighted-evidence": {
+        "scoreAfterTwoMisses": 0,
+        "correctAnswersToHigh": 2,
+        "correctAnswersToComplete": 3,
+        "trajectoryAfterMisses": [
+          0.34,
+          0.72,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "bayesian-evidence": {
+        "scoreAfterTwoMisses": 0.2,
+        "correctAnswersToHigh": 7,
+        "correctAnswersToComplete": null,
+        "trajectoryAfterMisses": [
+          0.333333,
+          0.428571,
+          0.5,
+          0.555556,
+          0.6,
+          0.636364,
+          0.666667,
+          0.692308,
+          0.714286,
+          0.733333,
+          0.75,
+          0.764706
+        ]
+      },
+      "bkt-inspired": {
+        "scoreAfterTwoMisses": 0.13998,
+        "correctAnswersToHigh": 2,
+        "correctAnswersToComplete": 3,
+        "trajectoryAfterMisses": [
+          0.445128,
+          0.773661,
+          0.933861,
+          0.983022,
+          0.995798,
+          0.99897,
+          0.999748,
+          0.999938,
+          0.999985,
+          0.999996,
+          0.999999,
+          1
+        ]
+      },
+      "current-system-proxy": {
+        "scoreAfterTwoMisses": 0,
+        "correctAnswersToHigh": 4,
+        "correctAnswersToComplete": 7,
+        "trajectoryAfterMisses": [
+          0.260714,
+          0.446429,
+          0.602143,
+          0.742857,
+          0.8,
+          0.851786,
+          0.9,
+          0.91,
+          0.918182,
+          0.925,
+          0.930769,
+          0.935714
+        ]
+      }
+    },
+    "longAbsence": {
+      "weighted-evidence": {
+        "scoreBeforeGap": 1,
+        "scoreAfterGap": 1,
+        "changedWithoutResponse": false
+      },
+      "bayesian-evidence": {
+        "scoreBeforeGap": 0.666667,
+        "scoreAfterGap": 0.666667,
+        "changedWithoutResponse": false
+      },
+      "bkt-inspired": {
+        "scoreBeforeGap": 0.952589,
+        "scoreAfterGap": 0.952589,
+        "changedWithoutResponse": false
+      },
+      "current-system-proxy": {
+        "scoreBeforeGap": 0.782143,
+        "scoreAfterGap": 0.782143,
+        "changedWithoutResponse": false
+      }
+    }
+  },
+  "perfectFiftyStateLocationPass": {
+    "weighted-evidence": {
+      "scorePerStateLocation": 0.34,
+      "bandPerStateLocation": "medium",
+      "averageProgress": 0.34,
+      "bandCounts": {
+        "unknown": 0,
+        "low": 0,
+        "medium": 50,
+        "high": 0,
+        "complete": 0
+      },
+      "interpretation": "One correct location response is acknowledged as demonstrated evidence, not durable mastery."
+    },
+    "bayesian-evidence": {
+      "scorePerStateLocation": 0.5,
+      "bandPerStateLocation": "medium",
+      "averageProgress": 0.5,
+      "bandCounts": {
+        "unknown": 0,
+        "low": 0,
+        "medium": 50,
+        "high": 0,
+        "complete": 0
+      },
+      "interpretation": "One correct location response is acknowledged as demonstrated evidence, not durable mastery."
+    },
+    "bkt-inspired": {
+      "scorePerStateLocation": 0.536842,
+      "bandPerStateLocation": "medium",
+      "averageProgress": 0.5368,
+      "bandCounts": {
+        "unknown": 0,
+        "low": 0,
+        "medium": 50,
+        "high": 0,
+        "complete": 0
+      },
+      "interpretation": "One correct location response is acknowledged as demonstrated evidence, not durable mastery."
+    },
+    "current-system-proxy": {
+      "scorePerStateLocation": 0.560714,
+      "bandPerStateLocation": "medium",
+      "averageProgress": 0.5607,
+      "bandCounts": {
+        "unknown": 0,
+        "low": 0,
+        "medium": 50,
+        "high": 0,
+        "complete": 0
+      },
+      "interpretation": "One correct location response is acknowledged as demonstrated evidence, not durable mastery."
+    }
+  },
+  "syntheticProfiles": [
+    {
+      "profileId": "perfect",
+      "profileLabel": "Perfect learner",
+      "deterministicContext": {
+        "seed": "progress-score:perfect",
+        "plannerSeed": "progress-score-shared-planner",
+        "answerSeed": "progress-score-shared-answers",
+        "startTime": "2030-01-15T18:30:00.000Z",
+        "returnGapDays": 0
+      },
+      "evidenceEvents": 352,
+      "models": {
+        "weighted-evidence": {
+          "averageScoreAmongAttempted": 0.9724,
+          "bands": {
+            "unknown": 0,
+            "low": 0,
+            "medium": 1,
+            "high": 8,
+            "complete": 91
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                false,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 1,
+              "band": "complete",
+              "observations": 8,
+              "currentPlannerProgress": {
+                "status": "mastered",
+                "timesSeen": 8,
+                "correctCount": 7,
+                "missCount": 1,
+                "correctStreak": 7,
+                "lastSeenSession": 59,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 4.549999999999997,
+                "stability": 14.5,
+                "retrievability": 0.97,
+                "dueSession": 74,
+                "lastReviewedSession": 59,
+                "lapseCount": 1
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:maine": {
+              "evidence": [
+                true,
+                true,
+                true,
+                false,
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 1,
+              "band": "complete",
+              "observations": 8,
+              "currentPlannerProgress": {
+                "status": "mastered",
+                "timesSeen": 8,
+                "correctCount": 7,
+                "missCount": 1,
+                "correctStreak": 4,
+                "lastSeenSession": 56,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 4.549999999999997,
+                "stability": 8.525,
+                "retrievability": 0.97,
+                "dueSession": 65,
+                "lastReviewedSession": 56,
+                "lapseCount": 1
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:michigan": {
+              "evidence": [
+                true,
+                false,
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 1,
+              "band": "complete",
+              "observations": 6,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 6,
+                "correctCount": 5,
+                "missCount": 1,
+                "correctStreak": 4,
+                "lastSeenSession": 54,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 4.849999999999998,
+                "stability": 7.0625,
+                "retrievability": 0.97,
+                "dueSession": 61,
+                "lastReviewedSession": 54,
+                "lapseCount": 1
+              },
+              "currentProxyMatchesPlannerCounters": null
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 1,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 0,
+                "complete": 18
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 24,
+              "averageScoreAmongAttempted": 1,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 0,
+                "complete": 24
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 1,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 0,
+                "complete": 32
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.8938,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 1,
+                "high": 8,
+                "complete": 17
+              }
+            }
+          }
+        },
+        "bayesian-evidence": {
+          "averageScoreAmongAttempted": 0.671,
+          "bands": {
+            "unknown": 0,
+            "low": 0,
+            "medium": 11,
+            "high": 89,
+            "complete": 0
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                false,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 0.727273,
+              "band": "high",
+              "observations": 8,
+              "currentPlannerProgress": {
+                "status": "mastered",
+                "timesSeen": 8,
+                "correctCount": 7,
+                "missCount": 1,
+                "correctStreak": 7,
+                "lastSeenSession": 59,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 4.549999999999997,
+                "stability": 14.5,
+                "retrievability": 0.97,
+                "dueSession": 74,
+                "lastReviewedSession": 59,
+                "lapseCount": 1
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:maine": {
+              "evidence": [
+                true,
+                true,
+                true,
+                false,
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 0.727273,
+              "band": "high",
+              "observations": 8,
+              "currentPlannerProgress": {
+                "status": "mastered",
+                "timesSeen": 8,
+                "correctCount": 7,
+                "missCount": 1,
+                "correctStreak": 4,
+                "lastSeenSession": 56,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 4.549999999999997,
+                "stability": 8.525,
+                "retrievability": 0.97,
+                "dueSession": 65,
+                "lastReviewedSession": 56,
+                "lapseCount": 1
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:michigan": {
+              "evidence": [
+                true,
+                false,
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 0.666667,
+              "band": "high",
+              "observations": 6,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 6,
+                "correctCount": 5,
+                "missCount": 1,
+                "correctStreak": 4,
+                "lastSeenSession": 54,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 4.849999999999998,
+                "stability": 7.0625,
+                "retrievability": 0.97,
+                "dueSession": 61,
+                "lastReviewedSession": 54,
+                "lapseCount": 1
+              },
+              "currentProxyMatchesPlannerCounters": null
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.7249,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 18,
+                "complete": 0
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 24,
+              "averageScoreAmongAttempted": 0.6657,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 2,
+                "high": 22,
+                "complete": 0
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.67,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 32,
+                "complete": 0
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.6397,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 9,
+                "high": 17,
+                "complete": 0
+              }
+            }
+          }
+        },
+        "bkt-inspired": {
+          "averageScoreAmongAttempted": 0.9478,
+          "bands": {
+            "unknown": 0,
+            "low": 0,
+            "medium": 1,
+            "high": 8,
+            "complete": 91
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                false,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 0.999761,
+              "band": "complete",
+              "observations": 8,
+              "currentPlannerProgress": {
+                "status": "mastered",
+                "timesSeen": 8,
+                "correctCount": 7,
+                "missCount": 1,
+                "correctStreak": 7,
+                "lastSeenSession": 59,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 4.549999999999997,
+                "stability": 14.5,
+                "retrievability": 0.97,
+                "dueSession": 74,
+                "lastReviewedSession": 59,
+                "lapseCount": 1
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:maine": {
+              "evidence": [
+                true,
+                true,
+                true,
+                false,
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 0.998894,
+              "band": "complete",
+              "observations": 8,
+              "currentPlannerProgress": {
+                "status": "mastered",
+                "timesSeen": 8,
+                "correctCount": 7,
+                "missCount": 1,
+                "correctStreak": 4,
+                "lastSeenSession": 56,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 4.549999999999997,
+                "stability": 8.525,
+                "retrievability": 0.97,
+                "dueSession": 65,
+                "lastReviewedSession": 56,
+                "lapseCount": 1
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:michigan": {
+              "evidence": [
+                true,
+                false,
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 0.990069,
+              "band": "complete",
+              "observations": 6,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 6,
+                "correctCount": 5,
+                "missCount": 1,
+                "correctStreak": 4,
+                "lastSeenSession": 54,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 4.849999999999998,
+                "stability": 7.0625,
+                "retrievability": 0.97,
+                "dueSession": 61,
+                "lastReviewedSession": 54,
+                "lapseCount": 1
+              },
+              "currentProxyMatchesPlannerCounters": null
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.9911,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 0,
+                "complete": 18
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 24,
+              "averageScoreAmongAttempted": 0.9569,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 0,
+                "complete": 24
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.9562,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 0,
+                "complete": 32
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.8993,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 1,
+                "high": 8,
+                "complete": 17
+              }
+            }
+          }
+        },
+        "current-system-proxy": {
+          "averageScoreAmongAttempted": 0.7957,
+          "bands": {
+            "unknown": 0,
+            "low": 0,
+            "medium": 1,
+            "high": 91,
+            "complete": 8
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                false,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 0.94375,
+              "band": "complete",
+              "observations": 8,
+              "currentPlannerProgress": {
+                "status": "mastered",
+                "timesSeen": 8,
+                "correctCount": 7,
+                "missCount": 1,
+                "correctStreak": 7,
+                "lastSeenSession": 59,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 4.549999999999997,
+                "stability": 14.5,
+                "retrievability": 0.97,
+                "dueSession": 74,
+                "lastReviewedSession": 59,
+                "lapseCount": 1
+              },
+              "currentProxyMatchesPlannerCounters": true
+            },
+            "state:maine": {
+              "evidence": [
+                true,
+                true,
+                true,
+                false,
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 0.94375,
+              "band": "complete",
+              "observations": 8,
+              "currentPlannerProgress": {
+                "status": "mastered",
+                "timesSeen": 8,
+                "correctCount": 7,
+                "missCount": 1,
+                "correctStreak": 4,
+                "lastSeenSession": 56,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 4.549999999999997,
+                "stability": 8.525,
+                "retrievability": 0.97,
+                "dueSession": 65,
+                "lastReviewedSession": 56,
+                "lapseCount": 1
+              },
+              "currentProxyMatchesPlannerCounters": true
+            },
+            "state:michigan": {
+              "evidence": [
+                true,
+                false,
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 0.853571,
+              "band": "high",
+              "observations": 6,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 6,
+                "correctCount": 5,
+                "missCount": 1,
+                "correctStreak": 4,
+                "lastSeenSession": 54,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 4.849999999999998,
+                "stability": 7.0625,
+                "retrievability": 0.97,
+                "dueSession": 61,
+                "lastReviewedSession": 54,
+                "lapseCount": 1
+              },
+              "currentProxyMatchesPlannerCounters": true
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.9056,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 12,
+                "complete": 6
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 24,
+              "averageScoreAmongAttempted": 0.7829,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 23,
+                "complete": 1
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.7905,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 31,
+                "complete": 1
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.7378,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 1,
+                "high": 25,
+                "complete": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "profileId": "single-weak-item",
+      "profileLabel": "Single weak item learner",
+      "deterministicContext": {
+        "seed": "progress-score:single-weak-item",
+        "plannerSeed": "progress-score-shared-planner",
+        "answerSeed": "progress-score-shared-answers",
+        "startTime": "2030-01-15T18:30:00.000Z",
+        "returnGapDays": 0
+      },
+      "evidenceEvents": 385,
+      "models": {
+        "weighted-evidence": {
+          "averageScoreAmongAttempted": 0.9899,
+          "bands": {
+            "unknown": 1,
+            "low": 1,
+            "medium": 0,
+            "high": 0,
+            "complete": 98
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+              ],
+              "score": 0,
+              "band": "low",
+              "observations": 44,
+              "currentPlannerProgress": {
+                "status": "learning",
+                "timesSeen": 44,
+                "correctCount": 0,
+                "missCount": 44,
+                "correctStreak": 0,
+                "lastSeenSession": 60,
+                "introducedSession": 17,
+                "memoryState": "relearning",
+                "difficulty": 10,
+                "stability": 0.5,
+                "retrievability": 2.756262716126016e-16,
+                "dueSession": 61,
+                "lastReviewedSession": 60,
+                "lapseCount": 44
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:maine": {
+              "evidence": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 1,
+              "band": "complete",
+              "observations": 6,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 6,
+                "correctCount": 6,
+                "missCount": 0,
+                "correctStreak": 6,
+                "lastSeenSession": 54,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 4.099999999999998,
+                "stability": 11.25,
+                "retrievability": 0.97,
+                "dueSession": 65,
+                "lastReviewedSession": 54,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:michigan": {
+              "evidence": [
+                true,
+                true,
+                true
+              ],
+              "score": 1,
+              "band": "complete",
+              "observations": 3,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 3,
+                "correctCount": 3,
+                "missCount": 0,
+                "correctStreak": 3,
+                "lastSeenSession": 51,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 4.549999999999999,
+                "stability": 4.5,
+                "retrievability": 0.97,
+                "dueSession": 56,
+                "lastReviewedSession": 51,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 1,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 0,
+                "complete": 18
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 23,
+              "averageScoreAmongAttempted": 0.9565,
+              "bands": {
+                "unknown": 1,
+                "low": 1,
+                "medium": 0,
+                "high": 0,
+                "complete": 22
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 1,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 0,
+                "complete": 32
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 1,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 0,
+                "complete": 26
+              }
+            }
+          }
+        },
+        "bayesian-evidence": {
+          "averageScoreAmongAttempted": 0.6809,
+          "bands": {
+            "unknown": 1,
+            "low": 1,
+            "medium": 0,
+            "high": 98,
+            "complete": 0
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+              ],
+              "score": 0.021277,
+              "band": "low",
+              "observations": 44,
+              "currentPlannerProgress": {
+                "status": "learning",
+                "timesSeen": 44,
+                "correctCount": 0,
+                "missCount": 44,
+                "correctStreak": 0,
+                "lastSeenSession": 60,
+                "introducedSession": 17,
+                "memoryState": "relearning",
+                "difficulty": 10,
+                "stability": 0.5,
+                "retrievability": 2.756262716126016e-16,
+                "dueSession": 61,
+                "lastReviewedSession": 60,
+                "lapseCount": 44
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:maine": {
+              "evidence": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 0.777778,
+              "band": "high",
+              "observations": 6,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 6,
+                "correctCount": 6,
+                "missCount": 0,
+                "correctStreak": 6,
+                "lastSeenSession": 54,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 4.099999999999998,
+                "stability": 11.25,
+                "retrievability": 0.97,
+                "dueSession": 65,
+                "lastReviewedSession": 54,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:michigan": {
+              "evidence": [
+                true,
+                true,
+                true
+              ],
+              "score": 0.666667,
+              "band": "high",
+              "observations": 3,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 3,
+                "correctCount": 3,
+                "missCount": 0,
+                "correctStreak": 3,
+                "lastSeenSession": 51,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 4.549999999999999,
+                "stability": 4.5,
+                "retrievability": 0.97,
+                "dueSession": 56,
+                "lastReviewedSession": 51,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.7383,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 18,
+                "complete": 0
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 23,
+              "averageScoreAmongAttempted": 0.6386,
+              "bands": {
+                "unknown": 1,
+                "low": 1,
+                "medium": 0,
+                "high": 22,
+                "complete": 0
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.6905,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 32,
+                "complete": 0
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.6667,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 26,
+                "complete": 0
+              }
+            }
+          }
+        },
+        "bkt-inspired": {
+          "averageScoreAmongAttempted": 0.9574,
+          "bands": {
+            "unknown": 1,
+            "low": 1,
+            "medium": 0,
+            "high": 0,
+            "complete": 98
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+              ],
+              "score": 0.138462,
+              "band": "low",
+              "observations": 44,
+              "currentPlannerProgress": {
+                "status": "learning",
+                "timesSeen": 44,
+                "correctCount": 0,
+                "missCount": 44,
+                "correctStreak": 0,
+                "lastSeenSession": 60,
+                "introducedSession": 17,
+                "memoryState": "relearning",
+                "difficulty": 10,
+                "stability": 0.5,
+                "retrievability": 2.756262716126016e-16,
+                "dueSession": 61,
+                "lastReviewedSession": 60,
+                "lapseCount": 44
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:maine": {
+              "evidence": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 0.999275,
+              "band": "complete",
+              "observations": 6,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 6,
+                "correctCount": 6,
+                "missCount": 0,
+                "correctStreak": 6,
+                "lastSeenSession": 54,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 4.099999999999998,
+                "stability": 11.25,
+                "retrievability": 0.97,
+                "dueSession": 65,
+                "lastReviewedSession": 54,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:michigan": {
+              "evidence": [
+                true,
+                true,
+                true
+              ],
+              "score": 0.952589,
+              "band": "complete",
+              "observations": 3,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 3,
+                "correctCount": 3,
+                "missCount": 0,
+                "correctStreak": 3,
+                "lastSeenSession": 51,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 4.549999999999999,
+                "stability": 4.5,
+                "retrievability": 0.97,
+                "dueSession": 56,
+                "lastReviewedSession": 51,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.993,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 0,
+                "complete": 18
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 23,
+              "averageScoreAmongAttempted": 0.9172,
+              "bands": {
+                "unknown": 1,
+                "low": 1,
+                "medium": 0,
+                "high": 0,
+                "complete": 22
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.9703,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 0,
+                "complete": 32
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.9526,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 0,
+                "complete": 26
+              }
+            }
+          }
+        },
+        "current-system-proxy": {
+          "averageScoreAmongAttempted": 0.817,
+          "bands": {
+            "unknown": 1,
+            "low": 1,
+            "medium": 0,
+            "high": 89,
+            "complete": 9
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+              ],
+              "score": 0,
+              "band": "low",
+              "observations": 44,
+              "currentPlannerProgress": {
+                "status": "learning",
+                "timesSeen": 44,
+                "correctCount": 0,
+                "missCount": 44,
+                "correctStreak": 0,
+                "lastSeenSession": 60,
+                "introducedSession": 17,
+                "memoryState": "relearning",
+                "difficulty": 10,
+                "stability": 0.5,
+                "retrievability": 2.756262716126016e-16,
+                "dueSession": 61,
+                "lastReviewedSession": 60,
+                "lapseCount": 44
+              },
+              "currentProxyMatchesPlannerCounters": true
+            },
+            "state:maine": {
+              "evidence": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 0.964286,
+              "band": "complete",
+              "observations": 6,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 6,
+                "correctCount": 6,
+                "missCount": 0,
+                "correctStreak": 6,
+                "lastSeenSession": 54,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 4.099999999999998,
+                "stability": 11.25,
+                "retrievability": 0.97,
+                "dueSession": 65,
+                "lastReviewedSession": 54,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": true
+            },
+            "state:michigan": {
+              "evidence": [
+                true,
+                true,
+                true
+              ],
+              "score": 0.782143,
+              "band": "high",
+              "observations": 3,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 3,
+                "correctCount": 3,
+                "missCount": 0,
+                "correctStreak": 3,
+                "lastSeenSession": 51,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 4.549999999999999,
+                "stability": 4.5,
+                "retrievability": 0.97,
+                "dueSession": 56,
+                "lastReviewedSession": 51,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": true
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.9187,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 9,
+                "complete": 9
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 23,
+              "averageScoreAmongAttempted": 0.7481,
+              "bands": {
+                "unknown": 1,
+                "low": 1,
+                "medium": 0,
+                "high": 22,
+                "complete": 0
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.8375,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 32,
+                "complete": 0
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.7821,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 26,
+                "complete": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "profileId": "regional-weakness",
+      "profileLabel": "Regional weakness learner",
+      "deterministicContext": {
+        "seed": "progress-score:regional-weakness",
+        "plannerSeed": "progress-score-shared-planner",
+        "answerSeed": "progress-score-shared-answers",
+        "startTime": "2030-01-15T18:30:00.000Z",
+        "returnGapDays": 0
+      },
+      "evidenceEvents": 351,
+      "models": {
+        "weighted-evidence": {
+          "averageScoreAmongAttempted": 0.541,
+          "bands": {
+            "unknown": 0,
+            "low": 2,
+            "medium": 60,
+            "high": 18,
+            "complete": 20
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                false,
+                true,
+                false,
+                false,
+                false,
+                false,
+                true,
+                false,
+                true,
+                true,
+                false,
+                true,
+                true
+              ],
+              "score": 1,
+              "band": "complete",
+              "observations": 13,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 13,
+                "correctCount": 6,
+                "missCount": 7,
+                "correctStreak": 2,
+                "lastSeenSession": 60,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 8.299999999999995,
+                "stability": 4.341875,
+                "retrievability": 0.561813025078125,
+                "dueSession": 64,
+                "lastReviewedSession": 60,
+                "lapseCount": 7
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:maine": {
+              "evidence": [
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 1,
+              "band": "complete",
+              "observations": 4,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 4,
+                "correctCount": 4,
+                "missCount": 0,
+                "correctStreak": 4,
+                "lastSeenSession": 58,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 4.399999999999999,
+                "stability": 6.5,
+                "retrievability": 0.97,
+                "dueSession": 65,
+                "lastReviewedSession": 58,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:michigan": {
+              "evidence": [
+                false,
+                false,
+                false,
+                false,
+                true,
+                true,
+                false,
+                false,
+                true,
+                false,
+                true,
+                true,
+                true,
+                false,
+                false,
+                false,
+                false,
+                true,
+                false,
+                false,
+                true,
+                false,
+                false,
+                true,
+                true
+              ],
+              "score": 0.72,
+              "band": "high",
+              "observations": 25,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 25,
+                "correctCount": 10,
+                "missCount": 15,
+                "correctStreak": 2,
+                "lastSeenSession": 60,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 9.7,
+                "stability": 3.25,
+                "retrievability": 0.40493364795495623,
+                "dueSession": 63,
+                "lastReviewedSession": 60,
+                "lapseCount": 15
+              },
+              "currentProxyMatchesPlannerCounters": null
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.8444,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 10,
+                "complete": 8
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 24,
+              "averageScoreAmongAttempted": 0.4508,
+              "bands": {
+                "unknown": 0,
+                "low": 2,
+                "medium": 17,
+                "high": 2,
+                "complete": 3
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.5394,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 20,
+                "high": 6,
+                "complete": 6
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.4162,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 23,
+                "high": 0,
+                "complete": 3
+              }
+            }
+          }
+        },
+        "bayesian-evidence": {
+          "averageScoreAmongAttempted": 0.5244,
+          "bands": {
+            "unknown": 0,
+            "low": 3,
+            "medium": 89,
+            "high": 8,
+            "complete": 0
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                false,
+                true,
+                false,
+                false,
+                false,
+                false,
+                true,
+                false,
+                true,
+                true,
+                false,
+                true,
+                true
+              ],
+              "score": 0.4375,
+              "band": "medium",
+              "observations": 13,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 13,
+                "correctCount": 6,
+                "missCount": 7,
+                "correctStreak": 2,
+                "lastSeenSession": 60,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 8.299999999999995,
+                "stability": 4.341875,
+                "retrievability": 0.561813025078125,
+                "dueSession": 64,
+                "lastReviewedSession": 60,
+                "lapseCount": 7
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:maine": {
+              "evidence": [
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 0.714286,
+              "band": "high",
+              "observations": 4,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 4,
+                "correctCount": 4,
+                "missCount": 0,
+                "correctStreak": 4,
+                "lastSeenSession": 58,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 4.399999999999999,
+                "stability": 6.5,
+                "retrievability": 0.97,
+                "dueSession": 65,
+                "lastReviewedSession": 58,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:michigan": {
+              "evidence": [
+                false,
+                false,
+                false,
+                false,
+                true,
+                true,
+                false,
+                false,
+                true,
+                false,
+                true,
+                true,
+                true,
+                false,
+                false,
+                false,
+                false,
+                true,
+                false,
+                false,
+                true,
+                false,
+                false,
+                true,
+                true
+              ],
+              "score": 0.392857,
+              "band": "medium",
+              "observations": 25,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 25,
+                "correctCount": 10,
+                "missCount": 15,
+                "correctStreak": 2,
+                "lastSeenSession": 60,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 9.7,
+                "stability": 3.25,
+                "retrievability": 0.40493364795495623,
+                "dueSession": 63,
+                "lastReviewedSession": 60,
+                "lapseCount": 15
+              },
+              "currentProxyMatchesPlannerCounters": null
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.6341,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 10,
+                "high": 8,
+                "complete": 0
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 24,
+              "averageScoreAmongAttempted": 0.4332,
+              "bands": {
+                "unknown": 0,
+                "low": 3,
+                "medium": 21,
+                "high": 0,
+                "complete": 0
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.5415,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 32,
+                "high": 0,
+                "complete": 0
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.5114,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 26,
+                "high": 0,
+                "complete": 0
+              }
+            }
+          }
+        },
+        "bkt-inspired": {
+          "averageScoreAmongAttempted": 0.6646,
+          "bands": {
+            "unknown": 0,
+            "low": 2,
+            "medium": 60,
+            "high": 18,
+            "complete": 20
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                false,
+                true,
+                false,
+                false,
+                false,
+                false,
+                true,
+                false,
+                true,
+                true,
+                false,
+                true,
+                true
+              ],
+              "score": 0.939893,
+              "band": "complete",
+              "observations": 13,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 13,
+                "correctCount": 6,
+                "missCount": 7,
+                "correctStreak": 2,
+                "lastSeenSession": 60,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 8.299999999999995,
+                "stability": 4.341875,
+                "retrievability": 0.561813025078125,
+                "dueSession": 64,
+                "lastReviewedSession": 60,
+                "lapseCount": 7
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:maine": {
+              "evidence": [
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 0.988,
+              "band": "complete",
+              "observations": 4,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 4,
+                "correctCount": 4,
+                "missCount": 0,
+                "correctStreak": 4,
+                "lastSeenSession": 58,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 4.399999999999999,
+                "stability": 6.5,
+                "retrievability": 0.97,
+                "dueSession": 65,
+                "lastReviewedSession": 58,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:michigan": {
+              "evidence": [
+                false,
+                false,
+                false,
+                false,
+                true,
+                true,
+                false,
+                false,
+                true,
+                false,
+                true,
+                true,
+                true,
+                false,
+                false,
+                false,
+                false,
+                true,
+                false,
+                false,
+                true,
+                false,
+                false,
+                true,
+                true
+              ],
+              "score": 0.785028,
+              "band": "high",
+              "observations": 25,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 25,
+                "correctCount": 10,
+                "missCount": 15,
+                "correctStreak": 2,
+                "lastSeenSession": 60,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 9.7,
+                "stability": 3.25,
+                "retrievability": 0.40493364795495623,
+                "dueSession": 63,
+                "lastReviewedSession": 60,
+                "lapseCount": 15
+              },
+              "currentProxyMatchesPlannerCounters": null
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.889,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 10,
+                "complete": 8
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 24,
+              "averageScoreAmongAttempted": 0.5615,
+              "bands": {
+                "unknown": 0,
+                "low": 2,
+                "medium": 17,
+                "high": 2,
+                "complete": 3
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.678,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 20,
+                "high": 6,
+                "complete": 6
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.5881,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 23,
+                "high": 0,
+                "complete": 3
+              }
+            }
+          }
+        },
+        "current-system-proxy": {
+          "averageScoreAmongAttempted": 0.6034,
+          "bands": {
+            "unknown": 0,
+            "low": 3,
+            "medium": 65,
+            "high": 31,
+            "complete": 1
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                false,
+                true,
+                false,
+                false,
+                false,
+                false,
+                true,
+                false,
+                true,
+                true,
+                false,
+                true,
+                true
+              ],
+              "score": 0.571978,
+              "band": "medium",
+              "observations": 13,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 13,
+                "correctCount": 6,
+                "missCount": 7,
+                "correctStreak": 2,
+                "lastSeenSession": 60,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 8.299999999999995,
+                "stability": 4.341875,
+                "retrievability": 0.561813025078125,
+                "dueSession": 64,
+                "lastReviewedSession": 60,
+                "lapseCount": 7
+              },
+              "currentProxyMatchesPlannerCounters": true
+            },
+            "state:maine": {
+              "evidence": [
+                true,
+                true,
+                true,
+                true
+              ],
+              "score": 0.892857,
+              "band": "high",
+              "observations": 4,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 4,
+                "correctCount": 4,
+                "missCount": 0,
+                "correctStreak": 4,
+                "lastSeenSession": 58,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 4.399999999999999,
+                "stability": 6.5,
+                "retrievability": 0.97,
+                "dueSession": 65,
+                "lastReviewedSession": 58,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": true
+            },
+            "state:michigan": {
+              "evidence": [
+                false,
+                false,
+                false,
+                false,
+                true,
+                true,
+                false,
+                false,
+                true,
+                false,
+                true,
+                true,
+                true,
+                false,
+                false,
+                false,
+                false,
+                true,
+                false,
+                false,
+                true,
+                false,
+                false,
+                true,
+                true
+              ],
+              "score": 0.58,
+              "band": "medium",
+              "observations": 25,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 25,
+                "correctCount": 10,
+                "missCount": 15,
+                "correctStreak": 2,
+                "lastSeenSession": 60,
+                "introducedSession": 17,
+                "memoryState": "review",
+                "difficulty": 9.7,
+                "stability": 3.25,
+                "retrievability": 0.40493364795495623,
+                "dueSession": 63,
+                "lastReviewedSession": 60,
+                "lapseCount": 15
+              },
+              "currentProxyMatchesPlannerCounters": true
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.7333,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 0,
+                "high": 17,
+                "complete": 1
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 24,
+              "averageScoreAmongAttempted": 0.5012,
+              "bands": {
+                "unknown": 0,
+                "low": 3,
+                "medium": 20,
+                "high": 1,
+                "complete": 0
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.6248,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 21,
+                "high": 11,
+                "complete": 0
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.5812,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 24,
+                "high": 2,
+                "complete": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "profileId": "mixed",
+      "profileLabel": "Mixed learner",
+      "deterministicContext": {
+        "seed": "progress-score:mixed",
+        "plannerSeed": "progress-score-shared-planner",
+        "answerSeed": "progress-score-shared-answers",
+        "startTime": "2030-01-15T18:30:00.000Z",
+        "returnGapDays": 45
+      },
+      "evidenceEvents": 369,
+      "models": {
+        "weighted-evidence": {
+          "averageScoreAmongAttempted": 0.5018,
+          "bands": {
+            "unknown": 0,
+            "low": 2,
+            "medium": 70,
+            "high": 9,
+            "complete": 19
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                true
+              ],
+              "score": 0.34,
+              "band": "medium",
+              "observations": 1,
+              "currentPlannerProgress": {
+                "status": "learning",
+                "timesSeen": 1,
+                "correctCount": 1,
+                "missCount": 0,
+                "correctStreak": 1,
+                "lastSeenSession": 16,
+                "introducedSession": 16,
+                "memoryState": "learning",
+                "difficulty": 4.85,
+                "stability": 1.25,
+                "retrievability": 0.73,
+                "dueSession": 17,
+                "lastReviewedSession": 16,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:maine": {
+              "evidence": [
+                true,
+                false,
+                true,
+                true,
+                true,
+                true,
+                false,
+                true,
+                false,
+                true,
+                true,
+                true
+              ],
+              "score": 1,
+              "band": "complete",
+              "observations": 12,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 12,
+                "correctCount": 9,
+                "missCount": 3,
+                "correctStreak": 3,
+                "lastSeenSession": 55,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 5.449999999999996,
+                "stability": 6.49265625,
+                "retrievability": 0.8174250000000001,
+                "dueSession": 61,
+                "lastReviewedSession": 55,
+                "lapseCount": 3
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:michigan": {
+              "evidence": [
+                true
+              ],
+              "score": 0.34,
+              "band": "medium",
+              "observations": 1,
+              "currentPlannerProgress": {
+                "status": "learning",
+                "timesSeen": 1,
+                "correctCount": 1,
+                "missCount": 0,
+                "correctStreak": 1,
+                "lastSeenSession": 16,
+                "introducedSession": 16,
+                "memoryState": "learning",
+                "difficulty": 4.85,
+                "stability": 1.25,
+                "retrievability": 0.73,
+                "dueSession": 17,
+                "lastReviewedSession": 16,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.6289,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 8,
+                "high": 5,
+                "complete": 5
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 24,
+              "averageScoreAmongAttempted": 0.4192,
+              "bands": {
+                "unknown": 0,
+                "low": 2,
+                "medium": 19,
+                "high": 0,
+                "complete": 3
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.4712,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 25,
+                "high": 2,
+                "complete": 5
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.5277,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 18,
+                "high": 2,
+                "complete": 6
+              }
+            }
+          }
+        },
+        "bayesian-evidence": {
+          "averageScoreAmongAttempted": 0.5041,
+          "bands": {
+            "unknown": 0,
+            "low": 2,
+            "medium": 94,
+            "high": 4,
+            "complete": 0
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                true
+              ],
+              "score": 0.5,
+              "band": "medium",
+              "observations": 1,
+              "currentPlannerProgress": {
+                "status": "learning",
+                "timesSeen": 1,
+                "correctCount": 1,
+                "missCount": 0,
+                "correctStreak": 1,
+                "lastSeenSession": 16,
+                "introducedSession": 16,
+                "memoryState": "learning",
+                "difficulty": 4.85,
+                "stability": 1.25,
+                "retrievability": 0.73,
+                "dueSession": 17,
+                "lastReviewedSession": 16,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:maine": {
+              "evidence": [
+                true,
+                false,
+                true,
+                true,
+                true,
+                true,
+                false,
+                true,
+                false,
+                true,
+                true,
+                true
+              ],
+              "score": 0.666667,
+              "band": "high",
+              "observations": 12,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 12,
+                "correctCount": 9,
+                "missCount": 3,
+                "correctStreak": 3,
+                "lastSeenSession": 55,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 5.449999999999996,
+                "stability": 6.49265625,
+                "retrievability": 0.8174250000000001,
+                "dueSession": 61,
+                "lastReviewedSession": 55,
+                "lapseCount": 3
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:michigan": {
+              "evidence": [
+                true
+              ],
+              "score": 0.5,
+              "band": "medium",
+              "observations": 1,
+              "currentPlannerProgress": {
+                "status": "learning",
+                "timesSeen": 1,
+                "correctCount": 1,
+                "missCount": 0,
+                "correctStreak": 1,
+                "lastSeenSession": 16,
+                "introducedSession": 16,
+                "memoryState": "learning",
+                "difficulty": 4.85,
+                "stability": 1.25,
+                "retrievability": 0.73,
+                "dueSession": 17,
+                "lastReviewedSession": 16,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.5712,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 14,
+                "high": 4,
+                "complete": 0
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 24,
+              "averageScoreAmongAttempted": 0.4522,
+              "bands": {
+                "unknown": 0,
+                "low": 2,
+                "medium": 22,
+                "high": 0,
+                "complete": 0
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.5119,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 32,
+                "high": 0,
+                "complete": 0
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.4961,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 26,
+                "high": 0,
+                "complete": 0
+              }
+            }
+          }
+        },
+        "bkt-inspired": {
+          "averageScoreAmongAttempted": 0.6264,
+          "bands": {
+            "unknown": 0,
+            "low": 2,
+            "medium": 70,
+            "high": 12,
+            "complete": 16
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                true
+              ],
+              "score": 0.536842,
+              "band": "medium",
+              "observations": 1,
+              "currentPlannerProgress": {
+                "status": "learning",
+                "timesSeen": 1,
+                "correctCount": 1,
+                "missCount": 0,
+                "correctStreak": 1,
+                "lastSeenSession": 16,
+                "introducedSession": 16,
+                "memoryState": "learning",
+                "difficulty": 4.85,
+                "stability": 1.25,
+                "retrievability": 0.73,
+                "dueSession": 17,
+                "lastReviewedSession": 16,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:maine": {
+              "evidence": [
+                true,
+                false,
+                true,
+                true,
+                true,
+                true,
+                false,
+                true,
+                false,
+                true,
+                true,
+                true
+              ],
+              "score": 0.998488,
+              "band": "complete",
+              "observations": 12,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 12,
+                "correctCount": 9,
+                "missCount": 3,
+                "correctStreak": 3,
+                "lastSeenSession": 55,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 5.449999999999996,
+                "stability": 6.49265625,
+                "retrievability": 0.8174250000000001,
+                "dueSession": 61,
+                "lastReviewedSession": 55,
+                "lapseCount": 3
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:michigan": {
+              "evidence": [
+                true
+              ],
+              "score": 0.536842,
+              "band": "medium",
+              "observations": 1,
+              "currentPlannerProgress": {
+                "status": "learning",
+                "timesSeen": 1,
+                "correctCount": 1,
+                "missCount": 0,
+                "correctStreak": 1,
+                "lastSeenSession": 16,
+                "introducedSession": 16,
+                "memoryState": "learning",
+                "difficulty": 4.85,
+                "stability": 1.25,
+                "retrievability": 0.73,
+                "dueSession": 17,
+                "lastReviewedSession": 16,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.7415,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 8,
+                "high": 5,
+                "complete": 5
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 24,
+              "averageScoreAmongAttempted": 0.541,
+              "bands": {
+                "unknown": 0,
+                "low": 2,
+                "medium": 19,
+                "high": 1,
+                "complete": 2
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.6178,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 25,
+                "high": 2,
+                "complete": 5
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.6363,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 18,
+                "high": 4,
+                "complete": 4
+              }
+            }
+          }
+        },
+        "current-system-proxy": {
+          "averageScoreAmongAttempted": 0.5778,
+          "bands": {
+            "unknown": 0,
+            "low": 1,
+            "medium": 81,
+            "high": 18,
+            "complete": 0
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                true
+              ],
+              "score": 0.560714,
+              "band": "medium",
+              "observations": 1,
+              "currentPlannerProgress": {
+                "status": "learning",
+                "timesSeen": 1,
+                "correctCount": 1,
+                "missCount": 0,
+                "correctStreak": 1,
+                "lastSeenSession": 16,
+                "introducedSession": 16,
+                "memoryState": "learning",
+                "difficulty": 4.85,
+                "stability": 1.25,
+                "retrievability": 0.73,
+                "dueSession": 17,
+                "lastReviewedSession": 16,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": true
+            },
+            "state:maine": {
+              "evidence": [
+                true,
+                false,
+                true,
+                true,
+                true,
+                true,
+                false,
+                true,
+                false,
+                true,
+                true,
+                true
+              ],
+              "score": 0.8125,
+              "band": "high",
+              "observations": 12,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 12,
+                "correctCount": 9,
+                "missCount": 3,
+                "correctStreak": 3,
+                "lastSeenSession": 55,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 5.449999999999996,
+                "stability": 6.49265625,
+                "retrievability": 0.8174250000000001,
+                "dueSession": 61,
+                "lastReviewedSession": 55,
+                "lapseCount": 3
+              },
+              "currentProxyMatchesPlannerCounters": true
+            },
+            "state:michigan": {
+              "evidence": [
+                true
+              ],
+              "score": 0.560714,
+              "band": "medium",
+              "observations": 1,
+              "currentPlannerProgress": {
+                "status": "learning",
+                "timesSeen": 1,
+                "correctCount": 1,
+                "missCount": 0,
+                "correctStreak": 1,
+                "lastSeenSession": 16,
+                "introducedSession": 16,
+                "memoryState": "learning",
+                "difficulty": 4.85,
+                "stability": 1.25,
+                "retrievability": 0.73,
+                "dueSession": 17,
+                "lastReviewedSession": 16,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": true
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.6637,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 8,
+                "high": 10,
+                "complete": 0
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 24,
+              "averageScoreAmongAttempted": 0.5207,
+              "bands": {
+                "unknown": 0,
+                "low": 1,
+                "medium": 22,
+                "high": 1,
+                "complete": 0
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.5831,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 27,
+                "high": 5,
+                "complete": 0
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.5645,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 24,
+                "high": 2,
+                "complete": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "profileId": "random",
+      "profileLabel": "Seeded random learner",
+      "deterministicContext": {
+        "seed": "progress-score:random",
+        "plannerSeed": "progress-score-shared-planner",
+        "answerSeed": "progress-score-shared-answers",
+        "startTime": "2030-01-15T18:30:00.000Z",
+        "returnGapDays": 0
+      },
+      "evidenceEvents": 298,
+      "models": {
+        "weighted-evidence": {
+          "averageScoreAmongAttempted": 0.4482,
+          "bands": {
+            "unknown": 0,
+            "low": 0,
+            "medium": 82,
+            "high": 6,
+            "complete": 12
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                true
+              ],
+              "score": 0.34,
+              "band": "medium",
+              "observations": 1,
+              "currentPlannerProgress": {
+                "status": "learning",
+                "timesSeen": 1,
+                "correctCount": 1,
+                "missCount": 0,
+                "correctStreak": 1,
+                "lastSeenSession": 21,
+                "introducedSession": 21,
+                "memoryState": "learning",
+                "difficulty": 4.85,
+                "stability": 1.25,
+                "retrievability": 0.73,
+                "dueSession": 22,
+                "lastReviewedSession": 21,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:maine": {
+              "evidence": [
+                false,
+                false,
+                false,
+                true,
+                false,
+                true,
+                false,
+                true,
+                true,
+                false,
+                true,
+                true
+              ],
+              "score": 1,
+              "band": "complete",
+              "observations": 12,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 12,
+                "correctCount": 6,
+                "missCount": 6,
+                "correctStreak": 2,
+                "lastSeenSession": 60,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 7.699999999999996,
+                "stability": 4.40009375,
+                "retrievability": 0.5790043828125,
+                "dueSession": 64,
+                "lastReviewedSession": 60,
+                "lapseCount": 6
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:michigan": {
+              "evidence": [
+                false,
+                false,
+                true,
+                true,
+                true
+              ],
+              "score": 1,
+              "band": "complete",
+              "observations": 5,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 5,
+                "correctCount": 3,
+                "missCount": 2,
+                "correctStreak": 3,
+                "lastSeenSession": 56,
+                "introducedSession": 21,
+                "memoryState": "review",
+                "difficulty": 5.749999999999998,
+                "stability": 5,
+                "retrievability": 0.64125,
+                "dueSession": 61,
+                "lastReviewedSession": 56,
+                "lapseCount": 2
+              },
+              "currentProxyMatchesPlannerCounters": null
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.5267,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 12,
+                "high": 2,
+                "complete": 4
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 24,
+              "averageScoreAmongAttempted": 0.45,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 20,
+                "high": 0,
+                "complete": 4
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.4037,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 29,
+                "high": 1,
+                "complete": 2
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.4469,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 21,
+                "high": 3,
+                "complete": 2
+              }
+            }
+          }
+        },
+        "bayesian-evidence": {
+          "averageScoreAmongAttempted": 0.4627,
+          "bands": {
+            "unknown": 0,
+            "low": 1,
+            "medium": 99,
+            "high": 0,
+            "complete": 0
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                true
+              ],
+              "score": 0.5,
+              "band": "medium",
+              "observations": 1,
+              "currentPlannerProgress": {
+                "status": "learning",
+                "timesSeen": 1,
+                "correctCount": 1,
+                "missCount": 0,
+                "correctStreak": 1,
+                "lastSeenSession": 21,
+                "introducedSession": 21,
+                "memoryState": "learning",
+                "difficulty": 4.85,
+                "stability": 1.25,
+                "retrievability": 0.73,
+                "dueSession": 22,
+                "lastReviewedSession": 21,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:maine": {
+              "evidence": [
+                false,
+                false,
+                false,
+                true,
+                false,
+                true,
+                false,
+                true,
+                true,
+                false,
+                true,
+                true
+              ],
+              "score": 0.466667,
+              "band": "medium",
+              "observations": 12,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 12,
+                "correctCount": 6,
+                "missCount": 6,
+                "correctStreak": 2,
+                "lastSeenSession": 60,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 7.699999999999996,
+                "stability": 4.40009375,
+                "retrievability": 0.5790043828125,
+                "dueSession": 64,
+                "lastReviewedSession": 60,
+                "lapseCount": 6
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:michigan": {
+              "evidence": [
+                false,
+                false,
+                true,
+                true,
+                true
+              ],
+              "score": 0.5,
+              "band": "medium",
+              "observations": 5,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 5,
+                "correctCount": 3,
+                "missCount": 2,
+                "correctStreak": 3,
+                "lastSeenSession": 56,
+                "introducedSession": 21,
+                "memoryState": "review",
+                "difficulty": 5.749999999999998,
+                "stability": 5,
+                "retrievability": 0.64125,
+                "dueSession": 61,
+                "lastReviewedSession": 56,
+                "lapseCount": 2
+              },
+              "currentProxyMatchesPlannerCounters": null
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.4968,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 18,
+                "high": 0,
+                "complete": 0
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 24,
+              "averageScoreAmongAttempted": 0.4783,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 24,
+                "high": 0,
+                "complete": 0
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.4431,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 32,
+                "high": 0,
+                "complete": 0
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.4491,
+              "bands": {
+                "unknown": 0,
+                "low": 1,
+                "medium": 25,
+                "high": 0,
+                "complete": 0
+              }
+            }
+          }
+        },
+        "bkt-inspired": {
+          "averageScoreAmongAttempted": 0.5799,
+          "bands": {
+            "unknown": 0,
+            "low": 0,
+            "medium": 82,
+            "high": 8,
+            "complete": 10
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                true
+              ],
+              "score": 0.536842,
+              "band": "medium",
+              "observations": 1,
+              "currentPlannerProgress": {
+                "status": "learning",
+                "timesSeen": 1,
+                "correctCount": 1,
+                "missCount": 0,
+                "correctStreak": 1,
+                "lastSeenSession": 21,
+                "introducedSession": 21,
+                "memoryState": "learning",
+                "difficulty": 4.85,
+                "stability": 1.25,
+                "retrievability": 0.73,
+                "dueSession": 22,
+                "lastReviewedSession": 21,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:maine": {
+              "evidence": [
+                false,
+                false,
+                false,
+                true,
+                false,
+                true,
+                false,
+                true,
+                true,
+                false,
+                true,
+                true
+              ],
+              "score": 0.947796,
+              "band": "complete",
+              "observations": 12,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 12,
+                "correctCount": 6,
+                "missCount": 6,
+                "correctStreak": 2,
+                "lastSeenSession": 60,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 7.699999999999996,
+                "stability": 4.40009375,
+                "retrievability": 0.5790043828125,
+                "dueSession": 64,
+                "lastReviewedSession": 60,
+                "lapseCount": 6
+              },
+              "currentProxyMatchesPlannerCounters": null
+            },
+            "state:michigan": {
+              "evidence": [
+                false,
+                false,
+                true,
+                true,
+                true
+              ],
+              "score": 0.933861,
+              "band": "complete",
+              "observations": 5,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 5,
+                "correctCount": 3,
+                "missCount": 2,
+                "correctStreak": 3,
+                "lastSeenSession": 56,
+                "introducedSession": 21,
+                "memoryState": "review",
+                "difficulty": 5.749999999999998,
+                "stability": 5,
+                "retrievability": 0.64125,
+                "dueSession": 61,
+                "lastReviewedSession": 56,
+                "lapseCount": 2
+              },
+              "currentProxyMatchesPlannerCounters": null
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.6579,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 12,
+                "high": 2,
+                "complete": 4
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 24,
+              "averageScoreAmongAttempted": 0.5895,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 20,
+                "high": 0,
+                "complete": 4
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.5278,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 29,
+                "high": 2,
+                "complete": 1
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.5813,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 21,
+                "high": 4,
+                "complete": 1
+              }
+            }
+          }
+        },
+        "current-system-proxy": {
+          "averageScoreAmongAttempted": 0.4938,
+          "bands": {
+            "unknown": 0,
+            "low": 0,
+            "medium": 98,
+            "high": 2,
+            "complete": 0
+          },
+          "diagnostics": {
+            "state:ohio": {
+              "evidence": [
+                true
+              ],
+              "score": 0.560714,
+              "band": "medium",
+              "observations": 1,
+              "currentPlannerProgress": {
+                "status": "learning",
+                "timesSeen": 1,
+                "correctCount": 1,
+                "missCount": 0,
+                "correctStreak": 1,
+                "lastSeenSession": 21,
+                "introducedSession": 21,
+                "memoryState": "learning",
+                "difficulty": 4.85,
+                "stability": 1.25,
+                "retrievability": 0.73,
+                "dueSession": 22,
+                "lastReviewedSession": 21,
+                "lapseCount": 0
+              },
+              "currentProxyMatchesPlannerCounters": true
+            },
+            "state:maine": {
+              "evidence": [
+                false,
+                false,
+                false,
+                true,
+                false,
+                true,
+                false,
+                true,
+                true,
+                false,
+                true,
+                true
+              ],
+              "score": 0.589286,
+              "band": "medium",
+              "observations": 12,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 12,
+                "correctCount": 6,
+                "missCount": 6,
+                "correctStreak": 2,
+                "lastSeenSession": 60,
+                "introducedSession": 1,
+                "memoryState": "review",
+                "difficulty": 7.699999999999996,
+                "stability": 4.40009375,
+                "retrievability": 0.5790043828125,
+                "dueSession": 64,
+                "lastReviewedSession": 60,
+                "lapseCount": 6
+              },
+              "currentProxyMatchesPlannerCounters": true
+            },
+            "state:michigan": {
+              "evidence": [
+                false,
+                false,
+                true,
+                true,
+                true
+              ],
+              "score": 0.602143,
+              "band": "medium",
+              "observations": 5,
+              "currentPlannerProgress": {
+                "status": "review",
+                "timesSeen": 5,
+                "correctCount": 3,
+                "missCount": 2,
+                "correctStreak": 3,
+                "lastSeenSession": 56,
+                "introducedSession": 21,
+                "memoryState": "review",
+                "difficulty": 5.749999999999998,
+                "stability": 5,
+                "retrievability": 0.64125,
+                "dueSession": 61,
+                "lastReviewedSession": 56,
+                "lapseCount": 2
+              },
+              "currentProxyMatchesPlannerCounters": true
+            }
+          },
+          "regional": {
+            "Northeast": {
+              "itemCount": 18,
+              "attemptedCount": 18,
+              "averageScoreAmongAttempted": 0.5538,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 17,
+                "high": 1,
+                "complete": 0
+              }
+            },
+            "Midwest": {
+              "itemCount": 24,
+              "attemptedCount": 24,
+              "averageScoreAmongAttempted": 0.5235,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 24,
+                "high": 0,
+                "complete": 0
+              }
+            },
+            "South": {
+              "itemCount": 32,
+              "attemptedCount": 32,
+              "averageScoreAmongAttempted": 0.447,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 31,
+                "high": 1,
+                "complete": 0
+              }
+            },
+            "West": {
+              "itemCount": 26,
+              "attemptedCount": 26,
+              "averageScoreAmongAttempted": 0.4823,
+              "bands": {
+                "unknown": 0,
+                "low": 0,
+                "medium": 26,
+                "high": 0,
+                "complete": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "criteriaEvaluation": {
+    "weighted-evidence": {
+      "strengths": [
+        "Immediate acknowledgement",
+        "simple arithmetic",
+        "quick reversal after repeated misses"
+      ],
+      "weaknesses": [
+        "Clamp saturation discards accumulated evidence",
+        "fixed increments are highly parameter-sensitive",
+        "some failure-heavy recent-correct histories can recover to implausibly high values"
+      ]
+    },
+    "bayesian-evidence": {
+      "strengths": [
+        "All evidence remains visible in the posterior",
+        "lucky guesses reverse",
+        "one miss has diminishing impact after extensive success",
+        "prior and evidence weights are explainable"
+      ],
+      "weaknesses": [
+        "Provisional prior is uncalibrated",
+        "plain Beta evidence does not model response order or retention",
+        "question-specific guessing needs an explicit extension"
+      ]
+    },
+    "bkt-inspired": {
+      "strengths": [
+        "Explicit guess and slip assumptions",
+        "fast recovery",
+        "bounded latent probability"
+      ],
+      "weaknesses": [
+        "No-forgetting and learning transitions rapidly saturate",
+        "parameter interactions are less intuitive",
+        "latent knowledge is not the same construct as demonstrated-progress"
+      ]
+    },
+    "current-system-proxy": {
+      "strengths": [
+        "Uses existing counters",
+        "easy to compute read-only",
+        "acknowledges one successful demonstration"
+      ],
+      "weaknesses": [
+        "Formula weights are invented",
+        "streak reset creates a large one-miss drop",
+        "excluding scheduler fields is honest but makes this only a partial projection"
+      ]
+    }
+  },
+  "recommendation": {
+    "furtherPrototype": "bayesian-evidence",
+    "rationale": "It best balances reversible lucky-guess evidence with resilience after many correct demonstrations, preserves the full evidence history, and remains explainable without conflating the score with retention scheduling.",
+    "rejectForVisibleBarInCurrentForm": [
+      "bkt-inspired"
+    ],
+    "rejectionRationale": "The current BKT assumptions saturate rapidly and can show high latent knowledge for failure-heavy synthetic histories; its no-forgetting learning model answers a different question from currently demonstrated skill.",
+    "baselineOnly": "weighted-evidence",
+    "diagnosticOnly": "current-system-proxy",
+    "unresolved": [
+      "Prior strength and whether it varies by question type",
+      "How to incorporate multiple-choice guess probability without turning the score into scheduler mastery",
+      "Whether evidence should be skill-specific and activity-weighted",
+      "Whether a user-facing complete band should require breadth or only per-skill evidence",
+      "How much recent evidence order should matter"
+    ]
+  },
+  "limitations": [
+    "Parameters are provisional and are not fitted to learner-outcome data.",
+    "Canonical responses omit question type, response time, confidence, and opportunity-specific guess rates.",
+    "No candidate is written to production state or used by a planner.",
+    "No time-decay model is included because demonstrated-progress and retention scheduling are intentionally separate in this experiment.",
+    "The current-system proxy projects three existing counters but is not an existing production score.",
+    "Synthetic U.S. Memory Trail histories are item/mode evidence streams, not an existing unified place-by-skill evidence architecture; each item history is treated only as a stand-in candidate skill stream."
+  ],
+  "validation": {
+    "fixtureUnchanged": true,
+    "allScoresBounded": true,
+    "longAbsenceChangesOnlyTimeSensitiveModels": true
+  }
+}
