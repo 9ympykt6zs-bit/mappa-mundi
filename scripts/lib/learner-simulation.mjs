@@ -104,6 +104,8 @@ export function runUnitedStatesLearnerSimulation({
   profileId,
   items,
   seed = `us-simulation:${profileId}`,
+  plannerSeed = null,
+  answerSeed = null,
   sessionCount = 36,
   startTime = defaultStart,
   replayEquivalent = null
@@ -111,7 +113,9 @@ export function runUnitedStatesLearnerSimulation({
   const profile = SYNTHETIC_LEARNER_PROFILES.find((candidate) => candidate.id === profileId);
   if (!profile) throw new Error(`Unknown synthetic learner profile: ${profileId}`);
   const fixtureSnapshot = JSON.stringify(items);
-  const answerRandom = createSeededRandom(`${seed}:answers`);
+  const resolvedPlannerSeed = plannerSeed ?? seed;
+  const resolvedAnswerSeed = answerSeed ?? `${seed}:answers`;
+  const answerRandom = createSeededRandom(resolvedAnswerSeed);
   let state = createUnitedStatesMemoryTrailState(null, items);
   let correct = 0;
   let incorrect = 0;
@@ -129,7 +133,7 @@ export function runUnitedStatesLearnerSimulation({
     const returned = ["forgetting", "mixed"].includes(profileId) && sessionIndex >= returnSessionIndex;
     const elapsedDays = sessionIndex + (returned ? 45 : 0);
     const nowIso = new Date(new Date(startTime).getTime() + (elapsedDays * dayMs)).toISOString();
-    const deterministicContext = { seed: `${seed}:planner:${sessionIndex}`, now: nowIso };
+    const deterministicContext = { seed: `${resolvedPlannerSeed}:planner:${sessionIndex}`, now: nowIso };
     const options = { seed: deterministicContext.seed, now: () => new Date(nowIso) };
     const beforeState = clone(state);
     const plan = planUnitedStatesMemoryTrailSession(beforeState, items, options);
@@ -209,7 +213,13 @@ export function runUnitedStatesLearnerSimulation({
   const output = {
     schemaVersion: 1,
     profile,
-    deterministicContext: { seed, startTime, returnGapDays: ["forgetting", "mixed"].includes(profileId) ? 45 : 0 },
+    deterministicContext: {
+      seed,
+      plannerSeed: resolvedPlannerSeed,
+      answerSeed: resolvedAnswerSeed,
+      startTime,
+      returnGapDays: ["forgetting", "mixed"].includes(profileId) ? 45 : 0
+    },
     summary: {
       sessionsSimulated: sessions.length,
       itemsEncountered: uniqueItems,
@@ -238,7 +248,7 @@ export function runUnitedStatesLearnerSimulation({
     inspector: createLearningInspectorDebugObject({
       selections,
       transitions,
-      context: { profileId, seed, startTime }
+      context: { profileId, seed, plannerSeed: resolvedPlannerSeed, answerSeed: resolvedAnswerSeed, startTime }
     }),
     finalState: state
   };

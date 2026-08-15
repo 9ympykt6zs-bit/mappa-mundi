@@ -52,7 +52,7 @@ A warning is a prompt for investigation, not an assertion that the algorithm is 
 
 - U.S. Memory Trail review scheduling is session-based. Advancing the injected wall clock is recorded and replayable, but does not itself make an item due.
 - Daily Trail uses calendar dates, but the controlled return probe is an explicit completed-trail review; it is not a unified-state simulation with U.S. Memory Trail.
-- The U.S. Memory Trail planner exposes selected plan buckets but not rejected alternatives or a comparison trace. “Why it won” and full eligibility/starvation analysis therefore remain unavailable.
+- Selection Trace reconstructs the candidate bucket for each emitted U.S. Memory Trail slot. It exposes considered alternatives and existing priority fields, but not the exact comparator clause that broke each tie, cross-bucket competition, or a single numeric score.
 - Item categories are the production `states` and `capitals` categories. The runner does not infer richer `US_CONTENT_TAXONOMY.md` concepts that the item data does not carry.
 - Simulated correctness is an answer script, not a model of response time, UI interaction, audio, map behavior, or human memory.
 - The reports observe 36-session windows. They do not establish long-horizon convergence or absence of starvation across every eligible item.
@@ -66,3 +66,15 @@ A warning is a prompt for investigation, not an assertion that the algorithm is 
 ## Eligibility delay analysis
 
 O6.1 reuses the full in-memory Selection Traces from these simulations to measure candidate deferral without changing planner behavior. Run `npm run report:eligibility-delays` and see [`eligibility-delay-report.md`](eligibility-delay-report.md) for definitions and limitations.
+
+## Matched-seed comparisons
+
+O6.2 holds the U.S. Memory Trail planner seed, empty starting state, and simulated time schedule constant while changing only the synthetic learner-response profile. Planner and answer randomness are separate dependencies: stochastic-looking answer profiles use a deterministic answer seed that cannot change planner tie-breaking. Within each matched group, the same answer seed is shared across profiles; profiles that do not consume randomness simply ignore it.
+
+Run the 12-seed, five-profile, 60-session matrix with:
+
+```sh
+npm run report:matched-seed-simulations
+```
+
+This generates `reports/us-matched-seed-simulations.md` and `reports/us-matched-seed-simulations.json`. See [`matched-seed-simulations.md`](matched-seed-simulations.md) for measurements, interpretation, and limits.

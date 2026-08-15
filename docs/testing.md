@@ -2,6 +2,8 @@
 
 The repository has a fast Node-based baseline and a separate Playwright browser layer. The fast baseline is the normal development check; Playwright covers selected browser flows and should be run in a supported local or CI environment.
 
+The baseline includes `scripts/check-matched-seed-simulation-matrix.mjs`, which verifies O6.2 seed matching and answer-seed separation, deterministic replay, aggregation math, serialization, immutability, and unchanged planner output. Generate the larger descriptive matrix separately with `npm run report:matched-seed-simulations`; see [`matched-seed-simulations.md`](matched-seed-simulations.md).
+
 ## Setup
 
 Install JavaScript dependencies and the Chromium browser used by the test projects:
