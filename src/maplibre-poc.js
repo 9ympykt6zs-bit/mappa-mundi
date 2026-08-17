@@ -17,6 +17,9 @@ import {
 import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=20260721-mental-map-consolidation-1";
 import { readUnitedStatesAtlasProgress } from "./atlas/united-states-atlas-progress.js";
 import { renderUnitedStatesAtlasOverview, renderUnitedStatesAtlasProfile } from "./atlas/united-states-atlas-ui.js";
+import { createUnitedStatesProgressReport } from "./united-states-progress-report.js";
+import { renderUnitedStatesProgressReport } from "./united-states-progress-report-ui.js";
+import { loadPlaceMastery } from "./place-mastery-store.js";
 import {
   getMapReconstructionRegion,
   listMapReconstructionRegions
@@ -320,6 +323,7 @@ const appShellScreenIds = new Set([
   "daily-trail-intro",
   "daily-trail-summary",
   "united-states-trail-summary",
+  "united-states-progress-report",
   "begin-journey-placeholder",
   "free-play-difficulty",
   "settings",
@@ -3112,6 +3116,7 @@ const mainMenuChallengeButton = document.querySelector("#main-menu-challenge-but
 const mainMenuDailyTrailButton = document.querySelector("#main-menu-daily-trail-button");
 const mainMenuUnitedStatesMemoryTrailButton = document.querySelector("#main-menu-us-memory-trail-button");
 const mainMenuUnitedStatesAtlasButton = document.querySelector("#main-menu-united-states-atlas-button");
+const mainMenuUnitedStatesProgressButton = document.querySelector("#main-menu-united-states-progress-button");
 const mainMenuMentalMapChallengeButton = document.querySelector("#main-menu-mental-map-challenge-button");
 const mainMenuMapReconstructionButton = document.querySelector("#main-menu-map-reconstruction-button");
 const legacyCompassChallengeButton = document.querySelector("#main-menu-compass-challenge-button");
@@ -3525,6 +3530,7 @@ const mainMenuLaunchButton = document.querySelector("#main-menu-launch-button");
 const appShellPlaceholderCard = document.querySelector("#app-shell-placeholder-card");
 const appShellPlaceholderTitle = document.querySelector("#app-shell-placeholder-title");
 const appShellPlaceholderMessage = document.querySelector("#app-shell-placeholder-message");
+const unitedStatesProgressReportView = document.querySelector("#united-states-progress-report");
 const journeyPresetList = document.querySelector("#journey-preset-list");
 const journeyShellContent = document.querySelector("#journey-shell-content");
 const journeyCompletionOverlay = document.querySelector("#journey-completion-overlay");
@@ -3553,6 +3559,7 @@ const mentalMapChallengePanel = document.querySelector("#mental-map-challenge-pa
 const mapReconstructionPanel = document.querySelector("#map-reconstruction-panel");
 const mapElement = document.querySelector("#map");
 let unitedStatesAtlasProgress = null;
+let unitedStatesProgressReportModel = null;
 let activeMentalMapChallenge = null;
 let activeMentalMapChallengeState = null;
 let mentalMapChallengePool = [];
@@ -3740,6 +3747,11 @@ async function ensureMapRuntimeLoaded() {
 async function ensureActivityDataLoaded() {
   if (activityDataReady) {
     return;
+  }
+
+  if (!normalizeActivityData) {
+    const normalizerModule = await import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns");
+    normalizeActivityData = normalizerModule.normalizeActivity;
   }
 
   if (!activityDataPromise) {
@@ -5411,6 +5423,7 @@ function bindUiEvents() {
   mainMenuDailyTrailButton?.addEventListener("click", openDailyTrailIntro);
   mainMenuUnitedStatesMemoryTrailButton?.addEventListener("click", startOrContinueUnitedStatesMemoryTrail);
   mainMenuUnitedStatesAtlasButton?.addEventListener("click", () => { void openUnitedStatesAtlas(); });
+  mainMenuUnitedStatesProgressButton?.addEventListener("click", () => { void openUnitedStatesProgressReport(); });
   mainMenuMentalMapChallengeButton?.addEventListener("click", () => { void openMentalMapChallenge(); });
   mainMenuMapReconstructionButton?.addEventListener("click", () => { void openMapReconstruction(); });
   legacyCompassChallengeButton?.addEventListener("click", () => { void openCompassChallenge(); });
@@ -5841,6 +5854,7 @@ function renderAppShellScreen(screenId) {
   const isChallengeMenu = normalizedScreenId === "challenge-menu";
   const isMenuHub = isMainMenu || isMoreWaysMenu || isLearnMenu || isChallengeMenu;
   const isChooseJourney = normalizedScreenId === "choose-journey";
+  const isUnitedStatesProgressReport = normalizedScreenId === "united-states-progress-report";
   const hasJourneyShellContent = isJourneyShellScreen(normalizedScreenId);
   const content = getAppShellScreenContent(normalizedScreenId);
 
@@ -5932,7 +5946,14 @@ function renderAppShellScreen(screenId) {
   renderQuickStartCard(isChallengeMenu);
 
   if (appShellPlaceholderCard) {
-    appShellPlaceholderCard.hidden = isMenuHub || isChooseJourney || hasJourneyShellContent;
+    appShellPlaceholderCard.hidden = isMenuHub || isChooseJourney || hasJourneyShellContent || isUnitedStatesProgressReport;
+  }
+
+  if (unitedStatesProgressReportView) {
+    unitedStatesProgressReportView.hidden = !isUnitedStatesProgressReport;
+    if (isUnitedStatesProgressReport && unitedStatesProgressReportModel) {
+      renderUnitedStatesProgressReport(unitedStatesProgressReportView, unitedStatesProgressReportModel);
+    }
   }
 
   if (appShellPlaceholderTitle) {
@@ -6012,6 +6033,10 @@ function getAppShellScreenContent(screenId) {
     "united-states-trail-summary": {
       title: "United States Memory Trail",
       subtitle: "This session is complete."
+    },
+    "united-states-progress-report": {
+      title: "U.S. Progress Report",
+      subtitle: "What you have shown you can do."
     },
     "begin-journey-placeholder": {
       title: `Play: ${selectedJourneyTitle}`,
@@ -7661,6 +7686,30 @@ function toggleMemoryTrailInfo() {
   const isExpanded = memoryTrailInfoButton.getAttribute("aria-expanded") === "true";
   memoryTrailInfoButton.setAttribute("aria-expanded", String(!isExpanded));
   memoryTrailInfoCopy.hidden = isExpanded;
+}
+
+function getUnitedStatesProgressReportDailyTrailItems() {
+  const byId = new Map();
+  dailyTrailGoals.forEach((goal) => {
+    const journey = journeyPresets.find((candidate) => candidate.id === goal.journeyId);
+    getDailyTrailGoalItems(goal, journey).forEach((item) => {
+      if (item?.id && !byId.has(item.id)) byId.set(item.id, item);
+    });
+  });
+  return [...byId.values()];
+}
+
+async function openUnitedStatesProgressReport() {
+  await ensureActivityDataLoaded();
+  const items = getUnitedStatesMemoryTrailItems();
+  unitedStatesProgressReportModel = createUnitedStatesProgressReport({
+    items,
+    unitedStatesMemoryTrailState: loadUnitedStatesMemoryTrailProgress(items),
+    dailyTrailState: loadDailyTrailState(),
+    dailyTrailItems: getUnitedStatesProgressReportDailyTrailItems(),
+    placeMasteryState: loadPlaceMastery()
+  });
+  showAppScreen("united-states-progress-report");
 }
 
 function isMemoryTrailActive() {

@@ -1,0 +1,3993 @@
+{
+  "schemaVersion": 1,
+  "kind": "bayesian-progress-visualization-prototype",
+  "productionAuthoritative": false,
+  "connectedToProductionState": false,
+  "connectedToPlanner": false,
+  "scoreMeaning": "Provisional estimate of what the learner has demonstrated they can currently do; not permanent mastery or retention scheduling.",
+  "model": {
+    "id": "bayesian-evidence",
+    "prior": {
+      "alpha": 1,
+      "beta": 2
+    },
+    "formula": "(1 + correct responses) / (3 + correct responses + misses)",
+    "timeSensitive": false
+  },
+  "displayThresholds": {
+    "unseen": null,
+    "needsReview": [
+      0,
+      0.3
+    ],
+    "demonstrated": [
+      0.3,
+      0.65
+    ],
+    "strongEvidence": [
+      0.65,
+      1
+    ]
+  },
+  "aggregationRule": "Average all item-skill scores; an unseen item contributes an empty segment but remains null in its own record. Always show attempted and unseen counts beside group progress.",
+  "recommendedDisplay": "Label + segmented bar for summaries, with skill breakdown available where the learner can act on it.",
+  "optionExamples": {
+    "simpleSegmentedBar": "Location\n████████░░",
+    "labelAndBar": "Location\nStrong evidence\n████████░░",
+    "skillBreakdown": "Ohio\n\nLocation\nStrong evidence\n████████░░\n\nIdentification\nStrong evidence\n███████░░░\n\nCapital\nStrong evidence\n███████░░░\n\nRelationships\nNeeds review\n██░░░░░░░░"
+  },
+  "testHistories": [
+    {
+      "id": "never-attempted",
+      "purpose": "Never attempted",
+      "record": {
+        "itemId": "prototype:never-attempted",
+        "skillId": "location",
+        "label": "Never attempted",
+        "evidenceHistory": [],
+        "bayesianProgressScore": null,
+        "displayCategory": {
+          "id": "unseen",
+          "label": "Unseen"
+        },
+        "explanation": "No retrieval evidence yet. Unseen is intentionally different from a 0% score.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 0,
+          "emptyCount": 10,
+          "text": "░░░░░░░░░░",
+          "percentage": null,
+          "isUnseen": true
+        },
+        "evidenceSummary": {
+          "responseCount": 0,
+          "correctCount": 0,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": []
+      }
+    },
+    {
+      "id": "one-correct",
+      "purpose": "One correct answer",
+      "record": {
+        "itemId": "prototype:one-correct",
+        "skillId": "location",
+        "label": "One correct answer",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      }
+    },
+    {
+      "id": "three-correct",
+      "purpose": "Three correct answers",
+      "record": {
+        "itemId": "prototype:three-correct",
+        "skillId": "location",
+        "label": "Three correct answers",
+        "evidenceHistory": [
+          true,
+          true,
+          true
+        ],
+        "bayesianProgressScore": 0.666667,
+        "displayCategory": {
+          "id": "strong-evidence",
+          "label": "Strong evidence"
+        },
+        "explanation": "A correct response added positive evidence, moving progress from 60% to 67%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 7,
+          "emptyCount": 3,
+          "text": "███████░░░",
+          "percentage": 67,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 3,
+          "correctCount": 3,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.5,
+            "scoreAfter": 0.6,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 50% to 60%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.6,
+            "scoreAfter": 0.666667,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 60% to 67%."
+          }
+        ]
+      }
+    },
+    {
+      "id": "perfect-first-exposure",
+      "purpose": "Perfect first exposure",
+      "record": {
+        "itemId": "prototype:perfect-first-exposure",
+        "skillId": "location",
+        "label": "Perfect first exposure",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      }
+    },
+    {
+      "id": "one-correct-five-misses",
+      "purpose": "One correct followed by five misses",
+      "record": {
+        "itemId": "prototype:one-correct-five-misses",
+        "skillId": "location",
+        "label": "One correct followed by five misses",
+        "evidenceHistory": [
+          true,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "bayesianProgressScore": 0.222222,
+        "displayCategory": {
+          "id": "needs-review",
+          "label": "Needs review"
+        },
+        "explanation": "A miss added contradictory evidence, moving progress from 25% to 22%. Earlier successful evidence was kept.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 2,
+          "emptyCount": 8,
+          "text": "██░░░░░░░░",
+          "percentage": 22,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 6,
+          "correctCount": 1,
+          "missCount": 5,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.5,
+            "scoreAfter": 0.4,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 50% to 40%. Earlier successful evidence was kept."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.4,
+            "scoreAfter": 0.333333,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 40% to 33%. Earlier successful evidence was kept."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.333333,
+            "scoreAfter": 0.285714,
+            "displayCategoryAfter": {
+              "id": "needs-review",
+              "label": "Needs review"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 33% to 29%. Earlier successful evidence was kept."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.285714,
+            "scoreAfter": 0.25,
+            "displayCategoryAfter": {
+              "id": "needs-review",
+              "label": "Needs review"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 29% to 25%. Earlier successful evidence was kept."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.25,
+            "scoreAfter": 0.222222,
+            "displayCategoryAfter": {
+              "id": "needs-review",
+              "label": "Needs review"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 25% to 22%. Earlier successful evidence was kept."
+          }
+        ]
+      }
+    },
+    {
+      "id": "five-correct-one-miss",
+      "purpose": "Five correct followed by one miss",
+      "record": {
+        "itemId": "prototype:five-correct-one-miss",
+        "skillId": "location",
+        "label": "Five correct followed by one miss",
+        "evidenceHistory": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "bayesianProgressScore": 0.666667,
+        "displayCategory": {
+          "id": "strong-evidence",
+          "label": "Strong evidence"
+        },
+        "explanation": "A miss added contradictory evidence, moving progress from 75% to 67%. Earlier successful evidence was kept.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 7,
+          "emptyCount": 3,
+          "text": "███████░░░",
+          "percentage": 67,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 6,
+          "correctCount": 5,
+          "missCount": 1,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.5,
+            "scoreAfter": 0.6,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 50% to 60%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.6,
+            "scoreAfter": 0.666667,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 60% to 67%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.666667,
+            "scoreAfter": 0.714286,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 67% to 71%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.714286,
+            "scoreAfter": 0.75,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 71% to 75%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.75,
+            "scoreAfter": 0.666667,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 75% to 67%. Earlier successful evidence was kept."
+          }
+        ]
+      }
+    },
+    {
+      "id": "ten-correct-one-miss",
+      "purpose": "Ten correct followed by one miss",
+      "record": {
+        "itemId": "prototype:ten-correct-one-miss",
+        "skillId": "location",
+        "label": "Ten correct followed by one miss",
+        "evidenceHistory": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "bayesianProgressScore": 0.785714,
+        "displayCategory": {
+          "id": "strong-evidence",
+          "label": "Strong evidence"
+        },
+        "explanation": "A miss added contradictory evidence, moving progress from 85% to 79%. Earlier successful evidence was kept.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 8,
+          "emptyCount": 2,
+          "text": "████████░░",
+          "percentage": 79,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 11,
+          "correctCount": 10,
+          "missCount": 1,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.5,
+            "scoreAfter": 0.6,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 50% to 60%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.6,
+            "scoreAfter": 0.666667,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 60% to 67%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.666667,
+            "scoreAfter": 0.714286,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 67% to 71%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.714286,
+            "scoreAfter": 0.75,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 71% to 75%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.75,
+            "scoreAfter": 0.777778,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 75% to 78%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.777778,
+            "scoreAfter": 0.8,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 78% to 80%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.8,
+            "scoreAfter": 0.818182,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 80% to 82%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.818182,
+            "scoreAfter": 0.833333,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 82% to 83%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.833333,
+            "scoreAfter": 0.846154,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 83% to 85%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.846154,
+            "scoreAfter": 0.785714,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 85% to 79%. Earlier successful evidence was kept."
+          }
+        ]
+      }
+    },
+    {
+      "id": "persistent-ohio-failure",
+      "purpose": "Persistent Ohio failure",
+      "record": {
+        "itemId": "state:ohio",
+        "skillId": "location",
+        "label": "Persistent Ohio failure",
+        "evidenceHistory": [
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "bayesianProgressScore": 0.181818,
+        "displayCategory": {
+          "id": "needs-review",
+          "label": "Needs review"
+        },
+        "explanation": "A miss added contradictory evidence, moving progress from 20% to 18%. Earlier successful evidence was kept.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 2,
+          "emptyCount": 8,
+          "text": "██░░░░░░░░",
+          "percentage": 18,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 8,
+          "correctCount": 1,
+          "missCount": 7,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.25,
+            "displayCategoryAfter": {
+              "id": "needs-review",
+              "label": "Needs review"
+            },
+            "explanation": "The first response was a miss, so the evidence currently points to more practice; progress is 25%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.25,
+            "scoreAfter": 0.2,
+            "displayCategoryAfter": {
+              "id": "needs-review",
+              "label": "Needs review"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 25% to 20%. Earlier successful evidence was kept."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.2,
+            "scoreAfter": 0.333333,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 20% to 33%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.333333,
+            "scoreAfter": 0.285714,
+            "displayCategoryAfter": {
+              "id": "needs-review",
+              "label": "Needs review"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 33% to 29%. Earlier successful evidence was kept."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.285714,
+            "scoreAfter": 0.25,
+            "displayCategoryAfter": {
+              "id": "needs-review",
+              "label": "Needs review"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 29% to 25%. Earlier successful evidence was kept."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.25,
+            "scoreAfter": 0.222222,
+            "displayCategoryAfter": {
+              "id": "needs-review",
+              "label": "Needs review"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 25% to 22%. Earlier successful evidence was kept."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.222222,
+            "scoreAfter": 0.2,
+            "displayCategoryAfter": {
+              "id": "needs-review",
+              "label": "Needs review"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 22% to 20%. Earlier successful evidence was kept."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.2,
+            "scoreAfter": 0.181818,
+            "displayCategoryAfter": {
+              "id": "needs-review",
+              "label": "Needs review"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 20% to 18%. Earlier successful evidence was kept."
+          }
+        ]
+      }
+    },
+    {
+      "id": "complete-state-location-pass",
+      "purpose": "One state in a perfect 50-state pass",
+      "record": {
+        "itemId": "prototype:complete-state-location-pass",
+        "skillId": "location",
+        "label": "One state in a perfect 50-state pass",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      }
+    },
+    {
+      "id": "long-absence",
+      "purpose": "Long absence without new evidence",
+      "record": {
+        "itemId": "prototype:long-absence",
+        "skillId": "location",
+        "label": "Long absence without new evidence",
+        "evidenceHistory": [
+          true,
+          true,
+          true,
+          {
+            "type": "gap",
+            "days": 365
+          }
+        ],
+        "bayesianProgressScore": 0.666667,
+        "displayCategory": {
+          "id": "strong-evidence",
+          "label": "Strong evidence"
+        },
+        "explanation": "No new response was recorded during the 365-day absence, so demonstrated-knowledge progress stayed at 67%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 7,
+          "emptyCount": 3,
+          "text": "███████░░░",
+          "percentage": 67,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 3,
+          "correctCount": 3,
+          "missCount": 0,
+          "gapCount": 1
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.5,
+            "scoreAfter": 0.6,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 50% to 60%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.6,
+            "scoreAfter": 0.666667,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 60% to 67%."
+          },
+          {
+            "event": {
+              "type": "gap",
+              "days": 365
+            },
+            "scoreBefore": 0.666667,
+            "scoreAfter": 0.666667,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "No new response was recorded during the 365-day absence, so demonstrated-knowledge progress stayed at 67%."
+          }
+        ]
+      }
+    },
+    {
+      "id": "long-absence-correct",
+      "purpose": "Long absence followed by a correct answer",
+      "record": {
+        "itemId": "prototype:long-absence-correct",
+        "skillId": "location",
+        "label": "Long absence followed by a correct answer",
+        "evidenceHistory": [
+          true,
+          true,
+          true,
+          {
+            "type": "gap",
+            "days": 365
+          },
+          true
+        ],
+        "bayesianProgressScore": 0.714286,
+        "displayCategory": {
+          "id": "strong-evidence",
+          "label": "Strong evidence"
+        },
+        "explanation": "A correct response after a 365-day absence added positive evidence, moving progress from 67% to 71%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 7,
+          "emptyCount": 3,
+          "text": "███████░░░",
+          "percentage": 71,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 4,
+          "correctCount": 4,
+          "missCount": 0,
+          "gapCount": 1
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.5,
+            "scoreAfter": 0.6,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 50% to 60%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.6,
+            "scoreAfter": 0.666667,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 60% to 67%."
+          },
+          {
+            "event": {
+              "type": "gap",
+              "days": 365
+            },
+            "scoreBefore": 0.666667,
+            "scoreAfter": 0.666667,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "No new response was recorded during the 365-day absence, so demonstrated-knowledge progress stayed at 67%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.666667,
+            "scoreAfter": 0.714286,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response after a 365-day absence added positive evidence, moving progress from 67% to 71%."
+          }
+        ]
+      }
+    },
+    {
+      "id": "long-absence-miss",
+      "purpose": "Long absence followed by a miss",
+      "record": {
+        "itemId": "prototype:long-absence-miss",
+        "skillId": "location",
+        "label": "Long absence followed by a miss",
+        "evidenceHistory": [
+          true,
+          true,
+          true,
+          {
+            "type": "gap",
+            "days": 365
+          },
+          false
+        ],
+        "bayesianProgressScore": 0.571429,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A miss after a 365-day absence added contradictory evidence, moving progress from 67% to 57%. Earlier successful evidence was kept.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 6,
+          "emptyCount": 4,
+          "text": "██████░░░░",
+          "percentage": 57,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 4,
+          "correctCount": 3,
+          "missCount": 1,
+          "gapCount": 1
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.5,
+            "scoreAfter": 0.6,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 50% to 60%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.6,
+            "scoreAfter": 0.666667,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 60% to 67%."
+          },
+          {
+            "event": {
+              "type": "gap",
+              "days": 365
+            },
+            "scoreBefore": 0.666667,
+            "scoreAfter": 0.666667,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "No new response was recorded during the 365-day absence, so demonstrated-knowledge progress stayed at 67%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.666667,
+            "scoreAfter": 0.571429,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A miss after a 365-day absence added contradictory evidence, moving progress from 67% to 57%. Earlier successful evidence was kept."
+          }
+        ]
+      }
+    }
+  ],
+  "ohioSkillBreakdown": {
+    "groupId": "state:ohio",
+    "label": "Ohio",
+    "itemCount": 4,
+    "attemptedCount": 4,
+    "unseenCount": 0,
+    "bayesianProgressScore": 0.585317,
+    "displayCategory": {
+      "id": "demonstrated",
+      "label": "Demonstrated"
+    },
+    "display": {
+      "segmentCount": 10,
+      "filledCount": 6,
+      "emptyCount": 4,
+      "text": "██████░░░░",
+      "percentage": 59,
+      "isUnseen": false
+    },
+    "categoryCounts": {
+      "unseen": 0,
+      "needs-review": 1,
+      "demonstrated": 0,
+      "strong-evidence": 3
+    },
+    "explanation": "4 of 4 skills have retrieval evidence. The group bar averages every skill, with unseen skills shown as empty rather than silently omitted.",
+    "records": [
+      {
+        "itemId": "state:ohio",
+        "skillId": "location",
+        "label": "Location",
+        "evidenceHistory": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "bayesianProgressScore": 0.785714,
+        "displayCategory": {
+          "id": "strong-evidence",
+          "label": "Strong evidence"
+        },
+        "explanation": "A miss added contradictory evidence, moving progress from 85% to 79%. Earlier successful evidence was kept.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 8,
+          "emptyCount": 2,
+          "text": "████████░░",
+          "percentage": 79,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 11,
+          "correctCount": 10,
+          "missCount": 1,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.5,
+            "scoreAfter": 0.6,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 50% to 60%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.6,
+            "scoreAfter": 0.666667,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 60% to 67%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.666667,
+            "scoreAfter": 0.714286,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 67% to 71%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.714286,
+            "scoreAfter": 0.75,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 71% to 75%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.75,
+            "scoreAfter": 0.777778,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 75% to 78%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.777778,
+            "scoreAfter": 0.8,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 78% to 80%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.8,
+            "scoreAfter": 0.818182,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 80% to 82%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.818182,
+            "scoreAfter": 0.833333,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 82% to 83%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.833333,
+            "scoreAfter": 0.846154,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 83% to 85%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.846154,
+            "scoreAfter": 0.785714,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 85% to 79%. Earlier successful evidence was kept."
+          }
+        ]
+      },
+      {
+        "itemId": "state:ohio",
+        "skillId": "identification",
+        "label": "Identification",
+        "evidenceHistory": [
+          true,
+          true,
+          true
+        ],
+        "bayesianProgressScore": 0.666667,
+        "displayCategory": {
+          "id": "strong-evidence",
+          "label": "Strong evidence"
+        },
+        "explanation": "A correct response added positive evidence, moving progress from 60% to 67%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 7,
+          "emptyCount": 3,
+          "text": "███████░░░",
+          "percentage": 67,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 3,
+          "correctCount": 3,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.5,
+            "scoreAfter": 0.6,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 50% to 60%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.6,
+            "scoreAfter": 0.666667,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 60% to 67%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:ohio",
+        "skillId": "capital",
+        "label": "Capital",
+        "evidenceHistory": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          false
+        ],
+        "bayesianProgressScore": 0.666667,
+        "displayCategory": {
+          "id": "strong-evidence",
+          "label": "Strong evidence"
+        },
+        "explanation": "A miss added contradictory evidence, moving progress from 75% to 67%. Earlier successful evidence was kept.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 7,
+          "emptyCount": 3,
+          "text": "███████░░░",
+          "percentage": 67,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 6,
+          "correctCount": 5,
+          "missCount": 1,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.5,
+            "scoreAfter": 0.6,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 50% to 60%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.6,
+            "scoreAfter": 0.666667,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 60% to 67%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.666667,
+            "scoreAfter": 0.714286,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 67% to 71%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": 0.714286,
+            "scoreAfter": 0.75,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A correct response added positive evidence, moving progress from 71% to 75%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.75,
+            "scoreAfter": 0.666667,
+            "displayCategoryAfter": {
+              "id": "strong-evidence",
+              "label": "Strong evidence"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 75% to 67%. Earlier successful evidence was kept."
+          }
+        ]
+      },
+      {
+        "itemId": "state:ohio",
+        "skillId": "relationships",
+        "label": "Relationships",
+        "evidenceHistory": [
+          true,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "bayesianProgressScore": 0.222222,
+        "displayCategory": {
+          "id": "needs-review",
+          "label": "Needs review"
+        },
+        "explanation": "A miss added contradictory evidence, moving progress from 25% to 22%. Earlier successful evidence was kept.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 2,
+          "emptyCount": 8,
+          "text": "██░░░░░░░░",
+          "percentage": 22,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 6,
+          "correctCount": 1,
+          "missCount": 5,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.5,
+            "scoreAfter": 0.4,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 50% to 40%. Earlier successful evidence was kept."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.4,
+            "scoreAfter": 0.333333,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 40% to 33%. Earlier successful evidence was kept."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.333333,
+            "scoreAfter": 0.285714,
+            "displayCategoryAfter": {
+              "id": "needs-review",
+              "label": "Needs review"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 33% to 29%. Earlier successful evidence was kept."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.285714,
+            "scoreAfter": 0.25,
+            "displayCategoryAfter": {
+              "id": "needs-review",
+              "label": "Needs review"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 29% to 25%. Earlier successful evidence was kept."
+          },
+          {
+            "event": {
+              "type": "response",
+              "correct": false
+            },
+            "scoreBefore": 0.25,
+            "scoreAfter": 0.222222,
+            "displayCategoryAfter": {
+              "id": "needs-review",
+              "label": "Needs review"
+            },
+            "explanation": "A miss added contradictory evidence, moving progress from 25% to 22%. Earlier successful evidence was kept."
+          }
+        ]
+      }
+    ]
+  },
+  "perfectStateLocationPass": {
+    "groupId": "us-state-locations",
+    "label": "U.S. State Locations",
+    "itemCount": 50,
+    "attemptedCount": 50,
+    "unseenCount": 0,
+    "bayesianProgressScore": 0.5,
+    "displayCategory": {
+      "id": "demonstrated",
+      "label": "Demonstrated"
+    },
+    "display": {
+      "segmentCount": 10,
+      "filledCount": 5,
+      "emptyCount": 5,
+      "text": "█████░░░░░",
+      "percentage": 50,
+      "isUnseen": false
+    },
+    "categoryCounts": {
+      "unseen": 0,
+      "needs-review": 0,
+      "demonstrated": 50,
+      "strong-evidence": 0
+    },
+    "explanation": "50 of 50 skills have retrieval evidence. The group bar averages every skill, with unseen skills shown as empty rather than silently omitted.",
+    "records": [
+      {
+        "itemId": "state:alabama",
+        "skillId": "location",
+        "label": "Alabama",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:alaska",
+        "skillId": "location",
+        "label": "Alaska",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:arizona",
+        "skillId": "location",
+        "label": "Arizona",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:arkansas",
+        "skillId": "location",
+        "label": "Arkansas",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:california",
+        "skillId": "location",
+        "label": "California",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:colorado",
+        "skillId": "location",
+        "label": "Colorado",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:connecticut",
+        "skillId": "location",
+        "label": "Connecticut",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:delaware",
+        "skillId": "location",
+        "label": "Delaware",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:florida",
+        "skillId": "location",
+        "label": "Florida",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:georgia",
+        "skillId": "location",
+        "label": "Georgia",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:hawaii",
+        "skillId": "location",
+        "label": "Hawaii",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:idaho",
+        "skillId": "location",
+        "label": "Idaho",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:illinois",
+        "skillId": "location",
+        "label": "Illinois",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:indiana",
+        "skillId": "location",
+        "label": "Indiana",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:iowa",
+        "skillId": "location",
+        "label": "Iowa",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:kansas",
+        "skillId": "location",
+        "label": "Kansas",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:kentucky",
+        "skillId": "location",
+        "label": "Kentucky",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:louisiana",
+        "skillId": "location",
+        "label": "Louisiana",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:maine",
+        "skillId": "location",
+        "label": "Maine",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:maryland",
+        "skillId": "location",
+        "label": "Maryland",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:massachusetts",
+        "skillId": "location",
+        "label": "Massachusetts",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:michigan",
+        "skillId": "location",
+        "label": "Michigan",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:minnesota",
+        "skillId": "location",
+        "label": "Minnesota",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:mississippi",
+        "skillId": "location",
+        "label": "Mississippi",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:missouri",
+        "skillId": "location",
+        "label": "Missouri",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:montana",
+        "skillId": "location",
+        "label": "Montana",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:nebraska",
+        "skillId": "location",
+        "label": "Nebraska",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:nevada",
+        "skillId": "location",
+        "label": "Nevada",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:new-hampshire",
+        "skillId": "location",
+        "label": "New Hampshire",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:new-jersey",
+        "skillId": "location",
+        "label": "New Jersey",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:new-mexico",
+        "skillId": "location",
+        "label": "New Mexico",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:new-york",
+        "skillId": "location",
+        "label": "New York",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:north-carolina",
+        "skillId": "location",
+        "label": "North Carolina",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:north-dakota",
+        "skillId": "location",
+        "label": "North Dakota",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:ohio",
+        "skillId": "location",
+        "label": "Ohio",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:oklahoma",
+        "skillId": "location",
+        "label": "Oklahoma",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:oregon",
+        "skillId": "location",
+        "label": "Oregon",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:pennsylvania",
+        "skillId": "location",
+        "label": "Pennsylvania",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:rhode-island",
+        "skillId": "location",
+        "label": "Rhode Island",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:south-carolina",
+        "skillId": "location",
+        "label": "South Carolina",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:south-dakota",
+        "skillId": "location",
+        "label": "South Dakota",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:tennessee",
+        "skillId": "location",
+        "label": "Tennessee",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:texas",
+        "skillId": "location",
+        "label": "Texas",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:utah",
+        "skillId": "location",
+        "label": "Utah",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:vermont",
+        "skillId": "location",
+        "label": "Vermont",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:virginia",
+        "skillId": "location",
+        "label": "Virginia",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:washington",
+        "skillId": "location",
+        "label": "Washington",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:west-virginia",
+        "skillId": "location",
+        "label": "West Virginia",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:wisconsin",
+        "skillId": "location",
+        "label": "Wisconsin",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      },
+      {
+        "itemId": "state:wyoming",
+        "skillId": "location",
+        "label": "Wyoming",
+        "evidenceHistory": [
+          true
+        ],
+        "bayesianProgressScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%.",
+        "display": {
+          "segmentCount": 10,
+          "filledCount": 5,
+          "emptyCount": 5,
+          "text": "█████░░░░░",
+          "percentage": 50,
+          "isUnseen": false
+        },
+        "evidenceSummary": {
+          "responseCount": 1,
+          "correctCount": 1,
+          "missCount": 0,
+          "gapCount": 0
+        },
+        "trajectory": [
+          {
+            "event": {
+              "type": "response",
+              "correct": true
+            },
+            "scoreBefore": null,
+            "scoreAfter": 0.5,
+            "displayCategoryAfter": {
+              "id": "demonstrated",
+              "label": "Demonstrated"
+            },
+            "explanation": "A first correct response added positive evidence and set demonstrated-knowledge progress to 50%."
+          }
+        ]
+      }
+    ]
+  },
+  "persistentWeakness": {
+    "itemId": "state:ohio",
+    "skillId": "location",
+    "label": "Persistent Ohio failure",
+    "evidenceHistory": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "bayesianProgressScore": 0.181818,
+    "displayCategory": {
+      "id": "needs-review",
+      "label": "Needs review"
+    },
+    "explanation": "A miss added contradictory evidence, moving progress from 20% to 18%. Earlier successful evidence was kept.",
+    "display": {
+      "segmentCount": 10,
+      "filledCount": 2,
+      "emptyCount": 8,
+      "text": "██░░░░░░░░",
+      "percentage": 18,
+      "isUnseen": false
+    },
+    "evidenceSummary": {
+      "responseCount": 8,
+      "correctCount": 1,
+      "missCount": 7,
+      "gapCount": 0
+    },
+    "trajectory": [
+      {
+        "event": {
+          "type": "response",
+          "correct": false
+        },
+        "scoreBefore": null,
+        "scoreAfter": 0.25,
+        "displayCategoryAfter": {
+          "id": "needs-review",
+          "label": "Needs review"
+        },
+        "explanation": "The first response was a miss, so the evidence currently points to more practice; progress is 25%."
+      },
+      {
+        "event": {
+          "type": "response",
+          "correct": false
+        },
+        "scoreBefore": 0.25,
+        "scoreAfter": 0.2,
+        "displayCategoryAfter": {
+          "id": "needs-review",
+          "label": "Needs review"
+        },
+        "explanation": "A miss added contradictory evidence, moving progress from 25% to 20%. Earlier successful evidence was kept."
+      },
+      {
+        "event": {
+          "type": "response",
+          "correct": true
+        },
+        "scoreBefore": 0.2,
+        "scoreAfter": 0.333333,
+        "displayCategoryAfter": {
+          "id": "demonstrated",
+          "label": "Demonstrated"
+        },
+        "explanation": "A correct response added positive evidence, moving progress from 20% to 33%."
+      },
+      {
+        "event": {
+          "type": "response",
+          "correct": false
+        },
+        "scoreBefore": 0.333333,
+        "scoreAfter": 0.285714,
+        "displayCategoryAfter": {
+          "id": "needs-review",
+          "label": "Needs review"
+        },
+        "explanation": "A miss added contradictory evidence, moving progress from 33% to 29%. Earlier successful evidence was kept."
+      },
+      {
+        "event": {
+          "type": "response",
+          "correct": false
+        },
+        "scoreBefore": 0.285714,
+        "scoreAfter": 0.25,
+        "displayCategoryAfter": {
+          "id": "needs-review",
+          "label": "Needs review"
+        },
+        "explanation": "A miss added contradictory evidence, moving progress from 29% to 25%. Earlier successful evidence was kept."
+      },
+      {
+        "event": {
+          "type": "response",
+          "correct": false
+        },
+        "scoreBefore": 0.25,
+        "scoreAfter": 0.222222,
+        "displayCategoryAfter": {
+          "id": "needs-review",
+          "label": "Needs review"
+        },
+        "explanation": "A miss added contradictory evidence, moving progress from 25% to 22%. Earlier successful evidence was kept."
+      },
+      {
+        "event": {
+          "type": "response",
+          "correct": false
+        },
+        "scoreBefore": 0.222222,
+        "scoreAfter": 0.2,
+        "displayCategoryAfter": {
+          "id": "needs-review",
+          "label": "Needs review"
+        },
+        "explanation": "A miss added contradictory evidence, moving progress from 22% to 20%. Earlier successful evidence was kept."
+      },
+      {
+        "event": {
+          "type": "response",
+          "correct": false
+        },
+        "scoreBefore": 0.2,
+        "scoreAfter": 0.181818,
+        "displayCategoryAfter": {
+          "id": "needs-review",
+          "label": "Needs review"
+        },
+        "explanation": "A miss added contradictory evidence, moving progress from 20% to 18%. Earlier successful evidence was kept."
+      }
+    ]
+  },
+  "validationBoundaries": [
+    "No production learner state is read or written.",
+    "No adaptive algorithm, mastery threshold, or planner behavior is imported or changed.",
+    "The developer HTML artifact is not linked from normal navigation.",
+    "Elapsed time alone does not change demonstrated-knowledge progress."
+  ]
+}

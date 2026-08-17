@@ -1,3 +1,5 @@
+import { scoreBayesianEvidenceCounts } from "../../src/bayesian-progress-score.js";
+
 export const PROGRESS_SCORE_BANDS = Object.freeze([
   { id: "low", minimum: 0, maximumExclusive: 0.3 },
   { id: "medium", minimum: 0.3, maximumExclusive: 0.65 },
@@ -93,7 +95,11 @@ function initialState(modelId, parameters) {
 function currentScore(modelId, state, parameters) {
   if (!state.attempted) return null;
   if (modelId === "weighted-evidence") return rounded(state.score);
-  if (modelId === "bayesian-evidence") return rounded(state.alpha / (state.alpha + state.beta));
+  if (modelId === "bayesian-evidence") return scoreBayesianEvidenceCounts(
+    state.alpha - parameters.priorAlpha,
+    state.beta - parameters.priorBeta,
+    parameters
+  );
   if (modelId === "bkt-inspired") return rounded(state.probabilityKnown);
   if (modelId === "current-system-proxy") return scoreCurrentSystemProxy(state, parameters);
   return null;

@@ -11,6 +11,7 @@
     "report:matched-seed-simulations": "node scripts/run-matched-seed-simulation-matrix.mjs",
     "report:long-horizon-mastery": "node scripts/run-long-horizon-mastery-report.mjs",
     "report:progress-score-experiment": "node scripts/run-progress-score-comparison.mjs",
+    "report:bayesian-progress-prototype": "node scripts/run-bayesian-progress-prototype.mjs",
     "check:us-content": "node scripts/check-us-content-coverage.mjs",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",

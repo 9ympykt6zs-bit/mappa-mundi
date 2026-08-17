@@ -495,6 +495,293 @@ select,
   margin: 0;
 }
 
+.app-shell-panel:has(.united-states-progress-report:not([hidden])) {
+  justify-items: stretch;
+  max-width: min(1040px, 100%);
+  text-align: left;
+}
+
+.app-shell-panel:has(.united-states-progress-report:not([hidden])) > .launch-kicker,
+.app-shell-panel:has(.united-states-progress-report:not([hidden])) > h1,
+.app-shell-panel:has(.united-states-progress-report:not([hidden])) > #app-shell-subtitle {
+  justify-self: center;
+  text-align: center;
+}
+
+.united-states-progress-report {
+  color: var(--ink);
+  display: grid;
+  gap: 22px;
+  width: 100%;
+}
+
+.united-states-progress-report[hidden] {
+  display: none;
+}
+
+.us-progress-intro {
+  background: linear-gradient(135deg, rgba(234, 242, 255, 0.76), rgba(244, 250, 247, 0.9));
+  border: 1px solid rgba(94, 139, 183, 0.24);
+  border-radius: 18px;
+  display: grid;
+  gap: 7px;
+  padding: 20px;
+}
+
+.us-progress-intro .us-progress-eyebrow {
+  color: #426a8d;
+  font-size: 0.73rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.us-progress-intro h2 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  margin: 0;
+}
+
+.app-shell-panel .us-progress-intro .us-progress-intro-lead {
+  color: var(--ink);
+  font-size: 1.05rem;
+}
+
+.app-shell-panel .us-progress-intro .us-progress-intro-note {
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.us-progress-category-list,
+.us-progress-item-list {
+  display: grid;
+  gap: 12px;
+}
+
+.us-progress-category,
+.us-progress-item,
+.us-progress-data-sources {
+  background: #fff;
+  border: 1px solid rgba(135, 151, 170, 0.35);
+  border-radius: 16px;
+  box-shadow: 0 7px 20px rgba(28, 48, 75, 0.07);
+  overflow: clip;
+}
+
+.us-progress-category-summary,
+.us-progress-item-summary {
+  cursor: pointer;
+  display: grid;
+  gap: 13px;
+  list-style: none;
+  padding: 18px 20px;
+}
+
+.us-progress-category-summary::-webkit-details-marker,
+.us-progress-item-summary::-webkit-details-marker {
+  display: none;
+}
+
+.us-progress-category-summary {
+  grid-template-columns: minmax(190px, 0.9fr) minmax(220px, 1.35fr);
+}
+
+.us-progress-category-copy,
+.us-progress-item-heading {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.us-progress-category-title {
+  font-size: 1.08rem;
+}
+
+.us-progress-category-count {
+  color: var(--muted);
+  flex-basis: 100%;
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.us-progress-label {
+  color: #496177;
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.us-progress-label-strong-evidence {
+  color: #267b70;
+}
+
+.us-progress-label-needs-review {
+  color: #ad5145;
+}
+
+.us-progress-label-demonstrated {
+  color: #8a631c;
+}
+
+.us-progress-label-early-evidence {
+  color: #426a8d;
+}
+
+.us-progress-bar {
+  align-self: center;
+  display: grid;
+  gap: 5px;
+  grid-template-columns: repeat(10, 1fr);
+  width: 100%;
+}
+
+.us-progress-segment {
+  background: #e4e0d8;
+  border-radius: 4px;
+  height: 15px;
+}
+
+.us-progress-bar-demonstrated .us-progress-segment.is-filled {
+  background: #d59a29;
+}
+
+.us-progress-bar-early-evidence .us-progress-segment.is-filled {
+  background: #5683a8;
+}
+
+.us-progress-bar-strong-evidence .us-progress-segment.is-filled {
+  background: #2f8579;
+}
+
+.us-progress-bar-needs-review .us-progress-segment.is-filled {
+  background: #bd6252;
+}
+
+.us-progress-bar-unseen .us-progress-segment {
+  background: transparent;
+  border: 1px dashed #b8b3aa;
+}
+
+.us-progress-item-list {
+  background: #f5f7fa;
+  border-top: 1px solid rgba(135, 151, 170, 0.24);
+  max-height: min(62vh, 720px);
+  overflow-y: auto;
+  padding: 14px;
+}
+
+.us-progress-item {
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.us-progress-item-summary {
+  grid-template-columns: minmax(180px, 0.9fr) minmax(180px, 1.1fr);
+  padding: 14px 16px;
+}
+
+.us-progress-item-name {
+  font-size: 0.94rem;
+}
+
+.us-progress-item .us-progress-segment {
+  height: 11px;
+}
+
+.us-progress-item-detail {
+  border-top: 1px solid rgba(135, 151, 170, 0.24);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+  padding: 16px;
+}
+
+.us-progress-detail-section {
+  background: #f7f9fb;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.us-progress-detail-section h4 {
+  font-size: 0.95rem;
+  margin: 0 0 3px;
+}
+
+.app-shell-panel .us-progress-detail-section p {
+  font-size: 0.79rem;
+  font-weight: 600;
+  line-height: 1.45;
+  margin: 7px 0 0;
+}
+
+.app-shell-panel .us-progress-detail-prompt {
+  color: #426a8d;
+  font-size: 0.73rem;
+}
+
+.us-progress-evidence-counts,
+.us-progress-review-label {
+  color: var(--ink);
+  font-weight: 850;
+}
+
+.us-progress-review-label {
+  display: block;
+  font-size: 0.9rem;
+  margin-top: 11px;
+}
+
+.us-progress-review-practice-now {
+  background: #fff3f0;
+}
+
+.us-progress-source-note {
+  color: #6e7784;
+}
+
+.us-progress-data-sources > summary {
+  cursor: pointer;
+  font-weight: 800;
+  padding: 14px 18px;
+}
+
+.us-progress-data-sources-copy {
+  border-top: 1px solid rgba(135, 151, 170, 0.24);
+  padding: 16px 20px 18px;
+}
+
+.app-shell-panel .us-progress-data-sources-copy p,
+.us-progress-data-sources-copy li {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.us-progress-data-sources-copy ul {
+  margin: 10px 0 0;
+  padding-left: 20px;
+}
+
+@media (max-width: 680px) {
+  .us-progress-category-summary,
+  .us-progress-item-summary,
+  .us-progress-item-detail {
+    grid-template-columns: 1fr;
+  }
+
+  .us-progress-category-summary,
+  .us-progress-item-summary {
+    padding: 15px;
+  }
+
+  .us-progress-item-list {
+    max-height: none;
+    padding: 10px;
+  }
+}
+
 .quick-start-row {
   display: block;
   position: relative;
