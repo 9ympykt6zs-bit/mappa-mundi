@@ -17,12 +17,37 @@ const OPTIONAL_SIGNAL_CATEGORIES = Object.freeze([
 
 const demonstratedCategoryIds = new Set(["demonstrated", "strong-evidence"]);
 
+const DISPLAY_CATEGORY_LABELS = Object.freeze({
+  unseen: "Not started",
+  "early-evidence": "Building",
+  demonstrated: "Going well",
+  "strong-evidence": "Strong",
+  "needs-review": "Needs review"
+});
+
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
 function count(value) {
   return Math.max(0, Number(value) || 0);
+}
+
+function learnerDisplayCategory(category) {
+  return {
+    ...category,
+    label: DISPLAY_CATEGORY_LABELS[category.id] || category.label
+  };
+}
+
+function learnerProgressDisplay(score) {
+  const display = renderBayesianProgressSegments(score);
+  return {
+    ...display,
+    accessibleLabel: score === null
+      ? "Not started"
+      : `${Math.round(score * 100)}% progress`
+  };
 }
 
 function itemProgressEntriesForCanonicalItem(item, source) {
@@ -106,8 +131,8 @@ function reviewStatus(progressEntries, currentSessionNumber, currentDate) {
   if (progressEntries.length === 0) {
     return {
       id: "unavailable",
-      label: "No review status yet",
-      explanation: "The learning system has not scheduled this item."
+      label: "Not started",
+      explanation: "Answer a question about this to start building progress."
     };
   }
   const progressValues = progressEntries.map((entry) => entry.progress);
@@ -119,21 +144,21 @@ function reviewStatus(progressEntries, currentSessionNumber, currentDate) {
   if (dueNow) {
     return {
       id: "practice-now",
-      label: "Useful to practice now",
-      explanation: "Scheduler status only; it does not lower or control the demonstrated-progress score."
+      label: "Worth practicing",
+      explanation: "A little more practice could help build your confidence."
     };
   }
   if (progressValues.some((progress) => ["review", "mastered"].includes(progress.status) || progress.memoryState === "review")) {
     return {
       id: "future-review",
-      label: "Review planned later",
-      explanation: "The learning system is spacing future practice separately from demonstrated progress."
+      label: "Keep it fresh",
+      explanation: "You may see this again later to help keep it fresh."
     };
   }
   return {
     id: "building-practice",
-    label: "Building practice",
-    explanation: "The learning system is still gathering practice evidence for this item."
+    label: "Building confidence",
+    explanation: "Keep practicing to build a clearer picture of what you know."
   };
 }
 
@@ -170,13 +195,13 @@ function latestEvidenceSummary(progressEntries) {
 }
 
 function explanationForEvidence(correctCount, incorrectCount, score) {
-  if (score === null) return "No retrieval evidence yet. Unseen is different from zero progress.";
+  if (score === null) return "You haven't answered a question about this yet.";
   const responseLabel = `${correctCount} correct ${correctCount === 1 ? "response" : "responses"}`;
-  const missLabel = `${incorrectCount} ${incorrectCount === 1 ? "miss" : "misses"}`;
+  const missLabel = `${incorrectCount} ${incorrectCount === 1 ? "mistake" : "mistakes"}`;
   if (incorrectCount === 0) {
-    return `${responseLabel} added positive evidence. More successful retrievals can strengthen the evidence without implying permanent mastery.`;
+    return `${responseLabel} built your progress. More correct answers can build your confidence further.`;
   }
-  return `${responseLabel} and ${missLabel} shape this estimate. Misses add contradictory evidence without erasing earlier success.`;
+  return `${responseLabel} and ${missLabel} shape your progress. Mistakes can lower it, but they do not erase what you have already shown.`;
 }
 
 function itemLabel(item, itemsById) {
@@ -190,7 +215,7 @@ function createItemRecord({ item, category, itemsById, plannerSources, placeMast
   const plannerEvidence = aggregatePlannerEvidence(item, plannerSources);
   const evidence = signalEvidence || plannerEvidence;
   const score = scoreBayesianEvidenceCounts(evidence.correctCount, evidence.incorrectCount);
-  const displayCategory = demonstratedProgressCategory(score);
+  const displayCategory = learnerDisplayCategory(demonstratedProgressCategory(score));
   const usesCombinedStatePractice = item.type === "state" && Boolean(category.signalId) && !signalEvidence;
   return {
     itemId: item.id,
@@ -198,7 +223,7 @@ function createItemRecord({ item, category, itemsById, plannerSources, placeMast
     label: itemLabel(item, itemsById),
     bayesianProgressScore: score,
     displayCategory,
-    display: renderBayesianProgressSegments(score),
+    display: learnerProgressDisplay(score),
     explanation: explanationForEvidence(evidence.correctCount, evidence.incorrectCount, score),
     evidenceHistory: {
       availability: "aggregate-only",
@@ -221,9 +246,9 @@ function createCategory(definition, records) {
     ? null
     : Number((records.reduce((sum, record) => sum + (record.bayesianProgressScore || 0), 0) / records.length).toFixed(6));
   const demonstratedCount = records.filter((record) => demonstratedCategoryIds.has(record.displayCategory.id)).length;
-  const baseDisplayCategory = demonstratedProgressCategory(aggregateScore);
+  const baseDisplayCategory = learnerDisplayCategory(demonstratedProgressCategory(aggregateScore));
   const displayCategory = demonstratedCount > 0 && records.length > attempted.length && baseDisplayCategory.id === "needs-review"
-    ? { id: "early-evidence", label: "Early evidence" }
+    ? { id: "early-evidence", label: DISPLAY_CATEGORY_LABELS["early-evidence"] }
     : baseDisplayCategory;
   return {
     id: definition.id,
@@ -234,10 +259,10 @@ function createCategory(definition, records) {
     demonstratedCount,
     bayesianProgressScore: aggregateScore,
     displayCategory,
-    display: renderBayesianProgressSegments(aggregateScore),
+    display: learnerProgressDisplay(aggregateScore),
     summary: attempted.length === 0
-      ? `0 / ${records.length} demonstrated · no evidence yet`
-      : `${demonstratedCount} / ${records.length} demonstrated`,
+      ? `0 of ${records.length} showing progress · not started`
+      : `${demonstratedCount} of ${records.length} showing progress`,
     records: records.sort((left, right) => left.label.localeCompare(right.label))
   };
 }
@@ -292,10 +317,14 @@ export function createUnitedStatesProgressReport({
   const report = {
     schemaVersion: 1,
     kind: "united-states-demonstrated-progress-report",
-    title: "U.S. Progress Report",
-    sectionTitle: "Demonstrated knowledge",
-    subtitle: "What you have shown you can do",
-    scoreMeaning: "Demonstrated progress is a read-only report. It is not permanent mastery and does not select practice questions.",
+    title: "Progress Report",
+    scopeTitle: "United States",
+    sectionTitle: "What you know",
+    subtitle: "Your progress is based on the answers you've given across Mappa Mundi. Correct answers build your progress. If later answers show that you're having trouble with something, your progress can adjust.",
+    howProgressWorks: [
+      "Your progress changes as you answer questions throughout Mappa Mundi. Correct answers build confidence, while mistakes help identify things that could use more practice.",
+      "You may occasionally review something even when your progress is high. That helps keep what you've learned fresh."
+    ],
     categories,
     dataSources: [
       "United States Memory Trail item-level correct and miss counts",

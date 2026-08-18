@@ -67,6 +67,9 @@ const report = createUnitedStatesProgressReport({
   currentDate: "2030-01-15"
 });
 assert.equal(JSON.stringify({ items, memoryState }), inputSnapshot, "Report generation must not mutate learner state or items.");
+assert.equal(report.title, "Progress Report");
+assert.equal(report.scopeTitle, "United States");
+assert.equal(report.sectionTitle, "What you know");
 assert.equal(report.categories.length, 3);
 assert.deepEqual(report.categories.map((category) => category.totalPossible), [2, 2, 2]);
 
@@ -76,12 +79,18 @@ const capitals = report.categories.find((category) => category.id === "state-cap
 assert.equal(locations.demonstratedCount, 1);
 assert.equal(locations.attemptedCount, 1);
 assert.equal(locations.unseenCount, 1);
+assert.equal(locations.displayCategory.id, "early-evidence");
+assert.equal(locations.displayCategory.label, "Building");
+assert.equal(locations.summary, "1 of 2 showing progress");
 assert.equal(locations.records.find((record) => record.itemId === "state:ohio").displayCategory.id, "demonstrated");
+assert.equal(locations.records.find((record) => record.itemId === "state:ohio").displayCategory.label, "Going well");
 assert.equal(locations.records.find((record) => record.itemId === "state:maine").displayCategory.id, "unseen");
+assert.equal(locations.records.find((record) => record.itemId === "state:maine").displayCategory.label, "Not started");
 assert.equal(locations.records.find((record) => record.itemId === "state:maine").bayesianProgressScore, null);
 assert.equal(identification.records.find((record) => record.itemId === "state:ohio").bayesianProgressScore, 0.5);
 assert.match(identification.records.find((record) => record.itemId === "state:ohio").evidenceHistory.note, /combines location and identification/);
 assert.equal(capitals.records.find((record) => record.itemId === "capital:columbus-oh").displayCategory.id, "needs-review");
+assert.equal(capitals.records.find((record) => record.itemId === "capital:columbus-oh").displayCategory.label, "Needs review");
 assert.equal(capitals.records.find((record) => record.itemId === "capital:columbus-oh").reviewStatus.id, "practice-now");
 
 const signalReport = createUnitedStatesProgressReport({
@@ -103,6 +112,7 @@ const signalReport = createUnitedStatesProgressReport({
 const signalLocation = signalReport.categories.find((category) => category.id === "state-locations").records.find((record) => record.itemId === "state:ohio");
 const signalIdentification = signalReport.categories.find((category) => category.id === "state-identification").records.find((record) => record.itemId === "state:ohio");
 assert.equal(signalLocation.bayesianProgressScore, 0.666667, "Skill-specific evidence must take priority over combined counters.");
+assert.equal(signalLocation.displayCategory.label, "Strong");
 assert.equal(signalIdentification.bayesianProgressScore, 0.2);
 assert.equal(signalLocation.reviewStatus.id, "building-practice", "Review status must remain sourced from scheduler fields.");
 assert.ok(signalReport.categories.some((category) => category.id === "geographic-relationships"));

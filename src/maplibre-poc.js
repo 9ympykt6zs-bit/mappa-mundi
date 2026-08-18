@@ -6035,8 +6035,8 @@ function getAppShellScreenContent(screenId) {
       subtitle: "This session is complete."
     },
     "united-states-progress-report": {
-      title: "U.S. Progress Report",
-      subtitle: "What you have shown you can do."
+      title: "Progress Report",
+      subtitle: "See what you know and where you're still building confidence."
     },
     "begin-journey-placeholder": {
       title: `Play: ${selectedJourneyTitle}`,
