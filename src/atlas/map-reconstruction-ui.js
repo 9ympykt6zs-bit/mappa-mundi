@@ -1485,6 +1485,7 @@ export function createMapReconstructionActivity(container, options) {
         session = submitMapReconstructionSession(session, evaluation);
         successVisualPending = evaluation.isComplete;
         render();
+        options.onEvaluation?.(evaluation);
         container.querySelector(evaluation.isComplete
           ? ".map-reconstruction-primary-action"
           : ".map-reconstruction-show-correction-action")?.focus();

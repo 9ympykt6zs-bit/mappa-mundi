@@ -21,6 +21,16 @@ import { createUnitedStatesProgressReport } from "./united-states-progress-repor
 import { renderUnitedStatesProgressReport } from "./united-states-progress-report-ui.js";
 import { loadPlaceMastery } from "./place-mastery-store.js";
 import {
+  adaptCanonicalMapReconstructionEvaluation,
+  adaptCanonicalMentalMapEvaluation,
+  adaptCanonicalRetrievalAttempt,
+  getCanonicalMentalMapConceptId
+} from "./canonical-learning-evidence.js";
+import {
+  recordCanonicalEvidenceEvent,
+  recordCanonicalEvidenceEvents
+} from "./canonical-learning-evidence-repository.js";
+import {
   getMapReconstructionRegion,
   listMapReconstructionRegions
 } from "./atlas/map-reconstruction-regions.js";
@@ -3562,6 +3572,10 @@ let unitedStatesAtlasProgress = null;
 let unitedStatesProgressReportModel = null;
 let activeMentalMapChallenge = null;
 let activeMentalMapChallengeState = null;
+let activeMentalMapCanonicalAttemptIdentity = null;
+let canonicalEvidenceAttemptSequence = 0;
+const canonicalEvidenceAttemptIdentityByObject = new WeakMap();
+const canonicalMemoryTrailOccurredAtByAttemptId = new Map();
 let mentalMapChallengePool = [];
 let mentalMapUsedQuestionIds = new Set();
 let mentalMapReorderAnnouncement = "";
@@ -3572,6 +3586,133 @@ let mapReconstructionController = null;
 let activeMapReconstructionRegionId = "";
 let mapReconstructionFeatureCollectionPromise = null;
 const mapReconstructionGeometryPromises = new Map();
+
+function createCanonicalRuntimeAttemptIdentity(sourceMode, sourceActivityId = "") {
+  canonicalEvidenceAttemptSequence += 1;
+  const occurredAt = new Date().toISOString();
+  const nonce = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${canonicalEvidenceAttemptSequence}`;
+  const attemptId = `${sourceMode}:${sourceActivityId || "activity"}:${nonce}`;
+  return { attemptId, eventId: attemptId, occurredAt };
+}
+
+function getCanonicalRuntimeAttemptIdentity(value, sourceMode, sourceActivityId = "") {
+  if (!value || typeof value !== "object") {
+    return createCanonicalRuntimeAttemptIdentity(sourceMode, sourceActivityId);
+  }
+  const existing = canonicalEvidenceAttemptIdentityByObject.get(value);
+  if (existing) return existing;
+  const identity = createCanonicalRuntimeAttemptIdentity(sourceMode, sourceActivityId);
+  canonicalEvidenceAttemptIdentityByObject.set(value, identity);
+  return identity;
+}
+
+function reportCanonicalEvidenceWrite(result) {
+  if (!result?.ok) {
+    console.warn("[canonical-evidence] Evidence was not persisted.", result?.status || result);
+  }
+}
+
+function recordCanonicalJourneyPlacementEvidence(result = {}) {
+  const activityId = session?.currentActivity?.id || "";
+  if (activeJourneySession?.mode !== "journey"
+    || currentAppScreen !== "journey-gameplay"
+    || !activityId.startsWith("us-states-")
+    || !["correct", "incorrect"].includes(result.status)) return;
+  const stateId = result.completedId || result.selectedId;
+  if (!stateId) return;
+  try {
+    const identity = getCanonicalRuntimeAttemptIdentity(result, "journey", activityId);
+    const event = adaptCanonicalRetrievalAttempt({
+      item: {
+        id: `state:${stateId}`,
+        type: "state",
+        targetId: stateId,
+        sourceActivityId: activityId
+      },
+      promptType: "name_to_place",
+      result: result.status,
+      ...identity,
+      sourceMode: "journey",
+      sourceActivityId: activityId,
+      response: { selectedTargetId: result.targetId || result.completedId || null }
+    });
+    reportCanonicalEvidenceWrite(recordCanonicalEvidenceEvent(event, window.localStorage));
+  } catch (error) {
+    console.warn("[canonical-evidence] Journey evidence could not be created.", error);
+  }
+}
+
+function getCanonicalMemoryTrailPlan(memoryTrail) {
+  if (isUnitedStatesMemoryTrail(memoryTrail)) return activeUnitedStatesMemoryTrailSession?.plan || null;
+  if (isDailyTrailMemoryTrail(memoryTrail)) return activeDailyTrailSession?.plan || null;
+  return null;
+}
+
+function recordCanonicalMemoryTrailEvidence(memoryTrail, targetId, result, promptType, sequence) {
+  if (!isUnitedStatesMemoryTrail(memoryTrail) && !isDailyTrailMemoryTrail(memoryTrail)) return;
+  const plan = getCanonicalMemoryTrailPlan(memoryTrail);
+  const item = (plan?.allItems || []).find((candidate) => candidate?.targetId === targetId);
+  if (!item || !["state", "capital"].includes(item.type)) return;
+  const sourceMode = isUnitedStatesMemoryTrail(memoryTrail) ? "us-memory-trail" : "daily-trail";
+  const sessionId = plan?.sessionId || `${sourceMode}:${memoryTrail.startedAt}`;
+  const promptIdentity = memoryTrail.currentPromptKey || `${sequence}:${promptType}:${targetId}`;
+  const attemptId = `${sourceMode}:${sessionId}:${promptIdentity}`;
+  const occurredAt = canonicalMemoryTrailOccurredAtByAttemptId.get(attemptId) || new Date().toISOString();
+  canonicalMemoryTrailOccurredAtByAttemptId.set(attemptId, occurredAt);
+  try {
+    const event = adaptCanonicalRetrievalAttempt({
+      item,
+      promptType,
+      result,
+      eventId: attemptId,
+      attemptId,
+      occurredAt,
+      sourceMode,
+      sourceActivityId: item.sourceActivityId || memoryTrail.activityId,
+      sessionId,
+      sequence
+    });
+    reportCanonicalEvidenceWrite(recordCanonicalEvidenceEvent(event, window.localStorage));
+  } catch (error) {
+    console.warn("[canonical-evidence] Trail evidence could not be created.", error);
+  }
+}
+
+function recordCanonicalMentalMapEvaluation() {
+  if (!activeMentalMapChallenge || !activeMentalMapChallengeState?.evaluation) return;
+  try {
+    const identity = activeMentalMapCanonicalAttemptIdentity
+      || createCanonicalRuntimeAttemptIdentity("mental-map", activeMentalMapChallenge.id);
+    const event = adaptCanonicalMentalMapEvaluation({
+      challenge: activeMentalMapChallenge,
+      evaluation: activeMentalMapChallengeState.evaluation,
+      conceptId: getCanonicalMentalMapConceptId(activeMentalMapChallenge),
+      ...identity,
+      sourceMode: "mental-map",
+      sourceActivityId: activeMentalMapChallenge.id
+    });
+    reportCanonicalEvidenceWrite(recordCanonicalEvidenceEvent(event, window.localStorage));
+  } catch (error) {
+    console.warn("[canonical-evidence] Mental Map evidence could not be created.", error);
+  }
+}
+
+function recordCanonicalReconstructionEvaluation(evaluation, sourceActivityId) {
+  try {
+    const identity = getCanonicalRuntimeAttemptIdentity(evaluation, "map-reconstruction", sourceActivityId);
+    const events = adaptCanonicalMapReconstructionEvaluation({
+      evaluation,
+      eventIdPrefix: identity.eventId,
+      attemptId: identity.attemptId,
+      occurredAt: identity.occurredAt,
+      sourceMode: "map-reconstruction",
+      sourceActivityId
+    });
+    reportCanonicalEvidenceWrite(recordCanonicalEvidenceEvents(events, window.localStorage));
+  } catch (error) {
+    console.warn("[canonical-evidence] Reconstruction evidence could not be created.", error);
+  }
+}
 
 const journeyDifficultyOptions = [
   {
@@ -7856,7 +7997,8 @@ async function startMapReconstructionCapstone(capstoneId, selectionOptions = {})
       {
         capstone,
         geometry,
-        resumeSnapshot
+        resumeSnapshot,
+        onEvaluation: (evaluation) => recordCanonicalReconstructionEvaluation(evaluation, capstone.id)
       }
     );
   } catch (error) {
@@ -7885,7 +8027,8 @@ async function startMapReconstructionRegion(regionId) {
     if (currentAppScreen !== "map-reconstruction" || activeMapReconstructionRegionId !== region.id) return;
     mapReconstructionController = createMapReconstructionActivity(mapReconstructionPanel, {
       region,
-      geometry
+      geometry,
+      onEvaluation: (evaluation) => recordCanonicalReconstructionEvaluation(evaluation, region.id)
     });
   } catch (error) {
     if (currentAppScreen !== "map-reconstruction" || activeMapReconstructionRegionId !== region.id) return;
@@ -8033,6 +8176,9 @@ function startNextMentalMapQuestion() {
   activeMentalMapChallengeState = activeMentalMapChallenge
     ? createMentalMapChallengeState(activeMentalMapChallenge)
     : null;
+  activeMentalMapCanonicalAttemptIdentity = activeMentalMapChallenge
+    ? createCanonicalRuntimeAttemptIdentity("mental-map", activeMentalMapChallenge.id)
+    : null;
   mentalMapReorderAnnouncement = "";
   renderActiveMentalMapChallenge();
 }
@@ -8099,6 +8245,7 @@ function renderActiveMentalMapChallenge() {
 function submitActiveMentalMapChallenge() {
   activeMentalMapChallengeState = submitMentalMapAnswer(activeMentalMapChallengeState, activeMentalMapChallenge);
   if (!activeMentalMapChallengeState?.evaluation) return;
+  recordCanonicalMentalMapEvaluation();
   document.body.classList.add("mental-map-result-mode");
   if (mapElement) mapElement.setAttribute("aria-hidden", "false");
   runner?.enterMentalMapChallengeResult({
@@ -8112,6 +8259,7 @@ function exitMentalMapChallenge() {
   if (mentalMapChallengePanel) mentalMapChallengePanel.hidden = true;
   activeMentalMapChallenge = null;
   activeMentalMapChallengeState = null;
+  activeMentalMapCanonicalAttemptIdentity = null;
   mentalMapChallengePool = [];
   mentalMapUsedQuestionIds = new Set();
   mentalMapReorderAnnouncement = "";
@@ -12062,6 +12210,7 @@ function updateMemoryTrailStats(memoryTrail, targetId, result, options = {}) {
       stats
     });
     updateMemoryTrailDebugObject(memoryTrail);
+    recordCanonicalMemoryTrailEvidence(memoryTrail, targetId, result, promptType, stats.lastPromptedAt);
     return;
   }
 
@@ -12136,6 +12285,7 @@ function updateMemoryTrailStats(memoryTrail, targetId, result, options = {}) {
     successRate: getMemoryTrailSuccessRate(memoryTrail)
   });
   updateMemoryTrailDebugObject(memoryTrail);
+  recordCanonicalMemoryTrailEvidence(memoryTrail, targetId, result, promptType, stats.lastPromptedAt);
 }
 
 function getMasteryDebugPlace(memoryTrail, targetId) {
@@ -23339,6 +23489,7 @@ function placeGrabbedAnswer(targetIds, options = {}) {
 
   const targetId = choosePlacementTarget(targetIds);
   const result = session.tryAnswer(targetId);
+  recordCanonicalJourneyPlacementEvidence(result);
 
   if (result.status === "no-selection") {
     showFeedback("Select a label first.");

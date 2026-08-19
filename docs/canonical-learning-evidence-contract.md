@@ -1,6 +1,6 @@
 # Canonical learning evidence contract v1
 
-This is the read-only validation slice that follows the A1 design audit. It defines a small vocabulary for describing U.S. learning evidence without creating shared persistence, changing learner state, or changing any planner, score, threshold, or mode behavior.
+This contract began as the read-only A1 validation slice. A2 now uses it for additive live-event persistence; the vocabulary and mappings remain the source of truth, while the repository behavior is documented in [canonical-learning-evidence-repository.md](./canonical-learning-evidence-repository.md).
 
 ## Contract
 
@@ -42,14 +42,14 @@ node scripts/check-canonical-learning-evidence.mjs
 
 It also runs automatically through `npm test` because the fast baseline discovers every `scripts/check-*.mjs` file.
 
-## Explicit boundaries
+## A1 boundaries and A2 status
 
-This slice does not:
+The contract itself does not:
 
-- persist canonical events;
-- emit events from production gameplay;
 - reduce events into mastery or scheduler state;
 - migrate historical learner data;
 - change the Progress Report or Learning Inspector;
 - decide how partial evidence affects Bayesian demonstrated progress;
-- implement A2.
+- replace existing planner stores.
+
+A2 adds a versioned repository, factual reducer, optional canonical Learning Inspector view, and narrow production emission alongside existing behavior. It does not change Progress Report scoring or any learning algorithm.

@@ -9,6 +9,12 @@ import {
   createMentalMapSelectionTrace,
   createUnitedStatesMemoryTrailSelectionTrace
 } from "./selection-trace.js";
+import {
+  getAllCanonicalEvidenceEvents,
+  getCanonicalEvidenceConceptSkillSummaries,
+  getCanonicalEvidenceRepositoryStatus,
+  getRecentCanonicalEvidenceEvents
+} from "./canonical-learning-evidence-repository.js";
 
 export const LEARNING_INSPECTOR_SCHEMA_VERSION = 1;
 export const LEARNING_INSPECTOR_AVAILABILITY = Object.freeze({
@@ -435,13 +441,67 @@ export function createLearningInspectorTransition({ before = null, event = {}, a
   };
 }
 
-export function createLearningInspectorDebugObject({ items = [], selections = [], transitions = [], context = {} } = {}) {
-  return cloneJson({
+export function createCanonicalEvidenceInspectorView({
+  repository,
+  conceptId = "",
+  skillId = "",
+  sourceMode = "",
+  recentLimit = 20
+} = {}) {
+  let events = getAllCanonicalEvidenceEvents(repository);
+  if (conceptId) events = events.filter((event) => event.conceptId === conceptId);
+  if (skillId) events = events.filter((event) => event.skillId === skillId);
+  if (sourceMode) events = events.filter((event) => event.sourceMode === sourceMode);
+  const summaries = getCanonicalEvidenceConceptSkillSummaries({
+    ...repository,
+    events
+  });
+  const recentEvidence = getRecentCanonicalEvidenceEvents({ ...repository, events }, recentLimit);
+  return {
+    schemaVersion: LEARNING_INSPECTOR_SCHEMA_VERSION,
+    kind: "canonical-evidence-view",
+    adapter: "canonical-evidence-repository",
+    informationClass: observed(
+      "canonical-live-events",
+      "canonical-learning-evidence-repository",
+      "These are raw canonical events and factual reductions, distinct from legacy planner aggregates."
+    ),
+    repository: observed(
+      getCanonicalEvidenceRepositoryStatus(repository),
+      "canonical-learning-evidence-repository"
+    ),
+    filters: observed({ conceptId, skillId, sourceMode }, "Learning Inspector request"),
+    summaries: observed(summaries, "deterministic canonical event reducer"),
+    recentEvidence: observed(
+      recentEvidence,
+      "canonical-learning-evidence-repository",
+      "Each event retains its sourceMode and optional sourceActivityId/sessionId provenance."
+    )
+  };
+}
+
+export function createLearningInspectorDebugObject({
+  items = [],
+  selections = [],
+  transitions = [],
+  context = {},
+  canonicalEvidence = null,
+  canonicalRepository = null,
+  canonicalEvidenceFilters = {}
+} = {}) {
+  const output = {
     schemaVersion: LEARNING_INSPECTOR_SCHEMA_VERSION,
     kind: "learning-inspector-export",
     context,
     items,
     selections,
     transitions
-  });
+  };
+  if (canonicalEvidence || canonicalRepository) {
+    output.canonicalEvidence = canonicalEvidence || createCanonicalEvidenceInspectorView({
+      repository: canonicalRepository,
+      ...canonicalEvidenceFilters
+    });
+  }
+  return cloneJson(output);
 }

@@ -1229,6 +1229,7 @@ export function createLower48ReconstructionActivity(container, options = {}) {
           camera = fitMapReconstructionCamera(geometry.workspace, capstone.camera);
         }
         render();
+        options.onEvaluation?.(evaluation);
       })
     );
     return actions;

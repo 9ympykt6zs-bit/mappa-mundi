@@ -203,6 +203,35 @@ function hasPartialMentalMapEvidence(evaluation = {}) {
     || (evaluation.validTransitions || []).length > 0;
 }
 
+function canonicalSlug(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function uniqueSorted(values = []) {
+  return [...new Set(values.filter(Boolean))].sort();
+}
+
+export function getCanonicalMentalMapConceptId(challenge = {}) {
+  const ordered = challenge.orderedStateIds || [];
+  if (ordered.length) return `relationship:ordered:${ordered.join(">")}`;
+  if (challenge.routeStartStateId && challenge.routeDestinationStateId) {
+    return `relationship:border-route:${challenge.routeStartStateId}:${challenge.routeDestinationStateId}`;
+  }
+  const relationships = (challenge.directionRelationships || [])
+    .map(({ fromStateId, toStateId, direction }) => `${fromStateId}:${direction}:${toStateId}`)
+    .sort();
+  if (relationships.length) return `relationship:direction:${relationships.join("+")}`;
+  const correct = uniqueSorted([
+    ...(challenge.correctStateIds || []),
+    challenge.correctStateId
+  ]);
+  const features = uniqueSorted(challenge.associatedFeatureIds || []);
+  return `relationship:set:${[...features, ...correct].map(canonicalSlug).join("+")}`;
+}
+
 export function adaptCanonicalMentalMapEvaluation({ challenge = {}, evaluation = {}, conceptId, ...context } = {}) {
   const isSequencing = challenge.answerMode === "ordered-sequence";
   const credit = Number.isFinite(Number(evaluation.score)) && Number.isFinite(Number(evaluation.maxScore)) && Number(evaluation.maxScore) > 0

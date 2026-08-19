@@ -12,6 +12,7 @@ import {
 import { listMapReconstructionRegions } from "../../src/atlas/map-reconstruction-regions.js";
 import { getMapReconstructionCapstone } from "../../src/atlas/map-reconstruction-capstones.js";
 import { buildUnitedStatesMemoryTrailItems } from "../../src/united-states-memory-trail-planner.js";
+import { getCanonicalMentalMapConceptId } from "../../src/canonical-learning-evidence.js";
 
 export const TAXONOMY_TAGS = Object.freeze({
   PHYSICAL: "physical-geography",
@@ -127,21 +128,7 @@ function source(file, type, instanceId, reachability, extra = {}) {
 }
 
 export function fixedChallengeConceptId(challenge) {
-  const ordered = challenge.orderedStateIds || [];
-  if (ordered.length) return `relationship:ordered:${ordered.join(">")}`;
-  if (challenge.routeStartStateId && challenge.routeDestinationStateId) {
-    return `relationship:border-route:${challenge.routeStartStateId}:${challenge.routeDestinationStateId}`;
-  }
-  const relationships = (challenge.directionRelationships || [])
-    .map(({ fromStateId, toStateId, direction }) => `${fromStateId}:${direction}:${toStateId}`)
-    .sort();
-  if (relationships.length) return `relationship:direction:${relationships.join("+")}`;
-  const correct = uniqueSorted([
-    ...(challenge.correctStateIds || []),
-    challenge.correctStateId
-  ]);
-  const features = uniqueSorted(challenge.associatedFeatureIds || []);
-  return `relationship:set:${[...features, ...correct].map(slug).join("+")}`;
+  return getCanonicalMentalMapConceptId(challenge);
 }
 
 function challengeStateIds(challenge) {
