@@ -29,6 +29,16 @@ The command discovers every `scripts/check-*.mjs` file, runs each check in an is
 
 The checks are executable assertions rather than a uniform test framework. Some production-wiring checks inspect source text because `src/maplibre-poc.js` does not expose those browser functions as importable modules. Such assertions should target a stable behavior boundary or wiring contract and should not pin cache-buster values or incidental formatting.
 
+## Canonical evidence parity check
+
+`scripts/check-canonical-evidence-parity.mjs` runs deterministic Journey, U.S. Memory Trail, Daily Trail, Mental Map, Map Reconstruction, duplicate-protection, missing-emission, and reload scenarios. It compares only equivalent legacy and canonical fields, preserves intentional abstraction differences, verifies fixture immutability and JSON serialization, and checks that production wiring remains additive. Generate its Markdown and JSON evidence with:
+
+```sh
+npm run report:canonical-evidence-parity
+```
+
+See [`canonical-evidence-parity-validation.md`](canonical-evidence-parity-validation.md) for the proof boundary and migration prerequisites.
+
 ## Browser/E2E tests
 
 Run Playwright separately:

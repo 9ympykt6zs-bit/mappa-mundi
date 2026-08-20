@@ -1,0 +1,1229 @@
+{
+  "reportVersion": 1,
+  "generatedAt": "2034-02-03T15:30:00.000Z",
+  "question": "Where canonical evidence and legacy state describe the same learner behavior, do they agree?",
+  "executiveSummary": {
+    "totalScenarios": 11,
+    "matches": 52,
+    "intentionalDifferences": 3,
+    "unavailableComparisons": 1,
+    "defects": 0,
+    "scenarioVerdicts": {
+      "match": 8,
+      "intentional difference": 3,
+      "unavailable/not comparable": 0,
+      "defect": 0
+    }
+  },
+  "scenarios": [
+    {
+      "id": "journey-locate-ohio-correct",
+      "mode": "Journey",
+      "action": "Select Ohio, then place it on Ohio.",
+      "legacy": {
+        "source": "src/maplibre/activity-session.js (ActivitySession)",
+        "itemId": "ohio",
+        "behavior": "locate Ohio",
+        "attempts": 1,
+        "correct": 1,
+        "incorrect": 0,
+        "completedIds": [
+          "ohio"
+        ]
+      },
+      "canonical": {
+        "eventCount": 1,
+        "events": [
+          {
+            "schemaVersion": 1,
+            "eventId": "journey-ohio-correct",
+            "attemptId": "journey-ohio-correct:attempt",
+            "occurredAt": "2034-02-03T15:30:00.000Z",
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "sourceMode": "journey",
+            "outcome": "correct",
+            "sourceActivityId": "us-states-05",
+            "sessionId": "journey:parity-session",
+            "sequence": 0
+          }
+        ],
+        "derivedSummary": [
+          {
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "attemptCount": 1,
+            "correctCount": 1,
+            "incorrectCount": 0,
+            "assistedCount": 0,
+            "partialCount": 0,
+            "skippedCount": 0,
+            "lastEvidenceAt": "2034-02-03T15:30:00.000Z",
+            "mostRecentOutcome": "correct",
+            "sourceModes": [
+              "journey"
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "field": "evidence event count",
+          "legacyValue": 1,
+          "canonicalValue": 1,
+          "classification": "match",
+          "explanation": "The canonical stream contains exactly one event per expected evidence unit."
+        },
+        {
+          "field": "item ID",
+          "legacyValue": "ohio",
+          "canonicalValue": "ohio",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "skill/behavior",
+          "legacyValue": "locating",
+          "canonicalValue": "locating",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "correct",
+          "legacyValue": 1,
+          "canonicalValue": 1,
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        }
+      ],
+      "verdict": "match"
+    },
+    {
+      "id": "journey-locate-ohio-incorrect",
+      "mode": "Journey",
+      "action": "Select Ohio, then place it on Michigan.",
+      "legacy": {
+        "source": "src/maplibre/activity-session.js (ActivitySession)",
+        "itemId": "ohio",
+        "behavior": "locate Ohio",
+        "attempts": 1,
+        "correct": 0,
+        "incorrect": 1,
+        "selectedTargetId": "michigan"
+      },
+      "canonical": {
+        "eventCount": 1,
+        "events": [
+          {
+            "schemaVersion": 1,
+            "eventId": "journey-ohio-incorrect",
+            "attemptId": "journey-ohio-incorrect:attempt",
+            "occurredAt": "2034-02-03T15:30:00.000Z",
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "sourceMode": "journey",
+            "outcome": "incorrect",
+            "sourceActivityId": "us-states-05",
+            "sessionId": "journey:parity-session",
+            "sequence": 0
+          }
+        ],
+        "derivedSummary": [
+          {
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "attemptCount": 1,
+            "correctCount": 0,
+            "incorrectCount": 1,
+            "assistedCount": 0,
+            "partialCount": 0,
+            "skippedCount": 0,
+            "lastEvidenceAt": "2034-02-03T15:30:00.000Z",
+            "mostRecentOutcome": "incorrect",
+            "sourceModes": [
+              "journey"
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "field": "evidence event count",
+          "legacyValue": 1,
+          "canonicalValue": 1,
+          "classification": "match",
+          "explanation": "The canonical stream contains exactly one event per expected evidence unit."
+        },
+        {
+          "field": "item ID",
+          "legacyValue": "ohio",
+          "canonicalValue": "ohio",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "skill/behavior",
+          "legacyValue": "locating",
+          "canonicalValue": "locating",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "incorrect",
+          "legacyValue": 1,
+          "canonicalValue": 1,
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        }
+      ],
+      "verdict": "match"
+    },
+    {
+      "id": "memory-trail-locate-ohio-repeated-misses",
+      "mode": "U.S. Memory Trail",
+      "action": "Miss Ohio twice, then locate Ohio correctly.",
+      "legacy": {
+        "source": "src/united-states-memory-trail-planner.js (itemProgress + lastSessionSummary)",
+        "itemId": "state:ohio",
+        "behavior": "combined session result for Ohio",
+        "attempts": 3,
+        "correct": 1,
+        "incorrect": 2,
+        "timesSeen": 1,
+        "sessionId": "us-memory-trail:parity-session"
+      },
+      "canonical": {
+        "eventCount": 3,
+        "events": [
+          {
+            "schemaVersion": 1,
+            "eventId": "memory-ohio-miss-1",
+            "attemptId": "memory-ohio-miss-1:attempt",
+            "occurredAt": "2034-02-03T15:30:00.000Z",
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "sourceMode": "us-memory-trail",
+            "outcome": "incorrect",
+            "sourceActivityId": "us-states-05",
+            "sessionId": "us-memory-trail:parity-session",
+            "sequence": 0
+          },
+          {
+            "schemaVersion": 1,
+            "eventId": "memory-ohio-miss-2",
+            "attemptId": "memory-ohio-miss-2:attempt",
+            "occurredAt": "2034-02-03T15:30:01.000Z",
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "sourceMode": "us-memory-trail",
+            "outcome": "incorrect",
+            "sourceActivityId": "us-states-05",
+            "sessionId": "us-memory-trail:parity-session",
+            "sequence": 1
+          },
+          {
+            "schemaVersion": 1,
+            "eventId": "memory-ohio-correct-1",
+            "attemptId": "memory-ohio-correct-1:attempt",
+            "occurredAt": "2034-02-03T15:30:02.000Z",
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "sourceMode": "us-memory-trail",
+            "outcome": "correct",
+            "sourceActivityId": "us-states-05",
+            "sessionId": "us-memory-trail:parity-session",
+            "sequence": 2
+          }
+        ],
+        "derivedSummary": [
+          {
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "attemptCount": 3,
+            "correctCount": 1,
+            "incorrectCount": 2,
+            "assistedCount": 0,
+            "partialCount": 0,
+            "skippedCount": 0,
+            "lastEvidenceAt": "2034-02-03T15:30:02.000Z",
+            "mostRecentOutcome": "correct",
+            "sourceModes": [
+              "us-memory-trail"
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "field": "evidence event count",
+          "legacyValue": 3,
+          "canonicalValue": 3,
+          "classification": "match",
+          "explanation": "The canonical stream contains exactly one event per expected evidence unit."
+        },
+        {
+          "field": "concept ID",
+          "legacyValue": "state-location:ohio",
+          "canonicalValue": "state-location:ohio",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "skill ID",
+          "legacyValue": "locating",
+          "canonicalValue": "locating",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "correct",
+          "legacyValue": 1,
+          "canonicalValue": 1,
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "incorrect/misses",
+          "legacyValue": 2,
+          "canonicalValue": 2,
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "times seen vs raw attempts",
+          "legacyValue": 1,
+          "canonicalValue": 3,
+          "classification": "intentional difference",
+          "explanation": "The legacy planner increments timesSeen once per practiced item per completed session; canonical evidence retains each response."
+        },
+        {
+          "field": "timestamp",
+          "legacyValue": null,
+          "canonicalValue": "2034-02-03T15:30:02.000Z",
+          "classification": "unavailable/not comparable",
+          "explanation": "This legacy planner stores session numbers rather than per-response timestamps."
+        }
+      ],
+      "verdict": "intentional difference"
+    },
+    {
+      "id": "memory-trail-locate-ohio-repeated-correct",
+      "mode": "U.S. Memory Trail",
+      "action": "Locate Ohio correctly in two consecutive sessions.",
+      "legacy": {
+        "source": "src/united-states-memory-trail-planner.js (itemProgress)",
+        "itemId": "state:ohio",
+        "attempts": 2,
+        "correct": 2,
+        "incorrect": 0,
+        "timesSeen": 2
+      },
+      "canonical": {
+        "eventCount": 2,
+        "events": [
+          {
+            "schemaVersion": 1,
+            "eventId": "memory-ohio-repeat-correct-1",
+            "attemptId": "memory-ohio-repeat-correct-1:attempt",
+            "occurredAt": "2034-02-03T15:30:00.000Z",
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "sourceMode": "us-memory-trail",
+            "outcome": "correct",
+            "sourceActivityId": "us-states-05",
+            "sessionId": "us-memory-trail:parity-session",
+            "sequence": 0
+          },
+          {
+            "schemaVersion": 1,
+            "eventId": "memory-ohio-repeat-correct-2",
+            "attemptId": "memory-ohio-repeat-correct-2:attempt",
+            "occurredAt": "2034-02-03T15:30:01.000Z",
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "sourceMode": "us-memory-trail",
+            "outcome": "correct",
+            "sourceActivityId": "us-states-05",
+            "sessionId": "us-memory-trail:parity-session",
+            "sequence": 1
+          }
+        ],
+        "derivedSummary": [
+          {
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "attemptCount": 2,
+            "correctCount": 2,
+            "incorrectCount": 0,
+            "assistedCount": 0,
+            "partialCount": 0,
+            "skippedCount": 0,
+            "lastEvidenceAt": "2034-02-03T15:30:01.000Z",
+            "mostRecentOutcome": "correct",
+            "sourceModes": [
+              "us-memory-trail"
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "field": "evidence event count",
+          "legacyValue": 2,
+          "canonicalValue": 2,
+          "classification": "match",
+          "explanation": "The canonical stream contains exactly one event per expected evidence unit."
+        },
+        {
+          "field": "concept ID",
+          "legacyValue": "state-location:ohio",
+          "canonicalValue": "state-location:ohio",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "skill ID",
+          "legacyValue": "locating",
+          "canonicalValue": "locating",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "attempts",
+          "legacyValue": 2,
+          "canonicalValue": 2,
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "correct",
+          "legacyValue": 2,
+          "canonicalValue": 2,
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "incorrect",
+          "legacyValue": 0,
+          "canonicalValue": 0,
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        }
+      ],
+      "verdict": "match"
+    },
+    {
+      "id": "daily-trail-locate-ohio",
+      "mode": "Daily Trail",
+      "action": "Miss Ohio once, then locate Ohio correctly.",
+      "legacy": {
+        "source": "src/daily-trail-planner.js (itemProgress)",
+        "itemId": "world-core:state:ohio",
+        "behavior": "combined session result for Ohio",
+        "attempts": 2,
+        "correct": 1,
+        "incorrect": 1,
+        "timesSeen": 1
+      },
+      "canonical": {
+        "eventCount": 2,
+        "events": [
+          {
+            "schemaVersion": 1,
+            "eventId": "daily-ohio-miss",
+            "attemptId": "daily-ohio-miss:attempt",
+            "occurredAt": "2034-02-03T15:30:00.000Z",
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "sourceMode": "daily-trail",
+            "outcome": "incorrect",
+            "sourceActivityId": "us-states-05",
+            "sessionId": "daily-trail:parity-session",
+            "sequence": 0
+          },
+          {
+            "schemaVersion": 1,
+            "eventId": "daily-ohio-correct",
+            "attemptId": "daily-ohio-correct:attempt",
+            "occurredAt": "2034-02-03T15:30:01.000Z",
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "sourceMode": "daily-trail",
+            "outcome": "correct",
+            "sourceActivityId": "us-states-05",
+            "sessionId": "daily-trail:parity-session",
+            "sequence": 1
+          }
+        ],
+        "derivedSummary": [
+          {
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "attemptCount": 2,
+            "correctCount": 1,
+            "incorrectCount": 1,
+            "assistedCount": 0,
+            "partialCount": 0,
+            "skippedCount": 0,
+            "lastEvidenceAt": "2034-02-03T15:30:01.000Z",
+            "mostRecentOutcome": "correct",
+            "sourceModes": [
+              "daily-trail"
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "field": "evidence event count",
+          "legacyValue": 2,
+          "canonicalValue": 2,
+          "classification": "match",
+          "explanation": "The canonical stream contains exactly one event per expected evidence unit."
+        },
+        {
+          "field": "concept ID",
+          "legacyValue": "state-location:ohio",
+          "canonicalValue": "state-location:ohio",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "skill ID",
+          "legacyValue": "locating",
+          "canonicalValue": "locating",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "correct",
+          "legacyValue": 1,
+          "canonicalValue": 1,
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "incorrect/misses",
+          "legacyValue": 1,
+          "canonicalValue": 1,
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "times seen vs raw attempts",
+          "legacyValue": 1,
+          "canonicalValue": 2,
+          "classification": "intentional difference",
+          "explanation": "Daily Trail persists one timesSeen increment per practiced item per session, while canonical evidence retains both responses."
+        }
+      ],
+      "verdict": "intentional difference"
+    },
+    {
+      "id": "daily-trail-guided-ohio",
+      "mode": "Daily Trail",
+      "action": "Use the guided Ohio exposure.",
+      "legacy": {
+        "source": "src/maplibre-poc.js (updateMemoryTrailStats guided branch)",
+        "itemId": "world-core:state:ohio",
+        "behavior": "guided exposure",
+        "retrievalAttempts": 0,
+        "retrievalCorrect": 0,
+        "guidedTapCount": 1
+      },
+      "canonical": {
+        "eventCount": 1,
+        "events": [
+          {
+            "schemaVersion": 1,
+            "eventId": "daily-ohio-guided",
+            "attemptId": "daily-ohio-guided:attempt",
+            "occurredAt": "2034-02-03T15:30:02.000Z",
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "sourceMode": "daily-trail",
+            "outcome": "assisted",
+            "sourceActivityId": "us-states-05",
+            "sessionId": "daily-trail:parity-session",
+            "sequence": 2
+          }
+        ],
+        "derivedSummary": [
+          {
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "attemptCount": 1,
+            "correctCount": 0,
+            "incorrectCount": 0,
+            "assistedCount": 1,
+            "partialCount": 0,
+            "skippedCount": 0,
+            "lastEvidenceAt": "2034-02-03T15:30:02.000Z",
+            "mostRecentOutcome": "assisted",
+            "sourceModes": [
+              "daily-trail"
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "field": "evidence event count",
+          "legacyValue": 1,
+          "canonicalValue": 1,
+          "classification": "match",
+          "explanation": "The canonical stream contains exactly one event per expected evidence unit."
+        },
+        {
+          "field": "canonical correct retrieval",
+          "legacyValue": 0,
+          "canonicalValue": 0,
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "assisted exposure",
+          "legacyValue": 1,
+          "canonicalValue": 1,
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "legacy persisted raw attempt",
+          "legacyValue": "runtime-only guided counter",
+          "canonicalValue": "durable assisted event",
+          "classification": "intentional difference",
+          "explanation": "The planner aggregate records introduction separately; the canonical repository durably preserves the assisted exposure without retrieval credit."
+        }
+      ],
+      "verdict": "intentional difference"
+    },
+    {
+      "id": "ohio-skill-separation",
+      "mode": "U.S. Memory Trail",
+      "action": "Answer one locate prompt and one identify/name prompt for Ohio.",
+      "legacy": {
+        "source": "src/maplibre-poc.js (nameToPlace*/placeToName* targetStats)",
+        "itemId": "state:ohio",
+        "locatingAttempts": 1,
+        "identifyingAttempts": 1
+      },
+      "canonical": {
+        "eventCount": 2,
+        "events": [
+          {
+            "schemaVersion": 1,
+            "eventId": "skill-locate-ohio",
+            "attemptId": "skill-locate-ohio:attempt",
+            "occurredAt": "2034-02-03T15:30:00.000Z",
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "sourceMode": "us-memory-trail",
+            "outcome": "correct",
+            "sourceActivityId": "us-states-05",
+            "sessionId": "us-memory-trail:parity-session",
+            "sequence": 0
+          },
+          {
+            "schemaVersion": 1,
+            "eventId": "skill-identify-ohio",
+            "attemptId": "skill-identify-ohio:attempt",
+            "occurredAt": "2034-02-03T15:30:01.000Z",
+            "conceptId": "state-naming:ohio",
+            "skillId": "identifying",
+            "sourceMode": "us-memory-trail",
+            "outcome": "correct",
+            "sourceActivityId": "us-states-05",
+            "sessionId": "us-memory-trail:parity-session",
+            "sequence": 1
+          }
+        ],
+        "derivedSummary": [
+          {
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "attemptCount": 1,
+            "correctCount": 1,
+            "incorrectCount": 0,
+            "assistedCount": 0,
+            "partialCount": 0,
+            "skippedCount": 0,
+            "lastEvidenceAt": "2034-02-03T15:30:00.000Z",
+            "mostRecentOutcome": "correct",
+            "sourceModes": [
+              "us-memory-trail"
+            ]
+          },
+          {
+            "conceptId": "state-naming:ohio",
+            "skillId": "identifying",
+            "attemptCount": 1,
+            "correctCount": 1,
+            "incorrectCount": 0,
+            "assistedCount": 0,
+            "partialCount": 0,
+            "skippedCount": 0,
+            "lastEvidenceAt": "2034-02-03T15:30:01.000Z",
+            "mostRecentOutcome": "correct",
+            "sourceModes": [
+              "us-memory-trail"
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "field": "evidence event count",
+          "legacyValue": 2,
+          "canonicalValue": 2,
+          "classification": "match",
+          "explanation": "The canonical stream contains exactly one event per expected evidence unit."
+        },
+        {
+          "field": "locating concept",
+          "legacyValue": "state-location:ohio",
+          "canonicalValue": "state-location:ohio",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "locating skill",
+          "legacyValue": "locating",
+          "canonicalValue": "locating",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "identifying concept",
+          "legacyValue": "state-naming:ohio",
+          "canonicalValue": "state-naming:ohio",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "identifying skill",
+          "legacyValue": "identifying",
+          "canonicalValue": "identifying",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "concepts remain distinct",
+          "legacyValue": true,
+          "canonicalValue": true,
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        }
+      ],
+      "verdict": "match"
+    },
+    {
+      "id": "mental-map-lake-erie-relationship",
+      "mode": "Mental Map",
+      "action": "Submit a partial Lake Erie set, then the complete correct set.",
+      "legacy": {
+        "source": "src/atlas/mental-map-challenge-engine.js (evaluateMentalMapAnswer)",
+        "itemId": "lake-erie-all",
+        "behavior": "relationship recall",
+        "outcomes": [
+          "partial",
+          "correct"
+        ],
+        "credit": [
+          {
+            "earned": 2,
+            "possible": 4
+          },
+          {
+            "earned": 4,
+            "possible": 4
+          }
+        ]
+      },
+      "canonical": {
+        "eventCount": 2,
+        "events": [
+          {
+            "schemaVersion": 1,
+            "eventId": "mental-map-lake-erie-partial",
+            "attemptId": "mental-map-lake-erie-partial:attempt",
+            "occurredAt": "2034-02-03T15:30:00.000Z",
+            "conceptId": "relationship:set:lake-lake-erie+michigan+new-york+ohio+pennsylvania",
+            "skillId": "relationship-recall",
+            "sourceMode": "mental-map",
+            "outcome": "partial",
+            "sourceActivityId": "lake-erie-all",
+            "credit": {
+              "earned": 2,
+              "possible": 4
+            },
+            "response": {
+              "challengeId": "lake-erie-all",
+              "selectedEntityIds": [
+                "state:ohio",
+                "state:pennsylvania"
+              ],
+              "missingEntityIds": [
+                "state:michigan",
+                "state:new-york"
+              ],
+              "unnecessaryEntityIds": []
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "eventId": "mental-map-lake-erie-correct",
+            "attemptId": "mental-map-lake-erie-correct:attempt",
+            "occurredAt": "2034-02-03T15:30:01.000Z",
+            "conceptId": "relationship:set:lake-lake-erie+michigan+new-york+ohio+pennsylvania",
+            "skillId": "relationship-recall",
+            "sourceMode": "mental-map",
+            "outcome": "correct",
+            "sourceActivityId": "lake-erie-all",
+            "credit": {
+              "earned": 4,
+              "possible": 4
+            },
+            "response": {
+              "challengeId": "lake-erie-all",
+              "selectedEntityIds": [
+                "state:michigan",
+                "state:new-york",
+                "state:ohio",
+                "state:pennsylvania"
+              ],
+              "missingEntityIds": [],
+              "unnecessaryEntityIds": []
+            }
+          }
+        ],
+        "derivedSummary": [
+          {
+            "conceptId": "relationship:set:lake-lake-erie+michigan+new-york+ohio+pennsylvania",
+            "skillId": "relationship-recall",
+            "attemptCount": 2,
+            "correctCount": 1,
+            "incorrectCount": 0,
+            "assistedCount": 0,
+            "partialCount": 1,
+            "skippedCount": 0,
+            "lastEvidenceAt": "2034-02-03T15:30:01.000Z",
+            "mostRecentOutcome": "correct",
+            "sourceModes": [
+              "mental-map"
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "field": "evidence event count",
+          "legacyValue": 2,
+          "canonicalValue": 2,
+          "classification": "match",
+          "explanation": "The canonical stream contains exactly one event per expected evidence unit."
+        },
+        {
+          "field": "skill ID",
+          "legacyValue": "relationship-recall",
+          "canonicalValue": "relationship-recall",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "outcomes",
+          "legacyValue": [
+            "partial",
+            "correct"
+          ],
+          "canonicalValue": [
+            "partial",
+            "correct"
+          ],
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "partial credit",
+          "legacyValue": {
+            "earned": 2,
+            "possible": 4
+          },
+          "canonicalValue": {
+            "earned": 2,
+            "possible": 4
+          },
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "source activity",
+          "legacyValue": "lake-erie-all",
+          "canonicalValue": "lake-erie-all",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        }
+      ],
+      "verdict": "match"
+    },
+    {
+      "id": "reconstruction-partial-and-correct",
+      "mode": "Map Reconstruction",
+      "action": "Submit Ohio close and Michigan well placed.",
+      "legacy": {
+        "source": "src/atlas/map-reconstruction-evaluation.js (evaluation.placements)",
+        "itemIds": [
+          "ohio",
+          "michigan"
+        ],
+        "behavior": "spatial reconstruction",
+        "placementStatuses": [
+          "close",
+          "well-placed"
+        ]
+      },
+      "canonical": {
+        "eventCount": 2,
+        "events": [
+          {
+            "schemaVersion": 1,
+            "eventId": "reconstruction-great-lakes-parity:ohio",
+            "attemptId": "reconstruction-great-lakes-parity:attempt",
+            "occurredAt": "2034-02-03T15:30:00.000Z",
+            "conceptId": "state-reconstruction:ohio",
+            "skillId": "spatial-reconstruction",
+            "sourceMode": "map-reconstruction",
+            "outcome": "partial",
+            "sourceActivityId": "rebuild-great-lakes",
+            "response": {
+              "stateEntityId": "state:ohio",
+              "placementStatus": "close",
+              "distanceRatio": 0.31,
+              "vectorErrorRatio": 0.28,
+              "adjacencyRatio": 0.12
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "eventId": "reconstruction-great-lakes-parity:michigan",
+            "attemptId": "reconstruction-great-lakes-parity:attempt",
+            "occurredAt": "2034-02-03T15:30:00.000Z",
+            "conceptId": "state-reconstruction:michigan",
+            "skillId": "spatial-reconstruction",
+            "sourceMode": "map-reconstruction",
+            "outcome": "correct",
+            "sourceActivityId": "rebuild-great-lakes",
+            "response": {
+              "stateEntityId": "state:michigan",
+              "placementStatus": "well-placed",
+              "distanceRatio": 0.11,
+              "vectorErrorRatio": 0.1,
+              "adjacencyRatio": 0.05
+            }
+          }
+        ],
+        "derivedSummary": [
+          {
+            "conceptId": "state-reconstruction:michigan",
+            "skillId": "spatial-reconstruction",
+            "attemptCount": 1,
+            "correctCount": 1,
+            "incorrectCount": 0,
+            "assistedCount": 0,
+            "partialCount": 0,
+            "skippedCount": 0,
+            "lastEvidenceAt": "2034-02-03T15:30:00.000Z",
+            "mostRecentOutcome": "correct",
+            "sourceModes": [
+              "map-reconstruction"
+            ]
+          },
+          {
+            "conceptId": "state-reconstruction:ohio",
+            "skillId": "spatial-reconstruction",
+            "attemptCount": 1,
+            "correctCount": 0,
+            "incorrectCount": 0,
+            "assistedCount": 0,
+            "partialCount": 1,
+            "skippedCount": 0,
+            "lastEvidenceAt": "2034-02-03T15:30:00.000Z",
+            "mostRecentOutcome": "partial",
+            "sourceModes": [
+              "map-reconstruction"
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "field": "evidence event count",
+          "legacyValue": 2,
+          "canonicalValue": 2,
+          "classification": "match",
+          "explanation": "The canonical stream contains exactly one event per expected evidence unit."
+        },
+        {
+          "field": "concept IDs",
+          "legacyValue": [
+            "state-reconstruction:ohio",
+            "state-reconstruction:michigan"
+          ],
+          "canonicalValue": [
+            "state-reconstruction:ohio",
+            "state-reconstruction:michigan"
+          ],
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "skill IDs",
+          "legacyValue": [
+            "spatial-reconstruction",
+            "spatial-reconstruction"
+          ],
+          "canonicalValue": [
+            "spatial-reconstruction",
+            "spatial-reconstruction"
+          ],
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "outcomes",
+          "legacyValue": [
+            "partial",
+            "correct"
+          ],
+          "canonicalValue": [
+            "partial",
+            "correct"
+          ],
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "source activity",
+          "legacyValue": "rebuild-great-lakes",
+          "canonicalValue": "rebuild-great-lakes",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        }
+      ],
+      "verdict": "match"
+    },
+    {
+      "id": "duplicate-protection-single-action",
+      "mode": "Canonical repository",
+      "action": "Submit the same action event through overlapping wiring twice.",
+      "legacy": {
+        "source": "controlled action fixture",
+        "itemId": "state:ohio",
+        "evidenceBearingActions": 1
+      },
+      "canonical": {
+        "eventCount": 1,
+        "events": [
+          {
+            "schemaVersion": 1,
+            "eventId": "duplicate-ohio-action",
+            "attemptId": "duplicate-ohio-action:attempt",
+            "occurredAt": "2034-02-03T15:30:00.000Z",
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "sourceMode": "journey",
+            "outcome": "correct",
+            "sourceActivityId": "us-states-05",
+            "sessionId": "journey:parity-session",
+            "sequence": 0
+          }
+        ],
+        "derivedSummary": [
+          {
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "attemptCount": 1,
+            "correctCount": 1,
+            "incorrectCount": 0,
+            "assistedCount": 0,
+            "partialCount": 0,
+            "skippedCount": 0,
+            "lastEvidenceAt": "2034-02-03T15:30:00.000Z",
+            "mostRecentOutcome": "correct",
+            "sourceModes": [
+              "journey"
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "field": "evidence event count",
+          "legacyValue": 1,
+          "canonicalValue": 1,
+          "classification": "match",
+          "explanation": "The canonical stream contains exactly one event per expected evidence unit."
+        },
+        {
+          "field": "first write inserted",
+          "legacyValue": true,
+          "canonicalValue": true,
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "second write rejected as duplicate",
+          "legacyValue": false,
+          "canonicalValue": false,
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "durable event count",
+          "legacyValue": 1,
+          "canonicalValue": 1,
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        }
+      ],
+      "verdict": "match"
+    },
+    {
+      "id": "reload-persistence-parity",
+      "mode": "U.S. Memory Trail + canonical repository",
+      "action": "Record correct Ohio evidence, persist both stores, and reload.",
+      "legacy": {
+        "source": "mappaUnitedStatesMemoryTrailProgress",
+        "itemId": "state:ohio",
+        "correct": 1,
+        "incorrect": 0,
+        "currentSessionNumber": 2
+      },
+      "canonical": {
+        "eventCount": 1,
+        "events": [
+          {
+            "schemaVersion": 1,
+            "eventId": "persistence-ohio",
+            "attemptId": "persistence-ohio:attempt",
+            "occurredAt": "2034-02-03T15:30:00.000Z",
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "sourceMode": "us-memory-trail",
+            "outcome": "correct",
+            "sourceActivityId": "us-states-05",
+            "sessionId": "us-memory-trail:parity-session",
+            "sequence": 0
+          }
+        ],
+        "derivedSummary": [
+          {
+            "conceptId": "state-location:ohio",
+            "skillId": "locating",
+            "attemptCount": 1,
+            "correctCount": 1,
+            "incorrectCount": 0,
+            "assistedCount": 0,
+            "partialCount": 0,
+            "skippedCount": 0,
+            "lastEvidenceAt": "2034-02-03T15:30:00.000Z",
+            "mostRecentOutcome": "correct",
+            "sourceModes": [
+              "us-memory-trail"
+            ]
+          }
+        ]
+      },
+      "comparisons": [
+        {
+          "field": "evidence event count",
+          "legacyValue": 1,
+          "canonicalValue": 1,
+          "classification": "match",
+          "explanation": "The canonical stream contains exactly one event per expected evidence unit."
+        },
+        {
+          "field": "correct after reload",
+          "legacyValue": 1,
+          "canonicalValue": 1,
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "incorrect after reload",
+          "legacyValue": 0,
+          "canonicalValue": 0,
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "concept after reload",
+          "legacyValue": "state-location:ohio",
+          "canonicalValue": "state-location:ohio",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        },
+        {
+          "field": "canonical repository status",
+          "legacyValue": "ready",
+          "canonicalValue": "ready",
+          "classification": "match",
+          "explanation": "Equivalent measurements agree."
+        }
+      ],
+      "verdict": "match"
+    }
+  ],
+  "fixtureIntegrity": {
+    "memoryTrailInputUnchanged": true,
+    "dailyTrailInputUnchanged": true
+  },
+  "coverage": {
+    "validated": [
+      "Journey U.S. state location correct and incorrect actions",
+      "U.S. Memory Trail Ohio location with repeated misses and recovery",
+      "U.S. Memory Trail repeated correct Ohio retrieval across sessions",
+      "Daily Trail Ohio location and guided exposure",
+      "Ohio locating versus identifying skill separation",
+      "Mental Map relationship partial and correct results",
+      "Map Reconstruction state-level partial and correct placements",
+      "repository duplicate protection",
+      "legacy and canonical reload/persistence round-trip"
+    ],
+    "untested": [
+      "non-U.S. Journey canonical emission",
+      "capital retrieval parity beyond the shared state/capital adapter contract",
+      "every generated Mental Map challenge form",
+      "every reconstruction region and Lower 48 capstone",
+      "browser-level localStorage failures and cross-tab concurrency",
+      "historical interactions that occurred before canonical emission was installed"
+    ]
+  },
+  "risks": [
+    {
+      "name": "Double-writing risk",
+      "finding": "Repository eventId idempotency prevents duplicate durable events when overlapping wiring submits the same action identity. Distinct accidental identities for one UI action remain a wiring risk."
+    },
+    {
+      "name": "Mode-specific ambiguity",
+      "finding": "Legacy trail planners combine prompt forms in session aggregates; raw canonical events preserve locating versus identifying. Aggregate-to-skill parity is therefore unavailable historically."
+    },
+    {
+      "name": "Partial-result semantics",
+      "finding": "Mental Map score-bearing incomplete answers and reconstruction close placements remain partial. Other legacy modes without partial semantics cannot be compared as partial."
+    },
+    {
+      "name": "Session/timestamp differences",
+      "finding": "Canonical events have per-attempt timestamps and session IDs. Some legacy stores retain only session numbers or completion state."
+    },
+    {
+      "name": "Historical aggregate limitations",
+      "finding": "Canonical history covers new emission only. Legacy aggregates cannot be losslessly converted into prompt-specific events and are not backfilled."
+    }
+  ],
+  "conclusion": {
+    "canonicalRepositoryTrustedForNewReadOnlyEvidence": true,
+    "progressReportMigrationSafeToBegin": true,
+    "qualification": "Safe to begin a separate, shadow/read-only Progress Report migration slice for newly emitted evidence; not safe to replace legacy scoring or infer historical prompt-specific evidence yet."
+  }
+}
