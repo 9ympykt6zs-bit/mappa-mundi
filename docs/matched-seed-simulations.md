@@ -28,7 +28,7 @@ Existing simulation calls that provide only `seed` preserve the prior behavior: 
 Every matrix cell records:
 
 - progression: introduced and encountered items, selections, correct/incorrect results, first complete introduction, first mastery, and mastered counts at checkpoints;
-- adaptation: new/review/reason-bucket counts, repeated selections, maximum eligibility deferral, and unresolved deferrals;
+- adaptation: new/review/reason-bucket counts, explicit fairness-review counts, repeated selections, maximum eligibility deferral, and unresolved deferrals;
 - regional behavior: introduced items, inferred candidate opportunities, selections, review/weak-review selections, error rate, and selection per opportunity;
 - diagnostic items: Ohio, Wyoming, Massachusetts, and Georgia;
 - matched deltas from the near-perfect profile to single-weak-item, regional-weakness, and mixed profiles.
@@ -46,6 +46,7 @@ When the same pairwise direction appears across matched planner seeds, the resul
 - Eligibility is inferred from Selection Trace candidate-pool reconstruction. Items outside emitted pools are not called eligible.
 - The planner does not retain the exact comparator clause that resolved every tie or a single cross-bucket score.
 - A finite 60-session window cannot prove long-run convergence or absence of starvation.
+- The current trajectories include the one-slot cumulative fairness lane. The generated report exposes its counts and resulting changes; it does not compare against or preserve a pre-fairness trajectory.
 - The matrix covers U.S. Memory Trail, not Daily Trail, UI interactions, response time, or human forgetting.
 
 The checks in `scripts/check-matched-seed-simulation-matrix.mjs` verify seed matching/separation, exact replay, seed-sensitive valid trajectories, aggregation math, JSON serialization, fixture immutability, and unchanged planner output. Passing checks verify the reporting machinery, not the adaptive algorithm's educational correctness.

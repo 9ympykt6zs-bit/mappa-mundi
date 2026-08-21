@@ -143,6 +143,7 @@ This O6.3 report observes the production U.S. Memory Trail item-state model for 
 - Near-perfect learners reached 25% mastery at ${range(perfect.milestones.mastery[25])}, 50% at ${range(perfect.milestones.mastery[50])}, 75% at ${range(perfect.milestones.mastery[75])}, 90% at ${range(perfect.milestones.mastery[90])}, and 95% at ${range(perfect.milestones.mastery[95])}. None reached 100% by session 200.
 - All 100 items were first introduced for near-perfect learners at ${range(perfect.milestones.allCurriculumItemsIntroduced)}. At that point all ${range(itemsCorrectAtIntroduction)} items had at least one correct demonstration, with ${range(correctAtIntroduction)} correct and ${range(missesAtIntroduction)} incorrect demonstrations overall, but ${range(masteredAtIntroduction)} items were currently mastered.
 - The single-weak learner encountered Ohio ${range(weakOhioEncounters)} times—every session from its introduction through session 200. Ohio continuously occupied the weak-review opportunity, and its unmet prerequisite kept Columbus unintroduced; the other 98 introduced items nevertheless reached mastery by session 150 in every seed.
+- After complete introduction, the one-slot fairness lane was used ${range(perfect.reviewLoad.fairnessSelections)} times for near-perfect learners and ${range(report.aggregate.profiles["regional-weakness"].reviewLoad.fairnessSelections)} times for regional-weakness learners. These selections can shift item encounters, lapses, regional totals, and mastery timing; the regenerated tables report those changes directly while weak remediation keeps the other nine cumulative slots.
 - The current Memory Trail state has no separate domain-level “I know the United States” or full-error-free-pass state. Broad demonstrated competence and scheduler item mastery therefore cannot be represented as separate accomplishments by this model.
 - Mastery is not necessarily absorbing: diagnostic histories record when a mastered item lapses after later evidence and whether it recovers.
 
@@ -191,7 +192,7 @@ The planner does not define a “full pass” over all introduced material, so t
 | --- | ---: | ---: | ---: |
 ${reviewRows()}
 
-Per-session JSON distinguishes new, weak, older, recent, due, and other review reasons and counts reconstructed competing review items. A decline is descriptive only; lower review load does not automatically mean better pedagogy.
+Per-session JSON distinguishes new, weak, fairness, older, recent, due, and other review reasons and counts reconstructed competing review items. A decline is descriptive only; lower review load does not automatically mean better pedagogy.
 
 ## Persistent Ohio weakness
 

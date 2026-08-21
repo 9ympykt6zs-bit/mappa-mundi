@@ -14,6 +14,8 @@ The generated Markdown and JSON reports compare each Census region's selection s
 
 The focused check proves exact replay, input immutability, the 10,000-selection floor, the ±20% regional and item-type bounds, absence of an eligible item with zero selections, and locating/identifying prompt-objective shares within ±20% of their intentional profile targets. Ordinary review targets a 50/50 mix; early-chunk support intentionally favors the easier locating form at 70/30. In a separate mixed-pressure setup, 70 future-due mastered items receive no session slots while 30 due review items are available. When all 100 mastered items are due, every item remains selectable and appears during the 200-plan probe.
 
+The report runs through the production cumulative fairness lane. After its introduction, all 100 neutral items still receive selections, Census-region shares remain within about −1.94% to +0.66% of eligible share, and state/capital shares remain within 1% of their eligible shares.
+
 ```sh
 npm run check:neutral-selection-balance
 ```

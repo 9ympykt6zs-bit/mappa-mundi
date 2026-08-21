@@ -62,3 +62,5 @@ Reason-signal aggregates are mutually exclusive in this order: new item, weak re
 - Daily Trail eligibility delay until its rejected candidate pools become inspectable.
 
 The report should therefore be read as behavioral evidence, not an acceptance verdict.
+
+The production planner now also has a structural cumulative-review fairness lane documented in [`us-memory-trail-fairness.md`](us-memory-trail-fairness.md). Its adversarial focused check—not this finite 36-session report—verifies eventual review for continuously eligible due items behind a saturated weak-item pool.

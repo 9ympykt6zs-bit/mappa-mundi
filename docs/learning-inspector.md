@@ -64,7 +64,7 @@ Current system boundaries:
 | System | Trace evidence | Limits |
 | --- | --- | --- |
 | Daily Trail | Existing reason projection, item debug factors, emitted new/review counts, and other items emitted in the same plan. | The emitted plan does not retain the full discarded candidate pool. Eligible-candidate count, rejected alternatives, and exact comparator steps remain unavailable. |
-| U.S. Memory Trail | New/weak/older/recent bucket, current progress factors, and a read-only reconstruction of that bucket using the planner's existing eligibility and priority helpers. | Comparator clauses are ordered but the planner does not retain which clause broke every pairwise tie. Separate slot buckets are not one shared numeric ranking. |
+| U.S. Memory Trail | New/weak/older/recent/fairness bucket, current progress factors, and a read-only reconstruction of that bucket using the planner's existing eligibility and priority helpers. The cumulative fairness lane exposes `longest-waiting-eligible-due-item`. | Comparator clauses are ordered but the planner does not retain which clause broke every pairwise tie. Separate slot buckets are not one shared numeric ranking. |
 | Mental Map | The opt-in debug selectors expose valid/preferred counts, applied diversity filters, deterministic random draw/index, and alternatives in the preferred pool. Generated shortest-route tracing also records the seeded starting pair and pairs examined before the first eligible route. | Generated-route selection stops at the first eligible pair, so it does not calculate the total eligible-pair count. Mental Map selection does not currently use learner mastery evidence, so the trace cannot supply pedagogical priority or mastery scores. |
 
 Generate the tracked Ohio example with:

@@ -30,6 +30,7 @@ assert.equal(first.validation.answerSeedSeparateFromPlannerSeed, true);
 assert.equal(first.validation.answerSeedSharedWithinGroups, true);
 assert.equal(first.validation.fixtureUnchanged, true);
 assert.equal(first.runs.length, options.plannerSeeds.length * 5);
+assert.ok(first.runs.every((run) => Number.isInteger(run.adaptation.fairnessReviewSelections)));
 for (const plannerSeed of options.plannerSeeds) {
   const group = first.runs.filter((run) => run.plannerSeed === plannerSeed);
   assert.equal(group.length, 5);
@@ -44,6 +45,10 @@ assert.deepEqual(
   first.aggregate.profiles.perfect.metrics["progression.itemsIntroduced"],
   summarizeDistribution(perfectIntroduced),
   "Profile aggregates must be calculated from their matching runs."
+);
+assert.deepEqual(
+  first.aggregate.profiles.perfect.metrics["adaptation.fairnessReviewSelections"],
+  summarizeDistribution(first.runs.filter((run) => run.profileId === "perfect").map((run) => run.adaptation.fairnessReviewSelections))
 );
 const expectedOhioDeltas = options.plannerSeeds.map((plannerSeed) => {
   const perfect = first.runs.find((run) => run.plannerSeed === plannerSeed && run.profileId === "perfect");

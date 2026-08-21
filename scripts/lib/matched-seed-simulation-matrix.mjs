@@ -177,6 +177,7 @@ function summarizeRun(simulation, eligibility, items) {
       reviewSelections: simulation.selectionBehavior.reviewSelections,
       reasonBuckets,
       weakReviewSelections: reasonBuckets["weak-review"] || 0,
+      fairnessReviewSelections: reasonBuckets["fairness-review"] || 0,
       dueReviewSelections: reasonBuckets["due-review"] || 0,
       olderReviewSelections: reasonBuckets["older-review"] || 0,
       recentReviewSelections: reasonBuckets["recent-review"] || 0,
@@ -208,6 +209,7 @@ const aggregateMetricPaths = Object.freeze([
   "progression.finalMasteredCount",
   "adaptation.reviewSelections",
   "adaptation.weakReviewSelections",
+  "adaptation.fairnessReviewSelections",
   "adaptation.newSelections",
   "adaptation.maximumEligibilityDeferral",
   "adaptation.unresolvedEligibleDeferralItems",
@@ -318,7 +320,7 @@ export function runMatchedSeedSimulationMatrix({
   }
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: "us-memory-trail-matched-seed-simulation-matrix",
     experiment: {
       plannerSeeds: clone(plannerSeeds),

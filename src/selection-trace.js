@@ -132,6 +132,7 @@ export function createUnitedStatesMemoryTrailSelectionTrace({ state = {}, plan =
   if (selectedCandidate?.due) reasons.push("due-for-review");
   if ((selectedCandidate?.missCount || 0) > 0) reasons.push("recorded-miss");
   if (debug.reasonBucket === "new") reasons.push("curriculum-eligible-new-item");
+  if (debug.reasonBucket === "fairness-review") reasons.push("longest-waiting-eligible-due-item");
   trace.selectionReasons = inferred(reasons.filter(Boolean), "U.S. Memory Trail plan membership and existing progress fields");
   trace.reasonBucket = inferred(debug.reasonBucket, "membership in emitted U.S. Memory Trail plan arrays");
   trace.priorityFactors = selectedCandidate
@@ -164,7 +165,7 @@ export function createUnitedStatesMemoryTrailSelectionTrace({ state = {}, plan =
   trace.unavailableFields = observed({
     exactComparatorSteps: "The planner uses ordered comparator clauses but does not retain which clause broke each pairwise tie.",
     numericScore: "No single selection score is calculated by the current planner.",
-    crossBucketCompetition: "New, weak, older, and recent slots are selected separately; they are not one shared ranked pool."
+    crossBucketCompetition: "New, weak, older, recent, and cumulative fairness slots are selected separately; they are not one shared ranked pool."
   }, "U.S. Memory Trail trace adapter");
   return trace;
 }

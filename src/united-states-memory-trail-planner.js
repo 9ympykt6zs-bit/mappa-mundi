@@ -13,7 +13,8 @@ export const UNITED_STATES_MEMORY_TRAIL_CONFIG = Object.freeze({
   weakReviewCount: 1,
   recentReviewCount: 1,
   olderReviewCount: 1,
-  cumulativeReviewCount: 10
+  cumulativeReviewCount: 10,
+  cumulativeFairnessCount: 1
 });
 
 const validStatuses = new Set(["unseen", "introduced", "learning", "review", "mastered"]);
@@ -236,10 +237,12 @@ export function getUnitedStatesMemoryTrailSelectionDebug(state, plan = {}, selec
   const normalized = attachPlannerContext(createUnitedStatesMemoryTrailState(state, items, options), items, options);
   const selectedId = selectedItem.id || "";
   const newIds = new Set((plan.newItems || []).map((item) => item.id));
+  const fairnessIds = new Set((plan.fairnessReviewItems || []).map((item) => item.id));
   const weakIds = new Set((plan.weakReviewItems || []).map((item) => item.id));
   const oldIds = new Set((plan.oldReviewItems || []).map((item) => item.id));
   const membership = newIds.has(selectedId) ? "new"
-    : weakIds.has(selectedId) ? "weak-review"
+    : fairnessIds.has(selectedId) ? "fairness-review"
+      : weakIds.has(selectedId) ? "weak-review"
       : oldIds.has(selectedId) ? "older-review"
         : (plan.recentReviewItems || []).some((item) => item.id === selectedId) ? "recent-review"
           : (plan.reviewItems || []).some((item) => item.id === selectedId) ? "review"
@@ -254,6 +257,10 @@ export function getUnitedStatesMemoryTrailSelectionDebug(state, plan = {}, selec
       .filter((item) => eligibleNewItems.some((candidate) => candidate.id === item.id));
     const capitalItems = sectionItems.filter((item) => item.type === "capital");
     candidates = capitalItems.length > 0 ? capitalItems : sectionItems.filter((item) => item.type === "state");
+  } else if (membership === "fairness-review") {
+    candidates = getCumulativeReviewEligibleItems(normalized, items)
+      .filter((item) => isFairnessReviewDue(normalized, item))
+      .sort((left, right) => compareFairnessPriority(normalized, left, right));
   } else if (plan.sessionType === "cumulative-review") {
     candidates = items
       .filter((item) => practiceEligibleStatuses.has(getItemStatus(normalized, item)))
@@ -282,7 +289,11 @@ export function getUnitedStatesMemoryTrailSelectionDebug(state, plan = {}, selec
 
   return {
     reasonBucket: membership,
-    candidatePoolKind: membership === "unknown" ? null : plan.sessionType === "cumulative-review" ? "cumulative-review" : membership,
+    candidatePoolKind: membership === "unknown"
+      ? null
+      : membership === "fairness-review"
+        ? "cumulative-fairness"
+        : plan.sessionType === "cumulative-review" ? "cumulative-review" : membership,
     candidateCount: membership === "unknown" ? null : candidates.length,
     selectedCandidateIndex: candidates.findIndex((item) => item.id === selectedId),
     candidates: candidates.map((item) => {
@@ -523,13 +534,14 @@ function buildUnitedStatesLearningPlan(state, items, eligibleNewItems) {
     weakReviewItems,
     oldReviewItems,
     recentReviewItems,
+    fairnessReviewItems: [],
     playItems,
     allItems: items
   });
 }
 
 function buildUnitedStatesCumulativeReviewPlan(state, items) {
-  const reviewItems = selectCumulativeReviewItems(state, items, {
+  const { reviewItems, fairnessReviewItems } = selectCumulativeReviewItems(state, items, {
     limit: UNITED_STATES_MEMORY_TRAIL_CONFIG.cumulativeReviewCount
   });
   const activeActivityId = reviewItems[0]?.homeActivityId || items[0]?.homeActivityId || "";
@@ -546,12 +558,13 @@ function buildUnitedStatesCumulativeReviewPlan(state, items) {
     }),
     oldReviewItems: [],
     recentReviewItems: [],
+    fairnessReviewItems,
     playItems: reviewItems,
     allItems: items
   });
 }
 
-function createPlan({ state, sessionType, title, activeActivityId, newItems, reviewItems, weakReviewItems, oldReviewItems, recentReviewItems, playItems, allItems }) {
+function createPlan({ state, sessionType, title, activeActivityId, newItems, reviewItems, weakReviewItems, oldReviewItems, recentReviewItems, fairnessReviewItems = [], playItems, allItems }) {
   return {
     trailId: unitedStatesMemoryTrailId,
     source: UNITED_STATES_MEMORY_TRAIL_SOURCE,
@@ -566,6 +579,7 @@ function createPlan({ state, sessionType, title, activeActivityId, newItems, rev
     weakReviewItems: dedupeItems(weakReviewItems),
     oldReviewItems: dedupeItems(oldReviewItems),
     recentReviewItems: dedupeItems(recentReviewItems),
+    fairnessReviewItems: dedupeItems(fairnessReviewItems),
     playItems: dedupeItems(playItems),
     allItems,
     curriculumCursor: getNextCurriculumCursor(state, allItems),
@@ -660,10 +674,46 @@ function selectOlderReviewItems(state, items = [], options = {}) {
 
 function selectCumulativeReviewItems(state, items = [], options = {}) {
   const limit = Math.max(1, Number(options.limit) || UNITED_STATES_MEMORY_TRAIL_CONFIG.cumulativeReviewCount);
-  return items
-    .filter((item) => practiceEligibleStatuses.has(getItemStatus(state, item)))
+  const eligibleItems = getCumulativeReviewEligibleItems(state, items);
+  const adaptiveItems = [...eligibleItems]
     .sort((left, right) => compareReviewPriority(state, left, right))
     .slice(0, limit);
+  const adaptiveIds = new Set(adaptiveItems.map((item) => item.id));
+  const fairnessItem = [...eligibleItems]
+    .filter((item) => isFairnessReviewDue(state, item))
+    .filter((item) => !adaptiveIds.has(item.id))
+    .sort((left, right) => compareFairnessPriority(state, left, right))[0] || null;
+
+  if (!fairnessItem || UNITED_STATES_MEMORY_TRAIL_CONFIG.cumulativeFairnessCount <= 0) {
+    return { reviewItems: adaptiveItems, fairnessReviewItems: [] };
+  }
+
+  return {
+    reviewItems: [...adaptiveItems.slice(0, Math.max(0, limit - 1)), fairnessItem],
+    fairnessReviewItems: [fairnessItem]
+  };
+}
+
+function getCumulativeReviewEligibleItems(state, items = []) {
+  return items.filter((item) => practiceEligibleStatuses.has(getItemStatus(state, item)));
+}
+
+function compareFairnessPriority(state, left, right) {
+  const leftProgress = state.itemProgress[left.id] || {};
+  const rightProgress = state.itemProgress[right.id] || {};
+  return (Number(leftProgress.dueSession) || 0) - (Number(rightProgress.dueSession) || 0)
+    || (leftProgress.lastSeenSession || 0) - (rightProgress.lastSeenSession || 0)
+    || comparePlannerTie(state, left, right)
+    || left.order - right.order;
+}
+
+function isFairnessReviewDue(state, item) {
+  const dueSession = state.itemProgress[item.id]?.dueSession;
+  return dueSession !== null
+    && dueSession !== undefined
+    && dueSession !== ""
+    && Number.isFinite(Number(dueSession))
+    && Number(dueSession) <= state.currentSessionNumber;
 }
 
 function compareReviewPriority(state, left, right) {

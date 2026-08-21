@@ -34,6 +34,7 @@ function profileAggregateRow(profileId) {
     range(metrics["progression.finalMasteredCount"]),
     range(metrics["adaptation.reviewSelections"]),
     range(metrics["adaptation.weakReviewSelections"]),
+    range(metrics["adaptation.fairnessReviewSelections"]),
     range(metrics["regions.West.selections"]),
     range(metrics["adaptation.maximumEligibilityDeferral"])
   ]);
@@ -58,6 +59,7 @@ function seedMatrixRows() {
     run.adaptation.newSelections,
     run.adaptation.reviewSelections,
     run.adaptation.weakReviewSelections,
+    run.adaptation.fairnessReviewSelections,
     run.regions.Midwest?.selections || 0,
     run.regions.West?.selections || 0,
     run.adaptation.maximumEligibilityDeferral
@@ -130,6 +132,7 @@ This O6.2 report holds planner seed, starting state, simulated time schedule, an
 
 - Across ${matrix.experiment.plannerSeedCount} matched planner seeds, the single-weak-item profile added a median ${perfectVsWeak.deltas.OhioEncounters.median} Ohio encounters relative to the near-perfect profile (range ${perfectVsWeak.deltas.OhioEncounters.min}–${perfectVsWeak.deltas.OhioEncounters.max}); the difference was positive for ${perfectVsWeak.positiveEffectCounts.OhioEncounters} of ${perfectVsWeak.matchedSeedCount} seeds. This is consistent with an answer-driven weak-item effect.
 - The regional-weakness profile added a median ${perfectVsRegional.deltas.MidwestWeakReviewSelections.median} Midwest weak-review selections relative to near-perfect (range ${perfectVsRegional.deltas.MidwestWeakReviewSelections.min}–${perfectVsRegional.deltas.MidwestWeakReviewSelections.max}); the difference was positive for ${perfectVsRegional.positiveEffectCounts.MidwestWeakReviewSelections} of ${perfectVsRegional.matchedSeedCount} seeds.
+- Once cumulative review begins, at most one of ten slots is labeled \`fairness-review\`; the other nine retain the existing adaptive ranking. The aggregate and seed tables expose the resulting fairness counts rather than folding them into an unnamed review bucket.
 - Mixed-profile review pressure changed by a median ${perfectVsMixed.deltas.reviewSelections.median} review selections relative to near-perfect (range ${perfectVsMixed.deltas.reviewSelections.min}–${perfectVsMixed.deltas.reviewSelections.max}).
 - Wyoming maximum eligibility deferral ranged ${diagnosticRange("random", "state:wyoming", "maximumEligibilityDeferral")} sessions across random-profile seeds. This makes the earlier single-seed eight-session observation more appropriately a seed-specific example, not a universal value.
 - Every near-perfect run introduced all 100 items at session 39 and first reached mastery at session 49. The final mastered count was only 2–3 at session 60, strengthening the evidence that the earlier 36-session window was too short for any mastery while leaving broader convergence unverified.
@@ -148,14 +151,14 @@ This O6.2 report holds planner seed, starting state, simulated time schedule, an
 
 Values are median (minimum–maximum) across planner seeds.
 
-| Profile | Items introduced | Final mastered | Review selections | Weak review | West selections | Maximum deferral |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Profile | Items introduced | Final mastered | Review selections | Weak review | Fairness review | West selections | Maximum deferral |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 ${matrix.experiment.profileIds.map(profileAggregateRow).join("\n")}
 
 ## Seed matrix summary
 
-| Planner seed | Profile | Introduced | Unique | Mastered | New | Review | Weak review | Midwest selections | West selections | Max deferral |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Planner seed | Profile | Introduced | Unique | Mastered | New | Review | Weak review | Fairness review | Midwest selections | West selections | Max deferral |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 ${seedMatrixRows()}
 
 ## Pairwise comparisons

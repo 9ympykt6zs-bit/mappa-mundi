@@ -334,6 +334,7 @@ export function createDailyTrailSelectionExplanation({ state = {}, plan = {}, it
 function getUsPlanMembership(plan, itemId) {
   const memberships = [
     ["new", plan.newItems],
+    ["fairness-review", plan.fairnessReviewItems],
     ["weak-review", plan.weakReviewItems],
     ["older-review", plan.oldReviewItems],
     ["recent-review", plan.recentReviewItems],

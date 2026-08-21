@@ -19,6 +19,8 @@ The focused automated check is `scripts/check-long-horizon-mastery-report.mjs`; 
 
 The reporter reads the production U.S. Memory Trail `status` field. The planner currently transitions an item to `mastered` when cumulative correct responses are at least 7, the current correct streak is at least 4, and the item has been seen at least 4 times. A later miss can move a mastered item back to `review`, so mastery is not necessarily absorbing. These rules remain owned by `src/united-states-memory-trail-planner.js`; the reporter observes their output rather than duplicating them.
 
+The current production trajectories include the one-slot cumulative fairness lane. The report records `fairness-review` separately after complete introduction because broader due-item exposure can change encounters, lapses, regional totals, and mastery timing. The remaining nine cumulative slots retain the existing adaptive priority.
+
 The source planner's valid statuses are `unseen`, `introduced`, `learning`, `review`, and `mastered`. It does not currently emit a distinct `relearning` status. O6.3 still reports a relearning column, which remains zero unless the production model begins exposing that status.
 
 ## Item mastery versus broader accomplishment

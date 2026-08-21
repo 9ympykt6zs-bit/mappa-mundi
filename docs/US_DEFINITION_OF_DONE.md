@@ -126,7 +126,7 @@ The simulations demonstrate that:
 - [x] forgotten or lapsed material returns appropriately;
 - [x] weak regions or concepts receive additional opportunities when warranted;
 - [x] strong regions do not receive the same unnecessary review pressure;
-- [ ] eligible content is not permanently starved;
+- [x] eligible content is not permanently starved;
 - [x] identical seeded scenarios are reproducible.
 
 Simulation output should be readable enough to show **what happened and why**, not merely report that tests passed.

@@ -78,6 +78,8 @@ const weakRun = first.runs.find((run) => run.profile.id === "single-weak-item");
 assert.ok(perfectRun.diagnostics["capital:augusta-me"].encounters > 0, "The capital diagnostic must use its stable curriculum ID.");
 assert.equal(perfectRun.perfectRunAnalysis.proxyEvidence.itemsCurrentlyMastered, 0);
 assert.equal(perfectRun.perfectRunAnalysis.proxyEvidence.itemsWithAtLeastOneCorrectDemonstration, 100);
+assert.ok(perfectRun.reviewLoadAfterIntroduction.totals.fairnessReviewSelections > 0);
+assert.ok(first.aggregate.profiles.perfect.reviewLoad.fairnessSelections.min > 0);
 assert.deepEqual(weakRun.finalState.itemIdsByStatus.unseen, ["capital:columbus-oh"]);
 assert.equal(weakRun.diagnostics["state:ohio"].encounters, 184);
 assert.doesNotThrow(() => JSON.stringify(first));

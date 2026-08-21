@@ -6,17 +6,17 @@ This deterministic report holds all 100 U.S. Memory Trail items at identical mas
 
 | Region | Eligible items | Eligible share | Selections | Selection share | Relative difference | Within ±20% |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| Midwest | 24 | 24.00% | 2417 | 24.17% | +0.71% | Yes |
-| Northeast | 18 | 18.00% | 1764 | 17.64% | -2.00% | Yes |
-| South | 32 | 32.00% | 3228 | 32.28% | +0.88% | Yes |
-| West | 26 | 26.00% | 2591 | 25.91% | -0.35% | Yes |
+| Midwest | 24 | 24.00% | 2412 | 24.12% | +0.50% | Yes |
+| Northeast | 18 | 18.00% | 1765 | 17.65% | -1.94% | Yes |
+| South | 32 | 32.00% | 3221 | 32.21% | +0.66% | Yes |
+| West | 26 | 26.00% | 2602 | 26.02% | +0.08% | Yes |
 
 ## Item-type balance
 
 | Item type | Eligible items | Eligible share | Selections | Selection share | Relative difference | Within ±20% |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| capital | 50 | 50.00% | 5049 | 50.49% | +0.98% | Yes |
-| state | 50 | 50.00% | 4951 | 49.51% | -0.98% | Yes |
+| capital | 50 | 50.00% | 5047 | 50.47% | +0.94% | Yes |
+| state | 50 | 50.00% | 4953 | 49.53% | -0.94% | Yes |
 
 ## Prompt-objective balance
 
@@ -31,7 +31,7 @@ The production prompt selector intentionally targets a 50/50 locating/identifyin
 
 ## Starvation and reproducibility
 
-- Per-item selection range: 73–134.
+- Per-item selection range: 76–130.
 - Eligible items never selected: none.
 - All region shares within ±20% of eligible share: yes.
 - All item-type shares within ±20% of eligible share: yes.

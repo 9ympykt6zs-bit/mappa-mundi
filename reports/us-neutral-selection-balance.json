@@ -17,37 +17,37 @@
     {
       "id": "Midwest",
       "eligible": 24,
-      "selected": 2417,
+      "selected": 2412,
       "eligibleShare": 0.24,
-      "selectionShare": 0.2417,
-      "relativeDifference": 0.007083,
+      "selectionShare": 0.2412,
+      "relativeDifference": 0.005,
       "withinTwentyPercent": true
     },
     {
       "id": "Northeast",
       "eligible": 18,
-      "selected": 1764,
+      "selected": 1765,
       "eligibleShare": 0.18,
-      "selectionShare": 0.1764,
-      "relativeDifference": -0.02,
+      "selectionShare": 0.1765,
+      "relativeDifference": -0.019444,
       "withinTwentyPercent": true
     },
     {
       "id": "South",
       "eligible": 32,
-      "selected": 3228,
+      "selected": 3221,
       "eligibleShare": 0.32,
-      "selectionShare": 0.3228,
-      "relativeDifference": 0.00875,
+      "selectionShare": 0.3221,
+      "relativeDifference": 0.006562,
       "withinTwentyPercent": true
     },
     {
       "id": "West",
       "eligible": 26,
-      "selected": 2591,
+      "selected": 2602,
       "eligibleShare": 0.26,
-      "selectionShare": 0.2591,
-      "relativeDifference": -0.003462,
+      "selectionShare": 0.2602,
+      "relativeDifference": 0.000769,
       "withinTwentyPercent": true
     }
   ],
@@ -55,19 +55,19 @@
     {
       "id": "capital",
       "eligible": 50,
-      "selected": 5049,
+      "selected": 5047,
       "eligibleShare": 0.5,
-      "selectionShare": 0.5049,
-      "relativeDifference": 0.0098,
+      "selectionShare": 0.5047,
+      "relativeDifference": 0.0094,
       "withinTwentyPercent": true
     },
     {
       "id": "state",
       "eligible": 50,
-      "selected": 4951,
+      "selected": 4953,
       "eligibleShare": 0.5,
-      "selectionShare": 0.4951,
-      "relativeDifference": -0.0098,
+      "selectionShare": 0.4953,
+      "relativeDifference": -0.0094,
       "withinTwentyPercent": true
     }
   ],
@@ -214,8 +214,8 @@
     }
   },
   "itemSelectionRange": {
-    "minimum": 73,
-    "maximum": 134,
+    "minimum": 76,
+    "maximum": 130,
     "neverSelectedItemIds": []
   },
   "checks": {

@@ -57,13 +57,13 @@ A warning is a prompt for investigation, not an assertion that the algorithm is 
 - Selection Trace reconstructs the candidate bucket for each emitted U.S. Memory Trail slot. It exposes considered alternatives and existing priority fields, but not the exact comparator clause that broke each tie, cross-bucket competition, or a single numeric score.
 - Item categories are the production `states` and `capitals` categories. The runner does not infer richer `US_CONTENT_TAXONOMY.md` concepts that the item data does not carry.
 - Simulated correctness and response time are scripted evidence, not UI interaction, audio, map behavior, or human memory. The current U.S. Memory Trail planner does not use response speed for ranking.
-- The reports observe 36-session windows. They do not establish long-horizon convergence or absence of starvation across every eligible item.
+- The general reports observe finite windows and do not alone prove long-horizon convergence. The separate cumulative-review fairness check establishes that continuously eligible due U.S. Memory Trail items receive an eventual lane even under a saturated weak-item pool; it does not establish the equivalent property for Daily Trail.
 
 ## Evidence status
 
 - **Implemented:** runner, production-derived fixture adapter, eight profiles covering every named Definition-of-Done learner scenario, Daily Trail return probe, Markdown/JSON report generation, and Inspector capture exist.
 - **Automatically tested:** same-input replay, seed variation, all required profiles, JSON serialization, fixture immutability, and the return probe run in the fast baseline.
-- **Verified:** the 2026-08-21 Definition-of-Done audit accepts exact replay, the named scenario coverage, repeated-error pressure, lapsed-item return/recovery, and matched regional-weakness pressure as demonstrated by the generated reports and their focused checks. This does not certify the pedagogical thresholds, prove permanent starvation impossible, or resolve the explicitly documented planner/state limitations.
+- **Verified:** the 2026-08-21 Definition-of-Done audit accepts exact replay, the named scenario coverage, repeated-error pressure, lapsed-item return/recovery, matched regional-weakness pressure, and U.S. Memory Trail cumulative due-item starvation protection as demonstrated by generated reports and focused checks. This does not certify the pedagogical thresholds, extend the fairness guarantee to Daily Trail, or resolve the explicitly documented planner/state limitations.
 
 ## Eligibility delay analysis
 

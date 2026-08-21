@@ -255,6 +255,7 @@ function createReviewLoadAnalysis(simulation, eligibility, allIntroducedSession,
       session: session.session,
       newItemSelections: counts.new || 0,
       weakReviewSelections: counts["weak-review"] || 0,
+      fairnessReviewSelections: counts["fairness-review"] || 0,
       olderReviewSelections: counts["older-review"] || 0,
       recentReviewSelections: counts["recent-review"] || 0,
       dueReviewSelections: counts["due-review"] || 0,
@@ -391,7 +392,8 @@ function aggregateProfileRuns(runs) {
     reviewLoad: {
       first25Average: summarizeDistribution(runs.map((run) => run.reviewLoadAfterIntroduction.first25Sessions?.averageReviewSelectionsPerSession)),
       last25Average: summarizeDistribution(runs.map((run) => run.reviewLoadAfterIntroduction.last25Sessions?.averageReviewSelectionsPerSession)),
-      declineObservedCount: runs.filter((run) => run.reviewLoadAfterIntroduction.reviewPressureDeclined).length
+      declineObservedCount: runs.filter((run) => run.reviewLoadAfterIntroduction.reviewPressureDeclined).length,
+      fairnessSelections: summarizeDistribution(runs.map((run) => run.reviewLoadAfterIntroduction.totals?.fairnessReviewSelections || 0))
     },
     postIntroductionRegionalReview: Object.fromEntries(["Northeast", "Midwest", "South", "West"].map((region) => [region, {
       candidateOpportunities: summarizeDistribution(runs.map((run) => run.reviewLoadAfterIntroduction.regionalTotals?.[region]?.candidateOpportunities)),
@@ -444,7 +446,7 @@ export function runLongHorizonMasteryMatrix({
     milestonePercentages.map((percentage) => [percentage, classifySensitivity(profiles[profileId].milestones.mastery[percentage], plannerSeeds.length)])
   )]));
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: "us-memory-trail-long-horizon-mastery-report",
     experiment: {
       plannerSeeds: clone(plannerSeeds),
