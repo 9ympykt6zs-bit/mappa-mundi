@@ -134,9 +134,11 @@ assert.equal(repositoryReport.stateCoverage.length, 50, "repository integration 
 assert.equal(repositoryReport.summary.statesWithLocation, 50);
 assert.equal(repositoryReport.summary.statesWithNaming, 50);
 assert.equal(repositoryReport.summary.statesWithExplicitCapitalRelationshipData, 50);
+assert.equal(repositoryReport.summary.statesWithAssessedCapitalRelationship, 50);
+assert.equal(repositoryReport.gaps.capitalRelationshipDataOnly.length, 0);
 assert.equal(repositoryReport.summary.dynamicRouteEndpointPairs, 845);
-assert.equal(repositoryReport.summary.fixedMentalMapConcepts, 19);
-assert.equal(repositoryReport.summary.fixedMentalMapQuestionInstances, 20);
+assert.equal(repositoryReport.summary.fixedMentalMapConcepts, 69);
+assert.equal(repositoryReport.summary.fixedMentalMapQuestionInstances, 120);
 assert.equal(repositoryReport.summary.reconstructionFeedbackConcepts, 30);
 assert.equal(repositoryReport.summary.reconstructionFeedbackRuleInstances, 31);
 assert.deepEqual(repositoryReport.physicalGeography.counts, {

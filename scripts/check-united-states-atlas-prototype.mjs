@@ -46,7 +46,8 @@ assert.ok(markupSource.includes('id="united-states-atlas-overview"'), "Atlas lea
 assert.ok(markupSource.includes('id="mental-map-challenge-panel"'), "Mental Map Challenge panel host is missing.");
 assert.ok(runtimeSource.includes("function openUnitedStatesAtlas()"), "Atlas open handler is missing.");
 assert.ok(runtimeSource.includes("function selectUnitedStatesAtlasState(stateId)"), "Atlas state selection handler is missing.");
-assert.ok(runtimeSource.includes("async function openMentalMapChallenge()"), "Mental Map Challenge open handler is missing.");
+assert.ok(runtimeSource.includes("async function openMentalMapChallenge(options = {})"), "Mental Map Challenge open handler is missing.");
+assert.ok(runtimeSource.includes("openMentalMapChallenge({ stateCapitalOnly: true })"), "Capital Connections must reuse the filtered Mental Map entry path.");
 assert.ok(runtimeSource.includes("function submitActiveMentalMapChallenge()"), "Mental Map Challenge submit handler is missing.");
 assert.ok(runtimeSource.includes('currentAppScreen === "united-states-atlas"'), "Map taps must be scoped to the dedicated atlas screen.");
 assert.ok(runnerSource.includes("enterUnitedStatesAtlas(options = {})"), "Runner atlas overview method is missing.");

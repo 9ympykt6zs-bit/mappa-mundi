@@ -76,7 +76,7 @@ For coverage auditing, the broader categories above—such as geographic relatio
 ### Minimum state coverage
 
 - [ ] Every state can be practiced through both location and identification/naming.
-- [ ] Every state has an explicit state-to-capital relationship.
+- [x] Every state has an explicit, directly assessed state-to-capital relationship.
 - [ ] Every state has at least one meaningful curated relational concept—for example adjacency, relative position, regional membership, connection to a physical feature, or relationship to another place.
 - [ ] Every state has at least one separate non-capital contextual concept drawn from the categories defined in [`docs/US_CONTENT_TAXONOMY.md`](US_CONTENT_TAXONOMY.md).
 - [ ] Important U.S. physical features and regions have deliberately defined coverage rather than appearing only incidentally through state questions.

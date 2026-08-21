@@ -2,7 +2,7 @@
 
 This adapter asks whether the current U.S. Progress Report tells the same story when Bayesian demonstrated-progress inputs come from canonical evidence. The guarded production selector now uses the adapter for eligible new learners, while the shadow comparison remains active as a developer diagnostic and writes no evidence or planner state.
 
-The adapter supports state location, state identification/naming, and the current item-level capital category. State skills use separate canonical concept × skill summaries. The capital category intentionally combines its locating and identifying mappings because the current report represents capitals as one item-level category. Assisted evidence remains visible as provenance but contributes neither correct nor incorrect retrieval credit.
+The adapter supports state location, state identification/naming, and the current item-level capital category. State skills use separate canonical concept × skill histories. The capital category intentionally rolls up locating, identifying, and explicit capital-of relationship histories because the current report represents capitals as one item-level category. The three histories remain independently inspectable. Assisted evidence remains visible as provenance but contributes neither correct nor incorrect retrieval credit.
 
 Both paths call `scoreBayesianEvidenceCounts` from `src/bayesian-progress-score.js`; the adapter does not copy the formula. Histories produced by `src/progress-evidence-policy.js` are the sole canonical scoring input. Raw events provide recent-attempt and source provenance and are never added to history counts, preventing double counting.
 

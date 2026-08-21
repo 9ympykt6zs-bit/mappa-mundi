@@ -63,6 +63,12 @@ npm run check:progress-report-canonical-first
 
 See [`progress-report-canonical-first.md`](progress-report-canonical-first.md) for eligibility and fallback semantics.
 
+`scripts/check-state-capital-relationship-learning.mjs` validates I1 Capital Connections. It derives exactly 50 relationships from the canonical atlas, checks both prompt directions, canonical concept identity, answer correctness, correct/incorrect persistence, event deduplication, Progress Evidence Policy separation, canonical Progress Report rollup, existing-user fallback, 50/50 assessed coverage, D.C. exclusion, unchanged Memory Trail planning, and production wiring. Run it with:
+
+```sh
+npm run check:state-capital-relationships
+```
+
 ## Browser/E2E tests
 
 Run Playwright separately:

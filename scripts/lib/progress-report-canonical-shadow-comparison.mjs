@@ -500,7 +500,7 @@ export function buildProgressReportCanonicalShadowComparison() {
       safeNow: [
         "Canonical-first production reads for persistently enrolled learners whose first read passed a clean legacy-history audit",
         "State location and identification canonical concept-skill streams routed through Progress Evidence Policy v1",
-        "Capital item-level scoring that intentionally combines canonical locating and identifying histories"
+        "Capital item-level scoring that intentionally rolls up separate locating, identifying, and capital-of relationship histories"
       ],
       legacyDependent: [
         "Existing learner history that predates canonical emission",
@@ -524,7 +524,7 @@ export function buildProgressReportCanonicalShadowComparison() {
       "The controlled cases validate score/category parity, not Progress Report UI rendering.",
       "Canonical evidence does not reproduce scheduler due/review status.",
       "The comparison does not backfill or fabricate historical per-attempt events.",
-      "Only state location, state identification, and item-level capital retrieval are included."
+      "Only state location, state identification, and the approved item-level capital rollup are included."
     ]
   };
 }

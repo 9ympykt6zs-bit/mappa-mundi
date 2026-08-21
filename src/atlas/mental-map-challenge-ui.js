@@ -23,6 +23,14 @@ function stateNames(stateIds = [], separator = ", ") {
   return stateIds.length ? stateIds.map(stateName).join(separator) : "None";
 }
 
+function answerName(challenge, stateId) {
+  return challenge?.answerLabelsByStateId?.[stateId] || stateName(stateId);
+}
+
+function answerNames(challenge, stateIds = [], separator = ", ") {
+  return stateIds.length ? stateIds.map((stateId) => answerName(challenge, stateId)).join(separator) : "None";
+}
+
 function createButton(label, className, callback, options = {}) {
   const button = document.createElement("button");
   button.type = "button";
@@ -199,7 +207,9 @@ function createSelectedAnswers(challenge, state, options) {
   if (!state.selectedStateIds.length) {
     const empty = document.createElement("p");
     empty.className = "mental-map-empty";
-    empty.textContent = "No states selected yet.";
+    empty.textContent = challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SINGLE_SELECT
+      ? "No answer selected yet."
+      : "No states selected yet.";
     section.appendChild(empty);
     return section;
   }
@@ -247,10 +257,10 @@ function createSelectedAnswers(challenge, state, options) {
     } else {
       item.classList.add("is-removable");
       item.appendChild(createButton(
-        stateName(stateId),
+        answerName(challenge, stateId),
         "mental-map-selected-choice",
         () => options.onRemove?.(stateId),
-        { ariaLabel: `Remove ${stateName(stateId)}` }
+        { ariaLabel: `Remove ${answerName(challenge, stateId)}` }
       ));
     }
     list.appendChild(item);
@@ -319,13 +329,14 @@ function createPreSubmitControls(challenge, state, options) {
   return controls;
 }
 
-function createResultLine(label, stateIds, className = "") {
+function createResultLine(label, stateIds, className = "", challenge = null) {
   const row = document.createElement("p");
   row.className = `mental-map-result-line ${className}`.trim();
   const strong = document.createElement("strong");
   strong.textContent = `${label}: `;
-  row.append(strong, document.createTextNode(stateNames(stateIds)));
-  appendResultSpeaker(row, `${label}: ${stateNames(stateIds)}`);
+  const names = challenge ? answerNames(challenge, stateIds) : stateNames(stateIds);
+  row.append(strong, document.createTextNode(names));
+  appendResultSpeaker(row, `${label}: ${names}`);
   return row;
 }
 
@@ -401,7 +412,8 @@ function createResultContent(challenge, state, options) {
   wrapper.appendChild(createResultLine(
     evaluation.isBorderRoute && evaluation.isCorrect ? "Your valid route" : evaluation.isBorderRoute ? "Your route" : "Your answer",
     evaluation.isBorderRoute ? evaluation.routeStateIds : evaluation.selectedStateIds,
-    challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE ? "is-sequence" : ""
+    challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE ? "is-sequence" : "",
+    challenge
   ));
 
   if (evaluation.isBorderRoute) {
@@ -425,7 +437,7 @@ function createResultContent(challenge, state, options) {
     const referenceStateIds = challenge.referenceStateId
       ? [challenge.referenceStateId]
       : challenge.referenceStateIds || [];
-    wrapper.append(createResultLine("Correct answer", challenge.correctStateIds));
+    wrapper.append(createResultLine("Correct answer", challenge.correctStateIds, "", challenge));
     if (referenceStateIds.length) {
       wrapper.append(createResultLine(
         referenceStateIds.length === 1 ? "Reference state" : "Reference states",
@@ -433,7 +445,7 @@ function createResultContent(challenge, state, options) {
       ));
     }
     if (evaluation.selectedInvalidStateIds.length) {
-      wrapper.append(createResultLine("Incorrect", evaluation.selectedInvalidStateIds));
+      wrapper.append(createResultLine("Incorrect", evaluation.selectedInvalidStateIds, "", challenge));
     }
   } else if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_COUNT) {
     wrapper.append(

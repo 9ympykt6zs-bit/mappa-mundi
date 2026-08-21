@@ -423,7 +423,8 @@ export function createUnitedStatesProgressReportReadModel({
         "state-location",
         "state-identification",
         "capital-location",
-        "capital-identification"
+        "capital-identification",
+        "capital-of-relationship"
       ],
       shadowComparison: comparison,
       error: null

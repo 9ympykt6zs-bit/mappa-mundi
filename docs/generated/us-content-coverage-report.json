@@ -8,20 +8,20 @@
   },
   "summary": {
     "uniqueConceptsAllRepresentations": 1505,
-    "fixedAssessedConcepts": 253,
+    "fixedAssessedConcepts": 303,
     "conditionalFeedbackConcepts": 30,
-    "dataOnlyConcepts": 377,
+    "dataOnlyConcepts": 327,
     "dynamicallyPossibleConcepts": 845,
-    "sourceInstancesAndVariants": 1909,
-    "fixedMentalMapConcepts": 19,
-    "fixedMentalMapQuestionInstances": 20,
+    "sourceInstancesAndVariants": 2009,
+    "fixedMentalMapConcepts": 69,
+    "fixedMentalMapQuestionInstances": 120,
     "reconstructionFeedbackConcepts": 30,
     "reconstructionFeedbackRuleInstances": 31,
     "statesTotal": 50,
     "statesWithLocation": 50,
     "statesWithNaming": 50,
     "statesWithExplicitCapitalRelationshipData": 50,
-    "statesWithAssessedCapitalRelationship": 0,
+    "statesWithAssessedCapitalRelationship": 50,
     "statesWithAssessedCuratedRelationship": 46,
     "statesWithAnyCuratedRelationshipContent": 50,
     "statesWithNonCapitalContextual": 43,
@@ -56,10 +56,10 @@
       "reachability": "Atlas/profile data; mostly unscored"
     },
     {
-      "source": "src/atlas/mental-map-challenges.js + compass-challenges.js",
-      "records": 20,
+      "source": "src/atlas/mental-map-challenges.js + compass-challenges.js + state-capital-relationship-challenges.js",
+      "records": 120,
       "role": "Fixed question instances",
-      "reachability": "Mental Map"
+      "reachability": "Mental Map and Capital Connections"
     },
     {
       "source": "src/atlas/mental-map-challenges.js + border-chain.js",
@@ -114,7 +114,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 2,
       "conditionalRelationalCount": 1,
@@ -136,7 +136,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 0,
@@ -158,7 +158,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 2,
       "conditionalRelationalCount": 2,
@@ -180,7 +180,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 4,
       "conditionalRelationalCount": 1,
@@ -202,7 +202,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 3,
       "conditionalRelationalCount": 1,
@@ -224,7 +224,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 3,
       "conditionalRelationalCount": 2,
@@ -246,7 +246,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 0,
@@ -268,7 +268,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 2,
@@ -290,7 +290,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 3,
       "conditionalRelationalCount": 2,
@@ -312,7 +312,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 3,
@@ -334,7 +334,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 0,
@@ -356,7 +356,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 2,
       "conditionalRelationalCount": 1,
@@ -378,7 +378,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 2,
@@ -400,7 +400,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "conditional-only",
       "curatedRelationalCount": 0,
       "conditionalRelationalCount": 2,
@@ -422,7 +422,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 2,
       "conditionalRelationalCount": 2,
@@ -444,7 +444,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 2,
@@ -466,7 +466,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 1,
@@ -488,7 +488,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 5,
       "conditionalRelationalCount": 2,
@@ -510,7 +510,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 3,
       "conditionalRelationalCount": 0,
@@ -532,7 +532,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 1,
@@ -554,7 +554,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 0,
@@ -576,7 +576,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 2,
       "conditionalRelationalCount": 2,
@@ -598,7 +598,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 4,
       "conditionalRelationalCount": 2,
@@ -620,7 +620,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 3,
       "conditionalRelationalCount": 1,
@@ -642,7 +642,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 2,
       "conditionalRelationalCount": 3,
@@ -664,7 +664,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 3,
       "conditionalRelationalCount": 2,
@@ -686,7 +686,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "conditional-only",
       "curatedRelationalCount": 0,
       "conditionalRelationalCount": 2,
@@ -708,7 +708,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 2,
       "conditionalRelationalCount": 1,
@@ -730,7 +730,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 2,
       "conditionalRelationalCount": 1,
@@ -752,7 +752,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 3,
@@ -774,7 +774,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 3,
       "conditionalRelationalCount": 2,
@@ -796,7 +796,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 3,
       "conditionalRelationalCount": 1,
@@ -818,7 +818,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 2,
       "conditionalRelationalCount": 1,
@@ -840,7 +840,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 2,
@@ -862,7 +862,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 2,
       "conditionalRelationalCount": 2,
@@ -884,7 +884,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 2,
       "conditionalRelationalCount": 1,
@@ -906,7 +906,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 1,
@@ -928,7 +928,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 3,
       "conditionalRelationalCount": 2,
@@ -950,7 +950,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 0,
@@ -972,7 +972,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 2,
@@ -994,7 +994,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "conditional-only",
       "curatedRelationalCount": 0,
       "conditionalRelationalCount": 2,
@@ -1016,7 +1016,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 4,
       "conditionalRelationalCount": 2,
@@ -1038,7 +1038,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 3,
       "conditionalRelationalCount": 2,
@@ -1060,7 +1060,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 3,
       "conditionalRelationalCount": 3,
@@ -1082,7 +1082,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 1,
@@ -1104,7 +1104,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 2,
       "conditionalRelationalCount": 1,
@@ -1126,7 +1126,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 3,
       "conditionalRelationalCount": 1,
@@ -1148,7 +1148,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "conditional-only",
       "curatedRelationalCount": 0,
       "conditionalRelationalCount": 1,
@@ -1170,7 +1170,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 2,
@@ -1192,7 +1192,7 @@
       "location": true,
       "naming": true,
       "capitalRelationship": "data-only",
-      "capitalRelationshipAssessed": false,
+      "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
       "curatedRelationalCount": 1,
       "conditionalRelationalCount": 2,
@@ -1356,48 +1356,48 @@
       "objectiveId": "capital-relationship-assessed",
       "objective": "Explicit capital relationship (assessed)",
       "eligibleStates": 12,
-      "uniqueConcepts": 0,
-      "stateConceptParticipations": 0,
-      "conceptsPerState": 0,
-      "nationalMeanConceptsPerState": 0,
-      "percentOfNationalMean": null,
-      "diagnostic": "no-national-baseline"
+      "uniqueConcepts": 12,
+      "stateConceptParticipations": 12,
+      "conceptsPerState": 1,
+      "nationalMeanConceptsPerState": 1,
+      "percentOfNationalMean": 100,
+      "diagnostic": "within-80%-120%"
     },
     {
       "region": "Northeast",
       "objectiveId": "capital-relationship-assessed",
       "objective": "Explicit capital relationship (assessed)",
       "eligibleStates": 9,
-      "uniqueConcepts": 0,
-      "stateConceptParticipations": 0,
-      "conceptsPerState": 0,
-      "nationalMeanConceptsPerState": 0,
-      "percentOfNationalMean": null,
-      "diagnostic": "no-national-baseline"
+      "uniqueConcepts": 9,
+      "stateConceptParticipations": 9,
+      "conceptsPerState": 1,
+      "nationalMeanConceptsPerState": 1,
+      "percentOfNationalMean": 100,
+      "diagnostic": "within-80%-120%"
     },
     {
       "region": "South",
       "objectiveId": "capital-relationship-assessed",
       "objective": "Explicit capital relationship (assessed)",
       "eligibleStates": 16,
-      "uniqueConcepts": 0,
-      "stateConceptParticipations": 0,
-      "conceptsPerState": 0,
-      "nationalMeanConceptsPerState": 0,
-      "percentOfNationalMean": null,
-      "diagnostic": "no-national-baseline"
+      "uniqueConcepts": 16,
+      "stateConceptParticipations": 16,
+      "conceptsPerState": 1,
+      "nationalMeanConceptsPerState": 1,
+      "percentOfNationalMean": 100,
+      "diagnostic": "within-80%-120%"
     },
     {
       "region": "West",
       "objectiveId": "capital-relationship-assessed",
       "objective": "Explicit capital relationship (assessed)",
       "eligibleStates": 13,
-      "uniqueConcepts": 0,
-      "stateConceptParticipations": 0,
-      "conceptsPerState": 0,
-      "nationalMeanConceptsPerState": 0,
-      "percentOfNationalMean": null,
-      "diagnostic": "no-national-baseline"
+      "uniqueConcepts": 13,
+      "stateConceptParticipations": 13,
+      "conceptsPerState": 1,
+      "nationalMeanConceptsPerState": 1,
+      "percentOfNationalMean": 100,
+      "diagnostic": "within-80%-120%"
     },
     {
       "region": "Midwest",
@@ -1513,9 +1513,9 @@
     },
     {
       "tag": "political-geography",
-      "fixedAssessed": 202,
+      "fixedAssessed": 252,
       "conditionalFeedback": 0,
-      "dataOnly": 118,
+      "dataOnly": 68,
       "dynamicCapacity": 0
     },
     {
@@ -1983,58 +1983,7 @@
   "gaps": {
     "missingLocation": [],
     "missingNaming": [],
-    "capitalRelationshipDataOnly": [
-      "Alabama",
-      "Alaska",
-      "Arizona",
-      "Arkansas",
-      "California",
-      "Colorado",
-      "Connecticut",
-      "Delaware",
-      "Florida",
-      "Georgia",
-      "Hawaii",
-      "Idaho",
-      "Illinois",
-      "Indiana",
-      "Iowa",
-      "Kansas",
-      "Kentucky",
-      "Louisiana",
-      "Maine",
-      "Maryland",
-      "Massachusetts",
-      "Michigan",
-      "Minnesota",
-      "Mississippi",
-      "Missouri",
-      "Montana",
-      "Nebraska",
-      "Nevada",
-      "New Hampshire",
-      "New Jersey",
-      "New Mexico",
-      "New York",
-      "North Carolina",
-      "North Dakota",
-      "Ohio",
-      "Oklahoma",
-      "Oregon",
-      "Pennsylvania",
-      "Rhode Island",
-      "South Carolina",
-      "South Dakota",
-      "Tennessee",
-      "Texas",
-      "Utah",
-      "Vermont",
-      "Virginia",
-      "Washington",
-      "West Virginia",
-      "Wisconsin",
-      "Wyoming"
-    ],
+    "capitalRelationshipDataOnly": [],
     "missingAssessedCuratedRelationship": [
       "Indiana",
       "Nebraska",
@@ -2078,7 +2027,7 @@
       "watersheds-and-drainage-features"
     ],
     "integrationGaps": [
-      "Fifty explicit atlas capitalOf relationships exist, but no direct scored state-to-capital concept was found.",
+      "Fifty explicit atlas capitalOf relationships now have direct scored retrieval in both prompt directions.",
       "Atlas region, coast, international-border, and state/feature relationships are mostly informational rather than scored.",
       "Reconstruction relationship feedback is conditional and does not establish balanced learner exposure.",
       "Dynamic border-route capacity describes possible generation, not actual delivered frequency."
@@ -38720,7 +38669,8 @@
           "instanceId": "tennessee-pennsylvania-intermediates",
           "reachability": "Mental Map main-menu activity",
           "prompt": "Find a route from Tennessee to Pennsylvania by traveling only through states that share a border.",
-          "category": "routes-and-sequences"
+          "category": "routes-and-sequences",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -42673,7 +42623,8 @@
           "instanceId": "east-arizona-south-colorado",
           "reachability": "Mental Map main-menu activity",
           "prompt": "Which state is east of Arizona and south of Colorado?",
-          "category": "relative-position"
+          "category": "relative-position",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -42703,7 +42654,8 @@
           "instanceId": "west-of-arkansas",
           "reachability": "Mental Map main-menu activity",
           "prompt": "Which state lies immediately west of Arkansas?",
-          "category": "cardinal-direction"
+          "category": "cardinal-direction",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -42734,7 +42686,8 @@
           "instanceId": "west-tennessee-north-louisiana",
           "reachability": "Mental Map main-menu activity",
           "prompt": "Which state is west of Tennessee and north of Louisiana?",
-          "category": "relative-position"
+          "category": "relative-position",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -42764,7 +42717,8 @@
           "instanceId": "east-of-nevada",
           "reachability": "Mental Map main-menu activity",
           "prompt": "Which state lies directly east of Nevada?",
-          "category": "cardinal-direction"
+          "category": "cardinal-direction",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -42794,7 +42748,8 @@
           "instanceId": "north-of-oklahoma",
           "reachability": "Mental Map main-menu activity",
           "prompt": "Which state lies directly north of Oklahoma?",
-          "category": "cardinal-direction"
+          "category": "cardinal-direction",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -42825,7 +42780,8 @@
           "instanceId": "south-virginia-east-tennessee",
           "reachability": "Mental Map main-menu activity",
           "prompt": "Which state is south of Virginia and east of Tennessee?",
-          "category": "relative-position"
+          "category": "relative-position",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -42857,7 +42813,8 @@
           "instanceId": "southwest-west-to-east",
           "reachability": "Mental Map main-menu activity",
           "prompt": "Put these states in west-to-east order.",
-          "category": "directional-ordering"
+          "category": "directional-ordering",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -42893,7 +42850,8 @@
           "instanceId": "mississippi-west-side-northward",
           "reachability": "Mental Map main-menu activity",
           "prompt": "Follow the western side of the Mississippi River northward from Louisiana to Minnesota.",
-          "category": "routes-and-sequences"
+          "category": "routes-and-sequences",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -42929,7 +42887,8 @@
           "instanceId": "gulf-coast-eastward",
           "reachability": "Mental Map main-menu activity",
           "prompt": "Travel eastward along the Gulf of Mexico coast from Texas to Florida.",
-          "category": "routes-and-sequences"
+          "category": "routes-and-sequences",
+          "promptDirection": null
         },
         {
           "file": "src/atlas/compass-challenges.js",
@@ -42937,7 +42896,8 @@
           "instanceId": "gulf-states-west-to-east",
           "reachability": "Mental Map main-menu activity",
           "prompt": "Put these states in west-to-east order.",
-          "category": "directional-ordering"
+          "category": "directional-ordering",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -42969,7 +42929,8 @@
           "instanceId": "northern-us-west-to-east",
           "reachability": "Mental Map main-menu activity",
           "prompt": "Put these states in west-to-east order.",
-          "category": "directional-ordering"
+          "category": "directional-ordering",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -43933,7 +43894,8 @@
           "instanceId": "canada-contiguous-land-border-all",
           "reachability": "Mental Map main-menu activity",
           "prompt": "There are 12 contiguous U.S. states that border Canada. Name as many as you can.",
-          "category": "borders-and-neighbors"
+          "category": "borders-and-neighbors",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -43968,7 +43930,8 @@
           "instanceId": "mexico-land-border-all",
           "reachability": "Mental Map main-menu activity",
           "prompt": "There are 4 U.S. states that share a land border with Mexico. Name as many as you can.",
-          "category": "borders-and-neighbors"
+          "category": "borders-and-neighbors",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -44003,7 +43966,8 @@
           "instanceId": "lake-erie-all",
           "reachability": "Mental Map main-menu activity",
           "prompt": "There are 4 U.S. states that border Lake Erie. Name as many as you can.",
-          "category": "rivers-lakes-and-mountains"
+          "category": "rivers-lakes-and-mountains",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -44040,7 +44004,8 @@
           "instanceId": "rocky-mountains-any-three",
           "reachability": "Mental Map main-menu activity",
           "prompt": "Name any three U.S. states that include part of the Rocky Mountains.",
-          "category": "rivers-lakes-and-mountains"
+          "category": "rivers-lakes-and-mountains",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -44081,7 +44046,8 @@
           "instanceId": "mississippi-river-any-three",
           "reachability": "Mental Map main-menu activity",
           "prompt": "There are 10 U.S. states that border or lie alongside the Mississippi River. Name as many as you can.",
-          "category": "rivers-lakes-and-mountains"
+          "category": "rivers-lakes-and-mountains",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -44126,7 +44092,8 @@
           "instanceId": "atlantic-coast-any-three",
           "reachability": "Mental Map main-menu activity",
           "prompt": "Name any three U.S. states with an Atlantic Ocean coastline.",
-          "category": "coasts-and-waterways"
+          "category": "coasts-and-waterways",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -44162,7 +44129,8 @@
           "instanceId": "gulf-of-mexico-coast-all",
           "reachability": "Mental Map main-menu activity",
           "prompt": "There are 5 U.S. states with a Gulf of Mexico coastline. Name as many as you can.",
-          "category": "coasts-and-waterways"
+          "category": "coasts-and-waterways",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -44198,7 +44166,8 @@
           "instanceId": "pacific-coast-any-three",
           "reachability": "Mental Map main-menu activity",
           "prompt": "Name any three U.S. states with a Pacific Ocean coastline.",
-          "category": "coasts-and-waterways"
+          "category": "coasts-and-waterways",
+          "promptDirection": null
         }
       ],
       "notes": []
@@ -44207,8 +44176,8 @@
       "id": "state-capital:alabama:montgomery",
       "label": "Montgomery capitalOf Alabama",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "alabama"
       ],
@@ -44229,6 +44198,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:montgomery:state:alabama",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-alabama-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Alabama?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-alabama-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Montgomery is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44237,8 +44224,8 @@
       "id": "state-capital:alaska:juneau",
       "label": "Juneau capitalOf Alaska",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "alaska"
       ],
@@ -44259,6 +44246,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:juneau:state:alaska",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-alaska-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Alaska?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-alaska-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Juneau is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44267,8 +44272,8 @@
       "id": "state-capital:arizona:phoenix",
       "label": "Phoenix capitalOf Arizona",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "arizona"
       ],
@@ -44289,6 +44294,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:phoenix:state:arizona",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-arizona-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Arizona?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-arizona-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Phoenix is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44297,8 +44320,8 @@
       "id": "state-capital:arkansas:little-rock",
       "label": "Little Rock capitalOf Arkansas",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "arkansas"
       ],
@@ -44319,6 +44342,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:little-rock:state:arkansas",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-arkansas-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Arkansas?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-arkansas-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Little Rock is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44327,8 +44368,8 @@
       "id": "state-capital:california:sacramento",
       "label": "Sacramento capitalOf California",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "california"
       ],
@@ -44349,6 +44390,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:sacramento:state:california",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-california-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of California?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-california-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Sacramento is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44357,8 +44416,8 @@
       "id": "state-capital:colorado:denver",
       "label": "Denver capitalOf Colorado",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "colorado"
       ],
@@ -44379,6 +44438,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:denver:state:colorado",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-colorado-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Colorado?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-colorado-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Denver is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44387,8 +44464,8 @@
       "id": "state-capital:connecticut:hartford",
       "label": "Hartford capitalOf Connecticut",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "connecticut"
       ],
@@ -44409,6 +44486,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:hartford:state:connecticut",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-connecticut-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Connecticut?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-connecticut-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Hartford is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44417,8 +44512,8 @@
       "id": "state-capital:delaware:dover",
       "label": "Dover capitalOf Delaware",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "delaware"
       ],
@@ -44439,6 +44534,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:dover:state:delaware",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-delaware-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Delaware?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-delaware-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Dover is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44447,8 +44560,8 @@
       "id": "state-capital:florida:tallahassee",
       "label": "Tallahassee capitalOf Florida",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "florida"
       ],
@@ -44469,6 +44582,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:tallahassee:state:florida",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-florida-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Florida?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-florida-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Tallahassee is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44477,8 +44608,8 @@
       "id": "state-capital:georgia:atlanta",
       "label": "Atlanta capitalOf Georgia",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "georgia"
       ],
@@ -44499,6 +44630,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:atlanta:state:georgia",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-georgia-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Georgia?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-georgia-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Atlanta is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44507,8 +44656,8 @@
       "id": "state-capital:hawaii:honolulu",
       "label": "Honolulu capitalOf Hawaii",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "hawaii"
       ],
@@ -44529,6 +44678,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:honolulu:state:hawaii",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-hawaii-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Hawaii?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-hawaii-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Honolulu is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44537,8 +44704,8 @@
       "id": "state-capital:idaho:boise",
       "label": "Boise capitalOf Idaho",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "idaho"
       ],
@@ -44559,6 +44726,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:boise:state:idaho",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-idaho-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Idaho?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-idaho-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Boise is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44567,8 +44752,8 @@
       "id": "state-capital:illinois:springfield",
       "label": "Springfield capitalOf Illinois",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "illinois"
       ],
@@ -44589,6 +44774,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:springfield:state:illinois",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-illinois-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Illinois?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-illinois-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Springfield is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44597,8 +44800,8 @@
       "id": "state-capital:indiana:indianapolis",
       "label": "Indianapolis capitalOf Indiana",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "indiana"
       ],
@@ -44619,6 +44822,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:indianapolis:state:indiana",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-indiana-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Indiana?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-indiana-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Indianapolis is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44627,8 +44848,8 @@
       "id": "state-capital:iowa:des-moines",
       "label": "Des Moines capitalOf Iowa",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "iowa"
       ],
@@ -44649,6 +44870,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:des-moines:state:iowa",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-iowa-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Iowa?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-iowa-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Des Moines is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44657,8 +44896,8 @@
       "id": "state-capital:kansas:topeka",
       "label": "Topeka capitalOf Kansas",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "kansas"
       ],
@@ -44679,6 +44918,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:topeka:state:kansas",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-kansas-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Kansas?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-kansas-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Topeka is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44687,8 +44944,8 @@
       "id": "state-capital:kentucky:frankfort",
       "label": "Frankfort capitalOf Kentucky",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "kentucky"
       ],
@@ -44709,6 +44966,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:frankfort:state:kentucky",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-kentucky-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Kentucky?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-kentucky-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Frankfort is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44717,8 +44992,8 @@
       "id": "state-capital:louisiana:baton-rouge",
       "label": "Baton Rouge capitalOf Louisiana",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "louisiana"
       ],
@@ -44739,6 +45014,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:baton-rouge:state:louisiana",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-louisiana-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Louisiana?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-louisiana-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Baton Rouge is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44747,8 +45040,8 @@
       "id": "state-capital:maine:augusta",
       "label": "Augusta capitalOf Maine",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "maine"
       ],
@@ -44769,6 +45062,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:augusta:state:maine",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-maine-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Maine?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-maine-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Augusta is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44777,8 +45088,8 @@
       "id": "state-capital:maryland:annapolis",
       "label": "Annapolis capitalOf Maryland",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "maryland"
       ],
@@ -44799,6 +45110,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:annapolis:state:maryland",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-maryland-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Maryland?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-maryland-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Annapolis is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44807,8 +45136,8 @@
       "id": "state-capital:massachusetts:boston",
       "label": "Boston capitalOf Massachusetts",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "massachusetts"
       ],
@@ -44829,6 +45158,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:boston:state:massachusetts",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-massachusetts-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Massachusetts?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-massachusetts-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Boston is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44837,8 +45184,8 @@
       "id": "state-capital:michigan:lansing",
       "label": "Lansing capitalOf Michigan",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "michigan"
       ],
@@ -44859,6 +45206,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:lansing:state:michigan",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-michigan-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Michigan?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-michigan-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Lansing is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44867,8 +45232,8 @@
       "id": "state-capital:minnesota:saint-paul",
       "label": "Saint Paul capitalOf Minnesota",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "minnesota"
       ],
@@ -44889,6 +45254,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:saint-paul:state:minnesota",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-minnesota-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Minnesota?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-minnesota-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Saint Paul is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44897,8 +45280,8 @@
       "id": "state-capital:mississippi:jackson",
       "label": "Jackson capitalOf Mississippi",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "mississippi"
       ],
@@ -44919,6 +45302,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:jackson:state:mississippi",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-mississippi-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Mississippi?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-mississippi-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Jackson is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44927,8 +45328,8 @@
       "id": "state-capital:missouri:jefferson-city",
       "label": "Jefferson City capitalOf Missouri",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "missouri"
       ],
@@ -44949,6 +45350,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:jefferson-city:state:missouri",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-missouri-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Missouri?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-missouri-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Jefferson City is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44957,8 +45376,8 @@
       "id": "state-capital:montana:helena",
       "label": "Helena capitalOf Montana",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "montana"
       ],
@@ -44979,6 +45398,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:helena:state:montana",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-montana-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Montana?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-montana-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Helena is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -44987,8 +45424,8 @@
       "id": "state-capital:nebraska:lincoln",
       "label": "Lincoln capitalOf Nebraska",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "nebraska"
       ],
@@ -45009,6 +45446,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:lincoln:state:nebraska",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-nebraska-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Nebraska?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-nebraska-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Lincoln is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45017,8 +45472,8 @@
       "id": "state-capital:nevada:carson-city",
       "label": "Carson City capitalOf Nevada",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "nevada"
       ],
@@ -45039,6 +45494,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:carson-city:state:nevada",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-nevada-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Nevada?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-nevada-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Carson City is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45047,8 +45520,8 @@
       "id": "state-capital:new-hampshire:concord",
       "label": "Concord capitalOf New Hampshire",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "new-hampshire"
       ],
@@ -45069,6 +45542,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:concord:state:new-hampshire",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-new-hampshire-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of New Hampshire?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-new-hampshire-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Concord is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45077,8 +45568,8 @@
       "id": "state-capital:new-jersey:trenton",
       "label": "Trenton capitalOf New Jersey",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "new-jersey"
       ],
@@ -45099,6 +45590,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:trenton:state:new-jersey",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-new-jersey-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of New Jersey?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-new-jersey-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Trenton is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45107,8 +45616,8 @@
       "id": "state-capital:new-mexico:santa-fe",
       "label": "Santa Fe capitalOf New Mexico",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "new-mexico"
       ],
@@ -45129,6 +45638,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:santa-fe:state:new-mexico",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-new-mexico-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of New Mexico?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-new-mexico-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Santa Fe is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45137,8 +45664,8 @@
       "id": "state-capital:new-york:albany",
       "label": "Albany capitalOf New York",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "new-york"
       ],
@@ -45159,6 +45686,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:albany:state:new-york",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-new-york-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of New York?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-new-york-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Albany is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45167,8 +45712,8 @@
       "id": "state-capital:north-carolina:raleigh",
       "label": "Raleigh capitalOf North Carolina",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "north-carolina"
       ],
@@ -45189,6 +45734,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:raleigh:state:north-carolina",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-north-carolina-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of North Carolina?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-north-carolina-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Raleigh is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45197,8 +45760,8 @@
       "id": "state-capital:north-dakota:bismarck",
       "label": "Bismarck capitalOf North Dakota",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "north-dakota"
       ],
@@ -45219,6 +45782,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:bismarck:state:north-dakota",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-north-dakota-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of North Dakota?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-north-dakota-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Bismarck is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45227,8 +45808,8 @@
       "id": "state-capital:ohio:columbus",
       "label": "Columbus capitalOf Ohio",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "ohio"
       ],
@@ -45249,6 +45830,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:columbus:state:ohio",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-ohio-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Ohio?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-ohio-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Columbus is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45257,8 +45856,8 @@
       "id": "state-capital:oklahoma:oklahoma-city",
       "label": "Oklahoma City capitalOf Oklahoma",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "oklahoma"
       ],
@@ -45279,6 +45878,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:oklahoma-city:state:oklahoma",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-oklahoma-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Oklahoma?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-oklahoma-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Oklahoma City is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45287,8 +45904,8 @@
       "id": "state-capital:oregon:salem",
       "label": "Salem capitalOf Oregon",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "oregon"
       ],
@@ -45309,6 +45926,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:salem:state:oregon",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-oregon-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Oregon?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-oregon-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Salem is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45317,8 +45952,8 @@
       "id": "state-capital:pennsylvania:harrisburg",
       "label": "Harrisburg capitalOf Pennsylvania",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "pennsylvania"
       ],
@@ -45339,6 +45974,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:harrisburg:state:pennsylvania",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-pennsylvania-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Pennsylvania?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-pennsylvania-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Harrisburg is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45347,8 +46000,8 @@
       "id": "state-capital:rhode-island:providence",
       "label": "Providence capitalOf Rhode Island",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "rhode-island"
       ],
@@ -45369,6 +46022,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:providence:state:rhode-island",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-rhode-island-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Rhode Island?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-rhode-island-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Providence is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45377,8 +46048,8 @@
       "id": "state-capital:south-carolina:columbia",
       "label": "Columbia capitalOf South Carolina",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "south-carolina"
       ],
@@ -45399,6 +46070,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:columbia:state:south-carolina",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-south-carolina-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of South Carolina?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-south-carolina-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Columbia is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45407,8 +46096,8 @@
       "id": "state-capital:south-dakota:pierre",
       "label": "Pierre capitalOf South Dakota",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "south-dakota"
       ],
@@ -45429,6 +46118,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:pierre:state:south-dakota",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-south-dakota-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of South Dakota?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-south-dakota-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Pierre is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45437,8 +46144,8 @@
       "id": "state-capital:tennessee:nashville",
       "label": "Nashville capitalOf Tennessee",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "tennessee"
       ],
@@ -45459,6 +46166,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:nashville:state:tennessee",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-tennessee-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Tennessee?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-tennessee-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Nashville is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45467,8 +46192,8 @@
       "id": "state-capital:texas:austin",
       "label": "Austin capitalOf Texas",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "texas"
       ],
@@ -45489,6 +46214,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:austin:state:texas",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-texas-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Texas?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-texas-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Austin is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45497,8 +46240,8 @@
       "id": "state-capital:utah:salt-lake-city",
       "label": "Salt Lake City capitalOf Utah",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "utah"
       ],
@@ -45519,6 +46262,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:salt-lake-city:state:utah",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-utah-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Utah?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-utah-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Salt Lake City is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45527,8 +46288,8 @@
       "id": "state-capital:vermont:montpelier",
       "label": "Montpelier capitalOf Vermont",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "vermont"
       ],
@@ -45549,6 +46310,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:montpelier:state:vermont",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-vermont-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Vermont?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-vermont-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Montpelier is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45557,8 +46336,8 @@
       "id": "state-capital:virginia:richmond",
       "label": "Richmond capitalOf Virginia",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "virginia"
       ],
@@ -45579,6 +46358,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:richmond:state:virginia",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-virginia-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Virginia?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-virginia-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Richmond is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45587,8 +46384,8 @@
       "id": "state-capital:washington:olympia",
       "label": "Olympia capitalOf Washington",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "washington"
       ],
@@ -45609,6 +46406,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:olympia:state:washington",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-washington-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Washington?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-washington-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Olympia is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45617,8 +46432,8 @@
       "id": "state-capital:west-virginia:charleston",
       "label": "Charleston capitalOf West Virginia",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "west-virginia"
       ],
@@ -45639,6 +46454,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:charleston:state:west-virginia",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-west-virginia-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of West Virginia?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-west-virginia-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Charleston is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45647,8 +46480,8 @@
       "id": "state-capital:wisconsin:madison",
       "label": "Madison capitalOf Wisconsin",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "wisconsin"
       ],
@@ -45669,6 +46502,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:madison:state:wisconsin",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-wisconsin-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Wisconsin?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-wisconsin-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Madison is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -45677,8 +46528,8 @@
       "id": "state-capital:wyoming:cheyenne",
       "label": "Cheyenne capitalOf Wyoming",
       "kind": "state-capital-relationship",
-      "delivery": "data-only",
-      "authored": false,
+      "delivery": "fixed-scored",
+      "authored": true,
       "stateIds": [
         "wyoming"
       ],
@@ -45699,6 +46550,24 @@
           "type": "atlas-relationship",
           "instanceId": "capitalOf:capital:cheyenne:state:wyoming",
           "reachability": "Atlas/profile data; not established as scored learning"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-wyoming-state-to-capital",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "What is the capital of Wyoming?",
+          "category": "capitals-and-regions",
+          "promptDirection": "state-to-capital"
+        },
+        {
+          "file": "src/atlas/state-capital-relationship-challenges.js",
+          "type": "mental-map-question",
+          "instanceId": "state-capital-wyoming-capital-to-state",
+          "reachability": "Capital Connections main-menu activity",
+          "prompt": "Cheyenne is the capital of which state?",
+          "category": "capitals-and-regions",
+          "promptDirection": "capital-to-state"
         }
       ],
       "notes": []
@@ -50428,5 +51297,5 @@
       "notes": []
     }
   ],
-  "repositoryRevision": "59af1954939d5bf438eb27fefc8c1b3a95ffe3ea"
+  "repositoryRevision": "50ecedbc42625f55664c4a8a61e70ac836a8d219"
 }

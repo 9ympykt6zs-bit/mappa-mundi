@@ -99,8 +99,7 @@ export const PROGRESS_EVIDENCE_RULES = Object.freeze([
     progressSkillId: USER_FACING_PROGRESS_SKILLS.CAPITAL_OF_RELATIONSHIP,
     conceptPattern: /^state-capital:[^:]+:[^:]+$/,
     canonicalSkillIds: ["relationship-recall"],
-    validatedSourceModes: [],
-    currentStatus: "policy-defined-no-live-emitter"
+    validatedSourceModes: ["mental-map"]
   }),
   rule({
     id: "geographic-relationship-recall",
@@ -123,13 +122,12 @@ export const PROGRESS_REPORT_ROLLUP_POLICIES = Object.freeze({
     userFacingCategoryId: "state-capitals",
     includedProgressSkillIds: Object.freeze([
       USER_FACING_PROGRESS_SKILLS.CAPITAL_LOCATION,
-      USER_FACING_PROGRESS_SKILLS.CAPITAL_IDENTIFICATION
-    ]),
-    excludedProgressSkillIds: Object.freeze([
+      USER_FACING_PROGRESS_SKILLS.CAPITAL_IDENTIFICATION,
       USER_FACING_PROGRESS_SKILLS.CAPITAL_OF_RELATIONSHIP
     ]),
+    excludedProgressSkillIds: Object.freeze([]),
     aggregation: "sum-correct-and-incorrect-once-per-event-then-use-existing-bayesian-model",
-    explanation: "The current single State Capitals category temporarily combines capital locating and naming retrieval. Capital-of relationship evidence remains a distinct history and is not silently pooled."
+    explanation: "The current single State Capitals category temporarily rolls up capital locating, naming, and explicit capital-of relationship histories. Each remains a distinct policy history and every event is counted once."
   })
 });
 

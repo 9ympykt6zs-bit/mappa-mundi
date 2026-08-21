@@ -19,6 +19,11 @@ import {
   createUnitedStatesProgressReportEvidenceExplanation,
   UNITED_STATES_PROGRESS_REPORT_CATEGORY_DEFINITIONS
 } from "./united-states-progress-report.js";
+import { getStateCapitalRelationshipPairs } from "./atlas/state-capital-relationship-challenges.js";
+
+const capitalRelationshipConceptByStateId = new Map(
+  getStateCapitalRelationshipPairs().map(({ stateId, conceptId }) => [stateId, conceptId])
+);
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -51,6 +56,7 @@ function approvedHistoryKeys(item, category, itemsById) {
     const state = itemsById.get(item.relatedStateItemId);
     const stateId = item.relatedStateTargetId || state?.targetId;
     if (!stateId) return [];
+    const capitalRelationshipConceptId = capitalRelationshipConceptByStateId.get(stateId);
     return [
       {
         historyKey: `${USER_FACING_PROGRESS_SKILLS.CAPITAL_LOCATION}\u0000capital-location:${stateId}:${item.targetId}`,
@@ -63,7 +69,13 @@ function approvedHistoryKeys(item, category, itemsById) {
         conceptId: `capital-naming:${stateId}:${item.targetId}`,
         canonicalSkillId: "identifying",
         progressSkillId: USER_FACING_PROGRESS_SKILLS.CAPITAL_IDENTIFICATION
-      }
+      },
+      ...(capitalRelationshipConceptId ? [{
+        historyKey: `${USER_FACING_PROGRESS_SKILLS.CAPITAL_OF_RELATIONSHIP}\u0000${capitalRelationshipConceptId}`,
+        conceptId: capitalRelationshipConceptId,
+        canonicalSkillId: "relationship-recall",
+        progressSkillId: USER_FACING_PROGRESS_SKILLS.CAPITAL_OF_RELATIONSHIP
+      }] : [])
     ];
   }
   return [];
@@ -198,7 +210,7 @@ export function createCanonicalUnitedStatesProgressReportShadow(options = {}) {
     limitations: [
       "Canonical events cover new emission only and do not reconstruct legacy history.",
       "Scheduler review status remains source-specific and separate from canonical demonstrated progress.",
-      "The current State Capitals rollup includes capital locating and identifying, not capital-of relationship evidence."
+      "The current State Capitals rollup combines three separate policy histories: locating, identifying, and capital-of relationship recall."
     ]
   };
 }

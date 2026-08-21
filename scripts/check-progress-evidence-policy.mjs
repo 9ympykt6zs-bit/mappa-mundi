@@ -116,10 +116,10 @@ const capitalRelationship = createCanonicalEvidenceEvent({
   eventId: "capital-of-relationship",
   attemptId: "capital-of-relationship:attempt",
   occurredAt: new Date(Date.parse(occurredAt) + 9000).toISOString(),
-  conceptId: "state-capital:ohio:columbus-oh",
+  conceptId: "state-capital:ohio:columbus",
   skillId: "relationship-recall",
-  sourceMode: "future-capital-relationship",
-  sourceActivityId: "policy-validation",
+  sourceMode: "mental-map",
+  sourceActivityId: "us-state-capital-relationships",
   outcome: "correct",
   sequence: 9
 });
@@ -160,14 +160,13 @@ assert.deepEqual(capitalDecisions.map(({ contributions }) => contributions[0].pr
   USER_FACING_PROGRESS_SKILLS.CAPITAL_IDENTIFICATION,
   USER_FACING_PROGRESS_SKILLS.CAPITAL_OF_RELATIONSHIP
 ]);
-assert.equal(capitalDecisions[2].sourceModeValidated, false, "The relationship rule is defined before a live emitter is validated.");
+assert.equal(capitalDecisions[2].sourceModeValidated, true, "Capital Connections is a validated live relationship producer.");
 assert.deepEqual(PROGRESS_REPORT_ROLLUP_POLICIES["state-capitals"].includedProgressSkillIds, [
   USER_FACING_PROGRESS_SKILLS.CAPITAL_LOCATION,
-  USER_FACING_PROGRESS_SKILLS.CAPITAL_IDENTIFICATION
-]);
-assert.deepEqual(PROGRESS_REPORT_ROLLUP_POLICIES["state-capitals"].excludedProgressSkillIds, [
+  USER_FACING_PROGRESS_SKILLS.CAPITAL_IDENTIFICATION,
   USER_FACING_PROGRESS_SKILLS.CAPITAL_OF_RELATIONSHIP
 ]);
+assert.deepEqual(PROGRESS_REPORT_ROLLUP_POLICIES["state-capitals"].excludedProgressSkillIds, []);
 
 const duplicateResult = applyProgressEvidencePolicy([journeyLocate, journeyLocate]);
 assert.equal(duplicateResult.uniqueEventCount, 1);

@@ -28,7 +28,7 @@ npm run check:us-content
 - **Data only**: structured atlas knowledge that is visible or queryable but is not established as scored learning.
 - **Dynamic capacity**: a question the current generator could construct. Capacity is reported separately because it does not prove that the question is selected or delivered.
 
-A concept may carry multiple taxonomy tags from `docs/US_CONTENT_TAXONOMY.md`. It is still counted once. State and capital activity targets and their Memory Trail prompt forms merge under the same concept IDs. The two fixed Gulf west-to-east prompts merge because their ordered relationship is identical. Exact duplicate reconstruction feedback messages currently merge through an isolated normalization rule because reconstruction rules do not yet have canonical concept IDs.
+A concept may carry multiple taxonomy tags from `docs/US_CONTENT_TAXONOMY.md`. It is still counted once. State and capital activity targets and their Memory Trail prompt forms merge under the same concept IDs. The two Capital Connections prompt directions merge under one `state-capital:{state}:{capital}` concept per state. The two fixed Gulf west-to-east prompts merge because their ordered relationship is identical. Exact duplicate reconstruction feedback messages currently merge through an isolated normalization rule because reconstruction rules do not yet have canonical concept IDs.
 
 ## Regions
 
@@ -41,7 +41,7 @@ The Definition of Done's 80%–120% band is shown as a diagnostic comparison, no
 - Static inspection cannot prove that a learner actually receives a concept or that a browser flow works.
 - Dynamic route totals describe possible endpoint pairs, not selection frequency or regional balance.
 - Conditional reconstruction feedback does not establish ordinary assessed coverage.
-- Direct state-to-capital relationships exist in atlas data, but the reporter does not treat capital name/location practice as proof that the relationship itself is assessed.
+- Direct state-to-capital relationships are assessed only by the explicit Capital Connections relationship questions; ordinary capital name/location practice remains separate.
 - Physical-feature targets are counted once even when the activity can offer multiple prompt forms.
 - Unscored atlas relationships are included for traceability and integration-gap analysis but do not satisfy assessed-content floors.
 - The reporter does not attempt to define the future learner-evidence schema. Its concept-ID helpers are intentionally isolated in `scripts/lib/us-content-coverage.mjs`.

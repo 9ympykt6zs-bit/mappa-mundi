@@ -101,7 +101,11 @@ assert.deepEqual([ohioIdentification.evidenceHistory.correctCount, ohioIdentific
 assert.equal(maineLocation.bayesianProgressScore, null, "Unseen must stay unseen.");
 assert.equal(maineLocation.displayCategory.id, "unseen");
 assert.deepEqual([columbus.evidenceHistory.correctCount, columbus.evidenceHistory.incorrectCount], [1, 1]);
-assert.deepEqual(columbus.canonicalMapping.progressSkillIds, ["capital-location", "capital-identification"]);
+assert.deepEqual(columbus.canonicalMapping.progressSkillIds, [
+  "capital-location",
+  "capital-identification",
+  "capital-of-relationship"
+]);
 
 const replay = createUnitedStatesProgressReportReadModel({ items, repository, storage: cleanStorage, now: fixedNow });
 assert.equal(replay.selection.reason, "eligible-enrolled-new-learner");

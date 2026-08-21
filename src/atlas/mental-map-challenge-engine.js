@@ -69,7 +69,7 @@ export function buildMentalMapAnswerBank(challenge, { random = Math.random } = {
 
   return shuffled.map((stateId) => ({
     id: stateId,
-    name: getStateById(stateId).name
+    name: challenge.answerLabelsByStateId?.[stateId] || getStateById(stateId).name
   }));
 }
 

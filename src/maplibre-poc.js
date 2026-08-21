@@ -3128,6 +3128,7 @@ const mainMenuDailyTrailButton = document.querySelector("#main-menu-daily-trail-
 const mainMenuUnitedStatesMemoryTrailButton = document.querySelector("#main-menu-us-memory-trail-button");
 const mainMenuUnitedStatesAtlasButton = document.querySelector("#main-menu-united-states-atlas-button");
 const mainMenuUnitedStatesProgressButton = document.querySelector("#main-menu-united-states-progress-button");
+const mainMenuStateCapitalRelationshipsButton = document.querySelector("#main-menu-state-capital-relationships-button");
 const mainMenuMentalMapChallengeButton = document.querySelector("#main-menu-mental-map-challenge-button");
 const mainMenuMapReconstructionButton = document.querySelector("#main-menu-map-reconstruction-button");
 const legacyCompassChallengeButton = document.querySelector("#main-menu-compass-challenge-button");
@@ -3583,6 +3584,7 @@ let mentalMapReorderAnnouncement = "";
 let mentalMapLastQuestionId = "";
 let mentalMapLastCategory = "";
 let mentalMapRecentAnswerModes = [];
+let mentalMapStateCapitalOnly = false;
 let mapReconstructionController = null;
 let activeMapReconstructionRegionId = "";
 let mapReconstructionFeatureCollectionPromise = null;
@@ -3683,14 +3685,14 @@ function recordCanonicalMentalMapEvaluation() {
   if (!activeMentalMapChallenge || !activeMentalMapChallengeState?.evaluation) return;
   try {
     const identity = activeMentalMapCanonicalAttemptIdentity
-      || createCanonicalRuntimeAttemptIdentity("mental-map", activeMentalMapChallenge.id);
+      || createCanonicalRuntimeAttemptIdentity("mental-map", activeMentalMapChallenge.sourceActivityId || activeMentalMapChallenge.id);
     const event = adaptCanonicalMentalMapEvaluation({
       challenge: activeMentalMapChallenge,
       evaluation: activeMentalMapChallengeState.evaluation,
       conceptId: getCanonicalMentalMapConceptId(activeMentalMapChallenge),
       ...identity,
       sourceMode: "mental-map",
-      sourceActivityId: activeMentalMapChallenge.id
+      sourceActivityId: activeMentalMapChallenge.sourceActivityId || activeMentalMapChallenge.id
     });
     reportCanonicalEvidenceWrite(recordCanonicalEvidenceEvent(event, window.localStorage));
   } catch (error) {
@@ -5566,6 +5568,7 @@ function bindUiEvents() {
   mainMenuUnitedStatesMemoryTrailButton?.addEventListener("click", startOrContinueUnitedStatesMemoryTrail);
   mainMenuUnitedStatesAtlasButton?.addEventListener("click", () => { void openUnitedStatesAtlas(); });
   mainMenuUnitedStatesProgressButton?.addEventListener("click", () => { void openUnitedStatesProgressReport(); });
+  mainMenuStateCapitalRelationshipsButton?.addEventListener("click", () => { void openMentalMapChallenge({ stateCapitalOnly: true }); });
   mainMenuMentalMapChallengeButton?.addEventListener("click", () => { void openMentalMapChallenge(); });
   mainMenuMapReconstructionButton?.addEventListener("click", () => { void openMapReconstruction(); });
   legacyCompassChallengeButton?.addEventListener("click", () => { void openCompassChallenge(); });
@@ -8108,7 +8111,7 @@ function exitMapReconstruction() {
   showAppScreen("main-menu", { pushHistory: false });
 }
 
-async function openMentalMapChallenge() {
+async function openMentalMapChallenge(options = {}) {
   await ensureMapReady();
   saveCurrentActivityProgress();
   cancelGrabbedAnswer();
@@ -8135,14 +8138,22 @@ async function openMentalMapChallenge() {
   runner.setCompletedTargets([]);
   runner.setUnitedStatesAtlasLearningStatuses({});
   runner.prepareMentalMapChallenge();
-  mentalMapChallengePool = getUnifiedMentalMapChallenges();
+  mentalMapStateCapitalOnly = options.stateCapitalOnly === true;
+  mentalMapChallengePool = getUnifiedMentalMapChallenges({
+    includeGenerated: !mentalMapStateCapitalOnly,
+    includeStateCapitalRelationships: mentalMapStateCapitalOnly
+  }).filter((challenge) => !mentalMapStateCapitalOnly || challenge.canonicalConceptId?.startsWith("state-capital:"));
   mentalMapUsedQuestionIds = new Set();
   mentalMapLastQuestionId = "";
   mentalMapLastCategory = "";
   mentalMapRecentAnswerModes = [];
   startNextMentalMapQuestion();
-  setHeaderTitle("Mental Map Challenge", { shortTitle: "Mental Map" });
-  instruction.textContent = "Recall first. The map appears after you submit.";
+  setHeaderTitle(mentalMapStateCapitalOnly ? "Capital Connections" : "Mental Map Challenge", {
+    shortTitle: mentalMapStateCapitalOnly ? "Capitals" : "Mental Map"
+  });
+  instruction.textContent = mentalMapStateCapitalOnly
+    ? "Recall the state-capital relationship, then submit your answer."
+    : "Recall first. The map appears after you submit.";
   renderActivityNavControls(null);
   updateTopBarNavigation();
 }
@@ -8184,7 +8195,7 @@ function startNextMentalMapQuestion() {
     ? createMentalMapChallengeState(activeMentalMapChallenge)
     : null;
   activeMentalMapCanonicalAttemptIdentity = activeMentalMapChallenge
-    ? createCanonicalRuntimeAttemptIdentity("mental-map", activeMentalMapChallenge.id)
+    ? createCanonicalRuntimeAttemptIdentity("mental-map", activeMentalMapChallenge.sourceActivityId || activeMentalMapChallenge.id)
     : null;
   mentalMapReorderAnnouncement = "";
   renderActiveMentalMapChallenge();
@@ -8273,6 +8284,7 @@ function exitMentalMapChallenge() {
   mentalMapLastQuestionId = "";
   mentalMapLastCategory = "";
   mentalMapRecentAnswerModes = [];
+  mentalMapStateCapitalOnly = false;
   runner?.prepareMentalMapChallenge();
   if (mapElement) mapElement.removeAttribute("aria-hidden");
   document.body.classList.remove("mental-map-challenge-mode", "mental-map-result-mode", "overview-mode", "browse-mode");

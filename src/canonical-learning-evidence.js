@@ -215,6 +215,7 @@ function uniqueSorted(values = []) {
 }
 
 export function getCanonicalMentalMapConceptId(challenge = {}) {
+  if (challenge.canonicalConceptId) return requireNamespacedId(challenge.canonicalConceptId, "challenge.canonicalConceptId");
   const ordered = challenge.orderedStateIds || [];
   if (ordered.length) return `relationship:ordered:${ordered.join(">")}`;
   if (challenge.routeStartStateId && challenge.routeDestinationStateId) {
@@ -245,6 +246,7 @@ export function adaptCanonicalMentalMapEvaluation({ challenge = {}, evaluation =
     credit,
     response: {
       challengeId: challenge.id || null,
+      promptDirection: challenge.promptDirection || null,
       selectedEntityIds: (evaluation.selectedStateIds || []).map((stateId) => `state:${stateId}`),
       missingEntityIds: (evaluation.missingStateIds || []).map((stateId) => `state:${stateId}`),
       unnecessaryEntityIds: (evaluation.unnecessaryStateIds || []).map((stateId) => `state:${stateId}`)

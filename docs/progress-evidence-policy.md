@@ -24,7 +24,7 @@ The policy decision key is the canonical `conceptId + skillId`. Source mode and 
 | State Identification | `state-naming:{state}` + `identifying` | Supported |
 | Capital Location | `capital-location:{state}:{capital}` + `locating` | Supported |
 | Capital Identification | `capital-naming:{state}:{capital}` + `identifying` | Supported |
-| Capital-of Relationship | `state-capital:{state}:{capital}` + `relationship-recall` | Policy defined; no current live emitter |
+| Capital-of Relationship | `state-capital:{state}:{capital}` + `relationship-recall` | Supported by Capital Connections |
 | Geographic Relationships | `relationship:*` + `relationship-recall` or `sequencing` | Supported for Mental Map evidence |
 | Spatial Reconstruction | `state-reconstruction:{state}` + `spatial-reconstruction` | Supported as a distinct skill, not State Location |
 | Contextual Knowledge | Explicit contextual concept + contextual-recall skill + approved U.S. taxonomy qualification | Blocked by canonical contract v1 |
@@ -41,7 +41,7 @@ Context cannot yet contribute. Canonical v1 has no contextual-recall skill, and 
 | Memory/Daily place-to-name | `state-naming:*` + `identifying` | State Identification | Include; never share with State Location |
 | Capital name-to-place | `capital-location:*` + `locating` | Capital Location | Include |
 | Capital place-to-name | `capital-naming:*` + `identifying` | Capital Identification | Include |
-| Future scored capital relationship activity | `state-capital:*` + `relationship-recall` | Capital-of Relationship | Include after emitter parity validation |
+| Capital Connections in either prompt direction | `state-capital:*` + `relationship-recall` | Capital-of Relationship | Include; both directions share one history |
 | Mental Map relationship question | `relationship:*` + `relationship-recall` | Geographic Relationships | Include; do not leak into State Location or Identification |
 | Mental Map ordered relationship | `relationship:*` + `sequencing` | Geographic Relationships | Include as relationship evidence |
 | Map Reconstruction | `state-reconstruction:*` + `spatial-reconstruction` | Spatial Reconstruction only | Never automatically convert to State Location |
@@ -67,9 +67,9 @@ The existing Bayesian model accepts correct and incorrect counts, not fractional
 
 Capital Location, Capital Identification, and Capital-of Relationship remain separate canonical histories.
 
-While the current UI retains one **State Capitals** category, its temporary canonical rollup may combine Capital Location and Capital Identification by summing their correct/incorrect events once per `eventId` for each capital, then calling the existing Bayesian scorer. This matches the current item-level capital category without duplicating the formula.
+While the current UI retains one **State Capitals** category, its temporary canonical rollup combines Capital Location, Capital Identification, and Capital-of Relationship by summing their correct/incorrect events once per `eventId` for each capital, then calling the existing Bayesian scorer. Each subskill remains a separate policy history; the rollup does not duplicate the formula.
 
-Capital-of Relationship is not included in that rollup. It answers a different question—knowing which capital belongs to a state—and must remain separately inspectable until product design explicitly decides how to display it.
+Capital-of Relationship answers a different question—knowing which capital belongs to a state—and remains separately inspectable even though the current UI rolls it into State Capitals.
 
 ## 7. Reconstruction and Mental Map treatment
 
@@ -111,6 +111,6 @@ Brand-new learners can start with canonical-only histories. Existing learners re
 
 ## 11. Migration readiness criteria
 
-A canonical-first implementation for brand-new learners is design-ready for State Location, State Identification, Capital Location, and Capital Identification when it consumes this policy, retains the current Bayesian module, and passes shadow/UI acceptance. Geographic Relationships and Spatial Reconstruction are policy-defined but should not appear in the current UI without separate product acceptance. Context and live Capital-of Relationship progress are not implementation-ready because their emitters/contracts are incomplete.
+A canonical-first implementation for brand-new learners is active for State Location, State Identification, Capital Location, Capital Identification, and Capital-of Relationship behind the guarded selector. Geographic Relationships and Spatial Reconstruction are policy-defined but should not appear in the current UI without separate product acceptance. Context remains blocked because its canonical contract is incomplete.
 
-Existing learners are not migration-ready. Migration remains blocked on a versioned legacy-baseline format, a canonical cutover boundary, overlap prevention, and an explicit display treatment for combined historical state-practice evidence.
+Existing learners are not migration-ready. Capital Connections creates only new live relationship evidence and never fabricates historical events. Migration remains blocked on a versioned legacy-baseline format, a canonical cutover boundary, overlap prevention, and an explicit display treatment for combined historical state-practice evidence.

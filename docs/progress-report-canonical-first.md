@@ -25,9 +25,10 @@ The supported production skills are:
 - State Location;
 - State Identification;
 - Capital Location; and
-- Capital Identification.
+- Capital Identification; and
+- Capital-of Relationship.
 
-Journey, U.S. Memory Trail, and Daily Trail attempts merge when they have the same canonical concept × skill. Location and identification remain separate. The current single State Capitals UI category temporarily rolls Capital Location and Capital Identification together once per canonical event. Assisted, partial, and skipped evidence remains provenance and does not become correct or incorrect Bayesian input. Unseen histories retain a null score and render as Not started.
+Journey, U.S. Memory Trail, and Daily Trail attempts merge when they have the same canonical concept × skill. Location and identification remain separate. Capital Connections emits `state-capital:{state}:{capital}` × `relationship-recall` for direct association retrieval in either direction. The current single State Capitals UI category temporarily rolls all three capital subskills together once per canonical event while retaining distinct policy histories. Assisted, partial, and skipped evidence remains provenance and does not become correct or incorrect Bayesian input. Unseen histories retain a null score and render as Not started.
 
 Unsupported optional categories already present in the legacy presentation model are preserved; this slice does not promote additional canonical skills into the UI.
 
