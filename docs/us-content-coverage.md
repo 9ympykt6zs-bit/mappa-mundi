@@ -42,7 +42,7 @@ The Definition of Done's 80%–120% band is shown as a diagnostic comparison, no
 - Dynamic route totals describe possible endpoint pairs, not selection frequency or regional balance.
 - Conditional reconstruction feedback does not establish ordinary assessed coverage.
 - Direct state-to-capital relationships are assessed only by the explicit U.S. Connections relationship questions; ordinary capital name/location practice remains separate.
-- U.S. Connections directly assesses all 50 Census-region memberships, 17 international-border edges, and 25 coast edges from the trusted atlas. Other atlas relationship types remain data-only unless another fixed question already assesses them.
+- U.S. Connections directly assesses all 50 Census-region memberships, 17 international-border edges, 25 coast edges, 36 state/major-river edges, 13 state/Great-Lake edges, and 61 state/mountain-range edges from the trusted atlas. The physical subset is limited to features already present in the scored U.S. physical curriculum; other atlas relationship types remain data-only unless another fixed question already assesses them.
 - Physical-feature targets are counted once even when the activity can offer multiple prompt forms.
 - Unscored atlas relationships are included for traceability and integration-gap analysis but do not satisfy assessed-content floors.
 - The reporter does not attempt to define the future learner-evidence schema. Its concept-ID helpers are intentionally isolated in `scripts/lib/us-content-coverage.mjs`.

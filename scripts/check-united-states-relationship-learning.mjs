@@ -40,25 +40,52 @@ assert.deepEqual(
     type,
     relationships.filter((relationship) => relationship.relationshipType === type).length
   ])),
-  { "region-membership": 50, "international-border": 17, coast: 25 }
+  {
+    "region-membership": 50,
+    "international-border": 17,
+    coast: 25,
+    "river-through": 36,
+    "major-lake-border": 13,
+    "mountain-range": 61
+  }
 );
 
 const challenges = getUnitedStatesRelationshipChallenges();
-assert.equal(challenges.length, 92, "Every approved atlas edge must have one fixed retrieval question.");
-assert.equal(new Set(challenges.map(({ canonicalConceptId }) => canonicalConceptId)).size, 92);
+assert.equal(challenges.length, 202, "Every approved atlas edge must have one fixed retrieval question.");
+assert.equal(new Set(challenges.map(({ canonicalConceptId }) => canonicalConceptId)).size, 202);
 assert.equal(challenges.some(({ referenceStateId }) => referenceStateId === "district-of-columbia"), false);
 
 const ohioRegion = challenges.find(({ canonicalConceptId }) => canonicalConceptId === "relationship:region-membership:ohio:midwest");
 const ohioCanada = challenges.find(({ canonicalConceptId }) => canonicalConceptId === "relationship:international-border:ohio:canada");
 const floridaCoasts = challenges.filter(({ relationship }) => relationship.stateId === "florida" && relationship.relationshipType === "coast");
+const ohioRiver = challenges.find(({ canonicalConceptId }) => canonicalConceptId === "relationship:river-through:ohio:ohio-river");
+const ohioLake = challenges.find(({ canonicalConceptId }) => canonicalConceptId === "relationship:major-lake-border:ohio:lake-erie");
+const coloradoRockies = challenges.find(({ canonicalConceptId }) => canonicalConceptId === "relationship:mountain-range:colorado:rocky-mountains");
 assert.equal(ohioRegion.prompt, "Which U.S. Census region includes Ohio?");
 assert.equal(ohioRegion.answerLabelsByStateId.ohio, "Midwest");
 assert.equal(ohioCanada.answerLabelsByStateId.ohio, "Canada");
+assert.equal(ohioRiver.prompt, "Which major river flows through Ohio?");
+assert.equal(ohioRiver.answerLabelsByStateId.ohio, "Ohio River");
+assert.equal(ohioLake.prompt, "Which Great Lake borders Ohio?");
+assert.equal(ohioLake.answerLabelsByStateId.ohio, "Lake Erie");
+assert.equal(coloradoRockies.prompt, "Which mountain range is located in Colorado?");
+assert.equal(coloradoRockies.answerLabelsByStateId.colorado, "Rocky Mountains");
 assert.deepEqual(floridaCoasts.map(({ relationship }) => relationship.targetName).sort(), ["Atlantic Ocean", "Gulf of Mexico"]);
 for (const challenge of floridaCoasts) {
   const labels = Object.values(challenge.answerLabelsByStateId);
   const otherTrueCoast = challenge.relationship.targetName === "Atlantic Ocean" ? "Gulf of Mexico" : "Atlantic Ocean";
   assert.equal(labels.includes(otherTrueCoast), false, "Another true Florida coast must never be an incorrect choice.");
+}
+for (const challenge of challenges) {
+  const otherTrueTargets = relationships
+    .filter(({ stateId, relationshipType, targetEntityId }) => (
+      stateId === challenge.relationship.stateId
+      && relationshipType === challenge.relationship.relationshipType
+      && targetEntityId !== challenge.relationship.targetEntityId
+    ))
+    .map(({ targetName }) => targetName);
+  const offeredLabels = Object.values(challenge.answerLabelsByStateId);
+  assert.equal(otherTrueTargets.some((label) => offeredLabels.includes(label)), false, "Another true relationship must never be offered as incorrect.");
 }
 assert.ok(buildMentalMapAnswerBank(ohioRegion, { random: () => 0 }).some(({ id, name }) => id === "ohio" && name === "Midwest"));
 assert.equal(evaluateMentalMapAnswer(ohioRegion, ["ohio"]).isCorrect, true);
@@ -105,14 +132,27 @@ assert.ok(ohioRecord.canonicalMapping.conceptIds.includes(event.conceptId));
 const ordinaryPool = getUnifiedMentalMapChallenges({ includeGenerated: false });
 const connectionsPool = getUnifiedMentalMapChallenges({ includeGenerated: false, includeUnitedStatesRelationships: true });
 assert.equal(ordinaryPool.some(({ sourceActivityId }) => sourceActivityId === "us-atlas-relationships"), false);
-assert.equal(connectionsPool.filter(({ sourceActivityId }) => sourceActivityId === "us-atlas-relationships").length, 92);
+assert.equal(connectionsPool.filter(({ sourceActivityId }) => sourceActivityId === "us-atlas-relationships").length, 202);
 assert.equal(connectionsPool.filter(({ sourceActivityId }) => sourceActivityId === "us-state-capital-relationships").length, 100);
 
 const coverage = buildRepositoryCoverage();
+const assessedPhysicalEntityIds = new Set(coverage.concepts
+  .filter(({ kind, delivery }) => kind === "physical-feature" && delivery === "fixed-scored")
+  .flatMap(({ entityIds }) => entityIds));
+for (const relationship of relationships.filter(({ relationshipType }) => [
+  UNITED_STATES_RELATIONSHIP_TYPES.RIVER_THROUGH,
+  UNITED_STATES_RELATIONSHIP_TYPES.MAJOR_LAKE_BORDER,
+  UNITED_STATES_RELATIONSHIP_TYPES.MOUNTAIN_RANGE
+].includes(relationshipType))) {
+  assert.ok(assessedPhysicalEntityIds.has(relationship.targetEntityId), "Physical relationship targets must already belong to the taught U.S. physical curriculum.");
+}
 for (const conceptId of [
   "relationship:region-membership:ohio:midwest",
   "relationship:international-border:ohio:canada",
-  "relationship:coast:florida:atlantic-ocean"
+  "relationship:coast:florida:atlantic-ocean",
+  "relationship:river-through:ohio:ohio-river",
+  "relationship:major-lake-border:ohio:lake-erie",
+  "relationship:mountain-range:colorado:rocky-mountains"
 ]) {
   const concept = coverage.concepts.find(({ id }) => id === conceptId);
   assert.equal(concept.delivery, "fixed-scored");
@@ -129,4 +169,4 @@ assert.match(indexSource, />U\.S\. Connections</);
 assert.match(runtimeSource, /includeUnitedStatesRelationships: mentalMapUnitedStatesRelationshipsOnly/);
 assert.match(runtimeSource, /"us-atlas-relationships"\s*\]\s*\.includes\(challenge\.sourceActivityId\)/);
 
-console.log("I2 U.S. atlas relationship learning passed: 50 regions, 17 borders, and 25 coasts are assessed.");
+console.log("I2 U.S. atlas relationship learning passed: 202 trusted political and physical relationships are assessed.");

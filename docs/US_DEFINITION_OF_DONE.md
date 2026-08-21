@@ -79,15 +79,15 @@ For coverage auditing, the broader categories above—such as geographic relatio
 - [x] Every state has an explicit, directly assessed state-to-capital relationship.
 - [x] Every state has at least one meaningful curated relational concept—for example adjacency, relative position, regional membership, connection to a physical feature, or relationship to another place.
 - [x] Every state has at least one separate non-capital contextual concept drawn from the categories defined in [`docs/US_CONTENT_TAXONOMY.md`](US_CONTENT_TAXONOMY.md).
-- [ ] Important U.S. physical features and regions have deliberately defined coverage rather than appearing only incidentally through state questions.
+- [x] Important U.S. physical features and regions have deliberately defined coverage rather than appearing only incidentally through state questions.
 
 ### Regional balance
 
 Raw question totals do not need to be equal between regions. Balance is measured after accounting for the amount of eligible geography in each region.
 
-- [ ] For state-based categories, **concepts per state** in each major region fall between **80% and 120% of the national mean**, unless a documented geographic or pedagogical reason justifies the difference.
+- [x] For state-based categories, **concepts per state** in each major region fall between **80% and 120% of the national mean**, unless a documented geographic or pedagogical reason justifies the difference.
 - [ ] Comparable physical-feature and contextual categories use an equivalent normalized measure based on eligible features or deliberately curated learning targets.
-- [ ] No major region is thin merely because it received less development attention.
+- [x] No major region is thin merely because it received less development attention.
 - [ ] Any intentional imbalance is documented as a content decision rather than occurring accidentally.
 
 ### Selection balance

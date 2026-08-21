@@ -6,13 +6,19 @@ export const UNITED_STATES_RELATIONSHIP_ACTIVITY_ID = "us-atlas-relationships";
 export const UNITED_STATES_RELATIONSHIP_TYPES = Object.freeze({
   REGION_MEMBERSHIP: "region-membership",
   INTERNATIONAL_BORDER: "international-border",
-  COAST: "coast"
+  COAST: "coast",
+  RIVER_THROUGH: "river-through",
+  MAJOR_LAKE_BORDER: "major-lake-border",
+  MOUNTAIN_RANGE: "mountain-range"
 });
 
 const approvedAtlasType = Object.freeze({
-  belongsToRegion: UNITED_STATES_RELATIONSHIP_TYPES.REGION_MEMBERSHIP,
-  internationalBorder: UNITED_STATES_RELATIONSHIP_TYPES.INTERNATIONAL_BORDER,
-  coast: UNITED_STATES_RELATIONSHIP_TYPES.COAST
+  belongsToRegion: Object.freeze({ relationshipType: UNITED_STATES_RELATIONSHIP_TYPES.REGION_MEMBERSHIP, direction: "state-to-target" }),
+  internationalBorder: Object.freeze({ relationshipType: UNITED_STATES_RELATIONSHIP_TYPES.INTERNATIONAL_BORDER, direction: "state-to-target" }),
+  coast: Object.freeze({ relationshipType: UNITED_STATES_RELATIONSHIP_TYPES.COAST, direction: "state-to-target" }),
+  flowsThrough: Object.freeze({ relationshipType: UNITED_STATES_RELATIONSHIP_TYPES.RIVER_THROUGH, direction: "target-to-state", targetKind: "river" }),
+  majorBordersState: Object.freeze({ relationshipType: UNITED_STATES_RELATIONSHIP_TYPES.MAJOR_LAKE_BORDER, direction: "target-to-state", targetKind: "lake" }),
+  locatedIn: Object.freeze({ relationshipType: UNITED_STATES_RELATIONSHIP_TYPES.MOUNTAIN_RANGE, direction: "target-to-state", targetKind: "mountain-range" })
 });
 
 function atlasId(entityId) {
@@ -27,10 +33,12 @@ export function getApprovedUnitedStatesAtlasRelationships(atlas = unitedStatesAt
   const entitiesById = new Map((atlas?.entities || []).map((entity) => [entity.id, entity]));
   return (atlas?.relationships || [])
     .map((relationship) => {
-      const relationshipType = approvedAtlasType[relationship.type];
-      const state = entitiesById.get(relationship.from);
-      const target = entitiesById.get(relationship.to);
-      if (!relationshipType || state?.kind !== "state" || !target) return null;
+      const approval = approvedAtlasType[relationship.type];
+      if (!approval) return null;
+      const state = entitiesById.get(approval.direction === "state-to-target" ? relationship.from : relationship.to);
+      const target = entitiesById.get(approval.direction === "state-to-target" ? relationship.to : relationship.from);
+      if (state?.kind !== "state" || !target || (approval.targetKind && target.kind !== approval.targetKind)) return null;
+      const { relationshipType } = approval;
       const stateId = atlasId(state.id);
       const targetId = atlasId(target.id);
       return {
@@ -65,6 +73,15 @@ export function validateApprovedUnitedStatesAtlasRelationships(relationships = g
   if (counts[UNITED_STATES_RELATIONSHIP_TYPES.COAST] !== 25) {
     errors.push(`Expected 25 coast relationships, found ${counts[UNITED_STATES_RELATIONSHIP_TYPES.COAST]}.`);
   }
+  if (counts[UNITED_STATES_RELATIONSHIP_TYPES.RIVER_THROUGH] !== 36) {
+    errors.push(`Expected 36 major river-through relationships, found ${counts[UNITED_STATES_RELATIONSHIP_TYPES.RIVER_THROUGH]}.`);
+  }
+  if (counts[UNITED_STATES_RELATIONSHIP_TYPES.MAJOR_LAKE_BORDER] !== 13) {
+    errors.push(`Expected 13 major Great Lake border relationships, found ${counts[UNITED_STATES_RELATIONSHIP_TYPES.MAJOR_LAKE_BORDER]}.`);
+  }
+  if (counts[UNITED_STATES_RELATIONSHIP_TYPES.MOUNTAIN_RANGE] !== 61) {
+    errors.push(`Expected 61 mountain-range relationships, found ${counts[UNITED_STATES_RELATIONSHIP_TYPES.MOUNTAIN_RANGE]}.`);
+  }
   if (new Set(relationships.map(({ conceptId }) => conceptId)).size !== relationships.length) {
     errors.push("Approved atlas relationship concept IDs must be unique.");
   }
@@ -75,18 +92,19 @@ export function validateApprovedUnitedStatesAtlasRelationships(relationships = g
   return errors;
 }
 
-function targetPool(relationships, relationship, atlas) {
+function targetPool(relationships, relationship) {
   const actualTargetsForState = new Set(relationships
     .filter(({ relationshipType, stateId }) => relationshipType === relationship.relationshipType && stateId === relationship.stateId)
     .map(({ targetEntityId }) => targetEntityId));
-  return (atlas?.entities || [])
-    .filter(({ kind }) => kind === relationship.targetKind)
-    .map((entity) => ({
-      targetId: atlasId(entity.id),
-      targetEntityId: entity.id,
-      targetKind: entity.kind,
-      targetName: entity.name
-    }))
+  const approvedTargets = new Map(relationships
+    .filter(({ relationshipType }) => relationshipType === relationship.relationshipType)
+    .map(({ targetId, targetEntityId, targetKind, targetName }) => [targetEntityId, {
+      targetId,
+      targetEntityId,
+      targetKind,
+      targetName
+    }]));
+  return [...approvedTargets.values()]
     .filter(({ targetEntityId }) => targetEntityId === relationship.targetEntityId || !actualTargetsForState.has(targetEntityId))
     .sort((left, right) => left.targetName.localeCompare(right.targetName));
 }
@@ -105,7 +123,16 @@ function promptFor(relationship) {
   if (relationship.relationshipType === UNITED_STATES_RELATIONSHIP_TYPES.INTERNATIONAL_BORDER) {
     return `Which country shares an international border with ${relationship.stateName}?`;
   }
-  return `Which of these bodies of water borders ${relationship.stateName}'s coast?`;
+  if (relationship.relationshipType === UNITED_STATES_RELATIONSHIP_TYPES.COAST) {
+    return `Which of these bodies of water borders ${relationship.stateName}'s coast?`;
+  }
+  if (relationship.relationshipType === UNITED_STATES_RELATIONSHIP_TYPES.RIVER_THROUGH) {
+    return `Which major river flows through ${relationship.stateName}?`;
+  }
+  if (relationship.relationshipType === UNITED_STATES_RELATIONSHIP_TYPES.MAJOR_LAKE_BORDER) {
+    return `Which Great Lake borders ${relationship.stateName}?`;
+  }
+  return `Which mountain range is located in ${relationship.stateName}?`;
 }
 
 function explanationFor(relationship) {
@@ -115,11 +142,20 @@ function explanationFor(relationship) {
   if (relationship.relationshipType === UNITED_STATES_RELATIONSHIP_TYPES.INTERNATIONAL_BORDER) {
     return `${relationship.stateName} shares an international boundary with ${relationship.targetName}.`;
   }
-  return `${relationship.stateName} has a coastline on the ${relationship.targetName}.`;
+  if (relationship.relationshipType === UNITED_STATES_RELATIONSHIP_TYPES.COAST) {
+    return `${relationship.stateName} has a coastline on the ${relationship.targetName}.`;
+  }
+  if (relationship.relationshipType === UNITED_STATES_RELATIONSHIP_TYPES.RIVER_THROUGH) {
+    return `The ${relationship.targetName} flows through ${relationship.stateName}.`;
+  }
+  if (relationship.relationshipType === UNITED_STATES_RELATIONSHIP_TYPES.MAJOR_LAKE_BORDER) {
+    return `${relationship.stateName} borders ${relationship.targetName}.`;
+  }
+  return `${relationship.targetName} is a mountain range found in ${relationship.stateName}.`;
 }
 
 function createChallenge(relationships, relationship, atlas) {
-  const candidates = targetPool(relationships, relationship, atlas);
+  const candidates = targetPool(relationships, relationship);
   const correct = candidates.find(({ targetEntityId }) => targetEntityId === relationship.targetEntityId);
   const distractors = candidates.filter(({ targetEntityId }) => targetEntityId !== relationship.targetEntityId).slice(0, 3);
   const choices = [correct, ...distractors].filter(Boolean);
@@ -139,9 +175,11 @@ function createChallenge(relationships, relationship, atlas) {
     referenceStateId: relationship.stateId,
     category: relationship.relationshipType === UNITED_STATES_RELATIONSHIP_TYPES.REGION_MEMBERSHIP
       ? "capitals-and-regions"
-      : relationship.relationshipType === UNITED_STATES_RELATIONSHIP_TYPES.COAST
+      : [UNITED_STATES_RELATIONSHIP_TYPES.COAST, UNITED_STATES_RELATIONSHIP_TYPES.RIVER_THROUGH].includes(relationship.relationshipType)
         ? "coasts-and-waterways"
-        : "borders-and-neighbors",
+        : [UNITED_STATES_RELATIONSHIP_TYPES.MAJOR_LAKE_BORDER, UNITED_STATES_RELATIONSHIP_TYPES.MOUNTAIN_RANGE].includes(relationship.relationshipType)
+          ? "rivers-lakes-and-mountains"
+          : "borders-and-neighbors",
     sourceModule: "united-states-relationship-challenges",
     sourceActivityId: UNITED_STATES_RELATIONSHIP_ACTIVITY_ID,
     canonicalConceptId: relationship.conceptId,

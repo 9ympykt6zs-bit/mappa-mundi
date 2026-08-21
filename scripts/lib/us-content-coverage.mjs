@@ -371,6 +371,15 @@ function atlasRelationshipConcept(relationship, entitiesById) {
   } else if (relationship.type === "coast") {
     id = `relationship:coast:${from.id.replace("state:", "")}:${to.id.replace("water:", "")}`;
     tags.push(TAXONOMY_TAGS.PHYSICAL);
+  } else if (relationship.type === "flowsThrough" && from.kind === "river" && to.kind === "state") {
+    id = `relationship:river-through:${to.id.replace("state:", "")}:${from.id.replace("river:", "")}`;
+    tags.push(TAXONOMY_TAGS.PHYSICAL);
+  } else if (relationship.type === "majorBordersState" && from.kind === "lake" && to.kind === "state") {
+    id = `relationship:major-lake-border:${to.id.replace("state:", "")}:${from.id.replace("lake:", "")}`;
+    tags.push(TAXONOMY_TAGS.PHYSICAL);
+  } else if (relationship.type === "locatedIn" && from.kind === "mountain-range" && to.kind === "state") {
+    id = `relationship:mountain-range:${to.id.replace("state:", "")}:${from.id.replace("mountain-range:", "")}`;
+    tags.push(TAXONOMY_TAGS.PHYSICAL);
   } else {
     const endpoints = [relationship.from, relationship.to].map((value) => value.replace(":", "-")).sort();
     id = `relationship:atlas:${slug(relationship.type)}:${endpoints.join(":")}`;
@@ -382,7 +391,9 @@ function atlasRelationshipConcept(relationship, entitiesById) {
     label: `${from.name} ${relationship.type} ${to.name}`,
     kind: relationship.type === "capitalOf"
       ? "state-capital-relationship"
-      : ["belongsToRegion", "internationalBorder", "coast"].includes(relationship.type)
+      : ["belongsToRegion", "internationalBorder", "coast", "flowsThrough", "majorBordersState", "locatedIn"].includes(relationship.type)
+        && id.startsWith("relationship:")
+        && !id.startsWith("relationship:atlas:")
         ? "curated-relationship"
         : "atlas-relationship",
     stateIds,

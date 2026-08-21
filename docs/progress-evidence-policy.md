@@ -42,7 +42,7 @@ Context cannot yet contribute. Canonical v1 has no contextual-recall skill, and 
 | Capital name-to-place | `capital-location:*` + `locating` | Capital Location | Include |
 | Capital place-to-name | `capital-naming:*` + `identifying` | Capital Identification | Include |
 | U.S. Connections capital question in either prompt direction | `state-capital:*` + `relationship-recall` | Capital-of Relationship | Include; both directions share one history |
-| U.S. Connections region, international-border, or coast question | `relationship:*` + `relationship-recall` | Geographic Relationships | Include under the state or states named by the fixed concept |
+| U.S. Connections region, international-border, coast, river, Great Lake, or mountain-range question | `relationship:*` + `relationship-recall` | Geographic Relationships | Include under the state or states named by the fixed concept |
 | Mental Map relationship question | `relationship:*` + `relationship-recall` | Geographic Relationships | Include; do not leak into State Location or Identification |
 | Mental Map ordered relationship | `relationship:*` + `sequencing` | Geographic Relationships | Include as relationship evidence |
 | Map Reconstruction | `state-reconstruction:*` + `spatial-reconstruction` | Spatial Reconstruction only | Never automatically convert to State Location |
