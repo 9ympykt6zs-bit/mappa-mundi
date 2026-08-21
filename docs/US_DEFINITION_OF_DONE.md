@@ -120,7 +120,7 @@ At minimum, automated scenarios exist for:
 
 The simulations demonstrate that:
 
-- [ ] unseen material is not accidentally assessed before the intended introduction;
+- [x] unseen material is not accidentally assessed before the intended introduction;
 - [x] repeated errors materially change future review behavior;
 - [ ] mastered material does not dominate sessions;
 - [x] forgotten or lapsed material returns appropriately;

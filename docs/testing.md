@@ -167,6 +167,10 @@ Deterministic mode does not freeze browser timers, animation timing, response du
 
 A browser acceptance pass on 2026-08-21 verified the main-menu Expedition entry, nine-step hub, enabled/locked states for a new learner, Atlas launch and return, and absence of horizontal overflow at a 390×844 mobile viewport. No browser console errors were observed on that path.
 
+## Unseen-introduction guard check
+
+`scripts/check-unseen-introduction-guard.mjs` verifies the production Memory Trail boundary between guided exposure and retrieval assessment. It checks that an unexposed current-window target is selected for guidance before retrieval branches, exposure without a completed guided tap remains guarded, a single-item window cannot deadlock, guided results return before retrieval counters update, and canonical guided evidence is labeled `assisted` rather than correct or incorrect retrieval.
+
 ## Deterministic learner simulations
 
 Run the O4 synthetic learner evidence generator with:

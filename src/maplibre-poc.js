@@ -119,6 +119,7 @@ import {
 import { resolveMemoryTrailNewTargetLimit } from "./memory-trail-new-target-limit.js?v=20260621-daily-trail-co-progression-2";
 import { createMasteryDebugController } from "./mastery-debug.js?v=20260805-mastery-debug-1";
 import { chooseMemoryTrailRetrievalPromptType } from "./memory-trail-prompt-selector.js";
+import { findMemoryTrailGuidedExposureTarget } from "./memory-trail-introduction-guard.js";
 
 const APP_NAME = "Mappa Mundi";
 const LANDING_PAGE_TITLE = "Mappa Mundi \u2013 Geography Game for Learning the World";
@@ -11930,9 +11931,14 @@ function chooseNextPrompt(memoryTrail) {
   const avoidLast = (stats) => stats.targetId !== memoryTrail.lastPromptedTargetId || introducedStats.length === 1;
   const due = (stats) => stats.nextDuePrompt <= memoryTrail.promptCount;
   const dueIntroduced = introducedStats.filter((stats) => due(stats) && avoidLast(stats));
-  const unguidedCurrentTarget = memoryTrail.currentPracticeWindow
-    .map((target) => memoryTrail.targetStats[target.id])
-    .find((stats) => stats && !hasTargetCompletedGuidedExposure(stats) && avoidLast(stats));
+  const unguidedCurrentTarget = memoryTrail.currentPracticeWindow.length > 0
+    ? findMemoryTrailGuidedExposureTarget({
+      currentPracticeTargetIds: memoryTrail.currentPracticeWindow.map((target) => target.id),
+      targetStats: memoryTrail.targetStats,
+      lastPromptedTargetId: memoryTrail.lastPromptedTargetId,
+      introducedTargetCount: introducedStats.length
+    })
+    : null;
 
   if (unguidedCurrentTarget) {
     return {
