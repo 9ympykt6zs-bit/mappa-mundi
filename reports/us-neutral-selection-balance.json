@@ -71,6 +71,52 @@
       "withinTwentyPercent": true
     }
   ],
+  "promptObjectiveProfiles": [
+    {
+      "profile": "ordinary-review",
+      "prompts": 10000,
+      "objectives": [
+        {
+          "id": "locating",
+          "intendedShare": 0.5,
+          "selected": 5000,
+          "selectionShare": 0.5,
+          "relativeDifference": 0,
+          "withinTwentyPercent": true
+        },
+        {
+          "id": "identifying",
+          "intendedShare": 0.5,
+          "selected": 5000,
+          "selectionShare": 0.5,
+          "relativeDifference": 0,
+          "withinTwentyPercent": true
+        }
+      ]
+    },
+    {
+      "profile": "early-chunk-support",
+      "prompts": 10000,
+      "objectives": [
+        {
+          "id": "locating",
+          "intendedShare": 0.7,
+          "selected": 7000,
+          "selectionShare": 0.7,
+          "relativeDifference": 0,
+          "withinTwentyPercent": true
+        },
+        {
+          "id": "identifying",
+          "intendedShare": 0.3,
+          "selected": 3000,
+          "selectionShare": 0.3,
+          "relativeDifference": 0,
+          "withinTwentyPercent": true
+        }
+      ]
+    }
+  ],
   "itemSelectionRange": {
     "minimum": 73,
     "maximum": 134,
@@ -80,8 +126,10 @@
     "atLeastTenThousandSelections": true,
     "noRegionOutsideTwentyPercent": true,
     "noItemTypeOutsideTwentyPercent": true,
+    "noPromptObjectiveOutsideTwentyPercent": true,
+    "noPromptObjectiveStarved": true,
     "noEligibleItemStarved": true,
     "deterministicAndReadOnly": true
   },
-  "limitation": "The planner selects curriculum items before downstream prompt-form choice, so this report verifies Census-region and state/capital item-type balance, not locating-versus-identifying prompt-form balance or non-Memory-Trail activities."
+  "limitation": "This report verifies U.S. Memory Trail item selection and its production locating-versus-identifying prompt selector. It does not project objective balance across Journey, Mental Map, Connections, reconstruction, or other non-Memory-Trail activities."
 }

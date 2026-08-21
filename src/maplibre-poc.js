@@ -118,6 +118,7 @@ import {
 } from "./united-states-memory-trail-planner.js?v=20260708-us-trail-capitals-phase2a-4";
 import { resolveMemoryTrailNewTargetLimit } from "./memory-trail-new-target-limit.js?v=20260621-daily-trail-co-progression-2";
 import { createMasteryDebugController } from "./mastery-debug.js?v=20260805-mastery-debug-1";
+import { chooseMemoryTrailRetrievalPromptType } from "./memory-trail-prompt-selector.js";
 
 const APP_NAME = "Mappa Mundi";
 const LANDING_PAGE_TITLE = "Mappa Mundi \u2013 Geography Game for Learning the World";
@@ -12073,32 +12074,11 @@ function chooseNextPrompt(memoryTrail) {
 }
 
 function chooseRetrievalPromptType(memoryTrail, stats, options = {}) {
-  if (isDailyTrailMemoryTrail(memoryTrail)) {
-    return "name_to_place";
-  }
-
-  if (options.preferEasier || stats.placeToNameIncorrect > stats.nameToPlaceIncorrect + 1) {
-    return "name_to_place";
-  }
-
-  if (stats.nameToPlaceCorrect < 1) {
-    return "name_to_place";
-  }
-
-  if (stats.placeToNameCorrect < 1) {
-    return "place_to_name";
-  }
-
-  const retrievalCount = Math.max(1, memoryTrail.retrievalPromptCount);
-  const placeToNameCount = getIntroducedMemoryTrailStats(memoryTrail)
-    .reduce((count, item) => count + item.placeToNameAttempts, 0);
-  const placeToNameRatio = placeToNameCount / retrievalCount;
-
-  if (options.earlyChunk) {
-    return placeToNameRatio < 0.3 ? "place_to_name" : "name_to_place";
-  }
-
-  return placeToNameRatio < 0.5 ? "place_to_name" : "name_to_place";
+  return chooseMemoryTrailRetrievalPromptType({
+    isDailyTrail: isDailyTrailMemoryTrail(memoryTrail),
+    retrievalPromptCount: memoryTrail.retrievalPromptCount,
+    introducedStats: getIntroducedMemoryTrailStats(memoryTrail)
+  }, stats, options);
 }
 
 function hashMemoryTrailString(value) {

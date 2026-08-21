@@ -29,12 +29,22 @@ ${rows(report.regions)}
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
 ${rows(report.itemTypes)}
 
+## Prompt-objective balance
+
+The production prompt selector intentionally targets a 50/50 locating/identifying mix during ordinary review and an easier 70/30 mix during early-chunk support.
+
+| Profile | Objective | Intended share | Prompts | Actual share | Relative difference | Within ±20% |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+${report.promptObjectiveProfiles.flatMap((profile) => profile.objectives.map((objective) => `| ${profile.profile} | ${objective.id} | ${percent(objective.intendedShare)} | ${objective.selected} | ${percent(objective.selectionShare)} | ${objective.relativeDifference >= 0 ? "+" : ""}${percent(objective.relativeDifference)} | ${objective.withinTwentyPercent ? "Yes" : "No"} |`)).join("\n")}
+
 ## Starvation and reproducibility
 
 - Per-item selection range: ${report.itemSelectionRange.minimum}–${report.itemSelectionRange.maximum}.
 - Eligible items never selected: ${report.itemSelectionRange.neverSelectedItemIds.length ? report.itemSelectionRange.neverSelectedItemIds.join(", ") : "none"}.
 - All region shares within ±20% of eligible share: ${report.checks.noRegionOutsideTwentyPercent ? "yes" : "no"}.
 - All item-type shares within ±20% of eligible share: ${report.checks.noItemTypeOutsideTwentyPercent ? "yes" : "no"}.
+- All prompt-objective shares within ±20% of their intentional profile target: ${report.checks.noPromptObjectiveOutsideTwentyPercent ? "yes" : "no"}.
+- Prompt objectives never selected: ${report.checks.noPromptObjectiveStarved ? "none" : "one or more"}.
 - Same seed and state replay exactly in the focused automated check.
 
 ## Scope limit

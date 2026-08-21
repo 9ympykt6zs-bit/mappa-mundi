@@ -2,6 +2,7 @@ import {
   createUnitedStatesMemoryTrailState,
   planUnitedStatesMemoryTrailSession
 } from "../../src/united-states-memory-trail-planner.js";
+import { chooseMemoryTrailRetrievalPromptType } from "../../src/memory-trail-prompt-selector.js";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -34,6 +35,57 @@ function distribution({ eligibleCounts, selectionCounts, eligibleTotal, selectio
       withinTwentyPercent: Math.abs(relativeDifference) <= 0.2
     };
   });
+}
+
+function runPromptObjectiveProfile(items, promptCount, { earlyChunk = false } = {}) {
+  const stats = items.map((item) => ({
+    targetId: item.id,
+    nameToPlaceAttempts: 0,
+    nameToPlaceCorrect: 0,
+    nameToPlaceIncorrect: 0,
+    placeToNameAttempts: 0,
+    placeToNameCorrect: 0,
+    placeToNameIncorrect: 0
+  }));
+  const counts = { locating: 0, identifying: 0 };
+  let retrievalPromptCount = 0;
+  for (let index = 0; index < promptCount; index += 1) {
+    const targetStats = stats[index % stats.length];
+    const promptType = chooseMemoryTrailRetrievalPromptType({
+      isDailyTrail: false,
+      retrievalPromptCount,
+      introducedStats: stats
+    }, targetStats, { earlyChunk });
+    if (promptType === "place_to_name") {
+      counts.identifying += 1;
+      targetStats.placeToNameAttempts += 1;
+      targetStats.placeToNameCorrect += 1;
+    } else {
+      counts.locating += 1;
+      targetStats.nameToPlaceAttempts += 1;
+      targetStats.nameToPlaceCorrect += 1;
+    }
+    retrievalPromptCount += 1;
+  }
+  const intendedShares = earlyChunk ? { locating: 0.7, identifying: 0.3 } : { locating: 0.5, identifying: 0.5 };
+  return {
+    profile: earlyChunk ? "early-chunk-support" : "ordinary-review",
+    prompts: promptCount,
+    objectives: Object.keys(counts).map((id) => {
+      const selected = counts[id];
+      const intendedShare = intendedShares[id];
+      const selectionShare = selected / promptCount;
+      const relativeDifference = (selectionShare - intendedShare) / intendedShare;
+      return {
+        id,
+        intendedShare,
+        selected,
+        selectionShare: Number(selectionShare.toFixed(6)),
+        relativeDifference: Number(relativeDifference.toFixed(6)),
+        withinTwentyPercent: Math.abs(relativeDifference) <= 0.2
+      };
+    })
+  };
 }
 
 export function createNeutralUnitedStatesMemoryTrailState(items = []) {
@@ -108,6 +160,10 @@ export function runNeutralUnitedStatesSelectionBalance({
     selectionTotal: selections
   });
   const itemSelectionCounts = Object.values(selectionCountsByItemId);
+  const promptObjectiveProfiles = [
+    runPromptObjectiveProfile(items, selections),
+    runPromptObjectiveProfile(items, selections, { earlyChunk: true })
+  ];
 
   return {
     schemaVersion: 1,
@@ -123,6 +179,7 @@ export function runNeutralUnitedStatesSelectionBalance({
     selectionsPerPlan: selections / planCount,
     regions,
     itemTypes,
+    promptObjectiveProfiles,
     itemSelectionRange: {
       minimum: Math.min(...itemSelectionCounts),
       maximum: Math.max(...itemSelectionCounts),
@@ -132,9 +189,11 @@ export function runNeutralUnitedStatesSelectionBalance({
       atLeastTenThousandSelections: selections >= 10000,
       noRegionOutsideTwentyPercent: regions.every(({ withinTwentyPercent }) => withinTwentyPercent),
       noItemTypeOutsideTwentyPercent: itemTypes.every(({ withinTwentyPercent }) => withinTwentyPercent),
+      noPromptObjectiveOutsideTwentyPercent: promptObjectiveProfiles.every((profile) => profile.objectives.every(({ withinTwentyPercent }) => withinTwentyPercent)),
+      noPromptObjectiveStarved: promptObjectiveProfiles.every((profile) => profile.objectives.every(({ selected }) => selected > 0)),
       noEligibleItemStarved: itemSelectionCounts.every((count) => count > 0),
       deterministicAndReadOnly: true
     },
-    limitation: "The planner selects curriculum items before downstream prompt-form choice, so this report verifies Census-region and state/capital item-type balance, not locating-versus-identifying prompt-form balance or non-Memory-Trail activities."
+    limitation: "This report verifies U.S. Memory Trail item selection and its production locating-versus-identifying prompt selector. It does not project objective balance across Journey, Mental Map, Connections, reconstruction, or other non-Memory-Trail activities."
   };
 }

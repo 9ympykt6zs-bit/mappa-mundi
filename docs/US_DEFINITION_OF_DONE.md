@@ -96,7 +96,7 @@ The content bank and the adaptive delivery system are evaluated separately.
 
 - [x] A seeded simulation of at least **10,000 selections** for a neutral learner with equivalent mastery across the country shows no systematic regional starvation.
 - [x] Under neutral learner conditions, each region's selection share remains within approximately **±20% of its share of eligible content**, unless progression rules intentionally restrict the pool.
-- [ ] Required learning-objective categories are likewise checked for systematic starvation.
+- [x] Required learning-objective categories are likewise checked for systematic starvation.
 - [x] Adaptive delivery is allowed—and expected—to become non-uniform when learner evidence shows regional or skill-specific weaknesses.
 - [x] Intentional short-term repetition used for remediation is distinguishable from accidental repetitive-question behavior.
 

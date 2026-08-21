@@ -18,14 +18,27 @@ This deterministic report holds all 100 U.S. Memory Trail items at identical mas
 | capital | 50 | 50.00% | 5049 | 50.49% | +0.98% | Yes |
 | state | 50 | 50.00% | 4951 | 49.51% | -0.98% | Yes |
 
+## Prompt-objective balance
+
+The production prompt selector intentionally targets a 50/50 locating/identifying mix during ordinary review and an easier 70/30 mix during early-chunk support.
+
+| Profile | Objective | Intended share | Prompts | Actual share | Relative difference | Within ±20% |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+| ordinary-review | locating | 50.00% | 5000 | 50.00% | +0.00% | Yes |
+| ordinary-review | identifying | 50.00% | 5000 | 50.00% | +0.00% | Yes |
+| early-chunk-support | locating | 70.00% | 7000 | 70.00% | +0.00% | Yes |
+| early-chunk-support | identifying | 30.00% | 3000 | 30.00% | +0.00% | Yes |
+
 ## Starvation and reproducibility
 
 - Per-item selection range: 73–134.
 - Eligible items never selected: none.
 - All region shares within ±20% of eligible share: yes.
 - All item-type shares within ±20% of eligible share: yes.
+- All prompt-objective shares within ±20% of their intentional profile target: yes.
+- Prompt objectives never selected: none.
 - Same seed and state replay exactly in the focused automated check.
 
 ## Scope limit
 
-The planner selects curriculum items before downstream prompt-form choice, so this report verifies Census-region and state/capital item-type balance, not locating-versus-identifying prompt-form balance or non-Memory-Trail activities.
+This report verifies U.S. Memory Trail item selection and its production locating-versus-identifying prompt selector. It does not project objective balance across Journey, Mental Map, Connections, reconstruction, or other non-Memory-Trail activities.

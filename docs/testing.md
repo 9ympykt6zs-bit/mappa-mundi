@@ -75,7 +75,7 @@ npm run check:state-capital-relationships
 npm run check:us-relationships
 ```
 
-`scripts/check-neutral-selection-balance.mjs` holds all 100 U.S. Memory Trail items at equivalent mastery and scheduling state, then verifies exact replay, input immutability, 10,000 selections, regional and state/capital shares within ±20% of eligible content, and nonzero selection for every item. Run it with:
+`scripts/check-neutral-selection-balance.mjs` holds all 100 U.S. Memory Trail items at equivalent mastery and scheduling state, then verifies exact replay, input immutability, 10,000 selections, regional and state/capital shares within ±20% of eligible content, and nonzero selection for every item. It also drives the extracted production prompt selector for 10,000 ordinary-review and 10,000 early-chunk prompts, verifying that locating and identifying stay within ±20% of their intentional 50/50 and 70/30 targets without starving either objective. Run it with:
 
 ```sh
 npm run check:neutral-selection-balance
