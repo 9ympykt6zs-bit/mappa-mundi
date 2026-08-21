@@ -24,6 +24,11 @@ import { createExpeditionReadModel } from "./expedition-framework.js";
 import { renderExpedition } from "./expedition-ui.js";
 import { loadPlaceMastery } from "./place-mastery-store.js";
 import {
+  activityProgressStorageKey,
+  completedActivitiesStorageKey,
+  resetAllLearningProgress
+} from "./learning-progress-reset.js";
+import {
   createCanonicalEvidenceInspectorView,
   createDailyTrailInspectorItemView,
   createDailyTrailSelectionExplanation,
@@ -82,7 +87,6 @@ import {
   DAILY_TRAIL_CONFIG,
   DAILY_TRAIL_DEBUG_REASONS,
   dailyTrailGoals,
-  dailyTrailStorageKey,
   DAILY_TRAIL_SLOW_CORRECT_MS,
   dailyTrailUsCapitalsGoalId,
   getDailyTrailGoal,
@@ -94,6 +98,7 @@ import {
   planCompletedDailyTrailReviewSession,
   planDailyTrailDevSession,
   planDailyTrailSession,
+  resetDailyTrailProgress as resetDailyTrailPersistedProgress,
   selectDailyTrailGoal,
   startNextDailyTrailGoal,
   shouldShowDailyTrailGoalChoice,
@@ -314,8 +319,6 @@ const continentsOceansNamePromptFocusProfiles = Object.freeze({
 });
 const defaultMenuRoot = "world";
 const defaultMapSet = "world-europe";
-const completedActivitiesStorageKey = "geography-memory-completed-activities";
-const activityProgressStorageKey = "geography-memory-activity-progress";
 const difficultyStorageKey = "geography-memory-difficulty-mode";
 const appSettingsStorageKey = "atlasQuestSettings";
 const legacyLayerSettingsStorageKey = "atlas-quest-layer-settings";
@@ -2982,6 +2985,7 @@ let pendingUnitedStatesMemoryTrailGameplaySettingsReturn = false;
 let unitedStatesMemoryTrailResetConfirmationVisible = false;
 let dailyTrailDevReplayCursor = null;
 let dailyTrailResetConfirmationVisible = false;
+let allLearningProgressResetConfirmationVisible = false;
 let dailyTrailDevSelectedGoalId = "";
 let dailyTrailDevSearchQuery = "";
 let dailyTrailDevCheatBuffer = "";
@@ -18960,11 +18964,7 @@ function exitDailyTrailGameplay(options = {}) {
 }
 
 function resetDailyTrailProgress() {
-  try {
-    localStorage.removeItem(dailyTrailStorageKey);
-  } catch (error) {
-    // localStorage can be unavailable in private or embedded contexts.
-  }
+  resetDailyTrailPersistedProgress(window.localStorage);
 
   activeDailyTrailSession = null;
   clearDailyTrailDevReplayCursor();
@@ -20579,7 +20579,8 @@ function renderCustomizeScreen() {
   resetSection.content.append(
     renderSettingsDefaultsControl(),
     renderDailyTrailResetControl(),
-    renderUnitedStatesMemoryTrailResetControl()
+    renderUnitedStatesMemoryTrailResetControl(),
+    renderAllLearningProgressResetControl()
   );
 
   panel.append(mapLayersSection.details, audioSection.details, studyTargetsSection.details, resetSection.details);
@@ -21278,6 +21279,78 @@ function renderUnitedStatesMemoryTrailResetConfirmation() {
     unitedStatesMemoryTrailResetConfirmationVisible = false;
     rerenderSettingsPreservingUiState("reset-us-memory-trail-progress");
     showFeedback("United States Memory Trail reset.", true);
+  });
+
+  actions.append(cancelButton, confirmButton);
+  confirmation.append(title, body, actions);
+  return confirmation;
+}
+
+function renderAllLearningProgressResetControl() {
+  const wrapper = document.createElement("div");
+  wrapper.className = "settings-defaults-control settings-all-learning-reset-control";
+
+  const copy = document.createElement("p");
+  copy.className = "settings-panel-copy";
+  copy.textContent = "Erase learning progress across Mappa Mundi, including journeys, activities, adaptive trails, reconstruction progress, mastery history, and canonical evidence. Settings and preferences will be kept.";
+
+  const resetButton = document.createElement("button");
+  resetButton.type = "button";
+  resetButton.className = "settings-reset-button settings-reset-button-danger";
+  resetButton.textContent = "Reset All Learning Progress";
+  resetButton.dataset.settingsControl = "reset-all-learning-progress";
+  resetButton.addEventListener("click", () => {
+    allLearningProgressResetConfirmationVisible = true;
+    rerenderSettingsPreservingUiState("reset-all-learning-cancel");
+  });
+
+  wrapper.append(copy, resetButton);
+  if (allLearningProgressResetConfirmationVisible) {
+    wrapper.appendChild(renderAllLearningProgressResetConfirmation());
+  }
+  return wrapper;
+}
+
+function renderAllLearningProgressResetConfirmation() {
+  const confirmation = document.createElement("section");
+  confirmation.className = "settings-reset-confirmation";
+  confirmation.setAttribute("role", "alertdialog");
+  confirmation.setAttribute("aria-labelledby", "all-learning-reset-title");
+  confirmation.setAttribute("aria-describedby", "all-learning-reset-copy");
+
+  const title = document.createElement("h3");
+  title.id = "all-learning-reset-title";
+  title.textContent = "Reset all learning progress across Mappa Mundi?";
+
+  const body = document.createElement("p");
+  body.id = "all-learning-reset-copy";
+  body.textContent = "This permanently erases journey and activity progress, Daily Trail and United States Memory Trail history, reconstruction progress, mastery records, and canonical learning evidence. Your map, study, audio, difficulty, and other ordinary preferences will not change.";
+
+  const actions = document.createElement("div");
+  actions.className = "settings-reset-confirmation-actions";
+
+  const cancelButton = document.createElement("button");
+  cancelButton.type = "button";
+  cancelButton.className = "settings-reset-button";
+  cancelButton.textContent = "Cancel";
+  cancelButton.dataset.settingsControl = "reset-all-learning-cancel";
+  cancelButton.addEventListener("click", () => {
+    allLearningProgressResetConfirmationVisible = false;
+    rerenderSettingsPreservingUiState("reset-all-learning-progress");
+  });
+
+  const confirmButton = document.createElement("button");
+  confirmButton.type = "button";
+  confirmButton.className = "settings-reset-button settings-reset-button-danger";
+  confirmButton.textContent = "Erase All Learning Progress";
+  confirmButton.dataset.settingsControl = "reset-all-learning-confirm";
+  confirmButton.addEventListener("click", () => {
+    const result = resetAllLearningProgress(window.localStorage);
+    if (!result.ok) {
+      showFeedback("Some learning progress could not be reset. Please try again.");
+      return;
+    }
+    window.location.reload();
   });
 
   actions.append(cancelButton, confirmButton);
@@ -24133,7 +24206,7 @@ function handleResetButtonClick() {
     return;
   }
 
-  const shouldReset = window.confirm("Reset this activity? Your current progress will be cleared.");
+  const shouldReset = window.confirm("Restart this activity? Your current progress for this activity will be cleared.");
 
   if (!shouldReset) {
     return;

@@ -8,6 +8,8 @@ The baseline also includes `scripts/check-long-horizon-mastery-report.mjs`. It c
 
 The baseline includes `scripts/check-progress-score-comparison.mjs` for the isolated progress-score experiment. It checks deterministic formula replay, bounds, input immutability, Bayesian and BKT calculations, no response-free time decay, JSON serialization, fixture immutability, current-counter projection, and unchanged planner output. Generate the comparison with `npm run report:progress-score-experiment`; see [`experimental-progress-scores.md`](experimental-progress-scores.md).
 
+The baseline includes `scripts/check-learning-progress-reset.mjs`. It pins the complete learner-state reset manifest, verifies deterministic/idempotent global removal and storage-failure continuation, proves that scoped resets retain canonical evidence, checks explicit runtime labels/wiring, and verifies that settings, preferences, developer configuration, and unknown future preference keys survive. See [`learning-progress-reset.md`](learning-progress-reset.md).
+
 ## Setup
 
 Install JavaScript dependencies and the Chromium browser used by the test projects:
@@ -110,6 +112,8 @@ The reload/resume regression completes the first U.S. activity, reloads the page
 The journey-completion regression seeds the completed prerequisite U.S. activities, resumes the final activity through the visible Continue Journey card, completes that activity through the deterministic test hook, and verifies the final completion screen and saved completion flag. After a reload, it confirms the journey is offered for review from the beginning rather than as an incomplete journey to continue. Viewing the completed journey must not erase or increment its saved progress.
 
 The U.S. system smoke spec covers the primary Across the United States Expedition, its nine milestones, recommended step, Atlas launch, and return routing. It launches a clean Daily Trail into guided introduction and a seeded U.S. Memory Trail into a plan that contains both new content and an eligible weak/due adaptive review. It submits a U.S. Connections retrieval attempt, opens ordinary Mental Map, and loads a playable regional Reconstruction piece bank. These flows collect uncaught page errors and error-level console messages; the Atlas exit coverage caught and now guards a formerly invalid empty-status MapLibre paint expression.
+
+Reset acceptance covers the explicit global confirmation and cancellation path, every key in the global learner-state manifest, preference survival across the resulting reload, and canonical-history retention by activity, Daily Trail, and U.S. Memory Trail scoped resets. The global action is intentionally allowlist-based rather than using `localStorage.clear()`.
 
 The spatial regression test checks that the U.S. regional question pool is populated, IDs are unique, Gulf Coast coverage has at least three eligible questions, and selection does not immediately repeat the same Gulf Coast question when alternatives exist.
 

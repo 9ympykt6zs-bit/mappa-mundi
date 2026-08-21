@@ -84,9 +84,9 @@ export function hasUnitedStatesMemoryTrailProgress(state = createUnitedStatesMem
   );
 }
 
-export function resetUnitedStatesMemoryTrailProgress() {
+export function resetUnitedStatesMemoryTrailProgress(storage = globalThis.localStorage) {
   try {
-    localStorage.removeItem(unitedStatesMemoryTrailStorageKey);
+    storage?.removeItem?.(unitedStatesMemoryTrailStorageKey);
   } catch {
     // Ignore storage failures; runtime cleanup happens in the caller.
   }

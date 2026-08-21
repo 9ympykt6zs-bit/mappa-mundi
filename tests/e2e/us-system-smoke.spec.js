@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { learningProgressStorageKeys } from "../../src/learning-progress-reset.js";
 
 async function passLaunchScreen(page) {
   await expect(page.locator("#launch-screen")).toBeVisible();
@@ -24,6 +25,14 @@ function collectRuntimeErrors(page) {
 async function openFreshMainMenu(page) {
   await page.goto("/?test=1");
   await passLaunchScreen(page);
+}
+
+async function openResetSettings(page) {
+  await page.locator("#app-shell-settings-gear").click();
+  await expect(page.locator("#app-shell-title")).toHaveText("Settings");
+  await page.getByRole("button", { name: "Customize" }).click();
+  await expect(page.locator("#app-shell-title")).toHaveText("Customize");
+  await page.locator('details[data-settings-key="reset-defaults"] > summary').click();
 }
 
 test("Across the United States launches Atlas and returns to the expedition", async ({ page }) => {
@@ -122,5 +131,79 @@ test("Map Reconstruction loads a regional piece bank", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Choose a region to rebuild" })).toBeVisible();
   await page.locator(".map-reconstruction-region-option").first().click();
   await expect(page.locator(".map-reconstruction-bank-piece").first()).toBeVisible({ timeout: 20_000 });
+  expect(runtimeErrors).toEqual([]);
+});
+
+test("scoped resets preserve canonical learning history", async ({ page }) => {
+  const runtimeErrors = collectRuntimeErrors(page);
+  await openFreshMainMenu(page);
+  const canonicalHistory = JSON.stringify({ version: 1, events: [{ eventId: "scoped-history" }] });
+  await page.evaluate(({ canonical, daily, unitedStates }) => {
+    localStorage.setItem("mappaMundiCanonicalEvidence", canonical);
+    localStorage.setItem("mappaDailyTrailProgress", daily);
+    localStorage.setItem("mappaUnitedStatesMemoryTrailProgress", unitedStates);
+  }, {
+    canonical: canonicalHistory,
+    daily: JSON.stringify({ hasStarted: true }),
+    unitedStates: JSON.stringify({ hasStarted: true })
+  });
+  await openResetSettings(page);
+
+  await page.getByRole("button", { name: "Reset All Daily Trail Progress" }).click();
+  await expect(page.getByRole("alertdialog", { name: "Reset all Daily Trail progress?" })).toBeVisible();
+  await page.getByRole("button", { name: "Reset All Daily Trail", exact: true }).click();
+  expect(await page.evaluate(() => ({
+    canonical: localStorage.getItem("mappaMundiCanonicalEvidence"),
+    daily: localStorage.getItem("mappaDailyTrailProgress"),
+    unitedStates: localStorage.getItem("mappaUnitedStatesMemoryTrailProgress")
+  }))).toEqual({ canonical: canonicalHistory, daily: null, unitedStates: JSON.stringify({ hasStarted: true }) });
+
+  await page.getByRole("button", { name: "Reset United States Memory Trail" }).click();
+  await expect(page.getByRole("alertdialog", { name: "Reset United States Memory Trail?" })).toBeVisible();
+  await page.getByRole("button", { name: "Reset United States Trail" }).click();
+  expect(await page.evaluate(() => ({
+    canonical: localStorage.getItem("mappaMundiCanonicalEvidence"),
+    unitedStates: localStorage.getItem("mappaUnitedStatesMemoryTrailProgress")
+  }))).toEqual({ canonical: canonicalHistory, unitedStates: null });
+  expect(runtimeErrors).toEqual([]);
+});
+
+test("Reset All Learning Progress clears its manifest and preserves preferences", async ({ page }) => {
+  const runtimeErrors = collectRuntimeErrors(page);
+  await openFreshMainMenu(page);
+  const preferences = {
+    "geography-memory-difficulty-mode": "hard",
+    atlasQuestSettings: JSON.stringify({ version: 1, mapLayers: { showCities: false } }),
+    atlasQuestOnboardingSeen: "true",
+    atlasQuestAudioMuted: "true",
+    "future-preference": "preserve"
+  };
+  await page.evaluate(({ learningKeys, preferenceValues }) => {
+    learningKeys.forEach((key) => localStorage.setItem(key, `learning:${key}`));
+    Object.entries(preferenceValues).forEach(([key, value]) => localStorage.setItem(key, value));
+  }, { learningKeys: learningProgressStorageKeys, preferenceValues: preferences });
+  await openResetSettings(page);
+
+  await page.getByRole("button", { name: "Reset All Learning Progress" }).click();
+  const dialog = page.getByRole("alertdialog", { name: "Reset all learning progress across Mappa Mundi?" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("permanently erases journey and activity progress");
+  await expect(dialog).toContainText("preferences will not change");
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(await page.evaluate((key) => localStorage.getItem(key), learningProgressStorageKeys[0])).toBeTruthy();
+
+  await page.getByRole("button", { name: "Reset All Learning Progress" }).click();
+  await Promise.all([
+    page.waitForNavigation(),
+    page.getByRole("button", { name: "Erase All Learning Progress" }).click()
+  ]);
+  await expect(page.locator("#launch-screen")).toBeVisible();
+  const afterReset = await page.evaluate(({ learningKeys, preferenceKeys }) => ({
+    learning: Object.fromEntries(learningKeys.map((key) => [key, localStorage.getItem(key)])),
+    preferences: Object.fromEntries(preferenceKeys.map((key) => [key, localStorage.getItem(key)]))
+  }), { learningKeys: learningProgressStorageKeys, preferenceKeys: Object.keys(preferences) });
+  expect(Object.values(afterReset.learning).every((value) => value === null)).toBe(true);
+  expect(afterReset.preferences).toEqual(preferences);
   expect(runtimeErrors).toEqual([]);
 });

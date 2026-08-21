@@ -49,7 +49,9 @@ There is deliberately no mastery formula in A2. Read APIs expose all events; con
 
 Historical planner counters are not replayed into this repository. The A1 aggregate adapter remains available for truthful read-only inspection, but it cannot be inserted as a raw event because it has no real event identity, timestamp, or prompt-specific attribution.
 
-`resetCanonicalEvidenceRepository` removes only `mappaMundiCanonicalEvidence`. It does not clear Daily Trail, U.S. Memory Trail, Journey, place mastery, reconstruction resume data, Progress Report inputs, or other legacy persistence.
+`resetCanonicalEvidenceRepository` remains a narrow repository-level helper: it removes only `mappaMundiCanonicalEvidence` and does not act as a user-facing mode reset. Scoped activity, Daily Trail, U.S. Memory Trail, Journey, and Reconstruction resets deliberately retain canonical history.
+
+The separately confirmed **Reset All Learning Progress** action is the sole global learner reset. It clears canonical evidence together with every store in the explicit manifest documented in [`learning-progress-reset.md`](learning-progress-reset.md), while preserving settings and preferences.
 
 ## Current limitations and next work
 

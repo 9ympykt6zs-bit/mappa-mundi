@@ -147,6 +147,15 @@ export function saveDailyTrailState(state) {
   return normalized;
 }
 
+export function resetDailyTrailProgress(storage = globalThis.localStorage) {
+  try {
+    storage?.removeItem?.(dailyTrailStorageKey);
+  } catch {
+    // Ignore storage failures; the caller can still reset its in-memory session.
+  }
+  return createDailyTrailState();
+}
+
 export function hasDailyTrailProgress(state = loadDailyTrailState()) {
   return Boolean(state?.hasStarted || Object.keys(state?.itemProgress || {}).length > 0);
 }

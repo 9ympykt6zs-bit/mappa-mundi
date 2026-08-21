@@ -159,6 +159,8 @@ test("United States Journey records a miss, accepts correction, and resets", asy
   await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getActivityAttempt().completedTargetIds))
     .toContain(firstTarget.id);
 
+  const canonicalEvidenceBeforeReset = await page.evaluate(() => localStorage.getItem("mappaMundiCanonicalEvidence"));
+  expect(canonicalEvidenceBeforeReset).toBeTruthy();
   expect(await page.evaluate(() => window.__MAPPA_TEST_API__.resetCurrentActivity())).toBe(true);
   await expect.poll(() => page.evaluate(() => ({
     activity: window.__MAPPA_TEST_API__.getCurrentActivity(),
@@ -171,6 +173,8 @@ test("United States Journey records a miss, accepts correction, and resets", asy
       completedTargetIds: []
     }
   });
+  expect(await page.evaluate(() => localStorage.getItem("mappaMundiCanonicalEvidence")))
+    .toBe(canonicalEvidenceBeforeReset);
 });
 
 test("United States Journey resumes activity two after a full reload", async ({ page }) => {
