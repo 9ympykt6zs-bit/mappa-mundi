@@ -495,7 +495,8 @@ select,
   margin: 0;
 }
 
-.app-shell-panel:has(.united-states-progress-report:not([hidden])) {
+.app-shell-panel:has(.united-states-progress-report:not([hidden])),
+.app-shell-panel:has(.united-states-expedition:not([hidden])) {
   justify-items: stretch;
   max-width: min(1040px, 100%);
   text-align: left;
@@ -503,7 +504,10 @@ select,
 
 .app-shell-panel:has(.united-states-progress-report:not([hidden])) > .launch-kicker,
 .app-shell-panel:has(.united-states-progress-report:not([hidden])) > h1,
-.app-shell-panel:has(.united-states-progress-report:not([hidden])) > #app-shell-subtitle {
+.app-shell-panel:has(.united-states-progress-report:not([hidden])) > #app-shell-subtitle,
+.app-shell-panel:has(.united-states-expedition:not([hidden])) > .launch-kicker,
+.app-shell-panel:has(.united-states-expedition:not([hidden])) > h1,
+.app-shell-panel:has(.united-states-expedition:not([hidden])) > #app-shell-subtitle {
   justify-self: center;
   text-align: center;
 }
@@ -517,6 +521,97 @@ select,
 
 .united-states-progress-report[hidden] {
   display: none;
+}
+
+.united-states-expedition {
+  color: var(--ink);
+  display: grid;
+  gap: 20px;
+  width: 100%;
+}
+
+.united-states-expedition[hidden] {
+  display: none;
+}
+
+.expedition-intro {
+  background: linear-gradient(135deg, rgba(230, 246, 239, 0.92), rgba(234, 242, 255, 0.86));
+  border: 1px solid rgba(54, 130, 111, 0.24);
+  border-radius: 18px;
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+}
+
+.app-shell-panel .expedition-progress {
+  color: #176c60;
+  font-size: 0.9rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.expedition-step-list {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.expedition-step {
+  background: #fff;
+  border: 1px solid rgba(103, 128, 157, 0.28);
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(23, 32, 51, 0.08);
+  display: grid;
+  gap: 7px;
+  padding: 18px;
+}
+
+.expedition-step.is-recommended {
+  border-color: #298f7f;
+  box-shadow: 0 0 0 2px rgba(41, 143, 127, 0.14), 0 10px 24px rgba(23, 32, 51, 0.1);
+}
+
+.expedition-step h2 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.app-shell-panel .expedition-step-mechanic {
+  color: #176c60;
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.expedition-step-footer {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-top: 5px;
+}
+
+.expedition-step-footer .main-menu-button {
+  margin: 0;
+  min-width: 132px;
+  width: auto;
+}
+
+.expedition-step-status {
+  color: #596a80;
+  font-weight: 850;
+}
+
+.expedition-step-complete .expedition-step-status {
+  color: #176c60;
+}
+
+.expedition-step-locked {
+  background: #f4f6f8;
+  opacity: 0.72;
 }
 
 .us-progress-intro {
@@ -1003,6 +1098,28 @@ select,
   border-color: rgba(145, 225, 211, 0.72);
   border-radius: 18px;
   min-height: 172px;
+}
+
+.main-menu-us-expedition-card {
+  background: linear-gradient(150deg, rgba(31, 91, 125, 0.98), rgba(18, 77, 72, 0.99));
+  border-color: rgba(168, 231, 214, 0.78);
+  border-radius: 20px;
+  min-height: 224px;
+}
+
+.main-menu-us-expedition-card::after {
+  background: linear-gradient(135deg, rgba(35, 126, 154, 0.82), rgba(20, 119, 94, 0.92));
+  height: 100%;
+}
+
+.main-menu-us-expedition-card .main-menu-daily-trail-panel {
+  align-content: center;
+  padding-top: 58px;
+}
+
+.main-menu-us-expedition-card .main-menu-daily-trail-title {
+  font-size: clamp(1.55rem, 3.6vw, 2.25rem);
+  line-height: 1.03;
 }
 
 .main-menu-us-memory-trail-card::before {

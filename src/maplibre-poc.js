@@ -19,6 +19,9 @@ import { readUnitedStatesAtlasProgress } from "./atlas/united-states-atlas-progr
 import { renderUnitedStatesAtlasOverview, renderUnitedStatesAtlasProfile } from "./atlas/united-states-atlas-ui.js";
 import { renderUnitedStatesProgressReport } from "./united-states-progress-report-ui.js";
 import { createUnitedStatesProgressReportReadModel } from "./united-states-progress-report-read-path.js";
+import { acrossUnitedStatesExpedition } from "./across-united-states-expedition.js";
+import { createExpeditionReadModel } from "./expedition-framework.js";
+import { renderExpedition } from "./expedition-ui.js";
 import { loadPlaceMastery } from "./place-mastery-store.js";
 import {
   createCanonicalEvidenceInspectorView,
@@ -345,6 +348,7 @@ const appShellScreenIds = new Set([
   "daily-trail-intro",
   "daily-trail-summary",
   "united-states-trail-summary",
+  "united-states-expedition",
   "united-states-progress-report",
   "begin-journey-placeholder",
   "free-play-difficulty",
@@ -3138,6 +3142,7 @@ const mainMenuForkSection = document.querySelector("#main-menu-fork-section");
 const mainMenuLearnButton = document.querySelector("#main-menu-learn-button");
 const mainMenuChallengeButton = document.querySelector("#main-menu-challenge-button");
 const mainMenuDailyTrailButton = document.querySelector("#main-menu-daily-trail-button");
+const mainMenuUnitedStatesExpeditionButton = document.querySelector("#main-menu-us-expedition-button");
 const mainMenuUnitedStatesMemoryTrailButton = document.querySelector("#main-menu-us-memory-trail-button");
 const mainMenuUnitedStatesAtlasButton = document.querySelector("#main-menu-united-states-atlas-button");
 const mainMenuUnitedStatesProgressButton = document.querySelector("#main-menu-united-states-progress-button");
@@ -3147,6 +3152,7 @@ const mainMenuMapReconstructionButton = document.querySelector("#main-menu-map-r
 const legacyCompassChallengeButton = document.querySelector("#main-menu-compass-challenge-button");
 const mainMenuMoreWaysButton = document.querySelector("#main-menu-more-ways-button");
 const mainMenuDailyTrailAction = document.querySelector("#main-menu-daily-trail-action");
+const mainMenuUnitedStatesExpeditionAction = document.querySelector("#main-menu-us-expedition-action");
 const mainMenuUnitedStatesMemoryTrailAction = document.querySelector("#main-menu-us-memory-trail-action");
 const mainMenuLearnSection = document.querySelector("#main-menu-learn-section");
 const mainMenuChallengeSection = document.querySelector("#main-menu-challenge-section");
@@ -3556,6 +3562,7 @@ const appShellPlaceholderCard = document.querySelector("#app-shell-placeholder-c
 const appShellPlaceholderTitle = document.querySelector("#app-shell-placeholder-title");
 const appShellPlaceholderMessage = document.querySelector("#app-shell-placeholder-message");
 const unitedStatesProgressReportView = document.querySelector("#united-states-progress-report");
+const unitedStatesExpeditionView = document.querySelector("#united-states-expedition");
 const journeyPresetList = document.querySelector("#journey-preset-list");
 const journeyShellContent = document.querySelector("#journey-shell-content");
 const journeyCompletionOverlay = document.querySelector("#journey-completion-overlay");
@@ -3585,6 +3592,8 @@ const mapReconstructionPanel = document.querySelector("#map-reconstruction-panel
 const mapElement = document.querySelector("#map");
 let unitedStatesAtlasProgress = null;
 let unitedStatesProgressReportModel = null;
+let unitedStatesExpeditionModel = null;
+let shouldReturnToUnitedStatesExpedition = false;
 let activeMentalMapChallenge = null;
 let activeMentalMapChallengeState = null;
 let activeMentalMapCanonicalAttemptIdentity = null;
@@ -5684,12 +5693,28 @@ function bindUiEvents() {
   browseCloseButton?.addEventListener("click", closeBrowseDrawer);
   journeyMemoryTrailButton?.addEventListener("click", startMemoryTrailFromJourneyGameplay);
   mainMenuDailyTrailButton?.addEventListener("click", openDailyTrailIntro);
-  mainMenuUnitedStatesMemoryTrailButton?.addEventListener("click", startOrContinueUnitedStatesMemoryTrail);
-  mainMenuUnitedStatesAtlasButton?.addEventListener("click", () => { void openUnitedStatesAtlas(); });
+  mainMenuUnitedStatesExpeditionButton?.addEventListener("click", () => { void openUnitedStatesExpedition(); });
+  mainMenuUnitedStatesMemoryTrailButton?.addEventListener("click", () => {
+    clearUnitedStatesExpeditionReturn();
+    void startOrContinueUnitedStatesMemoryTrail();
+  });
+  mainMenuUnitedStatesAtlasButton?.addEventListener("click", () => {
+    clearUnitedStatesExpeditionReturn();
+    void openUnitedStatesAtlas();
+  });
   mainMenuUnitedStatesProgressButton?.addEventListener("click", () => { void openUnitedStatesProgressReport(); });
-  mainMenuUnitedStatesRelationshipsButton?.addEventListener("click", () => { void openMentalMapChallenge({ unitedStatesRelationshipsOnly: true }); });
-  mainMenuMentalMapChallengeButton?.addEventListener("click", () => { void openMentalMapChallenge(); });
-  mainMenuMapReconstructionButton?.addEventListener("click", () => { void openMapReconstruction(); });
+  mainMenuUnitedStatesRelationshipsButton?.addEventListener("click", () => {
+    clearUnitedStatesExpeditionReturn();
+    void openMentalMapChallenge({ unitedStatesRelationshipsOnly: true });
+  });
+  mainMenuMentalMapChallengeButton?.addEventListener("click", () => {
+    clearUnitedStatesExpeditionReturn();
+    void openMentalMapChallenge();
+  });
+  mainMenuMapReconstructionButton?.addEventListener("click", () => {
+    clearUnitedStatesExpeditionReturn();
+    void openMapReconstruction();
+  });
   legacyCompassChallengeButton?.addEventListener("click", () => { void openCompassChallenge(); });
   mainMenuMoreWaysButton?.addEventListener("click", () => showAppScreen("main-menu-more-ways"));
   audioMuteButton?.addEventListener("click", toggleAudioMute);
@@ -6118,6 +6143,7 @@ function renderAppShellScreen(screenId) {
   const isChallengeMenu = normalizedScreenId === "challenge-menu";
   const isMenuHub = isMainMenu || isMoreWaysMenu || isLearnMenu || isChallengeMenu;
   const isChooseJourney = normalizedScreenId === "choose-journey";
+  const isUnitedStatesExpedition = normalizedScreenId === "united-states-expedition";
   const isUnitedStatesProgressReport = normalizedScreenId === "united-states-progress-report";
   const hasJourneyShellContent = isJourneyShellScreen(normalizedScreenId);
   const content = getAppShellScreenContent(normalizedScreenId);
@@ -6156,6 +6182,7 @@ function renderAppShellScreen(screenId) {
   });
 
   updateDailyTrailMainMenuButton(isMainMenu);
+  if (isMainMenu) void refreshUnitedStatesExpeditionMenuAction();
 
   if (mainMenuMoreWaysButton) {
     mainMenuMoreWaysButton.disabled = !isMainMenu;
@@ -6210,7 +6237,16 @@ function renderAppShellScreen(screenId) {
   renderQuickStartCard(isChallengeMenu);
 
   if (appShellPlaceholderCard) {
-    appShellPlaceholderCard.hidden = isMenuHub || isChooseJourney || hasJourneyShellContent || isUnitedStatesProgressReport;
+    appShellPlaceholderCard.hidden = isMenuHub || isChooseJourney || hasJourneyShellContent || isUnitedStatesExpedition || isUnitedStatesProgressReport;
+  }
+
+  if (unitedStatesExpeditionView) {
+    unitedStatesExpeditionView.hidden = !isUnitedStatesExpedition;
+    if (isUnitedStatesExpedition && unitedStatesExpeditionModel) {
+      renderExpedition(unitedStatesExpeditionView, unitedStatesExpeditionModel, {
+        onLaunch: launchUnitedStatesExpeditionStep
+      });
+    }
   }
 
   if (unitedStatesProgressReportView) {
@@ -6297,6 +6333,10 @@ function getAppShellScreenContent(screenId) {
     "united-states-trail-summary": {
       title: "United States Memory Trail",
       subtitle: "This session is complete."
+    },
+    "united-states-expedition": {
+      title: "Across the United States",
+      subtitle: "Your guided route through the U.S. learning experience."
     },
     "united-states-progress-report": {
       title: "Progress Report",
@@ -7963,6 +8003,104 @@ function getUnitedStatesProgressReportDailyTrailItems() {
   return [...byId.values()];
 }
 
+function countCompletedJourneyStepsForExpedition(journeyId, predicate = () => true) {
+  const journey = journeyPresets.find((candidate) => candidate.id === journeyId);
+  const journeyProgress = getJourneyProgress(journeyId, loadProgress());
+  return (journey?.steps || []).filter(predicate).filter((step) => (
+    Object.values(journeyProgress.completedSteps?.[step.id] || {}).some(Boolean)
+  )).length;
+}
+
+function countCanonicalAttemptsForExpedition(events, predicate) {
+  return new Set(events.filter(predicate).map((event) => event.attemptId || event.eventId)).size;
+}
+
+async function createAcrossUnitedStatesExpeditionModel() {
+  const trailState = loadUnitedStatesMemoryTrailProgress();
+  const canonicalEvents = loadCanonicalEvidenceRepository().events || [];
+  const connectionActivityIds = new Set(["us-state-capital-relationships", "us-atlas-relationships"]);
+  const reconstructionEvents = canonicalEvents.filter((event) => event.sourceMode === "map-reconstruction");
+  return createExpeditionReadModel(acrossUnitedStatesExpedition, {
+    usJourneyStateStepsCompleted: countCompletedJourneyStepsForExpedition("united-states", (step) => step.kind === "states"),
+    usJourneyPhysicalStepsCompleted: countCompletedJourneyStepsForExpedition("united-states", (step) => step.kind === "physical-features"),
+    usCapitalJourneyStepsCompleted: countCompletedJourneyStepsForExpedition("us-capitals"),
+    usTrailHasStarted: trailState.hasStarted,
+    usTrailIntroducedCount: trailState.introducedItemIds?.length || 0,
+    usConnectionsAttempts: countCanonicalAttemptsForExpedition(canonicalEvents, (event) => (
+      event.sourceMode === "mental-map" && connectionActivityIds.has(event.sourceActivityId)
+    )),
+    mentalMapAttempts: countCanonicalAttemptsForExpedition(canonicalEvents, (event) => (
+      event.sourceMode === "mental-map" && !connectionActivityIds.has(event.sourceActivityId)
+    )),
+    regionalReconstructionAttempts: countCanonicalAttemptsForExpedition(reconstructionEvents, (event) => (
+      event.sourceActivityId !== "rebuild-lower-48"
+    )),
+    lower48ReconstructionAttempts: countCanonicalAttemptsForExpedition(reconstructionEvents, (event) => (
+      event.sourceActivityId === "rebuild-lower-48"
+    ))
+  });
+}
+
+async function refreshUnitedStatesExpeditionMenuAction() {
+  if (!mainMenuUnitedStatesExpeditionAction) return;
+  const model = await createAcrossUnitedStatesExpeditionModel();
+  if (currentAppScreen !== "main-menu") return;
+  mainMenuUnitedStatesExpeditionAction.textContent = model.progress.completedCount > 0
+    ? `Continue · ${model.progress.completedCount}/${model.progress.totalCount}`
+    : "Begin Expedition";
+}
+
+async function openUnitedStatesExpedition(options = {}) {
+  unitedStatesExpeditionModel = await createAcrossUnitedStatesExpeditionModel();
+  showAppScreen("united-states-expedition", { pushHistory: options.pushHistory !== false });
+}
+
+function returnFromUnitedStatesExpeditionActivity(fallbackScreen) {
+  if (shouldReturnToUnitedStatesExpedition) {
+    shouldReturnToUnitedStatesExpedition = false;
+    void openUnitedStatesExpedition({ pushHistory: false });
+    return;
+  }
+  showAppScreen(fallbackScreen, { pushHistory: false });
+}
+
+function clearUnitedStatesExpeditionReturn() {
+  shouldReturnToUnitedStatesExpedition = false;
+}
+
+function launchUnitedStatesExpeditionStep(step) {
+  if (!step || step.status === "locked") return;
+  shouldReturnToUnitedStatesExpedition = true;
+  const launch = step.launch || {};
+  if (launch.kind === "united-states-atlas") {
+    void openUnitedStatesAtlas();
+    return;
+  }
+  if (launch.kind === "journey") {
+    selectJourney(launch.journeyId);
+    return;
+  }
+  if (launch.kind === "united-states-memory-trail") {
+    void startOrContinueUnitedStatesMemoryTrail();
+    return;
+  }
+  if (launch.kind === "united-states-connections") {
+    void openMentalMapChallenge({ unitedStatesRelationshipsOnly: true });
+    return;
+  }
+  if (launch.kind === "mental-map") {
+    void openMentalMapChallenge();
+    return;
+  }
+  if (launch.kind === "map-reconstruction-capstone") {
+    void openMapReconstructionWithOptions({ capstoneId: launch.capstoneId });
+    return;
+  }
+  if (launch.kind === "map-reconstruction") {
+    void openMapReconstruction();
+  }
+}
+
 async function openUnitedStatesProgressReport() {
   await ensureActivityDataLoaded();
   const items = getUnitedStatesMemoryTrailItems();
@@ -8051,7 +8189,7 @@ function exitUnitedStatesAtlas() {
   runner?.setUnitedStatesAtlasLearningStatuses({});
   unitedStatesAtlasProgress = null;
   document.body.classList.remove("united-states-atlas-mode", "overview-mode", "browse-mode");
-  showAppScreen("main-menu", { pushHistory: false });
+  returnFromUnitedStatesExpeditionActivity("main-menu");
 }
 
 function loadMapReconstructionGeometry(regionId) {
@@ -8171,6 +8309,10 @@ async function startMapReconstructionRegion(regionId) {
 }
 
 async function openMapReconstruction() {
+  return openMapReconstructionWithOptions();
+}
+
+async function openMapReconstructionWithOptions(options = {}) {
   saveCurrentActivityProgress();
   cancelGrabbedAnswer();
   clearFeedback();
@@ -8218,6 +8360,9 @@ async function openMapReconstruction() {
   }
   if (currentAppScreen !== "map-reconstruction") return;
   showMapReconstructionRegionSelection();
+  if (options.capstoneId) {
+    await startMapReconstructionCapstone(options.capstoneId);
+  }
 }
 
 function exitMapReconstruction() {
@@ -8227,7 +8372,7 @@ function exitMapReconstruction() {
   if (mapReconstructionPanel) mapReconstructionPanel.hidden = true;
   if (mapElement) mapElement.removeAttribute("aria-hidden");
   document.body.classList.remove("map-reconstruction-mode", "overview-mode", "browse-mode");
-  showAppScreen("main-menu", { pushHistory: false });
+  returnFromUnitedStatesExpeditionActivity("main-menu");
 }
 
 async function openMentalMapChallenge(options = {}) {
@@ -8410,7 +8555,7 @@ function exitMentalMapChallenge() {
   runner?.prepareMentalMapChallenge();
   if (mapElement) mapElement.removeAttribute("aria-hidden");
   document.body.classList.remove("mental-map-challenge-mode", "mental-map-result-mode", "overview-mode", "browse-mode");
-  showAppScreen("main-menu", { pushHistory: false });
+  returnFromUnitedStatesExpeditionActivity("main-menu");
 }
 
 async function openCompassChallenge() {
@@ -19418,7 +19563,7 @@ function exitUnitedStatesMemoryTrailGameplay() {
     answerBank.innerHTML = "";
   }
   resetActivityAttemptState();
-  showAppScreen("main-menu", { pushHistory: false });
+  returnFromUnitedStatesExpeditionActivity("main-menu");
 }
 
 function resetUnitedStatesMemoryTrailProgress() {
@@ -19445,7 +19590,7 @@ async function continueUnitedStatesMemoryTrailFromSummary() {
 
 function finishUnitedStatesMemoryTrailFromSummary() {
   lastUnitedStatesMemoryTrailSummary = null;
-  showAppScreen("main-menu", { pushHistory: false });
+  returnFromUnitedStatesExpeditionActivity("main-menu");
 }
 
 function renderUnitedStatesMemoryTrailSummary() {
@@ -24865,7 +25010,7 @@ function handleJourneyCompletionPrimary() {
 
   if (!activeJourneySession) {
     hideJourneyCompletionCard();
-    showAppScreen("choose-journey");
+    returnFromUnitedStatesExpeditionActivity("choose-journey");
     return;
   }
 
@@ -24883,7 +25028,7 @@ function handleJourneyCompletionPrimary() {
   atlasProgress = clearActiveJourney(atlasProgress);
   activeJourneySession = null;
   resetJourneyGameplayInstructionSession();
-  showAppScreen("choose-journey");
+  returnFromUnitedStatesExpeditionActivity("choose-journey");
 }
 
 async function advanceToJourneyStep(nextStepIndex) {
@@ -24988,7 +25133,7 @@ function exitJourney() {
   atlasProgress = clearActiveJourney(atlasProgress);
   activeJourneySession = null;
   resetJourneyGameplayInstructionSession();
-  showAppScreen(selectedJourneyId ? "journey-detail" : "main-menu", { pushHistory: false });
+  returnFromUnitedStatesExpeditionActivity(selectedJourneyId ? "journey-detail" : "main-menu");
 }
 
 function getCurrentActivitySequence(mapSet = activeMapSet) {

@@ -161,6 +161,12 @@ Deterministic mode does not freeze browser timers, animation timing, response du
 
 `scripts/check-learning-inspector.mjs` exercises the read-only Inspector adapters and local panel projection documented in [`learning-inspector.md`](learning-inspector.md). Fixtures cover place mastery, Daily Trail, U.S. Memory Trail, Journey progress, Mental Map results, reconstruction results, planner selection explanations, deterministic-context export, canonical summaries/recent responses, filtering, and before/after transitions. The check verifies that adapters do not mutate input state, equivalent inputs produce stable JSON, missing evidence remains explicitly unavailable, deterministic planner replays produce equivalent Inspector output, and runtime installation remains guarded to local development.
 
+## Expedition framework check
+
+`scripts/check-expedition-framework.mjs` validates the reusable Expedition configuration/read model and the “Across the United States” composition. It covers new, partial, and out-of-order direct-entry evidence; prerequisite unlocking; recommended-step selection; configuration errors; required mechanic references; the absence of an Expedition storage system; preservation of direct-entry menu paths; and runtime use of existing Journey, U.S. Memory Trail, and canonical evidence.
+
+A browser acceptance pass on 2026-08-21 verified the main-menu Expedition entry, nine-step hub, enabled/locked states for a new learner, Atlas launch and return, and absence of horizontal overflow at a 390×844 mobile viewport. No browser console errors were observed on that path.
+
 ## Deterministic learner simulations
 
 Run the O4 synthetic learner evidence generator with:
