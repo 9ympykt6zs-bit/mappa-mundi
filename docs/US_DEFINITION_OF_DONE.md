@@ -30,7 +30,7 @@ Completion does not mean that every possible piece of U.S. geography content has
 - [x] Strong or mastered items recede from ordinary review without disappearing permanently.
 - [x] Previously learned material can return when it becomes due or evidence suggests forgetting.
 - [x] New material is introduced according to the intended progression rules.
-- [ ] No eligible item can become permanently starved by the adaptive system.
+- [x] No eligible item can become permanently starved by the adaptive system.
 
 ---
 

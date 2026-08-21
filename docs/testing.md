@@ -10,6 +10,8 @@ The baseline includes `scripts/check-progress-score-comparison.mjs` for the isol
 
 The baseline includes `scripts/check-learning-progress-reset.mjs`. It pins the complete learner-state reset manifest, verifies deterministic/idempotent global removal and storage-failure continuation, proves that scoped resets retain canonical evidence, checks explicit runtime labels/wiring, and verifies that settings, preferences, developer configuration, and unknown future preference keys survive. See [`learning-progress-reset.md`](learning-progress-reset.md).
 
+The baseline includes `scripts/check-daily-trail-starvation-protection.mjs`. Across a deterministic multi-session scenario, it verifies that Daily Trail's existing old-section review lane eventually serves every waiting eligible due item even while a persistently failed item keeps strong remediation pressure. It also pins unchanged new-item introduction and future-due mastered-item recession. Together with `scripts/check-united-states-memory-trail-fairness.mjs`, this closes starvation protection across the two adaptive U.S. review planners.
+
 ## Setup
 
 Install JavaScript dependencies and the Chromium browser used by the test projects:
