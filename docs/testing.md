@@ -47,6 +47,14 @@ npm run report:progress-report-canonical-shadow
 
 See [`progress-report-canonical-shadow.md`](progress-report-canonical-shadow.md) for the adapter boundary and migration assessment.
 
+`scripts/check-progress-evidence-policy.mjs` validates the UI-independent Progress Evidence Policy against current canonical events. It covers cross-mode Ohio location history, naming/location separation, assisted and partial treatment, Mental Map and reconstruction isolation, event-ID deduplication, capital subskill separation, deterministic replay, serialization, immutability, and the explicit contextual-evidence contract gap. Run it directly with:
+
+```sh
+npm run check:progress-evidence-policy
+```
+
+See [`progress-evidence-policy.md`](progress-evidence-policy.md) for the inclusion matrix, historical baseline direction, and migration criteria.
+
 ## Browser/E2E tests
 
 Run Playwright separately:
