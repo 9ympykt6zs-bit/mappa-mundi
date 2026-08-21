@@ -27,7 +27,7 @@ Completion does not mean that every possible piece of U.S. geography content has
 - [ ] Resetting progress reliably returns the learner to the documented starting state.
 - [ ] Identical starting state and identical learner responses produce identical learning-state results, except where randomness is explicitly controlled by a seed or documented separately.
 - [ ] Repeated errors increase appropriate review pressure.
-- [ ] Strong or mastered items recede from ordinary review without disappearing permanently.
+- [x] Strong or mastered items recede from ordinary review without disappearing permanently.
 - [ ] Previously learned material can return when it becomes due or evidence suggests forgetting.
 - [ ] New material is introduced according to the intended progression rules.
 - [ ] No eligible item can become permanently starved by the adaptive system.
@@ -122,7 +122,7 @@ The simulations demonstrate that:
 
 - [x] unseen material is not accidentally assessed before the intended introduction;
 - [x] repeated errors materially change future review behavior;
-- [ ] mastered material does not dominate sessions;
+- [x] mastered material does not dominate sessions;
 - [x] forgotten or lapsed material returns appropriately;
 - [x] weak regions or concepts receive additional opportunities when warranted;
 - [x] strong regions do not receive the same unnecessary review pressure;

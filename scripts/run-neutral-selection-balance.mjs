@@ -45,7 +45,16 @@ ${report.promptObjectiveProfiles.flatMap((profile) => profile.objectives.map((ob
 - All item-type shares within ±20% of eligible share: ${report.checks.noItemTypeOutsideTwentyPercent ? "yes" : "no"}.
 - All prompt-objective shares within ±20% of their intentional profile target: ${report.checks.noPromptObjectiveOutsideTwentyPercent ? "yes" : "no"}.
 - Prompt objectives never selected: ${report.checks.noPromptObjectiveStarved ? "none" : "one or more"}.
+- Mastered share when 30 due non-mastered items compete with 70 future-mastered items: ${percent(report.masteredReviewPressure.mixedDuePressure.masteredShare)}.
+- All due mastered items remained eligible across the controlled probe: ${report.masteredReviewPressure.allMasteredDue.neverSelectedItemIds.length ? "no" : "yes"}.
 - Same seed and state replay exactly in the focused automated check.
+
+## Mastered-item pressure
+
+- Mixed due-review setup: ${report.masteredReviewPressure.mixedDuePressure.setup}
+- Mixed selections: ${report.masteredReviewPressure.mixedDuePressure.nonMasteredSelections} non-mastered; ${report.masteredReviewPressure.mixedDuePressure.masteredSelections} mastered.
+- All-mastered setup: ${report.masteredReviewPressure.allMasteredDue.setup}
+- All-mastered selections: ${report.masteredReviewPressure.allMasteredDue.masteredSelections}; never selected: ${report.masteredReviewPressure.allMasteredDue.neverSelectedItemIds.length ? report.masteredReviewPressure.allMasteredDue.neverSelectedItemIds.join(", ") : "none"}.
 
 ## Scope limit
 

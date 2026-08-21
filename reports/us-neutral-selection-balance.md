@@ -37,7 +37,16 @@ The production prompt selector intentionally targets a 50/50 locating/identifyin
 - All item-type shares within ±20% of eligible share: yes.
 - All prompt-objective shares within ±20% of their intentional profile target: yes.
 - Prompt objectives never selected: none.
+- Mastered share when 30 due non-mastered items compete with 70 future-mastered items: 0.00%.
+- All due mastered items remained eligible across the controlled probe: yes.
 - Same seed and state replay exactly in the focused automated check.
+
+## Mastered-item pressure
+
+- Mixed due-review setup: 70 mastered items scheduled in the future; 30 due review items.
+- Mixed selections: 2000 non-mastered; 0 mastered.
+- All-mastered setup: All 100 mastered items are due with equivalent scheduling evidence.
+- All-mastered selections: 2000; never selected: none.
 
 ## Scope limit
 

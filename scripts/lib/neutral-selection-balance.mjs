@@ -88,6 +88,76 @@ function runPromptObjectiveProfile(items, promptCount, { earlyChunk = false } = 
   };
 }
 
+function runMasteredReviewPressure(items, { planCount = 200, seedPrefix, now }) {
+  const currentSessionNumber = 100;
+  const createProgress = (item, index, allMasteredDue = false) => {
+    const mastered = allMasteredDue || index < 70;
+    return [item.id, {
+      status: mastered ? "mastered" : "review",
+      timesSeen: mastered ? 9 : 4,
+      correctCount: mastered ? 9 : 4,
+      missCount: 0,
+      correctStreak: mastered ? 6 : 3,
+      lastSeenSession: mastered ? 95 : 50,
+      introducedSession: 1,
+      memoryState: "review",
+      difficulty: mastered ? 2 : 5,
+      stability: mastered ? 12 : 5,
+      retrievability: mastered ? 0.95 : 0.7,
+      dueSession: allMasteredDue || !mastered ? 99 : 130,
+      lastReviewedSession: mastered ? 95 : 50,
+      lapseCount: 0
+    }];
+  };
+  const run = (allMasteredDue) => {
+    const state = createUnitedStatesMemoryTrailState({
+      currentSessionNumber,
+      introducedItemIds: items.map(({ id }) => id),
+      itemProgress: Object.fromEntries(items.map((item, index) => createProgress(item, index, allMasteredDue)))
+    }, items);
+    const selectionCounts = Object.fromEntries(items.map(({ id }) => [id, 0]));
+    let masteredSelections = 0;
+    let nonMasteredSelections = 0;
+    for (let planIndex = 0; planIndex < planCount; planIndex += 1) {
+      const plan = planUnitedStatesMemoryTrailSession(state, items, {
+        seed: `${seedPrefix}:mastered:${allMasteredDue ? "all-due" : "mixed"}:${planIndex}`,
+        now: () => new Date(now)
+      });
+      for (const item of plan.playItems) {
+        selectionCounts[item.id] += 1;
+        if (state.itemProgress[item.id].status === "mastered") masteredSelections += 1;
+        else nonMasteredSelections += 1;
+      }
+    }
+    return {
+      selections: masteredSelections + nonMasteredSelections,
+      masteredSelections,
+      nonMasteredSelections,
+      masteredShare: masteredSelections / Math.max(1, masteredSelections + nonMasteredSelections),
+      neverSelectedItemIds: Object.entries(selectionCounts).filter(([, count]) => count === 0).map(([id]) => id)
+    };
+  };
+  const mixedDuePressure = run(false);
+  const allMasteredDue = run(true);
+  return {
+    planCount,
+    mixedDuePressure: {
+      ...mixedDuePressure,
+      setup: "70 mastered items scheduled in the future; 30 due review items."
+    },
+    allMasteredDue: {
+      ...allMasteredDue,
+      setup: "All 100 mastered items are due with equivalent scheduling evidence."
+    },
+    checks: {
+      masteredDoesNotDominateMixedDueReview: mixedDuePressure.masteredShare < 0.5,
+      futureMasteredRecedesCompletely: mixedDuePressure.masteredSelections === 0,
+      masteredRemainsEligibleWhenDue: allMasteredDue.masteredSelections === allMasteredDue.selections,
+      noDueMasteredItemStarvedInProbe: allMasteredDue.neverSelectedItemIds.length === 0
+    }
+  };
+}
+
 export function createNeutralUnitedStatesMemoryTrailState(items = []) {
   const currentSessionNumber = 100;
   return createUnitedStatesMemoryTrailState({
@@ -164,6 +234,7 @@ export function runNeutralUnitedStatesSelectionBalance({
     runPromptObjectiveProfile(items, selections),
     runPromptObjectiveProfile(items, selections, { earlyChunk: true })
   ];
+  const masteredReviewPressure = runMasteredReviewPressure(items, { seedPrefix, now });
 
   return {
     schemaVersion: 1,
@@ -180,6 +251,7 @@ export function runNeutralUnitedStatesSelectionBalance({
     regions,
     itemTypes,
     promptObjectiveProfiles,
+    masteredReviewPressure,
     itemSelectionRange: {
       minimum: Math.min(...itemSelectionCounts),
       maximum: Math.max(...itemSelectionCounts),
@@ -191,6 +263,8 @@ export function runNeutralUnitedStatesSelectionBalance({
       noItemTypeOutsideTwentyPercent: itemTypes.every(({ withinTwentyPercent }) => withinTwentyPercent),
       noPromptObjectiveOutsideTwentyPercent: promptObjectiveProfiles.every((profile) => profile.objectives.every(({ withinTwentyPercent }) => withinTwentyPercent)),
       noPromptObjectiveStarved: promptObjectiveProfiles.every((profile) => profile.objectives.every(({ selected }) => selected > 0)),
+      masteredDoesNotDominateWhenDueReviewExists: masteredReviewPressure.checks.masteredDoesNotDominateMixedDueReview,
+      masteredRemainsEligibleWhenDue: masteredReviewPressure.checks.masteredRemainsEligibleWhenDue,
       noEligibleItemStarved: itemSelectionCounts.every((count) => count > 0),
       deterministicAndReadOnly: true
     },
