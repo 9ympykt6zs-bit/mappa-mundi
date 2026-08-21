@@ -80,7 +80,7 @@ const shadow = createCanonicalUnitedStatesProgressReportShadow({ items, reposito
 assert.deepEqual({ items, repository }, before, "The shadow adapter must not mutate items or repository state.");
 assert.equal(shadow.developerOnly, true);
 assert.equal(shadow.scoringModel.function, "scoreBayesianEvidenceCounts");
-assert.equal(shadow.scoringInputPolicy, "canonical concept-skill reducer summaries only; raw events are provenance only");
+assert.equal(shadow.scoringInputPolicy, "Progress Evidence Policy histories only; raw events are provenance only");
 assert.deepEqual(shadow.categories.map(({ id }) => id), ["state-locations", "state-identification", "state-capitals"]);
 assert.doesNotThrow(() => createCanonicalUnitedStatesProgressReportShadow(), "An absent repository should produce an empty shadow report.");
 
@@ -88,7 +88,8 @@ const legacySource = readFileSync(new URL("../src/united-states-progress-report.
 const shadowSource = readFileSync(new URL("../src/canonical-progress-report-shadow.js", import.meta.url), "utf8");
 assert.match(legacySource, /scoreBayesianEvidenceCounts\(evidence\.correctCount, evidence\.incorrectCount\)/);
 assert.match(shadowSource, /scoreBayesianEvidenceCounts\(correctCount, incorrectCount\)/);
-assert.match(shadowSource, /Reducer summaries are the single scoring input/);
+assert.match(shadowSource, /applyProgressEvidencePolicy\(events\)/);
+assert.match(shadowSource, /Progress Evidence Policy histories are the sole Bayesian input/);
 
 const markdown = renderProgressReportCanonicalShadowMarkdown(report);
 assert.match(markdown, /## Executive summary/);

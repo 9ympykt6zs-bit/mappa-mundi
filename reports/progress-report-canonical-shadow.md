@@ -4,7 +4,7 @@ Generated from deterministic controlled fixtures at 2034-02-03T15:30:00.000Z.
 
 ## Executive summary
 
-If the Progress Report were powered by canonical evidence, would it tell the same story as the current report? **Not unconditionally yet.** Across 16 item × skill cases, the shadow produced 11 exact matches, 1 semantic match, 3 intentional differences, 1 unavailable comparison, and 0 defects.
+If the Progress Report were powered by canonical evidence, would it tell the same story as the current report? **Yes for the guarded clean new-learner cohort; not as an unconditional replacement.** Across 16 item × skill cases, the shadow produced 11 exact matches, 1 semantic match, 3 intentional differences, 1 unavailable comparison, and 0 defects.
 
 The shared Bayesian formula behaves identically when both paths receive equivalent correct/incorrect counts. Remaining differences are evidence-scope and historical-data policy questions rather than formula defects.
 
@@ -52,9 +52,9 @@ One controlled user action was submitted twice with the same event identity. Fir
 
 Safe now:
 
-- Shadow/debug comparison for state location and identification canonical concept-skill streams
-- Capital item-level shadow scoring when both canonical capital retrieval prompt forms are intentionally combined
-- Canonical-first scoring from a clean cutover only when the included source modes and skill-sharing policy are explicitly matched
+- Canonical-first production reads for persistently enrolled learners whose first read passed a clean legacy-history audit
+- State location and identification canonical concept-skill streams routed through Progress Evidence Policy v1
+- Capital item-level scoring that intentionally combines canonical locating and identifying histories
 
 Still dependent on legacy evidence:
 
@@ -63,10 +63,10 @@ Still dependent on legacy evidence:
 - Current combined state-practice behavior when no skill-specific legacy signal exists
 
 - **Historical limitation:** Legacy aggregate counters cannot be losslessly separated into locating versus identifying attempts or converted into timestamped canonical events.
-- **Brand-new learners:** Not safe as an unconditional canonical-first replacement. Journey evidence is canonical but absent from the current report, and legacy planner fallbacks deliberately share combined state counts across location and identification. A source/skill policy must be chosen and shadow-accepted first.
+- **Brand-new learners:** Not safe as an unconditional canonical-first replacement. Safe only behind the production eligibility selector: healthy canonical storage, a clean and unambiguous legacy-history audit, a valid persistent cohort marker, and zero strict shadow defects.
 - **Existing learners:** Not safe. Existing legacy-only history would disappear unless a hybrid baseline/cutover strategy is designed; fabricating raw historical events is prohibited.
 
-Recommendation: Keep the current read path. Continue developer-only shadowing, define source inclusion and legacy-baseline policy, then compare category-level outputs over a clean-cutover cohort before enabling canonical-first reads.
+Recommendation: Use the guarded canonical-first read for the clean new-learner cohort, retain automatic legacy fallback and shadow diagnostics, and do not migrate existing learners until a baseline/cutover design exists.
 
 ## Scope limits
 

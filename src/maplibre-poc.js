@@ -17,8 +17,8 @@ import {
 import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=20260721-mental-map-consolidation-1";
 import { readUnitedStatesAtlasProgress } from "./atlas/united-states-atlas-progress.js";
 import { renderUnitedStatesAtlasOverview, renderUnitedStatesAtlasProfile } from "./atlas/united-states-atlas-ui.js";
-import { createUnitedStatesProgressReport } from "./united-states-progress-report.js";
 import { renderUnitedStatesProgressReport } from "./united-states-progress-report-ui.js";
+import { createUnitedStatesProgressReportReadModel } from "./united-states-progress-report-read-path.js";
 import { loadPlaceMastery } from "./place-mastery-store.js";
 import {
   adaptCanonicalMapReconstructionEvaluation,
@@ -27,6 +27,7 @@ import {
   getCanonicalMentalMapConceptId
 } from "./canonical-learning-evidence.js";
 import {
+  loadCanonicalEvidenceRepository,
   recordCanonicalEvidenceEvent,
   recordCanonicalEvidenceEvents
 } from "./canonical-learning-evidence-repository.js";
@@ -7843,13 +7844,19 @@ function getUnitedStatesProgressReportDailyTrailItems() {
 async function openUnitedStatesProgressReport() {
   await ensureActivityDataLoaded();
   const items = getUnitedStatesMemoryTrailItems();
-  unitedStatesProgressReportModel = createUnitedStatesProgressReport({
+  const readModel = createUnitedStatesProgressReportReadModel({
     items,
     unitedStatesMemoryTrailState: loadUnitedStatesMemoryTrailProgress(items),
     dailyTrailState: loadDailyTrailState(),
     dailyTrailItems: getUnitedStatesProgressReportDailyTrailItems(),
-    placeMasteryState: loadPlaceMastery()
+    placeMasteryState: loadPlaceMastery(),
+    repository: loadCanonicalEvidenceRepository()
   });
+  unitedStatesProgressReportModel = readModel.report;
+  if (isLocalDevAccessAllowed()) window.mappaProgressReportReadDebug = readModel.debug;
+  if (readModel.selection.fallback && readModel.selection.reason.startsWith("canonical-")) {
+    console.warn("Progress Report used its safe legacy fallback.", readModel.debug);
+  }
   showAppScreen("united-states-progress-report");
 }
 

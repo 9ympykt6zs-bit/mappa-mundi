@@ -43,6 +43,8 @@ function learnerDisplayCategory(category) {
   };
 }
 
+export const createUnitedStatesProgressReportDisplayCategory = learnerDisplayCategory;
+
 function learnerProgressDisplay(score) {
   const display = renderBayesianProgressSegments(score);
   return {
@@ -52,6 +54,8 @@ function learnerProgressDisplay(score) {
       : `${Math.round(score * 100)}% progress`
   };
 }
+
+export const createUnitedStatesProgressReportDisplay = learnerProgressDisplay;
 
 function itemProgressEntriesForCanonicalItem(item, source) {
   if (!source?.state?.itemProgress) return [];
@@ -206,6 +210,8 @@ function explanationForEvidence(correctCount, incorrectCount, score) {
   }
   return `${responseLabel} and ${missLabel} shape your progress. Mistakes can lower it, but they do not erase what you have already shown.`;
 }
+
+export const createUnitedStatesProgressReportEvidenceExplanation = explanationForEvidence;
 
 function itemLabel(item, itemsById) {
   if (item.type !== "capital") return item.label;

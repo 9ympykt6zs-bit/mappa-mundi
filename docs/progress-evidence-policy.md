@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This policy defines which canonical evidence affects each user-facing Progress Report skill. It is independent of UI layout and does not change the production report, Bayesian formula, learner state, scheduling, or gameplay.
+This policy defines which canonical evidence affects each user-facing Progress Report skill. The guarded canonical-first production read consumes it without changing UI layout, the Bayesian formula, learner evidence, scheduling, or gameplay.
 
 The policy decision key is the canonical `conceptId + skillId`. Source mode and activity remain provenance and producer-validation data; they do not redefine the skill. Outcome determines whether the included event is positive, negative, partial, assisted, or non-scoring evidence.
 
@@ -12,7 +12,7 @@ The policy decision key is the canonical `conceptId + skillId`. Source mode and 
 - Merge different modes when they measure the same concept × skill. Journey, U.S. Memory Trail, and Daily Trail Ohio-location events belong to one Ohio State Location history.
 - Keep location, identification, relationship recall, and spatial reconstruction separate.
 - Treat `correct` and `incorrect` as the current Bayesian inputs. Preserve other outcomes without silently changing their meaning.
-- Deduplicate by `eventId` before aggregation. Use either raw events or reducer summaries as the scoring input, never both.
+- Deduplicate by `eventId` before aggregation. Route raw canonical events through this policy and score the resulting histories; never add the raw events to those history counts again.
 - Do not fabricate prompt-specific history from legacy aggregates.
 - A new producer with an already-approved concept × skill may contribute regardless of its mode name, but it must pass emission parity before production migration.
 
@@ -97,7 +97,7 @@ Brand-new learners can start with canonical-only histories. Existing learners re
 - A current v1 event maps to exactly one policy history. Multiple contributions would require an explicit future rule proving that the action measured multiple skills.
 - Different modes with different event IDs may both contribute when they are genuinely separate attempts at the same concept × skill.
 - A category rollup consumes each mapped event once, even if it summarizes multiple subskills.
-- Consumers choose raw events or canonical reducer summaries as their scoring input. Summary counts must never be added to the raw events that produced them.
+- Consumers score policy history counts. Those counts must never be added to the raw events that produced them.
 - Legacy baselines and canonical events require a recorded cutover boundary; otherwise their overlapping period must not be summed.
 
 ## 10. Open questions

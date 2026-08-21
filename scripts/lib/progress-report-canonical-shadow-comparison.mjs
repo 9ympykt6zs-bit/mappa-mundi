@@ -145,7 +145,7 @@ function normalizedResult(sourceRecord, side) {
   return {
     sourceData: side === "legacy" ? clone(history.sources) : {
       conceptIds: clone(sourceRecord.canonicalMapping.conceptIds),
-      skillIds: clone(sourceRecord.canonicalMapping.skillIds),
+      skillIds: clone(sourceRecord.canonicalMapping.canonicalSkillIds),
       sourceModes: clone(history.sources.map(({ id }) => id))
     },
     evidenceCounts: {
@@ -296,7 +296,7 @@ function buildDoubleCountingCase() {
     categoryId: "state-locations",
     pair,
     expectedClassification: "exact match",
-    rationale: "Repository idempotency leaves one raw event; the shadow scores its reducer summary once and uses raw events only for provenance."
+    rationale: "Repository idempotency leaves one raw event; the Progress Evidence Policy history scores it once and raw events remain provenance."
   });
   return {
     comparison,
@@ -498,9 +498,9 @@ export function buildProgressReportCanonicalShadowComparison() {
     doubleCountingValidation: doubleCounting.validation,
     migrationReadiness: {
       safeNow: [
-        "Shadow/debug comparison for state location and identification canonical concept-skill streams",
-        "Capital item-level shadow scoring when both canonical capital retrieval prompt forms are intentionally combined",
-        "Canonical-first scoring from a clean cutover only when the included source modes and skill-sharing policy are explicitly matched"
+        "Canonical-first production reads for persistently enrolled learners whose first read passed a clean legacy-history audit",
+        "State location and identification canonical concept-skill streams routed through Progress Evidence Policy v1",
+        "Capital item-level scoring that intentionally combines canonical locating and identifying histories"
       ],
       legacyDependent: [
         "Existing learner history that predates canonical emission",
@@ -508,11 +508,11 @@ export function buildProgressReportCanonicalShadowComparison() {
         "Current combined state-practice behavior when no skill-specific legacy signal exists"
       ],
       historicalLimitation: "Legacy aggregate counters cannot be losslessly separated into locating versus identifying attempts or converted into timestamped canonical events.",
-      canonicalFirstSafeForNewLearners: false,
-      canonicalFirstNewLearnerQualification: "Journey evidence is canonical but absent from the current report, and legacy planner fallbacks deliberately share combined state counts across location and identification. A source/skill policy must be chosen and shadow-accepted first.",
+      canonicalFirstSafeForNewLearners: true,
+      canonicalFirstNewLearnerQualification: "Safe only behind the production eligibility selector: healthy canonical storage, a clean and unambiguous legacy-history audit, a valid persistent cohort marker, and zero strict shadow defects.",
       canonicalFirstSafeForExistingLearners: false,
       canonicalFirstExistingLearnerQualification: "Existing legacy-only history would disappear unless a hybrid baseline/cutover strategy is designed; fabricating raw historical events is prohibited.",
-      recommendation: "Keep the current read path. Continue developer-only shadowing, define source inclusion and legacy-baseline policy, then compare category-level outputs over a clean-cutover cohort before enabling canonical-first reads."
+      recommendation: "Use the guarded canonical-first read for the clean new-learner cohort, retain automatic legacy fallback and shadow diagnostics, and do not migrate existing learners until a baseline/cutover design exists."
     },
     scoringModel: {
       legacyModule: "src/united-states-progress-report.js",
@@ -549,7 +549,7 @@ Generated from deterministic controlled fixtures at ${report.generatedAt}.
 
 ## Executive summary
 
-${report.question} **Not unconditionally yet.** Across ${summary.totalComparableItemSkillCases} item × skill cases, the shadow produced ${summary.exactMatches} exact matches, ${summary.semanticMatches} semantic match${summary.semanticMatches === 1 ? "" : "es"}, ${summary.intentionalDifferences} intentional differences, ${summary.unavailableCases} unavailable comparison${summary.unavailableCases === 1 ? "" : "s"}, and ${summary.defects} defects.
+${report.question} **Yes for the guarded clean new-learner cohort; not as an unconditional replacement.** Across ${summary.totalComparableItemSkillCases} item × skill cases, the shadow produced ${summary.exactMatches} exact matches, ${summary.semanticMatches} semantic match${summary.semanticMatches === 1 ? "" : "es"}, ${summary.intentionalDifferences} intentional differences, ${summary.unavailableCases} unavailable comparison${summary.unavailableCases === 1 ? "" : "s"}, and ${summary.defects} defects.
 
 The shared Bayesian formula behaves identically when both paths receive equivalent correct/incorrect counts. Remaining differences are evidence-scope and historical-data policy questions rather than formula defects.
 

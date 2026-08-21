@@ -39,7 +39,7 @@ npm run report:canonical-evidence-parity
 
 See [`canonical-evidence-parity-validation.md`](canonical-evidence-parity-validation.md) for the proof boundary and migration prerequisites.
 
-`scripts/check-progress-report-canonical-shadow.mjs` validates the next read-only migration probe. It verifies deterministic item × skill comparisons, unchanged legacy/repository inputs, the shared Bayesian scoring function, locating/naming separation, assisted-evidence exclusion, reducer/raw-event non-double-counting, persistence, reset, and JSON/Markdown output. Generate its developer report with:
+`scripts/check-progress-report-canonical-shadow.mjs` validates the retained comparison diagnostic. It verifies deterministic item × skill comparisons, unchanged legacy/repository inputs, the shared Bayesian scoring function, locating/naming separation, assisted-evidence exclusion, policy-history/raw-event non-double-counting, persistence, reset, and JSON/Markdown output. Generate its developer report with:
 
 ```sh
 npm run report:progress-report-canonical-shadow
@@ -54,6 +54,14 @@ npm run check:progress-evidence-policy
 ```
 
 See [`progress-evidence-policy.md`](progress-evidence-policy.md) for the inclusion matrix, historical baseline direction, and migration criteria.
+
+`scripts/check-progress-report-canonical-first.mjs` validates the guarded production read path. It covers clean-new-learner enrollment, persistent reload selection, existing and ambiguous legacy fallback, corrupt repository and invalid marker fallback, strict shadow fallback, cross-mode state evidence, separate identification, the temporary capital rollup, unseen behavior, event deduplication, persistence/reset, deterministic output, unchanged Memory Trail planning, and runtime wiring. Run it with:
+
+```sh
+npm run check:progress-report-canonical-first
+```
+
+See [`progress-report-canonical-first.md`](progress-report-canonical-first.md) for eligibility and fallback semantics.
 
 ## Browser/E2E tests
 
