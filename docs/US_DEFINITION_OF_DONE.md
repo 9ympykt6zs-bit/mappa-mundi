@@ -94,11 +94,11 @@ Raw question totals do not need to be equal between regions. Balance is measured
 
 The content bank and the adaptive delivery system are evaluated separately.
 
-- [ ] A seeded simulation of at least **10,000 selections** for a neutral learner with equivalent mastery across the country shows no systematic regional starvation.
-- [ ] Under neutral learner conditions, each region's selection share remains within approximately **±20% of its share of eligible content**, unless progression rules intentionally restrict the pool.
+- [x] A seeded simulation of at least **10,000 selections** for a neutral learner with equivalent mastery across the country shows no systematic regional starvation.
+- [x] Under neutral learner conditions, each region's selection share remains within approximately **±20% of its share of eligible content**, unless progression rules intentionally restrict the pool.
 - [ ] Required learning-objective categories are likewise checked for systematic starvation.
-- [ ] Adaptive delivery is allowed—and expected—to become non-uniform when learner evidence shows regional or skill-specific weaknesses.
-- [ ] Intentional short-term repetition used for remediation is distinguishable from accidental repetitive-question behavior.
+- [x] Adaptive delivery is allowed—and expected—to become non-uniform when learner evidence shows regional or skill-specific weaknesses.
+- [x] Intentional short-term repetition used for remediation is distinguishable from accidental repetitive-question behavior.
 
 The goal is **balanced opportunity, not artificially equal delivery**.
 
@@ -110,24 +110,24 @@ The adaptive system is verified with deterministic simulated learners rather tha
 
 At minimum, automated scenarios exist for:
 
-- [ ] a new learner;
-- [ ] a consistently strong/fast learner;
-- [ ] a learner who repeatedly misses one item, such as Ohio, while knowing comparable items;
-- [ ] a learner with a persistent regional weakness;
-- [ ] a learner who initially struggles with new material and then learns it;
-- [ ] a learner returning after a simulated period of absence;
-- [ ] a mixed learner with different strengths and weaknesses.
+- [x] a new learner;
+- [x] a consistently strong/fast learner;
+- [x] a learner who repeatedly misses one item, such as Ohio, while knowing comparable items;
+- [x] a learner with a persistent regional weakness;
+- [x] a learner who initially struggles with new material and then learns it;
+- [x] a learner returning after a simulated period of absence;
+- [x] a mixed learner with different strengths and weaknesses.
 
 The simulations demonstrate that:
 
 - [ ] unseen material is not accidentally assessed before the intended introduction;
-- [ ] repeated errors materially change future review behavior;
+- [x] repeated errors materially change future review behavior;
 - [ ] mastered material does not dominate sessions;
-- [ ] forgotten or lapsed material returns appropriately;
-- [ ] weak regions or concepts receive additional opportunities when warranted;
-- [ ] strong regions do not receive the same unnecessary review pressure;
+- [x] forgotten or lapsed material returns appropriately;
+- [x] weak regions or concepts receive additional opportunities when warranted;
+- [x] strong regions do not receive the same unnecessary review pressure;
 - [ ] eligible content is not permanently starved;
-- [ ] identical seeded scenarios are reproducible.
+- [x] identical seeded scenarios are reproducible.
 
 Simulation output should be readable enough to show **what happened and why**, not merely report that tests passed.
 
@@ -137,9 +137,9 @@ Simulation output should be readable enough to show **what happened and why**, n
 
 ### Existing test suite
 
-- [ ] The six currently stale, failing, or uncertain standalone checks identified during the stabilization audit have each been investigated.
-- [ ] Each is either corrected, rewritten, or deliberately retired with a documented reason.
-- [ ] There is a documented command for running the non-browser automated test baseline.
+- [x] The six currently stale, failing, or uncertain standalone checks identified during the stabilization audit have each been investigated.
+- [x] Each is either corrected, rewritten, or deliberately retired with a documented reason.
+- [x] There is a documented command for running the non-browser automated test baseline.
 
 ### Browser/E2E testing
 
@@ -158,13 +158,13 @@ Simulation output should be readable enough to show **what happened and why**, n
   - reset.
 
 - [ ] Representative automated flows cover the major U.S. systems, including Daily Trail, U.S. Memory Trail, quizzes, Mental Map, reconstruction, and relevant atlas/navigation behavior.
-- [ ] The adaptive algorithm itself is tested primarily below the UI layer rather than requiring hundreds of browser interactions to establish correctness.
+- [x] The adaptive algorithm itself is tested primarily below the UI layer rather than requiring hundreds of browser interactions to establish correctness.
 - [ ] Acceptance flows produce no uncaught application errors or correctness-critical console errors.
 
 ### Continuous verification
 
-- [ ] A consolidated automated test baseline runs after significant changes, preferably through CI on pushes or pull requests.
-- [ ] Test failures are visible and treated as regressions rather than silently ignored.
+- [x] A consolidated automated test baseline runs after significant changes, preferably through CI on pushes or pull requests.
+- [x] Test failures are visible and treated as regressions rather than silently ignored.
 
 ---
 
@@ -207,14 +207,14 @@ The U.S. reference implementation is considered complete only when its status ca
 Required evidence includes:
 
 - [x] current content-coverage matrix;
-- [ ] regional/content-balance report;
-- [ ] adaptive learner simulation report;
+- [x] regional/content-balance report;
+- [x] adaptive learner simulation report;
 - [x] passing automated test baseline;
 - [ ] passing supported Playwright/E2E baseline;
 - [ ] brief desktop and mobile acceptance record;
 - [ ] Learning Inspector demonstrating learner-state and selection reasoning;
 - [ ] successful second-region graduation test;
-- [ ] updated `CURRENT_STATE.md` reflecting the verified system.
+- [x] updated `CURRENT_STATE.md` reflecting the verified system.
 
 No core behavior may remain classified merely as **“implemented but unverified.”**
 

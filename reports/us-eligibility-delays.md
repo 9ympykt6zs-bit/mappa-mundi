@@ -11,7 +11,7 @@ This report measures how long items wait after appearing in a planner candidate 
 
 Across profiles, the largest delays are generally early-curriculum items remaining in large older-review pools with only one older-review slot. These items were selected previously; an unresolved post-selection deferral is not the same as “never selected.” Eligibility-signal categories are mutually exclusive in this order: new, weak, due, recent, older, other.
 
-## Perfect learner
+## Strong/fast learner
 
 - Sessions simulated: 36
 - Items observed as eligible or selected: 92 of 100

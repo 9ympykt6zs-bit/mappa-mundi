@@ -8,11 +8,13 @@
       "kind": "us-memory-trail-eligibility-delay-report",
       "profile": {
         "id": "perfect",
-        "label": "Perfect learner",
-        "description": "Correct on almost every encounter, with a rare deterministic miss."
+        "label": "Strong/fast learner",
+        "description": "Correct on almost every encounter, with a rare deterministic miss and a synthetic 1.8-second response time."
       },
       "deterministicContext": {
         "seed": "o4:perfect:v1",
+        "plannerSeed": "o4:perfect:v1",
+        "answerSeed": "o4:perfect:v1:answers",
         "startTime": "2030-01-15T18:30:00.000Z",
         "returnGapDays": 0
       },
@@ -23772,6 +23774,8 @@
       },
       "deterministicContext": {
         "seed": "o4:single-weak-item:v1",
+        "plannerSeed": "o4:single-weak-item:v1",
+        "answerSeed": "o4:single-weak-item:v1:answers",
         "startTime": "2030-01-15T18:30:00.000Z",
         "returnGapDays": 0
       },
@@ -48323,6 +48327,8 @@
       },
       "deterministicContext": {
         "seed": "o4:forgetting:v1",
+        "plannerSeed": "o4:forgetting:v1",
+        "answerSeed": "o4:forgetting:v1:answers",
         "startTime": "2030-01-15T18:30:00.000Z",
         "returnGapDays": 45
       },
@@ -72337,6 +72343,8 @@
       },
       "deterministicContext": {
         "seed": "o4:regional-weakness:v1",
+        "plannerSeed": "o4:regional-weakness:v1",
+        "answerSeed": "o4:regional-weakness:v1:answers",
         "startTime": "2030-01-15T18:30:00.000Z",
         "returnGapDays": 0
       },
@@ -95122,6 +95130,8 @@
       },
       "deterministicContext": {
         "seed": "o4:mixed:v1",
+        "plannerSeed": "o4:mixed:v1",
+        "answerSeed": "o4:mixed:v1:answers",
         "startTime": "2030-01-15T18:30:00.000Z",
         "returnGapDays": 45
       },
@@ -118504,6 +118514,8 @@
       },
       "deterministicContext": {
         "seed": "o4:random:v1",
+        "plannerSeed": "o4:random:v1",
+        "answerSeed": "o4:random:v1:answers",
         "startTime": "2030-01-15T18:30:00.000Z",
         "returnGapDays": 0
       },

@@ -23,8 +23,10 @@ npm test
 
 | Profile | Scripted behavior |
 | --- | --- |
-| Perfect | Correct except for a rare, deterministic miss. |
+| New learner | Starts from empty state with deterministic 85% accuracy. |
+| Strong/fast | Correct except for a rare deterministic miss; records a synthetic 1.8-second correct-response time. |
 | Single weak item | Always misses Ohio and answers other encountered items correctly. |
+| Learning curve | Answers at 35% for eight sessions and then at 95%, demonstrating initial struggle followed by improvement. |
 | Forgetting | Learns initially, advances the injected clock 45 days, then deterministically misses some previously seen items after returning. |
 | Regional weakness | Strong Northeast responses and weaker Midwest responses, using the Census region attached by the canonical U.S. atlas data. |
 | Mixed | Region-dependent performance, lower capital accuracy, occasional errors, and a 45-day return gap. |
@@ -54,14 +56,14 @@ A warning is a prompt for investigation, not an assertion that the algorithm is 
 - Daily Trail uses calendar dates, but the controlled return probe is an explicit completed-trail review; it is not a unified-state simulation with U.S. Memory Trail.
 - Selection Trace reconstructs the candidate bucket for each emitted U.S. Memory Trail slot. It exposes considered alternatives and existing priority fields, but not the exact comparator clause that broke each tie, cross-bucket competition, or a single numeric score.
 - Item categories are the production `states` and `capitals` categories. The runner does not infer richer `US_CONTENT_TAXONOMY.md` concepts that the item data does not carry.
-- Simulated correctness is an answer script, not a model of response time, UI interaction, audio, map behavior, or human memory.
+- Simulated correctness and response time are scripted evidence, not UI interaction, audio, map behavior, or human memory. The current U.S. Memory Trail planner does not use response speed for ranking.
 - The reports observe 36-session windows. They do not establish long-horizon convergence or absence of starvation across every eligible item.
 
 ## Evidence status
 
-- **Implemented:** runner, production-derived fixture adapter, six profiles, Daily Trail return probe, Markdown/JSON report generation, and Inspector capture exist.
+- **Implemented:** runner, production-derived fixture adapter, eight profiles covering every named Definition-of-Done learner scenario, Daily Trail return probe, Markdown/JSON report generation, and Inspector capture exist.
 - **Automatically tested:** same-input replay, seed variation, all required profiles, JSON serialization, fixture immutability, and the return probe run in the fast baseline.
-- **Verified:** not implied by passing checks. A human must review generated behavior against the Definition of Done and record acceptance or defects.
+- **Verified:** the 2026-08-21 Definition-of-Done audit accepts exact replay, the named scenario coverage, repeated-error pressure, lapsed-item return/recovery, and matched regional-weakness pressure as demonstrated by the generated reports and their focused checks. This does not certify the pedagogical thresholds, prove permanent starvation impossible, or resolve the explicitly documented planner/state limitations.
 
 ## Eligibility delay analysis
 
@@ -88,6 +90,16 @@ npm run report:long-horizon-mastery
 ```
 
 It generates `reports/us-long-horizon-mastery.md` and `reports/us-long-horizon-mastery.json`. The report measures the current item-level status model, milestone timing, diagnostic item histories, post-introduction review load, and regional mastery without changing or endorsing the model. See [`long-horizon-mastery.md`](long-horizon-mastery.md).
+
+## Neutral selection balance
+
+The neutral balance verifier holds all 100 U.S. Memory Trail items at identical review state and runs 1,000 independent seeded plans, producing 10,000 selections:
+
+```sh
+npm run report:neutral-selection-balance
+```
+
+It verifies Census-region and state/capital item-type shares against eligible-content shares and reports per-item starvation. See [`neutral-selection-balance.md`](neutral-selection-balance.md). It does not claim locating-versus-identifying prompt-form balance because that choice occurs downstream of the item planner.
 
 ## Experimental demonstrated-progress scores
 

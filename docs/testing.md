@@ -75,6 +75,12 @@ npm run check:state-capital-relationships
 npm run check:us-relationships
 ```
 
+`scripts/check-neutral-selection-balance.mjs` holds all 100 U.S. Memory Trail items at equivalent mastery and scheduling state, then verifies exact replay, input immutability, 10,000 selections, regional and state/capital shares within ±20% of eligible content, and nonzero selection for every item. Run it with:
+
+```sh
+npm run check:neutral-selection-balance
+```
+
 ## Browser/E2E tests
 
 Run Playwright separately:

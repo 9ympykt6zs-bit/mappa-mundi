@@ -19,8 +19,10 @@ import {
 } from "../../src/united-states-memory-trail-planner.js";
 
 export const SYNTHETIC_LEARNER_PROFILES = Object.freeze([
-  { id: "perfect", label: "Perfect learner", description: "Correct on almost every encounter, with a rare deterministic miss." },
+  { id: "new-learner", label: "New learner", description: "Starts with an empty curriculum state and answers with a deterministic 85% success rate." },
+  { id: "perfect", label: "Strong/fast learner", description: "Correct on almost every encounter, with a rare deterministic miss and a synthetic 1.8-second response time." },
   { id: "single-weak-item", label: "Single weak item learner", description: "Always misses Ohio and answers other items correctly." },
+  { id: "learning-curve", label: "Initially struggling learner", description: "Answers at 35% for eight sessions, then improves to 95%." },
   { id: "forgetting", label: "Forgetting learner", description: "Learns initially, returns after 45 days, and misses the first previously seen items on return." },
   { id: "regional-weakness", label: "Regional weakness learner", description: "Strong in the Northeast and persistently weaker in the Midwest." },
   { id: "mixed", label: "Mixed learner", description: "Combines regional differences, occasional errors, and a return gap." },
@@ -39,8 +41,10 @@ function probabilityAnswer(random, probability) {
 }
 
 function answerForProfile({ profileId, item, sessionIndex, encounterIndex, progress, random, returned }) {
+  if (profileId === "new-learner") return probabilityAnswer(random, 0.85);
   if (profileId === "perfect") return encounterIndex % 29 !== 28;
   if (profileId === "single-weak-item") return item.targetId !== "ohio";
+  if (profileId === "learning-curve") return probabilityAnswer(random, sessionIndex < 8 ? 0.35 : 0.95);
   if (profileId === "forgetting") {
     if (returned && progress?.timesSeen > 0 && encounterIndex % 3 === 0) return false;
     return true;
@@ -58,6 +62,13 @@ function answerForProfile({ profileId, item, sessionIndex, encounterIndex, progr
   }
   if (profileId === "random") return probabilityAnswer(random, 0.55);
   throw new Error(`Unknown synthetic learner profile: ${profileId}`);
+}
+
+function responseTimeForProfile(profileId, isCorrect) {
+  if (profileId === "perfect") return isCorrect ? 1800 : 2400;
+  if (profileId === "new-learner") return isCorrect ? 3600 : 5200;
+  if (profileId === "learning-curve") return isCorrect ? 4200 : 6100;
+  return isCorrect ? 3200 : 4800;
 }
 
 function stateCounts(state) {
@@ -119,6 +130,8 @@ export function runUnitedStatesLearnerSimulation({
   let state = createUnitedStatesMemoryTrailState(null, items);
   let correct = 0;
   let incorrect = 0;
+  let responseTimeTotal = 0;
+  let responseTimeCount = 0;
   let encounterIndex = 0;
   const sessions = [];
   const transitions = [];
@@ -149,6 +162,9 @@ export function runUnitedStatesLearnerSimulation({
       regionCounts[item.censusRegion || "Unavailable"] = (regionCounts[item.censusRegion || "Unavailable"] || 0) + 1;
       categoryCounts[item.category || "Unavailable"] = (categoryCounts[item.category || "Unavailable"] || 0) + 1;
       selections.push(createUnitedStatesMemoryTrailSelectionExplanation({ state: beforeState, plan, item, deterministicContext }));
+      const responseTimeMs = responseTimeForProfile(profileId, isCorrect);
+      responseTimeTotal += responseTimeMs;
+      responseTimeCount += 1;
       return { item, isCorrect };
     });
     const result = {
@@ -227,6 +243,9 @@ export function runUnitedStatesLearnerSimulation({
       correct,
       incorrect,
       accuracy: correct + incorrect ? Number((correct / (correct + incorrect)).toFixed(4)) : null,
+      averageResponseTimeMs: responseTimeCount
+        ? Number((responseTimeTotal / responseTimeCount).toFixed(1))
+        : null,
       regionsEncountered: regionCounts,
       taxonomyCategoriesEncountered: categoryCounts,
       finalState: stateCounts(state)

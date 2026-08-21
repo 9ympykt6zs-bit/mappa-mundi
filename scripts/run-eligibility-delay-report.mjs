@@ -7,7 +7,8 @@ import { loadUnitedStatesSimulationFixture } from "./lib/us-simulation-fixture.m
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixture = loadUnitedStatesSimulationFixture(repositoryRoot);
-const reports = SYNTHETIC_LEARNER_PROFILES.map((profile) => {
+const eligibilityProfiles = SYNTHETIC_LEARNER_PROFILES.filter(({ id }) => !["new-learner", "learning-curve"].includes(id));
+const reports = eligibilityProfiles.map((profile) => {
   const simulation = runUnitedStatesLearnerSimulation({
     profileId: profile.id,
     items: fixture.items,

@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "kind": "united-states-neutral-selection-balance",
+  "deterministicContext": {
+    "seedPrefix": "us-neutral-balance-v1",
+    "now": "2030-04-01T12:00:00.000Z"
+  },
+  "neutralState": {
+    "itemCount": 100,
+    "equivalence": "Every item is introduced with identical review status, counts, scheduling fields, and due state.",
+    "mutationPolicy": "Each plan is an independent read-only selection opportunity; learner state is held constant."
+  },
+  "planCount": 1000,
+  "selections": 10000,
+  "selectionsPerPlan": 10,
+  "regions": [
+    {
+      "id": "Midwest",
+      "eligible": 24,
+      "selected": 2417,
+      "eligibleShare": 0.24,
+      "selectionShare": 0.2417,
+      "relativeDifference": 0.007083,
+      "withinTwentyPercent": true
+    },
+    {
+      "id": "Northeast",
+      "eligible": 18,
+      "selected": 1764,
+      "eligibleShare": 0.18,
+      "selectionShare": 0.1764,
+      "relativeDifference": -0.02,
+      "withinTwentyPercent": true
+    },
+    {
+      "id": "South",
+      "eligible": 32,
+      "selected": 3228,
+      "eligibleShare": 0.32,
+      "selectionShare": 0.3228,
+      "relativeDifference": 0.00875,
+      "withinTwentyPercent": true
+    },
+    {
+      "id": "West",
+      "eligible": 26,
+      "selected": 2591,
+      "eligibleShare": 0.26,
+      "selectionShare": 0.2591,
+      "relativeDifference": -0.003462,
+      "withinTwentyPercent": true
+    }
+  ],
+  "itemTypes": [
+    {
+      "id": "capital",
+      "eligible": 50,
+      "selected": 5049,
+      "eligibleShare": 0.5,
+      "selectionShare": 0.5049,
+      "relativeDifference": 0.0098,
+      "withinTwentyPercent": true
+    },
+    {
+      "id": "state",
+      "eligible": 50,
+      "selected": 4951,
+      "eligibleShare": 0.5,
+      "selectionShare": 0.4951,
+      "relativeDifference": -0.0098,
+      "withinTwentyPercent": true
+    }
+  ],
+  "itemSelectionRange": {
+    "minimum": 73,
+    "maximum": 134,
+    "neverSelectedItemIds": []
+  },
+  "checks": {
+    "atLeastTenThousandSelections": true,
+    "noRegionOutsideTwentyPercent": true,
+    "noItemTypeOutsideTwentyPercent": true,
+    "noEligibleItemStarved": true,
+    "deterministicAndReadOnly": true
+  },
+  "limitation": "The planner selects curriculum items before downstream prompt-form choice, so this report verifies Census-region and state/capital item-type balance, not locating-versus-identifying prompt-form balance or non-Memory-Trail activities."
+}

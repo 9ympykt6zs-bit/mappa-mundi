@@ -13,6 +13,14 @@ const fixture = loadUnitedStatesSimulationFixture(repositoryRoot);
 const fixtureBefore = JSON.stringify(fixture);
 const common = { items: fixture.items, sessionCount: 36, startTime: "2030-01-15T18:30:00.000Z" };
 
+assert.deepEqual(
+  ["new-learner", "perfect", "single-weak-item", "learning-curve", "regional-weakness", "forgetting", "mixed"].filter(
+    (profileId) => !SYNTHETIC_LEARNER_PROFILES.some(({ id }) => id === profileId)
+  ),
+  [],
+  "Every Definition-of-Done learner scenario must have an explicit deterministic profile."
+);
+
 for (const profile of SYNTHETIC_LEARNER_PROFILES) {
   const options = { ...common, profileId: profile.id, seed: `test:${profile.id}` };
   const first = runUnitedStatesLearnerSimulation(options);
@@ -26,6 +34,20 @@ for (const profile of SYNTHETIC_LEARNER_PROFILES) {
   assert.equal(first.healthChecks.deterministicReplay.status, "not-run");
   assert.equal(first.healthChecks.deterministicReplay.replayEquivalent, null);
 }
+
+const learningCurve = runUnitedStatesLearnerSimulation({ ...common, profileId: "learning-curve", seed: "learning-curve" });
+const accuracy = (sessions) => {
+  const correct = sessions.reduce((sum, session) => sum + session.correct, 0);
+  const incorrect = sessions.reduce((sum, session) => sum + session.incorrect, 0);
+  return correct / (correct + incorrect);
+};
+assert.ok(
+  accuracy(learningCurve.sessions.slice(8)) > accuracy(learningCurve.sessions.slice(0, 8)) + 0.4,
+  "The learning-curve profile must demonstrably improve after its initial struggle."
+);
+const strongFast = runUnitedStatesLearnerSimulation({ ...common, profileId: "perfect", seed: "strong-fast" });
+assert.ok(strongFast.summary.accuracy > 0.9);
+assert.ok(strongFast.summary.averageResponseTimeMs < 2500);
 
 const randomA = runUnitedStatesLearnerSimulation({ ...common, profileId: "random", seed: "random-a" });
 const randomB = runUnitedStatesLearnerSimulation({ ...common, profileId: "random", seed: "random-b" });
