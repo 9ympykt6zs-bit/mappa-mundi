@@ -91,25 +91,33 @@ npm run test:e2e:us
 npm run test:e2e:headed
 ```
 
-Playwright starts a local static server on port 4173. The suite runs the Journey smoke test at a 1440x900 desktop viewport and with an iPhone 13-sized mobile profile.
+Playwright starts a local static server on port 4173. Every browser flow runs at a 1440x900 desktop viewport and with an iPhone 13-sized mobile Chromium profile.
 
 Playwright requires an environment that permits a localhost server and Chromium process startup. In the restricted inspection sandbox used for the 2026-08-14 baseline audit, the server could run after localhost permission was granted, but Chromium exited before page launch because macOS denied its Mach-port registration. That is a test-environment limitation, not an application test failure. A supported run needs installed dependencies and Chromium (`npm install` and `npx playwright install chromium`) plus an ordinary local shell or CI runner that permits browser processes and localhost port 4173.
 
 ## Test mode
 
-The smoke test opens `http://127.0.0.1:4173/?test=1`. On a local hostname, that query parameter installs the narrow `window.__MAPPA_TEST_API__` hook. The hook exposes snapshots of the current activity, Journey, step, valid targets, saved Journey progress, and deterministic helpers for a correct answer or activity completion. It is not installed without `?test=1`, and it is never installed on a non-local (production) hostname.
+The smoke tests open `http://127.0.0.1:4173/?test=1`. On a local hostname, that query parameter installs the narrow `window.__MAPPA_TEST_API__` hook. The hook exposes snapshots of the current activity, attempt state, Journey, step, valid targets, active U.S. Memory Trail plan, and saved Journey progress, plus deterministic helpers for correct/incorrect placements, activity reset, and activity completion. It is not installed without `?test=1`, and it is never installed on a non-local (production) hostname.
 
 ## Current coverage
 
 The U.S. Journey smoke test passes the launch screen, enters Challenge Yourself, chooses the United States Journey, selects Medium, starts Play, confirms the first activity and targets, completes that activity through the test hook, verifies saved progress, and verifies advancement to a different second activity.
 
+The Journey input regression makes one incorrect placement, verifies the miss and lack of completion, corrects the same target, and resets the activity to zero completed targets and zero attempt errors. Every Journey flow also fails on uncaught page errors or browser-console errors.
+
 The reload/resume regression completes the first U.S. activity, reloads the page, returns through the launch screen, uses the visible Continue Journey card, and verifies that activity two resumes on Medium without resetting or double-incrementing progress. It then completes activity two and confirms activity three loads with exactly two completed steps saved.
 
 The journey-completion regression seeds the completed prerequisite U.S. activities, resumes the final activity through the visible Continue Journey card, completes that activity through the deterministic test hook, and verifies the final completion screen and saved completion flag. After a reload, it confirms the journey is offered for review from the beginning rather than as an incomplete journey to continue. Viewing the completed journey must not erase or increment its saved progress.
 
+The U.S. system smoke spec covers the primary Across the United States Expedition, its nine milestones, recommended step, Atlas launch, and return routing. It launches a clean Daily Trail into guided introduction and a seeded U.S. Memory Trail into a plan that contains both new content and an eligible weak/due adaptive review. It submits a U.S. Connections retrieval attempt, opens ordinary Mental Map, and loads a playable regional Reconstruction piece bank. These flows collect uncaught page errors and error-level console messages; the Atlas exit coverage caught and now guards a formerly invalid empty-status MapLibre paint expression.
+
 The spatial regression test checks that the U.S. regional question pool is populated, IDs are unique, Gulf Coast coverage has at least three eligible questions, and selection does not immediately repeat the same Gulf Coast question when alternatives exist.
 
 Map feel, narration timing and quality, visual polish, real-device touch/drag behavior, and geographic-label placement remain intentionally manual. Those are perceptual or hardware-sensitive checks and should not be inferred from deterministic state hooks.
+
+## Supported browser baseline (2026-08-21)
+
+`npm run test:e2e` completed successfully in a supported local environment: **20/20 project/test combinations passed** across desktop Chromium and the iPhone 13-sized mobile Chromium profile. The same checkout passed the fast baseline at **78/78**. This is the repository's current automated browser acceptance record; it is not a real-device, Safari, audio-quality, accessibility, or visual-polish sign-off.
 
 ## Stabilization disposition (2026-08-14)
 

@@ -25430,6 +25430,54 @@ function answerCurrentPromptForTest(targetId) {
   return session.isCompleted(nextTarget.id);
 }
 
+function answerCurrentPromptIncorrectlyForTest(targetId) {
+  if (!session || isActivityInputLocked()) {
+    return false;
+  }
+
+  const expectedTarget = session.allAvailableTargets.find((target) => (
+    !session.isCompleted(target.id) && (!targetId || target.id === targetId)
+  ));
+  const incorrectTarget = session.allAvailableTargets.find((target) => (
+    !session.isCompleted(target.id) && target.id !== expectedTarget?.id
+  ));
+  if (!expectedTarget || !incorrectTarget) {
+    return false;
+  }
+
+  session.toggleAnswer(expectedTarget.id);
+  placeGrabbedAnswer([incorrectTarget.id]);
+  return (activityAttemptState.missesByTargetId[expectedTarget.id] || 0) > 0;
+}
+
+function getActivityAttemptForTest() {
+  return {
+    incorrectPlacements: activityAttemptState?.incorrectPlacements || 0,
+    missesByTargetId: { ...(activityAttemptState?.missesByTargetId || {}) },
+    completedTargetIds: [...(session?.completedIds || [])]
+  };
+}
+
+function getUnitedStatesMemoryTrailPlanForTest() {
+  const plan = activeUnitedStatesMemoryTrailSession?.plan;
+  return plan ? {
+    sessionType: plan.sessionType,
+    newItemIds: plan.newItems.map((item) => item.id),
+    reviewItemIds: plan.reviewItems.map((item) => item.id),
+    weakReviewItemIds: plan.weakReviewItems.map((item) => item.id),
+    fairnessReviewItemIds: plan.fairnessReviewItems.map((item) => item.id)
+  } : null;
+}
+
+function resetCurrentActivityForTest() {
+  if (!session?.currentActivity || currentAppScreen !== "journey-gameplay") {
+    return false;
+  }
+  resetActivity();
+  return session.completedIds.length === 0
+    && activityAttemptState.incorrectPlacements === 0;
+}
+
 function completeCurrentActivityForTest() {
   if (!session?.currentActivity || currentAppScreen !== "journey-gameplay") {
     return false;
@@ -25461,6 +25509,10 @@ function installMappaTestApi() {
       getCurrentJourneyStep: getCurrentJourneyStepForTest,
       getCorrectTargets: getCorrectTargetsForTest,
       answerCurrentPrompt: answerCurrentPromptForTest,
+      answerCurrentPromptIncorrectly: answerCurrentPromptIncorrectlyForTest,
+      getActivityAttempt: getActivityAttemptForTest,
+      getUnitedStatesMemoryTrailPlan: getUnitedStatesMemoryTrailPlanForTest,
+      resetCurrentActivity: resetCurrentActivityForTest,
       completeCurrentActivity: completeCurrentActivityForTest,
       getSavedJourneyProgress: () => loadProgress()
     })

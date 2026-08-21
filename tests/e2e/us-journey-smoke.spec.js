@@ -3,6 +3,20 @@ import { journeyPresets } from "../../src/journey-presets.js";
 
 const unitedStatesJourney = journeyPresets.find((journey) => journey.id === "united-states");
 const unitedStatesStepIds = unitedStatesJourney.steps.map((step) => step.id);
+const runtimeErrorsByPage = new WeakMap();
+
+test.beforeEach(async ({ page }) => {
+  const errors = [];
+  runtimeErrorsByPage.set(page, errors);
+  page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(`console: ${message.text()}`);
+  });
+});
+
+test.afterEach(async ({ page }) => {
+  expect(runtimeErrorsByPage.get(page)).toEqual([]);
+});
 
 async function seedUnitedStatesFinalActivity(page) {
   await page.addInitScript(({ stepIds }) => {
@@ -120,6 +134,43 @@ test("United States Journey saves its first activity and advances", async ({ pag
   expect(secondActivity.id).toBe("us-states-02");
   expect(secondActivity.id).not.toBe(firstActivity.id);
   expect(secondStep).toMatchObject({ index: 1, id: "us-states-02" });
+});
+
+test("United States Journey records a miss, accepts correction, and resets", async ({ page }) => {
+  await page.goto("/?test=1");
+  await passLaunchScreen(page);
+  await startUnitedStatesJourney(page);
+
+  const [firstTarget] = await page.evaluate(() => window.__MAPPA_TEST_API__.getCorrectTargets());
+  expect(firstTarget?.id).toBeTruthy();
+  expect(await page.evaluate((targetId) => (
+    window.__MAPPA_TEST_API__.answerCurrentPromptIncorrectly(targetId)
+  ), firstTarget.id)).toBe(true);
+
+  await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getActivityAttempt())).toEqual({
+    incorrectPlacements: 1,
+    missesByTargetId: { [firstTarget.id]: 1 },
+    completedTargetIds: []
+  });
+
+  expect(await page.evaluate((targetId) => (
+    window.__MAPPA_TEST_API__.answerCurrentPrompt(targetId)
+  ), firstTarget.id)).toBe(true);
+  await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getActivityAttempt().completedTargetIds))
+    .toContain(firstTarget.id);
+
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.resetCurrentActivity())).toBe(true);
+  await expect.poll(() => page.evaluate(() => ({
+    activity: window.__MAPPA_TEST_API__.getCurrentActivity(),
+    attempt: window.__MAPPA_TEST_API__.getActivityAttempt()
+  }))).toEqual({
+    activity: expect.objectContaining({ id: "us-states-01", completedCount: 0 }),
+    attempt: {
+      incorrectPlacements: 0,
+      missesByTargetId: {},
+      completedTargetIds: []
+    }
+  });
 });
 
 test("United States Journey resumes activity two after a full reload", async ({ page }) => {

@@ -143,9 +143,9 @@ Simulation output should be readable enough to show **what happened and why**, n
 
 ### Browser/E2E testing
 
-- [ ] Playwright successfully runs in a supported local or CI environment; inability to launch a browser inside a restricted inspection environment is not itself considered an application failure.
-- [ ] Critical flows are exercised at representative desktop and mobile viewport sizes.
-- [ ] At minimum, E2E coverage verifies:
+- [x] Playwright successfully runs in a supported local or CI environment; inability to launch a browser inside a restricted inspection environment is not itself considered an application failure.
+- [x] Critical flows are exercised at representative desktop and mobile viewport sizes.
+- [x] At minimum, E2E coverage verifies:
   - new learner/start;
   - learning or introduction;
   - correct response;
@@ -157,9 +157,9 @@ Simulation output should be readable enough to show **what happened and why**, n
   - continued play;
   - reset.
 
-- [ ] Representative automated flows cover the major U.S. systems, including Daily Trail, U.S. Memory Trail, quizzes, Mental Map, reconstruction, and relevant atlas/navigation behavior.
+- [x] Representative automated flows cover the major U.S. systems, including Daily Trail, U.S. Memory Trail, quizzes, Mental Map, reconstruction, and relevant atlas/navigation behavior.
 - [x] The adaptive algorithm itself is tested primarily below the UI layer rather than requiring hundreds of browser interactions to establish correctness.
-- [ ] Acceptance flows produce no uncaught application errors or correctness-critical console errors.
+- [x] Acceptance flows produce no uncaught application errors or correctness-critical console errors.
 
 ### Continuous verification
 
@@ -210,7 +210,7 @@ Required evidence includes:
 - [x] regional/content-balance report;
 - [x] adaptive learner simulation report;
 - [x] passing automated test baseline;
-- [ ] passing supported Playwright/E2E baseline;
+- [x] passing supported Playwright/E2E baseline;
 - [ ] brief desktop and mobile acceptance record;
 - [x] Learning Inspector demonstrating learner-state and selection reasoning;
 - [ ] successful second-region graduation test;

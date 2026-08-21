@@ -7116,16 +7116,20 @@ export class MapLibreActivityRunner {
     }
 
     if (this.currentView === "united-states-atlas") {
+      const stateId = ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]];
+      const learningStatusStops = Object.entries(this.unitedStatesAtlasLearningStatuses)
+        .flatMap(([learningStateId, status]) => [learningStateId, this.getUnitedStatesAtlasLearningColor(status)]);
+      const unexploredColor = this.getUnitedStatesAtlasLearningColor("unexplored");
       return [
         "case",
-        ["==", ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]], this.unitedStatesAtlasSelectedStateId],
+        ["==", stateId, this.unitedStatesAtlasSelectedStateId],
         "#f6c85f",
-        [
+        learningStatusStops.length ? [
           "match",
-          ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]],
-          ...Object.entries(this.unitedStatesAtlasLearningStatuses).flatMap(([stateId, status]) => [stateId, this.getUnitedStatesAtlasLearningColor(status)]),
-          this.getUnitedStatesAtlasLearningColor("unexplored")
-        ]
+          stateId,
+          ...learningStatusStops,
+          unexploredColor
+        ] : unexploredColor
       ];
     }
 
