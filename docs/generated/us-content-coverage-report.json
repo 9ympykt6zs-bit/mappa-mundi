@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "auditRegionScheme": "Four U.S. Census regions from src/atlas/united-states-atlas-data.js",
   "diagnosticBand": {
     "minimumPercent": 80,
@@ -1978,6 +1978,72 @@
       "wetlands",
       "elevation-patterns",
       "watersheds-and-drainage-features"
+    ]
+  },
+  "normalizedCategoryCoverage": {
+    "rows": [
+      {
+        "scope": "national",
+        "category": "physical-feature:lake",
+        "denominator": "deliberately curated physical-feature targets",
+        "eligibleTargets": 6,
+        "assessedTargets": 6,
+        "assessedShare": 1
+      },
+      {
+        "scope": "national",
+        "category": "physical-feature:mountain-range",
+        "denominator": "deliberately curated physical-feature targets",
+        "eligibleTargets": 20,
+        "assessedTargets": 20,
+        "assessedShare": 1
+      },
+      {
+        "scope": "national",
+        "category": "physical-feature:river",
+        "denominator": "deliberately curated physical-feature targets",
+        "eligibleTargets": 8,
+        "assessedTargets": 8,
+        "assessedShare": 1
+      },
+      {
+        "scope": "Midwest",
+        "category": "non-capital-contextual",
+        "denominator": "eligible states",
+        "eligibleTargets": 12,
+        "assessedTargets": 12,
+        "assessedShare": 1
+      },
+      {
+        "scope": "Northeast",
+        "category": "non-capital-contextual",
+        "denominator": "eligible states",
+        "eligibleTargets": 9,
+        "assessedTargets": 9,
+        "assessedShare": 1
+      },
+      {
+        "scope": "South",
+        "category": "non-capital-contextual",
+        "denominator": "eligible states",
+        "eligibleTargets": 16,
+        "assessedTargets": 16,
+        "assessedShare": 1
+      },
+      {
+        "scope": "West",
+        "category": "non-capital-contextual",
+        "denominator": "eligible states",
+        "eligibleTargets": 13,
+        "assessedTargets": 13,
+        "assessedShare": 1
+      }
+    ],
+    "decisions": [
+      "Physical categories are normalized against the maintained, deliberately curated target inventory for that category, not against state count or an equal category quota.",
+      "The current 20 mountain-range, 8 river, and 6 lake targets are intentionally unequal because they represent distinct curated feature inventories; variants and multi-state reach do not increase the denominator.",
+      "Non-capital contextual coverage is normalized by eligible states within each Census region, because those concepts are state-associated retrieval targets.",
+      "Absent physical categories remain explicit content gaps and are not silently added to the eligible denominator until a curated scored target inventory exists."
     ]
   },
   "gaps": {
@@ -53091,5 +53157,5 @@
       "notes": []
     }
   ],
-  "repositoryRevision": "a3c97a987aa1e5a857e2daa4d4ef230893969dba"
+  "repositoryRevision": "1ce10bb616129bdbebc44365476451dc314b7d9f"
 }

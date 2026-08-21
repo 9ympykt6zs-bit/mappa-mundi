@@ -36,6 +36,8 @@ National aggregation uses the four Census regions already encoded in `src/atlas/
 
 The Definition of Done's 80%–120% band is shown as a diagnostic comparison, not as a claim that equal concepts per state is always pedagogically correct.
 
+Physical-feature and contextual coverage are also normalized with category-appropriate denominators. Rivers, lakes, and mountain ranges use the unique deliberately curated scored feature targets in each maintained inventory; prompt variants and the number of states touched by a feature do not inflate the denominator. Non-capital contextual coverage uses eligible states within each Census region. The generated report records the resulting assessed shares and the content decisions behind intentionally unequal physical-category totals.
+
 ## Known limitations
 
 - Static inspection cannot prove that a learner actually receives a concept or that a browser flow works.

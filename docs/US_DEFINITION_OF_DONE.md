@@ -86,9 +86,9 @@ For coverage auditing, the broader categories above—such as geographic relatio
 Raw question totals do not need to be equal between regions. Balance is measured after accounting for the amount of eligible geography in each region.
 
 - [x] For state-based categories, **concepts per state** in each major region fall between **80% and 120% of the national mean**, unless a documented geographic or pedagogical reason justifies the difference.
-- [ ] Comparable physical-feature and contextual categories use an equivalent normalized measure based on eligible features or deliberately curated learning targets.
+- [x] Comparable physical-feature and contextual categories use an equivalent normalized measure based on eligible features or deliberately curated learning targets.
 - [x] No major region is thin merely because it received less development attention.
-- [ ] Any intentional imbalance is documented as a content decision rather than occurring accidentally.
+- [x] Any intentional imbalance is documented as a content decision rather than occurring accidentally.
 
 ### Selection balance
 

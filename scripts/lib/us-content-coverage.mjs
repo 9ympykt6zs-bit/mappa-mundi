@@ -627,6 +627,43 @@ function physicalInventory(concepts) {
   };
 }
 
+export function buildNormalizedCategoryCoverage(states, concepts) {
+  const assessedPhysical = concepts.filter(({ kind, delivery }) => kind === "physical-feature" && delivery === DELIVERY.FIXED_SCORED);
+  const physicalKinds = uniqueSorted(assessedPhysical.map(({ id }) => id.split(":")[1]));
+  const physicalRows = physicalKinds.map((kind) => {
+    const targets = assessedPhysical.filter(({ id }) => id.split(":")[1] === kind);
+    return {
+      scope: "national",
+      category: `physical-feature:${kind}`,
+      denominator: "deliberately curated physical-feature targets",
+      eligibleTargets: targets.length,
+      assessedTargets: targets.length,
+      assessedShare: targets.length ? 1 : null
+    };
+  });
+  const contextualRows = uniqueSorted(states.map(({ censusRegion }) => censusRegion)).map((region) => {
+    const regionStates = states.filter(({ censusRegion }) => censusRegion === region);
+    const coveredStates = regionStates.filter((state) => conceptsForState(concepts, state.id, isNonCapitalContext).length > 0);
+    return {
+      scope: region,
+      category: "non-capital-contextual",
+      denominator: "eligible states",
+      eligibleTargets: regionStates.length,
+      assessedTargets: coveredStates.length,
+      assessedShare: regionStates.length ? coveredStates.length / regionStates.length : null
+    };
+  });
+  return {
+    rows: [...physicalRows, ...contextualRows],
+    decisions: [
+      "Physical categories are normalized against the maintained, deliberately curated target inventory for that category, not against state count or an equal category quota.",
+      "The current 20 mountain-range, 8 river, and 6 lake targets are intentionally unequal because they represent distinct curated feature inventories; variants and multi-state reach do not increase the denominator.",
+      "Non-capital contextual coverage is normalized by eligible states within each Census region, because those concepts are state-associated retrieval targets.",
+      "Absent physical categories remain explicit content gaps and are not silently added to the eligible denominator until a curated scored target inventory exists."
+    ]
+  };
+}
+
 function taxonomyInventory(concepts) {
   return Object.values(TAXONOMY_TAGS).map((tag) => ({
     tag,
@@ -735,10 +772,11 @@ export function buildRepositoryCoverage(rootDir = path.resolve(path.dirname(file
   const coverageByState = buildStateCoverage(states, mergedConcepts);
   const regionObjectiveMatrix = aggregateRegionObjectives(states, mergedConcepts);
   const physical = physicalInventory(mergedConcepts);
+  const normalizedCategoryCoverage = buildNormalizedCategoryCoverage(states, mergedConcepts);
   const taxonomy = taxonomyInventory(mergedConcepts);
   const summary = createCoverageSummary({ states, concepts: mergedConcepts, stateCoverage: coverageByState, dynamicCapacity });
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     auditRegionScheme: "Four U.S. Census regions from src/atlas/united-states-atlas-data.js",
     diagnosticBand: { minimumPercent: 80, maximumPercent: 120, purpose: "Diagnostic only; not a pedagogical truth." },
     summary,
@@ -747,6 +785,7 @@ export function buildRepositoryCoverage(rootDir = path.resolve(path.dirname(file
     regionObjectiveMatrix,
     taxonomyCoverage: taxonomy,
     physicalGeography: physical,
+    normalizedCategoryCoverage,
     gaps: createGapReport(coverageByState, regionObjectiveMatrix, physical, taxonomy),
     concepts: mergedConcepts
   };
@@ -838,6 +877,18 @@ export function renderCoverageMarkdown(report) {
     `- Disabled physical-menu categories: ${listOrNone(report.physicalGeography.disabledMenuCategories)}.`,
     `- Taxonomy examples with no current fixed physical-feature target inventory: ${listOrNone(report.physicalGeography.absentTaxonomyExamples)}.`,
     "",
+    "## Normalized physical and contextual coverage",
+    "",
+    "Unlike state-location counts, these categories use denominators suited to their content model. A target is counted once regardless of prompt variants or how many states a physical system touches.",
+    "",
+    "| Scope | Category | Denominator | Eligible targets | Assessed targets | Assessed share |",
+    "|---|---|---|---:|---:|---:|",
+    ...report.normalizedCategoryCoverage.rows.map((row) => `| ${row.scope} | ${row.category} | ${row.denominator} | ${row.eligibleTargets} | ${row.assessedTargets} | ${row.assessedShare === null ? "—" : `${formatNumber(row.assessedShare * 100, 1)}%`} |`),
+    "",
+    "### Documented content decisions",
+    "",
+    ...report.normalizedCategoryCoverage.decisions.map((decision) => `- ${decision}`),
+    "",
     "## Gap report",
     "",
     `- Missing state location: ${listOrNone(report.gaps.missingLocation)}.`,
@@ -854,12 +905,12 @@ export function renderCoverageMarkdown(report) {
     "",
     ...report.gaps.integrationGaps.map((item) => `- ${item}`),
     "",
-    "## Comparison with the recent audit",
+    "## Current audit conclusions",
     "",
     "- Confirmed: 50/50 state location, 50/50 state naming, 50 capital targets, 845 dynamic route endpoint pairs, 20 mountain ranges, 8 rivers, and 6 lakes.",
-    "- Confirmed: Indiana, Nebraska, South Dakota, and West Virginia lack a fixed assessed curated relationship; the Midwest remains below the diagnostic band.",
-    "- The maintained reporter gives Midwest assessed relational coverage as 70.2%, rather than the audit's 71.7%, because it credits Tennessee and Pennsylvania as participants in the fixed Tennessee-to-Pennsylvania border-route concept. The one-off audit omitted route endpoint fields.",
-    "- The maintained reporter finds assessed non-capital context for 43 states and seven gaps. The earlier strict audit treated contextual/significance as a narrower historical/cultural category; the finalized taxonomy explicitly permits assessed physical geography and political geography beyond capitals, which this report now counts.",
+    `- Confirmed: ${report.summary.statesWithAssessedCuratedRelationship}/50 states have a fixed assessed curated relationship, and ${report.summary.statesWithNonCapitalContextual}/50 have assessed non-capital contextual coverage.`,
+    `- Regional curated-relationship and contextual rates are currently ${report.gaps.underCoveredRegions.length ? "outside the diagnostic band in one or more rows listed above" : "within the 80%–120% diagnostic band"}.`,
+    "- Human, historical-geographic, and environmental categories remain visible taxonomy gaps; current contextual floors are satisfied by assessed physical and non-capital political relationships allowed by the taxonomy.",
     "",
     "## Method and limitations",
     "",

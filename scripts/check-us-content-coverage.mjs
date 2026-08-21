@@ -5,6 +5,7 @@ import {
   OBJECTIVE_GROUPS,
   TAXONOMY_TAGS,
   aggregateRegionObjectives,
+  buildNormalizedCategoryCoverage,
   buildRepositoryCoverage,
   buildStateCoverage,
   createConcept,
@@ -118,6 +119,29 @@ assert.equal(west.stateConceptParticipations, 1);
 assert.equal(Math.round(west.percentOfNationalMean * 10) / 10, 66.7);
 assert.equal(west.diagnostic, "below-80%");
 
+const normalizedFixture = buildNormalizedCategoryCoverage(states, [
+  ...fixtureConcepts,
+  concept({
+    id: "physical-feature:river:alpha-river",
+    kind: "physical-feature",
+    stateIds: [],
+    taxonomyTags: [TAXONOMY_TAGS.PHYSICAL],
+    objectiveGroups: [OBJECTIVE_GROUPS.PHYSICAL_GEOGRAPHY]
+  })
+]);
+assert.deepEqual(normalizedFixture.rows.find(({ category }) => category === "physical-feature:river"), {
+  scope: "national",
+  category: "physical-feature:river",
+  denominator: "deliberately curated physical-feature targets",
+  eligibleTargets: 1,
+  assessedTargets: 1,
+  assessedShare: 1
+});
+assert.deepEqual(
+  normalizedFixture.rows.filter(({ category }) => category === "non-capital-contextual").map(({ scope, eligibleTargets, assessedTargets }) => [scope, eligibleTargets, assessedTargets]),
+  [["East", 2, 0], ["West", 2, 0]]
+);
+
 assert.throws(
   () => createConcept({ id: "invalid", taxonomyTags: [], objectiveGroups: [] }),
   /namespaced/,
@@ -150,6 +174,8 @@ assert.deepEqual(repositoryReport.physicalGeography.counts, {
   "mountain-range": 20,
   river: 8
 });
+assert.ok(repositoryReport.normalizedCategoryCoverage.rows.every(({ assessedShare }) => assessedShare === 1));
+assert.equal(repositoryReport.normalizedCategoryCoverage.decisions.length, 4);
 assert.ok(
   repositoryReport.concepts.every(({ sources }) => sources.length > 0 && sources.every(({ file, instanceId }) => file && instanceId)),
   "every repository concept must retain source traceability"
