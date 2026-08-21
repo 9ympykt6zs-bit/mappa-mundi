@@ -1,7 +1,4 @@
-import {
-  demonstratedProgressCategory,
-  scoreBayesianEvidenceCounts
-} from "./bayesian-progress-score.js";
+import { createCanonicalProgressReport } from "./canonical-progress-report.js";
 import {
   createEmptyCanonicalEvidenceRepository,
   getAllCanonicalEvidenceEvents
@@ -10,13 +7,9 @@ import {
   applyProgressEvidencePolicy,
   PROGRESS_REPORT_ROLLUP_POLICIES,
   USER_FACING_PROGRESS_SKILLS
-} from "./progress-evidence-policy.js";
+} from "./progress-evidence-policy.js?v=20260821-central-america-graduation-1";
 import {
   createUnitedStatesProgressReport,
-  createUnitedStatesProgressReportCategory,
-  createUnitedStatesProgressReportDisplay,
-  createUnitedStatesProgressReportDisplayCategory,
-  createUnitedStatesProgressReportEvidenceExplanation,
   UNITED_STATES_PROGRESS_REPORT_CATEGORY_DEFINITIONS
 } from "./united-states-progress-report.js";
 import { getStateCapitalRelationshipPairs } from "./atlas/state-capital-relationship-challenges.js";
@@ -131,61 +124,6 @@ function approvedHistoryKeys(item, category, itemsById) {
   return [];
 }
 
-function compareEvents(left, right) {
-  return left.occurredAt.localeCompare(right.occurredAt)
-    || Number(left.sequence ?? 0) - Number(right.sequence ?? 0)
-    || left.eventId.localeCompare(right.eventId);
-}
-
-function createCanonicalRecord({ item, category, itemsById, policyResult, eventsById, baseRecord }) {
-  const mappings = approvedHistoryKeys(item, category, itemsById);
-  const histories = mappings
-    .map(({ historyKey }) => policyResult.histories.find((history) => history.historyKey === historyKey))
-    .filter(Boolean);
-  const eventIds = [...new Set(histories.flatMap((history) => history.eventIds))];
-  const events = eventIds.map((eventId) => eventsById.get(eventId)).filter(Boolean).sort(compareEvents);
-  const correctCount = histories.reduce((sum, history) => sum + history.correctCount, 0);
-  const incorrectCount = histories.reduce((sum, history) => sum + history.incorrectCount, 0);
-  const assistedCount = histories.reduce((sum, history) => sum + history.assistedCount, 0);
-  const partialCount = histories.reduce((sum, history) => sum + history.partialCount, 0);
-  const skippedCount = histories.reduce((sum, history) => sum + history.skippedCount, 0);
-  const score = scoreBayesianEvidenceCounts(correctCount, incorrectCount);
-  const sourceModes = [...new Set(events.map(({ sourceMode }) => sourceMode))].sort();
-  return {
-    ...clone(baseRecord),
-    itemId: item.id,
-    skillId: category.id,
-    label: itemLabel(item, itemsById),
-    bayesianProgressScore: score,
-    displayCategory: createUnitedStatesProgressReportDisplayCategory(demonstratedProgressCategory(score)),
-    display: createUnitedStatesProgressReportDisplay(score),
-    explanation: createUnitedStatesProgressReportEvidenceExplanation(correctCount, incorrectCount, score),
-    evidenceHistory: {
-      availability: events.length ? "canonical-live-events" : "no-canonical-retrieval-evidence",
-      correctCount,
-      incorrectCount,
-      assistedCount,
-      partialCount,
-      skippedCount,
-      eventCount: events.length,
-      recentAttempts: clone(events),
-      latest: events.length
-        ? { availability: "observed", result: events.at(-1).outcome, text: `Latest canonical event: ${events.at(-1).outcome}.` }
-        : { availability: "unavailable", result: null, text: "No canonical event is available." },
-      sources: sourceModes.map((sourceMode) => ({ id: sourceMode, label: sourceMode })),
-      note: "Progress Evidence Policy histories are the sole Bayesian input; raw events provide provenance and are not counted again."
-    },
-    canonicalMapping: {
-      conceptIds: mappings.map(({ conceptId }) => conceptId),
-      canonicalSkillIds: [...new Set(mappings.map(({ canonicalSkillId }) => canonicalSkillId))],
-      progressSkillIds: mappings.map(({ progressSkillId }) => progressSkillId)
-    },
-    unseen: score === null,
-    knownStatus: score === null ? "unseen" : "known",
-    reviewStatus: clone(baseRecord.reviewStatus)
-  };
-}
-
 export function createCanonicalUnitedStatesProgressReport({
   items = [],
   repository,
@@ -198,7 +136,6 @@ export function createCanonicalUnitedStatesProgressReport({
   const emptyPresentation = createUnitedStatesProgressReport({ items: safeItems });
   const baseReport = legacyPresentationReport ? clone(legacyPresentationReport) : emptyPresentation;
   const events = getAllCanonicalEvidenceEvents(resolvedRepository);
-  const eventsById = new Map(events.map((event) => [event.eventId, event]));
   const policyResult = applyProgressEvidencePolicy(events);
   const baseCategories = new Map(baseReport.categories.map((category) => [category.id, category]));
   const emptyCategories = new Map(emptyPresentation.categories.map((category) => [category.id, category]));
@@ -210,40 +147,48 @@ export function createCanonicalUnitedStatesProgressReport({
     ...UNITED_STATES_PROGRESS_REPORT_CATEGORY_DEFINITIONS,
     ...(hasGeographicRelationshipHistory ? [GEOGRAPHIC_RELATIONSHIPS_CATEGORY] : [])
   ];
-  const canonicalCategories = canonicalDefinitions.map((definition) => {
-    const baseRecords = new Map((baseCategories.get(definition.id)?.records || []).map((record) => [record.itemId, record]));
-    const emptyRecords = new Map((emptyCategories.get(definition.id)?.records || []).map((record) => [record.itemId, record]));
-    const records = safeItems
+  const presentationCategories = canonicalDefinitions.map((definition) => ({
+    ...(baseCategories.get(definition.id) || emptyCategories.get(definition.id) || {}),
+    id: definition.id,
+    label: definition.label,
+    records: safeItems
       .filter((item) => item.type === definition.itemType)
-      .map((item) => createCanonicalRecord({
-        item,
-        category: definition,
-        itemsById,
-        policyResult,
-        eventsById,
-        baseRecord: baseRecords.get(item.id) || emptyRecords.get(item.id) || emptyStateRecords.get(item.id)
-      }));
-    return createUnitedStatesProgressReportCategory(definition, records);
+      .map((item) => {
+        const baseRecords = new Map((baseCategories.get(definition.id)?.records || []).map((record) => [record.itemId, record]));
+        const emptyRecords = new Map((emptyCategories.get(definition.id)?.records || []).map((record) => [record.itemId, record]));
+        return clone(baseRecords.get(item.id) || emptyRecords.get(item.id) || emptyStateRecords.get(item.id));
+      })
+  }));
+  const coreReport = createCanonicalProgressReport({
+    kind: "united-states-demonstrated-progress-report-canonical-first",
+    title: baseReport.title,
+    scopeTitle: baseReport.scopeTitle,
+    sectionTitle: baseReport.sectionTitle,
+    subtitle: baseReport.subtitle,
+    howProgressWorks: baseReport.howProgressWorks,
+    dataSources: [
+      "Canonical evidence routed through Progress Evidence Policy v1",
+      "Existing scheduler status shown separately from demonstrated progress when available"
+    ],
+    items: safeItems.map((item) => ({ ...item, label: itemLabel(item, itemsById) })),
+    categoryDefinitions: canonicalDefinitions.map((definition) => ({
+      ...definition,
+      getMappings: (item) => approvedHistoryKeys(item, definition, itemsById)
+    })),
+    repository: resolvedRepository,
+    baseReport: { ...baseReport, categories: presentationCategories }
   });
+  const canonicalCategories = coreReport.categories;
   const supportedCategoryIds = new Set(canonicalDefinitions.map(({ id }) => id));
   const categories = [
     ...canonicalCategories,
     ...baseReport.categories.filter(({ id }) => !supportedCategoryIds.has(id)).map(clone)
   ];
   const report = {
-    ...baseReport,
-    schemaVersion: 1,
-    kind: "united-states-demonstrated-progress-report-canonical-first",
+    ...coreReport,
     categories,
-    dataSources: [
-      "Canonical evidence routed through Progress Evidence Policy v1",
-      "Existing scheduler status shown separately from demonstrated progress when available"
-    ],
     readPath: {
-      id: "canonical-first",
-      policyVersion: policyResult.policyVersion,
-      canonicalEventCount: policyResult.uniqueEventCount,
-      duplicateEventIds: clone(policyResult.duplicateEventIds),
+      ...coreReport.readPath,
       supportedCategoryIds: canonicalDefinitions.map(({ id }) => id),
       capitalRollup: clone(PROGRESS_REPORT_ROLLUP_POLICIES["state-capitals"])
     }

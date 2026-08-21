@@ -86,10 +86,11 @@ assert.doesNotThrow(() => createCanonicalUnitedStatesProgressReportShadow(), "An
 
 const legacySource = readFileSync(new URL("../src/united-states-progress-report.js", import.meta.url), "utf8");
 const shadowSource = readFileSync(new URL("../src/canonical-progress-report-shadow.js", import.meta.url), "utf8");
+const coreSource = readFileSync(new URL("../src/canonical-progress-report.js", import.meta.url), "utf8");
 assert.match(legacySource, /scoreBayesianEvidenceCounts\(evidence\.correctCount, evidence\.incorrectCount\)/);
-assert.match(shadowSource, /scoreBayesianEvidenceCounts\(correctCount, incorrectCount\)/);
+assert.match(coreSource, /scoreBayesianEvidenceCounts\(correctCount, incorrectCount\)/);
 assert.match(shadowSource, /applyProgressEvidencePolicy\(events\)/);
-assert.match(shadowSource, /Progress Evidence Policy histories are the sole Bayesian input/);
+assert.match(coreSource, /Progress Evidence Policy histories are the sole Bayesian input/);
 
 const markdown = renderProgressReportCanonicalShadowMarkdown(report);
 assert.match(markdown, /## Executive summary/);

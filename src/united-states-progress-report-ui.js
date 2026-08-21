@@ -98,3 +98,5 @@ export function renderUnitedStatesProgressReport(container, report) {
   container.append(intro, categories, sourceDisclosure);
   return container;
 }
+
+export const renderProgressReport = renderUnitedStatesProgressReport;

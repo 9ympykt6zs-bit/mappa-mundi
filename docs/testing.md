@@ -123,7 +123,7 @@ Map feel, narration timing and quality, visual polish, real-device touch/drag be
 
 ## Supported browser baseline (2026-08-21)
 
-`npm run test:e2e` completed successfully in a supported local environment: **20/20 project/test combinations passed** across desktop Chromium and the iPhone 13-sized mobile Chromium profile. The same checkout passed the fast baseline at **78/78**. This is the repository's current automated browser acceptance record; it is not a real-device, Safari, audio-quality, accessibility, or visual-polish sign-off.
+`npm run test:e2e` completed successfully in a supported local environment: **26/26 project/test combinations passed** across desktop Chromium and the iPhone 13-sized mobile Chromium profile. The same checkout passed the fast baseline at **81/81**. This is the repository's current automated browser acceptance record; it is not a real-device, Safari, audio-quality, accessibility, or visual-polish sign-off.
 
 ## Stabilization disposition (2026-08-14)
 
@@ -180,6 +180,12 @@ Deterministic mode does not freeze browser timers, animation timing, response du
 `scripts/check-expedition-framework.mjs` validates the reusable Expedition configuration/read model and the “Across the United States” composition. It covers new, partial, and out-of-order direct-entry evidence; prerequisite unlocking; recommended-step selection; configuration errors; required mechanic references; the absence of an Expedition storage system; preservation of direct-entry menu paths; and runtime use of existing Journey, U.S. Memory Trail, and canonical evidence.
 
 A browser acceptance pass on 2026-08-21 verified the main-menu Expedition entry, nine-step hub, enabled/locked states for a new learner, Atlas launch and return, and absence of horizontal overflow at a 390×844 mobile viewport. No browser console errors were observed on that path.
+
+## Central America architecture graduation
+
+`scripts/check-central-america-graduation.mjs` applies the existing deterministic and canonical infrastructure to exactly Belize, Guatemala, Honduras, El Salvador, Nicaragua, Costa Rica, and Panama. It checks configuration, activity normalization, seeded answer-bank replay, canonical event creation and persistence, Progress Evidence Policy histories, the generic canonical Progress Report, Learning Inspector, ordinary Memory Trail Selection Trace, Expedition progression, and production wiring.
+
+`tests/e2e/central-america-graduation.spec.js` runs the same production flow in both supported browser projects. It covers the Learn Your World entry, bounded Expedition, live Journey evidence, Inspector, evidence-derived resume, shared Progress Report, and ordinary Memory Trail trace while failing on runtime errors. See [Central America Architecture Graduation Report](./central-america-architecture-graduation.md).
 
 ## Unseen-introduction guard check
 

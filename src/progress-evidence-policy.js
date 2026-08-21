@@ -10,7 +10,9 @@ export const USER_FACING_PROGRESS_SKILLS = Object.freeze({
   CAPITAL_OF_RELATIONSHIP: "capital-of-relationship",
   GEOGRAPHIC_RELATIONSHIPS: "geographic-relationships",
   SPATIAL_RECONSTRUCTION: "spatial-reconstruction",
-  CONTEXTUAL_KNOWLEDGE: "contextual-knowledge"
+  CONTEXTUAL_KNOWLEDGE: "contextual-knowledge",
+  COUNTRY_LOCATION: "country-location",
+  COUNTRY_IDENTIFICATION: "country-identification"
 });
 
 export const PROGRESS_EVIDENCE_OUTCOME_POLICY = Object.freeze({
@@ -66,6 +68,20 @@ function rule({
 }
 
 export const PROGRESS_EVIDENCE_RULES = Object.freeze([
+  rule({
+    id: "country-location-retrieval",
+    progressSkillId: USER_FACING_PROGRESS_SKILLS.COUNTRY_LOCATION,
+    conceptPattern: /^country-location:[^:]+$/,
+    canonicalSkillIds: ["locating"],
+    validatedSourceModes: ["journey", "memory-trail"]
+  }),
+  rule({
+    id: "country-identification-retrieval",
+    progressSkillId: USER_FACING_PROGRESS_SKILLS.COUNTRY_IDENTIFICATION,
+    conceptPattern: /^country-naming:[^:]+$/,
+    canonicalSkillIds: ["identifying"],
+    validatedSourceModes: ["memory-trail"]
+  }),
   rule({
     id: "state-location-retrieval",
     progressSkillId: USER_FACING_PROGRESS_SKILLS.STATE_LOCATION,

@@ -4,6 +4,10 @@
   "sequence": 21,
   "targetNoun": "country",
   "visibleAnswerLimit": 10,
+  "canonicalEvidence": {
+    "entityType": "country",
+    "allowedTargetIds": ["belize", "guatemala", "honduras", "el-salvador", "nicaragua", "costa-rica", "panama"]
+  },
   "map": {
     "region": "central-america"
   },

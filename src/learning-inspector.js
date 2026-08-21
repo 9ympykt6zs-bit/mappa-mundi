@@ -8,13 +8,14 @@ import {
   createDailyTrailSelectionTrace,
   createMentalMapSelectionTrace,
   createUnitedStatesMemoryTrailSelectionTrace
-} from "./selection-trace.js";
+} from "./selection-trace.js?v=20260821-central-america-graduation-1";
 import {
   getAllCanonicalEvidenceEvents,
   getCanonicalEvidenceConceptSkillSummaries,
   getCanonicalEvidenceRepositoryStatus,
   getRecentCanonicalEvidenceEvents
 } from "./canonical-learning-evidence-repository.js";
+import { getCanonicalRetrievalMappings } from "./canonical-learning-evidence.js?v=20260821-central-america-graduation-1";
 
 export const LEARNING_INSPECTOR_SCHEMA_VERSION = 1;
 export const LEARNING_INSPECTOR_AVAILABILITY = Object.freeze({
@@ -150,6 +151,44 @@ export function createPlaceMasteryInspectorItemView({ place = {}, masteryState =
       currentProgress: unavailable("Place mastery intentionally keeps recognition, naming, locating, and relationships separate.", "place-mastery-store")
     },
     metrics
+  };
+}
+
+export function createCanonicalRetrievalInspectorItemView({ item = {}, repository } = {}) {
+  const mappings = getCanonicalRetrievalMappings(item);
+  const summaries = getCanonicalEvidenceConceptSkillSummaries(repository);
+  const matching = mappings
+    .map((mapping) => summaries.find((summary) => summary.conceptId === mapping.conceptId && summary.skillId === mapping.skillId))
+    .filter(Boolean);
+  const attempts = matching.reduce((sum, summary) => sum + summary.attemptCount, 0);
+  const successes = matching.reduce((sum, summary) => sum + summary.correctCount, 0);
+  const failures = matching.reduce((sum, summary) => sum + summary.incorrectCount, 0);
+  const lastSeen = matching.map((summary) => summary.lastEvidenceAt).filter(Boolean).sort().at(-1) || null;
+  return {
+    schemaVersion: LEARNING_INSPECTOR_SCHEMA_VERSION,
+    kind: "item-view",
+    adapter: "canonical-retrieval",
+    identity: createIdentity({
+      ...item,
+      sourceMode: "canonical-evidence",
+      taxonomy: mappings.map(({ skillId }) => skillId).join(" + ")
+    }, "canonical-evidence"),
+    learnerState: {
+      masterySignals: observed(matching, "canonical evidence concept × skill summaries"),
+      currentProgress: attempts > 0
+        ? inferred(successes >= failures ? "building" : "needs-review", "canonical correct/incorrect evidence counts")
+        : unavailable("No canonical retrieval evidence exists for this item.", "canonical-evidence-repository")
+    },
+    metrics: {
+      attempts: observed(attempts, "canonical evidence summaries"),
+      successes: observed(successes, "canonical evidence summaries"),
+      failures: observed(failures, "canonical evidence summaries"),
+      lapses: unavailable("Canonical retrieval events do not define scheduler lapses.", "canonical-evidence-repository"),
+      lastSeen: lastSeen
+        ? observed(lastSeen, "canonical evidence summaries")
+        : unavailable("No canonical retrieval event has occurred.", "canonical-evidence-repository"),
+      nextReview: unavailable("This activity has no shared cross-mode scheduler due date.", "canonical-evidence-repository")
+    }
   };
 }
 

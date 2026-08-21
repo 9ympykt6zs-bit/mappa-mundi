@@ -150,8 +150,8 @@ export function installLearningInspectorPanel({ getSnapshot, documentRef = globa
     evidenceTitle.className = "learning-inspector-section-title";
     evidenceTitle.textContent = "Canonical learner evidence";
     nodes.push(evidenceTitle, ...view.canonicalSummaries.map((summary) => detailCard(`${summary.conceptId} · ${summary.skillId}`, [
-      ["Attempts", summary.attempts], ["Correct", summary.correctCount], ["Errors", summary.incorrectCount],
-      ["Last outcome", summary.lastOutcome], ["Last encounter", summary.lastOccurredAt], ["Source modes", summary.sourceModes]
+      ["Attempts", summary.attemptCount ?? summary.attempts], ["Correct", summary.correctCount], ["Errors", summary.incorrectCount],
+      ["Last outcome", summary.mostRecentOutcome ?? summary.lastOutcome], ["Last encounter", summary.lastEvidenceAt ?? summary.lastOccurredAt], ["Source modes", summary.sourceModes]
     ])));
     const recentEvidenceTitle = documentRef.createElement("h3");
     recentEvidenceTitle.className = "learning-inspector-section-title";

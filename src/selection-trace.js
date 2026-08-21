@@ -170,6 +170,42 @@ export function createUnitedStatesMemoryTrailSelectionTrace({ state = {}, plan =
   return trace;
 }
 
+export function createMemoryTrailSelectionTrace({ memoryTrail = {}, selection = {}, target = {}, deterministicContext = {} } = {}) {
+  const selected = target?.id ? target : { id: selection.targetId, targetId: selection.targetId, label: target?.name || null };
+  const trace = baseTrace({
+    source: "memory-trail",
+    selected,
+    deterministicContext,
+    planIdentity: `${memoryTrail.activityId || "activity"}:${memoryTrail.promptCount || 0}`
+  });
+  const introduced = Object.values(memoryTrail.targetStats || {}).filter((stats) => stats?.isIntroduced);
+  trace.selectionReasons = observed([selection.reason || "memory-trail-selection"], "Memory Trail emitted selection");
+  trace.reasonBucket = observed(selection.mode || "practice", "Memory Trail emitted selection");
+  trace.priorityFactors = inferred({
+    promptType: selection.promptType || null,
+    promptCount: memoryTrail.promptCount || 0,
+    lastPromptedTargetId: memoryTrail.lastPromptedTargetId || null,
+    targetStats: clone(memoryTrail.targetStats?.[selection.targetId] || null)
+  }, "existing Memory Trail state and emitted selection");
+  trace.eligibleCandidateCount = inferred(introduced.length, "introduced Memory Trail targets", "The engine does not retain every intermediate filter.");
+  trace.candidatePoolMetadata = observed({
+    activityId: memoryTrail.activityId || null,
+    source: memoryTrail.source || "ordinary-memory-trail",
+    targetPoolCount: (memoryTrail.targetPool || []).length,
+    currentPracticeWindowCount: (memoryTrail.currentPracticeWindow || []).length
+  }, "Memory Trail session");
+  trace.alternatives = inferred({
+    available: introduced.some((stats) => stats.targetId !== selection.targetId),
+    scope: "introduced-targets",
+    items: introduced.filter((stats) => stats.targetId !== selection.targetId).map((stats) => ({ id: stats.targetId }))
+  }, "Memory Trail targetStats", "Rejected intermediate candidates are not retained by the engine.");
+  trace.unavailableFields = observed({
+    exactComparatorSteps: "Memory Trail emits a reason but does not retain every intermediate filtering decision.",
+    numericScore: "The engine uses ordered predicates rather than one numeric selection score."
+  }, "Memory Trail trace adapter");
+  return trace;
+}
+
 export function createMentalMapSelectionTrace({ challenge = {}, pool = [], selectionDebug = null, generatedSelectionDebug = null, deterministicContext = {} } = {}) {
   const trace = baseTrace({ source: "mental-map", selected: challenge, deterministicContext, planIdentity: "challenge-selection" });
   const debug = selectionDebug || generatedSelectionDebug;

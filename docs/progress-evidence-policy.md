@@ -24,6 +24,8 @@ The policy decision key is the canonical `conceptId + skillId`. Source mode and 
 | State Identification | `state-naming:{state}` + `identifying` | Supported |
 | Capital Location | `capital-location:{state}:{capital}` + `locating` | Supported |
 | Capital Identification | `capital-naming:{state}:{capital}` + `identifying` | Supported |
+| Country Location | `country-location:{country}` + `locating` | Supported for configured Journey and Memory Trail producers |
+| Country Identification | `country-naming:{country}` + `identifying` | Supported for configured Memory Trail producers |
 | Capital-of Relationship | `state-capital:{state}:{capital}` + `relationship-recall` | Supported by U.S. Connections |
 | Geographic Relationships | `relationship:*` + `relationship-recall` or `sequencing` | Supported for Mental Map and U.S. Connections evidence |
 | Spatial Reconstruction | `state-reconstruction:{state}` + `spatial-reconstruction` | Supported as a distinct skill, not State Location |
@@ -41,6 +43,8 @@ Context cannot yet contribute. Canonical v1 has no contextual-recall skill, and 
 | Memory/Daily place-to-name | `state-naming:*` + `identifying` | State Identification | Include; never share with State Location |
 | Capital name-to-place | `capital-location:*` + `locating` | Capital Location | Include |
 | Capital place-to-name | `capital-naming:*` + `identifying` | Capital Identification | Include |
+| Configured country Journey/Memory Trail name-to-place | `country-location:*` + `locating` | Country Location | Include after activity-contract validation |
+| Configured country Memory Trail place-to-name | `country-naming:*` + `identifying` | Country Identification | Include after activity-contract validation |
 | U.S. Connections capital question in either prompt direction | `state-capital:*` + `relationship-recall` | Capital-of Relationship | Include; both directions share one history |
 | U.S. Connections region, international-border, coast, river, Great Lake, or mountain-range question | `relationship:*` + `relationship-recall` | Geographic Relationships | Include under the state or states named by the fixed concept |
 | Mental Map relationship question | `relationship:*` + `relationship-recall` | Geographic Relationships | Include; do not leak into State Location or Identification |
@@ -51,6 +55,8 @@ Context cannot yet contribute. Canonical v1 has no contextual-recall skill, and 
 | Generic location/naming evidence | Any | Relationships or Context | Exclude; those constructs require their own canonical concept and skill |
 
 Source modes listed above are the currently validated producers. The evaluator labels other exact concept × skill producers as semantically valid but not yet producer-validated; source naming alone never turns unrelated evidence into a skill contribution.
+
+The Central America graduation rules are an additive v1 extension: they introduce no persistence-schema change and do not reinterpret any existing U.S. event or cohort marker.
 
 ## 5. Outcome handling
 

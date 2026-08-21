@@ -1,3 +1,5 @@
+import { resolveRandomSource } from "../deterministic-dependencies.js";
+
 export const studyModes = {
   cumulative: "cumulative",
   sectionOnly: "sectionOnly"
@@ -7,6 +9,7 @@ export class ActivitySession {
   constructor(activity, options = {}) {
     this.activityCatalog = options.activityCatalog || [activity];
     this.currentActivity = activity;
+    this.random = resolveRandomSource(options);
     this.studyMode = options.studyMode || studyModes.cumulative;
     this.completed = new Set();
     this.selectedAnswerId = null;
@@ -214,6 +217,6 @@ export class ActivitySession {
       return null;
     }
 
-    return hiddenUnfinishedIds[Math.floor(Math.random() * hiddenUnfinishedIds.length)];
+    return hiddenUnfinishedIds[Math.floor(this.random() * hiddenUnfinishedIds.length)];
   }
 }

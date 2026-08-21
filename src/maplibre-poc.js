@@ -17,11 +17,19 @@ import {
 import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=20260721-mental-map-consolidation-1";
 import { readUnitedStatesAtlasProgress } from "./atlas/united-states-atlas-progress.js";
 import { renderUnitedStatesAtlasOverview, renderUnitedStatesAtlasProfile } from "./atlas/united-states-atlas-ui.js";
-import { renderUnitedStatesProgressReport } from "./united-states-progress-report-ui.js";
-import { createUnitedStatesProgressReportReadModel } from "./united-states-progress-report-read-path.js";
+import { renderProgressReport } from "./united-states-progress-report-ui.js?v=20260821-central-america-graduation-1";
+import { createUnitedStatesProgressReportReadModel } from "./united-states-progress-report-read-path.js?v=20260821-central-america-graduation-1";
 import { acrossUnitedStatesExpedition } from "./across-united-states-expedition.js";
+import { CENTRAL_AMERICA_LEARNING_UNIT_ID } from "./central-america-learning-unit.js";
+import { geographyLearningUnits, getGeographyLearningUnit } from "./geography-learning-unit-registry.js";
 import { createExpeditionReadModel } from "./expedition-framework.js";
 import { renderExpedition } from "./expedition-ui.js";
+import {
+  createGeographyLearningUnitExpeditionModel,
+  createGeographyLearningUnitItems,
+  createGeographyLearningUnitProgressReport
+} from "./geography-learning-unit.js";
+import { getCanonicalRetrievalItemForActivity } from "./activity-evidence-contract.js";
 import { loadPlaceMastery } from "./place-mastery-store.js";
 import {
   activityProgressStorageKey,
@@ -30,6 +38,7 @@ import {
 } from "./learning-progress-reset.js";
 import {
   createCanonicalEvidenceInspectorView,
+  createCanonicalRetrievalInspectorItemView,
   createDailyTrailInspectorItemView,
   createDailyTrailSelectionExplanation,
   createLearningInspectorDebugObject,
@@ -37,14 +46,15 @@ import {
   createPlaceMasteryInspectorItemView,
   createUnitedStatesMemoryTrailInspectorItemView,
   createUnitedStatesMemoryTrailSelectionExplanation
-} from "./learning-inspector.js";
+} from "./learning-inspector.js?v=20260821-central-america-graduation-1";
 import { installLearningInspectorPanel } from "./learning-inspector-panel.js";
 import {
   adaptCanonicalMapReconstructionEvaluation,
   adaptCanonicalMentalMapEvaluation,
   adaptCanonicalRetrievalAttempt,
   getCanonicalMentalMapConceptId
-} from "./canonical-learning-evidence.js";
+} from "./canonical-learning-evidence.js?v=20260821-central-america-graduation-1";
+import { createMemoryTrailSelectionTrace } from "./selection-trace.js?v=20260821-central-america-graduation-1";
 import {
   loadCanonicalEvidenceRepository,
   recordCanonicalEvidenceEvent,
@@ -103,7 +113,7 @@ import {
   startNextDailyTrailGoal,
   shouldShowDailyTrailGoalChoice,
   syncCompletedDailyTrailGoals
-} from "./daily-trail-planner.js?v=20260624-daily-trail-curriculum-progression-1";
+} from "./daily-trail-planner.js?v=20260821-learning-reset-cache-1";
 import {
   applyUnitedStatesMemoryTrailSessionResults,
   applyUnitedStatesMemoryTrailSessionSnapshot,
@@ -120,7 +130,7 @@ import {
   unitedStatesMemoryTrailJourneyId,
   unitedStatesMemoryTrailStorageKey,
   UNITED_STATES_MEMORY_TRAIL_SOURCE
-} from "./united-states-memory-trail-planner.js?v=20260708-us-trail-capitals-phase2a-4";
+} from "./united-states-memory-trail-planner.js?v=20260821-learning-reset-cache-1";
 import { resolveMemoryTrailNewTargetLimit } from "./memory-trail-new-target-limit.js?v=20260621-daily-trail-co-progression-2";
 import { createMasteryDebugController } from "./mastery-debug.js?v=20260805-mastery-debug-1";
 import { chooseMemoryTrailRetrievalPromptType } from "./memory-trail-prompt-selector.js";
@@ -129,7 +139,7 @@ import { findMemoryTrailGuidedExposureTarget } from "./memory-trail-introduction
 const APP_NAME = "Mappa Mundi";
 const LANDING_PAGE_TITLE = "Mappa Mundi \u2013 Geography Game for Learning the World";
 const dailyTrailCheckpointRuntimeFingerprint = "daily-trail-checkpoint-outline-20260622-3";
-const dailyTrailPlannerModuleSpecifier = "./daily-trail-planner.js?v=20260624-daily-trail-curriculum-progression-1";
+const dailyTrailPlannerModuleSpecifier = "./daily-trail-planner.js?v=20260821-learning-reset-cache-1";
 const mapLibreScriptUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js";
 const mapLibreStylesheetUrl = "https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css";
 const difficultyModes = Object.freeze({
@@ -353,8 +363,8 @@ const appShellScreenIds = new Set([
   "daily-trail-intro",
   "daily-trail-summary",
   "united-states-trail-summary",
-  "united-states-expedition",
-  "united-states-progress-report",
+  "expedition",
+  "progress-report",
   "begin-journey-placeholder",
   "free-play-difficulty",
   "settings",
@@ -3149,6 +3159,7 @@ const mainMenuLearnButton = document.querySelector("#main-menu-learn-button");
 const mainMenuChallengeButton = document.querySelector("#main-menu-challenge-button");
 const mainMenuDailyTrailButton = document.querySelector("#main-menu-daily-trail-button");
 const mainMenuUnitedStatesExpeditionButton = document.querySelector("#main-menu-us-expedition-button");
+const mainMenuCentralAmericaUnitButton = document.querySelector("#main-menu-central-america-unit-button");
 const mainMenuUnitedStatesMemoryTrailButton = document.querySelector("#main-menu-us-memory-trail-button");
 const mainMenuUnitedStatesAtlasButton = document.querySelector("#main-menu-united-states-atlas-button");
 const mainMenuUnitedStatesProgressButton = document.querySelector("#main-menu-united-states-progress-button");
@@ -3567,8 +3578,8 @@ const mainMenuLaunchButton = document.querySelector("#main-menu-launch-button");
 const appShellPlaceholderCard = document.querySelector("#app-shell-placeholder-card");
 const appShellPlaceholderTitle = document.querySelector("#app-shell-placeholder-title");
 const appShellPlaceholderMessage = document.querySelector("#app-shell-placeholder-message");
-const unitedStatesProgressReportView = document.querySelector("#united-states-progress-report");
-const unitedStatesExpeditionView = document.querySelector("#united-states-expedition");
+const progressReportView = document.querySelector("#progress-report");
+const expeditionView = document.querySelector("#expedition-view");
 const journeyPresetList = document.querySelector("#journey-preset-list");
 const journeyShellContent = document.querySelector("#journey-shell-content");
 const journeyCompletionOverlay = document.querySelector("#journey-completion-overlay");
@@ -3597,9 +3608,11 @@ const mentalMapChallengePanel = document.querySelector("#mental-map-challenge-pa
 const mapReconstructionPanel = document.querySelector("#map-reconstruction-panel");
 const mapElement = document.querySelector("#map");
 let unitedStatesAtlasProgress = null;
-let unitedStatesProgressReportModel = null;
-let unitedStatesExpeditionModel = null;
-let shouldReturnToUnitedStatesExpedition = false;
+let progressReportModel = null;
+let activeExpeditionDefinition = null;
+let activeExpeditionModel = null;
+let returnToExpeditionId = "";
+let runtimeMemoryTrailSelectionTrace = null;
 let activeMentalMapChallenge = null;
 let activeMentalMapChallengeState = null;
 let activeMentalMapCanonicalAttemptIdentity = null;
@@ -3692,19 +3705,14 @@ function recordCanonicalJourneyPlacementEvidence(result = {}) {
   const activityId = session?.currentActivity?.id || "";
   if (activeJourneySession?.mode !== "journey"
     || currentAppScreen !== "journey-gameplay"
-    || !activityId.startsWith("us-states-")
     || !["correct", "incorrect"].includes(result.status)) return;
-  const stateId = result.completedId || result.selectedId;
-  if (!stateId) return;
+  const targetId = result.completedId || result.selectedId;
+  const item = getCanonicalRetrievalItemForActivity(session.currentActivity, targetId);
+  if (!item) return;
   try {
     const identity = getCanonicalRuntimeAttemptIdentity(result, "journey", activityId);
     const event = adaptCanonicalRetrievalAttempt({
-      item: {
-        id: `state:${stateId}`,
-        type: "state",
-        targetId: stateId,
-        sourceActivityId: activityId
-      },
+      item,
       promptType: "name_to_place",
       result: result.status,
       ...identity,
@@ -3725,11 +3733,13 @@ function getCanonicalMemoryTrailPlan(memoryTrail) {
 }
 
 function recordCanonicalMemoryTrailEvidence(memoryTrail, targetId, result, promptType, sequence) {
-  if (!isUnitedStatesMemoryTrail(memoryTrail) && !isDailyTrailMemoryTrail(memoryTrail)) return;
+  const isUnitedStatesTrail = isUnitedStatesMemoryTrail(memoryTrail);
+  const isDailyTrail = isDailyTrailMemoryTrail(memoryTrail);
   const plan = getCanonicalMemoryTrailPlan(memoryTrail);
-  const item = (plan?.allItems || []).find((candidate) => candidate?.targetId === targetId);
-  if (!item || !["state", "capital"].includes(item.type)) return;
-  const sourceMode = isUnitedStatesMemoryTrail(memoryTrail) ? "us-memory-trail" : "daily-trail";
+  const item = (plan?.allItems || []).find((candidate) => candidate?.targetId === targetId)
+    || getCanonicalRetrievalItemForActivity(session?.currentActivity, targetId);
+  if (!item || !["state", "capital", "country"].includes(item.type)) return;
+  const sourceMode = isUnitedStatesTrail ? "us-memory-trail" : isDailyTrail ? "daily-trail" : "memory-trail";
   const sessionId = plan?.sessionId || `${sourceMode}:${memoryTrail.startedAt}`;
   const promptIdentity = memoryTrail.currentPromptKey || `${sequence}:${promptType}:${targetId}`;
   const attemptId = `${sourceMode}:${sessionId}:${promptIdentity}`;
@@ -3938,8 +3948,8 @@ async function ensureMapRuntimeLoaded() {
     mapRuntimePromise = Promise.all([
       loadStylesheetOnce(mapLibreStylesheetUrl),
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
-      import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns"),
-      import("./maplibre/activity-session.js?v=20260601-instruction-target-nouns"),
+      import("./map-engines/activity-normalizer.js?v=20260821-central-america-graduation-1"),
+      import("./maplibre/activity-session.js?v=20260821-central-america-graduation-1"),
       import("./maplibre/maplibre-activity-runner.js?v=20260721-mental-map-consolidation-1"),
       import("./chip-speech.js?v=20260728-activity-audio-1")
     ]).then(([
@@ -3967,7 +3977,7 @@ async function ensureActivityDataLoaded() {
   }
 
   if (!normalizeActivityData) {
-    const normalizerModule = await import("./map-engines/activity-normalizer.js?v=20260601-instruction-target-nouns");
+    const normalizerModule = await import("./map-engines/activity-normalizer.js?v=20260821-central-america-graduation-1");
     normalizeActivityData = normalizerModule.normalizeActivity;
   }
 
@@ -4123,6 +4133,8 @@ async function createRuntimeLearningInspectorSnapshot() {
   const dailyState = activeDailyTrailSession?.state || loadDailyTrailState();
   const dailyItems = activeDailyTrailSession?.plan?.allItems || [];
   const masteryState = loadPlaceMastery();
+  const canonicalRepository = loadCanonicalEvidenceRepository();
+  const configuredLearningUnitItems = geographyLearningUnits.flatMap((unit) => createGeographyLearningUnitItems(unit));
   const items = [
     ...unitedStatesItems.map((item) => createUnitedStatesMemoryTrailInspectorItemView({ item, state: unitedStatesState })),
     ...unitedStatesItems.map((item) => createPlaceMasteryInspectorItemView({
@@ -4131,7 +4143,11 @@ async function createRuntimeLearningInspectorSnapshot() {
       sourceActivity: item.homeActivityId || item.sourceActivityId,
       taxonomy: item.type
     })),
-    ...dailyItems.map((item) => createDailyTrailInspectorItemView({ item, state: dailyState }))
+    ...dailyItems.map((item) => createDailyTrailInspectorItemView({ item, state: dailyState })),
+    ...configuredLearningUnitItems.map((item) => createCanonicalRetrievalInspectorItemView({
+      item,
+      repository: canonicalRepository
+    }))
   ];
   const selections = [
     ...(activeUnitedStatesMemoryTrailSession?.plan?.playItems || []).map((item) => (
@@ -4147,7 +4163,14 @@ async function createRuntimeLearningInspectorSnapshot() {
         plan: activeDailyTrailSession.plan,
         item
       })
-    ))
+    )),
+    ...(runtimeMemoryTrailSelectionTrace ? [{
+      planner: runtimeMemoryTrailSelectionTrace.planner,
+      itemId: runtimeMemoryTrailSelectionTrace.selected,
+      reasonCode: runtimeMemoryTrailSelectionTrace.reasonBucket,
+      priorityFactors: runtimeMemoryTrailSelectionTrace.priorityFactors,
+      selectionTrace: runtimeMemoryTrailSelectionTrace
+    }] : [])
   ];
   return createLearningInspectorDebugObject({
     context: {
@@ -4158,7 +4181,7 @@ async function createRuntimeLearningInspectorSnapshot() {
     items,
     selections,
     transitions: runtimeLearningInspectorTransitions,
-    canonicalRepository: loadCanonicalEvidenceRepository()
+    canonicalRepository
   });
 }
 
@@ -4352,6 +4375,10 @@ function createDerivedUsStateCapitalActivities(activity) {
       targetNoun: stateTargets.some((target) => target.type === "federal-district")
         ? "state or federal district"
         : "state",
+      canonicalEvidence: {
+        entityType: "state",
+        allowedTargetIds: stateTargets.map((target) => target.id)
+      },
       features: stateTargets,
       targets: undefined
     },
@@ -4361,6 +4388,7 @@ function createDerivedUsStateCapitalActivities(activity) {
       title: `${sectionLabel} Capitals`,
       cumulativeGroup: "us-capitals",
       targetNoun: "capital city",
+      canonicalEvidence: null,
       features: capitalTargets,
       targets: undefined
     }
@@ -5699,26 +5727,27 @@ function bindUiEvents() {
   browseCloseButton?.addEventListener("click", closeBrowseDrawer);
   journeyMemoryTrailButton?.addEventListener("click", startMemoryTrailFromJourneyGameplay);
   mainMenuDailyTrailButton?.addEventListener("click", openDailyTrailIntro);
-  mainMenuUnitedStatesExpeditionButton?.addEventListener("click", () => { void openUnitedStatesExpedition(); });
+  mainMenuUnitedStatesExpeditionButton?.addEventListener("click", () => { void openExpedition(acrossUnitedStatesExpedition.id); });
+  mainMenuCentralAmericaUnitButton?.addEventListener("click", () => { void openExpedition(CENTRAL_AMERICA_LEARNING_UNIT_ID); });
   mainMenuUnitedStatesMemoryTrailButton?.addEventListener("click", () => {
-    clearUnitedStatesExpeditionReturn();
+    clearExpeditionReturn();
     void startOrContinueUnitedStatesMemoryTrail();
   });
   mainMenuUnitedStatesAtlasButton?.addEventListener("click", () => {
-    clearUnitedStatesExpeditionReturn();
+    clearExpeditionReturn();
     void openUnitedStatesAtlas();
   });
   mainMenuUnitedStatesProgressButton?.addEventListener("click", () => { void openUnitedStatesProgressReport(); });
   mainMenuUnitedStatesRelationshipsButton?.addEventListener("click", () => {
-    clearUnitedStatesExpeditionReturn();
+    clearExpeditionReturn();
     void openMentalMapChallenge({ unitedStatesRelationshipsOnly: true });
   });
   mainMenuMentalMapChallengeButton?.addEventListener("click", () => {
-    clearUnitedStatesExpeditionReturn();
+    clearExpeditionReturn();
     void openMentalMapChallenge();
   });
   mainMenuMapReconstructionButton?.addEventListener("click", () => {
-    clearUnitedStatesExpeditionReturn();
+    clearExpeditionReturn();
     void openMapReconstruction();
   });
   legacyCompassChallengeButton?.addEventListener("click", () => { void openCompassChallenge(); });
@@ -5803,8 +5832,7 @@ function bindLaunchScreenEvents() {
     showSettingsScreen();
   });
   mainMenuLearnButton?.addEventListener("click", () => {
-    journeyPickerIntent = "learn";
-    showAppScreen("choose-journey");
+    showAppScreen("learn-menu");
   });
   mainMenuChallengeButton?.addEventListener("click", () => {
     atlasProgress = loadProgress();
@@ -6149,8 +6177,8 @@ function renderAppShellScreen(screenId) {
   const isChallengeMenu = normalizedScreenId === "challenge-menu";
   const isMenuHub = isMainMenu || isMoreWaysMenu || isLearnMenu || isChallengeMenu;
   const isChooseJourney = normalizedScreenId === "choose-journey";
-  const isUnitedStatesExpedition = normalizedScreenId === "united-states-expedition";
-  const isUnitedStatesProgressReport = normalizedScreenId === "united-states-progress-report";
+  const isExpedition = normalizedScreenId === "expedition";
+  const isProgressReport = normalizedScreenId === "progress-report";
   const hasJourneyShellContent = isJourneyShellScreen(normalizedScreenId);
   const content = getAppShellScreenContent(normalizedScreenId);
 
@@ -6243,22 +6271,22 @@ function renderAppShellScreen(screenId) {
   renderQuickStartCard(isChallengeMenu);
 
   if (appShellPlaceholderCard) {
-    appShellPlaceholderCard.hidden = isMenuHub || isChooseJourney || hasJourneyShellContent || isUnitedStatesExpedition || isUnitedStatesProgressReport;
+    appShellPlaceholderCard.hidden = isMenuHub || isChooseJourney || hasJourneyShellContent || isExpedition || isProgressReport;
   }
 
-  if (unitedStatesExpeditionView) {
-    unitedStatesExpeditionView.hidden = !isUnitedStatesExpedition;
-    if (isUnitedStatesExpedition && unitedStatesExpeditionModel) {
-      renderExpedition(unitedStatesExpeditionView, unitedStatesExpeditionModel, {
-        onLaunch: launchUnitedStatesExpeditionStep
+  if (expeditionView) {
+    expeditionView.hidden = !isExpedition;
+    if (isExpedition && activeExpeditionModel) {
+      renderExpedition(expeditionView, activeExpeditionModel, {
+        onLaunch: launchExpeditionStep
       });
     }
   }
 
-  if (unitedStatesProgressReportView) {
-    unitedStatesProgressReportView.hidden = !isUnitedStatesProgressReport;
-    if (isUnitedStatesProgressReport && unitedStatesProgressReportModel) {
-      renderUnitedStatesProgressReport(unitedStatesProgressReportView, unitedStatesProgressReportModel);
+  if (progressReportView) {
+    progressReportView.hidden = !isProgressReport;
+    if (isProgressReport && progressReportModel) {
+      renderProgressReport(progressReportView, progressReportModel);
     }
   }
 
@@ -6340,13 +6368,15 @@ function getAppShellScreenContent(screenId) {
       title: "United States Memory Trail",
       subtitle: "This session is complete."
     },
-    "united-states-expedition": {
-      title: "Across the United States",
-      subtitle: "Your guided route through the U.S. learning experience."
+    expedition: {
+      title: activeExpeditionDefinition?.title || "Expedition",
+      subtitle: activeExpeditionDefinition?.description || "Your guided geography-learning route."
     },
-    "united-states-progress-report": {
+    "progress-report": {
       title: "Progress Report",
-      subtitle: "See what you know and where you're still building confidence."
+      subtitle: progressReportModel?.scopeTitle
+        ? `See what you know in ${progressReportModel.scopeTitle} and where you're still building confidence.`
+        : "See what you know and where you're still building confidence."
     },
     "begin-journey-placeholder": {
       title: `Play: ${selectedJourneyTitle}`,
@@ -7613,7 +7643,7 @@ function exitStudyExplore() {
     return;
   }
 
-  showAppScreen(selectedJourneyId ? "study" : "main-menu", { pushHistory: false });
+  returnFromExpeditionActivity(selectedJourneyId ? "study" : "main-menu");
 }
 
 function renderStudyExplorePanel() {
@@ -8056,34 +8086,79 @@ async function refreshUnitedStatesExpeditionMenuAction() {
     : "Begin Expedition";
 }
 
-async function openUnitedStatesExpedition(options = {}) {
-  unitedStatesExpeditionModel = await createAcrossUnitedStatesExpeditionModel();
-  showAppScreen("united-states-expedition", { pushHistory: options.pushHistory !== false });
+function getGeographyLearningUnitForExpeditionId(expeditionId) {
+  return getGeographyLearningUnit(expeditionId);
 }
 
-function returnFromUnitedStatesExpeditionActivity(fallbackScreen) {
-  if (shouldReturnToUnitedStatesExpedition) {
-    shouldReturnToUnitedStatesExpedition = false;
-    void openUnitedStatesExpedition({ pushHistory: false });
+async function createConfiguredExpeditionModel(expeditionId) {
+  if (expeditionId === acrossUnitedStatesExpedition.id) return createAcrossUnitedStatesExpeditionModel();
+  const unit = getGeographyLearningUnitForExpeditionId(expeditionId);
+  if (!unit) throw new Error(`Unknown Expedition: ${String(expeditionId)}`);
+  return createGeographyLearningUnitExpeditionModel(unit, loadCanonicalEvidenceRepository());
+}
+
+function getConfiguredExpeditionDefinition(expeditionId) {
+  if (expeditionId === acrossUnitedStatesExpedition.id) return acrossUnitedStatesExpedition;
+  return getGeographyLearningUnitForExpeditionId(expeditionId)?.expedition || null;
+}
+
+async function openExpedition(expeditionId, options = {}) {
+  const definition = getConfiguredExpeditionDefinition(expeditionId);
+  if (!definition) return;
+  activeExpeditionDefinition = definition;
+  activeExpeditionModel = await createConfiguredExpeditionModel(expeditionId);
+  showAppScreen("expedition", { pushHistory: options.pushHistory !== false });
+}
+
+function returnFromExpeditionActivity(fallbackScreen) {
+  if (returnToExpeditionId) {
+    const expeditionId = returnToExpeditionId;
+    returnToExpeditionId = "";
+    void openExpedition(expeditionId, { pushHistory: false });
     return;
   }
   showAppScreen(fallbackScreen, { pushHistory: false });
 }
 
-function clearUnitedStatesExpeditionReturn() {
-  shouldReturnToUnitedStatesExpedition = false;
+function clearExpeditionReturn() {
+  returnToExpeditionId = "";
 }
 
-function launchUnitedStatesExpeditionStep(step) {
+function launchExpeditionStep(step) {
   if (!step || step.status === "locked") return;
-  shouldReturnToUnitedStatesExpedition = true;
+  returnToExpeditionId = activeExpeditionDefinition?.id || "";
   const launch = step.launch || {};
   if (launch.kind === "united-states-atlas") {
     void openUnitedStatesAtlas();
     return;
   }
   if (launch.kind === "journey") {
+    if (launch.stepId) {
+      const journey = journeyPresets.find((candidate) => candidate.id === launch.journeyId);
+      const stepIndex = getValidJourneySteps(journey).findIndex((candidate) => candidate.id === launch.stepId);
+      if (!journey || stepIndex < 0) return;
+      atlasProgress = loadProgress();
+      startJourneyGameplayFromLaunchContext({
+        journeyId: journey.id,
+        stepIndex,
+        difficultyId: launch.difficultyId || getPreferredJourneyDifficultyId(journey, atlasProgress),
+        preserveProgress: true
+      });
+      return;
+    }
+    journeyPickerIntent = "neutral";
     selectJourney(launch.journeyId);
+    return;
+  }
+  if (launch.kind === "memory-trail") {
+    void startStudyPreviewActivity(launch.journeyId, launch.stepId, { autoStartMemoryTrail: true });
+    return;
+  }
+  if (launch.kind === "geography-progress-report") {
+    const unit = getGeographyLearningUnitForExpeditionId(activeExpeditionDefinition?.id);
+    if (!unit) return;
+    progressReportModel = createGeographyLearningUnitProgressReport(unit, loadCanonicalEvidenceRepository());
+    showAppScreen("progress-report");
     return;
   }
   if (launch.kind === "united-states-memory-trail") {
@@ -8118,12 +8193,12 @@ async function openUnitedStatesProgressReport() {
     placeMasteryState: loadPlaceMastery(),
     repository: loadCanonicalEvidenceRepository()
   });
-  unitedStatesProgressReportModel = readModel.report;
+  progressReportModel = readModel.report;
   if (isLocalDevAccessAllowed()) window.mappaProgressReportReadDebug = readModel.debug;
   if (readModel.selection.fallback && readModel.selection.reason.startsWith("canonical-")) {
     console.warn("Progress Report used its safe legacy fallback.", readModel.debug);
   }
-  showAppScreen("united-states-progress-report");
+  showAppScreen("progress-report");
 }
 
 function isMemoryTrailActive() {
@@ -8195,7 +8270,7 @@ function exitUnitedStatesAtlas() {
   runner?.setUnitedStatesAtlasLearningStatuses({});
   unitedStatesAtlasProgress = null;
   document.body.classList.remove("united-states-atlas-mode", "overview-mode", "browse-mode");
-  returnFromUnitedStatesExpeditionActivity("main-menu");
+  returnFromExpeditionActivity("main-menu");
 }
 
 function loadMapReconstructionGeometry(regionId) {
@@ -8378,7 +8453,7 @@ function exitMapReconstruction() {
   if (mapReconstructionPanel) mapReconstructionPanel.hidden = true;
   if (mapElement) mapElement.removeAttribute("aria-hidden");
   document.body.classList.remove("map-reconstruction-mode", "overview-mode", "browse-mode");
-  returnFromUnitedStatesExpeditionActivity("main-menu");
+  returnFromExpeditionActivity("main-menu");
 }
 
 async function openMentalMapChallenge(options = {}) {
@@ -8561,7 +8636,7 @@ function exitMentalMapChallenge() {
   runner?.prepareMentalMapChallenge();
   if (mapElement) mapElement.removeAttribute("aria-hidden");
   document.body.classList.remove("mental-map-challenge-mode", "mental-map-result-mode", "overview-mode", "browse-mode");
-  returnFromUnitedStatesExpeditionActivity("main-menu");
+  returnFromExpeditionActivity("main-menu");
 }
 
 async function openCompassChallenge() {
@@ -10794,6 +10869,13 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
   const stats = memoryTrail.targetStats[selection.targetId];
   if (!target || !stats) {
     return false;
+  }
+  if (!isAdaptiveTrailMemoryTrail(memoryTrail) && session?.currentActivity?.canonicalEvidence) {
+    runtimeMemoryTrailSelectionTrace = createMemoryTrailSelectionTrace({
+      memoryTrail,
+      selection,
+      target
+    });
   }
 
   const speechLabel = getMemoryTrailTargetLabel(target, memoryTrail);
@@ -19549,7 +19631,7 @@ function exitUnitedStatesMemoryTrailGameplay() {
     answerBank.innerHTML = "";
   }
   resetActivityAttemptState();
-  returnFromUnitedStatesExpeditionActivity("main-menu");
+  returnFromExpeditionActivity("main-menu");
 }
 
 function resetUnitedStatesMemoryTrailProgress() {
@@ -19576,7 +19658,7 @@ async function continueUnitedStatesMemoryTrailFromSummary() {
 
 function finishUnitedStatesMemoryTrailFromSummary() {
   lastUnitedStatesMemoryTrailSummary = null;
-  returnFromUnitedStatesExpeditionActivity("main-menu");
+  returnFromExpeditionActivity("main-menu");
 }
 
 function renderUnitedStatesMemoryTrailSummary() {
@@ -25069,7 +25151,7 @@ function handleJourneyCompletionPrimary() {
 
   if (!activeJourneySession) {
     hideJourneyCompletionCard();
-    returnFromUnitedStatesExpeditionActivity("choose-journey");
+    returnFromExpeditionActivity("choose-journey");
     return;
   }
 
@@ -25087,7 +25169,7 @@ function handleJourneyCompletionPrimary() {
   atlasProgress = clearActiveJourney(atlasProgress);
   activeJourneySession = null;
   resetJourneyGameplayInstructionSession();
-  returnFromUnitedStatesExpeditionActivity("choose-journey");
+  returnFromExpeditionActivity("choose-journey");
 }
 
 async function advanceToJourneyStep(nextStepIndex) {
@@ -25192,7 +25274,7 @@ function exitJourney() {
   atlasProgress = clearActiveJourney(atlasProgress);
   activeJourneySession = null;
   resetJourneyGameplayInstructionSession();
-  returnFromUnitedStatesExpeditionActivity(selectedJourneyId ? "journey-detail" : "main-menu");
+  returnFromExpeditionActivity(selectedJourneyId ? "journey-detail" : "main-menu");
 }
 
 function getCurrentActivitySequence(mapSet = activeMapSet) {

@@ -183,18 +183,18 @@ Perfect visual polish is not required for this milestone.
 
 The U.S. reference implementation is not complete until it demonstrates that Mappa Mundi is becoming a reusable geography-learning platform rather than a collection of one-off systems.
 
-- [ ] Generic activity, session, persistence, learner-state, and adaptive-learning responsibilities are distinguishable from U.S.-specific geography content.
-- [ ] Core learning behavior does not depend on copying U.S.-specific code into every future geography section.
-- [ ] The higher-level U.S. learning mechanics currently concentrated in `src/maplibre-poc.js` have sufficiently clear boundaries that they can be reused or extracted without duplicating the entire U.S. implementation.
-- [ ] Geography content can be represented through reusable data/configuration structures wherever practical.
-- [ ] Tests and learner simulations can be applied to another geography section without creating an entirely separate testing system.
+- [x] Generic activity, session, persistence, learner-state, and adaptive-learning responsibilities are distinguishable from U.S.-specific geography content.
+- [x] Core learning behavior does not depend on copying U.S.-specific code into every future geography section.
+- [x] The higher-level U.S. learning mechanics currently concentrated in `src/maplibre-poc.js` have sufficiently clear boundaries that they can be reused or extracted without duplicating the entire U.S. implementation.
+- [x] Geography content can be represented through reusable data/configuration structures wherever practical.
+- [x] Tests and learner simulations can be applied to another geography section without creating an entirely separate testing system.
 
 ### Graduation test
 
-- [ ] One small non-U.S. geography unit—Central America or another appropriately limited region—is implemented using the U.S. reference system.
-- [ ] The new unit requires primarily geography content, configuration, and assets rather than substantial new activity, learner-state, persistence, or adaptive-engine code.
-- [ ] Any core changes discovered during the port are generalized for reuse rather than implemented as region-specific exceptions.
-- [ ] The same observability and automated-verification tools work for the new unit.
+- [x] One small non-U.S. geography unit—Central America or another appropriately limited region—is implemented using the U.S. reference system.
+- [x] The new unit requires primarily geography content, configuration, and assets rather than substantial new activity, learner-state, persistence, or adaptive-engine code.
+- [x] Any core changes discovered during the port are generalized for reuse rather than implemented as region-specific exceptions.
+- [x] The same observability and automated-verification tools work for the new unit.
 
 Passing this test demonstrates that the U.S. implementation has become a platform.
 
@@ -211,9 +211,9 @@ Required evidence includes:
 - [x] adaptive learner simulation report;
 - [x] passing automated test baseline;
 - [x] passing supported Playwright/E2E baseline;
-- [ ] brief desktop and mobile acceptance record;
+- [x] brief desktop and mobile acceptance record;
 - [x] Learning Inspector demonstrating learner-state and selection reasoning;
-- [ ] successful second-region graduation test;
+- [x] successful second-region graduation test;
 - [x] updated `CURRENT_STATE.md` reflecting the verified system.
 
 No core behavior may remain classified merely as **“implemented but unverified.”**

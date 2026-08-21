@@ -9,7 +9,9 @@ The JSON-safe adapters are in `src/learning-inspector.js`; the local-only visual
 On `localhost`, loopback addresses, and `file:` development access, the app installs a floating **Learning Inspector** button. Opening it lazily reads the current stores and displays:
 
 - all 50 states and 50 capitals in the U.S. Memory Trail curriculum, with their adaptive progress and separate place-mastery signals;
+- canonical retrieval items from registered geography learning units, including all seven Central America countries and separate location/identification summaries;
 - active U.S. Memory Trail or Daily Trail selections, reason codes, priority factors, and selection traces;
+- the current ordinary Memory Trail selection reason and bounded candidate metadata when that mode is active;
 - canonical concept/skill histories and the 20 most recent canonical responses, retaining their source mode and activity;
 - up to 20 before/after canonical evidence transitions captured during the current app lifetime.
 
@@ -39,6 +41,7 @@ Every inspectable field is an envelope with an explicit evidence label:
 | Place mastery | Stable place ID, separate recognition/naming/locating/relationship signals, attempts, correct/incorrect counts, streaks, last result, and last attempt timestamps. Aggregate counts and latest encounter are marked inferred because they combine observed signals. | No due schedule or lapse semantics. No single combined mastery status is inferred from distinct skills. An absent place record is unavailable, not zero evidence. |
 | Daily Trail | Item/activity/category metadata plus the existing item progress record: status, memory state, attempts, correct responses, misses, lapses, last-seen/review fields, and due session/date when present. | The adapter reports planner progress status but does not relabel it as a new mastery judgment. Missing progress falls back to `introduced` or `unseen` as an explicitly inferred planner interpretation. |
 | U.S. Memory Trail | Item/activity/type metadata plus status, memory state, attempts, correct responses, misses, lapses, last-seen session, and due session when present. | No date-based due field currently exists. Item type is exposed as the closest available category, not silently mapped to the U.S. content taxonomy. |
+| Canonical retrieval | Configured item/activity/entity metadata, separate concept × skill histories, attempts, correct/incorrect counts, and latest evidence time. | Canonical evidence is demonstrated history, not a shared scheduler; lapse and next-review fields remain unavailable. |
 | Journey progress | Journey/step progress and stored completion for a specific difficulty. | Step completion is not treated as item mastery. Journey progress does not include attempts, errors, lapses, or due state. |
 | Mental Map | Challenge ID/category, current challenge state, and submitted evaluation fields such as correctness, selected/missing states, score, or route results when supplied. | Results are not currently accumulated into durable per-concept attempts or mastery. No last-seen or review schedule is available. |
 | Map Reconstruction | Region/state identity, session phase/view, evaluation, and state placement result when supplied. | Results are not currently accumulated into durable per-state attempts or mastery. Move count, last-seen time, and review schedule are not available as learner evidence. |
@@ -65,6 +68,7 @@ Current system boundaries:
 | --- | --- | --- |
 | Daily Trail | Existing reason projection, item debug factors, emitted new/review counts, and other items emitted in the same plan. | The emitted plan does not retain the full discarded candidate pool. Eligible-candidate count, rejected alternatives, and exact comparator steps remain unavailable. |
 | U.S. Memory Trail | New/weak/older/recent/fairness bucket, current progress factors, and a read-only reconstruction of that bucket using the planner's existing eligibility and priority helpers. The cumulative fairness lane exposes `longest-waiting-eligible-due-item`. | Comparator clauses are ordered but the planner does not retain which clause broke every pairwise tie. Separate slot buckets are not one shared numeric ranking. |
+| Ordinary Memory Trail | Emitted selection reason/mode, prompt type, current target statistics, current-window/target-pool counts, and introduced alternatives. | The engine does not retain every intermediate filter or one numeric priority score, so those fields remain explicitly inferred or unavailable. |
 | Mental Map | The opt-in debug selectors expose valid/preferred counts, applied diversity filters, deterministic random draw/index, and alternatives in the preferred pool. Generated shortest-route tracing also records the seeded starting pair and pairs examined before the first eligible route. | Generated-route selection stops at the first eligible pair, so it does not calculate the total eligible-pair count. Mental Map selection does not currently use learner mastery evidence, so the trace cannot supply pedagogical priority or mastery scores. |
 
 Generate the tracked Ohio example with:
@@ -73,7 +77,7 @@ Generate the tracked Ohio example with:
 npm run report:selection-trace
 ```
 
-The output is `reports/selection-trace-example.json`. Programmatic callers normally receive the trace through `createDailyTrailSelectionExplanation()`, `createUnitedStatesMemoryTrailSelectionExplanation()`, or `createMentalMapSelectionExplanation()`. Mental Map callers that need exact decision-time metadata use `selectNextUnifiedMentalMapChallengeWithDebug()` or `createGeneratedShortestRouteChallengeWithDebug()` and pass the returned `debug` object to the Inspector.
+The output is `reports/selection-trace-example.json`. Programmatic callers normally receive the trace through `createDailyTrailSelectionExplanation()`, `createUnitedStatesMemoryTrailSelectionExplanation()`, `createMemoryTrailSelectionTrace()`, or `createMentalMapSelectionExplanation()`. Mental Map callers that need exact decision-time metadata use `selectNextUnifiedMentalMapChallengeWithDebug()` or `createGeneratedShortestRouteChallengeWithDebug()` and pass the returned `debug` object to the Inspector.
 
 Compared with O5, a U.S. trace can now show that repeated Ohio selection came from the weak-review bucket, whether recorded misses/weak/due predicates applied, the reconstructed alternatives in that bucket, and whether West-tagged fixture items were present. A deterministic replay can compare the entire JSON trace. Daily Trail cannot yet prove that an unselected West item was eligible, because its full rejected pool is not retained; that limitation is explicit rather than guessed.
 
@@ -121,7 +125,7 @@ const transition = createLearningInspectorTransition({
 - A unified learner identity or single mastery judgment across the existing stores.
 - Durable event history tying each answer to every resulting store write.
 - Exact rejected-alternative ranking for past selections that were not captured with trace inputs; Daily Trail's full rejected pool remains unavailable even at trace time.
-- Shared naming/locating/relationship evidence across all modes.
+- A scheduler or mastery reducer that consumes shared canonical evidence across modes.
 - Cumulative Mental Map and reconstruction evidence.
 - Production-wide capture of deterministic seed/time context.
 - Automatic durable storage of selection traces from production gameplay.

@@ -137,6 +137,10 @@ function capitalConceptIds(stateId, capitalId) {
   return [`capital-location:${stateId}:${capitalId}`, `capital-naming:${stateId}:${capitalId}`];
 }
 
+function countryConceptIds(countryId) {
+  return [`country-location:${countryId}`, `country-naming:${countryId}`];
+}
+
 export function getCanonicalRetrievalMappings(item = {}) {
   const type = requireNonEmptyString(item.type, "item.type");
   const targetId = requireNonEmptyString(item.targetId, "item.targetId");
@@ -153,7 +157,13 @@ export function getCanonicalRetrievalMappings(item = {}) {
       { conceptId: capitalConceptIds(stateId, targetId)[1], skillId: "identifying", promptType: "place_to_name" }
     ];
   }
-  throw new TypeError(`No canonical U.S. retrieval mapping exists for item type: ${type}`);
+  if (type === "country") {
+    return [
+      { conceptId: countryConceptIds(targetId)[0], skillId: "locating", promptType: "name_to_place" },
+      { conceptId: countryConceptIds(targetId)[1], skillId: "identifying", promptType: "place_to_name" }
+    ];
+  }
+  throw new TypeError(`No canonical retrieval mapping exists for item type: ${type}`);
 }
 
 export function createCanonicalAggregateEvidenceSummary({ item = {}, progress = {}, sourceMode, sourceItemId } = {}) {

@@ -6,7 +6,7 @@ Expeditions are Mappa Mundi's guided orchestration layer. They arrange existing 
 
 `src/expedition-framework.js` accepts a structured Expedition definition and a flat evidence snapshot. It validates stable step IDs, launch references, and prerequisites, then derives each step as `locked`, `available`, `in-progress`, or `complete`. It also identifies the recommended next step and calculates milestone progress.
 
-The framework has no storage access and does not know about U.S. activities. A geography-specific runtime adapter is responsible for projecting existing evidence into the metric names used by its configuration. A future Expedition can therefore reuse the same read model and UI while supplying different steps, launches, and evidence metrics.
+The framework has no storage access and does not know about U.S. activities. A geography learning-unit adapter projects canonical repository events into metric names supplied by configuration. Expeditions therefore reuse the same read model and UI while supplying different steps, launches, and evidence metrics.
 
 ## Across the United States
 
@@ -38,6 +38,12 @@ Atlas exploration is deliberately optional and non-blocking because it is not sc
 
 Launching an activity from the Expedition records only an in-memory return destination. Exiting Atlas, U.S. Memory Trail, Journey gameplay, Mental Map/U.S. Connections, or Reconstruction returns to the freshly derived Expedition hub. No Expedition progress is written.
 
+## Central America graduation unit
+
+The `central-america-countries` learning unit is the bounded second-region proof. Its configuration composes the existing `central-america` step of the North America Journey, ordinary Memory Trail, and the shared canonical Progress Report. Seven location concepts unlock seven identification concepts; an optional report step remains non-blocking. The unit reads only canonical repository evidence and writes no Expedition state.
+
+The generic learning-unit registry, evidence-metric projection, canonical report core, activity evidence contract, and optional Journey step launch are reusable boundaries. Central America adds no scheduler, persistence store, or gameplay engine. See [Central America Architecture Graduation Report](./central-america-architecture-graduation.md).
+
 ## Current boundary
 
-This slice establishes the reusable model, primary U.S. entry/hub, evidence-derived resume state, activity launch composition, and return path. It does not yet add narrative transitions, teaching interstitials, achievements, a separate Expedition completion record, or a second-region graduation configuration. The existing activity completion and canonical evidence systems remain authoritative.
+The reusable model now has both the primary U.S. orchestration and a passing bounded Central America graduation unit. It does not add narrative transitions, teaching interstitials, achievements, or a separate Expedition completion record. Existing activity completion, mode scheduling, and canonical evidence systems remain authoritative.

@@ -249,7 +249,7 @@ assert.deepEqual(europeActivity.map?.dailyTrailQuizCamera, {
 const plannerImport = runtimeSource.match(/from "\.\/daily-trail-planner\.js\?v=([^"]+)"/);
 assert.equal(
   plannerImport?.[1],
-  "20260624-daily-trail-curriculum-progression-1",
+  "20260821-learning-reset-cache-1",
   "The runtime must load the checkpoint-aware planner under a new cache key."
 );
 assert.match(

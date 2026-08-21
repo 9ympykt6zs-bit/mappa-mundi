@@ -168,6 +168,10 @@
               <button id="main-menu-choose-button" class="main-menu-button main-menu-button-purple" type="button">Choose Journey</button>
               <button class="info-button" type="button" data-info-text="Pick a guided path, study sections with Memory Trail, and progress through activities in order." aria-label="More info about Choose Journey">i</button>
             </div>
+            <div class="main-menu-action-row info-anchor">
+              <button id="main-menu-central-america-unit-button" class="main-menu-button main-menu-button-teal" type="button">Central America Countries</button>
+              <button class="info-button" type="button" data-info-text="A compact path for locating and identifying Belize, Guatemala, Honduras, El Salvador, Nicaragua, Costa Rica, and Panama." aria-label="More info about Central America Countries">i</button>
+            </div>
           </div>
           <p class="main-menu-section-note">After choosing a journey, you can pick Study or Memory Trail before you play.</p>
         </section>
@@ -210,8 +214,8 @@
           <strong id="app-shell-placeholder-title">Coming Soon</strong>
           <p id="app-shell-placeholder-message">This feature is coming soon.</p>
         </div>
-        <div id="united-states-progress-report" class="united-states-progress-report" role="main" hidden></div>
-        <div id="united-states-expedition" class="united-states-expedition" role="main" hidden></div>
+        <div id="progress-report" class="united-states-progress-report" role="main" hidden></div>
+        <div id="expedition-view" class="united-states-expedition" role="main" hidden></div>
         <div id="journey-preset-list" class="journey-preset-list" hidden></div>
         <div id="journey-shell-content" class="journey-shell-content" hidden></div>
       </div>
@@ -354,7 +358,7 @@
 
         window.__mappaMundiLoadApp = () => {
           if (!appModulePromise) {
-            appModulePromise = import("./src/maplibre-poc.js?v=20260728-activity-audio-1");
+            appModulePromise = import("./src/maplibre-poc.js?v=20260821-central-america-graduation-1");
           }
 
           return appModulePromise;

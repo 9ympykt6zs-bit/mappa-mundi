@@ -26,6 +26,7 @@ export function normalizeActivity(rawActivity, overrides = {}) {
     memoryTrailRequireAllTargets: overrides.memoryTrailRequireAllTargets ?? rawActivity.memoryTrailRequireAllTargets ?? false,
     memoryTrailAutoStart: overrides.memoryTrailAutoStart ?? rawActivity.memoryTrailAutoStart ?? false,
     memoryTrailSections: overrides.memoryTrailSections || rawActivity.memoryTrailSections || [],
+    canonicalEvidence: overrides.canonicalEvidence ?? rawActivity.canonicalEvidence ?? null,
     map,
     sources: overrides.sources || rawActivity.sources || [],
     targetLayers: overrides.targetLayers || rawActivity.targetLayers || [],

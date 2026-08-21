@@ -239,10 +239,11 @@ assert.equal(JSON.stringify(plannerState), plannerSnapshot, "Progress Report sel
 
 const runtimeSource = readFileSync(new URL("../src/maplibre-poc.js", import.meta.url), "utf8");
 const adapterSource = readFileSync(new URL("../src/canonical-progress-report-shadow.js", import.meta.url), "utf8");
+const coreSource = readFileSync(new URL("../src/canonical-progress-report.js", import.meta.url), "utf8");
 assert.match(runtimeSource, /createUnitedStatesProgressReportReadModel/);
 assert.match(runtimeSource, /repository: loadCanonicalEvidenceRepository\(\)/);
-assert.match(runtimeSource, /unitedStatesProgressReportModel = readModel\.report/);
+assert.match(runtimeSource, /progressReportModel = readModel\.report/);
 assert.match(adapterSource, /applyProgressEvidencePolicy\(events\)/);
-assert.match(adapterSource, /scoreBayesianEvidenceCounts\(correctCount, incorrectCount\)/);
+assert.match(coreSource, /scoreBayesianEvidenceCounts\(correctCount, incorrectCount\)/);
 
 console.log("Progress Report canonical-first production read path passed.");

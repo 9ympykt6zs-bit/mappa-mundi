@@ -15,6 +15,8 @@ The v1 skills are locating, identifying, recognition, relationship recall, seque
 
 `conceptId + skillId` is the intended evidence aggregation key. Source mode, activity, session, and response metadata preserve provenance without changing concept identity.
 
+Country activities use the same retrieval contract: `country-location:{country} + locating` for name-to-place prompts and `country-naming:{country} + identifying` for place-to-name prompts. Central America's seven-country graduation unit validates these mappings without adding a region-specific concept vocabulary.
+
 ## Historical aggregates are not events
 
 Daily Trail and U.S. Memory Trail currently persist aggregate correct and miss counters. They do not retain a lossless chronological attempt history or prompt-specific skill attribution. Their read-only adapter therefore produces an aggregate summary that lists both possible concept/skill mappings and explicitly marks skill attribution unavailable.

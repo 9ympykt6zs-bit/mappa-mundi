@@ -48,7 +48,8 @@ assert.doesNotMatch(frameworkSource, /localStorage|sessionStorage/, "The reusabl
 assert.match(runtimeSource, /loadUnitedStatesMemoryTrailProgress\(\)/);
 assert.match(runtimeSource, /loadCanonicalEvidenceRepository\(\)/);
 assert.match(runtimeSource, /getJourneyProgress\(journeyId, loadProgress\(\)\)/);
-assert.match(runtimeSource, /returnFromUnitedStatesExpeditionActivity/);
+assert.match(runtimeSource, /returnFromExpeditionActivity/);
+assert.match(runtimeSource, /openExpedition\(expeditionId/);
 assert.match(indexSource, /id="main-menu-us-expedition-button"/);
 for (const directEntryId of [
   "main-menu-us-memory-trail-button",
