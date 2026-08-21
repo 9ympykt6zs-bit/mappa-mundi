@@ -69,6 +69,12 @@ See [`progress-report-canonical-first.md`](progress-report-canonical-first.md) f
 npm run check:state-capital-relationships
 ```
 
+`scripts/check-united-states-relationship-learning.mjs` validates I2 U.S. Connections. It derives 50 Census-region memberships, 17 international-border edges, and 25 coast edges from the trusted atlas; checks answer semantics, multi-coast distractors, canonical persistence and deduplication, Progress Evidence Policy routing, the optional canonical Geographic Relationships report category, ordinary Mental Map isolation, merged coverage identities, D.C. exclusion, and production wiring. Run it with:
+
+```sh
+npm run check:us-relationships
+```
+
 ## Browser/E2E tests
 
 Run Playwright separately:

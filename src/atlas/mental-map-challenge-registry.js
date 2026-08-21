@@ -11,6 +11,7 @@ import {
 } from "./compass-challenges.js";
 import { resolveRandomSource } from "../deterministic-dependencies.js";
 import { getStateCapitalRelationshipChallenges } from "./state-capital-relationship-challenges.js";
+import { getUnitedStatesRelationshipChallenges } from "./united-states-relationship-challenges.js";
 
 export const MENTAL_MAP_CHALLENGE_CATEGORIES = Object.freeze({
   BORDERS_AND_NEIGHBORS: "borders-and-neighbors",
@@ -87,7 +88,11 @@ export function validateUnifiedMentalMapChallenge(challenge) {
 }
 
 export function getUnifiedMentalMapChallenges(options = {}) {
-  const { includeGenerated = true, includeStateCapitalRelationships = false } = options;
+  const {
+    includeGenerated = true,
+    includeStateCapitalRelationships = false,
+    includeUnitedStatesRelationships = false
+  } = options;
   const candidates = [
     ...getMentalMapChallenges(options).map((challenge) => ({
       ...challenge,
@@ -95,7 +100,8 @@ export function getUnifiedMentalMapChallenges(options = {}) {
       sourceModule: "mental-map-challenges"
     })),
     ...getCompassChallenges().map(adaptCompassChallengeForMentalMap),
-    ...(includeStateCapitalRelationships ? getStateCapitalRelationshipChallenges() : [])
+    ...(includeStateCapitalRelationships || includeUnitedStatesRelationships ? getStateCapitalRelationshipChallenges() : []),
+    ...(includeUnitedStatesRelationships ? getUnitedStatesRelationshipChallenges() : [])
   ].filter(Boolean);
   const seenIds = new Set();
   return candidates.filter((challenge) => {

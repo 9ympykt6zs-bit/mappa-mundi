@@ -68,6 +68,10 @@ function createChallenge(pair, distractors, direction) {
       choice.stateId,
       stateToCapital ? choice.capitalName : choice.stateName
     ])),
+    answerEntityIdsByStateId: Object.fromEntries(choices.map((choice) => [
+      choice.stateId,
+      stateToCapital ? choice.capitalEntityId : choice.stateEntityId
+    ])),
     explanation: `${pair.capitalName} is the capital of ${pair.stateName}.`,
     associatedFeatureIds: [pair.capitalEntityId],
     referenceStateId: pair.stateId,

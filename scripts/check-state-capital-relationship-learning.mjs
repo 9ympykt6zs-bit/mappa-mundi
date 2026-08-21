@@ -88,6 +88,7 @@ assert.equal(correctEvent.outcome, "correct");
 assert.equal(incorrectEvent.outcome, "incorrect");
 assert.equal(correctEvent.response.promptDirection, "state-to-capital");
 assert.equal(incorrectEvent.response.promptDirection, "capital-to-state");
+assert.deepEqual(correctEvent.response.selectedEntityIds, ["capital:columbus"]);
 
 const storage = createMemoryStorage();
 const firstWrite = recordCanonicalEvidenceEvent(correctEvent, storage);
@@ -169,8 +170,8 @@ assert.equal(JSON.stringify(plannerState), plannerSnapshot);
 
 const runtimeSource = readFileSync(new URL("../src/maplibre-poc.js", import.meta.url), "utf8");
 const indexSource = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-assert.match(indexSource, /main-menu-state-capital-relationships-button/);
-assert.match(runtimeSource, /openMentalMapChallenge\(\{ stateCapitalOnly: true \}\)/);
+assert.match(indexSource, /main-menu-united-states-relationships-button/);
+assert.match(runtimeSource, /openMentalMapChallenge\(\{ unitedStatesRelationshipsOnly: true \}\)/);
 assert.match(runtimeSource, /recordCanonicalMentalMapEvaluation\(\)/);
 assert.match(runtimeSource, /sourceActivityId: activeMentalMapChallenge\.sourceActivityId \|\| activeMentalMapChallenge\.id/);
 

@@ -61,24 +61,24 @@ Content completeness is measured by **coverage**, not by reaching an arbitrary t
 
 ### Coverage model
 
-- [ ] The repository can generate or maintain a coverage matrix crossing major U.S. regions with relevant learning objectives/content categories.
-- [ ] At minimum, the coverage model distinguishes:
+- [x] The repository can generate or maintain a coverage matrix crossing major U.S. regions with relevant learning objectives/content categories.
+- [x] At minimum, the coverage model distinguishes:
   - state location;
   - state identification/naming;
   - geographic relationships;
   - major physical geography;
   - contextual/significance knowledge;
   - capitals, cities, or other political geography included in the current U.S. scope.
-- [ ] Rewordings or trivial variants of the same fact do not count as separate concepts when measuring content depth.
+- [x] Rewordings or trivial variants of the same fact do not count as separate concepts when measuring content depth.
 
 For coverage auditing, the broader categories above—such as geographic relationships and contextual/significance knowledge—are operationalized by the more detailed content categories in [`docs/US_CONTENT_TAXONOMY.md`](US_CONTENT_TAXONOMY.md).
 
 ### Minimum state coverage
 
-- [ ] Every state can be practiced through both location and identification/naming.
+- [x] Every state can be practiced through both location and identification/naming.
 - [x] Every state has an explicit, directly assessed state-to-capital relationship.
-- [ ] Every state has at least one meaningful curated relational concept—for example adjacency, relative position, regional membership, connection to a physical feature, or relationship to another place.
-- [ ] Every state has at least one separate non-capital contextual concept drawn from the categories defined in [`docs/US_CONTENT_TAXONOMY.md`](US_CONTENT_TAXONOMY.md).
+- [x] Every state has at least one meaningful curated relational concept—for example adjacency, relative position, regional membership, connection to a physical feature, or relationship to another place.
+- [x] Every state has at least one separate non-capital contextual concept drawn from the categories defined in [`docs/US_CONTENT_TAXONOMY.md`](US_CONTENT_TAXONOMY.md).
 - [ ] Important U.S. physical features and regions have deliberately defined coverage rather than appearing only incidentally through state questions.
 
 ### Regional balance
@@ -206,10 +206,10 @@ The U.S. reference implementation is considered complete only when its status ca
 
 Required evidence includes:
 
-- [ ] current content-coverage matrix;
+- [x] current content-coverage matrix;
 - [ ] regional/content-balance report;
 - [ ] adaptive learner simulation report;
-- [ ] passing automated test baseline;
+- [x] passing automated test baseline;
 - [ ] passing supported Playwright/E2E baseline;
 - [ ] brief desktop and mobile acceptance record;
 - [ ] Learning Inspector demonstrating learner-state and selection reasoning;

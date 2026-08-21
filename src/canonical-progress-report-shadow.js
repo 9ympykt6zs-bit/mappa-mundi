@@ -20,10 +20,57 @@ import {
   UNITED_STATES_PROGRESS_REPORT_CATEGORY_DEFINITIONS
 } from "./united-states-progress-report.js";
 import { getStateCapitalRelationshipPairs } from "./atlas/state-capital-relationship-challenges.js";
+import { getUnifiedMentalMapChallenges } from "./atlas/mental-map-challenge-registry.js";
+import { getCanonicalMentalMapConceptId } from "./canonical-learning-evidence.js";
 
 const capitalRelationshipConceptByStateId = new Map(
   getStateCapitalRelationshipPairs().map(({ stateId, conceptId }) => [stateId, conceptId])
 );
+
+const GEOGRAPHIC_RELATIONSHIPS_CATEGORY = Object.freeze({
+  id: "geographic-relationships",
+  label: "Geographic Relationships",
+  itemType: "state",
+  signalId: "relationships"
+});
+
+function relationshipChallengeStateIds(challenge) {
+  return [...new Set([
+    ...(challenge.correctStateIds || []),
+    ...(challenge.orderedStateIds || []),
+    ...(challenge.referenceStateIds || []),
+    challenge.correctStateId,
+    challenge.referenceStateId,
+    challenge.routeStartStateId,
+    challenge.routeDestinationStateId
+  ].filter(Boolean))];
+}
+
+const geographicRelationshipHistoriesByStateId = (() => {
+  const byStateId = new Map();
+  for (const challenge of getUnifiedMentalMapChallenges({
+    includeGenerated: false,
+    includeUnitedStatesRelationships: true
+  })) {
+    const conceptId = getCanonicalMentalMapConceptId(challenge);
+    if (!conceptId?.startsWith("relationship:")) continue;
+    const canonicalSkillId = challenge.canonicalSkillId
+      || (challenge.answerMode === "ordered-sequence" ? "sequencing" : "relationship-recall");
+    for (const stateId of relationshipChallengeStateIds(challenge)) {
+      const entries = byStateId.get(stateId) || [];
+      if (!entries.some((entry) => entry.conceptId === conceptId && entry.canonicalSkillId === canonicalSkillId)) {
+        entries.push({
+          historyKey: `${USER_FACING_PROGRESS_SKILLS.GEOGRAPHIC_RELATIONSHIPS}\u0000${conceptId}`,
+          conceptId,
+          canonicalSkillId,
+          progressSkillId: USER_FACING_PROGRESS_SKILLS.GEOGRAPHIC_RELATIONSHIPS
+        });
+      }
+      byStateId.set(stateId, entries);
+    }
+  }
+  return byStateId;
+})();
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -77,6 +124,9 @@ function approvedHistoryKeys(item, category, itemsById) {
         progressSkillId: USER_FACING_PROGRESS_SKILLS.CAPITAL_OF_RELATIONSHIP
       }] : [])
     ];
+  }
+  if (item.type === "state" && category.id === GEOGRAPHIC_RELATIONSHIPS_CATEGORY.id) {
+    return geographicRelationshipHistoriesByStateId.get(item.targetId) || [];
   }
   return [];
 }
@@ -152,7 +202,15 @@ export function createCanonicalUnitedStatesProgressReport({
   const policyResult = applyProgressEvidencePolicy(events);
   const baseCategories = new Map(baseReport.categories.map((category) => [category.id, category]));
   const emptyCategories = new Map(emptyPresentation.categories.map((category) => [category.id, category]));
-  const canonicalCategories = UNITED_STATES_PROGRESS_REPORT_CATEGORY_DEFINITIONS.map((definition) => {
+  const emptyStateRecords = new Map((emptyCategories.get("state-locations")?.records || []).map((record) => [record.itemId, record]));
+  const hasGeographicRelationshipHistory = policyResult.histories.some(
+    ({ progressSkillId }) => progressSkillId === USER_FACING_PROGRESS_SKILLS.GEOGRAPHIC_RELATIONSHIPS
+  );
+  const canonicalDefinitions = [
+    ...UNITED_STATES_PROGRESS_REPORT_CATEGORY_DEFINITIONS,
+    ...(hasGeographicRelationshipHistory ? [GEOGRAPHIC_RELATIONSHIPS_CATEGORY] : [])
+  ];
+  const canonicalCategories = canonicalDefinitions.map((definition) => {
     const baseRecords = new Map((baseCategories.get(definition.id)?.records || []).map((record) => [record.itemId, record]));
     const emptyRecords = new Map((emptyCategories.get(definition.id)?.records || []).map((record) => [record.itemId, record]));
     const records = safeItems
@@ -163,11 +221,11 @@ export function createCanonicalUnitedStatesProgressReport({
         itemsById,
         policyResult,
         eventsById,
-        baseRecord: baseRecords.get(item.id) || emptyRecords.get(item.id)
+        baseRecord: baseRecords.get(item.id) || emptyRecords.get(item.id) || emptyStateRecords.get(item.id)
       }));
     return createUnitedStatesProgressReportCategory(definition, records);
   });
-  const supportedCategoryIds = new Set(UNITED_STATES_PROGRESS_REPORT_CATEGORY_DEFINITIONS.map(({ id }) => id));
+  const supportedCategoryIds = new Set(canonicalDefinitions.map(({ id }) => id));
   const categories = [
     ...canonicalCategories,
     ...baseReport.categories.filter(({ id }) => !supportedCategoryIds.has(id)).map(clone)
@@ -186,7 +244,7 @@ export function createCanonicalUnitedStatesProgressReport({
       policyVersion: policyResult.policyVersion,
       canonicalEventCount: policyResult.uniqueEventCount,
       duplicateEventIds: clone(policyResult.duplicateEventIds),
-      supportedCategoryIds: ["state-locations", "state-identification", "state-capitals"],
+      supportedCategoryIds: canonicalDefinitions.map(({ id }) => id),
       capitalRollup: clone(PROGRESS_REPORT_ROLLUP_POLICIES["state-capitals"])
     }
   };

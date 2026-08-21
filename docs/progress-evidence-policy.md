@@ -24,8 +24,8 @@ The policy decision key is the canonical `conceptId + skillId`. Source mode and 
 | State Identification | `state-naming:{state}` + `identifying` | Supported |
 | Capital Location | `capital-location:{state}:{capital}` + `locating` | Supported |
 | Capital Identification | `capital-naming:{state}:{capital}` + `identifying` | Supported |
-| Capital-of Relationship | `state-capital:{state}:{capital}` + `relationship-recall` | Supported by Capital Connections |
-| Geographic Relationships | `relationship:*` + `relationship-recall` or `sequencing` | Supported for Mental Map evidence |
+| Capital-of Relationship | `state-capital:{state}:{capital}` + `relationship-recall` | Supported by U.S. Connections |
+| Geographic Relationships | `relationship:*` + `relationship-recall` or `sequencing` | Supported for Mental Map and U.S. Connections evidence |
 | Spatial Reconstruction | `state-reconstruction:{state}` + `spatial-reconstruction` | Supported as a distinct skill, not State Location |
 | Contextual Knowledge | Explicit contextual concept + contextual-recall skill + approved U.S. taxonomy qualification | Blocked by canonical contract v1 |
 
@@ -41,7 +41,8 @@ Context cannot yet contribute. Canonical v1 has no contextual-recall skill, and 
 | Memory/Daily place-to-name | `state-naming:*` + `identifying` | State Identification | Include; never share with State Location |
 | Capital name-to-place | `capital-location:*` + `locating` | Capital Location | Include |
 | Capital place-to-name | `capital-naming:*` + `identifying` | Capital Identification | Include |
-| Capital Connections in either prompt direction | `state-capital:*` + `relationship-recall` | Capital-of Relationship | Include; both directions share one history |
+| U.S. Connections capital question in either prompt direction | `state-capital:*` + `relationship-recall` | Capital-of Relationship | Include; both directions share one history |
+| U.S. Connections region, international-border, or coast question | `relationship:*` + `relationship-recall` | Geographic Relationships | Include under the state or states named by the fixed concept |
 | Mental Map relationship question | `relationship:*` + `relationship-recall` | Geographic Relationships | Include; do not leak into State Location or Identification |
 | Mental Map ordered relationship | `relationship:*` + `sequencing` | Geographic Relationships | Include as relationship evidence |
 | Map Reconstruction | `state-reconstruction:*` + `spatial-reconstruction` | Spatial Reconstruction only | Never automatically convert to State Location |
@@ -111,6 +112,6 @@ Brand-new learners can start with canonical-only histories. Existing learners re
 
 ## 11. Migration readiness criteria
 
-A canonical-first implementation for brand-new learners is active for State Location, State Identification, Capital Location, Capital Identification, and Capital-of Relationship behind the guarded selector. Geographic Relationships and Spatial Reconstruction are policy-defined but should not appear in the current UI without separate product acceptance. Context remains blocked because its canonical contract is incomplete.
+A canonical-first implementation for brand-new learners is active for State Location, State Identification, Capital Location, Capital Identification, Capital-of Relationship, and fixed Geographic Relationships behind the guarded selector. The existing optional Geographic Relationships category appears only after canonical relationship evidence exists; Spatial Reconstruction remains policy-defined but is not promoted into the current UI. Context remains blocked because its canonical contract is incomplete.
 
-Existing learners are not migration-ready. Capital Connections creates only new live relationship evidence and never fabricates historical events. Migration remains blocked on a versioned legacy-baseline format, a canonical cutover boundary, overlap prevention, and an explicit display treatment for combined historical state-practice evidence.
+Existing learners are not migration-ready. U.S. Connections creates only new live relationship evidence and never fabricates historical events. Migration remains blocked on a versioned legacy-baseline format, a canonical cutover boundary, overlap prevention, and an explicit display treatment for combined historical state-practice evidence.

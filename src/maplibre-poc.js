@@ -3128,7 +3128,7 @@ const mainMenuDailyTrailButton = document.querySelector("#main-menu-daily-trail-
 const mainMenuUnitedStatesMemoryTrailButton = document.querySelector("#main-menu-us-memory-trail-button");
 const mainMenuUnitedStatesAtlasButton = document.querySelector("#main-menu-united-states-atlas-button");
 const mainMenuUnitedStatesProgressButton = document.querySelector("#main-menu-united-states-progress-button");
-const mainMenuStateCapitalRelationshipsButton = document.querySelector("#main-menu-state-capital-relationships-button");
+const mainMenuUnitedStatesRelationshipsButton = document.querySelector("#main-menu-united-states-relationships-button");
 const mainMenuMentalMapChallengeButton = document.querySelector("#main-menu-mental-map-challenge-button");
 const mainMenuMapReconstructionButton = document.querySelector("#main-menu-map-reconstruction-button");
 const legacyCompassChallengeButton = document.querySelector("#main-menu-compass-challenge-button");
@@ -3584,7 +3584,7 @@ let mentalMapReorderAnnouncement = "";
 let mentalMapLastQuestionId = "";
 let mentalMapLastCategory = "";
 let mentalMapRecentAnswerModes = [];
-let mentalMapStateCapitalOnly = false;
+let mentalMapUnitedStatesRelationshipsOnly = false;
 let mapReconstructionController = null;
 let activeMapReconstructionRegionId = "";
 let mapReconstructionFeatureCollectionPromise = null;
@@ -5568,7 +5568,7 @@ function bindUiEvents() {
   mainMenuUnitedStatesMemoryTrailButton?.addEventListener("click", startOrContinueUnitedStatesMemoryTrail);
   mainMenuUnitedStatesAtlasButton?.addEventListener("click", () => { void openUnitedStatesAtlas(); });
   mainMenuUnitedStatesProgressButton?.addEventListener("click", () => { void openUnitedStatesProgressReport(); });
-  mainMenuStateCapitalRelationshipsButton?.addEventListener("click", () => { void openMentalMapChallenge({ stateCapitalOnly: true }); });
+  mainMenuUnitedStatesRelationshipsButton?.addEventListener("click", () => { void openMentalMapChallenge({ unitedStatesRelationshipsOnly: true }); });
   mainMenuMentalMapChallengeButton?.addEventListener("click", () => { void openMentalMapChallenge(); });
   mainMenuMapReconstructionButton?.addEventListener("click", () => { void openMapReconstruction(); });
   legacyCompassChallengeButton?.addEventListener("click", () => { void openCompassChallenge(); });
@@ -8138,21 +8138,24 @@ async function openMentalMapChallenge(options = {}) {
   runner.setCompletedTargets([]);
   runner.setUnitedStatesAtlasLearningStatuses({});
   runner.prepareMentalMapChallenge();
-  mentalMapStateCapitalOnly = options.stateCapitalOnly === true;
+  mentalMapUnitedStatesRelationshipsOnly = options.unitedStatesRelationshipsOnly === true;
   mentalMapChallengePool = getUnifiedMentalMapChallenges({
-    includeGenerated: !mentalMapStateCapitalOnly,
-    includeStateCapitalRelationships: mentalMapStateCapitalOnly
-  }).filter((challenge) => !mentalMapStateCapitalOnly || challenge.canonicalConceptId?.startsWith("state-capital:"));
+    includeGenerated: !mentalMapUnitedStatesRelationshipsOnly,
+    includeUnitedStatesRelationships: mentalMapUnitedStatesRelationshipsOnly
+  }).filter((challenge) => !mentalMapUnitedStatesRelationshipsOnly || [
+    "us-state-capital-relationships",
+    "us-atlas-relationships"
+  ].includes(challenge.sourceActivityId));
   mentalMapUsedQuestionIds = new Set();
   mentalMapLastQuestionId = "";
   mentalMapLastCategory = "";
   mentalMapRecentAnswerModes = [];
   startNextMentalMapQuestion();
-  setHeaderTitle(mentalMapStateCapitalOnly ? "Capital Connections" : "Mental Map Challenge", {
-    shortTitle: mentalMapStateCapitalOnly ? "Capitals" : "Mental Map"
+  setHeaderTitle(mentalMapUnitedStatesRelationshipsOnly ? "U.S. Connections" : "Mental Map Challenge", {
+    shortTitle: mentalMapUnitedStatesRelationshipsOnly ? "Connections" : "Mental Map"
   });
-  instruction.textContent = mentalMapStateCapitalOnly
-    ? "Recall the state-capital relationship, then submit your answer."
+  instruction.textContent = mentalMapUnitedStatesRelationshipsOnly
+    ? "Recall the geographic relationship, then submit your answer."
     : "Recall first. The map appears after you submit.";
   renderActivityNavControls(null);
   updateTopBarNavigation();
@@ -8284,7 +8287,7 @@ function exitMentalMapChallenge() {
   mentalMapLastQuestionId = "";
   mentalMapLastCategory = "";
   mentalMapRecentAnswerModes = [];
-  mentalMapStateCapitalOnly = false;
+  mentalMapUnitedStatesRelationshipsOnly = false;
   runner?.prepareMentalMapChallenge();
   if (mapElement) mapElement.removeAttribute("aria-hidden");
   document.body.classList.remove("mental-map-challenge-mode", "mental-map-result-mode", "overview-mode", "browse-mode");

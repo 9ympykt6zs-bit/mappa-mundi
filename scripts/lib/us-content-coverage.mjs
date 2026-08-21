@@ -6,6 +6,7 @@ import { journeyPresets } from "../../src/journey-presets.js";
 import { unitedStatesAtlas } from "../../src/atlas/united-states-atlas-data.js";
 import { getUnifiedMentalMapChallenges } from "../../src/atlas/mental-map-challenge-registry.js";
 import { getStateCapitalRelationshipChallenges } from "../../src/atlas/state-capital-relationship-challenges.js";
+import { getUnitedStatesRelationshipChallenges } from "../../src/atlas/united-states-relationship-challenges.js";
 import {
   findAllShortestBorderPaths,
   getBorderChainEligibleStateIds
@@ -157,6 +158,9 @@ function challengeTags(challenge) {
 function challengeSourceFile(challenge) {
   if (challenge.sourceModule === "state-capital-relationship-challenges") {
     return "src/atlas/state-capital-relationship-challenges.js";
+  }
+  if (challenge.sourceModule === "united-states-relationship-challenges") {
+    return "src/atlas/united-states-relationship-challenges.js";
   }
   return challenge.sourceModule === "compass-challenges"
     ? "src/atlas/compass-challenges.js"
@@ -358,6 +362,15 @@ function atlasRelationshipConcept(relationship, entitiesById) {
     const pair = [from.id.replace("state:", ""), to.id.replace("state:", "")].sort();
     id = `relationship:border:${pair.join(":")}`;
     stateIds = pair;
+  } else if (relationship.type === "belongsToRegion") {
+    id = `relationship:region-membership:${from.id.replace("state:", "")}:${to.id.replace("region:", "")}`;
+    tags.push(TAXONOMY_TAGS.POLITICAL);
+  } else if (relationship.type === "internationalBorder") {
+    id = `relationship:international-border:${from.id.replace("state:", "")}:${to.id.replace("country:", "")}`;
+    tags.push(TAXONOMY_TAGS.POLITICAL);
+  } else if (relationship.type === "coast") {
+    id = `relationship:coast:${from.id.replace("state:", "")}:${to.id.replace("water:", "")}`;
+    tags.push(TAXONOMY_TAGS.PHYSICAL);
   } else {
     const endpoints = [relationship.from, relationship.to].map((value) => value.replace(":", "-")).sort();
     id = `relationship:atlas:${slug(relationship.type)}:${endpoints.join(":")}`;
@@ -367,7 +380,11 @@ function atlasRelationshipConcept(relationship, entitiesById) {
   return {
     id,
     label: `${from.name} ${relationship.type} ${to.name}`,
-    kind: relationship.type === "capitalOf" ? "state-capital-relationship" : "atlas-relationship",
+    kind: relationship.type === "capitalOf"
+      ? "state-capital-relationship"
+      : ["belongsToRegion", "internationalBorder", "coast"].includes(relationship.type)
+        ? "curated-relationship"
+        : "atlas-relationship",
     stateIds,
     entityIds: [from.id, to.id, relationship.via].filter(Boolean),
     taxonomyTags: uniqueSorted(tags),
@@ -389,7 +406,8 @@ function addAtlasConcepts(concepts) {
 function addMentalMapConcepts(concepts) {
   const challenges = [
     ...getUnifiedMentalMapChallenges({ includeGenerated: false }),
-    ...getStateCapitalRelationshipChallenges()
+    ...getStateCapitalRelationshipChallenges(),
+    ...getUnitedStatesRelationshipChallenges()
   ];
   for (const challenge of challenges) {
     const isCapitalRelationship = challenge.canonicalConceptId?.startsWith("state-capital:");
@@ -403,7 +421,15 @@ function addMentalMapConcepts(concepts) {
       objectiveGroups: [isCapitalRelationship ? OBJECTIVE_GROUPS.POLITICAL_GEOGRAPHY : OBJECTIVE_GROUPS.GEOGRAPHIC_RELATIONSHIPS],
       authored: true,
       delivery: DELIVERY.FIXED_SCORED,
-      sources: [source(challengeSourceFile(challenge), "mental-map-question", challenge.id, isCapitalRelationship ? "Capital Connections main-menu activity" : "Mental Map main-menu activity", { prompt: challenge.prompt, category: challenge.category, promptDirection: challenge.promptDirection || null })]
+      sources: [source(
+        challengeSourceFile(challenge),
+        "mental-map-question",
+        challenge.id,
+        isCapitalRelationship || challenge.sourceActivityId === "us-atlas-relationships"
+          ? "U.S. Connections main-menu activity"
+          : "Mental Map main-menu activity",
+        { prompt: challenge.prompt, category: challenge.category, promptDirection: challenge.promptDirection || null }
+      )]
     });
   }
   return challenges;
@@ -608,7 +634,7 @@ function sourceInventory({ concepts, memoryItems, mentalChallenges, reconstructi
     { source: "src/united-states-memory-trail-planner.js", records: memoryItems.length, role: "Memory Trail item representations", reachability: "U.S. Memory Trail" },
     { source: "assets/maps/data/us-physical-*.json", records: concepts.filter(({ kind, delivery }) => kind === "physical-feature" && delivery === DELIVERY.FIXED_SCORED).length, role: "Physical activity targets across six source files", reachability: "U.S. Journey or physical menu" },
     { source: "src/atlas/united-states-atlas-data.js", records: unitedStatesAtlas.relationships.length, role: "Canonical entity relationships and region assignments", reachability: "Atlas/profile data; mostly unscored" },
-    { source: "src/atlas/mental-map-challenges.js + compass-challenges.js + state-capital-relationship-challenges.js", records: mentalChallenges.length, role: "Fixed question instances", reachability: "Mental Map and Capital Connections" },
+    { source: "src/atlas/mental-map-challenges.js + compass-challenges.js + state-capital-relationship-challenges.js + united-states-relationship-challenges.js", records: mentalChallenges.length, role: "Fixed question instances", reachability: "Mental Map and U.S. Connections" },
     { source: "src/atlas/mental-map-challenges.js + border-chain.js", records: dynamicCapacity.pairCount, role: "Dynamically possible route endpoint pairs", reachability: "One generated route per constructed Mental Map pool" },
     { source: "src/atlas/map-reconstruction-regions.js", records: reconstructionPieceCount + reconstructionFeedbackCount, role: `${reconstructionPieceCount} regional piece instances and ${reconstructionFeedbackCount} conditional-feedback rules`, reachability: "Map Reconstruction" },
     { source: "src/atlas/map-reconstruction-capstones.js", records: 48, role: "Lower 48 capstone piece instances", reachability: "Map Reconstruction capstone" },
@@ -668,7 +694,7 @@ function createGapReport(stateCoverage, matrix, physical, taxonomy) {
     absentPhysicalCategories: physical.absentTaxonomyExamples,
     integrationGaps: [
       "Fifty explicit atlas capitalOf relationships now have direct scored retrieval in both prompt directions.",
-      "Atlas region, coast, international-border, and state/feature relationships are mostly informational rather than scored.",
+      "Atlas region membership, coast, and international-border edges are scored; other atlas state/feature relationships remain mostly informational.",
       "Reconstruction relationship feedback is conditional and does not establish balanced learner exposure.",
       "Dynamic border-route capacity describes possible generation, not actual delivered frequency."
     ],

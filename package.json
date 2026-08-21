@@ -18,6 +18,7 @@
     "check:progress-evidence-policy": "node scripts/check-progress-evidence-policy.mjs",
     "check:progress-report-canonical-first": "node scripts/check-progress-report-canonical-first.mjs",
     "check:state-capital-relationships": "node scripts/check-state-capital-relationship-learning.mjs",
+    "check:us-relationships": "node scripts/check-united-states-relationship-learning.mjs",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:us": "playwright test tests/e2e/us-journey-smoke.spec.js",

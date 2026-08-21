@@ -136,9 +136,13 @@ assert.equal(repositoryReport.summary.statesWithNaming, 50);
 assert.equal(repositoryReport.summary.statesWithExplicitCapitalRelationshipData, 50);
 assert.equal(repositoryReport.summary.statesWithAssessedCapitalRelationship, 50);
 assert.equal(repositoryReport.gaps.capitalRelationshipDataOnly.length, 0);
+assert.equal(repositoryReport.summary.statesWithAssessedCuratedRelationship, 50);
+assert.equal(repositoryReport.summary.statesWithNonCapitalContextual, 50);
+assert.deepEqual(repositoryReport.gaps.missingAssessedCuratedRelationship, []);
+assert.deepEqual(repositoryReport.gaps.missingNonCapitalContextual, []);
 assert.equal(repositoryReport.summary.dynamicRouteEndpointPairs, 845);
-assert.equal(repositoryReport.summary.fixedMentalMapConcepts, 69);
-assert.equal(repositoryReport.summary.fixedMentalMapQuestionInstances, 120);
+assert.equal(repositoryReport.summary.fixedMentalMapConcepts, 161);
+assert.equal(repositoryReport.summary.fixedMentalMapQuestionInstances, 212);
 assert.equal(repositoryReport.summary.reconstructionFeedbackConcepts, 30);
 assert.equal(repositoryReport.summary.reconstructionFeedbackRuleInstances, 31);
 assert.deepEqual(repositoryReport.physicalGeography.counts, {

@@ -238,6 +238,7 @@ export function adaptCanonicalMentalMapEvaluation({ challenge = {}, evaluation =
   const credit = Number.isFinite(Number(evaluation.score)) && Number.isFinite(Number(evaluation.maxScore)) && Number(evaluation.maxScore) > 0
     ? { earned: Number(evaluation.score), possible: Number(evaluation.maxScore) }
     : undefined;
+  const responseEntityId = (stateId) => challenge.answerEntityIdsByStateId?.[stateId] || `state:${stateId}`;
   return createCanonicalEvidenceEvent({
     ...context,
     conceptId,
@@ -247,9 +248,9 @@ export function adaptCanonicalMentalMapEvaluation({ challenge = {}, evaluation =
     response: {
       challengeId: challenge.id || null,
       promptDirection: challenge.promptDirection || null,
-      selectedEntityIds: (evaluation.selectedStateIds || []).map((stateId) => `state:${stateId}`),
-      missingEntityIds: (evaluation.missingStateIds || []).map((stateId) => `state:${stateId}`),
-      unnecessaryEntityIds: (evaluation.unnecessaryStateIds || []).map((stateId) => `state:${stateId}`)
+      selectedEntityIds: (evaluation.selectedStateIds || []).map(responseEntityId),
+      missingEntityIds: (evaluation.missingStateIds || []).map(responseEntityId),
+      unnecessaryEntityIds: (evaluation.unnecessaryStateIds || []).map(responseEntityId)
     }
   });
 }
