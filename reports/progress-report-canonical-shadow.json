@@ -1,0 +1,939 @@
+{
+  "reportVersion": 1,
+  "generatedAt": "2034-02-03T15:30:00.000Z",
+  "question": "If the Progress Report were powered by canonical evidence, would it tell the same story as the current report?",
+  "executiveSummary": {
+    "totalComparableItemSkillCases": 16,
+    "exactMatches": 11,
+    "semanticMatches": 1,
+    "intentionalDifferences": 3,
+    "unavailableCases": 1,
+    "defects": 0
+  },
+  "cases": [
+    {
+      "id": "unseen-ohio-location",
+      "scenario": "No Ohio location evidence exists.",
+      "itemId": "state:ohio",
+      "categoryId": "state-locations",
+      "legacy": {
+        "sourceData": [],
+        "evidenceCounts": {
+          "correct": 0,
+          "incorrect": 0
+        },
+        "bayesianScore": null,
+        "displayCategory": {
+          "id": "unseen",
+          "label": "Not started"
+        },
+        "unseen": true,
+        "knownStatus": "unseen"
+      },
+      "canonical": {
+        "sourceData": {
+          "conceptIds": [
+            "state-location:ohio"
+          ],
+          "skillIds": [
+            "locating"
+          ],
+          "sourceModes": []
+        },
+        "evidenceCounts": {
+          "correct": 0,
+          "incorrect": 0,
+          "assisted": 0,
+          "partial": 0,
+          "skipped": 0,
+          "events": 0
+        },
+        "bayesianScore": null,
+        "displayCategory": {
+          "id": "unseen",
+          "label": "Not started"
+        },
+        "unseen": true,
+        "knownStatus": "unseen"
+      },
+      "classification": "exact match",
+      "rationale": "Both paths render Ohio location as Not started with no Bayesian score."
+    },
+    {
+      "id": "one-correct-location",
+      "scenario": "One correct Ohio location retrieval.",
+      "itemId": "state:ohio",
+      "categoryId": "state-locations",
+      "legacy": {
+        "sourceData": [
+          {
+            "id": "place-signal:locating",
+            "label": "Locating evidence",
+            "correctCount": 1,
+            "incorrectCount": 0
+          }
+        ],
+        "evidenceCounts": {
+          "correct": 1,
+          "incorrect": 0
+        },
+        "bayesianScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Going well"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "canonical": {
+        "sourceData": {
+          "conceptIds": [
+            "state-location:ohio"
+          ],
+          "skillIds": [
+            "locating"
+          ],
+          "sourceModes": [
+            "us-memory-trail"
+          ]
+        },
+        "evidenceCounts": {
+          "correct": 1,
+          "incorrect": 0,
+          "assisted": 0,
+          "partial": 0,
+          "skipped": 0,
+          "events": 1
+        },
+        "bayesianScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Going well"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "classification": "exact match",
+      "rationale": "Skill-specific legacy counts and canonical concept-skill events provide identical Bayesian inputs and presentation."
+    },
+    {
+      "id": "repeated-correct-location",
+      "scenario": "Three correct Ohio location retrievals.",
+      "itemId": "state:ohio",
+      "categoryId": "state-locations",
+      "legacy": {
+        "sourceData": [
+          {
+            "id": "place-signal:locating",
+            "label": "Locating evidence",
+            "correctCount": 3,
+            "incorrectCount": 0
+          }
+        ],
+        "evidenceCounts": {
+          "correct": 3,
+          "incorrect": 0
+        },
+        "bayesianScore": 0.666667,
+        "displayCategory": {
+          "id": "strong-evidence",
+          "label": "Strong"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "canonical": {
+        "sourceData": {
+          "conceptIds": [
+            "state-location:ohio"
+          ],
+          "skillIds": [
+            "locating"
+          ],
+          "sourceModes": [
+            "us-memory-trail"
+          ]
+        },
+        "evidenceCounts": {
+          "correct": 3,
+          "incorrect": 0,
+          "assisted": 0,
+          "partial": 0,
+          "skipped": 0,
+          "events": 3
+        },
+        "bayesianScore": 0.666667,
+        "displayCategory": {
+          "id": "strong-evidence",
+          "label": "Strong"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "classification": "exact match",
+      "rationale": "Skill-specific legacy counts and canonical concept-skill events provide identical Bayesian inputs and presentation."
+    },
+    {
+      "id": "correct-then-repeated-misses",
+      "scenario": "One correct Ohio location followed by three misses.",
+      "itemId": "state:ohio",
+      "categoryId": "state-locations",
+      "legacy": {
+        "sourceData": [
+          {
+            "id": "place-signal:locating",
+            "label": "Locating evidence",
+            "correctCount": 1,
+            "incorrectCount": 3
+          }
+        ],
+        "evidenceCounts": {
+          "correct": 1,
+          "incorrect": 3
+        },
+        "bayesianScore": 0.285714,
+        "displayCategory": {
+          "id": "needs-review",
+          "label": "Needs review"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "canonical": {
+        "sourceData": {
+          "conceptIds": [
+            "state-location:ohio"
+          ],
+          "skillIds": [
+            "locating"
+          ],
+          "sourceModes": [
+            "us-memory-trail"
+          ]
+        },
+        "evidenceCounts": {
+          "correct": 1,
+          "incorrect": 3,
+          "assisted": 0,
+          "partial": 0,
+          "skipped": 0,
+          "events": 4
+        },
+        "bayesianScore": 0.285714,
+        "displayCategory": {
+          "id": "needs-review",
+          "label": "Needs review"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "classification": "exact match",
+      "rationale": "Skill-specific legacy counts and canonical concept-skill events provide identical Bayesian inputs and presentation."
+    },
+    {
+      "id": "many-correct-then-one-miss",
+      "scenario": "Eight correct Ohio locations followed by one miss.",
+      "itemId": "state:ohio",
+      "categoryId": "state-locations",
+      "legacy": {
+        "sourceData": [
+          {
+            "id": "place-signal:locating",
+            "label": "Locating evidence",
+            "correctCount": 8,
+            "incorrectCount": 1
+          }
+        ],
+        "evidenceCounts": {
+          "correct": 8,
+          "incorrect": 1
+        },
+        "bayesianScore": 0.75,
+        "displayCategory": {
+          "id": "strong-evidence",
+          "label": "Strong"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "canonical": {
+        "sourceData": {
+          "conceptIds": [
+            "state-location:ohio"
+          ],
+          "skillIds": [
+            "locating"
+          ],
+          "sourceModes": [
+            "us-memory-trail"
+          ]
+        },
+        "evidenceCounts": {
+          "correct": 8,
+          "incorrect": 1,
+          "assisted": 0,
+          "partial": 0,
+          "skipped": 0,
+          "events": 9
+        },
+        "bayesianScore": 0.75,
+        "displayCategory": {
+          "id": "strong-evidence",
+          "label": "Strong"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "classification": "exact match",
+      "rationale": "Skill-specific legacy counts and canonical concept-skill events provide identical Bayesian inputs and presentation."
+    },
+    {
+      "id": "identification-separated-from-location",
+      "scenario": "Two correct Ohio identification/name retrievals with no location evidence.",
+      "itemId": "state:ohio",
+      "categoryId": "state-identification",
+      "legacy": {
+        "sourceData": [
+          {
+            "id": "place-signal:naming",
+            "label": "Naming evidence",
+            "correctCount": 2,
+            "incorrectCount": 0
+          }
+        ],
+        "evidenceCounts": {
+          "correct": 2,
+          "incorrect": 0
+        },
+        "bayesianScore": 0.6,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Going well"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "canonical": {
+        "sourceData": {
+          "conceptIds": [
+            "state-naming:ohio"
+          ],
+          "skillIds": [
+            "identifying"
+          ],
+          "sourceModes": [
+            "us-memory-trail"
+          ]
+        },
+        "evidenceCounts": {
+          "correct": 2,
+          "incorrect": 0,
+          "assisted": 0,
+          "partial": 0,
+          "skipped": 0,
+          "events": 2
+        },
+        "bayesianScore": 0.6,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Going well"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "classification": "exact match",
+      "rationale": "Skill-specific legacy counts and canonical concept-skill events provide identical Bayesian inputs and presentation."
+    },
+    {
+      "id": "identification-does-not-credit-location",
+      "scenario": "Inspect Ohio location after identification-only evidence.",
+      "itemId": "state:ohio",
+      "categoryId": "state-locations",
+      "legacy": {
+        "sourceData": [],
+        "evidenceCounts": {
+          "correct": 0,
+          "incorrect": 0
+        },
+        "bayesianScore": null,
+        "displayCategory": {
+          "id": "unseen",
+          "label": "Not started"
+        },
+        "unseen": true,
+        "knownStatus": "unseen"
+      },
+      "canonical": {
+        "sourceData": {
+          "conceptIds": [
+            "state-location:ohio"
+          ],
+          "skillIds": [
+            "locating"
+          ],
+          "sourceModes": []
+        },
+        "evidenceCounts": {
+          "correct": 0,
+          "incorrect": 0,
+          "assisted": 0,
+          "partial": 0,
+          "skipped": 0,
+          "events": 0
+        },
+        "bayesianScore": null,
+        "displayCategory": {
+          "id": "unseen",
+          "label": "Not started"
+        },
+        "unseen": true,
+        "knownStatus": "unseen"
+      },
+      "classification": "exact match",
+      "rationale": "Both skill-specific paths leave location unseen when only naming was demonstrated."
+    },
+    {
+      "id": "guided-assisted-excluded",
+      "scenario": "One guided Ohio exposure with no retrieval response.",
+      "itemId": "state:ohio",
+      "categoryId": "state-locations",
+      "legacy": {
+        "sourceData": [],
+        "evidenceCounts": {
+          "correct": 0,
+          "incorrect": 0
+        },
+        "bayesianScore": null,
+        "displayCategory": {
+          "id": "unseen",
+          "label": "Not started"
+        },
+        "unseen": true,
+        "knownStatus": "unseen"
+      },
+      "canonical": {
+        "sourceData": {
+          "conceptIds": [
+            "state-location:ohio"
+          ],
+          "skillIds": [
+            "locating"
+          ],
+          "sourceModes": [
+            "daily-trail"
+          ]
+        },
+        "evidenceCounts": {
+          "correct": 0,
+          "incorrect": 0,
+          "assisted": 1,
+          "partial": 0,
+          "skipped": 0,
+          "events": 1
+        },
+        "bayesianScore": null,
+        "displayCategory": {
+          "id": "unseen",
+          "label": "Not started"
+        },
+        "unseen": true,
+        "knownStatus": "unseen"
+      },
+      "classification": "semantically equivalent",
+      "rationale": "Canonical retains one assisted event, while both scoring paths correctly remain unseen with zero correct retrievals."
+    },
+    {
+      "id": "journey-plus-memory-same-skill",
+      "scenario": "Locate Ohio correctly once in Journey and once in U.S. Memory Trail.",
+      "itemId": "state:ohio",
+      "categoryId": "state-locations",
+      "legacy": {
+        "sourceData": [
+          {
+            "id": "united-states-memory-trail",
+            "label": "United States Memory Trail",
+            "correctCount": 1,
+            "incorrectCount": 0
+          }
+        ],
+        "evidenceCounts": {
+          "correct": 1,
+          "incorrect": 0
+        },
+        "bayesianScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Going well"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "canonical": {
+        "sourceData": {
+          "conceptIds": [
+            "state-location:ohio"
+          ],
+          "skillIds": [
+            "locating"
+          ],
+          "sourceModes": [
+            "journey",
+            "us-memory-trail"
+          ]
+        },
+        "evidenceCounts": {
+          "correct": 2,
+          "incorrect": 0,
+          "assisted": 0,
+          "partial": 0,
+          "skipped": 0,
+          "events": 2
+        },
+        "bayesianScore": 0.6,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Going well"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "classification": "intentional difference",
+      "rationale": "Canonical combines two actions measuring the same concept/skill across modes. The current Progress Report reads Memory Trail but not Journey, so it sees one correct response."
+    },
+    {
+      "id": "legacy-combined-prompt-location",
+      "scenario": "Legacy planner combines one location correct and one identification miss; inspect location.",
+      "itemId": "state:ohio",
+      "categoryId": "state-locations",
+      "legacy": {
+        "sourceData": [
+          {
+            "id": "united-states-memory-trail",
+            "label": "United States Memory Trail",
+            "correctCount": 1,
+            "incorrectCount": 1
+          }
+        ],
+        "evidenceCounts": {
+          "correct": 1,
+          "incorrect": 1
+        },
+        "bayesianScore": 0.4,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Going well"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "canonical": {
+        "sourceData": {
+          "conceptIds": [
+            "state-location:ohio"
+          ],
+          "skillIds": [
+            "locating"
+          ],
+          "sourceModes": [
+            "us-memory-trail"
+          ]
+        },
+        "evidenceCounts": {
+          "correct": 1,
+          "incorrect": 0,
+          "assisted": 0,
+          "partial": 0,
+          "skipped": 0,
+          "events": 1
+        },
+        "bayesianScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Going well"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "classification": "intentional difference",
+      "rationale": "Legacy combined counters give both state views 1 correct/1 miss. Canonical location correctly receives only the location response."
+    },
+    {
+      "id": "legacy-combined-prompt-identification",
+      "scenario": "Legacy planner combines one location correct and one identification miss; inspect identification.",
+      "itemId": "state:ohio",
+      "categoryId": "state-identification",
+      "legacy": {
+        "sourceData": [
+          {
+            "id": "united-states-memory-trail",
+            "label": "United States Memory Trail",
+            "correctCount": 1,
+            "incorrectCount": 1
+          }
+        ],
+        "evidenceCounts": {
+          "correct": 1,
+          "incorrect": 1
+        },
+        "bayesianScore": 0.4,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Going well"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "canonical": {
+        "sourceData": {
+          "conceptIds": [
+            "state-naming:ohio"
+          ],
+          "skillIds": [
+            "identifying"
+          ],
+          "sourceModes": [
+            "us-memory-trail"
+          ]
+        },
+        "evidenceCounts": {
+          "correct": 0,
+          "incorrect": 1,
+          "assisted": 0,
+          "partial": 0,
+          "skipped": 0,
+          "events": 1
+        },
+        "bayesianScore": 0.25,
+        "displayCategory": {
+          "id": "needs-review",
+          "label": "Needs review"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "classification": "intentional difference",
+      "rationale": "Legacy combined counters give both state views 1 correct/1 miss. Canonical identification correctly receives only the identification miss."
+    },
+    {
+      "id": "capital-combined-retrieval",
+      "scenario": "Two correct and one missed Columbus retrieval across both capital prompt forms.",
+      "itemId": "capital:columbus-oh",
+      "categoryId": "state-capitals",
+      "legacy": {
+        "sourceData": [
+          {
+            "id": "united-states-memory-trail",
+            "label": "United States Memory Trail",
+            "correctCount": 2,
+            "incorrectCount": 1
+          }
+        ],
+        "evidenceCounts": {
+          "correct": 2,
+          "incorrect": 1
+        },
+        "bayesianScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Going well"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "canonical": {
+        "sourceData": {
+          "conceptIds": [
+            "capital-location:ohio:columbus-oh",
+            "capital-naming:ohio:columbus-oh"
+          ],
+          "skillIds": [
+            "locating",
+            "identifying"
+          ],
+          "sourceModes": [
+            "us-memory-trail"
+          ]
+        },
+        "evidenceCounts": {
+          "correct": 2,
+          "incorrect": 1,
+          "assisted": 0,
+          "partial": 0,
+          "skipped": 0,
+          "events": 3
+        },
+        "bayesianScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Going well"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "classification": "exact match",
+      "rationale": "The current capital category is item-level; intentionally combining both canonical capital retrieval mappings reproduces its Bayesian inputs."
+    },
+    {
+      "id": "historical-legacy-only-location",
+      "scenario": "Legacy Ohio location history exists from before canonical emission began.",
+      "itemId": "state:ohio",
+      "categoryId": "state-locations",
+      "legacy": {
+        "sourceData": [
+          {
+            "id": "place-signal:locating",
+            "label": "Locating evidence",
+            "correctCount": 3,
+            "incorrectCount": 1
+          }
+        ],
+        "evidenceCounts": {
+          "correct": 3,
+          "incorrect": 1
+        },
+        "bayesianScore": 0.571429,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Going well"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "canonical": {
+        "sourceData": {
+          "conceptIds": [
+            "state-location:ohio"
+          ],
+          "skillIds": [
+            "locating"
+          ],
+          "sourceModes": []
+        },
+        "evidenceCounts": {
+          "correct": 0,
+          "incorrect": 0,
+          "assisted": 0,
+          "partial": 0,
+          "skipped": 0,
+          "events": 0
+        },
+        "bayesianScore": null,
+        "displayCategory": {
+          "id": "unseen",
+          "label": "Not started"
+        },
+        "unseen": true,
+        "knownStatus": "unseen"
+      },
+      "classification": "unavailable/not comparable",
+      "rationale": "No historical canonical events exist, and the shadow does not fabricate them from legacy aggregates."
+    },
+    {
+      "id": "reload-persistence",
+      "scenario": "Reload one correct Ohio location from both persisted stores.",
+      "itemId": "state:ohio",
+      "categoryId": "state-locations",
+      "legacy": {
+        "sourceData": [
+          {
+            "id": "place-signal:locating",
+            "label": "Locating evidence",
+            "correctCount": 1,
+            "incorrectCount": 0
+          }
+        ],
+        "evidenceCounts": {
+          "correct": 1,
+          "incorrect": 0
+        },
+        "bayesianScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Going well"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "canonical": {
+        "sourceData": {
+          "conceptIds": [
+            "state-location:ohio"
+          ],
+          "skillIds": [
+            "locating"
+          ],
+          "sourceModes": [
+            "us-memory-trail"
+          ]
+        },
+        "evidenceCounts": {
+          "correct": 1,
+          "incorrect": 0,
+          "assisted": 0,
+          "partial": 0,
+          "skipped": 0,
+          "events": 1
+        },
+        "bayesianScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Going well"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "classification": "exact match",
+      "rationale": "Both persisted representations reload with one correct retrieval and the same score/category."
+    },
+    {
+      "id": "reset-to-unseen",
+      "scenario": "Reset both scoped evidence stores and compare Ohio location.",
+      "itemId": "state:ohio",
+      "categoryId": "state-locations",
+      "legacy": {
+        "sourceData": [],
+        "evidenceCounts": {
+          "correct": 0,
+          "incorrect": 0
+        },
+        "bayesianScore": null,
+        "displayCategory": {
+          "id": "unseen",
+          "label": "Not started"
+        },
+        "unseen": true,
+        "knownStatus": "unseen"
+      },
+      "canonical": {
+        "sourceData": {
+          "conceptIds": [
+            "state-location:ohio"
+          ],
+          "skillIds": [
+            "locating"
+          ],
+          "sourceModes": []
+        },
+        "evidenceCounts": {
+          "correct": 0,
+          "incorrect": 0,
+          "assisted": 0,
+          "partial": 0,
+          "skipped": 0,
+          "events": 0
+        },
+        "bayesianScore": null,
+        "displayCategory": {
+          "id": "unseen",
+          "label": "Not started"
+        },
+        "unseen": true,
+        "knownStatus": "unseen"
+      },
+      "classification": "exact match",
+      "rationale": "After their explicit resets, both paths return Ohio location to Not started without creating evidence."
+    },
+    {
+      "id": "one-action-no-double-counting",
+      "scenario": "Submit one Ohio location action twice with the same event identity.",
+      "itemId": "state:ohio",
+      "categoryId": "state-locations",
+      "legacy": {
+        "sourceData": [
+          {
+            "id": "place-signal:locating",
+            "label": "Locating evidence",
+            "correctCount": 1,
+            "incorrectCount": 0
+          }
+        ],
+        "evidenceCounts": {
+          "correct": 1,
+          "incorrect": 0
+        },
+        "bayesianScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Going well"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "canonical": {
+        "sourceData": {
+          "conceptIds": [
+            "state-location:ohio"
+          ],
+          "skillIds": [
+            "locating"
+          ],
+          "sourceModes": [
+            "us-memory-trail"
+          ]
+        },
+        "evidenceCounts": {
+          "correct": 1,
+          "incorrect": 0,
+          "assisted": 0,
+          "partial": 0,
+          "skipped": 0,
+          "events": 1
+        },
+        "bayesianScore": 0.5,
+        "displayCategory": {
+          "id": "demonstrated",
+          "label": "Going well"
+        },
+        "unseen": false,
+        "knownStatus": "known"
+      },
+      "classification": "exact match",
+      "rationale": "Repository idempotency leaves one raw event; the shadow scores its reducer summary once and uses raw events only for provenance."
+    }
+  ],
+  "representativeExampleIds": [
+    "journey-plus-memory-same-skill",
+    "correct-then-repeated-misses",
+    "identification-separated-from-location",
+    "legacy-combined-prompt-location",
+    "legacy-combined-prompt-identification"
+  ],
+  "doubleCountingValidation": {
+    "firstInserted": true,
+    "duplicateInserted": false,
+    "repositoryEventCount": 1,
+    "shadowCorrectCount": 1,
+    "shadowRawEventCount": 1,
+    "legacySourceStoresReadByShadow": false
+  },
+  "migrationReadiness": {
+    "safeNow": [
+      "Shadow/debug comparison for state location and identification canonical concept-skill streams",
+      "Capital item-level shadow scoring when both canonical capital retrieval prompt forms are intentionally combined",
+      "Canonical-first scoring from a clean cutover only when the included source modes and skill-sharing policy are explicitly matched"
+    ],
+    "legacyDependent": [
+      "Existing learner history that predates canonical emission",
+      "Current scheduler/review-status fields",
+      "Current combined state-practice behavior when no skill-specific legacy signal exists"
+    ],
+    "historicalLimitation": "Legacy aggregate counters cannot be losslessly separated into locating versus identifying attempts or converted into timestamped canonical events.",
+    "canonicalFirstSafeForNewLearners": false,
+    "canonicalFirstNewLearnerQualification": "Journey evidence is canonical but absent from the current report, and legacy planner fallbacks deliberately share combined state counts across location and identification. A source/skill policy must be chosen and shadow-accepted first.",
+    "canonicalFirstSafeForExistingLearners": false,
+    "canonicalFirstExistingLearnerQualification": "Existing legacy-only history would disappear unless a hybrid baseline/cutover strategy is designed; fabricating raw historical events is prohibited.",
+    "recommendation": "Keep the current read path. Continue developer-only shadowing, define source inclusion and legacy-baseline policy, then compare category-level outputs over a clean-cutover cohort before enabling canonical-first reads."
+  },
+  "scoringModel": {
+    "legacyModule": "src/united-states-progress-report.js",
+    "canonicalShadowModule": "src/canonical-progress-report-shadow.js",
+    "sharedFormulaModule": "src/bayesian-progress-score.js",
+    "sharedFunction": "scoreBayesianEvidenceCounts"
+  },
+  "limitations": [
+    "The controlled cases validate score/category parity, not Progress Report UI rendering.",
+    "Canonical evidence does not reproduce scheduler due/review status.",
+    "The comparison does not backfill or fabricate historical per-attempt events.",
+    "Only state location, state identification, and item-level capital retrieval are included."
+  ]
+}

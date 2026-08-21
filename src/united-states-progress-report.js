@@ -25,6 +25,9 @@ const DISPLAY_CATEGORY_LABELS = Object.freeze({
   "needs-review": "Needs review"
 });
 
+export const UNITED_STATES_PROGRESS_REPORT_CATEGORY_DEFINITIONS = CATEGORY_DEFINITIONS;
+export const UNITED_STATES_PROGRESS_REPORT_DISPLAY_CATEGORY_LABELS = DISPLAY_CATEGORY_LABELS;
+
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -266,6 +269,8 @@ function createCategory(definition, records) {
     records: records.sort((left, right) => left.label.localeCompare(right.label))
   };
 }
+
+export const createUnitedStatesProgressReportCategory = createCategory;
 
 export function createUnitedStatesProgressReport({
   items = [],

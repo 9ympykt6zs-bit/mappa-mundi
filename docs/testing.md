@@ -39,6 +39,14 @@ npm run report:canonical-evidence-parity
 
 See [`canonical-evidence-parity-validation.md`](canonical-evidence-parity-validation.md) for the proof boundary and migration prerequisites.
 
+`scripts/check-progress-report-canonical-shadow.mjs` validates the next read-only migration probe. It verifies deterministic item × skill comparisons, unchanged legacy/repository inputs, the shared Bayesian scoring function, locating/naming separation, assisted-evidence exclusion, reducer/raw-event non-double-counting, persistence, reset, and JSON/Markdown output. Generate its developer report with:
+
+```sh
+npm run report:progress-report-canonical-shadow
+```
+
+See [`progress-report-canonical-shadow.md`](progress-report-canonical-shadow.md) for the adapter boundary and migration assessment.
+
 ## Browser/E2E tests
 
 Run Playwright separately:
