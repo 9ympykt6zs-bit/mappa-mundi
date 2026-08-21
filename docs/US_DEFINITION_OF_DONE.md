@@ -38,14 +38,14 @@ Completion does not mean that every possible piece of U.S. geography content has
 
 The learning system must be inspectable without reading application code or manually inferring what happened.
 
-- [ ] A developer-facing Learning Inspector displays the current learner state for each relevant U.S. geographic item.
-- [ ] The inspector shows the item's relevant skill states, such as naming and locating, rather than collapsing distinct skills when the learning model treats them separately.
-- [ ] The inspector exposes the important evidence behind that state, including recent responses, errors/lapses, last encounter, and review status.
-- [ ] Algorithmic fields such as difficulty, stability, due state, priority, or equivalent values are shown when they are used by the production algorithm.
-- [ ] When the system selects an item or question, the selection exposes a human-readable reason or reason code.
-- [ ] After an answer, the before-and-after learner state can be inspected.
-- [ ] A known learner state and answer sequence can be replayed to reproduce behavior.
-- [ ] Debugging and observability tooling does not alter production learning behavior.
+- [x] A developer-facing Learning Inspector displays the current learner state for each relevant U.S. geographic item.
+- [x] The inspector shows the item's relevant skill states, such as naming and locating, rather than collapsing distinct skills when the learning model treats them separately.
+- [x] The inspector exposes the important evidence behind that state, including recent responses, errors/lapses, last encounter, and review status.
+- [x] Algorithmic fields such as difficulty, stability, due state, priority, or equivalent values are shown when they are used by the production algorithm.
+- [x] When the system selects an item or question, the selection exposes a human-readable reason or reason code.
+- [x] After an answer, the before-and-after learner state can be inspected.
+- [x] A known learner state and answer sequence can be replayed to reproduce behavior.
+- [x] Debugging and observability tooling does not alter production learning behavior.
 
 The standard is that a developer should be able to answer:
 
@@ -212,7 +212,7 @@ Required evidence includes:
 - [x] passing automated test baseline;
 - [ ] passing supported Playwright/E2E baseline;
 - [ ] brief desktop and mobile acceptance record;
-- [ ] Learning Inspector demonstrating learner-state and selection reasoning;
+- [x] Learning Inspector demonstrating learner-state and selection reasoning;
 - [ ] successful second-region graduation test;
 - [x] updated `CURRENT_STATE.md` reflecting the verified system.
 

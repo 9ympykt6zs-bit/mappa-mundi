@@ -13,6 +13,8 @@ import {
   createUnitedStatesMemoryTrailSelectionExplanation,
   LEARNING_INSPECTOR_AVAILABILITY
 } from "../src/learning-inspector.js";
+import { createLearningInspectorPanelViewModel } from "../src/learning-inspector-panel.js";
+import fs from "node:fs";
 import {
   applyPlaceMasteryAttempt,
   createPlaceMasteryState,
@@ -348,7 +350,37 @@ assert.doesNotThrow(() => JSON.stringify(debugExport));
 assert.equal(debugExport.kind, "learning-inspector-export");
 assert.equal(debugExport.items.length, 5);
 
-console.log("Learning Inspector data-layer validation passed:", JSON.stringify({
+const panelView = createLearningInspectorPanelViewModel(debugExport);
+assert.equal(panelView.visibleItemCount, 5);
+assert.equal(panelView.selections.length, 3);
+assert.equal(panelView.transitions.length, 1);
+assert.deepEqual(panelView.items[0].masterySignals, masteryView.learnerState.masterySignals.value);
+assert.equal(panelView.items[0].metrics.attempts.value, 5);
+assert.equal(panelView.items[0].metrics.failures.value, 2);
+assert.equal(panelView.items[0].metrics.lastSeen.value, "2032-04-05T10:00:00.000Z");
+assert.equal(panelView.items[1].metrics.lapses.value, 1);
+assert.deepEqual(panelView.items[1].metrics.nextReview.value, { session: 9, date: "2032-04-05" });
+assert.equal(createLearningInspectorPanelViewModel(debugExport, "Maine").visibleItemCount, 3);
+assert.equal(createLearningInspectorPanelViewModel(debugExport, "locating").visibleItemCount, 1);
+assert.equal(createLearningInspectorPanelViewModel(debugExport, "no matching item").visibleItemCount, 0);
+const canonicalPanelView = createLearningInspectorPanelViewModel({
+  ...debugExport,
+  canonicalEvidence: {
+    summaries: { availability: "observed", value: [{ conceptId: "us-state:maine", skillId: "locating", attempts: 2 }] },
+    recentEvidence: { availability: "observed", value: [{ conceptId: "us-state:maine", skillId: "locating", outcome: "correct" }] }
+  }
+});
+assert.equal(canonicalPanelView.canonicalSummaryCount, 1);
+assert.equal(canonicalPanelView.recentCanonicalEvidence[0].outcome, "correct");
+
+const runtimeSource = fs.readFileSync(new URL("../src/maplibre-poc.js", import.meta.url), "utf8");
+assert.match(runtimeSource, /function createRuntimeLearningInspectorSnapshot\(\)/);
+assert.match(runtimeSource, /if \(!isLocalDevAccessAllowed\(\) \|\| learningInspectorPanelController\) return;/);
+assert.match(runtimeSource, /window\.mappaLearningInspector =/);
+assert.match(runtimeSource, /recordCanonicalEvidenceEventWithInspector\(event\)/);
+assert.match(runtimeSource, /recordCanonicalEvidenceEventsWithInspector\(events\)/);
+
+console.log("Learning Inspector runtime validation passed:", JSON.stringify({
   itemAdapters: debugExport.items.map((item) => item.adapter),
   selectionAdapters: debugExport.selections.map((selection) => selection.planner.value),
   transitionChanges: transition.changes.value.length,

@@ -21,6 +21,17 @@ import { renderUnitedStatesProgressReport } from "./united-states-progress-repor
 import { createUnitedStatesProgressReportReadModel } from "./united-states-progress-report-read-path.js";
 import { loadPlaceMastery } from "./place-mastery-store.js";
 import {
+  createCanonicalEvidenceInspectorView,
+  createDailyTrailInspectorItemView,
+  createDailyTrailSelectionExplanation,
+  createLearningInspectorDebugObject,
+  createLearningInspectorTransition,
+  createPlaceMasteryInspectorItemView,
+  createUnitedStatesMemoryTrailInspectorItemView,
+  createUnitedStatesMemoryTrailSelectionExplanation
+} from "./learning-inspector.js";
+import { installLearningInspectorPanel } from "./learning-inspector-panel.js";
+import {
   adaptCanonicalMapReconstructionEvaluation,
   adaptCanonicalMentalMapEvaluation,
   adaptCanonicalRetrievalAttempt,
@@ -3033,6 +3044,8 @@ let audioSettings = loadAudioSettings();
 let currentPresentationSettings = {};
 let isCurrentActivityProgressDisabled = false;
 let masteryDebugController = null;
+let learningInspectorPanelController = null;
+const runtimeLearningInspectorTransitions = [];
 
 const incorrectRevealThreshold = 3;
 const activityRetryThreshold = 5;
@@ -3615,6 +3628,51 @@ function reportCanonicalEvidenceWrite(result) {
   }
 }
 
+function recordRuntimeLearningInspectorTransition({ before, event, after }) {
+  if (!isLocalDevAccessAllowed()) return;
+  runtimeLearningInspectorTransitions.push(createLearningInspectorTransition({ before, event, after }));
+  if (runtimeLearningInspectorTransitions.length > 20) runtimeLearningInspectorTransitions.shift();
+}
+
+function recordCanonicalEvidenceEventWithInspector(event) {
+  const inspect = isLocalDevAccessAllowed();
+  const filters = { conceptId: event.conceptId, skillId: event.skillId };
+  const before = inspect ? createCanonicalEvidenceInspectorView({ repository: loadCanonicalEvidenceRepository(), ...filters }) : null;
+  const result = recordCanonicalEvidenceEvent(event, window.localStorage);
+  if (inspect && result?.inserted) {
+    const after = createCanonicalEvidenceInspectorView({ repository: loadCanonicalEvidenceRepository(), ...filters });
+    recordRuntimeLearningInspectorTransition({
+      before,
+      event: { itemId: event.conceptId, sourceMode: event.sourceMode, answer: event.response, result: { outcome: event.outcome } },
+      after
+    });
+  }
+  return result;
+}
+
+function recordCanonicalEvidenceEventsWithInspector(events = []) {
+  const inspect = isLocalDevAccessAllowed();
+  const sourceMode = events[0]?.sourceMode || "";
+  const before = inspect
+    ? createCanonicalEvidenceInspectorView({ repository: loadCanonicalEvidenceRepository(), sourceMode })
+    : null;
+  const result = recordCanonicalEvidenceEvents(events, window.localStorage);
+  if (inspect && result?.insertedEventIds?.length > 0) {
+    const after = createCanonicalEvidenceInspectorView({ repository: loadCanonicalEvidenceRepository(), sourceMode });
+    recordRuntimeLearningInspectorTransition({
+      before,
+      event: {
+        itemId: events.length === 1 ? events[0].conceptId : `${events.length} reconstruction concepts`,
+        sourceMode,
+        answer: events.map((event) => event.response),
+        result: { outcomes: events.map((event) => event.outcome) }
+      },
+      after
+    });
+  }
+  return result;
+}
+
 function recordCanonicalJourneyPlacementEvidence(result = {}) {
   const activityId = session?.currentActivity?.id || "";
   if (activeJourneySession?.mode !== "journey"
@@ -3639,7 +3697,7 @@ function recordCanonicalJourneyPlacementEvidence(result = {}) {
       sourceActivityId: activityId,
       response: { selectedTargetId: result.targetId || result.completedId || null }
     });
-    reportCanonicalEvidenceWrite(recordCanonicalEvidenceEvent(event, window.localStorage));
+    reportCanonicalEvidenceWrite(recordCanonicalEvidenceEventWithInspector(event));
   } catch (error) {
     console.warn("[canonical-evidence] Journey evidence could not be created.", error);
   }
@@ -3675,7 +3733,7 @@ function recordCanonicalMemoryTrailEvidence(memoryTrail, targetId, result, promp
       sessionId,
       sequence
     });
-    reportCanonicalEvidenceWrite(recordCanonicalEvidenceEvent(event, window.localStorage));
+    reportCanonicalEvidenceWrite(recordCanonicalEvidenceEventWithInspector(event));
   } catch (error) {
     console.warn("[canonical-evidence] Trail evidence could not be created.", error);
   }
@@ -3694,7 +3752,7 @@ function recordCanonicalMentalMapEvaluation() {
       sourceMode: "mental-map",
       sourceActivityId: activeMentalMapChallenge.sourceActivityId || activeMentalMapChallenge.id
     });
-    reportCanonicalEvidenceWrite(recordCanonicalEvidenceEvent(event, window.localStorage));
+    reportCanonicalEvidenceWrite(recordCanonicalEvidenceEventWithInspector(event));
   } catch (error) {
     console.warn("[canonical-evidence] Mental Map evidence could not be created.", error);
   }
@@ -3711,7 +3769,7 @@ function recordCanonicalReconstructionEvaluation(evaluation, sourceActivityId) {
       sourceMode: "map-reconstruction",
       sourceActivityId
     });
-    reportCanonicalEvidenceWrite(recordCanonicalEvidenceEvents(events, window.localStorage));
+    reportCanonicalEvidenceWrite(recordCanonicalEvidenceEventsWithInspector(events));
   } catch (error) {
     console.warn("[canonical-evidence] Reconstruction evidence could not be created.", error);
   }
@@ -4042,6 +4100,66 @@ function scheduleIdleWork(callback) {
   window.setTimeout(callback, 500);
 }
 
+async function createRuntimeLearningInspectorSnapshot() {
+  await ensureActivityDataLoaded();
+  const unitedStatesItems = getUnitedStatesMemoryTrailItems();
+  const unitedStatesState = activeUnitedStatesMemoryTrailSession?.state
+    || loadUnitedStatesMemoryTrailProgress(unitedStatesItems);
+  const dailyState = activeDailyTrailSession?.state || loadDailyTrailState();
+  const dailyItems = activeDailyTrailSession?.plan?.allItems || [];
+  const masteryState = loadPlaceMastery();
+  const items = [
+    ...unitedStatesItems.map((item) => createUnitedStatesMemoryTrailInspectorItemView({ item, state: unitedStatesState })),
+    ...unitedStatesItems.map((item) => createPlaceMasteryInspectorItemView({
+      place: { placeId: item.id, label: item.label },
+      masteryState,
+      sourceActivity: item.homeActivityId || item.sourceActivityId,
+      taxonomy: item.type
+    })),
+    ...dailyItems.map((item) => createDailyTrailInspectorItemView({ item, state: dailyState }))
+  ];
+  const selections = [
+    ...(activeUnitedStatesMemoryTrailSession?.plan?.playItems || []).map((item) => (
+      createUnitedStatesMemoryTrailSelectionExplanation({
+        state: unitedStatesState,
+        plan: activeUnitedStatesMemoryTrailSession.plan,
+        item
+      })
+    )),
+    ...(activeDailyTrailSession?.plan?.playItems || []).map((item) => (
+      createDailyTrailSelectionExplanation({
+        state: dailyState,
+        plan: activeDailyTrailSession.plan,
+        item
+      })
+    ))
+  ];
+  return createLearningInspectorDebugObject({
+    context: {
+      generatedAt: new Date().toISOString(),
+      scope: "current local browser state",
+      currentScreen: currentAppScreen
+    },
+    items,
+    selections,
+    transitions: runtimeLearningInspectorTransitions,
+    canonicalRepository: loadCanonicalEvidenceRepository()
+  });
+}
+
+function installRuntimeLearningInspector() {
+  if (!isLocalDevAccessAllowed() || learningInspectorPanelController) return;
+  learningInspectorPanelController = installLearningInspectorPanel({
+    getSnapshot: createRuntimeLearningInspectorSnapshot
+  });
+  if (!learningInspectorPanelController) return;
+  window.mappaLearningInspector = {
+    open: () => learningInspectorPanelController.open(),
+    refresh: () => learningInspectorPanelController.refresh(),
+    getSnapshot: createRuntimeLearningInspectorSnapshot
+  };
+}
+
 async function init() {
   document.title = document.body.classList.contains("launch-mode") ? LANDING_PAGE_TITLE : APP_NAME;
   if (launchTitle) {
@@ -4050,6 +4168,7 @@ async function init() {
 
   bindLaunchStartEvents();
   masteryDebugController = createMasteryDebugController();
+  installRuntimeLearningInspector();
 
   bindLaunchScreenEvents();
   bindDailyTrailDevCheatListener();

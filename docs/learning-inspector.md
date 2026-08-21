@@ -1,8 +1,19 @@
-# Learning Inspector data layer
+# Learning Inspector
 
-The Learning Inspector v1 is a read-only, JSON-safe adapter layer over Mappa Mundi's existing learner-state and result models. It does not create a shared evidence architecture, change planner behavior, write storage, or install a visual interface.
+The Learning Inspector is a read-only developer surface over Mappa Mundi's existing learner-state, planner, result, and canonical-evidence models. It does not create a second learner-state architecture, change planner behavior, or write its own storage.
 
-The implementation is in `src/learning-inspector.js`. `scripts/check-learning-inspector.mjs` provides fixture-based examples and regression coverage.
+The JSON-safe adapters are in `src/learning-inspector.js`; the local-only visual panel is in `src/learning-inspector-panel.js`. `scripts/check-learning-inspector.mjs` provides fixture-based examples and regression coverage.
+
+## Local developer panel
+
+On `localhost`, loopback addresses, and `file:` development access, the app installs a floating **Learning Inspector** button. Opening it lazily reads the current stores and displays:
+
+- all 50 states and 50 capitals in the U.S. Memory Trail curriculum, with their adaptive progress and separate place-mastery signals;
+- active U.S. Memory Trail or Daily Trail selections, reason codes, priority factors, and selection traces;
+- canonical concept/skill histories and the 20 most recent canonical responses, retaining their source mode and activity;
+- up to 20 before/after canonical evidence transitions captured during the current app lifetime.
+
+The same snapshot is available through `window.mappaLearningInspector.getSnapshot()`. `open()` and `refresh()` support direct developer use. The panel and browser global are not installed on non-local hosts.
 
 ## Evidence labels
 
@@ -103,11 +114,11 @@ const transition = createLearningInspectorTransition({
 });
 ```
 
-`createLearningInspectorDebugObject()` combines item views, selection explanations, and transitions into one JSON-safe export. V1 does not automatically read every localStorage key, listen to gameplay events, retain a history, install a global browser object, or render UI. Callers must supply the existing state/plan/result objects they want to inspect.
+`createLearningInspectorDebugObject()` combines item views, selection explanations, canonical evidence, and transitions into one JSON-safe export. Library callers supply the existing state/plan/result objects they want to inspect; the local runtime panel composes those adapters over the currently active U.S./Daily planner state and persisted stores.
 
 ## Still unavailable
 
-- A unified learner identity or evidence stream across the existing stores.
+- A unified learner identity or single mastery judgment across the existing stores.
 - Durable event history tying each answer to every resulting store write.
 - Exact rejected-alternative ranking for past selections that were not captured with trace inputs; Daily Trail's full rejected pool remains unavailable even at trace time.
 - Shared naming/locating/relationship evidence across all modes.
@@ -115,6 +126,7 @@ const transition = createLearningInspectorTransition({
 - Production-wide capture of deterministic seed/time context.
 - Automatic durable storage of selection traces from production gameplay.
 - Cross-device state, backend records, migrations, or transaction boundaries.
-- A visual Learning Inspector panel and automatic production-runtime wiring.
+- Durable storage of panel transitions; the local runtime keeps only the latest 20 in memory.
+- Non-local or learner-facing panel access; the surface is deliberately restricted to local development.
 
 These are explicit v1 boundaries, not evidence that the corresponding behavior does or does not work.

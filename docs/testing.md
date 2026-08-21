@@ -157,9 +157,9 @@ Deterministic mode does not freeze browser timers, animation timing, response du
 
 `scripts/check-deterministic-planning.mjs` proves same-seed replay, different-seed valid variation, fixed-time scheduling/session metadata, generated Mental Map replay, and working no-options production paths for the scoped systems.
 
-## Learning Inspector data-layer check
+## Learning Inspector runtime check
 
-`scripts/check-learning-inspector.mjs` exercises the read-only Inspector adapters documented in [`learning-inspector.md`](learning-inspector.md). Fixtures cover place mastery, Daily Trail, U.S. Memory Trail, Journey progress, Mental Map results, reconstruction results, planner selection explanations, deterministic-context export, and before/after transitions. The check verifies that adapters do not mutate input state, equivalent inputs produce stable JSON, missing evidence remains explicitly unavailable, and deterministic planner replays produce equivalent Inspector output.
+`scripts/check-learning-inspector.mjs` exercises the read-only Inspector adapters and local panel projection documented in [`learning-inspector.md`](learning-inspector.md). Fixtures cover place mastery, Daily Trail, U.S. Memory Trail, Journey progress, Mental Map results, reconstruction results, planner selection explanations, deterministic-context export, canonical summaries/recent responses, filtering, and before/after transitions. The check verifies that adapters do not mutate input state, equivalent inputs produce stable JSON, missing evidence remains explicitly unavailable, deterministic planner replays produce equivalent Inspector output, and runtime installation remains guarded to local development.
 
 ## Deterministic learner simulations
 
@@ -169,7 +169,7 @@ Run the O4 synthetic learner evidence generator with:
 npm run report:learner-simulations
 ```
 
-It drives the existing U.S. Memory Trail planner with six deterministic learner profiles and adds a controlled Daily Trail return probe. The command writes human-readable Markdown and machine-readable JSON under `reports/`. The fast baseline's `check-learner-simulations.mjs` verifies deterministic replay, different-seed variation, all profile scripts, Inspector serialization, and fixture immutability. See [`learner-simulations.md`](learner-simulations.md) for profiles, interpretation, and measurement limits.
+It drives the existing U.S. Memory Trail planner with eight deterministic learner profiles and adds a controlled Daily Trail return probe. The command writes human-readable Markdown and machine-readable JSON under `reports/`. The fast baseline's `check-learner-simulations.mjs` verifies deterministic replay, different-seed variation, all profile scripts, Inspector serialization, and fixture immutability. See [`learner-simulations.md`](learner-simulations.md) for profiles, interpretation, and measurement limits.
 
 ## Selection Trace check
 
