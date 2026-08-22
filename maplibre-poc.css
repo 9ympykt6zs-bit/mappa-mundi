@@ -5209,6 +5209,25 @@ body.compass-result-mode .mental-map-question-header h2 {
   word-spacing: 2px;
 }
 
+.mental-map-result-line.is-missing,
+.mental-map-result-line.is-incorrect {
+  border-left: 4px solid;
+  border-radius: 4px;
+  padding: 4px 7px;
+}
+
+.mental-map-result-line.is-missing {
+  background: rgba(230, 162, 60, 0.14);
+  border-left-color: #e6a23c;
+  color: #704900;
+}
+
+.mental-map-result-line.is-incorrect {
+  background: rgba(217, 81, 81, 0.12);
+  border-left-color: #d95151;
+  color: #8f2929;
+}
+
 .mental-map-alternative-note {
   color: #28745f;
   font-weight: 750;

@@ -11,7 +11,8 @@ import {
 } from "../src/canonical-learning-evidence-repository.js";
 import {
   buildMentalMapAnswerBank,
-  evaluateMentalMapAnswer
+  evaluateMentalMapAnswer,
+  getMentalMapResultVisualState
 } from "../src/atlas/mental-map-challenge-engine.js";
 import { getUnifiedMentalMapChallenges } from "../src/atlas/mental-map-challenge-registry.js";
 import {
@@ -56,12 +57,16 @@ assert.equal(new Set(challenges.map(({ canonicalConceptId }) => canonicalConcept
 assert.equal(challenges.some(({ referenceStateId }) => referenceStateId === "district-of-columbia"), false);
 
 const ohioRegion = challenges.find(({ canonicalConceptId }) => canonicalConceptId === "relationship:region-membership:ohio:midwest");
+const marylandRegion = challenges.find(({ canonicalConceptId }) => canonicalConceptId === "relationship:region-membership:maryland:south");
 const ohioCanada = challenges.find(({ canonicalConceptId }) => canonicalConceptId === "relationship:international-border:ohio:canada");
 const floridaCoasts = challenges.filter(({ relationship }) => relationship.stateId === "florida" && relationship.relationshipType === "coast");
 const ohioRiver = challenges.find(({ canonicalConceptId }) => canonicalConceptId === "relationship:river-through:ohio:ohio-river");
 const ohioLake = challenges.find(({ canonicalConceptId }) => canonicalConceptId === "relationship:major-lake-border:ohio:lake-erie");
 const coloradoRockies = challenges.find(({ canonicalConceptId }) => canonicalConceptId === "relationship:mountain-range:colorado:rocky-mountains");
 assert.equal(ohioRegion.prompt, "Which U.S. Census region includes Ohio?");
+assert.equal(marylandRegion.prompt, "Which U.S. Census region includes Maryland?");
+assert.equal(marylandRegion.explanation, "Maryland belongs to the South U.S. Census region.");
+assert.equal(marylandRegion.answerLabelsByStateId.alaska, "Northeast");
 assert.equal(ohioRegion.answerLabelsByStateId.ohio, "Midwest");
 assert.equal(ohioCanada.answerLabelsByStateId.ohio, "Canada");
 assert.equal(ohioRiver.prompt, "Which major river flows through Ohio?");
@@ -90,6 +95,33 @@ for (const challenge of challenges) {
 assert.ok(buildMentalMapAnswerBank(ohioRegion, { random: () => 0 }).some(({ id, name }) => id === "ohio" && name === "Midwest"));
 assert.equal(evaluateMentalMapAnswer(ohioRegion, ["ohio"]).isCorrect, true);
 assert.equal(evaluateMentalMapAnswer(ohioRegion, [ohioRegion.distractorStateIds[0]]).isCorrect, false);
+
+const marylandNortheastEvaluation = evaluateMentalMapAnswer(marylandRegion, ["alaska"]);
+assert.deepEqual(marylandNortheastEvaluation.selectedInvalidStateIds, ["alaska"], "Text feedback must retain the selected Northeast answer key.");
+const marylandNortheastVisual = getMentalMapResultVisualState(marylandRegion, marylandNortheastEvaluation);
+assert.deepEqual(marylandNortheastVisual.referenceStateIds, ["maryland"]);
+assert.deepEqual(marylandNortheastVisual.correctStateIds, ["maryland"]);
+assert.deepEqual(marylandNortheastVisual.selectedIncorrectStateIds, [], "A semantic answer key must not become Alaska map feedback.");
+assert.deepEqual(marylandNortheastVisual.learnerStateIds, [], "A semantic answer key must not affect result camera geometry.");
+assert.deepEqual(marylandNortheastVisual.contextStateIds, ["maryland"]);
+
+for (const [challenge, incorrectLabel] of [
+  [ohioRegion, "Northeast"],
+  [ohioCanada, "Mexico"],
+  [coloradoRockies, "Adirondack Mountains"]
+]) {
+  const incorrectAnswerId = Object.entries(challenge.answerLabelsByStateId)
+    .find(([, label]) => label === incorrectLabel)?.[0];
+  assert.ok(incorrectAnswerId, `Expected an answer choice labeled ${incorrectLabel}.`);
+  const visualState = getMentalMapResultVisualState(
+    challenge,
+    evaluateMentalMapAnswer(challenge, [incorrectAnswerId])
+  );
+  assert.deepEqual(visualState.referenceStateIds, [challenge.referenceStateId]);
+  assert.deepEqual(visualState.selectedIncorrectStateIds, []);
+  assert.deepEqual(visualState.learnerStateIds, []);
+  assert.equal(visualState.contextStateIds.includes(incorrectAnswerId), false);
+}
 
 const evaluation = evaluateMentalMapAnswer(ohioRegion, ["ohio"]);
 const event = adaptCanonicalMentalMapEvaluation({

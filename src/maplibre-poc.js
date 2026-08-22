@@ -9,12 +9,12 @@ import {
   selectMentalMapAnswer,
   submitMentalMapAnswer,
   undoMentalMapAnswer
-} from "./atlas/mental-map-challenge-engine.js?v=20260721-mental-map-consolidation-1";
+} from "./atlas/mental-map-challenge-engine.js?v=20260821-feedback-horizontal-wheel-1";
 import {
   getUnifiedMentalMapChallenges,
   selectNextUnifiedMentalMapChallenge
 } from "./atlas/mental-map-challenge-registry.js";
-import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=20260721-mental-map-consolidation-1";
+import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=20260821-feedback-horizontal-wheel-1";
 import { readUnitedStatesAtlasProgress } from "./atlas/united-states-atlas-progress.js";
 import { renderUnitedStatesAtlasOverview, renderUnitedStatesAtlasProfile } from "./atlas/united-states-atlas-ui.js";
 import { renderProgressReport } from "./united-states-progress-report-ui.js?v=20260821-central-america-graduation-1";
@@ -3950,7 +3950,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260821-central-america-graduation-1"),
       import("./maplibre/activity-session.js?v=20260821-central-america-graduation-1"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260721-mental-map-consolidation-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260821-feedback-horizontal-wheel-1"),
       import("./chip-speech.js?v=20260728-activity-audio-1")
     ]).then(([
       ,
@@ -24402,6 +24402,8 @@ function handleDocumentPointerUp(event) {
   grabbedHasMoved = false;
 
   if (!shouldDrop) {
+    // Keep the answer selected, but release drag/drop so the map can pan and zoom normally.
+    cancelGrabbedAnswer({ clearSelection: false });
     return;
   }
 
@@ -25613,6 +25615,64 @@ function getActivityAttemptForTest() {
   };
 }
 
+function getMountainRangeVisualStateForTest() {
+  if (!runner || session?.currentActivity?.id !== "us-mountain-ranges") {
+    return null;
+  }
+
+  const visualDebugState = runner.getMemoryTrailVisualDebugState?.() || {};
+  const map = runner.map;
+  const mapRect = map?.getContainer?.().getBoundingClientRect?.();
+  const targetClientPoints = {};
+  (runner.getMountainRangeSymbolGeoJson?.().features || []).forEach((feature) => {
+    const targetId = feature.properties?.targetId;
+    if (!targetId || targetClientPoints[targetId] || !map?.project) {
+      return;
+    }
+
+    const point = map.project(feature.geometry.coordinates);
+    targetClientPoints[targetId] = {
+      x: point.x,
+      y: point.y,
+      clientX: point.x + (mapRect?.left || 0),
+      clientY: point.y + (mapRect?.top || 0)
+    };
+  });
+  return {
+    activityId: session.currentActivity.id,
+    selectedTargetId: session.selectedId || "",
+    grabbedAnswerId: grabbedAnswerId || "",
+    completedTargetIds: [...session.completedIds],
+    persistedTargetIds: [...getActivityProgress(session.currentActivity.id, getEffectiveDifficulty(session.currentActivity))],
+    dragPanEnabled: Boolean(map?.dragPan?.isEnabled?.()),
+    boxZoomEnabled: Boolean(map?.boxZoom?.isEnabled?.()),
+    scrollZoomEnabled: Boolean(map?.scrollZoom?.isEnabled?.()),
+    mapCenter: map?.getCenter ? [map.getCenter().lng, map.getCenter().lat] : null,
+    mapZoom: map?.getZoom?.() ?? null,
+    mapRect: mapRect ? {
+      left: mapRect.left,
+      top: mapRect.top,
+      right: mapRect.right,
+      bottom: mapRect.bottom,
+      width: mapRect.width,
+      height: mapRect.height
+    } : null,
+    targetClientPoints,
+    activeTargetVisualIds: visualDebugState.activeTargetVisualIds || [],
+    mountainRangeActiveTargetVisualIds: visualDebugState.mountainRangeActiveTargetVisualIds || [],
+    shapeFillOpacityExpression: runner.getShapeFillOpacityExpression?.() || null,
+    completedLabelTargetIds: (runner.getCompletedLabelGeoJson?.().features || [])
+      .map(({ properties }) => properties?.id)
+      .filter(Boolean),
+    mountainSymbolTargetIds: [...new Set((runner.getMountainRangeSymbolGeoJson?.().features || [])
+      .map(({ properties }) => properties?.targetId)
+      .filter(Boolean))],
+    mountainCorridorTargetIds: [...new Set((runner.getMountainRangeCorridorGeoJson?.().features || [])
+      .map(({ properties }) => properties?.targetId)
+      .filter(Boolean))]
+  };
+}
+
 function getUnitedStatesMemoryTrailPlanForTest() {
   const plan = activeUnitedStatesMemoryTrailSession?.plan;
   return plan ? {
@@ -25622,6 +25682,42 @@ function getUnitedStatesMemoryTrailPlanForTest() {
     weakReviewItemIds: plan.weakReviewItems.map((item) => item.id),
     fairnessReviewItemIds: plan.fairnessReviewItems.map((item) => item.id)
   } : null;
+}
+
+function startMentalMapQuestionForTest(challengeId) {
+  if (currentAppScreen !== "mental-map-challenge") return false;
+  const challenge = mentalMapChallengePool.find((candidate) => candidate.id === challengeId);
+  if (!challenge) return false;
+
+  window.GeographyChipSpeech?.stopAudio?.();
+  document.body.classList.remove("mental-map-result-mode");
+  if (mapElement) mapElement.setAttribute("aria-hidden", "true");
+  runner?.prepareMentalMapChallenge();
+  activeMentalMapChallenge = challenge;
+  activeMentalMapChallengeState = createMentalMapChallengeState(challenge, { random: () => 0 });
+  activeMentalMapCanonicalAttemptIdentity = createCanonicalRuntimeAttemptIdentity(
+    "mental-map",
+    challenge.sourceActivityId || challenge.id
+  );
+  mentalMapReorderAnnouncement = "";
+  renderActiveMentalMapChallenge();
+  return true;
+}
+
+function getMentalMapVisualStateForTest() {
+  if (currentAppScreen !== "mental-map-challenge") return null;
+  const copyForTest = (value) => JSON.parse(JSON.stringify(value ?? null));
+  return {
+    challengeId: activeMentalMapChallenge?.id || "",
+    prompt: activeMentalMapChallenge?.prompt || "",
+    selectedStateIds: [...(activeMentalMapChallengeState?.selectedStateIds || [])],
+    evaluation: copyForTest(activeMentalMapChallengeState?.evaluation),
+    resultVisualState: copyForTest(runner?.mentalMapChallengeResultVisualState || {}),
+    stateFillExpression: copyForTest(runner?.getUsStateContextFillExpression?.()),
+    feedbackFeatureEntityIds: (runner?.mentalMapFeatureFeedback?.featureCollection?.features || [])
+      .map((feature) => feature.properties?.questionFeatureEntityId)
+      .filter(Boolean)
+  };
 }
 
 function resetCurrentActivityForTest() {
@@ -25666,7 +25762,10 @@ function installMappaTestApi() {
       answerCurrentPrompt: answerCurrentPromptForTest,
       answerCurrentPromptIncorrectly: answerCurrentPromptIncorrectlyForTest,
       getActivityAttempt: getActivityAttemptForTest,
+      getMountainRangeVisualState: getMountainRangeVisualStateForTest,
       getUnitedStatesMemoryTrailPlan: getUnitedStatesMemoryTrailPlanForTest,
+      startMentalMapQuestion: startMentalMapQuestionForTest,
+      getMentalMapVisualState: getMentalMapVisualStateForTest,
       resetCurrentActivity: resetCurrentActivityForTest,
       completeCurrentActivity: completeCurrentActivityForTest,
       getSavedJourneyProgress: () => loadProgress()

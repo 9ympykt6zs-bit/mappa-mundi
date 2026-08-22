@@ -161,7 +161,8 @@ function validateStaticDelivery() {
   const serviceWorkers = ["service-worker.js", "sw.js"].filter((file) => existsSync(path.join(repoRoot, file)));
   assert.equal(serviceWorkers.length, 0, "Unexpected service worker needs an explicit audio caching audit.");
   const indexSource = read("index.html");
-  assert.ok(indexSource.includes("20260728-activity-audio-1"));
+  assert.ok(indexSource.includes('rel="stylesheet" href="maplibre-poc.css?v='));
+  assert.ok(read("src/maplibre-poc.js").includes('import("./chip-speech.js?v=20260728-activity-audio-1")'));
   assert.ok(read("src/chip-speech.js").includes("20260728-activity-audio-1"));
 }
 

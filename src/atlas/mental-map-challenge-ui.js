@@ -2,7 +2,7 @@ import { getStateById } from "./united-states-atlas-queries.js";
 import {
   getMentalMapScoreLabel,
   isMentalMapAnswerChoiceDisabled
-} from "./mental-map-challenge-engine.js?v=20260721-mental-map-consolidation-1";
+} from "./mental-map-challenge-engine.js?v=20260821-feedback-horizontal-wheel-1";
 import {
   isMentalMapRecallAllChallenge,
   MENTAL_MAP_ANSWER_MODES,
@@ -445,12 +445,16 @@ function createResultContent(challenge, state, options) {
       ));
     }
     if (evaluation.selectedInvalidStateIds.length) {
-      wrapper.append(createResultLine("Incorrect", evaluation.selectedInvalidStateIds, "", challenge));
+      wrapper.append(createResultLine("Incorrect", evaluation.selectedInvalidStateIds, "is-incorrect", challenge));
     }
   } else if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.SELECT_COUNT) {
     wrapper.append(
       createResultLine("Correct selections", evaluation.selectedValidStateIds),
-      createResultLine("Incorrect", evaluation.selectedInvalidStateIds),
+      createResultLine(
+        "Incorrect",
+        evaluation.selectedInvalidStateIds,
+        evaluation.selectedInvalidStateIds.length ? "is-incorrect" : ""
+      ),
       createResultLine("Complete eligible set", evaluation.completeEligibleStateIds)
     );
     const count = document.createElement("p");
@@ -468,16 +472,16 @@ function createResultContent(challenge, state, options) {
     wrapper.append(
       createResultLine("Correct answer", challenge.correctStateIds),
       createResultLine("Correct selections", evaluation.selectedValidStateIds),
-      createResultLine("Missing", evaluation.missingStateIds),
-      createResultLine("Incorrect", evaluation.selectedInvalidStateIds)
+      createResultLine("Missing", evaluation.missingStateIds, evaluation.missingStateIds.length ? "is-missing" : ""),
+      createResultLine("Incorrect", evaluation.selectedInvalidStateIds, evaluation.selectedInvalidStateIds.length ? "is-incorrect" : "")
     );
   } else {
     wrapper.append(
       createResultLine("Expected sequence", evaluation.expectedSequence, "is-sequence"),
       createResultLine("Correctly positioned", evaluation.correctlyPositionedStateIds),
       createResultLine("Misplaced", evaluation.misplacedStateIds),
-      createResultLine("Missing", evaluation.missingStateIds),
-      createResultLine("Incorrect", evaluation.selectedInvalidStateIds)
+      createResultLine("Missing", evaluation.missingStateIds, evaluation.missingStateIds.length ? "is-missing" : ""),
+      createResultLine("Incorrect", evaluation.selectedInvalidStateIds, evaluation.selectedInvalidStateIds.length ? "is-incorrect" : "")
     );
     if (evaluation.acceptedAlternativeIndex !== null) {
       const alternative = document.createElement("p");

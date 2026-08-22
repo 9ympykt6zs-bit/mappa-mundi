@@ -502,6 +502,7 @@ export class MapLibreActivityRunner {
       active: false,
       dragging: false
     };
+    this.horizontalWheelPanHandler = null;
   }
 
   suppressStudyIntroCameraOnce(reason = "external target focus", ttlMs = 5000) {
@@ -617,6 +618,7 @@ export class MapLibreActivityRunner {
       }
     });
     window.maplibrePocMap = this.map;
+    this.installHorizontalWheelPan();
 
     await new Promise((resolve) => {
       this.map.on("load", resolve);
@@ -1270,6 +1272,7 @@ export class MapLibreActivityRunner {
       memoryTrailSuppressStudyTargetEmphasisReason: this.memoryTrailSuppressStudyTargetEmphasisReason,
       selectedTargetId: this.selectedTargetId || "",
       activeTargetVisualIds: this.getActiveTargetVisualIds(),
+      mountainRangeActiveTargetVisualIds: this.getMountainRangeActiveTargetVisualIds(),
       activeMemoryTrailHighlightIds: this.getMemoryTrailActiveHighlightIds()
     };
   }
@@ -1400,6 +1403,42 @@ export class MapLibreActivityRunner {
     const method = isEnabled ? "enable" : "disable";
     this.map.dragPan[method]();
     this.map.boxZoom[method]();
+  }
+
+  installHorizontalWheelPan() {
+    const container = this.map?.getContainer?.();
+    if (!container || this.horizontalWheelPanHandler) {
+      return;
+    }
+
+    this.horizontalWheelPanHandler = (event) => this.handleHorizontalWheelPan(event);
+    container.addEventListener("wheel", this.horizontalWheelPanHandler, {
+      capture: true,
+      passive: false
+    });
+  }
+
+  handleHorizontalWheelPan(event) {
+    if (!this.map?.dragPan?.isEnabled?.()) {
+      return;
+    }
+
+    const deltaMode = Number(event.deltaMode) || 0;
+    const deltaX = Number(event.deltaX) || 0;
+    const deltaY = Number(event.deltaY) || 0;
+    if (!deltaX || Math.abs(deltaX) <= Math.abs(deltaY)) {
+      return;
+    }
+
+    const containerWidth = this.map.getContainer?.().clientWidth || 1;
+    const deltaScale = deltaMode === 1
+      ? 16
+      : deltaMode === 2
+        ? containerWidth
+        : 1;
+    event.preventDefault();
+    event.stopPropagation();
+    this.map.panBy([deltaX * deltaScale, 0], { duration: 0 });
   }
 
   setPlacementInteractionState(state = {}) {
@@ -6662,6 +6701,7 @@ export class MapLibreActivityRunner {
       ];
     }
 
+    // Stylized mountains render through their corridor and symbol layers, including after completion.
     return [
       "case",
       ["boolean", ["get", "isOceanZone"], false],
@@ -6671,10 +6711,10 @@ export class MapLibreActivityRunner {
         0.34,
         0.01
       ],
-      ["in", ["get", "id"], ["literal", this.completedIds]],
-      0.96,
       ["boolean", ["get", "hasStylizedMountainRangeArt"], false],
       0,
+      ["in", ["get", "id"], ["literal", this.completedIds]],
+      0.96,
       ["==", ["get", "physicalFeatureType"], "mountain-range"],
       0.2,
       0.78
@@ -6865,7 +6905,7 @@ export class MapLibreActivityRunner {
       ["coalesce", ["get", "iconScale"], 0.72],
       [
         "case",
-        ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+        ["in", ["get", "targetId"], ["literal", this.getMountainRangeActiveTargetVisualIds()]],
         1.34,
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
         1.02,
@@ -6880,7 +6920,7 @@ export class MapLibreActivityRunner {
       ["coalesce", ["get", "iconScale"], 0.72],
       [
         "case",
-        ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+        ["in", ["get", "targetId"], ["literal", this.getMountainRangeActiveTargetVisualIds()]],
         2.18,
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
         1.46,
@@ -6899,7 +6939,7 @@ export class MapLibreActivityRunner {
         0.96,
         ["in", ["get", "targetId"], ["literal", this.memoryTrailCorrectHighlightIds]],
         0.96,
-        ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+        ["in", ["get", "targetId"], ["literal", this.getMountainRangeActiveTargetVisualIds()]],
         1,
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
         ["min", 0.9, ["+", ["coalesce", ["get", "symbolOpacity"], 0.58], 0.08]],
@@ -6912,7 +6952,7 @@ export class MapLibreActivityRunner {
         "case",
         ["boolean", ["get", "visualOnlyContinuation"], false],
         ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.46],
-        ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+        ["in", ["get", "targetId"], ["literal", this.getMountainRangeActiveTargetVisualIds()]],
         1,
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
         ["min", 0.9, ["+", ["coalesce", ["get", "symbolOpacity"], 0.58], 0.08]],
@@ -6924,7 +6964,7 @@ export class MapLibreActivityRunner {
       "case",
       ["boolean", ["get", "visualOnlyContinuation"], false],
       ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.58],
-      ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+      ["in", ["get", "targetId"], ["literal", this.getMountainRangeActiveTargetVisualIds()]],
       1,
       ["in", ["get", "targetId"], ["literal", this.completedIds]],
       ["min", 0.9, ["+", ["coalesce", ["get", "symbolOpacity"], 0.58], 0.08]],
@@ -6936,7 +6976,7 @@ export class MapLibreActivityRunner {
     if (this.getDifficultyVisualState().isHard && !this.studyPreviewMode) {
       return [
         "case",
-        ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+        ["in", ["get", "targetId"], ["literal", this.getMountainRangeActiveTargetVisualIds()]],
         ["min", 0.9, ["+", ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.64], 0.28]],
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
         ["min", 0.42, ["+", ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.28], 0.08]],
@@ -6946,7 +6986,7 @@ export class MapLibreActivityRunner {
 
     return [
       "case",
-      ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+      ["in", ["get", "targetId"], ["literal", this.getMountainRangeActiveTargetVisualIds()]],
       ["min", 0.9, ["+", ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.64], 0.28]],
       ["in", ["get", "targetId"], ["literal", this.completedIds]],
       ["min", 0.42, ["+", ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.28], 0.08]],
@@ -6970,7 +7010,7 @@ export class MapLibreActivityRunner {
         colors.memoryTrailWrongLine,
         ["in", ["get", "targetId"], ["literal", this.memoryTrailCorrectHighlightIds]],
         colors.memoryTrailCorrectLine,
-        ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+        ["in", ["get", "targetId"], ["literal", this.getMountainRangeActiveTargetVisualIds()]],
         colors.memoryTrailLine,
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
         ["coalesce", ["get", "mountainRangeCorridorColor"], colors.mountainRangeFill],
@@ -6987,7 +7027,7 @@ export class MapLibreActivityRunner {
       ["coalesce", ["get", "corridorWidthPx"], 30],
       [
         "case",
-        ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+        ["in", ["get", "targetId"], ["literal", this.getMountainRangeActiveTargetVisualIds()]],
         1.22,
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
         1.02,
@@ -7003,7 +7043,7 @@ export class MapLibreActivityRunner {
         ["coalesce", ["get", "corridorOpacityScale"], 1],
         [
           "case",
-          ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+          ["in", ["get", "targetId"], ["literal", this.getMountainRangeActiveTargetVisualIds()]],
           0.3,
           ["in", ["get", "targetId"], ["literal", this.completedIds]],
           0.12,
@@ -7017,7 +7057,7 @@ export class MapLibreActivityRunner {
       ["coalesce", ["get", "corridorOpacityScale"], 1],
       [
         "case",
-        ["in", ["get", "targetId"], ["literal", this.getActiveTargetVisualIds()]],
+        ["in", ["get", "targetId"], ["literal", this.getMountainRangeActiveTargetVisualIds()]],
         0.32,
         ["in", ["get", "targetId"], ["literal", this.completedIds]],
         0.12,
@@ -7031,6 +7071,17 @@ export class MapLibreActivityRunner {
       ...this.getMemoryTrailActiveHighlightIds(),
       this.isMemoryTrailCheckpointPreAnswerStyleEnabled() ? "" : this.selectedTargetId
     ].filter(Boolean))];
+  }
+
+  getMountainRangeActiveTargetVisualIds() {
+    const activeTargetIds = this.getActiveTargetVisualIds();
+
+    // A picked-up locating chip is retrieval input, not permission to reveal its mountain target.
+    if (this.studyPreviewMode || !this.selectedTargetId) {
+      return activeTargetIds;
+    }
+
+    return activeTargetIds.filter((targetId) => targetId !== this.selectedTargetId);
   }
 
   refreshTargetShapeSources() {

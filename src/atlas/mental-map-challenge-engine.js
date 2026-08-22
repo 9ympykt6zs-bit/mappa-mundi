@@ -334,6 +334,12 @@ export function getMentalMapResultVisualState(challenge, evaluation) {
   const referenceStateIds = challenge.referenceStateId
     ? [challenge.referenceStateId]
     : [...(challenge.referenceStateIds || [])];
+  const geographicFeedbackStateIds = (stateIds = []) => unique(stateIds).filter((stateId) => {
+    const answerEntityId = challenge.answerEntityIdsByStateId?.[stateId];
+    return !answerEntityId
+      || answerEntityId === `state:${stateId}`
+      || referenceStateIds.includes(stateId);
+  });
   const directionArrows = (challenge.directionRelationships || [])
     .map(({ fromStateId, toStateId }) => ({ fromStateId, toStateId }));
   const associatedFeatures = (challenge.associatedFeatureIds || []).map((entityId) => {
@@ -363,12 +369,14 @@ export function getMentalMapResultVisualState(challenge, evaluation) {
   }).filter(Boolean);
   return {
     correctStateIds,
-    selectedCorrectStateIds: [...evaluation.selectedValidStateIds],
-    selectedIncorrectStateIds: [...evaluation.selectedInvalidStateIds],
-    missingStateIds: [...evaluation.missingStateIds],
-    misplacedStateIds: [...evaluation.misplacedStateIds],
+    selectedCorrectStateIds: geographicFeedbackStateIds(evaluation.selectedValidStateIds),
+    selectedIncorrectStateIds: geographicFeedbackStateIds(evaluation.selectedInvalidStateIds),
+    missingStateIds: geographicFeedbackStateIds(evaluation.missingStateIds),
+    misplacedStateIds: geographicFeedbackStateIds(evaluation.misplacedStateIds),
     expectedSequenceStateIds: routeStateIds,
-    learnerStateIds: evaluation.isBorderRoute ? routeStateIds : [...evaluation.selectedStateIds],
+    learnerStateIds: evaluation.isBorderRoute
+      ? routeStateIds
+      : geographicFeedbackStateIds(evaluation.selectedStateIds),
     referenceStateIds,
     contextStateIds: unique([
       ...referenceStateIds,
