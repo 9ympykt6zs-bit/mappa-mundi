@@ -66,18 +66,26 @@ export function createCapitalFeedbackFeatureCollection(activity = {}) {
   };
 }
 
-export function buildMentalMapStateContextLabels(stateIds = [], stateFeatures = EMPTY_FEATURE_COLLECTION) {
+export function buildMentalMapStateContextLabels(
+  stateIds = [],
+  stateFeatures = EMPTY_FEATURE_COLLECTION,
+  { neighborStateIds = stateIds, targetStateIds = [] } = {}
+) {
+  const neighborIds = new Set(neighborStateIds);
+  const targetIds = new Set(targetStateIds);
   return {
     type: "FeatureCollection",
     features: [...new Set(stateIds)].map((stateId) => {
       const feature = getStateFeature(stateId, stateFeatures);
-      const coordinates = getBoundsCenter(getGeometryBounds(feature?.geometry));
+      const coordinates = getBoundsCenter(getStateBounds([stateId], stateFeatures));
       return feature && coordinates ? {
         type: "Feature",
         properties: {
           stateId,
           stateName: feature.properties?.name || feature.properties?.NAME || stateId,
-          contextRole: "neighbor"
+          contextRole: targetIds.has(stateId)
+            ? "target"
+            : neighborIds.has(stateId) ? "neighbor" : "background"
         },
         geometry: { type: "Point", coordinates }
       } : null;
@@ -177,32 +185,8 @@ function getBoundsCenter(bounds) {
     : null;
 }
 
-function getValidLineCoordinates(value) {
-  return Array.isArray(value)
-    ? value.filter((line) => (
-        Array.isArray(line)
-        && line.length >= 2
-        && line.every((coordinate) => (
-          Array.isArray(coordinate)
-          && coordinate.length >= 2
-          && Number.isFinite(Number(coordinate[0]))
-          && Number.isFinite(Number(coordinate[1]))
-        ))
-      )).map((line) => line.map(([longitude, latitude]) => [Number(longitude), Number(latitude)]))
-    : [];
-}
-
 function getMountainRangeFeedback(sourceFeature, metadata) {
-  const visualArt = sourceFeature?.properties?.visualArt;
-  const spines = visualArt?.kind === "stylized-mountain-range"
-    ? getValidLineCoordinates(visualArt.spines)
-    : [];
   const extentBounds = getGeometryBounds(sourceFeature?.geometry);
-  const spineGeometry = spines.length ? {
-    type: spines.length === 1 ? "LineString" : "MultiLineString",
-    coordinates: spines.length === 1 ? spines[0] : spines
-  } : null;
-  const illustrationBounds = getGeometryBounds(spineGeometry) || extentBounds;
   const authoredAnchors = (sourceFeature?.properties?.symbolAnchors || [])
     .filter((coordinate) => (
       Array.isArray(coordinate)
@@ -211,11 +195,15 @@ function getMountainRangeFeedback(sourceFeature, metadata) {
       && Number.isFinite(Number(coordinate[1]))
     ))
     .map(([longitude, latitude]) => [Number(longitude), Number(latitude)]);
+  const illustrationBounds = getGeometryBounds({
+    type: "MultiPoint",
+    coordinates: authoredAnchors
+  }) || extentBounds;
   const fallbackAnchor = getBoundsCenter(illustrationBounds);
   const symbolAnchors = authoredAnchors.length
     ? authoredAnchors
     : fallbackAnchor ? [fallbackAnchor] : [];
-  const renderingMode = spineGeometry ? "stylized-ridge" : "approximate-symbol";
+  const renderingMode = authoredAnchors.length ? "authored-symbols" : "approximate-symbol";
   const sharedProperties = {
     questionFeatureEntityId: metadata.entityId,
     questionFeatureKind: metadata.kind,
@@ -226,11 +214,6 @@ function getMountainRangeFeedback(sourceFeature, metadata) {
   };
 
   return {
-    feature: spineGeometry ? {
-      type: "Feature",
-      properties: sharedProperties,
-      geometry: spineGeometry
-    } : null,
     symbols: symbolAnchors.map((coordinates, index) => ({
       type: "Feature",
       properties: {
@@ -527,7 +510,6 @@ export function buildMentalMapFeatureFeedback({
     if (!geometry) missingFeatureIds.push(metadata.entityId);
     if (metadata.kind === "mountain-range" && sourceFeature) {
       const mountainFeedback = getMountainRangeFeedback(sourceFeature, metadata);
-      if (mountainFeedback.feature) features.push(mountainFeedback.feature);
       labels.push(...mountainFeedback.symbols);
       if (mountainFeedback.labelAnchor) {
         labels.push({
@@ -607,6 +589,12 @@ export function buildMentalMapFeatureFeedback({
     explicitRouteGeometry
   );
   if (routeFeature) cameraBounds = mergeBounds(cameraBounds, getGeometryBounds(routeFeature.geometry));
+  const mapCameraBounds = cameraBounds ? [
+    Math.max(-180, cameraBounds[0]),
+    cameraBounds[1],
+    Math.min(180, cameraBounds[2]),
+    cameraBounds[3]
+  ] : null;
   return {
     featureCollection: { type: "FeatureCollection", features },
     labelCollection: { type: "FeatureCollection", features: labels },
@@ -616,7 +604,9 @@ export function buildMentalMapFeatureFeedback({
     },
     coastlineCollection: { type: "FeatureCollection", features: coastlines },
     coastStateIds: [...new Set(associatedFeatures.flatMap((feature) => feature.coastStateIds || []))],
-    cameraBounds: cameraBounds ? [[cameraBounds[0], cameraBounds[1]], [cameraBounds[2], cameraBounds[3]]] : null,
+    cameraBounds: mapCameraBounds
+      ? [[mapCameraBounds[0], mapCameraBounds[1]], [mapCameraBounds[2], mapCameraBounds[3]]]
+      : null,
     missingFeatureIds,
     mountainRenderingModes
   };

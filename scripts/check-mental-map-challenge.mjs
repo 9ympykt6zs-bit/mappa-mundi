@@ -492,6 +492,13 @@ assert.deepEqual(visualState.associatedFeatures.map((feature) => feature.entityI
       && feature.properties.renderingMode === "coastline-only"
     )));
     if (entityId === "water:gulf-of-mexico") assert.ok(feedback.missingFeatureIds.includes(entityId));
+  } else if (entityId.startsWith("mountain-range:")) {
+    assert.ok(!feedback.featureCollection.features.some((feature) => feature.properties.questionFeatureEntityId === entityId));
+    assert.ok(feedback.labelCollection.features.some((feature) => (
+      feature.properties.questionFeatureEntityId === entityId
+      && feature.properties.questionFeatureRole === "mountain-symbol"
+      && feature.properties.questionFeatureRenderingMode === "authored-symbols"
+    )));
   } else {
     assert.ok(feedback.featureCollection.features.some((feature) => feature.properties.questionFeatureEntityId === entityId));
   }

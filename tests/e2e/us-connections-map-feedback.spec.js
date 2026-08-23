@@ -190,14 +190,14 @@ test("relationship feedback follows each reference state and clears between ques
   }
 });
 
-test("Connections feedback keeps national context and renders mountains as authored ridges", async ({ page }) => {
+test("Connections feedback shows all 50 states and renders mountains with authored symbols", async ({ page }) => {
   await openUnitedStatesConnections(page);
   await startQuestion(page, "us-relationship-mountain-range-colorado-rocky-mountains");
 
   let state = await page.evaluate(() => window.__MAPPA_TEST_API__.getMentalMapVisualState());
   expect(state.feedbackFeatures).toEqual([]);
-  expect(state.feedbackLayerVisibility.mountainCorridor).toBe("none");
   expect(state.feedbackLayerVisibility.mountainSymbols).toBe("none");
+  expect(state.feedbackLayerVisibility.targetStateLabel).toBe("none");
 
   await submitAnswer(page, "Adirondack Mountains");
   await expect(page.locator(".mental-map-result-status")).toHaveText("Not quite");
@@ -208,29 +208,34 @@ test("Connections feedback keeps national context and renders mountains as autho
   state = await page.evaluate(() => window.__MAPPA_TEST_API__.getMentalMapVisualState());
   expect(state.resultVisualState.referenceStateIds).toEqual(["colorado"]);
   expect(state.resultVisualState.neighborStateIds.length).toBeGreaterThanOrEqual(6);
-  expect(state.feedbackFeatures).toHaveLength(1);
-  expect(["LineString", "MultiLineString"]).toContain(state.feedbackFeatures[0].geometry.type);
-  expect(state.feedbackFeatures.some(({ geometry }) => ["Polygon", "MultiPolygon"].includes(geometry.type))).toBe(false);
-  expect(state.feedbackFeatures[0].properties).toMatchObject({
-    questionFeatureKind: "mountain-range",
-    questionFeatureRenderingMode: "stylized-ridge",
-    geometryPrecision: "approximate"
-  });
+  expect(state.feedbackFeatures).toEqual([]);
   expect(state.mountainRenderingModes).toEqual([{
     entityId: "mountain-range:rocky-mountains",
-    mode: "stylized-ridge",
+    mode: "authored-symbols",
     geometryPrecision: "approximate"
   }]);
   expect(state.feedbackLabels.some(({ properties }) => properties.questionFeatureRole === "mountain-symbol")).toBe(true);
-  expect(state.feedbackLayerVisibility.mountainCorridor).toBe("visible");
   expect(state.feedbackLayerVisibility.mountainSymbols).toBe("visible");
+  expect(state.feedbackLayerVisibility.stateFill).toBe("visible");
+  expect(state.feedbackLayerVisibility.neighborLabels).toBe("visible");
+  expect(state.feedbackLayerVisibility.targetStateLabel).toBe("visible");
 
   expect(state.availableStateIds.length).toBeGreaterThanOrEqual(50);
   expect(state.availableStateIds).toEqual(expect.arrayContaining(["alaska", "hawaii", "colorado", "maine"]));
-  expect(state.feedbackCameraBounds[0][0]).toBeLessThanOrEqual(-124);
-  expect(state.feedbackCameraBounds[0][1]).toBeLessThanOrEqual(25);
+  expect(state.contextStateLabels).toHaveLength(50);
+  expect(state.contextStateLabels.filter(({ properties }) => properties.contextRole === "target"))
+    .toEqual([expect.objectContaining({ properties: expect.objectContaining({ stateId: "colorado", stateName: "Colorado" }) })]);
+  expect(state.contextStateLabels.filter(({ properties }) => properties.contextRole === "background").length)
+    .toBeGreaterThan(40);
+  expect(state.feedbackCameraBounds[0][0]).toBeLessThanOrEqual(-179);
+  expect(state.feedbackCameraBounds[0][1]).toBeLessThanOrEqual(19);
   expect(state.feedbackCameraBounds[1][0]).toBeGreaterThanOrEqual(-67);
-  expect(state.feedbackCameraBounds[1][1]).toBeGreaterThanOrEqual(49);
+  expect(state.feedbackCameraBounds[1][1]).toBeGreaterThanOrEqual(71);
+  expect(state.stateBoundaryPaint).toEqual({
+    color: "#7a8996",
+    width: ["interpolate", ["linear"], ["zoom"], 1, 0.85, 4, 1.55, 6, 2],
+    opacity: 0.98
+  });
   expect(state.mapInteractions).toEqual({
     dragPan: true,
     scrollZoom: true,
@@ -239,7 +244,7 @@ test("Connections feedback keeps national context and renders mountains as autho
 
   const fillExpression = JSON.stringify(state.stateFillExpression);
   expect(fillExpression).toContain("colorado");
-  expect(fillExpression).toContain("#9aa9b8");
+  expect(fillExpression).toContain("#4f88b5");
   expect(fillExpression).toContain("#e3e8ec");
   expect(fillExpression).toContain("#f3f5f7");
   state.resultVisualState.neighborStateIds.forEach((neighborStateId) => {

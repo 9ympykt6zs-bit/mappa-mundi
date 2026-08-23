@@ -11,7 +11,7 @@ import {
   buildMentalMapFeatureFeedback,
   buildMentalMapStateContextLabels,
   createCapitalFeedbackFeatureCollection
-} from "../atlas/mental-map-feature-feedback.js?v=20260823-connections-geographic-feedback-1";
+} from "../atlas/mental-map-feature-feedback.js?v=20260823-connections-atlas-context-1";
 
 const colors = {
   ink: "#172033",
@@ -1010,6 +1010,7 @@ export class MapLibreActivityRunner {
     ["us-state-context-fill", "border-chain-state-fill"].forEach((layerId) => {
       if (this.map?.getLayer(layerId)) this.map.setPaintProperty(layerId, "fill-color", this.getUsStateContextFillExpression());
     });
+    this.refreshUnitedStatesContextLinePaint();
     this.refreshMentalMapFeatureFeedback();
   }
 
@@ -1089,7 +1090,7 @@ export class MapLibreActivityRunner {
     const nationalContextStateIds = visualState.isUnitedStatesConnections
       ? (this.usStatesAtlas?.features || []).map((feature) => (
           String(feature.properties?.id || feature.properties?.state || feature.id || "").toLowerCase()
-        )).filter((stateId) => stateId && !["alaska", "hawaii", "district-of-columbia"].includes(stateId))
+        )).filter((stateId) => stateId && stateId !== "district-of-columbia")
       : [];
     const associatedFeatures = visualState.capitalFeedback
       ? [
@@ -1114,9 +1115,18 @@ export class MapLibreActivityRunner {
       }
     });
     this.mentalMapFeatureFeedback = feedback;
+    const contextStateLabelIds = visualState.isUnitedStatesConnections
+      ? nationalContextStateIds
+      : visualState.neighborStateIds || [];
     this.mentalMapContextStateLabels = buildMentalMapStateContextLabels(
-      visualState.neighborStateIds || [],
-      this.usStatesAtlas
+      contextStateLabelIds,
+      this.usStatesAtlas,
+      {
+        neighborStateIds: visualState.neighborStateIds || [],
+        targetStateIds: visualState.isUnitedStatesConnections
+          ? [...new Set([...(visualState.referenceStateIds || []), ...(visualState.correctStateIds || [])])]
+          : []
+      }
     );
     this.map?.getSource("mental-map-question-features")?.setData(feedback.featureCollection);
     this.map?.getSource("mental-map-question-feature-labels")?.setData(feedback.labelCollection);
@@ -1128,20 +1138,13 @@ export class MapLibreActivityRunner {
     const hasFeatures = feedback.featureCollection.features.length > 0;
     const hasLabels = feedback.labelCollection.features.length > 0;
     const hasCapital = feedback.labelCollection.features.some((feature) => feature.properties?.questionFeatureKind === "capital");
-    const hasMountainRidges = feedback.featureCollection.features.some((feature) => feature.properties?.questionFeatureKind === "mountain-range");
     const hasMountainSymbols = feedback.labelCollection.features.some((feature) => feature.properties?.questionFeatureRole === "mountain-symbol");
     const hasContextStateLabels = this.mentalMapContextStateLabels.features.length > 0;
+    const hasTargetStateLabels = this.mentalMapContextStateLabels.features.some((feature) => feature.properties?.contextRole === "target");
     const hasRoute = feedback.routeCollection.features.length > 0;
     ["mental-map-question-feature-fill", "mental-map-question-feature-line"].forEach((layerId) => {
       if (this.map?.getLayer(layerId)) this.map.setLayoutProperty(layerId, "visibility", resultVisible && hasFeatures ? "visible" : "none");
     });
-    if (this.map?.getLayer("mental-map-mountain-feedback-corridor")) {
-      this.map.setLayoutProperty(
-        "mental-map-mountain-feedback-corridor",
-        "visibility",
-        resultVisible && hasMountainRidges ? "visible" : "none"
-      );
-    }
     if (this.map?.getLayer("mental-map-question-feature-point-label")) {
       this.map.setLayoutProperty("mental-map-question-feature-point-label", "visibility", resultVisible && hasLabels ? "visible" : "none");
     }
@@ -1158,7 +1161,11 @@ export class MapLibreActivityRunner {
     if (this.map?.getLayer("mental-map-context-state-label")) {
       this.map.setLayoutProperty("mental-map-context-state-label", "visibility", resultVisible && hasContextStateLabels ? "visible" : "none");
     }
+    if (this.map?.getLayer("mental-map-target-state-label")) {
+      this.map.setLayoutProperty("mental-map-target-state-label", "visibility", resultVisible && hasTargetStateLabels ? "visible" : "none");
+    }
     if (resultVisible && hasContextStateLabels) this.map.moveLayer("mental-map-context-state-label");
+    if (resultVisible && hasTargetStateLabels) this.map.moveLayer("mental-map-target-state-label");
     if (resultVisible && hasCapital) this.map.moveLayer("mental-map-capital-feedback-star");
     if (resultVisible && hasMountainSymbols) this.map.moveLayer("mental-map-mountain-feedback-symbol");
     if (resultVisible && hasLabels) this.map.moveLayer("mental-map-question-feature-point-label");
@@ -2896,9 +2903,9 @@ export class MapLibreActivityRunner {
         visibility: "none"
       },
       paint: {
-        "line-color": colors.contextLine,
-        "line-width": 1.2,
-        "line-opacity": 0.95
+        "line-color": this.getUsStateContextLineColor(),
+        "line-width": this.getUsStateContextLineWidthExpression(),
+        "line-opacity": this.getUsStateContextLineOpacity()
       }
     });
 
@@ -3359,28 +3366,6 @@ export class MapLibreActivityRunner {
     });
 
     this.map.addLayer({
-      id: "mental-map-mountain-feedback-corridor",
-      type: "line",
-      source: "mental-map-question-features",
-      filter: [
-        "all",
-        ["==", ["get", "questionFeatureKind"], "mountain-range"],
-        ["in", ["geometry-type"], ["literal", ["LineString", "MultiLineString"]]]
-      ],
-      layout: {
-        visibility: "none",
-        "line-cap": "round",
-        "line-join": "round"
-      },
-      paint: {
-        "line-color": colors.mountainRangeFill,
-        "line-width": ["interpolate", ["linear"], ["zoom"], 2, 8, 5, 16],
-        "line-opacity": 0.28,
-        "line-blur": ["interpolate", ["linear"], ["zoom"], 2, 4, 5, 7]
-      }
-    });
-
-    this.map.addLayer({
       id: "mental-map-question-feature-line",
       type: "line",
       source: "mental-map-question-features",
@@ -3534,18 +3519,41 @@ export class MapLibreActivityRunner {
       id: "mental-map-context-state-label",
       type: "symbol",
       source: "mental-map-context-state-labels",
+      filter: ["!=", ["get", "contextRole"], "target"],
       layout: {
         visibility: "none",
         "text-field": ["get", "stateName"],
         "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
-        "text-size": 12,
+        "text-size": ["interpolate", ["linear"], ["zoom"], 1, 8.5, 4, 11],
         "text-allow-overlap": false,
-        "text-padding": 3
+        "text-ignore-placement": false,
+        "text-padding": 4
       },
       paint: {
-        "text-color": "#52606d",
+        "text-color": "#667684",
+        "text-halo-color": "rgba(255, 255, 255, 0.92)",
+        "text-halo-width": 1.4
+      }
+    });
+
+    this.map.addLayer({
+      id: "mental-map-target-state-label",
+      type: "symbol",
+      source: "mental-map-context-state-labels",
+      filter: ["==", ["get", "contextRole"], "target"],
+      layout: {
+        visibility: "none",
+        "text-field": ["get", "stateName"],
+        "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 1, 11.5, 4, 15],
+        "text-allow-overlap": true,
+        "text-ignore-placement": true,
+        "text-padding": 2
+      },
+      paint: {
+        "text-color": "#203b55",
         "text-halo-color": "#ffffff",
-        "text-halo-width": 1.6
+        "text-halo-width": 2.2
       }
     });
 
@@ -7303,6 +7311,32 @@ export class MapLibreActivityRunner {
     return this.getPoliticalFillExpression();
   }
 
+  isUnitedStatesConnectionsResultView() {
+    return ["mental-map-challenge-result", "compass-challenge-result"].includes(this.currentView)
+      && this.mentalMapChallengeResultVisualState.isUnitedStatesConnections;
+  }
+
+  getUsStateContextLineColor() {
+    return this.isUnitedStatesConnectionsResultView() ? "#7a8996" : colors.contextLine;
+  }
+
+  getUsStateContextLineWidthExpression() {
+    return this.isUnitedStatesConnectionsResultView()
+      ? ["interpolate", ["linear"], ["zoom"], 1, 0.85, 4, 1.55, 6, 2]
+      : 1.2;
+  }
+
+  getUsStateContextLineOpacity() {
+    return this.isUnitedStatesConnectionsResultView() ? 0.98 : 0.95;
+  }
+
+  refreshUnitedStatesContextLinePaint() {
+    if (!this.map?.getLayer("us-state-context-line")) return;
+    this.map.setPaintProperty("us-state-context-line", "line-color", this.getUsStateContextLineColor());
+    this.map.setPaintProperty("us-state-context-line", "line-width", this.getUsStateContextLineWidthExpression());
+    this.map.setPaintProperty("us-state-context-line", "line-opacity", this.getUsStateContextLineOpacity());
+  }
+
   getUsStateContextFillExpression() {
     if (["mental-map-challenge-result", "compass-challenge-result"].includes(this.currentView)) {
       const stateId = ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]];
@@ -7314,6 +7348,27 @@ export class MapLibreActivityRunner {
             colors.connectionsBackgroundFill
           ]
         : ["#dce8f5"];
+      if (visualState.isUnitedStatesConnections && visualState.referenceStateIds.length) {
+        const targetStateIds = [...new Set([
+          ...visualState.referenceStateIds,
+          ...visualState.correctStateIds
+        ])];
+        return [
+          "case",
+          [
+            "all",
+            ["in", stateId, ["literal", targetStateIds]],
+            ["in", stateId, ["literal", visualState.selectedCorrectStateIds]]
+          ], "#2f9d72",
+          [
+            "all",
+            ["in", stateId, ["literal", targetStateIds]],
+            ["in", stateId, ["literal", visualState.selectedIncorrectStateIds]]
+          ], "#d95151",
+          ["in", stateId, ["literal", targetStateIds]], "#4f88b5",
+          ...neutralContextStops
+        ];
+      }
       if (visualState.referenceStateIds.length) {
         return [
           "case",

@@ -32,10 +32,15 @@ function expectNoCapitalContext(state) {
   expect(state.resultVisualState.neighborStateIds || []).toEqual([]);
   expect(state.feedbackLayerVisibility.capitalStar).toBe("none");
   expect(state.feedbackLayerVisibility.neighborLabels).toBe("none");
+  expect(state.feedbackLayerVisibility.targetStateLabel).toBe("none");
 }
 
 function expectNeighborColorTreatment(state) {
   const expression = state.stateFillExpression;
+  [expression[1], expression[3]].forEach((semanticCondition) => {
+    expect(semanticCondition[0]).toBe("all");
+    expect(semanticCondition[1][2]).toEqual(["literal", ["south-dakota"]]);
+  });
   const neighborColorIndex = expression.indexOf("#e3e8ec");
   expect(neighborColorIndex).toBeGreaterThan(0);
   const neighborCondition = expression[neighborColorIndex - 1];
@@ -73,12 +78,20 @@ function expectCapitalTeachingContext(state) {
     }
   });
   expect(state.capitalFeedbackLabels[0].geometry.coordinates).toEqual([-100.3462286, 44.3671094]);
-  expect(state.contextStateLabels.map(({ properties }) => properties.stateName).sort()).toEqual(expectedNeighborNames);
-  expect(state.contextStateLabels.every(({ properties }) => properties.contextRole === "neighbor")).toBe(true);
+  expect(state.contextStateLabels).toHaveLength(50);
+  expect(state.contextStateLabels
+    .filter(({ properties }) => properties.contextRole === "neighbor")
+    .map(({ properties }) => properties.stateName).sort()).toEqual(expectedNeighborNames);
+  expect(state.contextStateLabels
+    .filter(({ properties }) => properties.contextRole === "target")
+    .map(({ properties }) => properties.stateName)).toEqual(["South Dakota"]);
+  expect(state.contextStateLabels.filter(({ properties }) => properties.contextRole === "background")).toHaveLength(43);
   expect(state.feedbackLayerVisibility).toMatchObject({
+    stateFill: "visible",
     capitalStar: "visible",
     capitalLabel: "visible",
     neighborLabels: "visible",
+    targetStateLabel: "visible",
     stateBoundaries: "visible"
   });
   expectNeighborColorTreatment(state);
@@ -89,7 +102,7 @@ async function expectUsableCameraFit(page) {
     const current = await visualState(page);
     const [cameraSouthwest, cameraNortheast] = current.mapCamera.bounds;
     const [feedbackSouthwest, feedbackNortheast] = current.feedbackCameraBounds;
-    return current.mapCamera.zoom >= 1.8
+    return current.mapCamera.zoom >= 0.8
       && cameraSouthwest[0] <= feedbackSouthwest[0]
       && cameraSouthwest[1] <= feedbackSouthwest[1]
       && cameraNortheast[0] >= feedbackNortheast[0]

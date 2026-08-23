@@ -9,7 +9,7 @@ import {
   selectMentalMapAnswer,
   submitMentalMapAnswer,
   undoMentalMapAnswer
-} from "./atlas/mental-map-challenge-engine.js?v=20260823-connections-geographic-feedback-1";
+} from "./atlas/mental-map-challenge-engine.js?v=20260823-connections-atlas-context-1";
 import {
   getUnifiedMentalMapChallenges,
   selectNextUnifiedMentalMapChallenge
@@ -3958,7 +3958,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260821-central-america-graduation-1"),
       import("./maplibre/activity-session.js?v=20260821-central-america-graduation-1"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260823-connections-geographic-feedback-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260823-connections-atlas-context-1"),
       import("./chip-speech.js?v=20260728-activity-audio-1")
     ]).then(([
       ,
@@ -25767,6 +25767,9 @@ function getMentalMapVisualStateForTest() {
       touchZoomRotate: runner.map.touchZoomRotate?.isEnabled?.() ?? null
     } : null,
     feedbackLayerVisibility: runner?.map ? {
+      stateFill: runner.map.getLayer("us-state-context-fill")
+        ? runner.map.getLayoutProperty("us-state-context-fill", "visibility")
+        : null,
       capitalStar: runner.map.getLayer("mental-map-capital-feedback-star")
         ? runner.map.getLayoutProperty("mental-map-capital-feedback-star", "visibility")
         : null,
@@ -25776,8 +25779,8 @@ function getMentalMapVisualStateForTest() {
       neighborLabels: runner.map.getLayer("mental-map-context-state-label")
         ? runner.map.getLayoutProperty("mental-map-context-state-label", "visibility")
         : null,
-      mountainCorridor: runner.map.getLayer("mental-map-mountain-feedback-corridor")
-        ? runner.map.getLayoutProperty("mental-map-mountain-feedback-corridor", "visibility")
+      targetStateLabel: runner.map.getLayer("mental-map-target-state-label")
+        ? runner.map.getLayoutProperty("mental-map-target-state-label", "visibility")
         : null,
       mountainSymbols: runner.map.getLayer("mental-map-mountain-feedback-symbol")
         ? runner.map.getLayoutProperty("mental-map-mountain-feedback-symbol", "visibility")
@@ -25785,6 +25788,11 @@ function getMentalMapVisualStateForTest() {
       stateBoundaries: runner.map.getLayer("us-state-context-line")
         ? runner.map.getLayoutProperty("us-state-context-line", "visibility")
         : null
+    } : null,
+    stateBoundaryPaint: runner?.map?.getLayer("us-state-context-line") ? {
+      color: copyForTest(runner.map.getPaintProperty("us-state-context-line", "line-color")),
+      width: copyForTest(runner.map.getPaintProperty("us-state-context-line", "line-width")),
+      opacity: copyForTest(runner.map.getPaintProperty("us-state-context-line", "line-opacity"))
     } : null
   };
 }
