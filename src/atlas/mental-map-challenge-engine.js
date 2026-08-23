@@ -370,9 +370,14 @@ export function getMentalMapResultVisualState(challenge, evaluation) {
   const isCapitalConnection = Boolean(challenge.sourceActivityId === "us-state-capital-relationships"
     && challenge.relationship?.stateId
     && challenge.relationship?.capitalEntityId);
+  const isUnitedStatesConnections = [
+    "us-state-capital-relationships",
+    "us-atlas-relationships"
+  ].includes(challenge.sourceActivityId);
   const capitalConnectionStateId = isCapitalConnection ? challenge.relationship.stateId : "";
-  const neighborStateIds = isCapitalConnection
-    ? getBorderingStates(capitalConnectionStateId).map(({ id }) => id)
+  const contextReferenceStateId = capitalConnectionStateId || referenceStateIds[0] || "";
+  const neighborStateIds = isUnitedStatesConnections && contextReferenceStateId
+    ? getBorderingStates(contextReferenceStateId).map(({ id }) => id)
     : [];
   const capitalFeedback = isCapitalConnection ? {
     entityId: challenge.relationship.capitalEntityId,
@@ -398,9 +403,10 @@ export function getMentalMapResultVisualState(challenge, evaluation) {
       ...directionArrows.flatMap(({ fromStateId, toStateId }) => [fromStateId, toStateId])
     ]),
     neighborStateIds,
-    cameraStateIds: isCapitalConnection
-      ? unique([capitalConnectionStateId, ...neighborStateIds])
+    cameraStateIds: isUnitedStatesConnections
+      ? unique([contextReferenceStateId, ...neighborStateIds])
       : [],
+    isUnitedStatesConnections,
     capitalFeedback,
     associatedFeatures,
     routeRenderingMode: getMentalMapRouteRenderingMode(challenge),

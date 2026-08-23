@@ -329,7 +329,7 @@ assert.ok(
   "this.isMemoryTrailCheckpointPreAnswerStyleEnabled() ? \"\" : this.selectedTargetId"
 ].forEach((hook) => assert.ok(runnerSource.includes(hook), `Missing checkpoint pre-answer outline guard: ${hook}`));
 assert.ok(runtimeSource.includes("runner?.setMemoryTrailCheckpointPreAnswerStyle?.(checkpointPreAnswerStyle);"));
-assert.ok(runtimeSource.includes("import(\"./maplibre/maplibre-activity-runner.js?v=20260823-capital-connections-feedback-1\")"));
+assert.ok(runtimeSource.includes("import(\"./maplibre/maplibre-activity-runner.js?v=20260823-connections-geographic-feedback-1\")"));
 
 const queueSelectorIndex = runtimeSource.indexOf("if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {");
 const defaultLearnSelectorIndex = runtimeSource.indexOf("const unguidedCurrentTarget = memoryTrail.currentPracticeWindow");

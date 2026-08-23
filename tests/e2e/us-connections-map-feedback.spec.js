@@ -138,10 +138,11 @@ test("Census-region questions are absent while retained semantic feedback uses o
   expect(state.resultVisualState).toMatchObject({
     correctStateIds: ["ohio"],
     referenceStateIds: ["ohio"],
-    contextStateIds: ["ohio"],
     selectedIncorrectStateIds: [],
     learnerStateIds: []
   });
+  expect(state.resultVisualState.contextStateIds).toContain("ohio");
+  expect(state.resultVisualState.neighborStateIds.length).toBeGreaterThan(0);
   expect(JSON.stringify(state.stateFillExpression)).toContain("ohio");
   expect(JSON.stringify(state.stateFillExpression)).not.toContain("alabama");
 });
@@ -172,15 +173,84 @@ test("relationship feedback follows each reference state and clears between ques
     await submitAnswer(page, incorrectAnswer);
     const state = await page.evaluate(() => window.__MAPPA_TEST_API__.getMentalMapVisualState());
     expect(state.resultVisualState.referenceStateIds).toEqual([referenceStateId]);
-    expect(state.resultVisualState.contextStateIds).toEqual([referenceStateId]);
+    expect(state.resultVisualState.contextStateIds).toContain(referenceStateId);
+    expect(state.resultVisualState.neighborStateIds.length).toBeGreaterThan(0);
     expect(state.resultVisualState.selectedIncorrectStateIds).toEqual([]);
     expect(state.resultVisualState.learnerStateIds).toEqual([]);
+    state.resultVisualState.neighborStateIds.forEach((neighborStateId) => {
+      expect(state.resultVisualState.selectedCorrectStateIds).not.toContain(neighborStateId);
+      expect(state.resultVisualState.selectedIncorrectStateIds).not.toContain(neighborStateId);
+      expect(state.resultVisualState.missingStateIds).not.toContain(neighborStateId);
+    });
     const fillExpression = JSON.stringify(state.stateFillExpression);
     expect(fillExpression).toContain(referenceStateId);
     for (const unrelatedStateId of state.evaluation.selectedInvalidStateIds) {
       expect(fillExpression).not.toContain(unrelatedStateId);
     }
   }
+});
+
+test("Connections feedback keeps national context and renders mountains as authored ridges", async ({ page }) => {
+  await openUnitedStatesConnections(page);
+  await startQuestion(page, "us-relationship-mountain-range-colorado-rocky-mountains");
+
+  let state = await page.evaluate(() => window.__MAPPA_TEST_API__.getMentalMapVisualState());
+  expect(state.feedbackFeatures).toEqual([]);
+  expect(state.feedbackLayerVisibility.mountainCorridor).toBe("none");
+  expect(state.feedbackLayerVisibility.mountainSymbols).toBe("none");
+
+  await submitAnswer(page, "Adirondack Mountains");
+  await expect(page.locator(".mental-map-result-status")).toHaveText("Not quite");
+  await expect(page.locator("#mental-map-challenge-panel")).toContainText(
+    "Rocky Mountains is a mountain range found in Colorado."
+  );
+
+  state = await page.evaluate(() => window.__MAPPA_TEST_API__.getMentalMapVisualState());
+  expect(state.resultVisualState.referenceStateIds).toEqual(["colorado"]);
+  expect(state.resultVisualState.neighborStateIds.length).toBeGreaterThanOrEqual(6);
+  expect(state.feedbackFeatures).toHaveLength(1);
+  expect(["LineString", "MultiLineString"]).toContain(state.feedbackFeatures[0].geometry.type);
+  expect(state.feedbackFeatures.some(({ geometry }) => ["Polygon", "MultiPolygon"].includes(geometry.type))).toBe(false);
+  expect(state.feedbackFeatures[0].properties).toMatchObject({
+    questionFeatureKind: "mountain-range",
+    questionFeatureRenderingMode: "stylized-ridge",
+    geometryPrecision: "approximate"
+  });
+  expect(state.mountainRenderingModes).toEqual([{
+    entityId: "mountain-range:rocky-mountains",
+    mode: "stylized-ridge",
+    geometryPrecision: "approximate"
+  }]);
+  expect(state.feedbackLabels.some(({ properties }) => properties.questionFeatureRole === "mountain-symbol")).toBe(true);
+  expect(state.feedbackLayerVisibility.mountainCorridor).toBe("visible");
+  expect(state.feedbackLayerVisibility.mountainSymbols).toBe("visible");
+
+  expect(state.availableStateIds.length).toBeGreaterThanOrEqual(50);
+  expect(state.availableStateIds).toEqual(expect.arrayContaining(["alaska", "hawaii", "colorado", "maine"]));
+  expect(state.feedbackCameraBounds[0][0]).toBeLessThanOrEqual(-124);
+  expect(state.feedbackCameraBounds[0][1]).toBeLessThanOrEqual(25);
+  expect(state.feedbackCameraBounds[1][0]).toBeGreaterThanOrEqual(-67);
+  expect(state.feedbackCameraBounds[1][1]).toBeGreaterThanOrEqual(49);
+  expect(state.mapInteractions).toEqual({
+    dragPan: true,
+    scrollZoom: true,
+    touchZoomRotate: true
+  });
+
+  const fillExpression = JSON.stringify(state.stateFillExpression);
+  expect(fillExpression).toContain("colorado");
+  expect(fillExpression).toContain("#9aa9b8");
+  expect(fillExpression).toContain("#e3e8ec");
+  expect(fillExpression).toContain("#f3f5f7");
+  state.resultVisualState.neighborStateIds.forEach((neighborStateId) => {
+    expect(state.resultVisualState.selectedCorrectStateIds).not.toContain(neighborStateId);
+    expect(state.resultVisualState.selectedIncorrectStateIds).not.toContain(neighborStateId);
+    expect(state.resultVisualState.missingStateIds).not.toContain(neighborStateId);
+  });
+
+  await startQuestion(page, "us-relationship-mountain-range-colorado-rocky-mountains");
+  await submitAnswer(page, "Rocky Mountains");
+  await expect(page.locator(".mental-map-result-status")).toHaveText("Correct");
 });
 
 test("missing and incorrect summaries match their map feedback treatments", async ({ page }) => {

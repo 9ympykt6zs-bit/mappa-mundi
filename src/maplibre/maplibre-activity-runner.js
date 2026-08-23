@@ -11,7 +11,7 @@ import {
   buildMentalMapFeatureFeedback,
   buildMentalMapStateContextLabels,
   createCapitalFeedbackFeatureCollection
-} from "../atlas/mental-map-feature-feedback.js?v=20260823-capital-connections-feedback-1";
+} from "../atlas/mental-map-feature-feedback.js?v=20260823-connections-geographic-feedback-1";
 
 const colors = {
   ink: "#172033",
@@ -20,8 +20,8 @@ const colors = {
   countryBorder: "#ffffff",
   contextFill: "#e8f4ef",
   contextLine: "#ffffff",
-  capitalConnectionNeighborFill: "#e3e8ec",
-  capitalConnectionBackgroundFill: "#f3f5f7",
+  connectionsNeighborFill: "#e3e8ec",
+  connectionsBackgroundFill: "#f3f5f7",
   targetFill: "#dbeafe",
   targetStroke: "#ffffff",
   previewFill: "#3b82f6",
@@ -1001,6 +1001,7 @@ export class MapLibreActivityRunner {
       contextStateIds: [...new Set(visualState.contextStateIds || [])],
       neighborStateIds: [...new Set(visualState.neighborStateIds || [])],
       cameraStateIds: [...new Set(visualState.cameraStateIds || [])],
+      isUnitedStatesConnections: visualState.isUnitedStatesConnections === true,
       capitalFeedback: visualState.capitalFeedback ? { ...visualState.capitalFeedback } : null,
       associatedFeatures: (visualState.associatedFeatures || []).map((feature) => ({ ...feature })),
       routeRenderingMode: visualState.routeRenderingMode || null,
@@ -1085,6 +1086,11 @@ export class MapLibreActivityRunner {
     const cameraStateIds = visualState.cameraStateIds?.length
       ? visualState.cameraStateIds
       : answerStateIds;
+    const nationalContextStateIds = visualState.isUnitedStatesConnections
+      ? (this.usStatesAtlas?.features || []).map((feature) => (
+          String(feature.properties?.id || feature.properties?.state || feature.id || "").toLowerCase()
+        )).filter((stateId) => stateId && !["alaska", "hawaii", "district-of-columbia"].includes(stateId))
+      : [];
     const associatedFeatures = visualState.capitalFeedback
       ? [
           ...(visualState.associatedFeatures || []).filter(({ entityId }) => entityId !== visualState.capitalFeedback.entityId),
@@ -1093,7 +1099,7 @@ export class MapLibreActivityRunner {
       : visualState.associatedFeatures || [];
     const feedback = buildMentalMapFeatureFeedback({
       associatedFeatures,
-      answerStateIds: cameraStateIds,
+      answerStateIds: [...new Set([...cameraStateIds, ...nationalContextStateIds])],
       orderedStateIds: visualState.expectedSequenceStateIds || [],
       routeRenderingMode: visualState.routeRenderingMode || "state-centroid-sequence",
       explicitRouteGeometry: visualState.explicitRouteGeometry || null,
@@ -1122,22 +1128,39 @@ export class MapLibreActivityRunner {
     const hasFeatures = feedback.featureCollection.features.length > 0;
     const hasLabels = feedback.labelCollection.features.length > 0;
     const hasCapital = feedback.labelCollection.features.some((feature) => feature.properties?.questionFeatureKind === "capital");
+    const hasMountainRidges = feedback.featureCollection.features.some((feature) => feature.properties?.questionFeatureKind === "mountain-range");
+    const hasMountainSymbols = feedback.labelCollection.features.some((feature) => feature.properties?.questionFeatureRole === "mountain-symbol");
     const hasContextStateLabels = this.mentalMapContextStateLabels.features.length > 0;
     const hasRoute = feedback.routeCollection.features.length > 0;
     ["mental-map-question-feature-fill", "mental-map-question-feature-line"].forEach((layerId) => {
       if (this.map?.getLayer(layerId)) this.map.setLayoutProperty(layerId, "visibility", resultVisible && hasFeatures ? "visible" : "none");
     });
+    if (this.map?.getLayer("mental-map-mountain-feedback-corridor")) {
+      this.map.setLayoutProperty(
+        "mental-map-mountain-feedback-corridor",
+        "visibility",
+        resultVisible && hasMountainRidges ? "visible" : "none"
+      );
+    }
     if (this.map?.getLayer("mental-map-question-feature-point-label")) {
       this.map.setLayoutProperty("mental-map-question-feature-point-label", "visibility", resultVisible && hasLabels ? "visible" : "none");
     }
     if (this.map?.getLayer("mental-map-capital-feedback-star")) {
       this.map.setLayoutProperty("mental-map-capital-feedback-star", "visibility", resultVisible && hasCapital ? "visible" : "none");
     }
+    if (this.map?.getLayer("mental-map-mountain-feedback-symbol")) {
+      this.map.setLayoutProperty(
+        "mental-map-mountain-feedback-symbol",
+        "visibility",
+        resultVisible && hasMountainSymbols ? "visible" : "none"
+      );
+    }
     if (this.map?.getLayer("mental-map-context-state-label")) {
       this.map.setLayoutProperty("mental-map-context-state-label", "visibility", resultVisible && hasContextStateLabels ? "visible" : "none");
     }
     if (resultVisible && hasContextStateLabels) this.map.moveLayer("mental-map-context-state-label");
     if (resultVisible && hasCapital) this.map.moveLayer("mental-map-capital-feedback-star");
+    if (resultVisible && hasMountainSymbols) this.map.moveLayer("mental-map-mountain-feedback-symbol");
     if (resultVisible && hasLabels) this.map.moveLayer("mental-map-question-feature-point-label");
     ["mental-map-question-route-halo", "mental-map-question-route-line"].forEach((layerId) => {
       if (this.map?.getLayer(layerId)) this.map.setLayoutProperty(layerId, "visibility", resultVisible && hasRoute ? "visible" : "none");
@@ -3315,7 +3338,11 @@ export class MapLibreActivityRunner {
       id: "mental-map-question-feature-fill",
       type: "fill",
       source: "mental-map-question-features",
-      filter: ["==", ["geometry-type"], "Polygon"],
+      filter: [
+        "all",
+        ["==", ["geometry-type"], "Polygon"],
+        ["!=", ["get", "questionFeatureKind"], "mountain-range"]
+      ],
       layout: { visibility: "none" },
       paint: {
         "fill-color": "#22d3ee",
@@ -3332,6 +3359,28 @@ export class MapLibreActivityRunner {
     });
 
     this.map.addLayer({
+      id: "mental-map-mountain-feedback-corridor",
+      type: "line",
+      source: "mental-map-question-features",
+      filter: [
+        "all",
+        ["==", ["get", "questionFeatureKind"], "mountain-range"],
+        ["in", ["geometry-type"], ["literal", ["LineString", "MultiLineString"]]]
+      ],
+      layout: {
+        visibility: "none",
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": colors.mountainRangeFill,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 2, 8, 5, 16],
+        "line-opacity": 0.28,
+        "line-blur": ["interpolate", ["linear"], ["zoom"], 2, 4, 5, 7]
+      }
+    });
+
+    this.map.addLayer({
       id: "mental-map-question-feature-line",
       type: "line",
       source: "mental-map-question-features",
@@ -3341,13 +3390,23 @@ export class MapLibreActivityRunner {
         "line-join": "round"
       },
       paint: {
-        "line-color": "#06b6d4",
-        "line-opacity": 0.94,
+        "line-color": [
+          "match",
+          ["get", "questionFeatureKind"],
+          "mountain-range", colors.mountainRangeLine,
+          "#06b6d4"
+        ],
+        "line-opacity": [
+          "match",
+          ["get", "questionFeatureKind"],
+          "mountain-range", 0.88,
+          0.94
+        ],
         "line-width": [
           "match",
           ["get", "questionFeatureKind"],
           "river", 7,
-          "mountain-range", 4,
+          "mountain-range", 2.5,
           "lake", 4.5,
           "water", 3,
           "country", 3.5,
@@ -3494,6 +3553,7 @@ export class MapLibreActivityRunner {
       id: "mental-map-question-feature-point-label",
       type: "symbol",
       source: "mental-map-question-feature-labels",
+      filter: ["!=", ["get", "questionFeatureRole"], "mountain-symbol"],
       layout: {
         visibility: "none",
         "text-field": ["get", "questionFeatureName"],
@@ -3538,6 +3598,23 @@ export class MapLibreActivityRunner {
     });
 
     this.ensureMountainRangeImages();
+
+    this.map.addLayer({
+      id: "mental-map-mountain-feedback-symbol",
+      type: "symbol",
+      source: "mental-map-question-feature-labels",
+      filter: ["==", ["get", "questionFeatureRole"], "mountain-symbol"],
+      layout: {
+        visibility: "none",
+        "icon-image": "mappa-mountain-range-glyph",
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 2, 0.42, 5, 0.66],
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true
+      },
+      paint: {
+        "icon-opacity": 0.9
+      }
+    });
 
     this.map.addLayer({
       id: "mountain-range-symbol-glow",
@@ -7230,11 +7307,11 @@ export class MapLibreActivityRunner {
     if (["mental-map-challenge-result", "compass-challenge-result"].includes(this.currentView)) {
       const stateId = ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]];
       const visualState = this.mentalMapChallengeResultVisualState;
-      const hasCapitalConnectionContext = visualState.neighborStateIds.length > 0;
-      const neutralContextStops = hasCapitalConnectionContext
+      const hasConnectionsContext = visualState.neighborStateIds.length > 0;
+      const neutralContextStops = hasConnectionsContext
         ? [
-            ["in", stateId, ["literal", visualState.neighborStateIds]], colors.capitalConnectionNeighborFill,
-            colors.capitalConnectionBackgroundFill
+            ["in", stateId, ["literal", visualState.neighborStateIds]], colors.connectionsNeighborFill,
+            colors.connectionsBackgroundFill
           ]
         : ["#dce8f5"];
       if (visualState.referenceStateIds.length) {

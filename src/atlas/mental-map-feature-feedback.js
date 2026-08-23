@@ -177,6 +177,75 @@ function getBoundsCenter(bounds) {
     : null;
 }
 
+function getValidLineCoordinates(value) {
+  return Array.isArray(value)
+    ? value.filter((line) => (
+        Array.isArray(line)
+        && line.length >= 2
+        && line.every((coordinate) => (
+          Array.isArray(coordinate)
+          && coordinate.length >= 2
+          && Number.isFinite(Number(coordinate[0]))
+          && Number.isFinite(Number(coordinate[1]))
+        ))
+      )).map((line) => line.map(([longitude, latitude]) => [Number(longitude), Number(latitude)]))
+    : [];
+}
+
+function getMountainRangeFeedback(sourceFeature, metadata) {
+  const visualArt = sourceFeature?.properties?.visualArt;
+  const spines = visualArt?.kind === "stylized-mountain-range"
+    ? getValidLineCoordinates(visualArt.spines)
+    : [];
+  const extentBounds = getGeometryBounds(sourceFeature?.geometry);
+  const spineGeometry = spines.length ? {
+    type: spines.length === 1 ? "LineString" : "MultiLineString",
+    coordinates: spines.length === 1 ? spines[0] : spines
+  } : null;
+  const illustrationBounds = getGeometryBounds(spineGeometry) || extentBounds;
+  const authoredAnchors = (sourceFeature?.properties?.symbolAnchors || [])
+    .filter((coordinate) => (
+      Array.isArray(coordinate)
+      && coordinate.length >= 2
+      && Number.isFinite(Number(coordinate[0]))
+      && Number.isFinite(Number(coordinate[1]))
+    ))
+    .map(([longitude, latitude]) => [Number(longitude), Number(latitude)]);
+  const fallbackAnchor = getBoundsCenter(illustrationBounds);
+  const symbolAnchors = authoredAnchors.length
+    ? authoredAnchors
+    : fallbackAnchor ? [fallbackAnchor] : [];
+  const renderingMode = spineGeometry ? "stylized-ridge" : "approximate-symbol";
+  const sharedProperties = {
+    questionFeatureEntityId: metadata.entityId,
+    questionFeatureKind: metadata.kind,
+    questionFeatureName: metadata.name,
+    questionFeatureRenderingMode: renderingMode,
+    geometryPrecision: sourceFeature?.properties?.geometryPrecision || "approximate",
+    sourceDescription: sourceFeature?.properties?.source || ""
+  };
+
+  return {
+    feature: spineGeometry ? {
+      type: "Feature",
+      properties: sharedProperties,
+      geometry: spineGeometry
+    } : null,
+    symbols: symbolAnchors.map((coordinates, index) => ({
+      type: "Feature",
+      properties: {
+        ...sharedProperties,
+        questionFeatureRole: "mountain-symbol",
+        symbolIndex: index
+      },
+      geometry: { type: "Point", coordinates }
+    })),
+    labelAnchor: getBoundsCenter(illustrationBounds),
+    illustrationBounds,
+    renderingMode
+  };
+}
+
 function isPointInRing([x, y], ring = []) {
   let inside = false;
   for (let index = 0, previous = ring.length - 1; index < ring.length; previous = index, index += 1) {
@@ -449,12 +518,38 @@ export function buildMentalMapFeatureFeedback({
   const labels = [];
   const coastlines = [];
   const missingFeatureIds = [];
+  const mountainRenderingModes = [];
 
   associatedFeatures.forEach((metadata) => {
     const sourceFeature = findFeatureGeometry(metadata, collections);
     const geometry = sourceFeature?.geometry || null;
     const coastlineOnly = metadata.relationshipType === "coast";
     if (!geometry) missingFeatureIds.push(metadata.entityId);
+    if (metadata.kind === "mountain-range" && sourceFeature) {
+      const mountainFeedback = getMountainRangeFeedback(sourceFeature, metadata);
+      if (mountainFeedback.feature) features.push(mountainFeedback.feature);
+      labels.push(...mountainFeedback.symbols);
+      if (mountainFeedback.labelAnchor) {
+        labels.push({
+          type: "Feature",
+          properties: {
+            questionFeatureEntityId: metadata.entityId,
+            questionFeatureKind: metadata.kind,
+            questionFeatureName: metadata.name,
+            questionFeatureRenderingMode: mountainFeedback.renderingMode,
+            questionFeatureRole: "feature-label"
+          },
+          geometry: { type: "Point", coordinates: mountainFeedback.labelAnchor }
+        });
+      }
+      cameraBounds = mergeBounds(cameraBounds, mountainFeedback.illustrationBounds);
+      mountainRenderingModes.push({
+        entityId: metadata.entityId,
+        mode: mountainFeedback.renderingMode,
+        geometryPrecision: sourceFeature.properties?.geometryPrecision || "approximate"
+      });
+      return;
+    }
     if (coastlineOnly) {
       coastlines.push(...createCoastlineFeatures(
         metadata,
@@ -522,6 +617,7 @@ export function buildMentalMapFeatureFeedback({
     coastlineCollection: { type: "FeatureCollection", features: coastlines },
     coastStateIds: [...new Set(associatedFeatures.flatMap((feature) => feature.coastStateIds || []))],
     cameraBounds: cameraBounds ? [[cameraBounds[0], cameraBounds[1]], [cameraBounds[2], cameraBounds[3]]] : null,
-    missingFeatureIds
+    missingFeatureIds,
+    mountainRenderingModes
   };
 }

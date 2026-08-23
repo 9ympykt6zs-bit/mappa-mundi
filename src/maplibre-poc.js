@@ -9,7 +9,7 @@ import {
   selectMentalMapAnswer,
   submitMentalMapAnswer,
   undoMentalMapAnswer
-} from "./atlas/mental-map-challenge-engine.js?v=20260823-capital-connections-feedback-1";
+} from "./atlas/mental-map-challenge-engine.js?v=20260823-connections-geographic-feedback-1";
 import {
   getUnifiedMentalMapChallenges,
   selectNextUnifiedMentalMapChallenge
@@ -3958,7 +3958,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260821-central-america-graduation-1"),
       import("./maplibre/activity-session.js?v=20260821-central-america-graduation-1"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260823-capital-connections-feedback-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260823-connections-geographic-feedback-1"),
       import("./chip-speech.js?v=20260728-activity-audio-1")
     ]).then(([
       ,
@@ -25741,6 +25741,12 @@ function getMentalMapVisualStateForTest() {
     feedbackFeatureEntityIds: (runner?.mentalMapFeatureFeedback?.featureCollection?.features || [])
       .map((feature) => feature.properties?.questionFeatureEntityId)
       .filter(Boolean),
+    feedbackFeatures: copyForTest(runner?.mentalMapFeatureFeedback?.featureCollection?.features || []),
+    feedbackLabels: copyForTest(runner?.mentalMapFeatureFeedback?.labelCollection?.features || []),
+    mountainRenderingModes: copyForTest(runner?.mentalMapFeatureFeedback?.mountainRenderingModes || []),
+    availableStateIds: copyForTest((runner?.usStatesAtlas?.features || [])
+      .map((feature) => feature.properties?.id)
+      .filter(Boolean)),
     capitalFeedbackFeatures: copyForTest((runner?.mentalMapFeatureFeedback?.featureCollection?.features || [])
       .filter((feature) => feature.properties?.questionFeatureKind === "capital")),
     capitalFeedbackLabels: copyForTest((runner?.mentalMapFeatureFeedback?.labelCollection?.features || [])
@@ -25755,6 +25761,11 @@ function getMentalMapVisualStateForTest() {
         [mapBounds.getEast(), mapBounds.getNorth()]
       ] : null
     } : null,
+    mapInteractions: runner?.map ? {
+      dragPan: runner.map.dragPan?.isEnabled?.() ?? null,
+      scrollZoom: runner.map.scrollZoom?.isEnabled?.() ?? null,
+      touchZoomRotate: runner.map.touchZoomRotate?.isEnabled?.() ?? null
+    } : null,
     feedbackLayerVisibility: runner?.map ? {
       capitalStar: runner.map.getLayer("mental-map-capital-feedback-star")
         ? runner.map.getLayoutProperty("mental-map-capital-feedback-star", "visibility")
@@ -25764,6 +25775,12 @@ function getMentalMapVisualStateForTest() {
         : null,
       neighborLabels: runner.map.getLayer("mental-map-context-state-label")
         ? runner.map.getLayoutProperty("mental-map-context-state-label", "visibility")
+        : null,
+      mountainCorridor: runner.map.getLayer("mental-map-mountain-feedback-corridor")
+        ? runner.map.getLayoutProperty("mental-map-mountain-feedback-corridor", "visibility")
+        : null,
+      mountainSymbols: runner.map.getLayer("mental-map-mountain-feedback-symbol")
+        ? runner.map.getLayoutProperty("mental-map-mountain-feedback-symbol", "visibility")
         : null,
       stateBoundaries: runner.map.getLayer("us-state-context-line")
         ? runner.map.getLayoutProperty("us-state-context-line", "visibility")

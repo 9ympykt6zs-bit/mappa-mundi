@@ -89,7 +89,7 @@ async function expectUsableCameraFit(page) {
     const current = await visualState(page);
     const [cameraSouthwest, cameraNortheast] = current.mapCamera.bounds;
     const [feedbackSouthwest, feedbackNortheast] = current.feedbackCameraBounds;
-    return current.mapCamera.zoom > 2.5
+    return current.mapCamera.zoom >= 1.8
       && cameraSouthwest[0] <= feedbackSouthwest[0]
       && cameraSouthwest[1] <= feedbackSouthwest[1]
       && cameraNortheast[0] >= feedbackNortheast[0]
