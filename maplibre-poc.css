@@ -7829,7 +7829,7 @@ body.launch-mode {
   box-shadow: none;
   display: grid;
   gap: clamp(16px, 2.4vw, 28px);
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   margin: 0 auto;
   max-width: min(1280px, 100%);
   min-height: calc(100svh - clamp(36px, 6vw, 72px));
@@ -8239,7 +8239,7 @@ body.about-page {
   .launch-content {
     display: grid;
     gap: 10px;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
     min-height: calc(100dvh - 28px);
     overflow: visible;
     padding: 0;
@@ -8260,7 +8260,7 @@ body.about-page {
     gap: 0;
     grid-template-columns: minmax(0, 1fr);
     justify-items: center;
-    min-height: calc(100dvh - 92px);
+    min-height: calc(100dvh - 28px);
     overflow: hidden;
     padding: clamp(18px, 4vh, 38px) 0 clamp(16px, 4vh, 32px);
     text-align: center;
@@ -8389,7 +8389,7 @@ body.about-page {
   }
 
   .title-screen-hero {
-    min-height: calc(100dvh - 84px);
+    min-height: calc(100dvh - 24px);
     padding-top: 12px;
   }
 
