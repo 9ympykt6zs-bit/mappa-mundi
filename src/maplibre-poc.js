@@ -3958,7 +3958,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260821-central-america-graduation-1"),
       import("./maplibre/activity-session.js?v=20260821-central-america-graduation-1"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260823-connections-atlas-context-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260823-connections-feedback-camera-1"),
       import("./chip-speech.js?v=20260728-activity-audio-1")
     ]).then(([
       ,
@@ -16616,10 +16616,49 @@ async function openCameraDevMenu() {
   bindCameraDevMapEvents();
   ensureCameraDevPanel();
   updateCameraDevPanel({ syncInputs: true });
-  return true;
+  return getCameraDevReport();
 }
 
-window.openCameraDevMenu = openCameraDevMenu;
+function getCameraDevReport() {
+  if (!isCameraDevAccessAllowed()) return null;
+  const snapshot = getCameraDevSnapshot();
+  return {
+    center: Array.isArray(snapshot.center) ? [...snapshot.center] : null,
+    zoom: snapshot.zoom ?? null,
+    pitch: snapshot.pitch ?? null,
+    bearing: snapshot.bearing ?? null,
+    cameraContext: snapshot.cameraContext || "",
+    targetId: snapshot.targetId || "",
+    targetLabel: snapshot.targetLabel || ""
+  };
+}
+
+function reportCameraDevState() {
+  const report = getCameraDevReport();
+  if (!report) {
+    console.warn("Camera dev reporting is only available on localhost.");
+    return null;
+  }
+  console.info("[camera-dev] current camera", report);
+  return report;
+}
+
+function applyCameraDevState(camera = {}) {
+  if (!isCameraDevAccessAllowed()) {
+    console.warn("Camera dev controls are only available on localhost.");
+    return false;
+  }
+  return runner?.applyCameraDevCamera?.(camera) || false;
+}
+
+if (isCameraDevAccessAllowed()) {
+  window.openCameraDevMenu = openCameraDevMenu;
+  window.mappaCameraDev = Object.freeze({
+    open: openCameraDevMenu,
+    report: reportCameraDevState,
+    apply: applyCameraDevState
+  });
+}
 
 const mountainFindDevSections = Object.freeze({
   western: { index: 0, title: "Western Lower 48" },
@@ -25753,9 +25792,13 @@ function getMentalMapVisualStateForTest() {
       .filter((feature) => feature.properties?.questionFeatureKind === "capital")),
     contextStateLabels: copyForTest(runner?.mentalMapContextStateLabels?.features || []),
     feedbackCameraBounds: copyForTest(runner?.mentalMapFeatureFeedback?.cameraBounds || null),
+    cameraDevReport: copyForTest(getCameraDevReport()),
     mapCamera: runner?.map ? {
       center: [runner.map.getCenter().lng, runner.map.getCenter().lat],
       zoom: runner.map.getZoom(),
+      pitch: runner.map.getPitch(),
+      bearing: runner.map.getBearing(),
+      moving: Boolean(runner.map.isMoving?.() || runner.map.isEasing?.() || runner.map.isZooming?.()),
       bounds: mapBounds ? [
         [mapBounds.getWest(), mapBounds.getSouth()],
         [mapBounds.getEast(), mapBounds.getNorth()]
@@ -25787,12 +25830,16 @@ function getMentalMapVisualStateForTest() {
         : null,
       stateBoundaries: runner.map.getLayer("us-state-context-line")
         ? runner.map.getLayoutProperty("us-state-context-line", "visibility")
+        : null,
+      borderChainFill: runner.map.getLayer("border-chain-state-fill")
+        ? runner.map.getLayoutProperty("border-chain-state-fill", "visibility")
         : null
     } : null,
     stateBoundaryPaint: runner?.map?.getLayer("us-state-context-line") ? {
       color: copyForTest(runner.map.getPaintProperty("us-state-context-line", "line-color")),
       width: copyForTest(runner.map.getPaintProperty("us-state-context-line", "line-width")),
-      opacity: copyForTest(runner.map.getPaintProperty("us-state-context-line", "line-opacity"))
+      opacity: copyForTest(runner.map.getPaintProperty("us-state-context-line", "line-opacity")),
+      sortKey: copyForTest(runner.map.getLayoutProperty("us-state-context-line", "line-sort-key"))
     } : null
   };
 }

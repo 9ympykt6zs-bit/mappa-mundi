@@ -915,8 +915,10 @@ export class MapLibreActivityRunner {
     this.setStudyVisibility("none");
     this.setUnitedStatesContextVisibility("visible");
     this.setUnitedStatesContextFillOpacity(1);
-    this.setBorderChainOverlayVisibility("visible");
     this.setMentalMapChallengeResultVisualState(options.visualState || {});
+    this.setBorderChainOverlayVisibility(
+      options.visualState?.isUnitedStatesConnections ? "none" : "visible"
+    );
     this.setCompassChallengeDirectionArrow(options.visualState?.directionArrows || []);
     this.resizeSoon();
     window.requestAnimationFrame(() => {
@@ -944,8 +946,10 @@ export class MapLibreActivityRunner {
     this.setStudyVisibility("none");
     this.setUnitedStatesContextVisibility("visible");
     this.setUnitedStatesContextFillOpacity(1);
-    this.setBorderChainOverlayVisibility("visible");
     this.setMentalMapChallengeResultVisualState(options.visualState || {});
+    this.setBorderChainOverlayVisibility(
+      options.visualState?.isUnitedStatesConnections ? "none" : "visible"
+    );
     this.setCompassChallengeDirectionArrow(options.visualState?.directionArrows || []);
     this.resizeSoon();
     window.requestAnimationFrame(() => {
@@ -1100,7 +1104,7 @@ export class MapLibreActivityRunner {
       : visualState.associatedFeatures || [];
     const feedback = buildMentalMapFeatureFeedback({
       associatedFeatures,
-      answerStateIds: [...new Set([...cameraStateIds, ...nationalContextStateIds])],
+      answerStateIds: cameraStateIds,
       orderedStateIds: visualState.expectedSequenceStateIds || [],
       routeRenderingMode: visualState.routeRenderingMode || "state-centroid-sequence",
       explicitRouteGeometry: visualState.explicitRouteGeometry || null,
@@ -1114,6 +1118,9 @@ export class MapLibreActivityRunner {
         capitals: this.usCapitalFeedbackFeatures
       }
     });
+    if (visualState.isUnitedStatesConnections) {
+      feedback.cameraBounds = this.expandConnectionsFeedbackCameraBounds(feedback.cameraBounds);
+    }
     this.mentalMapFeatureFeedback = feedback;
     const contextStateLabelIds = visualState.isUnitedStatesConnections
       ? nationalContextStateIds
@@ -1183,6 +1190,27 @@ export class MapLibreActivityRunner {
 
   fitMentalMapChallengeResultCamera(options = {}) {
     const bounds = this.mentalMapFeatureFeedback?.cameraBounds;
+    const visualState = this.mentalMapChallengeResultVisualState;
+    const targetStateIds = [...new Set([
+      ...(visualState.referenceStateIds || []),
+      ...(visualState.correctStateIds || [])
+    ])];
+    const targetStateLabels = targetStateIds.map((stateId) => (
+      this.usStatesAtlas?.features?.find((feature) => (
+        String(feature.properties?.id || feature.properties?.state || feature.id || "").toLowerCase() === stateId
+      ))?.properties?.name || stateId
+    ));
+    const cameraMetadata = {
+      cameraContext: "mental-map-result",
+      source: "enterMentalMapChallengeResult:feature-fit",
+      requestType: "fitBounds",
+      activityId: this.activity?.id,
+      targetId: targetStateIds[0] || "",
+      targetLabel: targetStateLabels[0] || "",
+      targetIds: targetStateIds,
+      targetLabels: targetStateLabels,
+      skipCameraDevOverride: Boolean(options.skipCameraDevOverride)
+    };
     if (this.hasValidBounds(bounds)) {
       const compact = this.isCompactFocusLayout();
       this.moveCamera({
@@ -1193,12 +1221,7 @@ export class MapLibreActivityRunner {
         maxZoom: compact ? 4.7 : 5.25,
         duration: options.duration ?? 650,
         essential: true
-      }, {
-        cameraContext: "mental-map-result",
-        source: "enterMentalMapChallengeResult:feature-fit",
-        requestType: "fitBounds",
-        activityId: this.activity?.id
-      }, "fitBounds");
+      }, cameraMetadata, "fitBounds");
       return;
     }
     this.moveCamera({
@@ -1212,8 +1235,46 @@ export class MapLibreActivityRunner {
       cameraContext: "mental-map-result",
       source: "enterMentalMapChallengeResult:fallback",
       requestType: "flyTo",
-      activityId: this.activity?.id
+      activityId: this.activity?.id,
+      targetId: targetStateIds[0] || "",
+      targetLabel: targetStateLabels[0] || "",
+      targetIds: targetStateIds,
+      targetLabels: targetStateLabels,
+      skipCameraDevOverride: Boolean(options.skipCameraDevOverride)
     }, "flyTo");
+  }
+
+  expandConnectionsFeedbackCameraBounds(bounds) {
+    if (!this.hasValidBounds(bounds)) return bounds;
+    const [[west, south], [east, north]] = bounds;
+    const center = this.getBoundsCenter([[west, south], [east, north]]);
+    const minimumLongitudeSpan = 12;
+    const minimumLatitudeSpan = 9;
+    const longitudeSpan = Math.max(minimumLongitudeSpan, east - west);
+    const latitudeSpan = Math.max(minimumLatitudeSpan, north - south);
+    let expandedWest = center[0] - longitudeSpan / 2;
+    let expandedEast = center[0] + longitudeSpan / 2;
+    let expandedSouth = center[1] - latitudeSpan / 2;
+    let expandedNorth = center[1] + latitudeSpan / 2;
+
+    if (expandedWest < -180) {
+      expandedEast += -180 - expandedWest;
+      expandedWest = -180;
+    }
+    if (expandedEast > 180) {
+      expandedWest -= expandedEast - 180;
+      expandedEast = 180;
+    }
+    if (expandedSouth < -85) {
+      expandedNorth += -85 - expandedSouth;
+      expandedSouth = -85;
+    }
+    if (expandedNorth > 85) {
+      expandedSouth -= expandedNorth - 85;
+      expandedNorth = 85;
+    }
+
+    return [[expandedWest, expandedSouth], [expandedEast, expandedNorth]];
   }
 
   setUnitedStatesContextFillOpacity(opacity) {
@@ -1970,6 +2031,7 @@ export class MapLibreActivityRunner {
   }
 
   applyCameraDevCamera(camera = {}) {
+    const currentContext = this.lastCameraDevContext || {};
     return this.moveCamera(
       {
         center: camera.center,
@@ -1979,7 +2041,11 @@ export class MapLibreActivityRunner {
         duration: Number.isFinite(Number(camera.duration)) ? Number(camera.duration) : 240
       },
       {
-        cameraContext: "camera-dev-manual",
+        activityId: currentContext.activityId || this.activity?.id || "",
+        activityTitle: currentContext.activityTitle || this.activity?.title || "",
+        targetId: currentContext.targetId || "",
+        targetLabel: currentContext.targetLabel || "",
+        cameraContext: currentContext.cameraContext || "camera-dev-manual",
         source: "camera-dev-panel",
         requestType: "easeTo",
         skipCameraDevOverride: true
@@ -1989,6 +2055,11 @@ export class MapLibreActivityRunner {
   }
 
   fitCameraDevCurrentTarget(targetId = "") {
+    if (this.isUnitedStatesConnectionsResultView()) {
+      this.fitMentalMapChallengeResultCamera({ duration: 240, skipCameraDevOverride: true });
+      return true;
+    }
+
     const target = this.activity?.targets?.find((candidate) => candidate.id === targetId)
       || this.activity?.targets?.find((candidate) => candidate.id === this.lastCameraDevContext?.targetId);
 
@@ -2006,6 +2077,11 @@ export class MapLibreActivityRunner {
   }
 
   fitCameraDevCurrentActivity() {
+    if (this.isUnitedStatesConnectionsResultView()) {
+      this.fitMentalMapChallengeResultCamera({ duration: 240, skipCameraDevOverride: true });
+      return true;
+    }
+
     if (this.currentView === "study") {
       this.fitStudyView({ skipCameraDevOverride: true, cameraContext: "camera-dev-fit-activity" });
       return true;
@@ -2900,7 +2976,8 @@ export class MapLibreActivityRunner {
       type: "line",
       source: "us-states-atlas-display",
       layout: {
-        visibility: "none"
+        visibility: "none",
+        "line-sort-key": this.getUsStateContextLineSortKeyExpression()
       },
       paint: {
         "line-color": this.getUsStateContextLineColor(),
@@ -7317,17 +7394,73 @@ export class MapLibreActivityRunner {
   }
 
   getUsStateContextLineColor() {
-    return this.isUnitedStatesConnectionsResultView() ? "#7a8996" : colors.contextLine;
+    if (!this.isUnitedStatesConnectionsResultView()) return colors.contextLine;
+    const stateId = ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]];
+    const visualState = this.mentalMapChallengeResultVisualState;
+    const targetStateIds = [...new Set([
+      ...visualState.referenceStateIds,
+      ...visualState.correctStateIds
+    ])];
+    return [
+      "case",
+      ["in", stateId, ["literal", targetStateIds]], "#203b55",
+      ["in", stateId, ["literal", visualState.neighborStateIds]], "#4f616e",
+      "#687985"
+    ];
   }
 
   getUsStateContextLineWidthExpression() {
-    return this.isUnitedStatesConnectionsResultView()
-      ? ["interpolate", ["linear"], ["zoom"], 1, 0.85, 4, 1.55, 6, 2]
-      : 1.2;
+    if (!this.isUnitedStatesConnectionsResultView()) return 1.2;
+    const stateId = ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]];
+    const visualState = this.mentalMapChallengeResultVisualState;
+    const targetStateIds = [...new Set([
+      ...visualState.referenceStateIds,
+      ...visualState.correctStateIds
+    ])];
+    const roleWidth = (targetWidth, neighborWidth, backgroundWidth) => [
+      "case",
+      ["in", stateId, ["literal", targetStateIds]], targetWidth,
+      ["in", stateId, ["literal", visualState.neighborStateIds]], neighborWidth,
+      backgroundWidth
+    ];
+    return [
+      "interpolate", ["linear"], ["zoom"],
+      1, roleWidth(2.2, 1.65, 1.15),
+      4, roleWidth(3.25, 2.35, 1.65),
+      6, roleWidth(4.2, 3, 2.15)
+    ];
   }
 
   getUsStateContextLineOpacity() {
-    return this.isUnitedStatesConnectionsResultView() ? 0.98 : 0.95;
+    if (!this.isUnitedStatesConnectionsResultView()) return 0.95;
+    const stateId = ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]];
+    const visualState = this.mentalMapChallengeResultVisualState;
+    const targetStateIds = [...new Set([
+      ...visualState.referenceStateIds,
+      ...visualState.correctStateIds
+    ])];
+    return [
+      "case",
+      ["in", stateId, ["literal", targetStateIds]], 1,
+      ["in", stateId, ["literal", visualState.neighborStateIds]], 0.98,
+      0.94
+    ];
+  }
+
+  getUsStateContextLineSortKeyExpression() {
+    if (!this.isUnitedStatesConnectionsResultView()) return 0;
+    const stateId = ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]];
+    const visualState = this.mentalMapChallengeResultVisualState;
+    const targetStateIds = [...new Set([
+      ...visualState.referenceStateIds,
+      ...visualState.correctStateIds
+    ])];
+    return [
+      "case",
+      ["in", stateId, ["literal", targetStateIds]], 2,
+      ["in", stateId, ["literal", visualState.neighborStateIds]], 1,
+      0
+    ];
   }
 
   refreshUnitedStatesContextLinePaint() {
@@ -7335,6 +7468,7 @@ export class MapLibreActivityRunner {
     this.map.setPaintProperty("us-state-context-line", "line-color", this.getUsStateContextLineColor());
     this.map.setPaintProperty("us-state-context-line", "line-width", this.getUsStateContextLineWidthExpression());
     this.map.setPaintProperty("us-state-context-line", "line-opacity", this.getUsStateContextLineOpacity());
+    this.map.setLayoutProperty("us-state-context-line", "line-sort-key", this.getUsStateContextLineSortKeyExpression());
   }
 
   getUsStateContextFillExpression() {

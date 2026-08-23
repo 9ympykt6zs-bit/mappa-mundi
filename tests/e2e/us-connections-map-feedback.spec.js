@@ -190,7 +190,7 @@ test("relationship feedback follows each reference state and clears between ques
   }
 });
 
-test("Connections feedback shows all 50 states and renders mountains with authored symbols", async ({ page }) => {
+test("Connections feedback keeps all 50 states available with readable boundary hierarchy", async ({ page }) => {
   await openUnitedStatesConnections(page);
   await startQuestion(page, "us-relationship-mountain-range-colorado-rocky-mountains");
 
@@ -227,15 +227,28 @@ test("Connections feedback shows all 50 states and renders mountains with author
     .toEqual([expect.objectContaining({ properties: expect.objectContaining({ stateId: "colorado", stateName: "Colorado" }) })]);
   expect(state.contextStateLabels.filter(({ properties }) => properties.contextRole === "background").length)
     .toBeGreaterThan(40);
-  expect(state.feedbackCameraBounds[0][0]).toBeLessThanOrEqual(-179);
-  expect(state.feedbackCameraBounds[0][1]).toBeLessThanOrEqual(19);
-  expect(state.feedbackCameraBounds[1][0]).toBeGreaterThanOrEqual(-67);
-  expect(state.feedbackCameraBounds[1][1]).toBeGreaterThanOrEqual(71);
-  expect(state.stateBoundaryPaint).toEqual({
-    color: "#7a8996",
-    width: ["interpolate", ["linear"], ["zoom"], 1, 0.85, 4, 1.55, 6, 2],
-    opacity: 0.98
-  });
+  expect(state.feedbackCameraBounds[0][0]).toBeLessThan(-114);
+  expect(state.feedbackCameraBounds[0][1]).toBeLessThan(32);
+  expect(state.feedbackCameraBounds[1][0]).toBeGreaterThan(-95);
+  expect(state.feedbackCameraBounds[1][1]).toBeGreaterThan(47);
+  expect(state.feedbackCameraBounds[0][0]).toBeGreaterThan(-130);
+  expect(state.feedbackCameraBounds[1][0]).toBeLessThan(-85);
+  expect(state.feedbackLayerVisibility.stateBoundaries).toBe("visible");
+  expect(state.feedbackLayerVisibility.borderChainFill).toBe("none");
+  const boundaryPaint = JSON.stringify(state.stateBoundaryPaint);
+  expect(boundaryPaint).toContain("colorado");
+  expect(boundaryPaint).toContain("#203b55");
+  expect(boundaryPaint).toContain("#4f616e");
+  expect(boundaryPaint).toContain("#687985");
+  expect(boundaryPaint).toContain("2.2");
+  expect(boundaryPaint).toContain("1.65");
+  expect(boundaryPaint).toContain("1.15");
+  expect(state.stateBoundaryPaint.sortKey).toEqual([
+    "case",
+    ["in", ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]], ["literal", ["colorado"]]], 2,
+    ["in", ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]], ["literal", state.resultVisualState.neighborStateIds]], 1,
+    0
+  ]);
   expect(state.mapInteractions).toEqual({
     dragPan: true,
     scrollZoom: true,

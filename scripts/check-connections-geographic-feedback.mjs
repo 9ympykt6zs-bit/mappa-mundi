@@ -29,7 +29,7 @@ const allStateIds = stateAtlas.features
   .filter((stateId) => stateId && stateId !== "district-of-columbia");
 const feedback = buildMentalMapFeatureFeedback({
   associatedFeatures: visual.associatedFeatures,
-  answerStateIds: [...visual.cameraStateIds, ...allStateIds],
+  answerStateIds: visual.cameraStateIds,
   stateFeatures: stateAtlas,
   collections: { mountainRanges }
 });
@@ -69,10 +69,12 @@ assert.ok(feedback.labelCollection.features.some(({ properties }) => (
   properties.questionFeatureRole === "feature-label"
   && properties.questionFeatureName === "Rocky Mountains"
 )));
-assert.ok(feedback.cameraBounds[0][0] <= -179, "Connections camera should include Alaska's western extent.");
-assert.ok(feedback.cameraBounds[1][0] >= -67, "Connections camera should retain the Atlantic coast.");
-assert.ok(feedback.cameraBounds[0][1] <= 19, "Connections camera should include Hawaii's southern extent.");
-assert.ok(feedback.cameraBounds[1][1] >= 71, "Connections camera should include Alaska's northern extent.");
+assert.ok(feedback.cameraBounds[0][0] < -114, "Connections camera should include Colorado's western neighbor context.");
+assert.ok(feedback.cameraBounds[1][0] > -95, "Connections camera should include Colorado's eastern neighbor context.");
+assert.ok(feedback.cameraBounds[0][1] < 32, "Connections camera should include Colorado's southern neighbor context.");
+assert.ok(feedback.cameraBounds[1][1] > 47, "Connections camera should include Colorado's northern mountain context.");
+assert.ok(feedback.cameraBounds[0][0] > -130 && feedback.cameraBounds[1][0] < -85,
+  "Connections camera should not use all-50-state bounds merely to render the national background.");
 assert.equal(stateLabels.features.length, 50);
 assert.equal(stateLabels.features.filter(({ properties }) => properties.contextRole === "target").length, 1);
 assert.equal(stateLabels.features.filter(({ properties }) => properties.contextRole === "neighbor").length, visual.neighborStateIds.length);
@@ -85,10 +87,17 @@ assert.match(runnerSource, /mental-map-mountain-feedback-symbol/);
 assert.match(runnerSource, /mental-map-target-state-label/);
 assert.match(runnerSource, /"text-allow-overlap": false/);
 assert.match(runnerSource, /getUsStateContextLineColor/);
-assert.match(runnerSource, /"#7a8996"/);
+assert.match(runnerSource, /"#203b55"/);
+assert.match(runnerSource, /"#4f616e"/);
+assert.match(runnerSource, /"#687985"/);
+assert.match(runnerSource, /getUsStateContextLineSortKeyExpression/);
+assert.match(runnerSource, /expandConnectionsFeedbackCameraBounds/);
+assert.match(runnerSource, /minimumLongitudeSpan = 12/);
+assert.match(runnerSource, /minimumLatitudeSpan = 9/);
+assert.match(runnerSource, /options\.visualState\?\.isUnitedStatesConnections \? "none" : "visible"/);
 assert.match(runnerSource, /\["!=", \["get", "questionFeatureKind"\], "mountain-range"\]/);
 assert.match(runnerSource, /stateId !== "district-of-columbia"/);
 assert.match(runnerSource, /colors\.connectionsNeighborFill/);
 assert.match(runnerSource, /colors\.connectionsBackgroundFill/);
 
-console.log("U.S. Connections feedback frames all 50 states and uses authored mountain symbols without raw ridge strokes.");
+console.log("U.S. Connections feedback keeps all 50 states available while framing the target context with visible boundary hierarchy.");
