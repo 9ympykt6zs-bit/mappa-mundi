@@ -14,6 +14,10 @@ import {
   MENTAL_MAP_AUDIO_ROLES
 } from "./mental-map-audio.js";
 import { getActivityAudioEntryByText } from "./activity-audio-registry.js";
+import {
+  UNLABELED_US_MAP_HINT_ID,
+  UNLABELED_US_MAP_SOURCE
+} from "./unlabeled-map-hint.js";
 
 function stateName(stateId) {
   return getStateById(stateId)?.name || "Unknown state";
@@ -314,6 +318,16 @@ function createAnswerBank(state, options) {
 function createPreSubmitControls(challenge, state, options) {
   const controls = document.createElement("div");
   controls.className = "mental-map-controls";
+  if (options.mapHintState?.available) {
+    const hintButton = createButton(
+      options.mapHintState.visible ? "Hide map" : "Show map",
+      "mental-map-secondary-action mental-map-map-hint-action",
+      options.onToggleMapHint
+    );
+    hintButton.setAttribute("aria-expanded", String(options.mapHintState.visible === true));
+    hintButton.setAttribute("aria-controls", UNLABELED_US_MAP_HINT_ID);
+    controls.appendChild(hintButton);
+  }
   if (challenge.answerMode === MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE) {
     controls.appendChild(createButton("Undo", "mental-map-secondary-action", options.onUndo, {
       disabled: !state.selectedStateIds.length
@@ -327,6 +341,36 @@ function createPreSubmitControls(challenge, state, options) {
     createButton("New Question", "mental-map-secondary-action", options.onNewQuestion)
   );
   return controls;
+}
+
+function createUnlabeledUnitedStatesMapHint() {
+  const figure = document.createElement("figure");
+  figure.id = UNLABELED_US_MAP_HINT_ID;
+  figure.className = "mental-map-map-hint";
+
+  const map = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  map.classList.add("mental-map-map-hint-svg");
+  map.setAttribute("viewBox", "-60 10 1020 600");
+  map.setAttribute("role", "img");
+  map.setAttribute("aria-label", "Unlabeled map of the United States showing state outlines");
+
+  const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+  title.textContent = "Unlabeled map of the United States showing state outlines";
+  const background = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  background.classList.add("mental-map-map-hint-background");
+  background.setAttribute("x", "-60");
+  background.setAttribute("y", "10");
+  background.setAttribute("width", "1020");
+  background.setAttribute("height", "600");
+  const states = document.createElementNS("http://www.w3.org/2000/svg", "use");
+  states.classList.add("mental-map-map-hint-states");
+  states.setAttribute("href", UNLABELED_US_MAP_SOURCE);
+  map.append(title, background, states);
+
+  const caption = document.createElement("figcaption");
+  caption.textContent = "State outlines only — no labels.";
+  figure.append(map, caption);
+  return figure;
 }
 
 function createResultLine(label, stateIds, className = "", challenge = null) {
@@ -519,6 +563,9 @@ export function renderMentalMapChallenge(container, challenge, state, options = 
   if (state.phase === "result") {
     inner.appendChild(createResultContent(challenge, state, options));
   } else {
+    if (options.mapHintState?.available && options.mapHintState.visible) {
+      inner.appendChild(createUnlabeledUnitedStatesMapHint());
+    }
     const workspace = document.createElement("div");
     workspace.className = "mental-map-answer-workspace";
     workspace.append(

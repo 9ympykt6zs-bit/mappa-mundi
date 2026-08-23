@@ -47,6 +47,7 @@ Context cannot yet contribute. Canonical v1 has no contextual-recall skill, and 
 | Configured country Memory Trail place-to-name | `country-naming:*` + `identifying` | Country Identification | Include after activity-contract validation |
 | U.S. Connections capital question in either prompt direction | `state-capital:*` + `relationship-recall` | Capital-of Relationship | Include; both directions share one history |
 | U.S. Connections international-border, coast, river, Great Lake, or mountain-range question | `relationship:*` + `relationship-recall` | Geographic Relationships | Include under the state or states named by the fixed concept; Census-region metadata does not generate learner-facing evidence |
+| Correct U.S. Connections response after opening the unlabeled map | Same relationship mapping + `assisted` | Exposure provenance only | Retain as assisted evidence; add no correct/incorrect Bayesian count under the existing outcome policy |
 | Mental Map relationship question | `relationship:*` + `relationship-recall` | Geographic Relationships | Include; do not leak into State Location or Identification |
 | Mental Map ordered relationship | `relationship:*` + `sequencing` | Geographic Relationships | Include as relationship evidence |
 | Map Reconstruction | `state-reconstruction:*` + `spatial-reconstruction` | Spatial Reconstruction only | Never automatically convert to State Location |

@@ -5123,6 +5123,47 @@ body.compass-challenge-mode:not(.compass-result-mode) .zoom-panel {
   margin-top: 22px;
 }
 
+.mental-map-map-hint {
+  background: #f5f8f4;
+  border: 1px solid #bdcad8;
+  border-radius: 9px;
+  margin: 18px auto 0;
+  max-width: 760px;
+  overflow: hidden;
+  padding: 10px 12px 8px;
+}
+
+.mental-map-map-hint-svg {
+  display: block;
+  height: auto;
+  max-height: 43vh;
+  width: 100%;
+}
+
+.mental-map-map-hint-background {
+  fill: #f5f8f4;
+}
+
+.mental-map-map-hint-states {
+  fill: #e7edf1;
+  stroke: #53677a;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.mental-map-map-hint figcaption {
+  color: #53677a;
+  font-size: 0.77rem;
+  font-weight: 700;
+  margin-top: 4px;
+  text-align: center;
+}
+
+.mental-map-map-hint-action {
+  margin-right: auto;
+}
+
 .mental-map-primary-action,
 .mental-map-secondary-action {
   border-radius: 7px;

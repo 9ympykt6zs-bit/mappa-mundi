@@ -243,7 +243,7 @@ export function getCanonicalMentalMapConceptId(challenge = {}) {
   return `relationship:set:${[...features, ...correct].map(canonicalSlug).join("+")}`;
 }
 
-export function adaptCanonicalMentalMapEvaluation({ challenge = {}, evaluation = {}, conceptId, ...context } = {}) {
+export function adaptCanonicalMentalMapEvaluation({ challenge = {}, evaluation = {}, conceptId, assisted = false, ...context } = {}) {
   const isSequencing = challenge.answerMode === "ordered-sequence";
   const credit = Number.isFinite(Number(evaluation.score)) && Number.isFinite(Number(evaluation.maxScore)) && Number(evaluation.maxScore) > 0
     ? { earned: Number(evaluation.score), possible: Number(evaluation.maxScore) }
@@ -253,7 +253,9 @@ export function adaptCanonicalMentalMapEvaluation({ challenge = {}, evaluation =
     ...context,
     conceptId,
     skillId: isSequencing ? "sequencing" : "relationship-recall",
-    outcome: evaluation.isCorrect ? "correct" : hasPartialMentalMapEvidence(evaluation) ? "partial" : "incorrect",
+    outcome: evaluation.isCorrect && assisted === true
+      ? "assisted"
+      : evaluation.isCorrect ? "correct" : hasPartialMentalMapEvidence(evaluation) ? "partial" : "incorrect",
     credit,
     response: {
       challengeId: challenge.id || null,

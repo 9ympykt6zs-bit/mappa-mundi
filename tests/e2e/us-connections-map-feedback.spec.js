@@ -28,6 +28,93 @@ async function submitAnswer(page, label) {
   await expect(page.locator("body")).toHaveClass(/mental-map-result-mode/);
 }
 
+async function canonicalEvents(page) {
+  return page.evaluate(() => {
+    const stored = JSON.parse(localStorage.getItem("mappaMundiCanonicalEvidence") || "null");
+    return stored?.events || [];
+  });
+}
+
+test("unlabeled map support preserves answers and distinguishes assisted evidence", async ({ page }) => {
+  await openUnitedStatesConnections(page);
+  await page.evaluate(() => localStorage.removeItem("mappaMundiCanonicalEvidence"));
+
+  await startQuestion(page, "us-relationship-international-border-ohio-canada");
+  await expect(page.getByRole("button", { name: "Show map", exact: true })).toBeVisible();
+  await submitAnswer(page, "Canada");
+  await expect(page.locator(".mental-map-result-status")).toHaveText("Correct");
+  let events = await canonicalEvents(page);
+  expect(events).toHaveLength(1);
+  expect(events[0]).toMatchObject({
+    outcome: "correct",
+    conceptId: "relationship:international-border:ohio:canada"
+  });
+
+  await startQuestion(page, "us-relationship-international-border-texas-mexico");
+  await page.getByRole("button", { name: "Select Mexico", exact: true }).click();
+  await page.getByRole("button", { name: "Show map", exact: true }).click();
+
+  const hint = page.locator("#unlabeled-us-map");
+  await expect(hint).toBeVisible();
+  await expect(hint).toContainText("State outlines only — no labels.");
+  await expect(hint.locator("svg")).toHaveAttribute(
+    "aria-label",
+    "Unlabeled map of the United States showing state outlines"
+  );
+  await expect(hint.locator("text")).toHaveCount(0);
+  await expect(hint.locator("use")).toHaveAttribute("href", "assets/maps/usa/usa-map.svg#usa-states");
+  await expect(hint).not.toContainText("Texas");
+  await expect(hint).not.toContainText("Mexico");
+  await expect(page.locator(".mental-map-result-content")).toHaveCount(0);
+
+  let state = await page.evaluate(() => window.__MAPPA_TEST_API__.getMentalMapVisualState());
+  expect(state.selectedStateIds).toEqual(["texas"]);
+  expect(state.mapHintState).toEqual({ available: true, visible: true, used: true });
+  expect(await canonicalEvents(page)).toHaveLength(1);
+
+  await page.getByRole("button", { name: "Hide map", exact: true }).click();
+  state = await page.evaluate(() => window.__MAPPA_TEST_API__.getMentalMapVisualState());
+  expect(state.selectedStateIds).toEqual(["texas"]);
+  expect(state.mapHintState).toEqual({ available: true, visible: false, used: true });
+  await page.getByRole("button", { name: "Show map", exact: true }).click();
+  await page.getByRole("button", { name: "Hide map", exact: true }).click();
+  expect(await canonicalEvents(page)).toHaveLength(1);
+
+  await page.getByRole("button", { name: "Submit", exact: true }).click();
+  await expect(page.locator(".mental-map-result-status")).toHaveText("Correct");
+  events = await canonicalEvents(page);
+  expect(events).toHaveLength(2);
+  expect(events[1]).toMatchObject({
+    outcome: "assisted",
+    conceptId: "relationship:international-border:texas:mexico",
+    credit: { earned: 1, possible: 1 }
+  });
+
+  await startQuestion(page, "us-relationship-international-border-ohio-canada");
+  state = await page.evaluate(() => window.__MAPPA_TEST_API__.getMentalMapVisualState());
+  expect(state.mapHintState).toEqual({ available: true, visible: false, used: false });
+  await page.getByRole("button", { name: "Show map", exact: true }).click();
+  await page.getByRole("button", { name: "Hide map", exact: true }).click();
+  await submitAnswer(page, "Mexico");
+  await expect(page.locator(".mental-map-result-status")).toHaveText("Not quite");
+  events = await canonicalEvents(page);
+  expect(events).toHaveLength(3);
+  expect(events[2]).toMatchObject({
+    outcome: "incorrect",
+    conceptId: "relationship:international-border:ohio:canada"
+  });
+});
+
+test("the map scaffold is scoped to U.S. Connections", async ({ page }) => {
+  await openMainMenu(page);
+  await page.locator("#main-menu-mental-map-challenge-button").click();
+  await expect(page.locator("#poc-title")).toHaveAttribute("title", "Mental Map Challenge", { timeout: 20_000 });
+  await startQuestion(page, "mississippi-river-any-three");
+  await expect(page.getByRole("button", { name: "Show map", exact: true })).toHaveCount(0);
+  const state = await page.evaluate(() => window.__MAPPA_TEST_API__.getMentalMapVisualState());
+  expect(state.mapHintState).toEqual({ available: false, visible: false, used: false });
+});
+
 test("Census-region questions are absent while retained semantic feedback uses only its reference state", async ({ page }) => {
   await openUnitedStatesConnections(page);
   expect(await page.evaluate(() => window.__MAPPA_TEST_API__.startMentalMapQuestion(

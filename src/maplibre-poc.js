@@ -14,7 +14,12 @@ import {
   getUnifiedMentalMapChallenges,
   selectNextUnifiedMentalMapChallenge
 } from "./atlas/mental-map-challenge-registry.js";
-import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=20260821-feedback-horizontal-wheel-1";
+import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=20260823-us-connections-map-hint-1";
+import {
+  createUnlabeledMapHintState,
+  toggleUnlabeledMapHint,
+  wasUnlabeledMapHintUsed
+} from "./atlas/unlabeled-map-hint.js?v=20260823-us-connections-map-hint-1";
 import { readUnitedStatesAtlasProgress } from "./atlas/united-states-atlas-progress.js";
 import { renderUnitedStatesAtlasOverview, renderUnitedStatesAtlasProfile } from "./atlas/united-states-atlas-ui.js";
 import { renderProgressReport } from "./united-states-progress-report-ui.js?v=20260821-central-america-graduation-1";
@@ -53,7 +58,7 @@ import {
   adaptCanonicalMentalMapEvaluation,
   adaptCanonicalRetrievalAttempt,
   getCanonicalMentalMapConceptId
-} from "./canonical-learning-evidence.js?v=20260821-central-america-graduation-1";
+} from "./canonical-learning-evidence.js?v=20260823-us-connections-map-hint-1";
 import { createMemoryTrailSelectionTrace } from "./selection-trace.js?v=20260821-central-america-graduation-1";
 import {
   loadCanonicalEvidenceRepository,
@@ -3616,6 +3621,7 @@ let runtimeMemoryTrailSelectionTrace = null;
 let activeMentalMapChallenge = null;
 let activeMentalMapChallengeState = null;
 let activeMentalMapCanonicalAttemptIdentity = null;
+let activeMentalMapMapHintState = createUnlabeledMapHintState();
 let canonicalEvidenceAttemptSequence = 0;
 const canonicalEvidenceAttemptIdentityByObject = new WeakMap();
 const canonicalMemoryTrailOccurredAtByAttemptId = new Map();
@@ -3773,6 +3779,7 @@ function recordCanonicalMentalMapEvaluation() {
       challenge: activeMentalMapChallenge,
       evaluation: activeMentalMapChallengeState.evaluation,
       conceptId: getCanonicalMentalMapConceptId(activeMentalMapChallenge),
+      assisted: wasUnlabeledMapHintUsed(activeMentalMapMapHintState),
       ...identity,
       sourceMode: "mental-map",
       sourceActivityId: activeMentalMapChallenge.sourceActivityId || activeMentalMapChallenge.id
@@ -8542,6 +8549,9 @@ function startNextMentalMapQuestion() {
   activeMentalMapChallengeState = activeMentalMapChallenge
     ? createMentalMapChallengeState(activeMentalMapChallenge)
     : null;
+  activeMentalMapMapHintState = createUnlabeledMapHintState({
+    available: mentalMapUnitedStatesRelationshipsOnly && Boolean(activeMentalMapChallenge)
+  });
   activeMentalMapCanonicalAttemptIdentity = activeMentalMapChallenge
     ? createCanonicalRuntimeAttemptIdentity("mental-map", activeMentalMapChallenge.sourceActivityId || activeMentalMapChallenge.id)
     : null;
@@ -8570,6 +8580,11 @@ function renderActiveMentalMapChallenge() {
   mentalMapChallengePanel.hidden = false;
   renderMentalMapChallenge(mentalMapChallengePanel, activeMentalMapChallenge, activeMentalMapChallengeState, {
     reorderAnnouncement: mentalMapReorderAnnouncement,
+    mapHintState: activeMentalMapMapHintState,
+    onToggleMapHint: () => {
+      activeMentalMapMapHintState = toggleUnlabeledMapHint(activeMentalMapMapHintState);
+      renderActiveMentalMapChallenge();
+    },
     onSelect: (stateId) => {
       mentalMapReorderAnnouncement = "";
       activeMentalMapChallengeState = selectMentalMapAnswer(activeMentalMapChallengeState, stateId);
@@ -8626,6 +8641,7 @@ function exitMentalMapChallenge() {
   activeMentalMapChallenge = null;
   activeMentalMapChallengeState = null;
   activeMentalMapCanonicalAttemptIdentity = null;
+  activeMentalMapMapHintState = createUnlabeledMapHintState();
   mentalMapChallengePool = [];
   mentalMapUsedQuestionIds = new Set();
   mentalMapReorderAnnouncement = "";
@@ -25695,6 +25711,9 @@ function startMentalMapQuestionForTest(challengeId) {
   runner?.prepareMentalMapChallenge();
   activeMentalMapChallenge = challenge;
   activeMentalMapChallengeState = createMentalMapChallengeState(challenge, { random: () => 0 });
+  activeMentalMapMapHintState = createUnlabeledMapHintState({
+    available: mentalMapUnitedStatesRelationshipsOnly
+  });
   activeMentalMapCanonicalAttemptIdentity = createCanonicalRuntimeAttemptIdentity(
     "mental-map",
     challenge.sourceActivityId || challenge.id
@@ -25711,6 +25730,7 @@ function getMentalMapVisualStateForTest() {
     challengeId: activeMentalMapChallenge?.id || "",
     prompt: activeMentalMapChallenge?.prompt || "",
     selectedStateIds: [...(activeMentalMapChallengeState?.selectedStateIds || [])],
+    mapHintState: copyForTest(activeMentalMapMapHintState),
     evaluation: copyForTest(activeMentalMapChallengeState?.evaluation),
     resultVisualState: copyForTest(runner?.mentalMapChallengeResultVisualState || {}),
     stateFillExpression: copyForTest(runner?.getUsStateContextFillExpression?.()),

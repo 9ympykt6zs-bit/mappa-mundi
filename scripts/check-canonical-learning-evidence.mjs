@@ -137,6 +137,32 @@ assert.equal(mentalEvent.outcome, "partial");
 assert.deepEqual(mentalEvent.credit, { earned: 2, possible: 4 });
 assert.equal(mentalEvent.response.selectedEntityIds.includes("state:ohio"), true);
 
+const correctRelationshipEvaluation = {
+  isCorrect: true,
+  score: 1,
+  maxScore: 1,
+  selectedStateIds: ["ohio"],
+  missingStateIds: [],
+  unnecessaryStateIds: []
+};
+const assistedRelationshipEvent = adaptCanonicalMentalMapEvaluation({
+  challenge: {
+    id: "us-relationship-international-border-ohio-canada",
+    answerEntityIdsByStateId: { ohio: "country:canada" }
+  },
+  evaluation: correctRelationshipEvaluation,
+  assisted: true,
+  conceptId: "relationship:international-border:ohio:canada",
+  eventId: "connections-ohio-assisted",
+  attemptId: "connections-ohio-assisted",
+  occurredAt,
+  sourceMode: "mental-map",
+  sourceActivityId: "us-atlas-relationships"
+});
+assert.equal(assistedRelationshipEvent.outcome, "assisted");
+assert.deepEqual(assistedRelationshipEvent.credit, { earned: 1, possible: 1 });
+assert.deepEqual(assistedRelationshipEvent.response.selectedEntityIds, ["country:canada"]);
+
 const sequenceChallenge = {
   id: "test-order",
   answerMode: MENTAL_MAP_ANSWER_MODES.ORDERED_SEQUENCE,
