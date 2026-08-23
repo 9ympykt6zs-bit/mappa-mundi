@@ -23,6 +23,7 @@ import {
 } from "../src/atlas/united-states-relationship-challenges.js";
 import { applyProgressEvidencePolicy, USER_FACING_PROGRESS_SKILLS } from "../src/progress-evidence-policy.js";
 import { createUnitedStatesProgressReportReadModel } from "../src/united-states-progress-report-read-path.js";
+import { journeyPresets } from "../src/journey-presets.js";
 import { buildRepositoryCoverage } from "./lib/us-content-coverage.mjs";
 
 function createMemoryStorage() {
@@ -52,22 +53,42 @@ assert.deepEqual(
 );
 
 const challenges = getUnitedStatesRelationshipChallenges();
-assert.equal(challenges.length, 202, "Every approved atlas edge must have one fixed retrieval question.");
-assert.equal(new Set(challenges.map(({ canonicalConceptId }) => canonicalConceptId)).size, 202);
+assert.equal(challenges.length, 152, "Every learner-facing non-region atlas edge must have one fixed retrieval question.");
+assert.equal(new Set(challenges.map(({ canonicalConceptId }) => canonicalConceptId)).size, 152);
 assert.equal(challenges.some(({ referenceStateId }) => referenceStateId === "district-of-columbia"), false);
+assert.equal(
+  challenges.some(({ relationshipType }) => relationshipType === UNITED_STATES_RELATIONSHIP_TYPES.REGION_MEMBERSHIP),
+  false,
+  "Census-region metadata must not generate learner-facing U.S. Connections questions."
+);
+assert.equal(challenges.some(({ prompt }) => /U\.S\. Census region/i.test(prompt)), false);
+assert.deepEqual(
+  Object.fromEntries(Object.values(UNITED_STATES_RELATIONSHIP_TYPES).map((type) => [
+    type,
+    challenges.filter((challenge) => challenge.relationshipType === type).length
+  ])),
+  {
+    "region-membership": 0,
+    "international-border": 17,
+    coast: 25,
+    "river-through": 36,
+    "major-lake-border": 13,
+    "mountain-range": 61
+  }
+);
+assert.deepEqual(
+  challenges.map(({ canonicalConceptId }) => canonicalConceptId),
+  relationships
+    .filter(({ relationshipType }) => relationshipType !== UNITED_STATES_RELATIONSHIP_TYPES.REGION_MEMBERSHIP)
+    .map(({ conceptId }) => conceptId),
+  "Excluding Census regions must not reorder or otherwise change retained learner-facing relationships."
+);
 
-const ohioRegion = challenges.find(({ canonicalConceptId }) => canonicalConceptId === "relationship:region-membership:ohio:midwest");
-const marylandRegion = challenges.find(({ canonicalConceptId }) => canonicalConceptId === "relationship:region-membership:maryland:south");
 const ohioCanada = challenges.find(({ canonicalConceptId }) => canonicalConceptId === "relationship:international-border:ohio:canada");
 const floridaCoasts = challenges.filter(({ relationship }) => relationship.stateId === "florida" && relationship.relationshipType === "coast");
 const ohioRiver = challenges.find(({ canonicalConceptId }) => canonicalConceptId === "relationship:river-through:ohio:ohio-river");
 const ohioLake = challenges.find(({ canonicalConceptId }) => canonicalConceptId === "relationship:major-lake-border:ohio:lake-erie");
 const coloradoRockies = challenges.find(({ canonicalConceptId }) => canonicalConceptId === "relationship:mountain-range:colorado:rocky-mountains");
-assert.equal(ohioRegion.prompt, "Which U.S. Census region includes Ohio?");
-assert.equal(marylandRegion.prompt, "Which U.S. Census region includes Maryland?");
-assert.equal(marylandRegion.explanation, "Maryland belongs to the South U.S. Census region.");
-assert.equal(marylandRegion.answerLabelsByStateId.alaska, "Northeast");
-assert.equal(ohioRegion.answerLabelsByStateId.ohio, "Midwest");
 assert.equal(ohioCanada.answerLabelsByStateId.ohio, "Canada");
 assert.equal(ohioRiver.prompt, "Which major river flows through Ohio?");
 assert.equal(ohioRiver.answerLabelsByStateId.ohio, "Ohio River");
@@ -92,22 +113,13 @@ for (const challenge of challenges) {
   const offeredLabels = Object.values(challenge.answerLabelsByStateId);
   assert.equal(otherTrueTargets.some((label) => offeredLabels.includes(label)), false, "Another true relationship must never be offered as incorrect.");
 }
-assert.ok(buildMentalMapAnswerBank(ohioRegion, { random: () => 0 }).some(({ id, name }) => id === "ohio" && name === "Midwest"));
-assert.equal(evaluateMentalMapAnswer(ohioRegion, ["ohio"]).isCorrect, true);
-assert.equal(evaluateMentalMapAnswer(ohioRegion, [ohioRegion.distractorStateIds[0]]).isCorrect, false);
-
-const marylandNortheastEvaluation = evaluateMentalMapAnswer(marylandRegion, ["alaska"]);
-assert.deepEqual(marylandNortheastEvaluation.selectedInvalidStateIds, ["alaska"], "Text feedback must retain the selected Northeast answer key.");
-const marylandNortheastVisual = getMentalMapResultVisualState(marylandRegion, marylandNortheastEvaluation);
-assert.deepEqual(marylandNortheastVisual.referenceStateIds, ["maryland"]);
-assert.deepEqual(marylandNortheastVisual.correctStateIds, ["maryland"]);
-assert.deepEqual(marylandNortheastVisual.selectedIncorrectStateIds, [], "A semantic answer key must not become Alaska map feedback.");
-assert.deepEqual(marylandNortheastVisual.learnerStateIds, [], "A semantic answer key must not affect result camera geometry.");
-assert.deepEqual(marylandNortheastVisual.contextStateIds, ["maryland"]);
+assert.ok(buildMentalMapAnswerBank(ohioCanada, { random: () => 0 }).some(({ id, name }) => id === "ohio" && name === "Canada"));
+assert.equal(evaluateMentalMapAnswer(ohioCanada, ["ohio"]).isCorrect, true);
+assert.equal(evaluateMentalMapAnswer(ohioCanada, [ohioCanada.distractorStateIds[0]]).isCorrect, false);
 
 for (const [challenge, incorrectLabel] of [
-  [ohioRegion, "Northeast"],
   [ohioCanada, "Mexico"],
+  [ohioRiver, "Arkansas River"],
   [coloradoRockies, "Adirondack Mountains"]
 ]) {
   const incorrectAnswerId = Object.entries(challenge.answerLabelsByStateId)
@@ -123,20 +135,20 @@ for (const [challenge, incorrectLabel] of [
   assert.equal(visualState.contextStateIds.includes(incorrectAnswerId), false);
 }
 
-const evaluation = evaluateMentalMapAnswer(ohioRegion, ["ohio"]);
+const evaluation = evaluateMentalMapAnswer(ohioCanada, ["ohio"]);
 const event = adaptCanonicalMentalMapEvaluation({
-  challenge: ohioRegion,
+  challenge: ohioCanada,
   evaluation,
-  conceptId: getCanonicalMentalMapConceptId(ohioRegion),
-  eventId: "us-relationship-ohio-midwest-correct",
+  conceptId: getCanonicalMentalMapConceptId(ohioCanada),
+  eventId: "us-relationship-ohio-canada-correct",
   attemptId: "us-relationship-attempt",
   occurredAt: "2036-06-01T12:00:00.000Z",
   sourceMode: "mental-map",
-  sourceActivityId: ohioRegion.sourceActivityId
+  sourceActivityId: ohioCanada.sourceActivityId
 });
-assert.equal(event.conceptId, "relationship:region-membership:ohio:midwest");
+assert.equal(event.conceptId, "relationship:international-border:ohio:canada");
 assert.equal(event.skillId, "relationship-recall");
-assert.deepEqual(event.response.selectedEntityIds, ["region:midwest"]);
+assert.deepEqual(event.response.selectedEntityIds, ["country:canada"]);
 
 const storage = createMemoryStorage();
 assert.equal(recordCanonicalEvidenceEvent(event, storage).inserted, true);
@@ -163,9 +175,16 @@ assert.ok(ohioRecord.canonicalMapping.conceptIds.includes(event.conceptId));
 
 const ordinaryPool = getUnifiedMentalMapChallenges({ includeGenerated: false });
 const connectionsPool = getUnifiedMentalMapChallenges({ includeGenerated: false, includeUnitedStatesRelationships: true });
+const learnerFacingConnectionsPool = connectionsPool.filter(({ sourceActivityId }) => [
+  "us-atlas-relationships",
+  "us-state-capital-relationships"
+].includes(sourceActivityId));
 assert.equal(ordinaryPool.some(({ sourceActivityId }) => sourceActivityId === "us-atlas-relationships"), false);
-assert.equal(connectionsPool.filter(({ sourceActivityId }) => sourceActivityId === "us-atlas-relationships").length, 202);
+assert.equal(connectionsPool.filter(({ sourceActivityId }) => sourceActivityId === "us-atlas-relationships").length, 152);
 assert.equal(connectionsPool.filter(({ sourceActivityId }) => sourceActivityId === "us-state-capital-relationships").length, 100);
+assert.equal(learnerFacingConnectionsPool.length, 252, "U.S. Connections must contain 252 retained prompt instances.");
+assert.equal(new Set(learnerFacingConnectionsPool.map(({ canonicalConceptId }) => canonicalConceptId)).size, 202);
+assert.equal(learnerFacingConnectionsPool.some(({ relationshipType }) => relationshipType === UNITED_STATES_RELATIONSHIP_TYPES.REGION_MEMBERSHIP), false);
 
 const coverage = buildRepositoryCoverage();
 const assessedPhysicalEntityIds = new Set(coverage.concepts
@@ -179,7 +198,6 @@ for (const relationship of relationships.filter(({ relationshipType }) => [
   assert.ok(assessedPhysicalEntityIds.has(relationship.targetEntityId), "Physical relationship targets must already belong to the taught U.S. physical curriculum.");
 }
 for (const conceptId of [
-  "relationship:region-membership:ohio:midwest",
   "relationship:international-border:ohio:canada",
   "relationship:coast:florida:atlantic-ocean",
   "relationship:river-through:ohio:ohio-river",
@@ -191,8 +209,19 @@ for (const conceptId of [
   assert.equal(concept.sources.filter(({ type }) => type === "atlas-relationship").length, 1);
   assert.equal(concept.sources.filter(({ type }) => type === "mental-map-question").length, 1);
 }
+const ohioRegionCoverage = coverage.concepts.find(({ id }) => id === "relationship:region-membership:ohio:midwest");
+assert.equal(ohioRegionCoverage.delivery, "data-only", "Census membership must remain reportable Atlas metadata without being assessed.");
+assert.equal(ohioRegionCoverage.sources.filter(({ type }) => type === "atlas-relationship").length, 1);
+assert.equal(ohioRegionCoverage.sources.filter(({ type }) => type === "mental-map-question").length, 0);
 assert.equal(coverage.summary.statesWithAssessedCuratedRelationship, 50);
 assert.equal(coverage.summary.statesWithNonCapitalContextual, 50);
+
+const unitedStatesJourney = journeyPresets.find(({ id }) => id === "united-states");
+assert.ok(unitedStatesJourney.steps.some(({ title }) => title === "New England States"));
+assert.ok(unitedStatesJourney.steps.some(({ title }) => title === "Southern Plains / Southwest States"));
+
+const expeditionSource = readFileSync(new URL("../src/across-united-states-expedition.js", import.meta.url), "utf8");
+assert.doesNotMatch(expeditionSource, /Retrieve capitals, borders, coasts, regions/);
 
 const runtimeSource = readFileSync(new URL("../src/maplibre-poc.js", import.meta.url), "utf8");
 const indexSource = readFileSync(new URL("../index.html", import.meta.url), "utf8");
@@ -201,4 +230,4 @@ assert.match(indexSource, />U\.S\. Connections</);
 assert.match(runtimeSource, /includeUnitedStatesRelationships: mentalMapUnitedStatesRelationshipsOnly/);
 assert.match(runtimeSource, /"us-atlas-relationships"\s*\]\s*\.includes\(challenge\.sourceActivityId\)/);
 
-console.log("I2 U.S. atlas relationship learning passed: 202 trusted political and physical relationships are assessed.");
+console.log("I2 U.S. atlas relationship learning passed: 152 non-Census atlas relationships are assessed and 50 Census memberships remain data-only.");

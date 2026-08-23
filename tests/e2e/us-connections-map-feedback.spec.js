@@ -28,39 +28,42 @@ async function submitAnswer(page, label) {
   await expect(page.locator("body")).toHaveClass(/mental-map-result-mode/);
 }
 
-test("Maryland region feedback never paints the Northeast answer key as Alaska", async ({ page }) => {
+test("Census-region questions are absent while retained semantic feedback uses only its reference state", async ({ page }) => {
   await openUnitedStatesConnections(page);
-  await startQuestion(page, "us-relationship-region-membership-maryland-south");
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.startMentalMapQuestion(
+    "us-relationship-region-membership-maryland-south"
+  ))).toBe(false);
+  await startQuestion(page, "us-relationship-international-border-ohio-canada");
 
-  await expect(page.locator(".mental-map-question-title-row h2")).toHaveText("Which U.S. Census region includes Maryland?");
-  await submitAnswer(page, "Northeast");
+  await expect(page.locator(".mental-map-question-title-row h2")).toHaveText("Which country shares an international border with Ohio?");
+  await submitAnswer(page, "Mexico");
 
   const panel = page.locator("#mental-map-challenge-panel");
   await expect(panel).toContainText("Not quite");
-  await expect(panel).toContainText("Your answer: Northeast");
-  await expect(panel).toContainText("Correct answer: South");
-  await expect(panel).toContainText("Reference state: Maryland");
-  await expect(panel).toContainText("Incorrect: Northeast");
-  await expect(panel).toContainText("Maryland belongs to the South U.S. Census region.");
+  await expect(panel).toContainText("Your answer: Mexico");
+  await expect(panel).toContainText("Correct answer: Canada");
+  await expect(panel).toContainText("Reference state: Ohio");
+  await expect(panel).toContainText("Incorrect: Mexico");
+  await expect(panel).toContainText("Ohio shares an international boundary with Canada.");
 
   const state = await page.evaluate(() => window.__MAPPA_TEST_API__.getMentalMapVisualState());
-  expect(state.evaluation.selectedInvalidStateIds).toEqual(["alaska"]);
+  expect(state.evaluation.selectedInvalidStateIds).toEqual(["alabama"]);
   expect(state.resultVisualState).toMatchObject({
-    correctStateIds: ["maryland"],
-    referenceStateIds: ["maryland"],
-    contextStateIds: ["maryland"],
+    correctStateIds: ["ohio"],
+    referenceStateIds: ["ohio"],
+    contextStateIds: ["ohio"],
     selectedIncorrectStateIds: [],
     learnerStateIds: []
   });
-  expect(JSON.stringify(state.stateFillExpression)).toContain("maryland");
-  expect(JSON.stringify(state.stateFillExpression)).not.toContain("alaska");
+  expect(JSON.stringify(state.stateFillExpression)).toContain("ohio");
+  expect(JSON.stringify(state.stateFillExpression)).not.toContain("alabama");
 });
 
 test("relationship feedback follows each reference state and clears between questions", async ({ page }) => {
   await openUnitedStatesConnections(page);
 
   const scenarios = [
-    ["us-relationship-region-membership-ohio-midwest", "Northeast", "ohio"],
+    ["us-relationship-international-border-ohio-canada", "Mexico", "ohio"],
     ["us-relationship-international-border-texas-mexico", "Canada", "texas"],
     ["us-relationship-mountain-range-colorado-rocky-mountains", "Adirondack Mountains", "colorado"]
   ];

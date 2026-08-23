@@ -8,13 +8,13 @@
   },
   "summary": {
     "uniqueConceptsAllRepresentations": 1505,
-    "fixedAssessedConcepts": 505,
+    "fixedAssessedConcepts": 455,
     "conditionalFeedbackConcepts": 30,
-    "dataOnlyConcepts": 125,
+    "dataOnlyConcepts": 175,
     "dynamicallyPossibleConcepts": 845,
-    "sourceInstancesAndVariants": 2211,
-    "fixedMentalMapConcepts": 271,
-    "fixedMentalMapQuestionInstances": 322,
+    "sourceInstancesAndVariants": 2161,
+    "fixedMentalMapConcepts": 221,
+    "fixedMentalMapQuestionInstances": 272,
     "reconstructionFeedbackConcepts": 30,
     "reconstructionFeedbackRuleInstances": 31,
     "statesTotal": 50,
@@ -57,7 +57,7 @@
     },
     {
       "source": "src/atlas/mental-map-challenges.js + compass-challenges.js + state-capital-relationship-challenges.js + united-states-relationship-challenges.js",
-      "records": 322,
+      "records": 272,
       "role": "Fixed question instances",
       "reachability": "Mental Map and U.S. Connections"
     },
@@ -116,10 +116,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 4,
+      "curatedRelationalCount": 3,
       "conditionalRelationalCount": 1,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 4,
+      "nonCapitalContextualCount": 3,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -138,10 +138,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 7,
+      "curatedRelationalCount": 6,
       "conditionalRelationalCount": 0,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 7,
+      "nonCapitalContextualCount": 6,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -160,10 +160,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 5,
+      "curatedRelationalCount": 4,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 4,
+      "nonCapitalContextualCount": 3,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -182,10 +182,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 9,
+      "curatedRelationalCount": 8,
       "conditionalRelationalCount": 1,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 7,
+      "nonCapitalContextualCount": 6,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -204,10 +204,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 9,
+      "curatedRelationalCount": 8,
       "conditionalRelationalCount": 1,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 8,
+      "nonCapitalContextualCount": 7,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -226,10 +226,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 8,
+      "curatedRelationalCount": 7,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 6,
+      "nonCapitalContextualCount": 5,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -248,10 +248,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 3,
+      "curatedRelationalCount": 2,
       "conditionalRelationalCount": 0,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 3,
+      "nonCapitalContextualCount": 2,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -270,10 +270,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 3,
+      "curatedRelationalCount": 2,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 3,
+      "nonCapitalContextualCount": 2,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -292,10 +292,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 6,
+      "curatedRelationalCount": 5,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 6,
+      "nonCapitalContextualCount": 5,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -314,10 +314,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 5,
+      "curatedRelationalCount": 4,
       "conditionalRelationalCount": 3,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 5,
+      "nonCapitalContextualCount": 4,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -336,10 +336,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 3,
+      "curatedRelationalCount": 2,
       "conditionalRelationalCount": 0,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 3,
+      "nonCapitalContextualCount": 2,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -358,10 +358,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 6,
+      "curatedRelationalCount": 5,
       "conditionalRelationalCount": 1,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 6,
+      "nonCapitalContextualCount": 5,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -380,10 +380,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 5,
+      "curatedRelationalCount": 4,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 5,
+      "nonCapitalContextualCount": 4,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -402,10 +402,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 3,
+      "curatedRelationalCount": 2,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 3,
+      "nonCapitalContextualCount": 2,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -424,10 +424,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 5,
+      "curatedRelationalCount": 4,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 5,
+      "nonCapitalContextualCount": 4,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -446,10 +446,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 4,
+      "curatedRelationalCount": 3,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 3,
+      "nonCapitalContextualCount": 2,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -468,10 +468,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 6,
+      "curatedRelationalCount": 5,
       "conditionalRelationalCount": 1,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 6,
+      "nonCapitalContextualCount": 5,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -490,10 +490,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 8,
+      "curatedRelationalCount": 7,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 7,
+      "nonCapitalContextualCount": 6,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -512,10 +512,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 8,
+      "curatedRelationalCount": 7,
       "conditionalRelationalCount": 0,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 7,
+      "nonCapitalContextualCount": 6,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -534,10 +534,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 6,
+      "curatedRelationalCount": 5,
       "conditionalRelationalCount": 1,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 6,
+      "nonCapitalContextualCount": 5,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -556,10 +556,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 3,
+      "curatedRelationalCount": 2,
       "conditionalRelationalCount": 0,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 3,
+      "nonCapitalContextualCount": 2,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -578,10 +578,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 8,
+      "curatedRelationalCount": 7,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 8,
+      "nonCapitalContextualCount": 7,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -600,10 +600,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 8,
+      "curatedRelationalCount": 7,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 7,
+      "nonCapitalContextualCount": 6,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -622,10 +622,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 6,
+      "curatedRelationalCount": 5,
       "conditionalRelationalCount": 1,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 6,
+      "nonCapitalContextualCount": 5,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -644,10 +644,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 6,
+      "curatedRelationalCount": 5,
       "conditionalRelationalCount": 3,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 6,
+      "nonCapitalContextualCount": 5,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -666,10 +666,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 7,
+      "curatedRelationalCount": 6,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 6,
+      "nonCapitalContextualCount": 5,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -688,10 +688,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 2,
+      "curatedRelationalCount": 1,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 2,
+      "nonCapitalContextualCount": 1,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -710,10 +710,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 4,
+      "curatedRelationalCount": 3,
       "conditionalRelationalCount": 1,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 2,
+      "nonCapitalContextualCount": 1,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -732,10 +732,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 7,
+      "curatedRelationalCount": 6,
       "conditionalRelationalCount": 1,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 7,
+      "nonCapitalContextualCount": 6,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -754,10 +754,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 3,
+      "curatedRelationalCount": 2,
       "conditionalRelationalCount": 3,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 3,
+      "nonCapitalContextualCount": 2,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -776,10 +776,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 7,
+      "curatedRelationalCount": 6,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 6,
+      "nonCapitalContextualCount": 5,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -798,10 +798,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 11,
+      "curatedRelationalCount": 10,
       "conditionalRelationalCount": 1,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 11,
+      "nonCapitalContextualCount": 10,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -820,10 +820,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 7,
+      "curatedRelationalCount": 6,
       "conditionalRelationalCount": 1,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 6,
+      "nonCapitalContextualCount": 5,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -842,10 +842,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 4,
+      "curatedRelationalCount": 3,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 4,
+      "nonCapitalContextualCount": 3,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -864,10 +864,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 6,
+      "curatedRelationalCount": 5,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 6,
+      "nonCapitalContextualCount": 5,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -886,10 +886,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 6,
+      "curatedRelationalCount": 5,
       "conditionalRelationalCount": 1,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 4,
+      "nonCapitalContextualCount": 3,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -908,10 +908,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 6,
+      "curatedRelationalCount": 5,
       "conditionalRelationalCount": 1,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 6,
+      "nonCapitalContextualCount": 5,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -930,10 +930,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 10,
+      "curatedRelationalCount": 9,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 9,
+      "nonCapitalContextualCount": 8,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -952,10 +952,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 3,
+      "curatedRelationalCount": 2,
       "conditionalRelationalCount": 0,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 3,
+      "nonCapitalContextualCount": 2,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -974,10 +974,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 5,
+      "curatedRelationalCount": 4,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 5,
+      "nonCapitalContextualCount": 4,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -996,10 +996,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 3,
+      "curatedRelationalCount": 2,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 3,
+      "nonCapitalContextualCount": 2,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -1018,10 +1018,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 10,
+      "curatedRelationalCount": 9,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 7,
+      "nonCapitalContextualCount": 6,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -1040,10 +1040,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 7,
+      "curatedRelationalCount": 6,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 7,
+      "nonCapitalContextualCount": 6,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -1062,10 +1062,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 7,
+      "curatedRelationalCount": 6,
       "conditionalRelationalCount": 3,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 5,
+      "nonCapitalContextualCount": 4,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -1084,10 +1084,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 5,
+      "curatedRelationalCount": 4,
       "conditionalRelationalCount": 1,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 5,
+      "nonCapitalContextualCount": 4,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -1106,10 +1106,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 8,
+      "curatedRelationalCount": 7,
       "conditionalRelationalCount": 1,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 7,
+      "nonCapitalContextualCount": 6,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -1128,10 +1128,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 10,
+      "curatedRelationalCount": 9,
       "conditionalRelationalCount": 1,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 9,
+      "nonCapitalContextualCount": 8,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -1150,10 +1150,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 5,
+      "curatedRelationalCount": 4,
       "conditionalRelationalCount": 1,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 5,
+      "nonCapitalContextualCount": 4,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -1172,10 +1172,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 5,
+      "curatedRelationalCount": 4,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 5,
+      "nonCapitalContextualCount": 4,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -1194,10 +1194,10 @@
       "capitalRelationship": "data-only",
       "capitalRelationshipAssessed": true,
       "curatedRelational": "assessed",
-      "curatedRelationalCount": 5,
+      "curatedRelationalCount": 4,
       "conditionalRelationalCount": 2,
       "nonCapitalContextual": true,
-      "nonCapitalContextualCount": 5,
+      "nonCapitalContextualCount": 4,
       "taxonomyTags": [
         "physical-geography",
         "political-geography",
@@ -1404,23 +1404,23 @@
       "objectiveId": "curated-relational",
       "objective": "Curated relational (assessed)",
       "eligibleStates": 12,
-      "uniqueConcepts": 49,
-      "stateConceptParticipations": 59,
-      "conceptsPerState": 4.916666666666667,
-      "nationalMeanConceptsPerState": 5.94,
-      "percentOfNationalMean": 82.77216610549944,
-      "diagnostic": "within-80%-120%"
+      "uniqueConcepts": 37,
+      "stateConceptParticipations": 47,
+      "conceptsPerState": 3.9166666666666665,
+      "nationalMeanConceptsPerState": 4.94,
+      "percentOfNationalMean": 79.28475033738191,
+      "diagnostic": "below-80%"
     },
     {
       "region": "Northeast",
       "objectiveId": "curated-relational",
       "objective": "Curated relational (assessed)",
       "eligibleStates": 9,
-      "uniqueConcepts": 42,
-      "stateConceptParticipations": 53,
-      "conceptsPerState": 5.888888888888889,
-      "nationalMeanConceptsPerState": 5.94,
-      "percentOfNationalMean": 99.13954358398803,
+      "uniqueConcepts": 33,
+      "stateConceptParticipations": 44,
+      "conceptsPerState": 4.888888888888889,
+      "nationalMeanConceptsPerState": 4.94,
+      "percentOfNationalMean": 98.96536212325687,
       "diagnostic": "within-80%-120%"
     },
     {
@@ -1428,11 +1428,11 @@
       "objectiveId": "curated-relational",
       "objective": "Curated relational (assessed)",
       "eligibleStates": 16,
-      "uniqueConcepts": 77,
-      "stateConceptParticipations": 101,
-      "conceptsPerState": 6.3125,
-      "nationalMeanConceptsPerState": 5.94,
-      "percentOfNationalMean": 106.27104377104376,
+      "uniqueConcepts": 61,
+      "stateConceptParticipations": 85,
+      "conceptsPerState": 5.3125,
+      "nationalMeanConceptsPerState": 4.94,
+      "percentOfNationalMean": 107.5404858299595,
       "diagnostic": "within-80%-120%"
     },
     {
@@ -1440,11 +1440,11 @@
       "objectiveId": "curated-relational",
       "objective": "Curated relational (assessed)",
       "eligibleStates": 13,
-      "uniqueConcepts": 64,
-      "stateConceptParticipations": 84,
-      "conceptsPerState": 6.461538461538462,
-      "nationalMeanConceptsPerState": 5.94,
-      "percentOfNationalMean": 108.78010878010878,
+      "uniqueConcepts": 51,
+      "stateConceptParticipations": 71,
+      "conceptsPerState": 5.461538461538462,
+      "nationalMeanConceptsPerState": 4.94,
+      "percentOfNationalMean": 110.5574587355964,
       "diagnostic": "within-80%-120%"
     },
     {
@@ -1452,11 +1452,11 @@
       "objectiveId": "non-capital-contextual",
       "objective": "Non-capital contextual (assessed)",
       "eligibleStates": 12,
-      "uniqueConcepts": 47,
-      "stateConceptParticipations": 57,
-      "conceptsPerState": 4.75,
-      "nationalMeanConceptsPerState": 5.44,
-      "percentOfNationalMean": 87.31617647058823,
+      "uniqueConcepts": 35,
+      "stateConceptParticipations": 45,
+      "conceptsPerState": 3.75,
+      "nationalMeanConceptsPerState": 4.44,
+      "percentOfNationalMean": 84.45945945945945,
       "diagnostic": "within-80%-120%"
     },
     {
@@ -1464,11 +1464,11 @@
       "objectiveId": "non-capital-contextual",
       "objective": "Non-capital contextual (assessed)",
       "eligibleStates": 9,
-      "uniqueConcepts": 40,
-      "stateConceptParticipations": 51,
-      "conceptsPerState": 5.666666666666667,
-      "nationalMeanConceptsPerState": 5.44,
-      "percentOfNationalMean": 104.16666666666667,
+      "uniqueConcepts": 31,
+      "stateConceptParticipations": 42,
+      "conceptsPerState": 4.666666666666667,
+      "nationalMeanConceptsPerState": 4.44,
+      "percentOfNationalMean": 105.10510510510511,
       "diagnostic": "within-80%-120%"
     },
     {
@@ -1476,11 +1476,11 @@
       "objectiveId": "non-capital-contextual",
       "objective": "Non-capital contextual (assessed)",
       "eligibleStates": 16,
-      "uniqueConcepts": 72,
-      "stateConceptParticipations": 91,
-      "conceptsPerState": 5.6875,
-      "nationalMeanConceptsPerState": 5.44,
-      "percentOfNationalMean": 104.54963235294117,
+      "uniqueConcepts": 56,
+      "stateConceptParticipations": 75,
+      "conceptsPerState": 4.6875,
+      "nationalMeanConceptsPerState": 4.44,
+      "percentOfNationalMean": 105.57432432432432,
       "diagnostic": "within-80%-120%"
     },
     {
@@ -1488,11 +1488,11 @@
       "objectiveId": "non-capital-contextual",
       "objective": "Non-capital contextual (assessed)",
       "eligibleStates": 13,
-      "uniqueConcepts": 60,
-      "stateConceptParticipations": 73,
-      "conceptsPerState": 5.615384615384615,
-      "nationalMeanConceptsPerState": 5.44,
-      "percentOfNationalMean": 103.22398190045247,
+      "uniqueConcepts": 47,
+      "stateConceptParticipations": 60,
+      "conceptsPerState": 4.615384615384615,
+      "nationalMeanConceptsPerState": 4.44,
+      "percentOfNationalMean": 103.95010395010394,
       "diagnostic": "within-80%-120%"
     }
   ],
@@ -1506,16 +1506,16 @@
     },
     {
       "tag": "regional-relationships",
-      "fixedAssessed": 221,
+      "fixedAssessed": 171,
       "conditionalFeedback": 30,
-      "dataOnly": 125,
+      "dataOnly": 175,
       "dynamicCapacity": 845
     },
     {
       "tag": "political-geography",
-      "fixedAssessed": 319,
+      "fixedAssessed": 269,
       "conditionalFeedback": 0,
-      "dataOnly": 1,
+      "dataOnly": 51,
       "dynamicCapacity": 0
     },
     {
@@ -2053,7 +2053,13 @@
     "missingAssessedCuratedRelationship": [],
     "conditionalOnlyCuratedRelationship": [],
     "missingNonCapitalContextual": [],
-    "underCoveredRegions": [],
+    "underCoveredRegions": [
+      {
+        "region": "Midwest",
+        "objective": "Curated relational (assessed)",
+        "percentOfNationalMean": 79.28475033738191
+      }
+    ],
     "taxonomyCategoriesWithoutFixedAssessedConcepts": [
       "human-geography",
       "historical-geographic-significance",
@@ -42280,8 +42286,8 @@
       "id": "relationship:region-membership:alabama:south",
       "label": "Alabama belongsToRegion South",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "alabama"
       ],
@@ -42303,15 +42309,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:alabama:region:south",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-alabama-south",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Alabama?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -42320,8 +42317,8 @@
       "id": "relationship:region-membership:alaska:west",
       "label": "Alaska belongsToRegion West",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "alaska"
       ],
@@ -42343,15 +42340,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:alaska:region:west",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-alaska-west",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Alaska?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -42360,8 +42348,8 @@
       "id": "relationship:region-membership:arizona:west",
       "label": "Arizona belongsToRegion West",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "arizona"
       ],
@@ -42383,15 +42371,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:arizona:region:west",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-arizona-west",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Arizona?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -42400,8 +42379,8 @@
       "id": "relationship:region-membership:arkansas:south",
       "label": "Arkansas belongsToRegion South",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "arkansas"
       ],
@@ -42423,15 +42402,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:arkansas:region:south",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-arkansas-south",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Arkansas?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -42440,8 +42410,8 @@
       "id": "relationship:region-membership:california:west",
       "label": "California belongsToRegion West",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "california"
       ],
@@ -42463,15 +42433,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:california:region:west",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-california-west",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes California?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -42480,8 +42441,8 @@
       "id": "relationship:region-membership:colorado:west",
       "label": "Colorado belongsToRegion West",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "colorado"
       ],
@@ -42503,15 +42464,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:colorado:region:west",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-colorado-west",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Colorado?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -42520,8 +42472,8 @@
       "id": "relationship:region-membership:connecticut:northeast",
       "label": "Connecticut belongsToRegion Northeast",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "connecticut"
       ],
@@ -42543,15 +42495,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:connecticut:region:northeast",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-connecticut-northeast",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Connecticut?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -42560,8 +42503,8 @@
       "id": "relationship:region-membership:delaware:south",
       "label": "Delaware belongsToRegion South",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "delaware"
       ],
@@ -42583,15 +42526,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:delaware:region:south",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-delaware-south",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Delaware?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -42600,8 +42534,8 @@
       "id": "relationship:region-membership:florida:south",
       "label": "Florida belongsToRegion South",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "florida"
       ],
@@ -42623,15 +42557,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:florida:region:south",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-florida-south",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Florida?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -42640,8 +42565,8 @@
       "id": "relationship:region-membership:georgia:south",
       "label": "Georgia belongsToRegion South",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "georgia"
       ],
@@ -42663,15 +42588,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:georgia:region:south",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-georgia-south",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Georgia?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -42680,8 +42596,8 @@
       "id": "relationship:region-membership:hawaii:west",
       "label": "Hawaii belongsToRegion West",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "hawaii"
       ],
@@ -42703,15 +42619,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:hawaii:region:west",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-hawaii-west",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Hawaii?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -42720,8 +42627,8 @@
       "id": "relationship:region-membership:idaho:west",
       "label": "Idaho belongsToRegion West",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "idaho"
       ],
@@ -42743,15 +42650,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:idaho:region:west",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-idaho-west",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Idaho?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -42760,8 +42658,8 @@
       "id": "relationship:region-membership:illinois:midwest",
       "label": "Illinois belongsToRegion Midwest",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "illinois"
       ],
@@ -42783,15 +42681,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:illinois:region:midwest",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-illinois-midwest",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Illinois?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -42800,8 +42689,8 @@
       "id": "relationship:region-membership:indiana:midwest",
       "label": "Indiana belongsToRegion Midwest",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "indiana"
       ],
@@ -42823,15 +42712,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:indiana:region:midwest",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-indiana-midwest",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Indiana?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -42840,8 +42720,8 @@
       "id": "relationship:region-membership:iowa:midwest",
       "label": "Iowa belongsToRegion Midwest",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "iowa"
       ],
@@ -42863,15 +42743,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:iowa:region:midwest",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-iowa-midwest",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Iowa?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -42880,8 +42751,8 @@
       "id": "relationship:region-membership:kansas:midwest",
       "label": "Kansas belongsToRegion Midwest",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "kansas"
       ],
@@ -42903,15 +42774,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:kansas:region:midwest",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-kansas-midwest",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Kansas?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -42920,8 +42782,8 @@
       "id": "relationship:region-membership:kentucky:south",
       "label": "Kentucky belongsToRegion South",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "kentucky"
       ],
@@ -42943,15 +42805,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:kentucky:region:south",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-kentucky-south",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Kentucky?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -42960,8 +42813,8 @@
       "id": "relationship:region-membership:louisiana:south",
       "label": "Louisiana belongsToRegion South",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "louisiana"
       ],
@@ -42983,15 +42836,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:louisiana:region:south",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-louisiana-south",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Louisiana?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43000,8 +42844,8 @@
       "id": "relationship:region-membership:maine:northeast",
       "label": "Maine belongsToRegion Northeast",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "maine"
       ],
@@ -43023,15 +42867,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:maine:region:northeast",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-maine-northeast",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Maine?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43040,8 +42875,8 @@
       "id": "relationship:region-membership:maryland:south",
       "label": "Maryland belongsToRegion South",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "maryland"
       ],
@@ -43063,15 +42898,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:maryland:region:south",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-maryland-south",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Maryland?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43080,8 +42906,8 @@
       "id": "relationship:region-membership:massachusetts:northeast",
       "label": "Massachusetts belongsToRegion Northeast",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "massachusetts"
       ],
@@ -43103,15 +42929,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:massachusetts:region:northeast",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-massachusetts-northeast",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Massachusetts?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43120,8 +42937,8 @@
       "id": "relationship:region-membership:michigan:midwest",
       "label": "Michigan belongsToRegion Midwest",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "michigan"
       ],
@@ -43143,15 +42960,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:michigan:region:midwest",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-michigan-midwest",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Michigan?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43160,8 +42968,8 @@
       "id": "relationship:region-membership:minnesota:midwest",
       "label": "Minnesota belongsToRegion Midwest",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "minnesota"
       ],
@@ -43183,15 +42991,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:minnesota:region:midwest",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-minnesota-midwest",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Minnesota?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43200,8 +42999,8 @@
       "id": "relationship:region-membership:mississippi:south",
       "label": "Mississippi belongsToRegion South",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "mississippi"
       ],
@@ -43223,15 +43022,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:mississippi:region:south",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-mississippi-south",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Mississippi?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43240,8 +43030,8 @@
       "id": "relationship:region-membership:missouri:midwest",
       "label": "Missouri belongsToRegion Midwest",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "missouri"
       ],
@@ -43263,15 +43053,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:missouri:region:midwest",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-missouri-midwest",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Missouri?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43280,8 +43061,8 @@
       "id": "relationship:region-membership:montana:west",
       "label": "Montana belongsToRegion West",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "montana"
       ],
@@ -43303,15 +43084,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:montana:region:west",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-montana-west",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Montana?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43320,8 +43092,8 @@
       "id": "relationship:region-membership:nebraska:midwest",
       "label": "Nebraska belongsToRegion Midwest",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "nebraska"
       ],
@@ -43343,15 +43115,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:nebraska:region:midwest",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-nebraska-midwest",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Nebraska?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43360,8 +43123,8 @@
       "id": "relationship:region-membership:nevada:west",
       "label": "Nevada belongsToRegion West",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "nevada"
       ],
@@ -43383,15 +43146,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:nevada:region:west",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-nevada-west",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Nevada?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43400,8 +43154,8 @@
       "id": "relationship:region-membership:new-hampshire:northeast",
       "label": "New Hampshire belongsToRegion Northeast",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "new-hampshire"
       ],
@@ -43423,15 +43177,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:new-hampshire:region:northeast",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-new-hampshire-northeast",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes New Hampshire?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43440,8 +43185,8 @@
       "id": "relationship:region-membership:new-jersey:northeast",
       "label": "New Jersey belongsToRegion Northeast",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "new-jersey"
       ],
@@ -43463,15 +43208,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:new-jersey:region:northeast",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-new-jersey-northeast",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes New Jersey?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43480,8 +43216,8 @@
       "id": "relationship:region-membership:new-mexico:west",
       "label": "New Mexico belongsToRegion West",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "new-mexico"
       ],
@@ -43503,15 +43239,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:new-mexico:region:west",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-new-mexico-west",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes New Mexico?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43520,8 +43247,8 @@
       "id": "relationship:region-membership:new-york:northeast",
       "label": "New York belongsToRegion Northeast",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "new-york"
       ],
@@ -43543,15 +43270,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:new-york:region:northeast",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-new-york-northeast",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes New York?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43560,8 +43278,8 @@
       "id": "relationship:region-membership:north-carolina:south",
       "label": "North Carolina belongsToRegion South",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "north-carolina"
       ],
@@ -43583,15 +43301,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:north-carolina:region:south",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-north-carolina-south",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes North Carolina?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43600,8 +43309,8 @@
       "id": "relationship:region-membership:north-dakota:midwest",
       "label": "North Dakota belongsToRegion Midwest",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "north-dakota"
       ],
@@ -43623,15 +43332,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:north-dakota:region:midwest",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-north-dakota-midwest",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes North Dakota?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43640,8 +43340,8 @@
       "id": "relationship:region-membership:ohio:midwest",
       "label": "Ohio belongsToRegion Midwest",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "ohio"
       ],
@@ -43663,15 +43363,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:ohio:region:midwest",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-ohio-midwest",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Ohio?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43680,8 +43371,8 @@
       "id": "relationship:region-membership:oklahoma:south",
       "label": "Oklahoma belongsToRegion South",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "oklahoma"
       ],
@@ -43703,15 +43394,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:oklahoma:region:south",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-oklahoma-south",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Oklahoma?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43720,8 +43402,8 @@
       "id": "relationship:region-membership:oregon:west",
       "label": "Oregon belongsToRegion West",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "oregon"
       ],
@@ -43743,15 +43425,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:oregon:region:west",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-oregon-west",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Oregon?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43760,8 +43433,8 @@
       "id": "relationship:region-membership:pennsylvania:northeast",
       "label": "Pennsylvania belongsToRegion Northeast",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "pennsylvania"
       ],
@@ -43783,15 +43456,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:pennsylvania:region:northeast",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-pennsylvania-northeast",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Pennsylvania?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43800,8 +43464,8 @@
       "id": "relationship:region-membership:rhode-island:northeast",
       "label": "Rhode Island belongsToRegion Northeast",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "rhode-island"
       ],
@@ -43823,15 +43487,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:rhode-island:region:northeast",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-rhode-island-northeast",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Rhode Island?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43840,8 +43495,8 @@
       "id": "relationship:region-membership:south-carolina:south",
       "label": "South Carolina belongsToRegion South",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "south-carolina"
       ],
@@ -43863,15 +43518,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:south-carolina:region:south",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-south-carolina-south",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes South Carolina?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43880,8 +43526,8 @@
       "id": "relationship:region-membership:south-dakota:midwest",
       "label": "South Dakota belongsToRegion Midwest",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "south-dakota"
       ],
@@ -43903,15 +43549,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:south-dakota:region:midwest",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-south-dakota-midwest",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes South Dakota?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43920,8 +43557,8 @@
       "id": "relationship:region-membership:tennessee:south",
       "label": "Tennessee belongsToRegion South",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "tennessee"
       ],
@@ -43943,15 +43580,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:tennessee:region:south",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-tennessee-south",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Tennessee?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -43960,8 +43588,8 @@
       "id": "relationship:region-membership:texas:south",
       "label": "Texas belongsToRegion South",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "texas"
       ],
@@ -43983,15 +43611,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:texas:region:south",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-texas-south",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Texas?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -44000,8 +43619,8 @@
       "id": "relationship:region-membership:utah:west",
       "label": "Utah belongsToRegion West",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "utah"
       ],
@@ -44023,15 +43642,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:utah:region:west",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-utah-west",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Utah?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -44040,8 +43650,8 @@
       "id": "relationship:region-membership:vermont:northeast",
       "label": "Vermont belongsToRegion Northeast",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "vermont"
       ],
@@ -44063,15 +43673,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:vermont:region:northeast",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-vermont-northeast",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Vermont?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -44080,8 +43681,8 @@
       "id": "relationship:region-membership:virginia:south",
       "label": "Virginia belongsToRegion South",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "virginia"
       ],
@@ -44103,15 +43704,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:virginia:region:south",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-virginia-south",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Virginia?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -44120,8 +43712,8 @@
       "id": "relationship:region-membership:washington:west",
       "label": "Washington belongsToRegion West",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "washington"
       ],
@@ -44143,15 +43735,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:washington:region:west",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-washington-west",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Washington?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -44160,8 +43743,8 @@
       "id": "relationship:region-membership:west-virginia:south",
       "label": "West Virginia belongsToRegion South",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "west-virginia"
       ],
@@ -44183,15 +43766,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:west-virginia:region:south",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-west-virginia-south",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes West Virginia?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -44200,8 +43774,8 @@
       "id": "relationship:region-membership:wisconsin:midwest",
       "label": "Wisconsin belongsToRegion Midwest",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "wisconsin"
       ],
@@ -44223,15 +43797,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:wisconsin:region:midwest",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-wisconsin-midwest",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Wisconsin?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -44240,8 +43805,8 @@
       "id": "relationship:region-membership:wyoming:west",
       "label": "Wyoming belongsToRegion West",
       "kind": "curated-relationship",
-      "delivery": "fixed-scored",
-      "authored": true,
+      "delivery": "data-only",
+      "authored": false,
       "stateIds": [
         "wyoming"
       ],
@@ -44263,15 +43828,6 @@
           "type": "atlas-relationship",
           "instanceId": "belongsToRegion:state:wyoming:region:west",
           "reachability": "Atlas/profile data; not established as scored learning"
-        },
-        {
-          "file": "src/atlas/united-states-relationship-challenges.js",
-          "type": "mental-map-question",
-          "instanceId": "us-relationship-region-membership-wyoming-west",
-          "reachability": "U.S. Connections main-menu activity",
-          "prompt": "Which U.S. Census region includes Wyoming?",
-          "category": "capitals-and-regions",
-          "promptDirection": "state-to-related-feature"
         }
       ],
       "notes": []
@@ -53157,5 +52713,5 @@
       "notes": []
     }
   ],
-  "repositoryRevision": "1ce10bb616129bdbebc44365476451dc314b7d9f"
+  "repositoryRevision": "ac006c78a2762f95d190955dc82bd24b91da72b2"
 }

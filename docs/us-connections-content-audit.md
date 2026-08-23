@@ -1,12 +1,16 @@
 # U.S. Connections Content Audit
 
+## Decision status
+
+The audit led to a product decision to exclude all four-region Census membership questions from learner-facing U.S. Connections. The 50 memberships remain available as Atlas and reporting metadata. U.S. Connections now contains 252 prompt instances representing 202 distinct concepts: 100 capital prompts representing 50 bidirectional capital relationships, plus 152 retained Atlas relationships.
+
 ## Executive summary
 
 U.S. Connections has a sound foundation: it retrieves relationships between states and capitals, neighboring countries, coasts, rivers, Great Lakes, and mountain ranges. Most of those relationships can strengthen a learner's connected map of the United States. The strongest current material is concrete and map-verifiable: capital pairs, international boundaries, coastal relationships, and Great Lake adjacency. River and mountain relationships are also worthwhile, but they need more deliberate teaching and more precise semantics than a single state-to-feature fact can provide.
 
 The four U.S. Census regions are the clear content outlier. They are an official statistical classification, not a relationship a learner can reliably infer from shape, distance, direction, or physical geography. Cases such as Oklahoma, Maryland, and Delaware being in the Census "South," or Alaska and Hawaii being in the Census "West," are correct only within that named classification. The app exposes a state's Census region in the optional Atlas, but it does not teach the classification as a system before assessment. The learner-facing state and capital Journeys instead use 11 practical learning groups with names such as "Southern Plains / Southwest" and "Atlantic South." A learner can therefore understand Oklahoma's location and still miss the Census answer. These questions should leave the core U.S. Connections assessment unless and until Mappa Mundi intentionally teaches why Census regions exist, how their boundaries work, and how they differ from other valid regional schemes.
 
-The audit also found a gap between the activity's promise and its present inventory. The current production pool contains 302 question instances representing 252 distinct relationship concepts:
+The audit also found a gap between the activity's promise and its inventory at the time of review. That pool contained 302 question instances representing 252 distinct relationship concepts:
 
 - 100 state-capital questions: 50 relationships asked in both directions;
 - 50 Census-region memberships;

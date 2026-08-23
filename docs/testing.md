@@ -73,7 +73,7 @@ See [`progress-report-canonical-first.md`](progress-report-canonical-first.md) f
 npm run check:state-capital-relationships
 ```
 
-`scripts/check-united-states-relationship-learning.mjs` validates I2 U.S. Connections. It derives 50 Census-region memberships, 17 international-border edges, 25 coast edges, 36 major-river edges, 13 Great Lakes edges, and 61 mountain-range edges from the trusted atlas; proves that every physical target already belongs to the scored U.S. physical curriculum; and checks answer semantics, multi-relationship distractors, canonical persistence and deduplication, Progress Evidence Policy routing, the optional canonical Geographic Relationships report category, ordinary Mental Map isolation, merged coverage identities, D.C. exclusion, and production wiring. Run it with:
+`scripts/check-united-states-relationship-learning.mjs` validates I2 U.S. Connections. It proves that all 50 Census-region memberships remain trusted Atlas/reporting metadata but generate no learner-facing question; derives the retained 17 international-border edges, 25 coast edges, 36 major-river edges, 13 Great Lakes edges, and 61 mountain-range edges; proves that every physical target already belongs to the scored U.S. physical curriculum; and checks answer semantics, multi-relationship distractors, canonical persistence and deduplication, Progress Evidence Policy routing, the optional canonical Geographic Relationships report category, ordinary Mental Map isolation, merged coverage identities, D.C. exclusion, unrelated Journey region preservation, and production wiring. Run it with:
 
 ```sh
 npm run check:us-relationships

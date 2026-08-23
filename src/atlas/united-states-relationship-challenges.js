@@ -191,8 +191,11 @@ function createChallenge(relationships, relationship, atlas) {
 }
 
 export function getUnitedStatesRelationshipChallenges(atlas = unitedStatesAtlas) {
-  const relationships = getApprovedUnitedStatesAtlasRelationships(atlas);
-  const errors = validateApprovedUnitedStatesAtlasRelationships(relationships);
+  const atlasRelationships = getApprovedUnitedStatesAtlasRelationships(atlas);
+  const errors = validateApprovedUnitedStatesAtlasRelationships(atlasRelationships);
   if (errors.length) throw new Error(`Invalid approved U.S. atlas relationships: ${errors.join(" ")}`);
+  const relationships = atlasRelationships.filter(({ relationshipType }) => (
+    relationshipType !== UNITED_STATES_RELATIONSHIP_TYPES.REGION_MEMBERSHIP
+  ));
   return relationships.map((relationship) => createChallenge(relationships, relationship, atlas));
 }

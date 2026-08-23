@@ -55,7 +55,7 @@ export const acrossUnitedStatesExpedition = Object.freeze({
     {
       id: "make-connections",
       title: "Make U.S. connections",
-      description: "Retrieve capitals, borders, coasts, regions, and physical-feature relationships before seeing the atlas correction.",
+      description: "Retrieve capitals, borders, coasts, and physical-feature relationships before seeing the atlas correction.",
       mechanicLabel: "U.S. Connections",
       launch: { kind: "united-states-connections" },
       prerequisiteStepIds: ["follow-landscape"],
