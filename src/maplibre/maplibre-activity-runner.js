@@ -7,7 +7,11 @@ import {
   oceanTextureSize
 } from "./ocean-textures.js?v=20260601-instruction-target-nouns";
 import { createCoastlineDisplayGeoJson } from "./coastline-display-geometry.js?v=20260623-coastline-visual-cleanup-2";
-import { buildMentalMapFeatureFeedback } from "../atlas/mental-map-feature-feedback.js?v=20260720-mental-map-audio-1";
+import {
+  buildMentalMapFeatureFeedback,
+  buildMentalMapStateContextLabels,
+  createCapitalFeedbackFeatureCollection
+} from "../atlas/mental-map-feature-feedback.js?v=20260823-capital-connections-feedback-1";
 
 const colors = {
   ink: "#172033",
@@ -16,6 +20,8 @@ const colors = {
   countryBorder: "#ffffff",
   contextFill: "#e8f4ef",
   contextLine: "#ffffff",
+  capitalConnectionNeighborFill: "#e3e8ec",
+  capitalConnectionBackgroundFill: "#f3f5f7",
   targetFill: "#dbeafe",
   targetStroke: "#ffffff",
   previewFill: "#3b82f6",
@@ -472,6 +478,8 @@ export class MapLibreActivityRunner {
     this.borderChainVisualState = {};
     this.mentalMapChallengeResultVisualState = {};
     this.mentalMapFeatureFeedback = null;
+    this.mentalMapContextStateLabels = emptyFeatureCollection;
+    this.usCapitalFeedbackFeatures = emptyFeatureCollection;
     this.overviewMapSet = "world-europe";
     this.overviewMapView = null;
     this.difficulty = difficultyModes.easy;
@@ -556,7 +564,7 @@ export class MapLibreActivityRunner {
     this.cameraTraceEventHandler = typeof handler === "function" ? handler : null;
   }
 
-  async load({ activity, worldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, coastalWaterMask, mountainRanges, riverLines, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1 }) {
+  async load({ activity, worldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, coastalWaterMask, mountainRanges, riverLines, usStatesAtlas, usCapitalActivity, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1 }) {
     this.activity = activity;
     this.worldCountries = worldCountries;
     this.worldCountriesDisplay = createCoastlineDisplayGeoJson(worldCountries);
@@ -570,6 +578,7 @@ export class MapLibreActivityRunner {
     this.riverLines = riverLines || emptyFeatureCollection;
     this.usStatesAtlas = usStatesAtlas;
     this.usStatesAtlasDisplay = createCoastlineDisplayGeoJson(usStatesAtlas);
+    this.usCapitalFeedbackFeatures = createCapitalFeedbackFeatureCollection(usCapitalActivity);
     this.stateTargets = stateTargets;
     this.northAmericaAdmin1 = northAmericaAdmin1 || emptyFeatureCollection;
     this.australiaAdmin1 = australiaAdmin1 || emptyFeatureCollection;
@@ -990,6 +999,9 @@ export class MapLibreActivityRunner {
       learnerStateIds: [...new Set(visualState.learnerStateIds || [])],
       referenceStateIds: [...new Set(visualState.referenceStateIds || [])],
       contextStateIds: [...new Set(visualState.contextStateIds || [])],
+      neighborStateIds: [...new Set(visualState.neighborStateIds || [])],
+      cameraStateIds: [...new Set(visualState.cameraStateIds || [])],
+      capitalFeedback: visualState.capitalFeedback ? { ...visualState.capitalFeedback } : null,
       associatedFeatures: (visualState.associatedFeatures || []).map((feature) => ({ ...feature })),
       routeRenderingMode: visualState.routeRenderingMode || null,
       explicitRouteGeometry: visualState.explicitRouteGeometry || null
@@ -1070,9 +1082,18 @@ export class MapLibreActivityRunner {
       ...(visualState.learnerStateIds || []),
       ...(visualState.contextStateIds || [])
     ])];
+    const cameraStateIds = visualState.cameraStateIds?.length
+      ? visualState.cameraStateIds
+      : answerStateIds;
+    const associatedFeatures = visualState.capitalFeedback
+      ? [
+          ...(visualState.associatedFeatures || []).filter(({ entityId }) => entityId !== visualState.capitalFeedback.entityId),
+          { ...visualState.capitalFeedback, kind: "capital" }
+        ]
+      : visualState.associatedFeatures || [];
     const feedback = buildMentalMapFeatureFeedback({
-      associatedFeatures: visualState.associatedFeatures || [],
-      answerStateIds,
+      associatedFeatures,
+      answerStateIds: cameraStateIds,
       orderedStateIds: visualState.expectedSequenceStateIds || [],
       routeRenderingMode: visualState.routeRenderingMode || "state-centroid-sequence",
       explicitRouteGeometry: visualState.explicitRouteGeometry || null,
@@ -1082,26 +1103,42 @@ export class MapLibreActivityRunner {
         lakes: this.inlandWaters,
         mountainRanges: this.mountainRanges,
         waters: this.oceanZones,
-        countries: this.worldCountriesDisplay
+        countries: this.worldCountriesDisplay,
+        capitals: this.usCapitalFeedbackFeatures
       }
     });
     this.mentalMapFeatureFeedback = feedback;
+    this.mentalMapContextStateLabels = buildMentalMapStateContextLabels(
+      visualState.neighborStateIds || [],
+      this.usStatesAtlas
+    );
     this.map?.getSource("mental-map-question-features")?.setData(feedback.featureCollection);
     this.map?.getSource("mental-map-question-feature-labels")?.setData(feedback.labelCollection);
     this.map?.getSource("mental-map-question-route")?.setData(feedback.routeCollection);
     this.map?.getSource("mental-map-question-coastlines")?.setData(feedback.coastlineCollection);
+    this.map?.getSource("mental-map-context-state-labels")?.setData(this.mentalMapContextStateLabels);
 
     const resultVisible = ["mental-map-challenge-result", "compass-challenge-result"].includes(this.currentView);
     const hasFeatures = feedback.featureCollection.features.length > 0;
     const hasLabels = feedback.labelCollection.features.length > 0;
+    const hasCapital = feedback.labelCollection.features.some((feature) => feature.properties?.questionFeatureKind === "capital");
+    const hasContextStateLabels = this.mentalMapContextStateLabels.features.length > 0;
     const hasRoute = feedback.routeCollection.features.length > 0;
     ["mental-map-question-feature-fill", "mental-map-question-feature-line"].forEach((layerId) => {
       if (this.map?.getLayer(layerId)) this.map.setLayoutProperty(layerId, "visibility", resultVisible && hasFeatures ? "visible" : "none");
     });
     if (this.map?.getLayer("mental-map-question-feature-point-label")) {
       this.map.setLayoutProperty("mental-map-question-feature-point-label", "visibility", resultVisible && hasLabels ? "visible" : "none");
-      if (resultVisible && hasLabels) this.map.moveLayer("mental-map-question-feature-point-label");
     }
+    if (this.map?.getLayer("mental-map-capital-feedback-star")) {
+      this.map.setLayoutProperty("mental-map-capital-feedback-star", "visibility", resultVisible && hasCapital ? "visible" : "none");
+    }
+    if (this.map?.getLayer("mental-map-context-state-label")) {
+      this.map.setLayoutProperty("mental-map-context-state-label", "visibility", resultVisible && hasContextStateLabels ? "visible" : "none");
+    }
+    if (resultVisible && hasContextStateLabels) this.map.moveLayer("mental-map-context-state-label");
+    if (resultVisible && hasCapital) this.map.moveLayer("mental-map-capital-feedback-star");
+    if (resultVisible && hasLabels) this.map.moveLayer("mental-map-question-feature-point-label");
     ["mental-map-question-route-halo", "mental-map-question-route-line"].forEach((layerId) => {
       if (this.map?.getLayer(layerId)) this.map.setLayoutProperty(layerId, "visibility", resultVisible && hasRoute ? "visible" : "none");
     });
@@ -3126,6 +3163,11 @@ export class MapLibreActivityRunner {
       data: emptyFeatureCollection
     });
 
+    this.map.addSource("mental-map-context-state-labels", {
+      type: "geojson",
+      data: emptyFeatureCollection
+    });
+
     this.map.addSource("mental-map-question-route", {
       type: "geojson",
       data: emptyFeatureCollection
@@ -3402,6 +3444,52 @@ export class MapLibreActivityRunner {
       }
     });
 
+    this.ensureCapitalMarkerImages();
+
+    this.map.addLayer({
+      id: "mental-map-capital-feedback-star",
+      type: "symbol",
+      source: "mental-map-question-feature-labels",
+      filter: ["==", ["get", "questionFeatureKind"], "capital"],
+      layout: {
+        visibility: "none",
+        "icon-image": "mappa-state-capital-star",
+        "icon-size": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          3,
+          0.9,
+          6,
+          1.1
+        ],
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true
+      },
+      paint: {
+        "icon-opacity": 1
+      }
+    });
+
+    this.map.addLayer({
+      id: "mental-map-context-state-label",
+      type: "symbol",
+      source: "mental-map-context-state-labels",
+      layout: {
+        visibility: "none",
+        "text-field": ["get", "stateName"],
+        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+        "text-size": 12,
+        "text-allow-overlap": false,
+        "text-padding": 3
+      },
+      paint: {
+        "text-color": "#52606d",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1.6
+      }
+    });
+
     this.map.addLayer({
       id: "mental-map-question-feature-point-label",
       type: "symbol",
@@ -3411,7 +3499,19 @@ export class MapLibreActivityRunner {
         "text-field": ["get", "questionFeatureName"],
         "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
         "text-size": 13,
-        "text-allow-overlap": true
+        "text-allow-overlap": true,
+        "text-anchor": [
+          "case",
+          ["==", ["get", "questionFeatureKind"], "capital"],
+          "top",
+          "center"
+        ],
+        "text-offset": [
+          "case",
+          ["==", ["get", "questionFeatureKind"], "capital"],
+          ["literal", [0, 1.25]],
+          ["literal", [0, 0]]
+        ]
       },
       paint: {
         "text-color": "#083344",
@@ -7130,6 +7230,13 @@ export class MapLibreActivityRunner {
     if (["mental-map-challenge-result", "compass-challenge-result"].includes(this.currentView)) {
       const stateId = ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]];
       const visualState = this.mentalMapChallengeResultVisualState;
+      const hasCapitalConnectionContext = visualState.neighborStateIds.length > 0;
+      const neutralContextStops = hasCapitalConnectionContext
+        ? [
+            ["in", stateId, ["literal", visualState.neighborStateIds]], colors.capitalConnectionNeighborFill,
+            colors.capitalConnectionBackgroundFill
+          ]
+        : ["#dce8f5"];
       if (visualState.referenceStateIds.length) {
         return [
           "case",
@@ -7137,7 +7244,7 @@ export class MapLibreActivityRunner {
           ["in", stateId, ["literal", visualState.selectedCorrectStateIds]], "#2f9d72",
           ["in", stateId, ["literal", visualState.referenceStateIds]], "#9aa9b8",
           ["in", stateId, ["literal", visualState.correctStateIds]], "#4f88b5",
-          "#dce8f5"
+          ...neutralContextStops
         ];
       }
       return [
@@ -7147,7 +7254,7 @@ export class MapLibreActivityRunner {
         ["in", stateId, ["literal", visualState.missingStateIds]], "#e6a23c",
         ["in", stateId, ["literal", visualState.selectedCorrectStateIds]], "#2f9d72",
         ["in", stateId, ["literal", visualState.correctStateIds]], "#4f88b5",
-        "#dce8f5"
+        ...neutralContextStops
       ];
     }
 

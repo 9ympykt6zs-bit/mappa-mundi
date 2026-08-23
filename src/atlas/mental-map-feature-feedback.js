@@ -42,7 +42,47 @@ function getCollectionForKind(kind, collections) {
   if (kind === "mountain-range") return copyFeatureCollection(collections.mountainRanges);
   if (kind === "water") return copyFeatureCollection(collections.waters);
   if (kind === "country") return copyFeatureCollection(collections.countries);
+  if (kind === "capital") return copyFeatureCollection(collections.capitals);
   return EMPTY_FEATURE_COLLECTION;
+}
+
+export function createCapitalFeedbackFeatureCollection(activity = {}) {
+  return {
+    type: "FeatureCollection",
+    features: (activity.features || activity.targets || [])
+      .filter(({ id, lon, lat }) => id && Number.isFinite(Number(lon)) && Number.isFinite(Number(lat)))
+      .map((capital) => ({
+        type: "Feature",
+        properties: {
+          id: capital.id,
+          name: capital.name,
+          state: capital.state || ""
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [Number(capital.lon), Number(capital.lat)]
+        }
+      }))
+  };
+}
+
+export function buildMentalMapStateContextLabels(stateIds = [], stateFeatures = EMPTY_FEATURE_COLLECTION) {
+  return {
+    type: "FeatureCollection",
+    features: [...new Set(stateIds)].map((stateId) => {
+      const feature = getStateFeature(stateId, stateFeatures);
+      const coordinates = getBoundsCenter(getGeometryBounds(feature?.geometry));
+      return feature && coordinates ? {
+        type: "Feature",
+        properties: {
+          stateId,
+          stateName: feature.properties?.name || feature.properties?.NAME || stateId,
+          contextRole: "neighbor"
+        },
+        geometry: { type: "Point", coordinates }
+      } : null;
+    }).filter(Boolean)
+  };
 }
 
 function findFeatureGeometry(featureMetadata, collections) {

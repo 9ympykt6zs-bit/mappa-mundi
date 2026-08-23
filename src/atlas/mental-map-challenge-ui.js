@@ -2,7 +2,7 @@ import { getStateById } from "./united-states-atlas-queries.js";
 import {
   getMentalMapScoreLabel,
   isMentalMapAnswerChoiceDisabled
-} from "./mental-map-challenge-engine.js?v=20260821-feedback-horizontal-wheel-1";
+} from "./mental-map-challenge-engine.js?v=20260823-capital-connections-feedback-1";
 import {
   isMentalMapRecallAllChallenge,
   MENTAL_MAP_ANSWER_MODES,

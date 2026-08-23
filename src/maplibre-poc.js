@@ -9,7 +9,7 @@ import {
   selectMentalMapAnswer,
   submitMentalMapAnswer,
   undoMentalMapAnswer
-} from "./atlas/mental-map-challenge-engine.js?v=20260821-feedback-horizontal-wheel-1";
+} from "./atlas/mental-map-challenge-engine.js?v=20260823-capital-connections-feedback-1";
 import {
   getUnifiedMentalMapChallenges,
   selectNextUnifiedMentalMapChallenge
@@ -289,6 +289,7 @@ const mountainRangesPath = "assets/data/physical-features/us-mountain-ranges.geo
 const riverLinesPath = "assets/data/physical-features/proof-sheet-rivers.geojson?v=20260620-us-rivers-continuity-assembly-1";
 const riverCartographicRepairsPath = "assets/data/physical-features/us-river-cartographic-repairs.json?v=20260621-cartographic-repairs-1";
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
+const usCapitalFeedbackPath = "assets/maps/data/us-capitals.json";
 const stateGeoJsonPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const northAmericaAdmin1Path = "assets/maps/data/maplibre-north-america-admin1.geojson";
 const australiaAdmin1Path = "assets/maps/data/maplibre-australia-admin1.geojson";
@@ -3957,7 +3958,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260821-central-america-graduation-1"),
       import("./maplibre/activity-session.js?v=20260821-central-america-graduation-1"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260821-feedback-horizontal-wheel-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260823-capital-connections-feedback-1"),
       import("./chip-speech.js?v=20260728-activity-audio-1")
     ]).then(([
       ,
@@ -4013,7 +4014,7 @@ async function ensureMapReady() {
       await ensureMapRuntimeLoaded();
       await ensureActivityDataLoaded();
 
-      const [worldCountries, supplementalWorldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, coastalWaterMask, mountainRanges, riverLines, usStatesAtlas, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
+      const [worldCountries, supplementalWorldCountries, oceanZones, coContinentOverrides, coContinentLand, inlandWaters, coastalWaterMask, mountainRanges, riverLines, usStatesAtlas, usCapitalActivity, stateTargets, northAmericaAdmin1, australiaAdmin1, chinaAdmin1, russiaAdmin1, indiaAdmin1, brazilAdmin1, japanAdmin1, germanyAdmin1, franceAdmin1, spainAdmin1, italyAdmin1, unitedKingdomAdmin1] = await Promise.all([
         fetchJson(worldCountriesPath),
         Promise.all(worldCountrySupplements.map((path) => fetchJson(path))),
         fetchJson(oceanZonesPath),
@@ -4024,6 +4025,7 @@ async function ensureMapReady() {
         fetchJson(mountainRangesPath),
         fetchJson(riverLinesPath),
         fetchJson(usStatesAtlasPath),
+        fetchJson(usCapitalFeedbackPath),
         fetchJson(stateGeoJsonPath),
         fetchJson(northAmericaAdmin1Path),
         fetchJson(australiaAdmin1Path),
@@ -4069,6 +4071,7 @@ async function ensureMapReady() {
         mountainRanges,
         riverLines,
         usStatesAtlas,
+        usCapitalActivity,
         stateTargets,
         northAmericaAdmin1,
         australiaAdmin1,
@@ -25726,6 +25729,7 @@ function startMentalMapQuestionForTest(challengeId) {
 function getMentalMapVisualStateForTest() {
   if (currentAppScreen !== "mental-map-challenge") return null;
   const copyForTest = (value) => JSON.parse(JSON.stringify(value ?? null));
+  const mapBounds = runner?.map?.getBounds?.();
   return {
     challengeId: activeMentalMapChallenge?.id || "",
     prompt: activeMentalMapChallenge?.prompt || "",
@@ -25736,7 +25740,35 @@ function getMentalMapVisualStateForTest() {
     stateFillExpression: copyForTest(runner?.getUsStateContextFillExpression?.()),
     feedbackFeatureEntityIds: (runner?.mentalMapFeatureFeedback?.featureCollection?.features || [])
       .map((feature) => feature.properties?.questionFeatureEntityId)
-      .filter(Boolean)
+      .filter(Boolean),
+    capitalFeedbackFeatures: copyForTest((runner?.mentalMapFeatureFeedback?.featureCollection?.features || [])
+      .filter((feature) => feature.properties?.questionFeatureKind === "capital")),
+    capitalFeedbackLabels: copyForTest((runner?.mentalMapFeatureFeedback?.labelCollection?.features || [])
+      .filter((feature) => feature.properties?.questionFeatureKind === "capital")),
+    contextStateLabels: copyForTest(runner?.mentalMapContextStateLabels?.features || []),
+    feedbackCameraBounds: copyForTest(runner?.mentalMapFeatureFeedback?.cameraBounds || null),
+    mapCamera: runner?.map ? {
+      center: [runner.map.getCenter().lng, runner.map.getCenter().lat],
+      zoom: runner.map.getZoom(),
+      bounds: mapBounds ? [
+        [mapBounds.getWest(), mapBounds.getSouth()],
+        [mapBounds.getEast(), mapBounds.getNorth()]
+      ] : null
+    } : null,
+    feedbackLayerVisibility: runner?.map ? {
+      capitalStar: runner.map.getLayer("mental-map-capital-feedback-star")
+        ? runner.map.getLayoutProperty("mental-map-capital-feedback-star", "visibility")
+        : null,
+      capitalLabel: runner.map.getLayer("mental-map-question-feature-point-label")
+        ? runner.map.getLayoutProperty("mental-map-question-feature-point-label", "visibility")
+        : null,
+      neighborLabels: runner.map.getLayer("mental-map-context-state-label")
+        ? runner.map.getLayoutProperty("mental-map-context-state-label", "visibility")
+        : null,
+      stateBoundaries: runner.map.getLayer("us-state-context-line")
+        ? runner.map.getLayoutProperty("us-state-context-line", "visibility")
+        : null
+    } : null
   };
 }
 

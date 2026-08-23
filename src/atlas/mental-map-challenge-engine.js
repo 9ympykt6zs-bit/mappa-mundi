@@ -1,4 +1,4 @@
-import { getStateById } from "./united-states-atlas-queries.js";
+import { getBorderingStates, getStateById } from "./united-states-atlas-queries.js";
 import { getEntity, unitedStatesAtlas } from "./united-states-atlas-data.js";
 import { findAllShortestBorderPaths, validateBorderRoute } from "./border-chain.js";
 import {
@@ -367,6 +367,20 @@ export function getMentalMapResultVisualState(challenge, evaluation) {
       exclusiveCoastStateIds
     } : null;
   }).filter(Boolean);
+  const isCapitalConnection = Boolean(challenge.sourceActivityId === "us-state-capital-relationships"
+    && challenge.relationship?.stateId
+    && challenge.relationship?.capitalEntityId);
+  const capitalConnectionStateId = isCapitalConnection ? challenge.relationship.stateId : "";
+  const neighborStateIds = isCapitalConnection
+    ? getBorderingStates(capitalConnectionStateId).map(({ id }) => id)
+    : [];
+  const capitalFeedback = isCapitalConnection ? {
+    entityId: challenge.relationship.capitalEntityId,
+    id: challenge.relationship.capitalId,
+    name: challenge.relationship.capitalName,
+    sourceFeatureId: getEntity(unitedStatesAtlas, challenge.relationship.capitalEntityId)?.source?.featureId || "",
+    stateId: capitalConnectionStateId
+  } : null;
   return {
     correctStateIds,
     selectedCorrectStateIds: geographicFeedbackStateIds(evaluation.selectedValidStateIds),
@@ -380,8 +394,14 @@ export function getMentalMapResultVisualState(challenge, evaluation) {
     referenceStateIds,
     contextStateIds: unique([
       ...referenceStateIds,
+      ...neighborStateIds,
       ...directionArrows.flatMap(({ fromStateId, toStateId }) => [fromStateId, toStateId])
     ]),
+    neighborStateIds,
+    cameraStateIds: isCapitalConnection
+      ? unique([capitalConnectionStateId, ...neighborStateIds])
+      : [],
+    capitalFeedback,
     associatedFeatures,
     routeRenderingMode: getMentalMapRouteRenderingMode(challenge),
     explicitRouteGeometry: challenge.explicitRouteGeometry || null,
