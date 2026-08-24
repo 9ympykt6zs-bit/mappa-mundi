@@ -18,7 +18,26 @@ The intended progression is:
 
 The learner should not experience Across the United States as a checklist of separate activities. Activities remain valuable, but they become tools supporting a coherent learning progression.
 
-## Core progression model
+## Progression Philosophy: Guided Freedom
+
+Mappa Mundi should guide learners without unnecessarily restricting access. A clear progression can help a learner understand what foundations matter, what would be useful to learn next, and how different experiences contribute to geographic understanding. Guidance should make the journey easier to navigate without turning every recommendation into a gate.
+
+Learners arrive with different levels and patterns of prior knowledge. One learner may know state locations but not capitals. Another may understand physical geography while having difficulty reconstructing a regional map. A third may already have substantial knowledge of the United States and be ready to demonstrate it through integrated reasoning.
+
+The goal is not to make learners complete every activity. The goal is to help learners understand geography and to represent what they know accurately. Progression should therefore respond to demonstrated understanding as well as participation in learning experiences.
+
+Guided freedom means preserving both:
+
+- a recommended sequence grounded in genuine learning dependencies;
+- learner agency to explore, practice, revisit, or demonstrate knowledge through another appropriate path.
+
+The progression model should distinguish a helpful prerequisite from an administrative barrier. Some knowledge makes later work more approachable, but the system should avoid assuming that knowledge can only have been acquired through Mappa Mundi or through one specific activity.
+
+## Recommended learning sequence
+
+The four stages below describe an intended conceptual progression. They express how geographic understanding can develop from foundational map knowledge through physical systems and relationships to integrated reasoning.
+
+The sequence represents learning dependencies, not necessarily mandatory gates. It can support recommendations, explanations, and readiness signals while leaving the final degree of restriction as a future product decision.
 
 ### Stage 1 — Learn the Map
 
@@ -77,8 +96,9 @@ Existing physical-feature learning activities may support this stage. Their geog
 
 This stage moves from knowing individual objects toward reasoning about how they are connected. It includes:
 
+- geographic and spatial relationships;
 - neighboring states and adjacency;
-- state-to-state relationships;
+- state-to-state connections and relationships;
 - state-capital relationships;
 - relationships between states and physical features;
 - borders, coasts, and other geographic connections;
@@ -116,6 +136,8 @@ Combined challenges may ask learners to:
 - plan routes through neighboring states;
 - use direction, adjacency, and physical geography to solve geographic problems.
 
+Together, these challenges provide demonstrations of understanding through combined geographic reasoning rather than completion of one isolated activity type.
+
 The integrated experience may draw on existing activity mechanics without duplicating them or forcing them into one homogeneous gameplay system. Its value comes from composition: the learner must choose and apply relevant knowledge across a sustained geographic journey.
 
 “Explore” in this proposal means active synthesis and application. It does not imply that Atlas browsing or open-ended exploration must be removed; those experiences may remain useful supporting paths.
@@ -144,7 +166,7 @@ The distinction between learning and assessment should depend on the attempt con
 
 This proposal does not change canonical evidence, scoring, or Progress Report policy. It identifies a learner-experience principle that future implementation work would need to respect.
 
-## Progression without an activity checklist
+## Recommendations instead of restrictions
 
 The stages provide a comprehensible direction, but they do not necessarily require rigid completion of every supporting activity. Different learners may already know different parts of the map or may develop skills unevenly.
 
@@ -158,7 +180,76 @@ A stage could eventually communicate:
 
 This preserves structure without reducing progression to time spent in each mode. A learner who demonstrates knowledge should not be required to repeat every introductory activity merely because it appears earlier in the proposed model.
 
+Mappa Mundi should prefer recommendations over hard locks. When a learner enters an experience before completing useful preparation, the system can explain the relationship and recommend a next step without automatically removing access.
+
+For example, a learner entering Connections before studying physical features might receive:
+
+> Connections are easier when you understand the physical map. We recommend exploring physical features first, but you can continue.
+
+The learner retains agency. The recommendation provides meaningful guidance, while the decision to continue does not become an error or a violation of the intended path.
+
+Hard prerequisites may still be appropriate where an experience would otherwise be unusable, misleading, or incapable of producing meaningful evidence. They should represent genuine dependencies and remain the exception rather than the default progression mechanism.
+
 The existing [Expedition Learning Model](expedition-learning-model.md) provides broader guidance for flexible progression, knowledge checks, and orchestration across distinct activities. This document applies those ideas specifically to the proposed Across the United States stage model.
+
+## Prior Knowledge and Demonstration Pathways
+
+Learners may already know a country or region through school, travel, personal interest, another learning product, or previous experience that Mappa Mundi did not record. The progression model should eventually let them demonstrate that knowledge instead of requiring them to repeat lessons they already understand.
+
+A future region-entry decision could offer two broad pathways:
+
+### Option 1 — Learn the region
+
+Follow the recommended progression through foundational map learning, physical systems, relationships, and integrated challenges. Recommendations can respond to the learner's developing knowledge and provide appropriate support.
+
+### Option 2 — Demonstrate existing knowledge
+
+Attempt an integrated exploration challenge that samples the kinds of understanding important for the region. A useful demonstration would need to go beyond one narrow fact type and may combine location, identification, reconstruction, physical geography, connections, routes, or other geographic reasoning.
+
+If the learner demonstrates sufficient understanding:
+
+- the region can be marked as demonstrated;
+- recommended introductory lessons can be bypassed rather than falsely recorded as completed;
+- the learner can continue to other regions or more advanced geographic work;
+- the earlier learning experiences can remain available for optional practice or exploration.
+
+Demonstration should not fabricate a history of lessons the learner did not take. It represents current evidence of understanding through a distinct pathway.
+
+This document does not define the content, threshold, adaptivity, or evidence policy for a demonstration challenge. Those decisions require separate educational and technical design.
+
+## Global implications
+
+Guided freedom should extend beyond the United States. Future world geography progression should not require a learner to spend extensive time completing basic U.S. lessons before exploring Europe, Asia, Africa, Central America, South America, Oceania, or another area of interest.
+
+Regions should have independent progress states. Knowledge of one region may inform recommendations in another, but it should not become an arbitrary universal gate.
+
+A future world map could communicate distinctions such as:
+
+- **demonstrated regions**, where the learner has provided sufficient evidence of broad understanding;
+- **learning regions**, where the learner is actively building knowledge;
+- **unfamiliar regions**, where little or no evidence is available;
+- **recommended next regions**, selected because they provide a useful or motivating next step.
+
+These states should help the learner choose where to go without implying that the world must be learned in one fixed continental order. A learner familiar with the United States should be able to move into Europe or Asia, while still retaining access to deeper U.S. challenges or review.
+
+## Terminology
+
+Learner-facing terminology should not assume that “completion” means time spent or that every form of progress comes from finishing assigned content.
+
+Possible concepts include:
+
+- **Learning** — the learner is actively developing knowledge through instruction, practice, support, or review.
+- **Explored** — the learner has engaged with a place or topic, without necessarily demonstrating durable or comprehensive knowledge.
+- **Demonstrated** — the learner has shown meaningful understanding through an appropriate challenge or body of evidence.
+- **Verified** — a possible term for knowledge confirmed under a defined assessment condition, if the product eventually needs that distinction.
+
+These terms are not finalized. Future language should clearly distinguish:
+
+- learning content or participating in learning experiences;
+- demonstrating knowledge through performance;
+- internal mastery heuristics used for recommendations, review, or reporting.
+
+An internal mastery estimate should not automatically become a learner-facing claim that a region is “complete.” Similarly, a demonstrated region should not imply that the learner has exhausted everything worth learning there.
 
 ## Future trail/menu implications
 
@@ -193,6 +284,11 @@ Direct access to individual activities may remain available through a secondary 
 
 ## Open questions
 
+- What score or evidence should qualify a region as demonstrated?
+- Should demonstration challenges adapt to the learner?
+- How broad must regional knowledge be to bypass lessons?
+- Should users be able to revisit demonstrated regions?
+- How should Progress Report represent demonstrated regions?
 - Should learners be able to skip or place out of stages through “Show What You Know” knowledge checks?
 - How much freedom should learners have to move between stages before completing recommended foundations?
 - Are the four stages sequential milestones, flexible areas of focus, or a mixture of both?
