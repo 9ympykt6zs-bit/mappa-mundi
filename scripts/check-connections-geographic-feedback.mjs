@@ -10,6 +10,7 @@ import {
   buildMentalMapStateContextLabels
 } from "../src/atlas/mental-map-feature-feedback.js";
 import { getUnitedStatesRelationshipChallenges } from "../src/atlas/united-states-relationship-challenges.js";
+import { MapLibreActivityRunner } from "../src/maplibre/maplibre-activity-runner.js";
 
 function readJson(path) {
   return JSON.parse(readFileSync(new URL(path, import.meta.url), "utf8").replace(/^\uFEFF/, ""));
@@ -61,14 +62,37 @@ assert.equal(mountainRanges.features.every((feature) => (
 assert.equal(feedback.featureCollection.features.length, 0);
 assert.deepEqual(feedback.mountainRenderingModes, [{
   entityId: "mountain-range:rocky-mountains",
-  mode: "authored-symbols",
+  mode: "mountain-ranges-activity-visualization",
   geometryPrecision: "approximate"
 }]);
-assert.ok(feedback.labelCollection.features.some(({ properties }) => properties.questionFeatureRole === "mountain-symbol"));
+assert.equal(feedback.labelCollection.features.some(({ properties }) => properties.questionFeatureRole === "mountain-symbol"), false);
 assert.ok(feedback.labelCollection.features.some(({ properties }) => (
   properties.questionFeatureRole === "feature-label"
   && properties.questionFeatureName === "Rocky Mountains"
 )));
+const runner = Object.assign(Object.create(MapLibreActivityRunner.prototype), {
+  activity: { id: "us-connections", targets: [] },
+  mountainRanges
+});
+const feedbackSymbols = runner.getMentalMapMountainFeedbackSymbolGeoJson(feedback).features;
+const activityTarget = {
+  id: "rocky-mountains",
+  name: "Rocky Mountains",
+  type: "mountain-range",
+  kind: "shape"
+};
+assert.deepEqual(
+  feedbackSymbols,
+  runner.getMountainRangeSymbolFeatures(activityTarget),
+  "Connections must reuse the Mountain Ranges activity symbol generator without a feedback-only approximation."
+);
+assert.ok(feedbackSymbols.length > mountainRanges.features.find(({ properties }) => (
+  properties.id === "rocky-mountains"
+)).properties.symbolAnchors.length, "Activity visualization should retain its authored dense symbol chain.");
+assert.ok(feedbackSymbols.every(({ properties }) => (
+  properties.hasStylizedMountainRangeArt === true
+  && properties.mountainRangeGlyphImage
+)), "Connections symbols must retain the activity's authored styling contract.");
 assert.ok(feedback.cameraBounds[0][0] < -114, "Connections camera should include Colorado's western neighbor context.");
 assert.ok(feedback.cameraBounds[1][0] > -95, "Connections camera should include Colorado's eastern neighbor context.");
 assert.ok(feedback.cameraBounds[0][1] < 32, "Connections camera should include Colorado's southern neighbor context.");
@@ -83,6 +107,8 @@ const alaskaLabel = stateLabels.features.find(({ properties }) => properties.sta
 assert.ok(alaskaLabel.geometry.coordinates[0] < -150 && alaskaLabel.geometry.coordinates[0] > -170);
 
 assert.doesNotMatch(runnerSource, /mental-map-mountain-feedback-corridor/);
+assert.match(runnerSource, /mental-map-mountain-feedback-symbols/);
+assert.match(runnerSource, /mental-map-mountain-feedback-glow/);
 assert.match(runnerSource, /mental-map-mountain-feedback-symbol/);
 assert.match(runnerSource, /mental-map-target-state-label/);
 assert.match(runnerSource, /"text-allow-overlap": false/);

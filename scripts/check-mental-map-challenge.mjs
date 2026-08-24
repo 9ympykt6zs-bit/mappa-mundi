@@ -494,10 +494,10 @@ assert.deepEqual(visualState.associatedFeatures.map((feature) => feature.entityI
     if (entityId === "water:gulf-of-mexico") assert.ok(feedback.missingFeatureIds.includes(entityId));
   } else if (entityId.startsWith("mountain-range:")) {
     assert.ok(!feedback.featureCollection.features.some((feature) => feature.properties.questionFeatureEntityId === entityId));
-    assert.ok(feedback.labelCollection.features.some((feature) => (
-      feature.properties.questionFeatureEntityId === entityId
-      && feature.properties.questionFeatureRole === "mountain-symbol"
-      && feature.properties.questionFeatureRenderingMode === "authored-symbols"
+    assert.ok(feedback.mountainFeedbackTargets.some((target) => target.entityId === entityId));
+    assert.ok(feedback.mountainRenderingModes.some((rendering) => (
+      rendering.entityId === entityId
+      && rendering.mode === "mountain-ranges-activity-visualization"
     )));
   } else {
     assert.ok(feedback.featureCollection.features.some((feature) => feature.properties.questionFeatureEntityId === entityId));

@@ -211,11 +211,17 @@ test("Connections feedback keeps all 50 states available with readable boundary 
   expect(state.feedbackFeatures).toEqual([]);
   expect(state.mountainRenderingModes).toEqual([{
     entityId: "mountain-range:rocky-mountains",
-    mode: "authored-symbols",
+    mode: "mountain-ranges-activity-visualization",
     geometryPrecision: "approximate"
   }]);
-  expect(state.feedbackLabels.some(({ properties }) => properties.questionFeatureRole === "mountain-symbol")).toBe(true);
+  expect(state.feedbackLabels.some(({ properties }) => properties.questionFeatureRole === "mountain-symbol")).toBe(false);
+  expect(state.mountainFeedbackSymbols.length).toBeGreaterThan(20);
+  expect(state.mountainFeedbackSymbols.every(({ properties }) => (
+    properties.hasStylizedMountainRangeArt === true
+    && Boolean(properties.mountainRangeGlyphImage)
+  ))).toBe(true);
   expect(state.feedbackLayerVisibility.mountainSymbols).toBe("visible");
+  expect(state.feedbackLayerVisibility.mountainGlow).toBe("visible");
   expect(state.feedbackLayerVisibility.stateFill).toBe("visible");
   expect(state.feedbackLayerVisibility.neighborLabels).toBe("visible");
   expect(state.feedbackLayerVisibility.targetStateLabel).toBe("visible");

@@ -3958,7 +3958,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260821-central-america-graduation-1"),
       import("./maplibre/activity-session.js?v=20260821-central-america-graduation-1"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260823-connections-feedback-camera-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260824-connections-mountain-visualization-1"),
       import("./chip-speech.js?v=20260728-activity-audio-1")
     ]).then(([
       ,
@@ -25782,6 +25782,7 @@ function getMentalMapVisualStateForTest() {
       .filter(Boolean),
     feedbackFeatures: copyForTest(runner?.mentalMapFeatureFeedback?.featureCollection?.features || []),
     feedbackLabels: copyForTest(runner?.mentalMapFeatureFeedback?.labelCollection?.features || []),
+    mountainFeedbackSymbols: copyForTest(runner?.mentalMapMountainFeedbackSymbols?.features || []),
     mountainRenderingModes: copyForTest(runner?.mentalMapFeatureFeedback?.mountainRenderingModes || []),
     availableStateIds: copyForTest((runner?.usStatesAtlas?.features || [])
       .map((feature) => feature.properties?.id)
@@ -25827,6 +25828,9 @@ function getMentalMapVisualStateForTest() {
         : null,
       mountainSymbols: runner.map.getLayer("mental-map-mountain-feedback-symbol")
         ? runner.map.getLayoutProperty("mental-map-mountain-feedback-symbol", "visibility")
+        : null,
+      mountainGlow: runner.map.getLayer("mental-map-mountain-feedback-glow")
+        ? runner.map.getLayoutProperty("mental-map-mountain-feedback-glow", "visibility")
         : null,
       stateBoundaries: runner.map.getLayer("us-state-context-line")
         ? runner.map.getLayoutProperty("us-state-context-line", "visibility")

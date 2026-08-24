@@ -11,7 +11,7 @@ import {
   buildMentalMapFeatureFeedback,
   buildMentalMapStateContextLabels,
   createCapitalFeedbackFeatureCollection
-} from "../atlas/mental-map-feature-feedback.js?v=20260823-connections-atlas-context-1";
+} from "../atlas/mental-map-feature-feedback.js?v=20260824-connections-mountain-visualization-1";
 
 const colors = {
   ink: "#172033",
@@ -478,6 +478,7 @@ export class MapLibreActivityRunner {
     this.borderChainVisualState = {};
     this.mentalMapChallengeResultVisualState = {};
     this.mentalMapFeatureFeedback = null;
+    this.mentalMapMountainFeedbackSymbols = emptyFeatureCollection;
     this.mentalMapContextStateLabels = emptyFeatureCollection;
     this.usCapitalFeedbackFeatures = emptyFeatureCollection;
     this.overviewMapSet = "world-europe";
@@ -1137,6 +1138,8 @@ export class MapLibreActivityRunner {
     );
     this.map?.getSource("mental-map-question-features")?.setData(feedback.featureCollection);
     this.map?.getSource("mental-map-question-feature-labels")?.setData(feedback.labelCollection);
+    this.mentalMapMountainFeedbackSymbols = this.getMentalMapMountainFeedbackSymbolGeoJson(feedback);
+    this.map?.getSource("mental-map-mountain-feedback-symbols")?.setData(this.mentalMapMountainFeedbackSymbols);
     this.map?.getSource("mental-map-question-route")?.setData(feedback.routeCollection);
     this.map?.getSource("mental-map-question-coastlines")?.setData(feedback.coastlineCollection);
     this.map?.getSource("mental-map-context-state-labels")?.setData(this.mentalMapContextStateLabels);
@@ -1145,7 +1148,7 @@ export class MapLibreActivityRunner {
     const hasFeatures = feedback.featureCollection.features.length > 0;
     const hasLabels = feedback.labelCollection.features.length > 0;
     const hasCapital = feedback.labelCollection.features.some((feature) => feature.properties?.questionFeatureKind === "capital");
-    const hasMountainSymbols = feedback.labelCollection.features.some((feature) => feature.properties?.questionFeatureRole === "mountain-symbol");
+    const hasMountainSymbols = this.mentalMapMountainFeedbackSymbols.features.length > 0;
     const hasContextStateLabels = this.mentalMapContextStateLabels.features.length > 0;
     const hasTargetStateLabels = this.mentalMapContextStateLabels.features.some((feature) => feature.properties?.contextRole === "target");
     const hasRoute = feedback.routeCollection.features.length > 0;
@@ -1158,13 +1161,11 @@ export class MapLibreActivityRunner {
     if (this.map?.getLayer("mental-map-capital-feedback-star")) {
       this.map.setLayoutProperty("mental-map-capital-feedback-star", "visibility", resultVisible && hasCapital ? "visible" : "none");
     }
-    if (this.map?.getLayer("mental-map-mountain-feedback-symbol")) {
-      this.map.setLayoutProperty(
-        "mental-map-mountain-feedback-symbol",
-        "visibility",
-        resultVisible && hasMountainSymbols ? "visible" : "none"
-      );
-    }
+    ["mental-map-mountain-feedback-glow", "mental-map-mountain-feedback-symbol"].forEach((layerId) => {
+      if (this.map?.getLayer(layerId)) {
+        this.map.setLayoutProperty(layerId, "visibility", resultVisible && hasMountainSymbols ? "visible" : "none");
+      }
+    });
     if (this.map?.getLayer("mental-map-context-state-label")) {
       this.map.setLayoutProperty("mental-map-context-state-label", "visibility", resultVisible && hasContextStateLabels ? "visible" : "none");
     }
@@ -1174,7 +1175,10 @@ export class MapLibreActivityRunner {
     if (resultVisible && hasContextStateLabels) this.map.moveLayer("mental-map-context-state-label");
     if (resultVisible && hasTargetStateLabels) this.map.moveLayer("mental-map-target-state-label");
     if (resultVisible && hasCapital) this.map.moveLayer("mental-map-capital-feedback-star");
-    if (resultVisible && hasMountainSymbols) this.map.moveLayer("mental-map-mountain-feedback-symbol");
+    if (resultVisible && hasMountainSymbols) {
+      this.map.moveLayer("mental-map-mountain-feedback-glow");
+      this.map.moveLayer("mental-map-mountain-feedback-symbol");
+    }
     if (resultVisible && hasLabels) this.map.moveLayer("mental-map-question-feature-point-label");
     ["mental-map-question-route-halo", "mental-map-question-route-line"].forEach((layerId) => {
       if (this.map?.getLayer(layerId)) this.map.setLayoutProperty(layerId, "visibility", resultVisible && hasRoute ? "visible" : "none");
@@ -3270,6 +3274,11 @@ export class MapLibreActivityRunner {
       data: emptyFeatureCollection
     });
 
+    this.map.addSource("mental-map-mountain-feedback-symbols", {
+      type: "geojson",
+      data: emptyFeatureCollection
+    });
+
     this.map.addSource("mental-map-context-state-labels", {
       type: "geojson",
       data: emptyFeatureCollection
@@ -3685,19 +3694,35 @@ export class MapLibreActivityRunner {
     this.ensureMountainRangeImages();
 
     this.map.addLayer({
-      id: "mental-map-mountain-feedback-symbol",
+      id: "mental-map-mountain-feedback-glow",
       type: "symbol",
-      source: "mental-map-question-feature-labels",
-      filter: ["==", ["get", "questionFeatureRole"], "mountain-symbol"],
+      source: "mental-map-mountain-feedback-symbols",
+      filter: ["!=", ["get", "visualOnlyContinuation"], true],
       layout: {
         visibility: "none",
-        "icon-image": "mappa-mountain-range-glyph",
-        "icon-size": ["interpolate", ["linear"], ["zoom"], 2, 0.42, 5, 0.66],
+        "icon-image": ["coalesce", ["get", "mountainRangeGlowImage"], "mappa-mountain-range-glow"],
+        "icon-size": this.getMentalMapMountainFeedbackGlowSizeExpression(),
         "icon-allow-overlap": true,
         "icon-ignore-placement": true
       },
       paint: {
-        "icon-opacity": 0.9
+        "icon-opacity": this.getMentalMapMountainFeedbackGlowOpacityExpression()
+      }
+    });
+
+    this.map.addLayer({
+      id: "mental-map-mountain-feedback-symbol",
+      type: "symbol",
+      source: "mental-map-mountain-feedback-symbols",
+      layout: {
+        visibility: "none",
+        "icon-image": ["coalesce", ["get", "mountainRangeGlyphImage"], "mappa-mountain-range-glyph"],
+        "icon-size": this.getMentalMapMountainFeedbackSymbolSizeExpression(),
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true
+      },
+      paint: {
+        "icon-opacity": this.getMentalMapMountainFeedbackSymbolOpacityExpression()
       }
     });
 
@@ -5200,6 +5225,19 @@ export class MapLibreActivityRunner {
     };
   }
 
+  getMentalMapMountainFeedbackSymbolGeoJson(feedback = this.mentalMapFeatureFeedback) {
+    return {
+      type: "FeatureCollection",
+      features: (feedback?.mountainFeedbackTargets || []).flatMap((target) => (
+        this.getMountainRangeSymbolFeatures({
+          ...target,
+          type: "mountain-range",
+          kind: "shape"
+        })
+      ))
+    };
+  }
+
   getMountainRangeCorridorGeoJson() {
     return {
       type: "FeatureCollection",
@@ -5250,7 +5288,7 @@ export class MapLibreActivityRunner {
       return this.getStylizedMountainSymbolFeatures(target, visualArt);
     }
 
-    const sourceFeature = this.findSourceShapeFeature(target, this.activity);
+    const sourceFeature = this.findMountainRangeSourceFeature(target);
     const anchors = sourceFeature?.properties?.symbolAnchors;
 
     if (!Array.isArray(anchors)) {
@@ -5283,7 +5321,7 @@ export class MapLibreActivityRunner {
   }
 
   getMountainRangeVisualArt(target) {
-    const sourceFeature = this.findSourceShapeFeature(target, this.activity);
+    const sourceFeature = this.findMountainRangeSourceFeature(target);
     const visualArt = sourceFeature?.properties?.visualArt;
 
     if (visualArt?.kind !== "stylized-mountain-range") {
@@ -7174,6 +7212,27 @@ export class MapLibreActivityRunner {
         0.92
       ]
     ];
+  }
+
+  getMentalMapMountainFeedbackSymbolSizeExpression() {
+    return ["*", ["coalesce", ["get", "iconScale"], 0.72], 1.02];
+  }
+
+  getMentalMapMountainFeedbackGlowSizeExpression() {
+    return ["*", ["coalesce", ["get", "iconScale"], 0.72], 1.46];
+  }
+
+  getMentalMapMountainFeedbackSymbolOpacityExpression() {
+    return [
+      "case",
+      ["boolean", ["get", "visualOnlyContinuation"], false],
+      ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.58],
+      ["min", 0.9, ["+", ["coalesce", ["get", "symbolOpacity"], 0.58], 0.08]]
+    ];
+  }
+
+  getMentalMapMountainFeedbackGlowOpacityExpression() {
+    return ["min", 0.42, ["+", ["*", ["coalesce", ["get", "symbolOpacity"], 0.5], 0.28], 0.08]];
   }
 
   getMountainRangeSymbolGlowSizeExpression() {
