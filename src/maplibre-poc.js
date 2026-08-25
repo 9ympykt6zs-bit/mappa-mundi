@@ -24,11 +24,18 @@ import { readUnitedStatesAtlasProgress } from "./atlas/united-states-atlas-progr
 import { renderUnitedStatesAtlasOverview, renderUnitedStatesAtlasProfile } from "./atlas/united-states-atlas-ui.js";
 import { renderProgressReport } from "./united-states-progress-report-ui.js?v=20260821-central-america-graduation-1";
 import { createUnitedStatesProgressReportReadModel } from "./united-states-progress-report-read-path.js?v=20260821-central-america-graduation-1";
-import { acrossUnitedStatesExpedition } from "./across-united-states-expedition.js";
+import {
+  ACROSS_UNITED_STATES_EXPEDITION_ID,
+  acrossUnitedStatesExpedition,
+  acrossUnitedStatesNavigation
+} from "./across-united-states-expedition.js?v=20260825-us-objective-navigation-1";
 import { CENTRAL_AMERICA_LEARNING_UNIT_ID } from "./central-america-learning-unit.js";
 import { geographyLearningUnits, getGeographyLearningUnit } from "./geography-learning-unit-registry.js";
 import { createExpeditionReadModel } from "./expedition-framework.js";
-import { renderExpedition } from "./expedition-ui.js";
+import {
+  renderAcrossUnitedStatesNavigation,
+  renderExpedition
+} from "./expedition-ui.js?v=20260825-us-objective-navigation-1";
 import {
   createGeographyLearningUnitExpeditionModel,
   createGeographyLearningUnitItems,
@@ -3617,7 +3624,9 @@ let unitedStatesAtlasProgress = null;
 let progressReportModel = null;
 let activeExpeditionDefinition = null;
 let activeExpeditionModel = null;
+let activeExpeditionObjectiveId = "";
 let returnToExpeditionId = "";
+let returnToExpeditionObjectiveId = "";
 let runtimeMemoryTrailSelectionTrace = null;
 let activeMentalMapChallenge = null;
 let activeMentalMapChallengeState = null;
@@ -6122,6 +6131,14 @@ function goBackAppScreen() {
     return;
   }
 
+  if (currentAppScreen === "expedition"
+    && activeExpeditionDefinition?.id === ACROSS_UNITED_STATES_EXPEDITION_ID
+    && activeExpeditionObjectiveId) {
+    activeExpeditionObjectiveId = "";
+    renderAppShellScreen("expedition");
+    return;
+  }
+
   const previousSnapshot = popAppScreenHistory();
   const previousScreen = getAppScreenSnapshotScreenId(previousSnapshot);
 
@@ -6287,9 +6304,23 @@ function renderAppShellScreen(screenId) {
   if (expeditionView) {
     expeditionView.hidden = !isExpedition;
     if (isExpedition && activeExpeditionModel) {
-      renderExpedition(expeditionView, activeExpeditionModel, {
-        onLaunch: launchExpeditionStep
-      });
+      if (activeExpeditionDefinition?.id === ACROSS_UNITED_STATES_EXPEDITION_ID) {
+        renderAcrossUnitedStatesNavigation(
+          expeditionView,
+          activeExpeditionModel,
+          acrossUnitedStatesNavigation,
+          {
+            objectiveId: activeExpeditionObjectiveId,
+            onSelectObjective: showActiveExpeditionObjective,
+            onLaunch: launchExpeditionStep,
+            onProgress: openUnitedStatesProgressReport
+          }
+        );
+      } else {
+        renderExpedition(expeditionView, activeExpeditionModel, {
+          onLaunch: launchExpeditionStep
+        });
+      }
     }
   }
 
@@ -6380,7 +6411,9 @@ function getAppShellScreenContent(screenId) {
     },
     expedition: {
       title: activeExpeditionDefinition?.title || "Expedition",
-      subtitle: activeExpeditionDefinition?.description || "Your guided geography-learning route."
+      subtitle: activeExpeditionDefinition?.id === ACROSS_UNITED_STATES_EXPEDITION_ID
+        ? acrossUnitedStatesNavigation.tagline
+        : activeExpeditionDefinition?.description || "Your guided geography-learning route."
     },
     "progress-report": {
       title: "Progress Report",
@@ -8117,14 +8150,26 @@ async function openExpedition(expeditionId, options = {}) {
   if (!definition) return;
   activeExpeditionDefinition = definition;
   activeExpeditionModel = await createConfiguredExpeditionModel(expeditionId);
+  activeExpeditionObjectiveId = expeditionId === ACROSS_UNITED_STATES_EXPEDITION_ID
+    ? options.objectiveId || ""
+    : "";
   showAppScreen("expedition", { pushHistory: options.pushHistory !== false });
+}
+
+function showActiveExpeditionObjective(objectiveId) {
+  if (activeExpeditionDefinition?.id !== ACROSS_UNITED_STATES_EXPEDITION_ID) return;
+  const isConfiguredObjective = acrossUnitedStatesNavigation.objectives.some(({ id }) => id === objectiveId);
+  activeExpeditionObjectiveId = isConfiguredObjective ? objectiveId : "";
+  renderAppShellScreen("expedition");
 }
 
 function returnFromExpeditionActivity(fallbackScreen) {
   if (returnToExpeditionId) {
     const expeditionId = returnToExpeditionId;
+    const objectiveId = returnToExpeditionObjectiveId;
     returnToExpeditionId = "";
-    void openExpedition(expeditionId, { pushHistory: false });
+    returnToExpeditionObjectiveId = "";
+    void openExpedition(expeditionId, { pushHistory: false, objectiveId });
     return;
   }
   showAppScreen(fallbackScreen, { pushHistory: false });
@@ -8132,11 +8177,13 @@ function returnFromExpeditionActivity(fallbackScreen) {
 
 function clearExpeditionReturn() {
   returnToExpeditionId = "";
+  returnToExpeditionObjectiveId = "";
 }
 
-function launchExpeditionStep(step) {
-  if (!step || step.status === "locked") return;
+function launchExpeditionStep(step, options = {}) {
+  if (!step || (step.status === "locked" && options.allowLocked !== true)) return;
   returnToExpeditionId = activeExpeditionDefinition?.id || "";
+  returnToExpeditionObjectiveId = options.objectiveId || activeExpeditionObjectiveId || "";
   const launch = step.launch || {};
   if (launch.kind === "united-states-atlas") {
     void openUnitedStatesAtlas();

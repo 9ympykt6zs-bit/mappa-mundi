@@ -31,7 +31,7 @@
     <link rel="icon" type="image/png" href="/assets/icons/atlas-quest-icon-192.png" />
     <link rel="apple-touch-icon" href="/assets/icons/atlas-quest-icon-180.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="stylesheet" href="maplibre-poc.css?v=20260823-us-connections-map-hint-1" />
+    <link rel="stylesheet" href="maplibre-poc.css?v=20260825-us-objective-navigation-1" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -350,7 +350,7 @@
 
         window.__mappaMundiLoadApp = () => {
           if (!appModulePromise) {
-            appModulePromise = import("./src/maplibre-poc.js?v=20260824-connections-mountain-visualization-1");
+            appModulePromise = import("./src/maplibre-poc.js?v=20260825-us-objective-navigation-1");
           }
 
           return appModulePromise;

@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { acrossUnitedStatesExpedition } from "../src/across-united-states-expedition.js";
+import {
+  acrossUnitedStatesExpedition,
+  acrossUnitedStatesNavigation
+} from "../src/across-united-states-expedition.js";
 import {
   createExpeditionReadModel,
   validateExpeditionConfiguration
 } from "../src/expedition-framework.js";
+import { getAcrossUnitedStatesObjectiveProgressLabel } from "../src/expedition-ui.js";
 
 assert.deepEqual(validateExpeditionConfiguration(acrossUnitedStatesExpedition), []);
 const empty = createExpeditionReadModel(acrossUnitedStatesExpedition, {});
@@ -41,10 +45,45 @@ assert.ok(acrossUnitedStatesExpedition.steps.some((step) => step.launch.kind ===
 assert.ok(acrossUnitedStatesExpedition.steps.some((step) => step.launch.kind === "mental-map"));
 assert.ok(acrossUnitedStatesExpedition.steps.some((step) => step.launch.kind.startsWith("map-reconstruction")));
 
+assert.deepEqual(
+  acrossUnitedStatesNavigation.objectives.map(({ title }) => title),
+  [
+    "Learn States & Capitals",
+    "Learn Physical Features",
+    "Learn Connections",
+    "Explore the United States"
+  ]
+);
+assert.deepEqual(
+  acrossUnitedStatesNavigation.objectives.map(({ sequence }) => sequence),
+  [1, 2, 3, 4]
+);
+assert.equal(new Set(acrossUnitedStatesNavigation.objectives.map(({ id }) => id)).size, 4);
+const expeditionStepIds = new Set(acrossUnitedStatesExpedition.steps.map(({ id }) => id));
+for (const objective of acrossUnitedStatesNavigation.objectives) {
+  assert.ok(expeditionStepIds.has(objective.primaryStepId), `${objective.title} must reuse an Expedition recommendation step.`);
+  for (const activity of objective.groups.flatMap(({ activities }) => activities)) {
+    assert.ok(expeditionStepIds.has(activity.stepId), `${activity.label} must derive progress from existing state.`);
+  }
+}
+assert.equal(getAcrossUnitedStatesObjectiveProgressLabel(empty, acrossUnitedStatesNavigation.objectives[0]), "Not started");
+assert.equal(getAcrossUnitedStatesObjectiveProgressLabel(partial, acrossUnitedStatesNavigation.objectives[0]), "Learning");
+assert.equal(
+  getAcrossUnitedStatesObjectiveProgressLabel(directEvidence, acrossUnitedStatesNavigation.objectives[2]),
+  "Showing progress"
+);
+assert.ok(acrossUnitedStatesNavigation.utilities.some(({ id }) => id === "atlas"));
+assert.ok(acrossUnitedStatesNavigation.utilities.some(({ id }) => id === "progress"));
+assert.equal(JSON.stringify(acrossUnitedStatesNavigation).includes("Show What I Know"), false, "Do not expose an unimplemented demonstration pathway.");
+
 const frameworkSource = fs.readFileSync(new URL("../src/expedition-framework.js", import.meta.url), "utf8");
+const navigationSource = fs.readFileSync(new URL("../src/across-united-states-expedition.js", import.meta.url), "utf8");
+const navigationUiSource = fs.readFileSync(new URL("../src/expedition-ui.js", import.meta.url), "utf8");
 const runtimeSource = fs.readFileSync(new URL("../src/maplibre-poc.js", import.meta.url), "utf8");
 const indexSource = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 assert.doesNotMatch(frameworkSource, /localStorage|sessionStorage/, "The reusable framework must not create an Expedition learner-state store.");
+assert.doesNotMatch(navigationSource, /localStorage|sessionStorage/, "Objective navigation configuration must not create learner state.");
+assert.doesNotMatch(navigationUiSource, /localStorage|sessionStorage/, "Objective navigation UI must not create learner state.");
 assert.match(runtimeSource, /loadUnitedStatesMemoryTrailProgress\(\)/);
 assert.match(runtimeSource, /loadCanonicalEvidenceRepository\(\)/);
 assert.match(runtimeSource, /getJourneyProgress\(journeyId, loadProgress\(\)\)/);
