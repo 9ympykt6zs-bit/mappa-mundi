@@ -49,7 +49,7 @@ test("Central America graduates the shared learning architecture", async ({ page
     if (message.type() === "error") runtimeErrors.push(`console: ${message.text()}`);
   });
 
-  await page.goto("/?test=1");
+  await page.goto("/?test=1&globeNavigation=off");
   await passLaunchScreen(page);
   await openCentralAmericaUnit(page);
   await expect(page.locator(".expedition-step")).toHaveCount(3);

@@ -99,7 +99,7 @@ async function getUnitedStatesProgress(page) {
 }
 
 test("United States Journey saves its first activity and advances", async ({ page }) => {
-  await page.goto("/?test=1");
+  await page.goto("/?test=1&globeNavigation=off");
   await passLaunchScreen(page);
   await startUnitedStatesJourney(page);
   const recommendation = page.locator("#memory-trail-overlay");
@@ -137,7 +137,7 @@ test("United States Journey saves its first activity and advances", async ({ pag
 });
 
 test("United States Journey records a miss, accepts correction, and resets", async ({ page }) => {
-  await page.goto("/?test=1");
+  await page.goto("/?test=1&globeNavigation=off");
   await passLaunchScreen(page);
   await startUnitedStatesJourney(page);
 
@@ -178,7 +178,7 @@ test("United States Journey records a miss, accepts correction, and resets", asy
 });
 
 test("United States Journey resumes activity two after a full reload", async ({ page }) => {
-  await page.goto("/?test=1");
+  await page.goto("/?test=1&globeNavigation=off");
   await passLaunchScreen(page);
   await startUnitedStatesJourney(page, "medium");
 
@@ -262,7 +262,7 @@ test("United States Journey resumes activity two after a full reload", async ({ 
 
 test("completed United States Journey remains complete after a full reload", async ({ page }) => {
   await seedUnitedStatesFinalActivity(page);
-  await page.goto("/?test=1");
+  await page.goto("/?test=1&globeNavigation=off");
   await passLaunchScreen(page);
 
   await page.getByRole("button", { name: "More Ways to Learn" }).click();

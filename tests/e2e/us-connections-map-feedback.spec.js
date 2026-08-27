@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 async function openMainMenu(page) {
-  await page.goto("/?test=1");
+  await page.goto("/?test=1&globeNavigation=off");
   await expect(page.locator("#launch-screen")).toBeVisible();
   await page.locator("#launch-start-button").click();
   await page.evaluate(() => window.__mappaMundiLoadApp());

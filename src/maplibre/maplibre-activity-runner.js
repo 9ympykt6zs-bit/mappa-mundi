@@ -3141,12 +3141,20 @@ export class MapLibreActivityRunner {
       paint: {
         "fill-color": [
           "case",
+          ["boolean", ["get", "globeNavigationSelected"], false],
+          colors.completedFill,
+          ["boolean", ["get", "globeNavigationContext"], false],
+          colors.previewFill,
           ["boolean", ["get", "completed"], false],
           colors.completedFill,
           colors.previewFill
         ],
         "fill-opacity": [
           "case",
+          ["boolean", ["get", "globeNavigationSelected"], false],
+          0.5,
+          ["boolean", ["get", "globeNavigationContext"], false],
+          0.12,
           ["boolean", ["get", "completed"], false],
           0.48,
           0.28
@@ -3163,11 +3171,20 @@ export class MapLibreActivityRunner {
         "line-color": colors.selectedLine,
         "line-width": [
           "case",
+          ["boolean", ["get", "globeNavigationSelected"], false],
+          3.4,
+          ["boolean", ["get", "globeNavigationContext"], false],
+          2.2,
           ["boolean", ["get", "completed"], false],
           2.6,
           1.7
         ],
-        "line-opacity": 0.92
+        "line-opacity": [
+          "case",
+          ["boolean", ["get", "globeNavigationContext"], false],
+          0.72,
+          0.92
+        ]
       }
     });
 

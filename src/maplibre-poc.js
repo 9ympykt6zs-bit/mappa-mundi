@@ -41,6 +41,13 @@ import {
   createGeographyLearningUnitItems,
   createGeographyLearningUnitProgressReport
 } from "./geography-learning-unit.js";
+import {
+  getGlobeNavigationChildren,
+  getGlobeNavigationPath,
+  getGlobeNavigationScope,
+  globeNavigationPrototype,
+  isGlobeNavigationPrototypeEnabled
+} from "./globe-navigation-prototype.js?v=20260826-globe-navigation-prototype-1";
 import { getCanonicalRetrievalItemForActivity } from "./activity-evidence-contract.js";
 import { loadPlaceMastery } from "./place-mastery-store.js";
 import {
@@ -3620,6 +3627,14 @@ const unitedStatesAtlasOverview = document.querySelector("#united-states-atlas-o
 const mentalMapChallengePanel = document.querySelector("#mental-map-challenge-panel");
 const mapReconstructionPanel = document.querySelector("#map-reconstruction-panel");
 const mapElement = document.querySelector("#map");
+const globeNavigationPanel = document.querySelector("#globe-navigation-panel");
+const globeNavigationPath = document.querySelector("#globe-navigation-path");
+const globeNavigationHoverName = document.querySelector("#globe-navigation-hover-name");
+const globeNavigationStatus = document.querySelector("#globe-navigation-status");
+const globeNavigationLearnButton = document.querySelector("#globe-navigation-learn-button");
+const globeNavigationFind = document.querySelector("#globe-navigation-find");
+const globeNavigationFindOptions = document.querySelector("#globe-navigation-find-options");
+const globeNavigationCurrentMenuButton = document.querySelector("#globe-navigation-current-menu");
 let unitedStatesAtlasProgress = null;
 let progressReportModel = null;
 let activeExpeditionDefinition = null;
@@ -3627,6 +3642,9 @@ let activeExpeditionModel = null;
 let activeExpeditionObjectiveId = "";
 let returnToExpeditionId = "";
 let returnToExpeditionObjectiveId = "";
+let activeGlobeNavigationScopeId = globeNavigationPrototype.rootScopeId;
+let returnToGlobeNavigationScopeId = "";
+let globeNavigationMapHoverBound = false;
 let runtimeMemoryTrailSelectionTrace = null;
 let activeMentalMapChallenge = null;
 let activeMentalMapChallengeState = null;
@@ -3967,7 +3985,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260821-central-america-graduation-1"),
       import("./maplibre/activity-session.js?v=20260821-central-america-graduation-1"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260824-connections-mountain-visualization-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260826-globe-navigation-prototype-1"),
       import("./chip-speech.js?v=20260728-activity-audio-1")
     ]).then(([
       ,
@@ -4263,7 +4281,11 @@ async function init() {
     showSettingsScreen({ track: false });
   } else if (window.__mappaMundiLaunchRequested) {
     trackEvent("launch_start_pressed");
-    showAppScreen("main-menu", { pushHistory: false });
+    if (isGlobeNavigationPrototypeEnabled(window.location.search)) {
+      await openGlobeNavigation();
+    } else {
+      showAppScreen("main-menu", { pushHistory: false });
+    }
   } else {
     showAppScreen("launch", { pushHistory: false });
   }
@@ -5645,6 +5667,10 @@ function bindUiEvents() {
   });
 
   homeButton?.addEventListener("click", () => {
+    if (currentAppScreen === "globe-navigation") {
+      void openGlobeNavigation(globeNavigationPrototype.rootScopeId);
+      return;
+    }
     if (currentAppScreen === "map-reconstruction") {
       exitMapReconstruction();
       return;
@@ -5689,6 +5715,17 @@ function bindUiEvents() {
     showAppScreen("main-menu");
   });
   backButton?.addEventListener("click", () => {
+    if (currentAppScreen === "globe-navigation") {
+      const scope = getGlobeNavigationScope(activeGlobeNavigationScopeId);
+      void openGlobeNavigation(scope?.parentId || globeNavigationPrototype.rootScopeId);
+      return;
+    }
+    if (returnToGlobeNavigationScopeId
+      && currentAppScreen === "free-play"
+      && !isNavigationBrowseMode
+      && returnToGlobeNavigation()) {
+      return;
+    }
     if (currentAppScreen === "map-reconstruction") {
       if (activeMapReconstructionRegionId) {
         showMapReconstructionRegionSelection();
@@ -5770,6 +5807,12 @@ function bindUiEvents() {
     void openMapReconstruction();
   });
   legacyCompassChallengeButton?.addEventListener("click", () => { void openCompassChallenge(); });
+  globeNavigationLearnButton?.addEventListener("click", openGlobeNavigationLearningAction);
+  globeNavigationCurrentMenuButton?.addEventListener("click", () => {
+    returnToGlobeNavigationScopeId = "";
+    appScreenHistory = [];
+    showAppScreen("main-menu", { pushHistory: false });
+  });
   mainMenuMoreWaysButton?.addEventListener("click", () => showAppScreen("main-menu-more-ways"));
   audioMuteButton?.addEventListener("click", toggleAudioMute);
   window.addEventListener("atlas-quest-audio-muted-change", updateAudioMuteControl);
@@ -5883,6 +5926,10 @@ function bindLaunchScreenEvents() {
 
 function handleLaunchStart() {
   trackEvent("launch_start_pressed");
+  if (isGlobeNavigationPrototypeEnabled(window.location.search)) {
+    void openGlobeNavigation();
+    return;
+  }
   showAppScreen("main-menu");
 }
 
@@ -6092,6 +6139,7 @@ function showAppScreen(screenId, options = {}) {
   activeStudyPracticeSession = null;
   isCurrentActivityProgressDisabled = false;
   currentAppScreen = normalizedScreenId;
+  hideGlobeNavigationSurface();
   closeInfoPopover();
   closeBrowseDrawer();
   cancelGrabbedAnswer();
@@ -6139,6 +6187,12 @@ function goBackAppScreen() {
     return;
   }
 
+  if (returnToGlobeNavigationScopeId
+    && ["expedition", "study", "journey-detail"].includes(currentAppScreen)
+    && returnToGlobeNavigation()) {
+    return;
+  }
+
   const previousSnapshot = popAppScreenHistory();
   const previousScreen = getAppScreenSnapshotScreenId(previousSnapshot);
 
@@ -6171,6 +6225,7 @@ function openFreePlay(options = {}) {
   freePlaySelectedMapFeature = null;
   activePreviewActivityId = null;
   selectedOverviewActivityId = null;
+  hideGlobeNavigationSurface();
   document.body.classList.remove("launch-mode", "app-shell-mode");
 
   if (launchScreen) {
@@ -6184,6 +6239,234 @@ function openFreePlay(options = {}) {
   updateResetControlVisibility();
   showHierarchyBrowseNode(options.hierarchyNodeId || "world");
   setBrowseDrawerOpen(!isCompactTouchLayout());
+}
+
+function hideGlobeNavigationSurface() {
+  document.body.classList.remove("globe-navigation-mode");
+  if (globeNavigationPanel) globeNavigationPanel.hidden = true;
+  if (globeNavigationHoverName) {
+    globeNavigationHoverName.hidden = true;
+    globeNavigationHoverName.textContent = "";
+  }
+}
+
+function getGlobeNavigationGeometryFeature(scope, options = {}) {
+  const geometry = scope?.geometry;
+  if (!runner || !geometry) return null;
+
+  let feature = null;
+  if (geometry.kind === "country") {
+    feature = runner.getOverviewGeoJsonForCountry?.(geometry.isoA3, {
+      activityId: scope.id,
+      label: scope.label
+    })?.features?.[0] || null;
+  } else if (geometry.kind === "activity-target") {
+    const activity = resolveMenuActivity({ activityId: geometry.activityId });
+    feature = runner.getOverviewGeoJsonForActivity?.(activity, [], {
+      activityId: scope.id,
+      label: scope.label
+    })?.features?.find((candidate) => candidate.properties?.id === geometry.targetId) || null;
+  }
+
+  if (!feature) return null;
+  return {
+    ...feature,
+    properties: {
+      ...feature.properties,
+      id: scope.id,
+      activityId: scope.id,
+      browseLabel: scope.label,
+      name: scope.label,
+      completed: false,
+      globeNavigationSelected: Boolean(options.selected),
+      globeNavigationContext: Boolean(options.context)
+    }
+  };
+}
+
+function getGlobeNavigationFeatureCollection(scopeId = activeGlobeNavigationScopeId) {
+  const scope = getGlobeNavigationScope(scopeId);
+  if (!scope) return { type: "FeatureCollection", features: [] };
+
+  const children = getGlobeNavigationChildren(scope.id);
+  const contextFeature = scope.id === globeNavigationPrototype.rootScopeId
+    ? null
+    : getGlobeNavigationGeometryFeature(scope, {
+        selected: children.length === 0,
+        context: children.length > 0
+      });
+  const childFeatures = children
+    .map((child) => getGlobeNavigationGeometryFeature(child))
+    .filter(Boolean);
+
+  return {
+    type: "FeatureCollection",
+    features: [contextFeature, ...childFeatures].filter(Boolean)
+  };
+}
+
+function renderGlobeNavigationPath(scope) {
+  if (!globeNavigationPath) return;
+  globeNavigationPath.replaceChildren();
+  getGlobeNavigationPath(scope.id).forEach((pathScope, index, path) => {
+    const isCurrent = index === path.length - 1;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = pathScope.label;
+    button.disabled = isCurrent;
+    button.setAttribute("aria-current", isCurrent ? "location" : "false");
+    button.addEventListener("click", () => void openGlobeNavigation(pathScope.id));
+    globeNavigationPath.appendChild(button);
+    if (!isCurrent) {
+      const separator = document.createElement("span");
+      separator.setAttribute("aria-hidden", "true");
+      separator.textContent = "›";
+      globeNavigationPath.appendChild(separator);
+    }
+  });
+}
+
+function getGlobeNavigationFinderScopes(scope) {
+  if ((scope.children || []).length > 0) return getGlobeNavigationChildren(scope.id);
+  const parent = getGlobeNavigationScope(scope.parentId);
+  return parent ? getGlobeNavigationChildren(parent.id) : [];
+}
+
+function renderGlobeNavigationFinder(scope) {
+  if (!globeNavigationFindOptions) return;
+  globeNavigationFindOptions.replaceChildren();
+  getGlobeNavigationFinderScopes(scope).forEach((candidate) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = candidate.label;
+    button.disabled = candidate.id === scope.id;
+    button.addEventListener("click", () => {
+      if (globeNavigationFind) globeNavigationFind.open = false;
+      void openGlobeNavigation(candidate.id);
+    });
+    globeNavigationFindOptions.appendChild(button);
+  });
+}
+
+function renderGlobeNavigationPanel(scope) {
+  if (!globeNavigationPanel) return;
+  globeNavigationPanel.hidden = false;
+  renderGlobeNavigationPath(scope);
+  renderGlobeNavigationFinder(scope);
+
+  const isComingLater = scope.availability === "coming-later";
+  if (globeNavigationStatus) {
+    globeNavigationStatus.textContent = isComingLater
+      ? "Learning content coming later in this globe prototype. Existing activities remain available in the current menu."
+      : "Select a highlighted place on the globe, or use Find a place.";
+  }
+
+  if (globeNavigationLearnButton) {
+    globeNavigationLearnButton.hidden = !scope.learningAction;
+    globeNavigationLearnButton.disabled = !scope.learningAction;
+    globeNavigationLearnButton.textContent = scope.learningAction?.label || "";
+  }
+}
+
+function bindGlobeNavigationMapHover() {
+  if (globeNavigationMapHoverBound || !runner?.map) return;
+  globeNavigationMapHoverBound = true;
+  runner.map.on("mousemove", (event) => {
+    if (currentAppScreen !== "globe-navigation" || !globeNavigationHoverName) return;
+    const scope = getGlobeNavigationScope(activeGlobeNavigationScopeId);
+    const childIds = new Set(scope?.children || []);
+    const candidate = runner.getNavigationCandidatesAtMapPoint(event.point)
+      .find((item) => item.kind === "overview" && childIds.has(item.targetId));
+    const child = candidate ? getGlobeNavigationScope(candidate.targetId) : null;
+    globeNavigationHoverName.textContent = child?.label || "";
+    globeNavigationHoverName.hidden = !child;
+  });
+  runner.map.on("mouseleave", () => {
+    if (!globeNavigationHoverName) return;
+    globeNavigationHoverName.textContent = "";
+    globeNavigationHoverName.hidden = true;
+  });
+}
+
+function handleGlobeNavigationMapPoint(mapPoint) {
+  const scope = getGlobeNavigationScope(activeGlobeNavigationScopeId);
+  const childIds = new Set(scope?.children || []);
+  const candidate = runner.getNavigationCandidatesAtMapPoint(mapPoint)
+    .find((item) => item.kind === "overview" && childIds.has(item.targetId));
+  if (candidate) void openGlobeNavigation(candidate.targetId);
+}
+
+async function openGlobeNavigation(scopeId = globeNavigationPrototype.rootScopeId) {
+  const scope = getGlobeNavigationScope(scopeId) || getGlobeNavigationScope(globeNavigationPrototype.rootScopeId);
+  if (!scope) return;
+
+  await ensureMapReady();
+  saveCurrentActivityProgress();
+  closeBrowseDrawer();
+  cancelGrabbedAnswer();
+  hideStudyPracticeCompletionCard();
+  activeStudyPracticeSession = null;
+  isCurrentActivityProgressDisabled = false;
+  currentAppScreen = "globe-navigation";
+  activeGlobeNavigationScopeId = scope.id;
+  lastTrackedMainMenuVisibility = false;
+  document.title = APP_NAME;
+  document.body.classList.remove(
+    "launch-mode",
+    "app-shell-mode",
+    "browse-mode",
+    "study-mode",
+    "study-explore-mode",
+    "browse-drawer-open"
+  );
+  document.body.classList.add("overview-mode", "globe-navigation-mode");
+
+  if (launchScreen) launchScreen.hidden = true;
+  if (appShellScreen) appShellScreen.hidden = true;
+  if (studyCard) studyCard.hidden = true;
+  if (regionPanel) regionPanel.inert = true;
+
+  setHeaderTitle(scope.heading || scope.label, { shortTitle: scope.heading || scope.label });
+  if (instruction) instruction.textContent = scope.instruction;
+  renderGlobeNavigationPanel(scope);
+  runner.setStudyPreviewMode(false);
+  runner.setOverviewFeatureCollection(getGlobeNavigationFeatureCollection(scope.id));
+  const wasOverview = runner.currentView === "overview";
+  runner.setOverviewMapSet("world-europe", scope.view);
+  if (!wasOverview) runner.enterOverview();
+  bindGlobeNavigationMapHover();
+  renderActivityNavControls(null);
+  updateDifficultyControls();
+  updateTopBarNavigation();
+  updateResetControlVisibility();
+}
+
+function returnToGlobeNavigation() {
+  if (!returnToGlobeNavigationScopeId) return false;
+  const scopeId = returnToGlobeNavigationScopeId;
+  returnToGlobeNavigationScopeId = "";
+  void openGlobeNavigation(scopeId);
+  return true;
+}
+
+function openGlobeNavigationLearningAction() {
+  const scope = getGlobeNavigationScope(activeGlobeNavigationScopeId);
+  const action = scope?.learningAction;
+  if (!action) return;
+
+  returnToGlobeNavigationScopeId = scope.id;
+  if (action.kind === "activity") {
+    void openActivity(action.activityId, { forceGameplayVisible: true });
+    return;
+  }
+  if (action.kind === "journey") {
+    journeyPickerIntent = "learn";
+    selectJourney(action.journeyId, { pushHistory: false });
+    return;
+  }
+  if (action.kind === "expedition") {
+    void openExpedition(action.expeditionId, { pushHistory: false });
+  }
 }
 
 function toggleMenuSection(section, isVisible) {
@@ -6819,7 +7102,7 @@ function getSelectedJourney() {
   return journeyPresets.find((journey) => journey.id === selectedJourneyId) || null;
 }
 
-function selectJourney(journeyId) {
+function selectJourney(journeyId, options = {}) {
   atlasProgress = loadProgress();
   const journey = journeyPresets.find((candidate) => candidate.id === journeyId) || null;
   if (journey) {
@@ -6837,7 +7120,9 @@ function selectJourney(journeyId) {
       ? selectedJourneyPlayState.difficultyId
       : getPreferredJourneyDifficultyId(journey, atlasProgress)
   };
-  showAppScreen(selectedJourneyDetailIntent === "learn" ? "study" : "journey-detail");
+  showAppScreen(selectedJourneyDetailIntent === "learn" ? "study" : "journey-detail", {
+    pushHistory: options.pushHistory !== false
+  });
 }
 
 function trackJourneyStarted(journey, difficultyId, stepIndex = 0) {
@@ -23176,7 +23461,8 @@ async function openActivity(activityId, options = {}) {
   if (shouldRevealGameplay) {
     currentAppScreen = options.appScreen || "free-play";
     lastTrackedMainMenuVisibility = false;
-    document.body.classList.remove("launch-mode", "app-shell-mode");
+    document.body.classList.remove("launch-mode", "app-shell-mode", "globe-navigation-mode");
+    if (globeNavigationPanel) globeNavigationPanel.hidden = true;
     if (launchScreen) {
       launchScreen.hidden = true;
     }
@@ -23475,6 +23761,12 @@ function isActiveAdaptiveTrailMapResponseScreen(memoryTrail = getActiveMemoryTra
 }
 
 function handleTargetClick(targetIds) {
+  if (currentAppScreen === "globe-navigation") {
+    const mapPoint = targetIds && !Array.isArray(targetIds) && typeof targetIds.x === "number" ? targetIds : null;
+    if (mapPoint) handleGlobeNavigationMapPoint(mapPoint);
+    return;
+  }
+
   if (currentAppScreen === "mental-map-challenge") {
     return;
   }
@@ -25524,7 +25816,10 @@ function renderActivityNavControls(activityId) {
 }
 
 function updateTopBarNavigation() {
-  const isHome = activeHierarchyNodeId === "world";
+  const isGlobeNavigation = currentAppScreen === "globe-navigation";
+  const isHome = isGlobeNavigation
+    ? activeGlobeNavigationScopeId === globeNavigationPrototype.rootScopeId
+    : activeHierarchyNodeId === "world";
   const isDailyTrailGameplay = currentAppScreen === "daily-trail-gameplay";
   const isUnitedStatesAtlas = currentAppScreen === "united-states-atlas";
   const isMentalMapChallenge = currentAppScreen === "mental-map-challenge";
@@ -25532,9 +25827,11 @@ function updateTopBarNavigation() {
   const isMapReconstruction = currentAppScreen === "map-reconstruction";
 
   if (backButton) {
-    backButton.hidden = !isUnitedStatesAtlas && !isMentalMapChallenge && !isCompassChallenge && !isMapReconstruction && !isDailyTrailGameplay
-      && isHome
-      && !["free-play", "journey-gameplay", "study-explore", "study-practice"].includes(currentAppScreen);
+    backButton.hidden = isGlobeNavigation
+      ? isHome
+      : !isUnitedStatesAtlas && !isMentalMapChallenge && !isCompassChallenge && !isMapReconstruction && !isDailyTrailGameplay
+        && isHome
+        && !["free-play", "journey-gameplay", "study-explore", "study-practice"].includes(currentAppScreen);
     backButton.textContent = isDailyTrailGameplay ? "Exit" : "Back";
     backButton.setAttribute("aria-label", isDailyTrailGameplay ? "Exit Daily Trail" : "Back");
     backButton.title = isDailyTrailGameplay ? "Exit Daily Trail" : "Back";
@@ -25546,6 +25843,9 @@ function updateTopBarNavigation() {
     homeButton.tabIndex = isDailyTrailGameplay ? -1 : 0;
     homeButton.setAttribute("aria-hidden", String(isDailyTrailGameplay));
     homeButton.setAttribute("aria-current", isHome ? "page" : "false");
+    homeButton.textContent = isGlobeNavigation ? "World" : "Home";
+    homeButton.setAttribute("aria-label", isGlobeNavigation ? "Return to World" : "Home");
+    homeButton.title = isGlobeNavigation ? "Return to World" : "Home";
   }
 
   updateResetControlVisibility();
@@ -25920,6 +26220,31 @@ function completeCurrentActivityForTest() {
   return journeyCompletionState?.isVisible === true;
 }
 
+function getGlobeNavigationStateForTest() {
+  const scope = getGlobeNavigationScope(activeGlobeNavigationScopeId);
+  const children = getGlobeNavigationChildren(scope?.id);
+  const cameraCenter = runner?.map?.getCenter?.();
+  return {
+    screen: currentAppScreen,
+    scopeId: scope?.id || "",
+    path: scope ? getGlobeNavigationPath(scope.id).map(({ id, label }) => ({ id, label })) : [],
+    childIds: children.map(({ id }) => id),
+    renderedFeatureIds: getGlobeNavigationFeatureCollection(scope?.id).features
+      .map((feature) => feature.properties?.activityId)
+      .filter(Boolean),
+    camera: {
+      center: cameraCenter ? [cameraCenter.lng, cameraCenter.lat] : null,
+      zoom: runner?.map?.getZoom?.() ?? null,
+      pitch: runner?.map?.getPitch?.() ?? null,
+      bearing: runner?.map?.getBearing?.() ?? null
+    },
+    childMapPoints: Object.fromEntries(children.map((child) => {
+      const point = runner?.map?.project?.(child.view?.center || [0, 0]);
+      return [child.id, point ? { x: point.x, y: point.y } : null];
+    }))
+  };
+}
+
 function installMappaTestApi() {
   if (!isMappaTestMode()) {
     return;
@@ -25941,6 +26266,7 @@ function installMappaTestApi() {
       getUnitedStatesMemoryTrailPlan: getUnitedStatesMemoryTrailPlanForTest,
       startMentalMapQuestion: startMentalMapQuestionForTest,
       getMentalMapVisualState: getMentalMapVisualStateForTest,
+      getGlobeNavigationState: getGlobeNavigationStateForTest,
       resetCurrentActivity: resetCurrentActivityForTest,
       completeCurrentActivity: completeCurrentActivityForTest,
       getSavedJourneyProgress: () => loadProgress()

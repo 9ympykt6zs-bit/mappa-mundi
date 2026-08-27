@@ -67,7 +67,7 @@ test("Mountain Ranges locating does not reveal selected or cover completed targe
     if (message.type() === "error") runtimeErrors.push(`console: ${message.text()}`);
   });
 
-  await page.goto("/?test=1");
+  await page.goto("/?test=1&globeNavigation=off");
   await passLaunchScreen(page);
   await startMountainRangeLocatingActivity(page);
 
@@ -119,7 +119,7 @@ test("selected Mountain Ranges chips permit navigation gestures without placemen
     if (message.type() === "error") runtimeErrors.push(`console: ${message.text()}`);
   });
 
-  await page.goto("/?test=1");
+  await page.goto("/?test=1&globeNavigation=off");
   await passLaunchScreen(page);
   await startMountainRangeLocatingActivity(page);
 

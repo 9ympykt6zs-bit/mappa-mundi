@@ -39,7 +39,7 @@ test("landing hero actions retain their destinations", async ({ page }) => {
   await page.goto("/");
   await page.locator("#launch-start-button").click();
 
-  await expect(page.locator("#app-shell-screen")).toBeVisible();
+  await expect(page.locator("#globe-navigation-panel")).toBeVisible({ timeout: 20_000 });
   await expect(page.locator("#launch-screen")).toBeHidden();
   await expect(page.locator(".top-bar")).toHaveCount(1);
 

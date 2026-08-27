@@ -23,7 +23,7 @@ function collectRuntimeErrors(page) {
 }
 
 async function openFreshMainMenu(page) {
-  await page.goto("/?test=1");
+  await page.goto("/?test=1&globeNavigation=off");
   await passLaunchScreen(page);
 }
 

@@ -4,7 +4,7 @@ const expectedNeighbors = ["iowa", "minnesota", "montana", "nebraska", "north-da
 const expectedNeighborNames = ["Iowa", "Minnesota", "Montana", "Nebraska", "North Dakota", "Wyoming"];
 
 async function openCapitalConnections(page) {
-  await page.goto("/?test=1");
+  await page.goto("/?test=1&globeNavigation=off");
   await expect(page.locator("#launch-screen")).toBeVisible();
   await page.locator("#launch-start-button").click();
   await page.evaluate(() => window.__mappaMundiLoadApp());

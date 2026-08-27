@@ -31,7 +31,7 @@
     <link rel="icon" type="image/png" href="/assets/icons/atlas-quest-icon-192.png" />
     <link rel="apple-touch-icon" href="/assets/icons/atlas-quest-icon-180.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="stylesheet" href="maplibre-poc.css?v=20260825-us-objective-navigation-1" />
+    <link rel="stylesheet" href="maplibre-poc.css?v=20260826-globe-navigation-prototype-1" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -243,6 +243,19 @@
     <main class="poc-main">
       <section class="map-shell" aria-label="Interactive MapLibre map">
         <div id="map"></div>
+        <section id="globe-navigation-panel" class="globe-navigation-panel" aria-label="Geographic navigation" hidden>
+          <nav id="globe-navigation-path" class="globe-navigation-path" aria-label="Current geographic path"></nav>
+          <p id="globe-navigation-hover-name" class="globe-navigation-hover-name" aria-live="polite" hidden></p>
+          <p id="globe-navigation-status" class="globe-navigation-status"></p>
+          <div class="globe-navigation-actions">
+            <button id="globe-navigation-learn-button" class="globe-navigation-primary" type="button"></button>
+            <details id="globe-navigation-find" class="globe-navigation-find">
+              <summary>Find a place</summary>
+              <div id="globe-navigation-find-options" class="globe-navigation-find-options"></div>
+            </details>
+            <button id="globe-navigation-current-menu" class="globe-navigation-quiet" type="button">Use current menu</button>
+          </div>
+        </section>
         <div id="audio-instruction-banner" class="audio-instruction-banner" role="status" aria-live="polite" hidden></div>
         <section id="mental-map-challenge-panel" class="mental-map-challenge-panel" aria-live="polite" hidden></section>
         <section id="map-reconstruction-panel" class="map-reconstruction-panel" aria-live="polite" hidden></section>
@@ -350,7 +363,7 @@
 
         window.__mappaMundiLoadApp = () => {
           if (!appModulePromise) {
-            appModulePromise = import("./src/maplibre-poc.js?v=20260825-us-objective-navigation-1");
+            appModulePromise = import("./src/maplibre-poc.js?v=20260826-globe-navigation-prototype-1");
           }
 
           return appModulePromise;
