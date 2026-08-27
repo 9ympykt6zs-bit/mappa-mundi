@@ -10,7 +10,7 @@ export const globeNavigationPrototype = Object.freeze({
       label: "World",
       heading: "Where do you want to learn?",
       instruction: "Choose a continent on the globe.",
-      view: { center: [-18, 18], zoom: 1.25 },
+      view: { center: [-18, 18], zoom: 1.85 },
       children: ["north-america", "south-america", "europe", "africa", "asia", "oceania", "antarctica"],
       learningAction: { kind: "activity", activityId: "continents-oceans", label: "Learn the Continents" }
     },
@@ -172,4 +172,19 @@ export function getGlobeNavigationPath(scopeId, model = globeNavigationPrototype
   }
 
   return path;
+}
+
+export function findGlobeNavigationScopes(query, model = globeNavigationPrototype) {
+  const normalizedQuery = String(query || "").trim().toLowerCase();
+  if (!normalizedQuery) return [];
+
+  return Object.values(model.scopes)
+    .filter((scope) => scope.label.toLowerCase().includes(normalizedQuery))
+    .sort((left, right) => {
+      const leftLabel = left.label.toLowerCase();
+      const rightLabel = right.label.toLowerCase();
+      const prefixDifference = Number(!leftLabel.startsWith(normalizedQuery))
+        - Number(!rightLabel.startsWith(normalizedQuery));
+      return prefixDifference || left.label.localeCompare(right.label);
+    });
 }

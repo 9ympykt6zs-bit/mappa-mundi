@@ -31,6 +31,13 @@ async function chooseMapScope(page, scopeId, { checkHover = false } = {}) {
   await expect.poll(async () => (await globeState(page)).scopeId).toBe(scopeId);
 }
 
+async function chooseSearchScope(page, label, query = label) {
+  const search = page.getByRole("combobox", { name: "Find a place" });
+  await search.fill(query);
+  await page.locator("#globe-navigation-find-options").getByRole("option", { name: label }).click();
+  await expect.poll(async () => (await globeState(page)).scopeId).toBe(label.toLowerCase().replaceAll(" ", "-"));
+}
+
 test("globe-first launch drills from World to the existing U.S. objective screen and back", async ({ page }, testInfo) => {
   const runtimeErrors = [];
   page.on("pageerror", (error) => runtimeErrors.push(`pageerror: ${error.message}`));
@@ -42,7 +49,46 @@ test("globe-first launch drills from World to the existing U.S. objective screen
   await expect(page.locator("#poc-title")).toHaveText("Where do you want to learn?");
   await expect(page.locator("#poc-instruction")).toHaveText("Choose a continent on the globe.");
   await expect(page.getByRole("button", { name: "Learn the Continents" })).toBeVisible();
-  await expect(page.locator("#globe-navigation-find")).toContainText("Find a place");
+  await expect(page.getByRole("button", { name: "Use current menu" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Find a place" })).toHaveAttribute("type", "search");
+  await expect.poll(async () => (await globeState(page)).camera.zoom).toBeCloseTo(1.85, 1);
+
+  const layout = await page.evaluate(() => {
+    const panel = document.querySelector("#globe-navigation-panel");
+    const header = document.querySelector(".poc-header");
+    const search = document.querySelector("#globe-navigation-find");
+    const actions = document.querySelector(".globe-navigation-actions");
+    const panelStyle = getComputedStyle(panel);
+    const headerStyle = getComputedStyle(header);
+    return {
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth,
+      panel: panel.getBoundingClientRect().toJSON(),
+      panelBackground: panelStyle.backgroundColor,
+      panelBorderWidth: panelStyle.borderTopWidth,
+      panelShadow: panelStyle.boxShadow,
+      headerBackground: headerStyle.backgroundColor,
+      headerBorderWidth: headerStyle.borderTopWidth,
+      headerShadow: headerStyle.boxShadow,
+      search: search.getBoundingClientRect().toJSON(),
+      actions: actions.getBoundingClientRect().toJSON()
+    };
+  });
+  expect(layout.panelBackground).toBe("rgba(0, 0, 0, 0)");
+  expect(layout.panelBorderWidth).toBe("0px");
+  expect(layout.panelShadow).toBe("none");
+  expect(layout.headerBackground).toBe("rgba(0, 0, 0, 0)");
+  expect(layout.headerBorderWidth).toBe("0px");
+  expect(layout.headerShadow).toBe("none");
+  expect(layout.noHorizontalOverflow).toBe(true);
+  expect(layout.search.x).toBeGreaterThanOrEqual(0);
+  expect(layout.search.right).toBeLessThanOrEqual(layout.viewport.width);
+  expect(layout.actions.bottom).toBeLessThanOrEqual(layout.viewport.height);
+  expect(layout.search.bottom).toBeLessThan(layout.actions.top);
+  if (testInfo.project.name.includes("desktop")) {
+    expect(layout.search.x).toBeLessThan(layout.viewport.width / 3);
+    expect(layout.search.y).toBeLessThan(layout.viewport.height / 3);
+  }
 
   const worldState = await globeState(page);
   expect(worldState.scopeId).toBe("world");
@@ -65,15 +111,21 @@ test("globe-first launch drills from World to the existing U.S. objective screen
   await page.locator("#back-button").click();
   await expect(page.locator("#poc-title")).toHaveText("Where do you want to learn?");
 
-  await chooseMapScope(page, "north-america", {
-    checkHover: testInfo.project.name.includes("desktop")
-  });
+  if (testInfo.project.name.includes("mobile")) {
+    await chooseSearchScope(page, "North America", "north");
+  } else {
+    await chooseMapScope(page, "north-america", { checkHover: true });
+  }
   await expect(page.locator("#poc-title")).toHaveText("North America");
   await expect(page.getByRole("button", { name: "Learn North America" })).toBeVisible();
   await expect(page.locator("#globe-navigation-path")).toContainText("World");
   await expect(page.locator("#globe-navigation-path")).toContainText("North America");
 
-  await chooseMapScope(page, "united-states");
+  if (testInfo.project.name.includes("mobile")) {
+    await chooseSearchScope(page, "United States", "united");
+  } else {
+    await chooseMapScope(page, "united-states");
+  }
   await expect(page.locator("#poc-title")).toHaveText("United States");
   await expect(page.getByRole("button", { name: "Learn the United States" })).toBeVisible();
   expect((await globeState(page)).path.map(({ label }) => label)).toEqual(["World", "North America", "United States"]);
@@ -96,19 +148,33 @@ test("globe-first launch drills from World to the existing U.S. objective screen
   expect(runtimeErrors).toEqual([]);
 });
 
-test("Europe proves country focus and an honest unsupported state", async ({ page }) => {
+test("place search uses the same scopes as globe selection and keeps unsupported names honest", async ({ page }) => {
   await startPrototype(page);
-  await page.locator("#globe-navigation-find").evaluate((details) => { details.open = true; });
-  await page.locator("#globe-navigation-find-options").getByRole("button", { name: "Europe" }).click();
+  await chooseMapScope(page, "europe");
   await expect(page.locator("#poc-title")).toHaveText("Europe");
-  expect((await globeState(page)).childIds).toEqual(["germany", "france", "italy", "netherlands"]);
+  const globeSelectedEurope = await globeState(page);
+  expect(globeSelectedEurope.childIds).toEqual(["germany", "france", "italy", "netherlands"]);
 
-  await page.locator("#globe-navigation-find").evaluate((details) => { details.open = true; });
-  await page.locator("#globe-navigation-find-options").getByRole("button", { name: "Netherlands" }).click();
+  await page.locator("#globe-navigation-path").getByRole("button", { name: "World" }).click();
+  const search = page.getByRole("combobox", { name: "Find a place" });
+  await search.fill("EUR");
+  await expect(page.locator("#globe-navigation-find-options").getByRole("option", { name: "Europe" })).toBeVisible();
+  await page.locator("#globe-navigation-find-options").getByRole("option", { name: "Europe" }).click();
+  await expect.poll(async () => (await globeState(page)).scopeId).toBe("europe");
+  expect((await globeState(page)).childIds).toEqual(globeSelectedEurope.childIds);
+
+  await search.fill("lands");
+  await expect(page.locator("#globe-navigation-find-options").getByRole("option", { name: "Netherlands" })).toBeVisible();
+  await page.locator("#globe-navigation-find-options").getByRole("option", { name: "Netherlands" }).click();
   await expect(page.locator("#poc-title")).toHaveText("Netherlands");
   await expect(page.locator("#globe-navigation-status")).toContainText("Learning content coming later");
   await expect(page.locator("#globe-navigation-learn-button")).toBeHidden();
   await expect(page.getByRole("button", { name: "Use current menu" })).toBeVisible();
+
+  await search.fill("Atlantis");
+  await expect(page.locator("#globe-navigation-find-options")).toContainText("No available learning area found.");
+  await expect(page.locator("#globe-navigation-find-options").getByRole("option")).toHaveCount(0);
+  expect((await globeState(page)).scopeId).toBe("netherlands");
 });
 
 test("the rollback query restores the current menu and direct activity routes still bypass navigation", async ({ page }) => {

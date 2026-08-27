@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { journeyPresets } from "../src/journey-presets.js";
 import { ACROSS_UNITED_STATES_EXPEDITION_ID } from "../src/across-united-states-expedition.js";
 import {
+  findGlobeNavigationScopes,
   getGlobeNavigationChildren,
   getGlobeNavigationPath,
   getGlobeNavigationScope,
@@ -12,6 +13,7 @@ import {
 
 const world = getGlobeNavigationScope(globeNavigationPrototype.rootScopeId);
 assert.equal(world.heading, "Where do you want to learn?");
+assert.equal(world.view.zoom, 1.85);
 assert.equal(world.learningAction.label, "Learn the Continents");
 assert.deepEqual(
   getGlobeNavigationChildren(world.id).map(({ id }) => id),
@@ -26,6 +28,9 @@ assert.equal(getGlobeNavigationScope("united-states").learningAction.expeditionI
 assert.ok(getGlobeNavigationChildren("europe").length >= 3, "Europe must prove country drill-down with a representative set.");
 assert.equal(getGlobeNavigationScope("netherlands").availability, "coming-later");
 assert.equal(getGlobeNavigationScope("netherlands").learningAction, undefined, "Unsupported content must not expose a fake learning action.");
+assert.deepEqual(findGlobeNavigationScopes("fran").map(({ id }) => id), ["france"]);
+assert.deepEqual(findGlobeNavigationScopes("LAND").map(({ id }) => id), ["netherlands"]);
+assert.deepEqual(findGlobeNavigationScopes("not a supported place"), []);
 
 const journeyIds = new Set(journeyPresets.map(({ id }) => id));
 for (const scope of Object.values(globeNavigationPrototype.scopes)) {
@@ -48,6 +53,9 @@ assert.match(runtimeSource, /isGlobeNavigationPrototypeEnabled\(window\.location
 assert.match(runtimeSource, /openExpedition\(action\.expeditionId, \{ pushHistory: false \}\)/);
 assert.match(runtimeSource, /returnToGlobeNavigation/);
 assert.match(indexSource, /id="globe-navigation-panel"/);
+assert.match(indexSource, /id="globe-navigation-search"/);
+assert.match(indexSource, /placeholder="Search places\.\.\."/);
+assert.doesNotMatch(indexSource, /<details id="globe-navigation-find"/, "Find a place must be a search input rather than the old disclosure menu.");
 assert.match(indexSource, /id="main-menu-us-expedition-button"/, "The current U.S. entry must remain intact.");
 assert.match(indexSource, /id="main-menu-choose-button"/, "The current journey menu must remain intact.");
 assert.doesNotMatch(configSource, /localStorage|sessionStorage/, "Navigation configuration must not create learner state.");

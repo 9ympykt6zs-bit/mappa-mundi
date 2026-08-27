@@ -42,12 +42,13 @@ import {
   createGeographyLearningUnitProgressReport
 } from "./geography-learning-unit.js";
 import {
+  findGlobeNavigationScopes,
   getGlobeNavigationChildren,
   getGlobeNavigationPath,
   getGlobeNavigationScope,
   globeNavigationPrototype,
   isGlobeNavigationPrototypeEnabled
-} from "./globe-navigation-prototype.js?v=20260826-globe-navigation-prototype-1";
+} from "./globe-navigation-prototype.js?v=20260827-globe-navigation-refinement-3";
 import { getCanonicalRetrievalItemForActivity } from "./activity-evidence-contract.js";
 import { loadPlaceMastery } from "./place-mastery-store.js";
 import {
@@ -3633,6 +3634,7 @@ const globeNavigationHoverName = document.querySelector("#globe-navigation-hover
 const globeNavigationStatus = document.querySelector("#globe-navigation-status");
 const globeNavigationLearnButton = document.querySelector("#globe-navigation-learn-button");
 const globeNavigationFind = document.querySelector("#globe-navigation-find");
+const globeNavigationSearchInput = document.querySelector("#globe-navigation-search");
 const globeNavigationFindOptions = document.querySelector("#globe-navigation-find-options");
 const globeNavigationCurrentMenuButton = document.querySelector("#globe-navigation-current-menu");
 let unitedStatesAtlasProgress = null;
@@ -5807,6 +5809,30 @@ function bindUiEvents() {
     void openMapReconstruction();
   });
   legacyCompassChallengeButton?.addEventListener("click", () => { void openCompassChallenge(); });
+  globeNavigationSearchInput?.addEventListener("input", () => {
+    renderGlobeNavigationFinder(globeNavigationSearchInput.value);
+  });
+  globeNavigationSearchInput?.addEventListener("focus", () => {
+    renderGlobeNavigationFinder(globeNavigationSearchInput.value);
+  });
+  globeNavigationSearchInput?.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      globeNavigationSearchInput.value = "";
+      setGlobeNavigationFinderExpanded(false);
+      return;
+    }
+    if (!["ArrowDown", "Enter"].includes(event.key)) return;
+    const firstResult = globeNavigationFindOptions?.querySelector("button");
+    if (!firstResult) return;
+    event.preventDefault();
+    if (event.key === "Enter") firstResult.click();
+    else firstResult.focus();
+  });
+  globeNavigationFind?.addEventListener("focusout", (event) => {
+    if (!globeNavigationFind.contains(event.relatedTarget)) {
+      setGlobeNavigationFinderExpanded(false);
+    }
+  });
   globeNavigationLearnButton?.addEventListener("click", openGlobeNavigationLearningAction);
   globeNavigationCurrentMenuButton?.addEventListener("click", () => {
     returnToGlobeNavigationScopeId = "";
@@ -6326,33 +6352,56 @@ function renderGlobeNavigationPath(scope) {
   });
 }
 
-function getGlobeNavigationFinderScopes(scope) {
-  if ((scope.children || []).length > 0) return getGlobeNavigationChildren(scope.id);
-  const parent = getGlobeNavigationScope(scope.parentId);
-  return parent ? getGlobeNavigationChildren(parent.id) : [];
+function setGlobeNavigationFinderExpanded(isExpanded) {
+  if (globeNavigationSearchInput) {
+    globeNavigationSearchInput.setAttribute("aria-expanded", String(isExpanded));
+  }
+  if (globeNavigationFindOptions) globeNavigationFindOptions.hidden = !isExpanded;
 }
 
-function renderGlobeNavigationFinder(scope) {
+function renderGlobeNavigationFinder(query = "") {
   if (!globeNavigationFindOptions) return;
   globeNavigationFindOptions.replaceChildren();
-  getGlobeNavigationFinderScopes(scope).forEach((candidate) => {
+
+  const normalizedQuery = String(query || "").trim();
+  if (!normalizedQuery) {
+    setGlobeNavigationFinderExpanded(false);
+    return;
+  }
+
+  const candidates = findGlobeNavigationScopes(normalizedQuery);
+  if (candidates.length === 0) {
+    const emptyState = document.createElement("p");
+    emptyState.className = "globe-navigation-find-empty";
+    emptyState.setAttribute("role", "status");
+    emptyState.textContent = "No available learning area found.";
+    globeNavigationFindOptions.appendChild(emptyState);
+    setGlobeNavigationFinderExpanded(true);
+    return;
+  }
+
+  candidates.forEach((candidate) => {
     const button = document.createElement("button");
     button.type = "button";
+    button.setAttribute("role", "option");
+    button.setAttribute("aria-selected", String(candidate.id === activeGlobeNavigationScopeId));
     button.textContent = candidate.label;
-    button.disabled = candidate.id === scope.id;
     button.addEventListener("click", () => {
-      if (globeNavigationFind) globeNavigationFind.open = false;
+      if (globeNavigationSearchInput) globeNavigationSearchInput.value = candidate.label;
+      setGlobeNavigationFinderExpanded(false);
       void openGlobeNavigation(candidate.id);
     });
     globeNavigationFindOptions.appendChild(button);
   });
+  setGlobeNavigationFinderExpanded(true);
 }
 
 function renderGlobeNavigationPanel(scope) {
   if (!globeNavigationPanel) return;
   globeNavigationPanel.hidden = false;
   renderGlobeNavigationPath(scope);
-  renderGlobeNavigationFinder(scope);
+  if (globeNavigationSearchInput) globeNavigationSearchInput.value = "";
+  renderGlobeNavigationFinder();
 
   const isComingLater = scope.availability === "coming-later";
   if (globeNavigationStatus) {
