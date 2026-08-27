@@ -45,10 +45,11 @@ import {
   findGlobeNavigationScopes,
   getGlobeNavigationChildren,
   getGlobeNavigationPath,
+  getGlobeNavigationSelectableScopes,
   getGlobeNavigationScope,
   globeNavigationPrototype,
   isGlobeNavigationPrototypeEnabled
-} from "./globe-navigation-prototype.js?v=20260827-globe-navigation-refinement-3";
+} from "./globe-navigation-prototype.js?v=20260827-globe-navigation-interaction-1";
 import { getCanonicalRetrievalItemForActivity } from "./activity-evidence-contract.js";
 import { loadPlaceMastery } from "./place-mastery-store.js";
 import {
@@ -3633,6 +3634,7 @@ const globeNavigationPath = document.querySelector("#globe-navigation-path");
 const globeNavigationHoverName = document.querySelector("#globe-navigation-hover-name");
 const globeNavigationStatus = document.querySelector("#globe-navigation-status");
 const globeNavigationLearnButton = document.querySelector("#globe-navigation-learn-button");
+const globeNavigationLearnLabel = document.querySelector("#globe-navigation-learn-label");
 const globeNavigationFind = document.querySelector("#globe-navigation-find");
 const globeNavigationSearchInput = document.querySelector("#globe-navigation-search");
 const globeNavigationFindOptions = document.querySelector("#globe-navigation-find-options");
@@ -6314,20 +6316,17 @@ function getGlobeNavigationFeatureCollection(scopeId = activeGlobeNavigationScop
   const scope = getGlobeNavigationScope(scopeId);
   if (!scope) return { type: "FeatureCollection", features: [] };
 
-  const children = getGlobeNavigationChildren(scope.id);
-  const contextFeature = scope.id === globeNavigationPrototype.rootScopeId
-    ? null
-    : getGlobeNavigationGeometryFeature(scope, {
-        selected: children.length === 0,
-        context: children.length > 0
-      });
-  const childFeatures = children
-    .map((child) => getGlobeNavigationGeometryFeature(child))
+  const ancestorIds = new Set(getGlobeNavigationPath(scope.id).map(({ id }) => id));
+  const selectableFeatures = getGlobeNavigationSelectableScopes()
+    .map((candidate) => getGlobeNavigationGeometryFeature(candidate, {
+      selected: candidate.id === scope.id,
+      context: candidate.id !== scope.id && ancestorIds.has(candidate.id)
+    }))
     .filter(Boolean);
 
   return {
     type: "FeatureCollection",
-    features: [contextFeature, ...childFeatures].filter(Boolean)
+    features: selectableFeatures
   };
 }
 
@@ -6400,6 +6399,11 @@ function renderGlobeNavigationPanel(scope) {
   if (!globeNavigationPanel) return;
   globeNavigationPanel.hidden = false;
   renderGlobeNavigationPath(scope);
+  if (globeNavigationHoverName) {
+    globeNavigationHoverName.textContent = "";
+    globeNavigationHoverName.hidden = true;
+  }
+  if (runner?.map) runner.map.getCanvas().style.cursor = "";
   if (globeNavigationSearchInput) globeNavigationSearchInput.value = "";
   renderGlobeNavigationFinder();
 
@@ -6413,8 +6417,29 @@ function renderGlobeNavigationPanel(scope) {
   if (globeNavigationLearnButton) {
     globeNavigationLearnButton.hidden = !scope.learningAction;
     globeNavigationLearnButton.disabled = !scope.learningAction;
-    globeNavigationLearnButton.textContent = scope.learningAction?.label || "";
   }
+  if (globeNavigationLearnLabel) {
+    globeNavigationLearnLabel.textContent = scope.learningAction?.label || "";
+  }
+}
+
+function getGlobeNavigationMapScopeAtPoint(mapPoint) {
+  const selectableScopesById = new Map(
+    getGlobeNavigationSelectableScopes().map((scope) => [scope.id, scope])
+  );
+  const matchedScopesById = new Map();
+
+  runner.getNavigationCandidatesAtMapPoint(mapPoint)
+    .filter((candidate) => candidate.kind === "overview")
+    .forEach((candidate) => {
+      const scope = selectableScopesById.get(candidate.targetId);
+      if (scope) matchedScopesById.set(scope.id, scope);
+    });
+
+  return [...matchedScopesById.values()]
+    .sort((left, right) => (
+      getGlobeNavigationPath(right.id).length - getGlobeNavigationPath(left.id).length
+    ))[0] || null;
 }
 
 function bindGlobeNavigationMapHover() {
@@ -6422,27 +6447,22 @@ function bindGlobeNavigationMapHover() {
   globeNavigationMapHoverBound = true;
   runner.map.on("mousemove", (event) => {
     if (currentAppScreen !== "globe-navigation" || !globeNavigationHoverName) return;
-    const scope = getGlobeNavigationScope(activeGlobeNavigationScopeId);
-    const childIds = new Set(scope?.children || []);
-    const candidate = runner.getNavigationCandidatesAtMapPoint(event.point)
-      .find((item) => item.kind === "overview" && childIds.has(item.targetId));
-    const child = candidate ? getGlobeNavigationScope(candidate.targetId) : null;
-    globeNavigationHoverName.textContent = child?.label || "";
-    globeNavigationHoverName.hidden = !child;
+    const candidateScope = getGlobeNavigationMapScopeAtPoint(event.point);
+    globeNavigationHoverName.textContent = candidateScope?.label || "";
+    globeNavigationHoverName.hidden = !candidateScope;
+    runner.map.getCanvas().style.cursor = candidateScope ? "pointer" : "";
   });
   runner.map.on("mouseleave", () => {
     if (!globeNavigationHoverName) return;
     globeNavigationHoverName.textContent = "";
     globeNavigationHoverName.hidden = true;
+    runner.map.getCanvas().style.cursor = "";
   });
 }
 
 function handleGlobeNavigationMapPoint(mapPoint) {
-  const scope = getGlobeNavigationScope(activeGlobeNavigationScopeId);
-  const childIds = new Set(scope?.children || []);
-  const candidate = runner.getNavigationCandidatesAtMapPoint(mapPoint)
-    .find((item) => item.kind === "overview" && childIds.has(item.targetId));
-  if (candidate) void openGlobeNavigation(candidate.targetId);
+  const candidateScope = getGlobeNavigationMapScopeAtPoint(mapPoint);
+  if (candidateScope) void openGlobeNavigation(candidateScope.id);
 }
 
 async function openGlobeNavigation(scopeId = globeNavigationPrototype.rootScopeId) {
@@ -6509,13 +6529,26 @@ function openGlobeNavigationLearningAction() {
     return;
   }
   if (action.kind === "journey") {
-    journeyPickerIntent = "learn";
-    selectJourney(action.journeyId, { pushHistory: false });
+    openGlobeNavigationJourneyLearning(action.journeyId);
     return;
   }
   if (action.kind === "expedition") {
     void openExpedition(action.expeditionId, { pushHistory: false });
   }
+}
+
+function openGlobeNavigationJourneyLearning(journeyId) {
+  journeyPickerIntent = "learn";
+  selectJourney(journeyId, { pushHistory: false });
+
+  const journey = getSelectedJourney();
+  const firstStep = getStudySelectionSteps(journey)[0];
+  const firstActivity = getActivityById(firstStep?.activityId);
+  if (!journey || !firstStep || !firstActivity) return;
+
+  void startStudyPreviewActivity(journey.id, firstStep.id, {
+    autoStartMemoryTrail: Boolean(firstActivity.memoryTrailAutoStart && isMemoryTrailEligible(firstActivity))
+  });
 }
 
 function toggleMenuSection(section, isVisible) {
@@ -26272,12 +26305,14 @@ function completeCurrentActivityForTest() {
 function getGlobeNavigationStateForTest() {
   const scope = getGlobeNavigationScope(activeGlobeNavigationScopeId);
   const children = getGlobeNavigationChildren(scope?.id);
+  const selectableScopes = getGlobeNavigationSelectableScopes();
   const cameraCenter = runner?.map?.getCenter?.();
   return {
     screen: currentAppScreen,
     scopeId: scope?.id || "",
     path: scope ? getGlobeNavigationPath(scope.id).map(({ id, label }) => ({ id, label })) : [],
     childIds: children.map(({ id }) => id),
+    selectableIds: selectableScopes.map(({ id }) => id),
     renderedFeatureIds: getGlobeNavigationFeatureCollection(scope?.id).features
       .map((feature) => feature.properties?.activityId)
       .filter(Boolean),
@@ -26290,6 +26325,10 @@ function getGlobeNavigationStateForTest() {
     childMapPoints: Object.fromEntries(children.map((child) => {
       const point = runner?.map?.project?.(child.view?.center || [0, 0]);
       return [child.id, point ? { x: point.x, y: point.y } : null];
+    })),
+    selectableMapPoints: Object.fromEntries(selectableScopes.map((selectableScope) => {
+      const point = runner?.map?.project?.(selectableScope.view?.center || [0, 0]);
+      return [selectableScope.id, point ? { x: point.x, y: point.y } : null];
     }))
   };
 }
@@ -26316,6 +26355,10 @@ function installMappaTestApi() {
       startMentalMapQuestion: startMentalMapQuestionForTest,
       getMentalMapVisualState: getMentalMapVisualStateForTest,
       getGlobeNavigationState: getGlobeNavigationStateForTest,
+      projectGlobeNavigationCoordinate: (coordinate) => {
+        const point = runner?.map?.project?.(coordinate);
+        return point ? { x: point.x, y: point.y } : null;
+      },
       resetCurrentActivity: resetCurrentActivityForTest,
       completeCurrentActivity: completeCurrentActivityForTest,
       getSavedJourneyProgress: () => loadProgress()

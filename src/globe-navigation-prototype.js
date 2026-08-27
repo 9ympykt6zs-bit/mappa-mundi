@@ -160,6 +160,10 @@ export function getGlobeNavigationChildren(scopeId, model = globeNavigationProto
   return (scope?.children || []).map((childId) => getGlobeNavigationScope(childId, model)).filter(Boolean);
 }
 
+export function getGlobeNavigationSelectableScopes(model = globeNavigationPrototype) {
+  return Object.values(model.scopes).filter((scope) => Boolean(scope.geometry));
+}
+
 export function getGlobeNavigationPath(scopeId, model = globeNavigationPrototype) {
   const path = [];
   const visited = new Set();

@@ -15,19 +15,44 @@ async function globeState(page) {
   return page.evaluate(() => window.__MAPPA_TEST_API__.getGlobeNavigationState());
 }
 
-async function chooseMapScope(page, scopeId, { checkHover = false } = {}) {
+const scopeLabels = {
+  "north-america": "North America",
+  "south-america": "South America",
+  europe: "Europe",
+  africa: "Africa",
+  asia: "Asia",
+  oceania: "Oceania",
+  antarctica: "Antarctica",
+  "united-states": "United States",
+  germany: "Germany",
+  france: "France",
+  italy: "Italy",
+  netherlands: "Netherlands"
+};
+
+async function chooseMapScope(page, scopeId, { checkHover = false, coordinate = null, useTouch = false } = {}) {
   const state = await globeState(page);
-  const point = state.childMapPoints[scopeId];
+  const point = coordinate
+    ? await page.evaluate(
+      (nextCoordinate) => window.__MAPPA_TEST_API__.projectGlobeNavigationCoordinate(nextCoordinate),
+      coordinate
+    )
+    : state.selectableMapPoints[scopeId];
   expect(point).toBeTruthy();
   const mapBox = await page.locator("#map").boundingBox();
   expect(mapBox).not.toBeNull();
 
-  await page.mouse.move(mapBox.x + point.x, mapBox.y + point.y);
-  if (checkHover) {
-    const expectedLabel = scopeId === "north-america" ? "North America" : scopeId;
-    await expect(page.locator("#globe-navigation-hover-name")).toHaveText(expectedLabel);
+  const x = mapBox.x + point.x;
+  const y = mapBox.y + point.y;
+  if (useTouch) {
+    await page.touchscreen.tap(x, y);
+  } else {
+    await page.mouse.move(x, y);
+    if (checkHover) {
+      await expect(page.locator("#globe-navigation-hover-name")).toHaveText(scopeLabels[scopeId]);
+    }
+    await page.mouse.click(x, y);
   }
-  await page.mouse.click(mapBox.x + point.x, mapBox.y + point.y);
   await expect.poll(async () => (await globeState(page)).scopeId).toBe(scopeId);
 }
 
@@ -48,7 +73,7 @@ test("globe-first launch drills from World to the existing U.S. objective screen
   await startPrototype(page);
   await expect(page.locator("#poc-title")).toHaveText("Where do you want to learn?");
   await expect(page.locator("#poc-instruction")).toHaveText("Choose a continent on the globe.");
-  await expect(page.getByRole("button", { name: "Learn the Continents" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Learn the Continents/ })).toBeVisible();
   await expect(page.getByRole("button", { name: "Use current menu" })).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Find a place" })).toHaveAttribute("type", "search");
   await expect.poll(async () => (await globeState(page)).camera.zoom).toBeCloseTo(1.85, 1);
@@ -71,7 +96,9 @@ test("globe-first launch drills from World to the existing U.S. objective screen
       headerBorderWidth: headerStyle.borderTopWidth,
       headerShadow: headerStyle.boxShadow,
       search: search.getBoundingClientRect().toJSON(),
-      actions: actions.getBoundingClientRect().toJSON()
+      actions: actions.getBoundingClientRect().toJSON(),
+      primary: document.querySelector("#globe-navigation-learn-button").getBoundingClientRect().toJSON(),
+      quiet: document.querySelector("#globe-navigation-current-menu").getBoundingClientRect().toJSON()
     };
   });
   expect(layout.panelBackground).toBe("rgba(0, 0, 0, 0)");
@@ -84,6 +111,8 @@ test("globe-first launch drills from World to the existing U.S. objective screen
   expect(layout.search.x).toBeGreaterThanOrEqual(0);
   expect(layout.search.right).toBeLessThanOrEqual(layout.viewport.width);
   expect(layout.actions.bottom).toBeLessThanOrEqual(layout.viewport.height);
+  expect(layout.viewport.height - layout.actions.bottom).toBeGreaterThanOrEqual(20);
+  expect(layout.primary.height).toBeGreaterThan(layout.quiet.height);
   expect(layout.search.bottom).toBeLessThan(layout.actions.top);
   if (testInfo.project.name.includes("desktop")) {
     expect(layout.search.x).toBeLessThan(layout.viewport.width / 3);
@@ -101,9 +130,23 @@ test("globe-first launch drills from World to the existing U.S. objective screen
     "oceania",
     "antarctica"
   ]);
-  expect(new Set(worldState.renderedFeatureIds)).toEqual(new Set(worldState.childIds));
+  expect(worldState.selectableIds).toEqual([
+    "north-america",
+    "south-america",
+    "europe",
+    "africa",
+    "asia",
+    "oceania",
+    "antarctica",
+    "united-states",
+    "germany",
+    "france",
+    "italy",
+    "netherlands"
+  ]);
+  expect(new Set(worldState.renderedFeatureIds)).toEqual(new Set(worldState.selectableIds));
 
-  await page.getByRole("button", { name: "Learn the Continents" }).click();
+  await page.getByRole("button", { name: /Learn the Continents/ }).click();
   await expect.poll(
     () => page.evaluate(() => window.__MAPPA_TEST_API__?.getCurrentActivity()?.id),
     { timeout: 20_000 }
@@ -114,23 +157,19 @@ test("globe-first launch drills from World to the existing U.S. objective screen
   if (testInfo.project.name.includes("mobile")) {
     await chooseSearchScope(page, "North America", "north");
   } else {
-    await chooseMapScope(page, "north-america", { checkHover: true });
+    await chooseMapScope(page, "north-america", { checkHover: true, coordinate: [-110, 55] });
   }
   await expect(page.locator("#poc-title")).toHaveText("North America");
-  await expect(page.getByRole("button", { name: "Learn North America" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Learn North America/ })).toBeVisible();
   await expect(page.locator("#globe-navigation-path")).toContainText("World");
   await expect(page.locator("#globe-navigation-path")).toContainText("North America");
 
-  if (testInfo.project.name.includes("mobile")) {
-    await chooseSearchScope(page, "United States", "united");
-  } else {
-    await chooseMapScope(page, "united-states");
-  }
+  await chooseMapScope(page, "united-states", { useTouch: testInfo.project.name.includes("mobile") });
   await expect(page.locator("#poc-title")).toHaveText("United States");
-  await expect(page.getByRole("button", { name: "Learn the United States" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Learn the United States/ })).toBeVisible();
   expect((await globeState(page)).path.map(({ label }) => label)).toEqual(["World", "North America", "United States"]);
 
-  await page.getByRole("button", { name: "Learn the United States" }).click();
+  await page.getByRole("button", { name: /Learn the United States/ }).click();
   await expect(page.locator("#app-shell-title")).toHaveText("Across the United States");
   await expect(page.locator(".us-objective-title")).toHaveText([
     "Learn States & Capitals",
@@ -148,19 +187,51 @@ test("globe-first launch drills from World to the existing U.S. objective screen
   expect(runtimeErrors).toEqual([]);
 });
 
-test("place search uses the same scopes as globe selection and keeps unsupported names honest", async ({ page }) => {
+test("map and search allow lateral region changes without requiring Back", async ({ page }, testInfo) => {
   await startPrototype(page);
-  await chooseMapScope(page, "europe");
+  if (testInfo.project.name.includes("mobile")) {
+    await chooseSearchScope(page, "Europe");
+  } else {
+    await chooseMapScope(page, "europe", { coordinate: [22, 50] });
+  }
   await expect(page.locator("#poc-title")).toHaveText("Europe");
   const globeSelectedEurope = await globeState(page);
   expect(globeSelectedEurope.childIds).toEqual(["germany", "france", "italy", "netherlands"]);
 
-  await page.locator("#globe-navigation-path").getByRole("button", { name: "World" }).click();
+  await chooseSearchScope(page, "France");
+  await expect(page.locator("#poc-title")).toHaveText("France");
+
+  if (testInfo.project.name.includes("mobile")) {
+    await page.getByRole("button", { name: "Zoom out" }).tap();
+    await expect.poll(async () => (await globeState(page)).camera.zoom).toBeLessThan(3.7);
+  }
+  await chooseMapScope(page, "germany", {
+    checkHover: testInfo.project.name.includes("desktop"),
+    useTouch: testInfo.project.name.includes("mobile")
+  });
+  await expect(page.locator("#poc-title")).toHaveText("Germany");
+  await expect(page.locator("#globe-navigation-hover-name")).toBeHidden();
+  expect((await globeState(page)).scopeId).toBe("germany");
+
+  await chooseSearchScope(page, "France");
+  await chooseSearchScope(page, "Italy");
+  await expect(page.locator("#poc-title")).toHaveText("Italy");
+
+  if (testInfo.project.name.includes("desktop")) {
+    for (const scopeId of ["france", "italy", "netherlands"]) {
+      await chooseSearchScope(page, "Europe");
+      await chooseMapScope(page, scopeId);
+      expect((await globeState(page)).scopeId).toBe(scopeId);
+    }
+  }
+
+  await chooseSearchScope(page, "France");
+  await chooseSearchScope(page, "United States", "united");
+  await expect(page.locator("#poc-title")).toHaveText("United States");
+  expect((await globeState(page)).path.map(({ label }) => label)).toEqual(["World", "North America", "United States"]);
+
+  await chooseSearchScope(page, "Europe");
   const search = page.getByRole("combobox", { name: "Find a place" });
-  await search.fill("EUR");
-  await expect(page.locator("#globe-navigation-find-options").getByRole("option", { name: "Europe" })).toBeVisible();
-  await page.locator("#globe-navigation-find-options").getByRole("option", { name: "Europe" }).click();
-  await expect.poll(async () => (await globeState(page)).scopeId).toBe("europe");
   expect((await globeState(page)).childIds).toEqual(globeSelectedEurope.childIds);
 
   await search.fill("lands");
@@ -175,6 +246,21 @@ test("place search uses the same scopes as globe selection and keeps unsupported
   await expect(page.locator("#globe-navigation-find-options")).toContainText("No available learning area found.");
   await expect(page.locator("#globe-navigation-find-options").getByRole("option")).toHaveCount(0);
   expect((await globeState(page)).scopeId).toBe("netherlands");
+});
+
+test("Learn on a supported country starts its existing learning experience immediately", async ({ page }) => {
+  await startPrototype(page);
+  await chooseSearchScope(page, "France");
+  await expect(page.getByRole("button", { name: /Learn France/ })).toBeVisible();
+  await expect(page.locator(".globe-navigation-primary-support")).toHaveText("Start learning this area");
+
+  await page.getByRole("button", { name: /Learn France/ }).click();
+  await expect.poll(
+    () => page.evaluate(() => window.__MAPPA_TEST_API__?.getCurrentActivity()?.id),
+    { timeout: 20_000 }
+  ).toBe("france-northern-eastern-regions-political-divisions");
+  await expect(page.locator("#globe-navigation-panel")).toBeHidden();
+  await expect(page.locator("#app-shell-screen")).toBeHidden();
 });
 
 test("the rollback query restores the current menu and direct activity routes still bypass navigation", async ({ page }) => {

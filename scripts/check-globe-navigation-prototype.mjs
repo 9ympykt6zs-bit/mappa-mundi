@@ -6,6 +6,7 @@ import {
   findGlobeNavigationScopes,
   getGlobeNavigationChildren,
   getGlobeNavigationPath,
+  getGlobeNavigationSelectableScopes,
   getGlobeNavigationScope,
   globeNavigationPrototype,
   isGlobeNavigationPrototypeEnabled
@@ -18,6 +19,24 @@ assert.equal(world.learningAction.label, "Learn the Continents");
 assert.deepEqual(
   getGlobeNavigationChildren(world.id).map(({ id }) => id),
   ["north-america", "south-america", "europe", "africa", "asia", "oceania", "antarctica"]
+);
+assert.deepEqual(
+  getGlobeNavigationSelectableScopes().map(({ id }) => id),
+  [
+    "north-america",
+    "south-america",
+    "europe",
+    "africa",
+    "asia",
+    "oceania",
+    "antarctica",
+    "united-states",
+    "germany",
+    "france",
+    "italy",
+    "netherlands"
+  ],
+  "Map and search must share the full configured geometry-backed prototype scope."
 );
 
 assert.deepEqual(
@@ -51,10 +70,13 @@ const indexSource = readFileSync(new URL("../index.html", import.meta.url), "utf
 const configSource = readFileSync(new URL("../src/globe-navigation-prototype.js", import.meta.url), "utf8");
 assert.match(runtimeSource, /isGlobeNavigationPrototypeEnabled\(window\.location\.search\)/);
 assert.match(runtimeSource, /openExpedition\(action\.expeditionId, \{ pushHistory: false \}\)/);
+assert.match(runtimeSource, /getGlobeNavigationSelectableScopes\(\)/);
+assert.match(runtimeSource, /openGlobeNavigationJourneyLearning\(action\.journeyId\)/);
 assert.match(runtimeSource, /returnToGlobeNavigation/);
 assert.match(indexSource, /id="globe-navigation-panel"/);
 assert.match(indexSource, /id="globe-navigation-search"/);
 assert.match(indexSource, /placeholder="Search places\.\.\."/);
+assert.match(indexSource, /Start learning this area/);
 assert.doesNotMatch(indexSource, /<details id="globe-navigation-find"/, "Find a place must be a search input rather than the old disclosure menu.");
 assert.match(indexSource, /id="main-menu-us-expedition-button"/, "The current U.S. entry must remain intact.");
 assert.match(indexSource, /id="main-menu-choose-button"/, "The current journey menu must remain intact.");

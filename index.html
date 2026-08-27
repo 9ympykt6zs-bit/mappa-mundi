@@ -31,7 +31,7 @@
     <link rel="icon" type="image/png" href="/assets/icons/atlas-quest-icon-192.png" />
     <link rel="apple-touch-icon" href="/assets/icons/atlas-quest-icon-180.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="stylesheet" href="maplibre-poc.css?v=20260827-globe-navigation-refinement-3" />
+    <link rel="stylesheet" href="maplibre-poc.css?v=20260827-globe-navigation-interaction-1" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -264,7 +264,10 @@
           <div class="globe-navigation-footer">
             <p id="globe-navigation-status" class="globe-navigation-status"></p>
             <div class="globe-navigation-actions">
-              <button id="globe-navigation-learn-button" class="globe-navigation-primary" type="button"></button>
+              <button id="globe-navigation-learn-button" class="globe-navigation-primary" type="button">
+                <span id="globe-navigation-learn-label" class="globe-navigation-primary-label"></span>
+                <span class="globe-navigation-primary-support">Start learning this area</span>
+              </button>
               <button id="globe-navigation-current-menu" class="globe-navigation-quiet" type="button">Use current menu</button>
             </div>
           </div>
@@ -376,7 +379,7 @@
 
         window.__mappaMundiLoadApp = () => {
           if (!appModulePromise) {
-            appModulePromise = import("./src/maplibre-poc.js?v=20260827-globe-navigation-refinement-3");
+            appModulePromise = import("./src/maplibre-poc.js?v=20260827-globe-navigation-interaction-1");
           }
 
           return appModulePromise;

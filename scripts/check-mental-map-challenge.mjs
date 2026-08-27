@@ -658,7 +658,7 @@ const chipSpeechSource = fs.readFileSync("src/chip-speech.js", "utf8");
 const cssSource = fs.readFileSync("maplibre-poc.css", "utf8");
 const markupSource = fs.readFileSync("index.html", "utf8");
 assert.ok(markupSource.includes("Mental Map Challenge"));
-assert.ok(markupSource.includes("maplibre-poc.css?v=20260827-globe-navigation-refinement-3"));
+assert.ok(markupSource.includes("maplibre-poc.css?v=20260827-globe-navigation-interaction-1"));
 assert.ok(runtimeSource.includes('currentAppScreen = "mental-map-challenge"'));
 assert.ok(runtimeSource.includes('document.body.classList.add("mental-map-result-mode")'));
 assert.ok(cssSource.includes("body.mental-map-challenge-mode:not(.mental-map-result-mode) #map"));
