@@ -455,6 +455,8 @@ const smallTargetMobileHitPaddingMaxPx = 36;
 const smallTargetDesktopHitPaddingMaxPx = 28;
 const smallTargetLearnDesiredMinScreenSizePx = 72;
 const smallTargetLearnFocusMaxZoom = 7.8;
+const politicalDivisionContextFill = "#e2e8f0";
+const politicalDivisionContextLine = "#64748b";
 
 export class MapLibreActivityRunner {
   constructor({ maplibregl, container }) {
@@ -761,7 +763,7 @@ export class MapLibreActivityRunner {
     this.studyIntroCameraTimeoutId = window.setTimeout(() => {
       this.studyIntroCameraTimeoutId = null;
       if (this.currentView === "study" && this.activity?.id === activityId) {
-        const studyView = this.activity.map?.studyView || {};
+        const studyView = this.getEffectiveStudyView();
         debugContinentsOceansRunnerCamera("enterStudyView study fit requested", {
           requestType: "fitBounds",
           source: "enterStudyView:studyView",
@@ -1314,6 +1316,24 @@ export class MapLibreActivityRunner {
     this.memoryTrailCorrectHighlightIds = [];
     this.memoryTrailWrongHighlightIds = [];
     this.refreshDifficultyVisuals();
+  }
+
+  getPoliticalDivisionVisualState() {
+    const context = this.getPoliticalDivisionContextGeoJson();
+    const eligible = this.getTargetShapeGeoJson();
+    const highlight = this.getPoliticalDivisionGuidedHighlightGeoJson();
+    return {
+      enabled: this.isCountryPoliticalDivisionActivity(),
+      contextFeatureIds: context.features.map((feature) => feature.properties?.id).filter(Boolean),
+      eligibleFeatureIds: eligible.features.map((feature) => feature.properties?.id).filter(Boolean),
+      highlightFeatureIds: highlight.features.map((feature) => feature.properties?.id).filter(Boolean),
+      contextFillColor: politicalDivisionContextFill,
+      contextLineColor: politicalDivisionContextLine,
+      highlightFillColor: colors.memoryTrailFill,
+      highlightLineColor: colors.memoryTrailLine,
+      highlightFillOpacity: 0.86,
+      highlightLineWidth: 4.2
+    };
   }
 
   setMemoryTrailCorrectionHighlight({ correctTargetId = "", wrongTargetId = "" } = {}) {
@@ -2127,7 +2147,7 @@ export class MapLibreActivityRunner {
   }
 
   fitStudyView(options = {}) {
-    const studyView = this.activity.map?.studyView || {};
+    const studyView = this.getEffectiveStudyView();
     this.moveCamera({
       bounds: studyView.bounds || [[-74.35, 40.85], [-66.75, 47.55]],
       padding: studyView.padding || { top: 55, right: 46, bottom: 78, left: 46 },
@@ -2140,6 +2160,39 @@ export class MapLibreActivityRunner {
       activityId: this.activity?.id,
       skipCameraDevOverride: Boolean(options.skipCameraDevOverride)
     }, "fitBounds");
+  }
+
+  getEffectiveStudyView(activity = this.activity) {
+    const configuredStudyView = activity?.map?.studyView || {};
+    if (!this.isCountryPoliticalDivisionActivity(activity)) {
+      return configuredStudyView;
+    }
+
+    const sectionBounds = this.getFeatureCollectionBounds(this.getTargetShapeGeoJson(activity));
+    return {
+      ...configuredStudyView,
+      bounds: sectionBounds || configuredStudyView.bounds,
+      padding: configuredStudyView.padding || { top: 62, right: 54, bottom: 88, left: 54 }
+    };
+  }
+
+  getFeatureCollectionBounds(featureCollection) {
+    const bounds = (featureCollection?.features || []).reduce((combined, feature) => {
+      const featureBounds = this.getGeometryBounds(feature.geometry);
+      if (!this.hasValidBounds(featureBounds)) return combined;
+      if (!combined) {
+        return [
+          [featureBounds[0][0], featureBounds[0][1]],
+          [featureBounds[1][0], featureBounds[1][1]]
+        ];
+      }
+      combined[0][0] = Math.min(combined[0][0], featureBounds[0][0]);
+      combined[0][1] = Math.min(combined[0][1], featureBounds[0][1]);
+      combined[1][0] = Math.max(combined[1][0], featureBounds[1][0]);
+      combined[1][1] = Math.max(combined[1][1], featureBounds[1][1]);
+      return combined;
+    }, null);
+    return this.hasValidBounds(bounds) ? bounds : null;
   }
 
   fitCurrentView() {
@@ -3260,6 +3313,16 @@ export class MapLibreActivityRunner {
       data: createCoastlineDisplayGeoJson(targetShapeGeoJson)
     });
 
+    this.map.addSource("political-division-context", {
+      type: "geojson",
+      data: createCoastlineDisplayGeoJson(this.getPoliticalDivisionContextGeoJson())
+    });
+
+    this.map.addSource("political-division-guided-highlight", {
+      type: "geojson",
+      data: this.getPoliticalDivisionGuidedHighlightGeoJson()
+    });
+
     this.map.addSource("mountain-range-corridors", {
       type: "geojson",
       data: this.getMountainRangeCorridorGeoJson()
@@ -3356,6 +3419,36 @@ export class MapLibreActivityRunner {
     });
 
     this.map.addLayer({
+      id: "political-division-context-fill",
+      type: "fill",
+      source: "political-division-context",
+      layout: {
+        visibility: "none"
+      },
+      paint: {
+        "fill-color": politicalDivisionContextFill,
+        "fill-opacity": 0.42,
+        "fill-antialias": true
+      }
+    }, "state-fill");
+
+    this.map.addLayer({
+      id: "political-division-context-line",
+      type: "line",
+      source: "political-division-context",
+      layout: {
+        visibility: "none",
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": politicalDivisionContextLine,
+        "line-opacity": 0.78,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 3, 0.85, 7, 1.45]
+      }
+    }, "state-fill");
+
+    this.map.addLayer({
       id: "border-chain-state-fill",
       type: "fill",
       source: "us-states-atlas",
@@ -3445,6 +3538,36 @@ export class MapLibreActivityRunner {
         "line-color": this.getStateLineExpression(),
         "line-opacity": this.getShapeLineOpacityExpression(),
         "line-width": this.getShapeLineWidthExpression()
+      }
+    });
+
+    this.map.addLayer({
+      id: "political-division-guided-highlight-fill",
+      type: "fill",
+      source: "political-division-guided-highlight",
+      layout: {
+        visibility: "none"
+      },
+      paint: {
+        "fill-color": colors.memoryTrailFill,
+        "fill-opacity": 0.86,
+        "fill-antialias": true
+      }
+    });
+
+    this.map.addLayer({
+      id: "political-division-guided-highlight-line",
+      type: "line",
+      source: "political-division-guided-highlight",
+      layout: {
+        visibility: "none",
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": colors.memoryTrailLine,
+        "line-opacity": 1,
+        "line-width": 4.2
       }
     });
 
@@ -5228,11 +5351,14 @@ export class MapLibreActivityRunner {
     };
   }
 
-  getTargetShapeGeoJson() {
+  getTargetShapeGeoJson(activity = this.activity) {
+    const targets = activity === this.activity
+      ? this.shapeTargets
+      : (activity?.targets || []).filter((target) => target.kind === "shape");
     return {
       type: "FeatureCollection",
-      features: this.shapeTargets
-        .map((target) => this.getTargetShapeFeature(target))
+      features: targets
+        .map((target) => this.getTargetShapeFeature(target, activity))
         .filter(Boolean)
     };
   }
@@ -5585,8 +5711,8 @@ export class MapLibreActivityRunner {
     return null;
   }
 
-  getTargetShapeFeature(target) {
-    const sourceFeature = this.findSourceShapeFeature(target, this.activity);
+  getTargetShapeFeature(target, activity = this.activity) {
+    const sourceFeature = this.findSourceShapeFeature(target, activity);
 
     if (!sourceFeature) {
       return null;
@@ -5619,15 +5745,117 @@ export class MapLibreActivityRunner {
     };
   }
 
+  isCountryPoliticalDivisionActivity(activity = this.activity) {
+    return Boolean(
+      activity?.map?.admin1Source
+      && activity?.targets?.some((target) => target.kind === "shape" && target.type === "admin1")
+    );
+  }
+
+  getPoliticalDivisionContextGeoJson(activity = this.activity) {
+    if (!this.isCountryPoliticalDivisionActivity(activity)) {
+      return emptyFeatureCollection;
+    }
+
+    const sourceId = activity.map.admin1Source;
+    const source = this.getAdmin1FeatureCollection(sourceId);
+    const parentIsoA3 = this.getParentCountryIsoA3(activity);
+    const activeTargetIds = new Set((activity.targets || []).map((target) => target.sourceFeatureId || target.id));
+    const features = (source?.features || [])
+      .filter((feature) => this.doesAdmin1FeatureBelongToCountry(feature, sourceId, parentIsoA3))
+      .map((feature) => ({
+        ...feature,
+        properties: {
+          ...feature.properties,
+          id: feature.properties?.id,
+          politicalDivisionContext: true,
+          activeSectionTarget: activeTargetIds.has(feature.properties?.id)
+        }
+      }));
+
+    return { type: "FeatureCollection", features };
+  }
+
+  doesAdmin1FeatureBelongToCountry(feature, sourceId, parentIsoA3) {
+    if (!parentIsoA3) return true;
+    if (admin1SourceParentCountryIsoA3[sourceId] === parentIsoA3) return true;
+
+    const properties = feature?.properties || {};
+    const isoA2 = String(properties.iso_3166_2 || "").split("-")[0].toUpperCase();
+    if (isoA2 && admin1Iso31662PrefixParentCountryIsoA3[isoA2] === parentIsoA3) return true;
+
+    return this.normalizeIsoA3(
+      properties.adm0_a3
+      || properties.ADM0_A3
+      || properties.sov_a3
+      || properties.SOV_A3
+    ) === parentIsoA3;
+  }
+
+  getPoliticalDivisionGuidedHighlightGeoJson(targetIds = this.memoryTrailHighlightIds, activity = this.activity) {
+    if (!this.isCountryPoliticalDivisionActivity(activity)) {
+      return emptyFeatureCollection;
+    }
+
+    const requestedIds = new Set(Array.isArray(targetIds) ? targetIds : [targetIds].filter(Boolean));
+    const eligibleTargets = (activity.targets || []).filter((target) => (
+      target.kind === "shape" && requestedIds.has(target.id)
+    ));
+    return {
+      type: "FeatureCollection",
+      features: eligibleTargets
+        .map((target) => this.getTargetShapeFeature(target, activity))
+        .filter(Boolean)
+        .map((feature) => ({
+          ...feature,
+          properties: {
+            ...feature.properties,
+            guidedHighlight: true
+          }
+        }))
+    };
+  }
+
+  getGuidedHighlightReadiness(target, activity = this.activity) {
+    if (!this.isCountryPoliticalDivisionActivity(activity)) {
+      return { ready: true, targetId: target?.id || "", reason: "dedicated-highlight-not-required" };
+    }
+
+    const eligibleFeature = (activity.targets || []).some((candidate) => candidate.id === target?.id)
+      ? this.getTargetShapeFeature(target, activity)
+      : null;
+    const highlightFeature = this.getPoliticalDivisionGuidedHighlightGeoJson([target?.id], activity).features[0] || null;
+    return validateRetrievalTarget(target, {
+      resolveShapeFeature: () => this.findSourceShapeFeature(target, activity),
+      resolveEligibleFeature: () => eligibleFeature,
+      requiresRenderedHighlight: true,
+      resolveRenderedHighlight: () => highlightFeature
+    });
+  }
+
   getTargetRetrievalReadiness(target, activity = this.activity) {
     return validateRetrievalTarget(target, {
-      resolveShapeFeature: (candidate) => this.findSourceShapeFeature(candidate, activity)
+      resolveShapeFeature: (candidate) => this.findSourceShapeFeature(candidate, activity),
+      resolveEligibleFeature: (candidate) => (
+        (activity.targets || []).some((target) => target.id === candidate.id)
+          ? this.getTargetShapeFeature(candidate, activity)
+          : null
+      ),
+      requiresRenderedHighlight: this.isCountryPoliticalDivisionActivity(activity),
+      resolveRenderedHighlight: (candidate) => (
+        this.getPoliticalDivisionGuidedHighlightGeoJson([candidate.id], activity).features[0] || null
+      )
     });
   }
 
   getActivityRetrievalReadiness(activity = this.activity) {
     return validateMapRetrievalActivity(activity, {
-      resolveShapeFeature: (target) => this.findSourceShapeFeature(target, activity)
+      resolveShapeFeature: (target) => this.findSourceShapeFeature(target, activity),
+      resolveEligibleFeature: (target) => this.getTargetShapeFeature(target, activity),
+      requiresRenderedHighlight: this.isCountryPoliticalDivisionActivity(activity),
+      resolveRenderedHighlight: (target) => (
+        this.getPoliticalDivisionGuidedHighlightGeoJson([target.id], activity).features[0] || null
+      )
     });
   }
 
@@ -6006,11 +6234,11 @@ export class MapLibreActivityRunner {
         const properties = feature.properties || {};
 
         return properties.id === sourceFeatureId
-          || properties.iso_3166_2 === target.iso_3166_2
-          || properties.name === adminName
-          || properties.sourceName === adminName
-          || properties.sourceNameEn === adminName
-          || properties.sourceGnName === adminName;
+          || (target.iso_3166_2 && properties.iso_3166_2 === target.iso_3166_2)
+          || (adminName && properties.name === adminName)
+          || (adminName && properties.sourceName === adminName)
+          || (adminName && properties.sourceNameEn === adminName)
+          || (adminName && properties.sourceGnName === adminName);
       }) || null;
     }
 
@@ -6018,12 +6246,12 @@ export class MapLibreActivityRunner {
       const properties = feature.properties || {};
 
       return properties.id === sourceFeatureId
-        || properties.ADM0_A3 === isoA3
-        || properties.ISO_A3 === isoA3
-        || properties.SOV_A3 === isoA3
-        || properties.ADMIN === adminName
-        || properties.NAME === adminName
-        || properties.NAME_LONG === adminName;
+        || (isoA3 && properties.ADM0_A3 === isoA3)
+        || (isoA3 && properties.ISO_A3 === isoA3)
+        || (isoA3 && properties.SOV_A3 === isoA3)
+        || (adminName && properties.ADMIN === adminName)
+        || (adminName && properties.NAME === adminName)
+        || (adminName && properties.NAME_LONG === adminName);
     }) || null;
 
     return this.getRegionalWorldSourceFeature(worldFeature, activity);
@@ -7441,13 +7669,19 @@ export class MapLibreActivityRunner {
   refreshTargetShapeSources() {
     const shapeSource = this.map?.getSource("target-shapes");
     const displaySource = this.map?.getSource("target-shapes-display");
-    if (!shapeSource && !displaySource) {
+    const politicalDivisionContextSource = this.map?.getSource("political-division-context");
+    const politicalDivisionHighlightSource = this.map?.getSource("political-division-guided-highlight");
+    if (!shapeSource && !displaySource && !politicalDivisionContextSource && !politicalDivisionHighlightSource) {
       return;
     }
 
     const targetShapeGeoJson = this.getTargetShapeGeoJson();
     shapeSource?.setData(targetShapeGeoJson);
     displaySource?.setData(createCoastlineDisplayGeoJson(targetShapeGeoJson));
+    politicalDivisionContextSource?.setData(
+      createCoastlineDisplayGeoJson(this.getPoliticalDivisionContextGeoJson())
+    );
+    politicalDivisionHighlightSource?.setData(this.getPoliticalDivisionGuidedHighlightGeoJson());
   }
 
   getPoliticalFillExpression() {
@@ -8193,7 +8427,7 @@ export class MapLibreActivityRunner {
 
   updateDifficultyLayerVisibility() {
     if (!this.map || this.currentView !== "study") {
-      ["ocean-target-raster", "state-fill", "state-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-active-halo", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
+      ["ocean-target-raster", "political-division-context-fill", "political-division-context-line", "state-fill", "state-line", "political-division-guided-highlight-fill", "political-division-guided-highlight-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-active-halo", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
         if (this.map?.getLayer(layerId)) {
           this.map.setLayoutProperty(layerId, "visibility", "none");
         }
@@ -8206,6 +8440,22 @@ export class MapLibreActivityRunner {
     const showGuidedTargets = visualState.usesProgressReveal
       || this.shouldShowHardContinentChallenge()
       || (visualState.isHard && hasCompletedTargets);
+    const showPoliticalDivisionContext = this.isCountryPoliticalDivisionActivity();
+    const showPoliticalDivisionHighlight = showPoliticalDivisionContext
+      && this.studyPreviewMode
+      && this.getPoliticalDivisionGuidedHighlightGeoJson().features.length > 0;
+
+    ["political-division-context-fill", "political-division-context-line"].forEach((layerId) => {
+      if (this.map.getLayer(layerId)) {
+        this.map.setLayoutProperty(layerId, "visibility", showPoliticalDivisionContext ? "visible" : "none");
+      }
+    });
+
+    ["political-division-guided-highlight-fill", "political-division-guided-highlight-line"].forEach((layerId) => {
+      if (this.map.getLayer(layerId)) {
+        this.map.setLayoutProperty(layerId, "visibility", showPoliticalDivisionHighlight ? "visible" : "none");
+      }
+    });
 
     if (this.map.getLayer("state-fill")) {
       this.map.setLayoutProperty("state-fill", "visibility", showGuidedTargets ? "visible" : "none");
@@ -8280,7 +8530,7 @@ export class MapLibreActivityRunner {
   }
 
   setStudyVisibility(visibility) {
-    ["ocean-target-raster", "state-fill", "state-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-active-halo", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
+    ["ocean-target-raster", "political-division-context-fill", "political-division-context-line", "state-fill", "state-line", "political-division-guided-highlight-fill", "political-division-guided-highlight-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-active-halo", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
       if (this.map.getLayer(layerId)) {
         this.map.setLayoutProperty(layerId, "visibility", visibility);
       }

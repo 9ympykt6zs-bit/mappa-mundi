@@ -59,11 +59,58 @@ export function validateRetrievalTarget(target, options = {}) {
   }
 
   const sourceFeature = options.resolveShapeFeature?.(target) || null;
-  const ready = isUsableRetrievalGeometry(sourceFeature?.geometry);
+  const sourceReady = isUsableRetrievalGeometry(sourceFeature?.geometry);
+  if (!sourceReady) {
+    return {
+      ready: false,
+      targetId,
+      reason: sourceFeature ? "invalid-target-geometry" : "missing-target-geometry",
+      sourceReady: false,
+      eligibleHitReady: false,
+      renderedHighlightReady: false
+    };
+  }
+
+  const eligibleFeature = options.resolveEligibleFeature
+    ? options.resolveEligibleFeature(target)
+    : sourceFeature;
+  const eligibleHitReady = isUsableRetrievalGeometry(eligibleFeature?.geometry);
+  if (!eligibleHitReady) {
+    return {
+      ready: false,
+      targetId,
+      reason: eligibleFeature ? "invalid-eligible-hit-geometry" : "missing-eligible-hit-geometry",
+      sourceReady: true,
+      eligibleHitReady: false,
+      renderedHighlightReady: false
+    };
+  }
+
+  const requiresRenderedHighlight = options.requiresRenderedHighlight === true
+    || (typeof options.requiresRenderedHighlight === "function"
+      && options.requiresRenderedHighlight(target) === true);
+  const highlightFeature = requiresRenderedHighlight
+    ? options.resolveRenderedHighlight?.(target) || null
+    : eligibleFeature;
+  const renderedHighlightReady = isUsableRetrievalGeometry(highlightFeature?.geometry);
+  if (!renderedHighlightReady) {
+    return {
+      ready: false,
+      targetId,
+      reason: highlightFeature ? "invalid-rendered-highlight-geometry" : "missing-rendered-highlight-geometry",
+      sourceReady: true,
+      eligibleHitReady: true,
+      renderedHighlightReady: false
+    };
+  }
+
   return {
-    ready,
+    ready: true,
     targetId,
-    reason: ready ? "ready" : sourceFeature ? "invalid-target-geometry" : "missing-target-geometry"
+    reason: "ready",
+    sourceReady: true,
+    eligibleHitReady: true,
+    renderedHighlightReady: true
   };
 }
 

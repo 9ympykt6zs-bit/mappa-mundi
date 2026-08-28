@@ -14285,7 +14285,10 @@ function fitMapToPracticeWindow(targets = [], reason = "practice-window") {
   if (getActiveDailyTrailFixedCamera(memoryTrail) || getActiveDailyTrailNonLearnCamera(memoryTrail)) {
     return applyMemoryTrailSectionQuizCamera(memoryTrail, { promptType: "fixed-camera" }, { duration: 260 });
   }
-  const windowKey = targets.map((target) => target.id).join("|");
+  const cameraTargets = runner.isCountryPoliticalDivisionActivity?.()
+    ? session.currentActivity.targets
+    : targets;
+  const windowKey = cameraTargets.map((target) => target.id).join("|");
   if (memoryTrail && memoryTrail.lastCameraWindowKey === windowKey) {
     return false;
   }
@@ -14300,9 +14303,9 @@ function fitMapToPracticeWindow(targets = [], reason = "practice-window") {
     return false;
   }
 
-  const didFit = runner.fitTargets(targets, {
+  const didFit = runner.fitTargets(cameraTargets, {
     duration: 850,
-    maxZoom: targets.length <= 3 ? 5.75 : 5.35,
+    maxZoom: cameraTargets.length <= 3 ? 5.75 : 5.35,
     cameraContext: reason,
     source: "fitMapToPracticeWindow"
   });
@@ -14313,7 +14316,7 @@ function fitMapToPracticeWindow(targets = [], reason = "practice-window") {
 
   debugMemoryTrail("fit practice window", {
     reason,
-    targetIds: targets.map((target) => target.id),
+    targetIds: cameraTargets.map((target) => target.id),
     didFit
   });
   return didFit;
@@ -26363,6 +26366,125 @@ function getMountainRangeVisualStateForTest() {
   };
 }
 
+function getPoliticalDivisionVisualStateForTest() {
+  const visualState = runner?.getPoliticalDivisionVisualState?.();
+  if (!visualState?.enabled) return null;
+
+  const map = runner.map;
+  const contextFillLayer = map?.getLayer?.("political-division-context-fill");
+  const highlightFillLayer = map?.getLayer?.("political-division-guided-highlight-fill");
+  const highlightLineLayer = map?.getLayer?.("political-division-guided-highlight-line");
+  const targetClientBounds = {};
+  const targetClientPoints = {};
+  const contextClientPoints = {};
+  const mapRect = map?.getContainer?.().getBoundingClientRect?.() || null;
+  (runner.getTargetShapeGeoJson?.().features || []).forEach((feature) => {
+    const bounds = runner.getGeometryBounds?.(feature.geometry);
+    if (!feature.properties?.id || !bounds || !map?.project) return;
+    const southwest = map.project(bounds[0]);
+    const northeast = map.project(bounds[1]);
+    targetClientBounds[feature.properties.id] = {
+      left: Math.min(southwest.x, northeast.x),
+      right: Math.max(southwest.x, northeast.x),
+      top: Math.min(southwest.y, northeast.y),
+      bottom: Math.max(southwest.y, northeast.y)
+    };
+    const longitude = Number(feature.properties?.longitude);
+    const latitude = Number(feature.properties?.latitude);
+    if (Number.isFinite(longitude) && Number.isFinite(latitude)) {
+      const point = map.project([longitude, latitude]);
+      targetClientPoints[feature.properties.id] = {
+        x: point.x,
+        y: point.y,
+        clientX: point.x + (mapRect?.left || 0),
+        clientY: point.y + (mapRect?.top || 0)
+      };
+    }
+  });
+  (runner.getPoliticalDivisionContextGeoJson?.().features || []).forEach((feature) => {
+    const longitude = Number(feature.properties?.longitude);
+    const latitude = Number(feature.properties?.latitude);
+    if (!feature.properties?.id || !Number.isFinite(longitude) || !Number.isFinite(latitude) || !map?.project) return;
+    const point = map.project([longitude, latitude]);
+    contextClientPoints[feature.properties.id] = {
+      x: point.x,
+      y: point.y,
+      clientX: point.x + (mapRect?.left || 0),
+      clientY: point.y + (mapRect?.top || 0)
+    };
+  });
+
+  const memoryTrail = getActiveMemoryTrail();
+  const promptTarget = session?.currentActivity?.targets?.find((target) => (
+    target.id === memoryTrail?.currentPromptTargetId
+  )) || null;
+  const targetHitIds = Object.fromEntries(Object.entries(targetClientPoints).map(([targetId, point]) => [
+    targetId,
+    runner.getTargetIdsAtMapPoint?.([point.x, point.y], promptTarget, { priorityTarget: promptTarget }) || []
+  ]));
+  const contextHitIds = Object.fromEntries(Object.entries(contextClientPoints).map(([targetId, point]) => [
+    targetId,
+    runner.getTargetIdsAtMapPoint?.([point.x, point.y], promptTarget, { priorityTarget: promptTarget }) || []
+  ]));
+  const center = map?.getCenter?.();
+  const targetStats = Object.fromEntries(Object.entries(memoryTrail?.targetStats || {}).map(([targetId, stats]) => [
+    targetId,
+    {
+      guidedTapCount: stats.guidedTapCount || 0,
+      totalRetrievalAttempts: stats.totalRetrievalAttempts || 0,
+      totalRetrievalCorrect: stats.totalRetrievalCorrect || 0
+    }
+  ]));
+
+  return {
+    activityId: session?.currentActivity?.id || "",
+    ...visualState,
+    contextFillVisibility: contextFillLayer
+      ? map.getLayoutProperty("political-division-context-fill", "visibility") || "visible"
+      : "missing",
+    highlightFillVisibility: highlightFillLayer
+      ? map.getLayoutProperty("political-division-guided-highlight-fill", "visibility") || "visible"
+      : "missing",
+    highlightLineVisibility: highlightLineLayer
+      ? map.getLayoutProperty("political-division-guided-highlight-line", "visibility") || "visible"
+      : "missing",
+    highlightFillPaint: highlightFillLayer
+      ? map.getPaintProperty("political-division-guided-highlight-fill", "fill-color")
+      : null,
+    highlightLinePaint: highlightLineLayer
+      ? map.getPaintProperty("political-division-guided-highlight-line", "line-color")
+      : null,
+    currentPromptTargetId: memoryTrail?.currentPromptTargetId || "",
+    currentPromptType: memoryTrail?.currentPromptType || "",
+    currentPromptPhase: memoryTrail?.phase || "",
+    incorrectCount: memoryTrail?.incorrectCount || 0,
+    targetStats,
+    contextFeatureCount: runner.getPoliticalDivisionContextGeoJson?.().features?.length || 0,
+    eligibleFeatureCount: runner.getTargetShapeGeoJson?.().features?.length || 0,
+    camera: {
+      center: center ? [center.lng, center.lat] : null,
+      zoom: map?.getZoom?.() ?? null,
+      pitch: map?.getPitch?.() ?? null,
+      bearing: map?.getBearing?.() ?? null,
+      isMoving: Boolean(map?.isMoving?.()),
+      isEasing: Boolean(map?.isEasing?.())
+    },
+    mapRect: mapRect?.toJSON?.() || (mapRect ? {
+      left: mapRect.left,
+      top: mapRect.top,
+      right: mapRect.right,
+      bottom: mapRect.bottom,
+      width: mapRect.width,
+      height: mapRect.height
+    } : null),
+    targetClientBounds,
+    targetClientPoints,
+    contextClientPoints,
+    targetHitIds,
+    contextHitIds
+  };
+}
+
 function getUnitedStatesMemoryTrailPlanForTest() {
   const plan = activeUnitedStatesMemoryTrailSession?.plan;
   return plan ? {
@@ -26557,6 +26679,7 @@ function installMappaTestApi() {
       answerCurrentPromptIncorrectly: answerCurrentPromptIncorrectlyForTest,
       getActivityAttempt: getActivityAttemptForTest,
       getMountainRangeVisualState: getMountainRangeVisualStateForTest,
+      getPoliticalDivisionVisualState: getPoliticalDivisionVisualStateForTest,
       getUnitedStatesMemoryTrailPlan: getUnitedStatesMemoryTrailPlanForTest,
       startMentalMapQuestion: startMentalMapQuestionForTest,
       getMentalMapVisualState: getMentalMapVisualStateForTest,
