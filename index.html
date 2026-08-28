@@ -268,6 +268,7 @@
                 <span id="globe-navigation-learn-label" class="globe-navigation-primary-label"></span>
                 <span class="globe-navigation-primary-support">Start learning this area</span>
               </button>
+              <button id="globe-navigation-learning-options" class="globe-navigation-quiet" type="button" hidden>Choose what to learn</button>
               <button id="globe-navigation-current-menu" class="globe-navigation-quiet" type="button">Use current menu</button>
             </div>
           </div>
@@ -379,7 +380,7 @@
 
         window.__mappaMundiLoadApp = () => {
           if (!appModulePromise) {
-            appModulePromise = import("./src/maplibre-poc.js?v=20260827-globe-navigation-interaction-1");
+            appModulePromise = import("./src/maplibre-poc.js?v=20260827-globe-navigation-correctness-1");
           }
 
           return appModulePromise;

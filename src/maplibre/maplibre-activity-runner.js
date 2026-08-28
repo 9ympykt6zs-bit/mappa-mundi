@@ -12,6 +12,10 @@ import {
   buildMentalMapStateContextLabels,
   createCapitalFeedbackFeatureCollection
 } from "../atlas/mental-map-feature-feedback.js?v=20260824-connections-mountain-visualization-1";
+import {
+  validateMapRetrievalActivity,
+  validateRetrievalTarget
+} from "./learning-integrity.js";
 
 const colors = {
   ink: "#172033",
@@ -5613,6 +5617,18 @@ export class MapLibreActivityRunner {
       },
       geometry: sourceFeature.geometry
     };
+  }
+
+  getTargetRetrievalReadiness(target, activity = this.activity) {
+    return validateRetrievalTarget(target, {
+      resolveShapeFeature: (candidate) => this.findSourceShapeFeature(candidate, activity)
+    });
+  }
+
+  getActivityRetrievalReadiness(activity = this.activity) {
+    return validateMapRetrievalActivity(activity, {
+      resolveShapeFeature: (target) => this.findSourceShapeFeature(target, activity)
+    });
   }
 
   getMountainRangeColorProperties(target) {

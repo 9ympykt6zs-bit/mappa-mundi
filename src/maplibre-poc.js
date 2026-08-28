@@ -42,6 +42,7 @@ import {
   createGeographyLearningUnitProgressReport
 } from "./geography-learning-unit.js";
 import {
+  createGlobeNavigationModel,
   findGlobeNavigationScopes,
   getGlobeNavigationChildren,
   getGlobeNavigationPath,
@@ -49,7 +50,8 @@ import {
   getGlobeNavigationScope,
   globeNavigationPrototype,
   isGlobeNavigationPrototypeEnabled
-} from "./globe-navigation-prototype.js?v=20260827-globe-navigation-interaction-1";
+} from "./globe-navigation-prototype.js?v=20260827-globe-navigation-correctness-1";
+import { evaluateMapTargetSelection } from "./maplibre/learning-integrity.js";
 import { getCanonicalRetrievalItemForActivity } from "./activity-evidence-contract.js";
 import { loadPlaceMastery } from "./place-mastery-store.js";
 import {
@@ -388,6 +390,7 @@ const appShellScreenIds = new Set([
   "expedition",
   "progress-report",
   "begin-journey-placeholder",
+  "learning-integrity-failure",
   "free-play-difficulty",
   "settings",
   "customize",
@@ -3635,6 +3638,7 @@ const globeNavigationHoverName = document.querySelector("#globe-navigation-hover
 const globeNavigationStatus = document.querySelector("#globe-navigation-status");
 const globeNavigationLearnButton = document.querySelector("#globe-navigation-learn-button");
 const globeNavigationLearnLabel = document.querySelector("#globe-navigation-learn-label");
+const globeNavigationLearningOptionsButton = document.querySelector("#globe-navigation-learning-options");
 const globeNavigationFind = document.querySelector("#globe-navigation-find");
 const globeNavigationSearchInput = document.querySelector("#globe-navigation-search");
 const globeNavigationFindOptions = document.querySelector("#globe-navigation-find-options");
@@ -3647,7 +3651,9 @@ let activeExpeditionObjectiveId = "";
 let returnToExpeditionId = "";
 let returnToExpeditionObjectiveId = "";
 let activeGlobeNavigationScopeId = globeNavigationPrototype.rootScopeId;
+let activeGlobeNavigationModel = globeNavigationPrototype;
 let returnToGlobeNavigationScopeId = "";
+let learningIntegrityFailure = null;
 let globeNavigationMapHoverBound = false;
 let runtimeMemoryTrailSelectionTrace = null;
 let activeMentalMapChallenge = null;
@@ -3989,7 +3995,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260821-central-america-graduation-1"),
       import("./maplibre/activity-session.js?v=20260821-central-america-graduation-1"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260826-globe-navigation-prototype-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260827-globe-navigation-correctness-1"),
       import("./chip-speech.js?v=20260728-activity-audio-1")
     ]).then(([
       ,
@@ -4119,6 +4125,9 @@ async function ensureMapReady() {
       });
       bindCameraDevMapEvents();
       runner.setDifficulty(getEffectiveDifficulty(session.currentActivity));
+      activeGlobeNavigationModel = createGlobeNavigationModel(mergedWorldCountries, {
+        getLearningReadiness: getGlobeNavigationLearningReadiness
+      });
       markPerf("mappa-map-init-end");
       logPerfMeasure("map initialization time", "mappa-map-init-start", "mappa-map-init-end");
     })();
@@ -5720,7 +5729,7 @@ function bindUiEvents() {
   });
   backButton?.addEventListener("click", () => {
     if (currentAppScreen === "globe-navigation") {
-      const scope = getGlobeNavigationScope(activeGlobeNavigationScopeId);
+      const scope = getGlobeNavigationScope(activeGlobeNavigationScopeId, activeGlobeNavigationModel);
       void openGlobeNavigation(scope?.parentId || globeNavigationPrototype.rootScopeId);
       return;
     }
@@ -5836,6 +5845,12 @@ function bindUiEvents() {
     }
   });
   globeNavigationLearnButton?.addEventListener("click", openGlobeNavigationLearningAction);
+  globeNavigationLearningOptionsButton?.addEventListener("click", () => {
+    const scope = getGlobeNavigationScope(activeGlobeNavigationScopeId, activeGlobeNavigationModel);
+    if (scope?.learningAction?.expeditionId !== ACROSS_UNITED_STATES_EXPEDITION_ID) return;
+    returnToGlobeNavigationScopeId = scope.id;
+    void openExpedition(ACROSS_UNITED_STATES_EXPEDITION_ID, { pushHistory: false });
+  });
   globeNavigationCurrentMenuButton?.addEventListener("click", () => {
     returnToGlobeNavigationScopeId = "";
     appScreenHistory = [];
@@ -6278,6 +6293,42 @@ function hideGlobeNavigationSurface() {
   }
 }
 
+function getGlobeNavigationLearningReadiness(scope) {
+  const requirements = scope?.learningRequirements || {};
+  const activityIds = new Set(requirements.activityIds || []);
+  const missingJourneyIds = [];
+
+  (requirements.journeyIds || []).forEach((journeyId) => {
+    const journey = journeyPresets.find((candidate) => candidate.id === journeyId);
+    if (!journey) {
+      missingJourneyIds.push(journeyId);
+      return;
+    }
+    journey.steps.forEach((step) => {
+      if (step.activityId) activityIds.add(step.activityId);
+    });
+  });
+
+  const activityReadiness = [...activityIds].map((activityId) => {
+    const activity = getActivityById(activityId);
+    return activity
+      ? runner?.getActivityRetrievalReadiness?.(activity) || { ready: false, activityId, reason: "validator-unavailable" }
+      : { ready: false, activityId, reason: "missing-activity" };
+  });
+  const invalidActivities = activityReadiness.filter((result) => !result.ready);
+  return {
+    ready: missingJourneyIds.length === 0 && activityReadiness.length > 0 && invalidActivities.length === 0,
+    reason: missingJourneyIds.length > 0
+      ? "missing-journey"
+      : activityReadiness.length === 0
+        ? "missing-learning-requirements"
+        : invalidActivities.length > 0 ? "invalid-learning-geometry" : "ready",
+    activityIds: [...activityIds],
+    missingJourneyIds,
+    invalidActivities
+  };
+}
+
 function getGlobeNavigationGeometryFeature(scope, options = {}) {
   const geometry = scope?.geometry;
   if (!runner || !geometry) return null;
@@ -6313,11 +6364,11 @@ function getGlobeNavigationGeometryFeature(scope, options = {}) {
 }
 
 function getGlobeNavigationFeatureCollection(scopeId = activeGlobeNavigationScopeId) {
-  const scope = getGlobeNavigationScope(scopeId);
+  const scope = getGlobeNavigationScope(scopeId, activeGlobeNavigationModel);
   if (!scope) return { type: "FeatureCollection", features: [] };
 
-  const ancestorIds = new Set(getGlobeNavigationPath(scope.id).map(({ id }) => id));
-  const selectableFeatures = getGlobeNavigationSelectableScopes()
+  const ancestorIds = new Set(getGlobeNavigationPath(scope.id, activeGlobeNavigationModel).map(({ id }) => id));
+  const selectableFeatures = getGlobeNavigationSelectableScopes(activeGlobeNavigationModel)
     .map((candidate) => getGlobeNavigationGeometryFeature(candidate, {
       selected: candidate.id === scope.id,
       context: candidate.id !== scope.id && ancestorIds.has(candidate.id)
@@ -6333,7 +6384,7 @@ function getGlobeNavigationFeatureCollection(scopeId = activeGlobeNavigationScop
 function renderGlobeNavigationPath(scope) {
   if (!globeNavigationPath) return;
   globeNavigationPath.replaceChildren();
-  getGlobeNavigationPath(scope.id).forEach((pathScope, index, path) => {
+  getGlobeNavigationPath(scope.id, activeGlobeNavigationModel).forEach((pathScope, index, path) => {
     const isCurrent = index === path.length - 1;
     const button = document.createElement("button");
     button.type = "button";
@@ -6368,12 +6419,12 @@ function renderGlobeNavigationFinder(query = "") {
     return;
   }
 
-  const candidates = findGlobeNavigationScopes(normalizedQuery);
+  const candidates = findGlobeNavigationScopes(normalizedQuery, activeGlobeNavigationModel);
   if (candidates.length === 0) {
     const emptyState = document.createElement("p");
     emptyState.className = "globe-navigation-find-empty";
     emptyState.setAttribute("role", "status");
-    emptyState.textContent = "No available learning area found.";
+    emptyState.textContent = "No geographic place found.";
     globeNavigationFindOptions.appendChild(emptyState);
     setGlobeNavigationFinderExpanded(true);
     return;
@@ -6407,10 +6458,10 @@ function renderGlobeNavigationPanel(scope) {
   if (globeNavigationSearchInput) globeNavigationSearchInput.value = "";
   renderGlobeNavigationFinder();
 
-  const isComingLater = scope.availability === "coming-later";
+  const isComingLater = scope.learningAvailability === "unavailable" || scope.availability === "coming-later";
   if (globeNavigationStatus) {
     globeNavigationStatus.textContent = isComingLater
-      ? "Learning content coming later in this globe prototype. Existing activities remain available in the current menu."
+      ? scope.learningUnavailableMessage || `Learning content for ${scope.label} is coming later.`
       : "Select a highlighted place on the globe, or use Find a place.";
   }
 
@@ -6421,24 +6472,42 @@ function renderGlobeNavigationPanel(scope) {
   if (globeNavigationLearnLabel) {
     globeNavigationLearnLabel.textContent = scope.learningAction?.label || "";
   }
+  if (globeNavigationLearningOptionsButton) {
+    const showLearningOptions = scope.id === "united-states" && scope.learningAction?.kind === "expedition";
+    globeNavigationLearningOptionsButton.hidden = !showLearningOptions;
+    globeNavigationLearningOptionsButton.disabled = !showLearningOptions;
+  }
 }
 
 function getGlobeNavigationMapScopeAtPoint(mapPoint) {
   const selectableScopesById = new Map(
-    getGlobeNavigationSelectableScopes().map((scope) => [scope.id, scope])
+    getGlobeNavigationSelectableScopes(activeGlobeNavigationModel).map((scope) => [scope.id, scope])
+  );
+  const countryScopesByIsoA3 = new Map(
+    getGlobeNavigationSelectableScopes(activeGlobeNavigationModel)
+      .filter((scope) => scope.geographicIdentity?.isoA3)
+      .map((scope) => [scope.geographicIdentity.isoA3, scope])
   );
   const matchedScopesById = new Map();
 
   runner.getNavigationCandidatesAtMapPoint(mapPoint)
-    .filter((candidate) => candidate.kind === "overview")
+    .filter((candidate) => candidate.kind === "overview" || candidate.kind === "world-country")
     .forEach((candidate) => {
-      const scope = selectableScopesById.get(candidate.targetId);
+      const scope = selectableScopesById.get(candidate.targetId)
+        || countryScopesByIsoA3.get(candidate.isoA3);
       if (scope) matchedScopesById.set(scope.id, scope);
     });
 
-  return [...matchedScopesById.values()]
+  const matchedScopes = [...matchedScopesById.values()];
+  const activeScope = getGlobeNavigationScope(activeGlobeNavigationScopeId, activeGlobeNavigationModel);
+  const preferredScopes = activeScope?.geographicType === "world"
+    ? matchedScopes.filter((scope) => scope.geographicType?.includes("continent"))
+    : matchedScopes;
+
+  return (preferredScopes.length > 0 ? preferredScopes : matchedScopes)
     .sort((left, right) => (
-      getGlobeNavigationPath(right.id).length - getGlobeNavigationPath(left.id).length
+      getGlobeNavigationPath(right.id, activeGlobeNavigationModel).length
+        - getGlobeNavigationPath(left.id, activeGlobeNavigationModel).length
     ))[0] || null;
 }
 
@@ -6466,10 +6535,10 @@ function handleGlobeNavigationMapPoint(mapPoint) {
 }
 
 async function openGlobeNavigation(scopeId = globeNavigationPrototype.rootScopeId) {
-  const scope = getGlobeNavigationScope(scopeId) || getGlobeNavigationScope(globeNavigationPrototype.rootScopeId);
-  if (!scope) return;
-
   await ensureMapReady();
+  const scope = getGlobeNavigationScope(scopeId, activeGlobeNavigationModel)
+    || getGlobeNavigationScope(globeNavigationPrototype.rootScopeId, activeGlobeNavigationModel);
+  if (!scope) return;
   saveCurrentActivityProgress();
   closeBrowseDrawer();
   cancelGrabbedAnswer();
@@ -6519,7 +6588,7 @@ function returnToGlobeNavigation() {
 }
 
 function openGlobeNavigationLearningAction() {
-  const scope = getGlobeNavigationScope(activeGlobeNavigationScopeId);
+  const scope = getGlobeNavigationScope(activeGlobeNavigationScopeId, activeGlobeNavigationModel);
   const action = scope?.learningAction;
   if (!action) return;
 
@@ -6533,7 +6602,11 @@ function openGlobeNavigationLearningAction() {
     return;
   }
   if (action.kind === "expedition") {
-    void openExpedition(action.expeditionId, { pushHistory: false });
+    if (action.expeditionId === ACROSS_UNITED_STATES_EXPEDITION_ID) {
+      void startAcrossUnitedStatesGlobeLearning();
+    } else {
+      void openExpedition(action.expeditionId, { pushHistory: false });
+    }
   }
 }
 
@@ -6791,6 +6864,12 @@ function getAppShellScreenContent(screenId) {
       subtitle: "Journey gameplay is coming next.",
       placeholderTitle: "Journey gameplay is coming next.",
       placeholderMessage: "Journey gameplay is coming next."
+    },
+    "learning-integrity-failure": {
+      title: "Learning activity unavailable",
+      subtitle: "This activity was stopped before any question could be scored.",
+      placeholderTitle: `${learningIntegrityFailure?.activityTitle || "This activity"} is unavailable`,
+      placeholderMessage: "Required map content could not be validated. No answer was scored; use Back or Home to choose another activity."
     },
     "free-play-difficulty": {
       title: "Choose Difficulty",
@@ -7892,10 +7971,32 @@ function showStudyStepNotReady() {
   showFeedback("This study section is not ready yet.");
 }
 
+function showLearningIntegrityFailure(activity, readiness) {
+  learningIntegrityFailure = {
+    activityId: activity?.id || readiness?.activityId || "",
+    activityTitle: activity?.title || "This learning activity",
+    invalidCount: readiness?.invalidTargets?.length || 0
+  };
+  hideMemoryTrailOverlay();
+  clearMemoryTrailState({ restoreReveals: false });
+  showAppScreen("learning-integrity-failure", { pushHistory: false });
+}
+
+function requireLearningIntegrity(activity) {
+  const readiness = runner?.getActivityRetrievalReadiness?.(activity)
+    || { ready: false, activityId: activity?.id || "", reason: "validator-unavailable", invalidTargets: [] };
+  if (!readiness.ready) {
+    showLearningIntegrityFailure(activity, readiness);
+    return null;
+  }
+  return readiness;
+}
+
 async function openStudyExploreActivity(journey, step, activity, options = {}) {
   await ensureMapReady();
   closeRiverPreview({ restoreActivityUi: true });
   activity = getActivityById(activity?.id) || activity;
+  if (!requireLearningIntegrity(activity)) return false;
   saveCurrentActivityProgress();
   trackEvent("study_preview_opened", {
     activity_id: activity.id,
@@ -8487,6 +8588,34 @@ async function createAcrossUnitedStatesExpeditionModel() {
   });
 }
 
+async function startAcrossUnitedStatesGlobeLearning() {
+  activeExpeditionDefinition = acrossUnitedStatesExpedition;
+  activeExpeditionModel = await createAcrossUnitedStatesExpeditionModel();
+  activeExpeditionObjectiveId = "";
+  const recommendedStep = activeExpeditionModel.steps.find((step) => (
+    step.id === activeExpeditionModel.recommendedStepId
+  ));
+
+  if (!recommendedStep) {
+    await openExpedition(ACROSS_UNITED_STATES_EXPEDITION_ID, { pushHistory: false });
+    return;
+  }
+
+  const configuredDirectLaunch = acrossUnitedStatesNavigation.objectives
+    .flatMap((objective) => objective.groups)
+    .flatMap((group) => group.activities)
+    .find((activity) => activity.stepId === recommendedStep.id && activity.launch?.stepId)
+    ?.launch;
+  launchExpeditionStep(recommendedStep, {
+    allowLocked: true,
+    directJourney: true,
+    directJourneyStepId: configuredDirectLaunch?.journeyId
+      && configuredDirectLaunch.journeyId === recommendedStep.launch?.journeyId
+      ? configuredDirectLaunch.stepId
+      : ""
+  });
+}
+
 async function refreshUnitedStatesExpeditionMenuAction() {
   if (!mainMenuUnitedStatesExpeditionAction) return;
   const model = await createAcrossUnitedStatesExpeditionModel();
@@ -8547,6 +8676,43 @@ function clearExpeditionReturn() {
   returnToExpeditionObjectiveId = "";
 }
 
+function startOrContinueJourneyDirectly(journeyId, options = {}) {
+  atlasProgress = loadProgress();
+  const journey = journeyPresets.find((candidate) => candidate.id === journeyId);
+  const validSteps = getValidJourneySteps(journey);
+  if (!journey || validSteps.length === 0) return false;
+
+  const difficultyId = getPreferredJourneyDifficultyId(journey, atlasProgress);
+  const state = getJourneyProgressState(journey, difficultyId, atlasProgress);
+  const resumeContext = { journeyId, stepIndex: state.resumeStepIndex, difficultyId };
+  const hasMeaningfulContinuation = !state.isComplete && (
+    state.hasPartialProgress || hasSavedJourneyActivityProgress(resumeContext)
+  );
+  const configuredStepIndex = validSteps.findIndex((step) => step.id === options.fallbackStepId);
+  const stepIndex = hasMeaningfulContinuation
+    ? state.resumeStepIndex
+    : configuredStepIndex >= 0 ? configuredStepIndex : 0;
+  const preserveProgress = hasMeaningfulContinuation;
+
+  selectedJourneyId = journey.id;
+  selectedJourneyPlayState = { journeyId: journey.id, difficultyId };
+  activeJourneySession = {
+    journeyId: journey.id,
+    currentStepIndex: stepIndex,
+    difficulty: difficultyId,
+    mode: "journey",
+    incorrectPlacements: 0
+  };
+  resetJourneyGameplayInstructionSession();
+  trackJourneyStarted(journey, difficultyId, stepIndex);
+  atlasProgress = setActiveJourney(journey.id, stepIndex, difficultyId, atlasProgress);
+  void openJourneyStep(stepIndex, {
+    preserveProgress,
+    skipMemoryTrailRecommendation: true
+  });
+  return true;
+}
+
 function launchExpeditionStep(step, options = {}) {
   if (!step || (step.status === "locked" && options.allowLocked !== true)) return;
   returnToExpeditionId = activeExpeditionDefinition?.id || "";
@@ -8557,6 +8723,11 @@ function launchExpeditionStep(step, options = {}) {
     return;
   }
   if (launch.kind === "journey") {
+    if (options.directJourney && startOrContinueJourneyDirectly(launch.journeyId, {
+      fallbackStepId: options.directJourneyStepId
+    })) {
+      return;
+    }
     if (launch.stepId) {
       const journey = journeyPresets.find((candidate) => candidate.id === launch.journeyId);
       const stepIndex = getValidJourneySteps(journey).findIndex((candidate) => candidate.id === launch.stepId);
@@ -11094,6 +11265,10 @@ function startMemoryTrail(options = {}) {
     clearMemoryTrailState({ restoreReveals: true });
     instruction.textContent = "Tap a target or name to show it. Tap it again to hide it.";
     renderStudyExplorePanel();
+    return false;
+  }
+
+  if (!requireLearningIntegrity(session.currentActivity)) {
     return false;
   }
 
@@ -14324,8 +14499,21 @@ function handleMemoryTrailTargetTap(targetIds, mapPoint = null) {
   }
 
   const expectedTargetId = memoryTrail.currentPromptTargetId;
+  const expectedTarget = getTargetById(memoryTrail, expectedTargetId);
+  const selectionOutcome = evaluateMapTargetSelection(expectedTarget, candidateIds, {
+    resolveShapeFeature: (target) => runner?.findSourceShapeFeature?.(target, session.currentActivity)
+  });
 
-  if (candidateIds.includes(expectedTargetId)) {
+  if (selectionOutcome.status === "blocked") {
+    showLearningIntegrityFailure(session.currentActivity, {
+      ready: false,
+      activityId: session.currentActivity?.id || "",
+      invalidTargets: [selectionOutcome.readiness]
+    });
+    return;
+  }
+
+  if (selectionOutcome.status === "correct") {
     debugMemoryTrail("map click accepted", getMemoryTrailClickDebugContext(memoryTrail, candidateIds, {
       result: "correct"
     }));
@@ -23520,6 +23708,8 @@ function getMemoryTrailAnalyticsContext() {
 async function openActivity(activityId, options = {}) {
   markPerf("mappa-first-activity-start");
   await ensureMapReady();
+  const integrityActivity = getActivityById(activityId);
+  if (!requireLearningIntegrity(integrityActivity)) return false;
   closeRiverPreview({ restoreActivityUi: true });
   saveCurrentActivityProgress();
   cancelGrabbedAnswer();
@@ -24390,6 +24580,19 @@ function normalizeNavigationText(value = "") {
 
 function placeGrabbedAnswer(targetIds, options = {}) {
   if (isActivityInputLocked()) {
+    return;
+  }
+
+  const selectedTargetReadiness = runner?.getTargetRetrievalReadiness?.(
+    session.getFeature(session.selectedId),
+    session.currentActivity
+  );
+  if (session.selectedId && !selectedTargetReadiness?.ready) {
+    showLearningIntegrityFailure(session.currentActivity, {
+      ready: false,
+      activityId: session.currentActivity?.id || "",
+      invalidTargets: [selectedTargetReadiness || { targetId: session.selectedId, reason: "validator-unavailable" }]
+    });
     return;
   }
 
@@ -26303,14 +26506,17 @@ function completeCurrentActivityForTest() {
 }
 
 function getGlobeNavigationStateForTest() {
-  const scope = getGlobeNavigationScope(activeGlobeNavigationScopeId);
-  const children = getGlobeNavigationChildren(scope?.id);
-  const selectableScopes = getGlobeNavigationSelectableScopes();
+  const scope = getGlobeNavigationScope(activeGlobeNavigationScopeId, activeGlobeNavigationModel);
+  const children = getGlobeNavigationChildren(scope?.id, activeGlobeNavigationModel);
+  const selectableScopes = getGlobeNavigationSelectableScopes(activeGlobeNavigationModel);
   const cameraCenter = runner?.map?.getCenter?.();
   return {
     screen: currentAppScreen,
     scopeId: scope?.id || "",
-    path: scope ? getGlobeNavigationPath(scope.id).map(({ id, label }) => ({ id, label })) : [],
+    path: scope ? getGlobeNavigationPath(scope.id, activeGlobeNavigationModel).map(({ id, label }) => ({ id, label })) : [],
+    countryScopeCount: activeGlobeNavigationModel.countryScopeIds?.length || 0,
+    learningAvailability: scope?.learningAvailability || "",
+    learningReadiness: scope?.learningReadiness || null,
     childIds: children.map(({ id }) => id),
     selectableIds: selectableScopes.map(({ id }) => id),
     renderedFeatureIds: getGlobeNavigationFeatureCollection(scope?.id).features

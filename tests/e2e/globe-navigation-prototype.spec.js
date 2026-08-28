@@ -5,9 +5,6 @@ async function startPrototype(page, query = "?test=1&globeNavigation=on") {
   await expect(page.locator("#launch-screen")).toBeVisible();
   await page.locator("#launch-start-button").click();
   await page.evaluate(() => window.__mappaMundiLoadApp());
-  if (await page.locator("#launch-screen").isVisible()) {
-    await page.locator("#launch-start-button").click();
-  }
   await expect(page.locator("#globe-navigation-panel")).toBeVisible({ timeout: 20_000 });
 }
 
@@ -56,14 +53,14 @@ async function chooseMapScope(page, scopeId, { checkHover = false, coordinate = 
   await expect.poll(async () => (await globeState(page)).scopeId).toBe(scopeId);
 }
 
-async function chooseSearchScope(page, label, query = label) {
+async function chooseSearchScope(page, label, query = label, expectedScopeId = label.toLowerCase().replaceAll(" ", "-")) {
   const search = page.getByRole("combobox", { name: "Find a place" });
   await search.fill(query);
   await page.locator("#globe-navigation-find-options").getByRole("option", { name: label }).click();
-  await expect.poll(async () => (await globeState(page)).scopeId).toBe(label.toLowerCase().replaceAll(" ", "-"));
+  await expect.poll(async () => (await globeState(page)).scopeId).toBe(expectedScopeId);
 }
 
-test("globe-first launch drills from World to the existing U.S. objective screen and back", async ({ page }, testInfo) => {
+test("globe-first launch drills to direct U.S. learning while preserving objective-menu access", async ({ page }, testInfo) => {
   const runtimeErrors = [];
   page.on("pageerror", (error) => runtimeErrors.push(`pageerror: ${error.message}`));
   page.on("console", (message) => {
@@ -130,20 +127,12 @@ test("globe-first launch drills from World to the existing U.S. objective screen
     "oceania",
     "antarctica"
   ]);
-  expect(worldState.selectableIds).toEqual([
-    "north-america",
-    "south-america",
-    "europe",
-    "africa",
-    "asia",
-    "oceania",
-    "antarctica",
-    "united-states",
-    "germany",
-    "france",
-    "italy",
-    "netherlands"
-  ]);
+  expect(worldState.countryScopeCount).toBe(179);
+  expect(worldState.selectableIds).toHaveLength(185);
+  expect(worldState.selectableIds).toEqual(expect.arrayContaining([
+    "north-america", "south-america", "europe", "africa", "asia", "oceania", "antarctica",
+    "united-states", "germany", "france", "italy", "netherlands", "country-per", "country-gha", "country-jpn"
+  ]));
   expect(new Set(worldState.renderedFeatureIds)).toEqual(new Set(worldState.selectableIds));
 
   await page.getByRole("button", { name: /Learn the Continents/ }).click();
@@ -167,9 +156,10 @@ test("globe-first launch drills from World to the existing U.S. objective screen
   await chooseMapScope(page, "united-states", { useTouch: testInfo.project.name.includes("mobile") });
   await expect(page.locator("#poc-title")).toHaveText("United States");
   await expect(page.getByRole("button", { name: /Learn the United States/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Choose what to learn" })).toBeVisible();
   expect((await globeState(page)).path.map(({ label }) => label)).toEqual(["World", "North America", "United States"]);
 
-  await page.getByRole("button", { name: /Learn the United States/ }).click();
+  await page.getByRole("button", { name: "Choose what to learn" }).click();
   await expect(page.locator("#app-shell-title")).toHaveText("Across the United States");
   await expect(page.locator(".us-objective-title")).toHaveText([
     "Learn States & Capitals",
@@ -177,13 +167,15 @@ test("globe-first launch drills from World to the existing U.S. objective screen
     "Learn Connections",
     "Explore the United States"
   ]);
-
   await page.locator("#app-shell-back-button").click();
   await expect(page.locator("#poc-title")).toHaveText("United States");
-  await page.locator("#back-button").click();
-  await expect(page.locator("#poc-title")).toHaveText("North America");
-  await page.locator("#back-button").click();
-  await expect(page.locator("#poc-title")).toHaveText("Where do you want to learn?");
+
+  await page.getByRole("button", { name: /Learn the United States/ }).click();
+  await expect.poll(
+    () => page.evaluate(() => window.__MAPPA_TEST_API__?.getCurrentActivity()?.id),
+    { timeout: 20_000 }
+  ).toBe("us-states-01");
+  await expect(page.locator("#app-shell-screen")).toBeHidden();
   expect(runtimeErrors).toEqual([]);
 });
 
@@ -196,7 +188,8 @@ test("map and search allow lateral region changes without requiring Back", async
   }
   await expect(page.locator("#poc-title")).toHaveText("Europe");
   const globeSelectedEurope = await globeState(page);
-  expect(globeSelectedEurope.childIds).toEqual(["germany", "france", "italy", "netherlands"]);
+  expect(globeSelectedEurope.childIds).toHaveLength(39);
+  expect(globeSelectedEurope.childIds).toEqual(expect.arrayContaining(["germany", "france", "italy", "netherlands"]));
 
   await chooseSearchScope(page, "France");
   await expect(page.locator("#poc-title")).toHaveText("France");
@@ -238,29 +231,83 @@ test("map and search allow lateral region changes without requiring Back", async
   await expect(page.locator("#globe-navigation-find-options").getByRole("option", { name: "Netherlands" })).toBeVisible();
   await page.locator("#globe-navigation-find-options").getByRole("option", { name: "Netherlands" }).click();
   await expect(page.locator("#poc-title")).toHaveText("Netherlands");
-  await expect(page.locator("#globe-navigation-status")).toContainText("Learning content coming later");
+  await expect(page.locator("#globe-navigation-status")).toContainText("Learning content for Netherlands is coming later");
   await expect(page.locator("#globe-navigation-learn-button")).toBeHidden();
   await expect(page.getByRole("button", { name: "Use current menu" })).toBeVisible();
 
   await search.fill("Atlantis");
-  await expect(page.locator("#globe-navigation-find-options")).toContainText("No available learning area found.");
+  await expect(page.locator("#globe-navigation-find-options")).toContainText("No geographic place found.");
   await expect(page.locator("#globe-navigation-find-options").getByRole("option")).toHaveCount(0);
   expect((await globeState(page)).scopeId).toBe("netherlands");
 });
 
-test("Learn on a supported country starts its existing learning experience immediately", async ({ page }) => {
+test("world geometry makes countries across every represented continent honest geographic destinations", async ({ page }, testInfo) => {
   await startPrototype(page);
-  await chooseSearchScope(page, "France");
-  await expect(page.getByRole("button", { name: /Learn France/ })).toBeVisible();
-  await expect(page.locator(".globe-navigation-primary-support")).toHaveText("Start learning this area");
 
-  await page.getByRole("button", { name: /Learn France/ }).click();
-  await expect.poll(
-    () => page.evaluate(() => window.__MAPPA_TEST_API__?.getCurrentActivity()?.id),
-    { timeout: 20_000 }
-  ).toBe("france-northern-eastern-regions-political-divisions");
-  await expect(page.locator("#globe-navigation-panel")).toBeHidden();
-  await expect(page.locator("#app-shell-screen")).toBeHidden();
+  if (testInfo.project.name.includes("desktop")) {
+    await chooseMapScope(page, "south-america", { coordinate: [-60, -18] });
+    await chooseMapScope(page, "country-per");
+  } else {
+    await chooseSearchScope(page, "Peru", "Peru", "country-per");
+  }
+  await expect(page.locator("#poc-title")).toHaveText("Peru");
+  await expect(page.locator("#globe-navigation-status")).toHaveText("Learning content for Peru is coming later.");
+  await expect(page.locator("#globe-navigation-learn-button")).toBeHidden();
+
+  for (const [label, scopeId] of [
+    ["Ghana", "country-gha"],
+    ["Japan", "country-jpn"],
+    ["Romania", "country-rou"],
+    ["Mexico", "country-mex"],
+    ["Fiji", "country-fji"]
+  ]) {
+    await chooseSearchScope(page, label, label, scopeId);
+    const state = await globeState(page);
+    expect(state.scopeId).toBe(scopeId);
+    expect(state.learningAvailability).toBe("unavailable");
+    await expect(page.locator("#globe-navigation-learn-button")).toBeHidden();
+  }
+
+  await chooseSearchScope(page, "Asia");
+  await expect(page.locator("#poc-title")).toHaveText("Asia");
+  await expect(page.locator("#globe-navigation-path")).toContainText("World");
+});
+
+test("every country that exposes Learn passes runtime curriculum and geometry validation", async ({ page }) => {
+  await startPrototype(page);
+  for (const label of ["United States", "Germany", "France", "Italy"]) {
+    await chooseSearchScope(page, label);
+    const state = await globeState(page);
+    expect(state.learningAvailability).toBe("available");
+    expect(state.learningReadiness?.ready).toBe(true);
+    expect(state.learningReadiness?.invalidActivities || []).toEqual([]);
+    await expect(page.locator("#globe-navigation-learn-button")).toBeVisible();
+  }
+
+  await chooseSearchScope(page, "Netherlands");
+  expect((await globeState(page)).learningAvailability).toBe("unavailable");
+  await expect(page.locator("#globe-navigation-learn-button")).toBeHidden();
+});
+
+test("Learn on each supported European country starts its validated learning experience immediately", async ({ page }) => {
+  for (const [label, expectedActivityId] of [
+    ["Germany", "germany-north-east-political-divisions"],
+    ["France", "france-northern-eastern-regions-political-divisions"],
+    ["Italy", "italy-northern-regions-political-divisions"]
+  ]) {
+    await startPrototype(page);
+    await chooseSearchScope(page, label);
+    await expect(page.getByRole("button", { name: new RegExp(`Learn ${label}`) })).toBeVisible();
+    await expect(page.locator(".globe-navigation-primary-support")).toHaveText("Start learning this area");
+
+    await page.getByRole("button", { name: new RegExp(`Learn ${label}`) }).click();
+    await expect.poll(
+      () => page.evaluate(() => window.__MAPPA_TEST_API__?.getCurrentActivity()?.id),
+      { timeout: 20_000 }
+    ).toBe(expectedActivityId);
+    await expect(page.locator("#globe-navigation-panel")).toBeHidden();
+    await expect(page.locator("#app-shell-screen")).toBeHidden();
+  }
 });
 
 test("the rollback query restores the current menu and direct activity routes still bypass navigation", async ({ page }) => {
