@@ -92,6 +92,7 @@ assert.equal(isGlobeNavigationPrototypeEnabled("?globeNavigation=legacy"), false
 assert.equal(isGlobeNavigationPrototypeEnabled("?globeNavigation=on"), true);
 
 const runtimeSource = readFileSync(new URL("../src/maplibre-poc.js", import.meta.url), "utf8");
+const runnerSource = readFileSync(new URL("../src/maplibre/maplibre-activity-runner.js", import.meta.url), "utf8");
 const indexSource = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const configSource = readFileSync(new URL("../src/globe-navigation-prototype.js", import.meta.url), "utf8");
 assert.match(runtimeSource, /isGlobeNavigationPrototypeEnabled\(window\.location\.search\)/);
@@ -102,6 +103,11 @@ assert.match(runtimeSource, /directJourneyStepId/);
 assert.match(runtimeSource, /configuredDirectLaunch\?\.journeyId\s*&&/);
 assert.match(runtimeSource, /createGlobeNavigationModel\(mergedWorldCountries/);
 assert.match(runtimeSource, /getGlobeNavigationSelectableScopes\(activeGlobeNavigationModel\)/);
+assert.match(runtimeSource, /globeNavigationSelectable: true/);
+assert.match(runtimeSource, /globeNavigationHovered: Boolean\(options\.hovered\)/);
+assert.match(runtimeSource, /selected: candidate\.id === scope\.id && candidate\.geometry\?\.kind === "country"/);
+assert.match(runnerSource, /\["boolean", \["get", "globeNavigationSelectable"\], false\],\s*0/);
+assert.match(runnerSource, /\["boolean", \["get", "globeNavigationHovered"\], false\]/);
 assert.match(runtimeSource, /openGlobeNavigationJourneyLearning\(action\.journeyId\)/);
 assert.match(runtimeSource, /getActivityRetrievalReadiness/);
 assert.match(runtimeSource, /returnToGlobeNavigation/);

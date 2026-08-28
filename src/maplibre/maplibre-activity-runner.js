@@ -3200,7 +3200,7 @@ export class MapLibreActivityRunner {
           "case",
           ["boolean", ["get", "globeNavigationSelected"], false],
           colors.completedFill,
-          ["boolean", ["get", "globeNavigationContext"], false],
+          ["boolean", ["get", "globeNavigationHovered"], false],
           colors.previewFill,
           ["boolean", ["get", "completed"], false],
           colors.completedFill,
@@ -3210,8 +3210,10 @@ export class MapLibreActivityRunner {
           "case",
           ["boolean", ["get", "globeNavigationSelected"], false],
           0.5,
-          ["boolean", ["get", "globeNavigationContext"], false],
-          0.12,
+          ["boolean", ["get", "globeNavigationHovered"], false],
+          0.34,
+          ["boolean", ["get", "globeNavigationSelectable"], false],
+          0,
           ["boolean", ["get", "completed"], false],
           0.48,
           0.28
@@ -3230,16 +3232,22 @@ export class MapLibreActivityRunner {
           "case",
           ["boolean", ["get", "globeNavigationSelected"], false],
           3.4,
-          ["boolean", ["get", "globeNavigationContext"], false],
-          2.2,
+          ["boolean", ["get", "globeNavigationHovered"], false],
+          2.6,
+          ["boolean", ["get", "globeNavigationSelectable"], false],
+          0,
           ["boolean", ["get", "completed"], false],
           2.6,
           1.7
         ],
         "line-opacity": [
           "case",
-          ["boolean", ["get", "globeNavigationContext"], false],
-          0.72,
+          ["boolean", ["get", "globeNavigationSelected"], false],
+          0.96,
+          ["boolean", ["get", "globeNavigationHovered"], false],
+          0.9,
+          ["boolean", ["get", "globeNavigationSelectable"], false],
+          0,
           0.92
         ]
       }

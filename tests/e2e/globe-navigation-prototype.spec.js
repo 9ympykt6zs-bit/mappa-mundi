@@ -12,6 +12,39 @@ async function globeState(page) {
   return page.evaluate(() => window.__MAPPA_TEST_API__.getGlobeNavigationState());
 }
 
+function evaluateStyleExpression(expression, properties) {
+  if (!Array.isArray(expression)) return expression;
+  const [operator, ...arguments_] = expression;
+  if (operator === "get") return properties[arguments_[0]];
+  if (operator === "boolean") {
+    const value = evaluateStyleExpression(arguments_[0], properties);
+    return typeof value === "boolean" ? value : evaluateStyleExpression(arguments_[1], properties);
+  }
+  if (operator === "case") {
+    for (let index = 0; index < arguments_.length - 1; index += 2) {
+      if (evaluateStyleExpression(arguments_[index], properties)) {
+        return evaluateStyleExpression(arguments_[index + 1], properties);
+      }
+    }
+    return evaluateStyleExpression(arguments_.at(-1), properties);
+  }
+  throw new Error(`Unsupported test expression operator: ${operator}`);
+}
+
+function getVisualState(state, scopeId) {
+  return state.visualStates.find(({ id }) => id === scopeId);
+}
+
+function getVisualOpacity(state, scopeId) {
+  const visualState = getVisualState(state, scopeId);
+  return evaluateStyleExpression(state.overviewPaint.fillOpacity, {
+    globeNavigationSelectable: visualState?.selectable === true,
+    globeNavigationCurrent: visualState?.current === true,
+    globeNavigationSelected: visualState?.selected === true,
+    globeNavigationHovered: visualState?.hovered === true
+  });
+}
+
 const scopeLabels = {
   "north-america": "North America",
   "south-america": "South America",
@@ -47,6 +80,9 @@ async function chooseMapScope(page, scopeId, { checkHover = false, coordinate = 
     await page.mouse.move(x, y);
     if (checkHover) {
       await expect(page.locator("#globe-navigation-hover-name")).toHaveText(scopeLabels[scopeId]);
+      await expect.poll(async () => (
+        (await globeState(page)).visualStates.filter(({ hovered }) => hovered).map(({ id }) => id)
+      )).toEqual([scopeId]);
     }
     await page.mouse.click(x, y);
   }
@@ -134,6 +170,9 @@ test("globe-first launch drills to direct U.S. learning while preserving objecti
     "united-states", "germany", "france", "italy", "netherlands", "country-per", "country-gha", "country-jpn"
   ]));
   expect(new Set(worldState.renderedFeatureIds)).toEqual(new Set(worldState.selectableIds));
+  expect(worldState.visualStates.filter(({ selected }) => selected)).toEqual([]);
+  expect(worldState.visualStates.filter(({ hovered }) => hovered)).toEqual([]);
+  expect(worldState.visualStates.every(({ id }) => getVisualOpacity(worldState, id) === 0)).toBe(true);
 
   await page.getByRole("button", { name: /Learn the Continents/ }).click();
   await expect.poll(
@@ -149,6 +188,9 @@ test("globe-first launch drills to direct U.S. learning while preserving objecti
     await chooseMapScope(page, "north-america", { checkHover: true, coordinate: [-110, 55] });
   }
   await expect(page.locator("#poc-title")).toHaveText("North America");
+  const northAmericaState = await globeState(page);
+  expect(northAmericaState.visualStates.filter(({ selected }) => selected)).toEqual([]);
+  expect(northAmericaState.visualStates.every(({ id }) => getVisualOpacity(northAmericaState, id) === 0)).toBe(true);
   await expect(page.getByRole("button", { name: /Learn North America/ })).toBeVisible();
   await expect(page.locator("#globe-navigation-path")).toContainText("World");
   await expect(page.locator("#globe-navigation-path")).toContainText("North America");
@@ -158,6 +200,7 @@ test("globe-first launch drills to direct U.S. learning while preserving objecti
   await expect(page.getByRole("button", { name: /Learn the United States/ })).toBeVisible();
   await expect(page.getByRole("button", { name: "Choose what to learn" })).toBeVisible();
   expect((await globeState(page)).path.map(({ label }) => label)).toEqual(["World", "North America", "United States"]);
+  expect((await globeState(page)).visualStates.filter(({ selected }) => selected).map(({ id }) => id)).toEqual(["united-states"]);
 
   await page.getByRole("button", { name: "Choose what to learn" }).click();
   await expect(page.locator("#app-shell-title")).toHaveText("Across the United States");
@@ -188,11 +231,14 @@ test("map and search allow lateral region changes without requiring Back", async
   }
   await expect(page.locator("#poc-title")).toHaveText("Europe");
   const globeSelectedEurope = await globeState(page);
+  expect(globeSelectedEurope.visualStates.filter(({ selected }) => selected)).toEqual([]);
+  expect(globeSelectedEurope.visualStates.every(({ id }) => getVisualOpacity(globeSelectedEurope, id) === 0)).toBe(true);
   expect(globeSelectedEurope.childIds).toHaveLength(39);
   expect(globeSelectedEurope.childIds).toEqual(expect.arrayContaining(["germany", "france", "italy", "netherlands"]));
 
   await chooseSearchScope(page, "France");
   await expect(page.locator("#poc-title")).toHaveText("France");
+  expect((await globeState(page)).visualStates.filter(({ selected }) => selected).map(({ id }) => id)).toEqual(["france"]);
 
   if (testInfo.project.name.includes("mobile")) {
     await page.getByRole("button", { name: "Zoom out" }).tap();
@@ -222,6 +268,7 @@ test("map and search allow lateral region changes without requiring Back", async
   await chooseSearchScope(page, "United States", "united");
   await expect(page.locator("#poc-title")).toHaveText("United States");
   expect((await globeState(page)).path.map(({ label }) => label)).toEqual(["World", "North America", "United States"]);
+  expect((await globeState(page)).visualStates.filter(({ selected }) => selected).map(({ id }) => id)).toEqual(["united-states"]);
 
   await chooseSearchScope(page, "Europe");
   const search = page.getByRole("combobox", { name: "Find a place" });
@@ -239,6 +286,40 @@ test("map and search allow lateral region changes without requiring Back", async
   await expect(page.locator("#globe-navigation-find-options")).toContainText("No geographic place found.");
   await expect(page.locator("#globe-navigation-find-options").getByRole("option")).toHaveCount(0);
   expect((await globeState(page)).scopeId).toBe("netherlands");
+});
+
+test("selectability stays visually neutral until one scope is focused, hovered, or selected", async ({ page }) => {
+  await startPrototype(page);
+  const search = page.getByRole("combobox", { name: "Find a place" });
+
+  await search.fill("France");
+  const franceOption = page.locator("#globe-navigation-find-options").getByRole("option", { name: "France" });
+  await franceOption.focus();
+  let state = await globeState(page);
+  expect(state.visualStates.filter(({ hovered }) => hovered).map(({ id }) => id)).toEqual(["france"]);
+  expect(getVisualOpacity(state, "france")).toBeGreaterThan(0);
+  expect(getVisualOpacity(state, "germany")).toBe(0);
+
+  await search.focus();
+  await expect.poll(async () => (
+    (await globeState(page)).visualStates.filter(({ hovered }) => hovered).map(({ id }) => id)
+  )).toEqual([]);
+
+  await search.fill("Germany");
+  const germanyOption = page.locator("#globe-navigation-find-options").getByRole("option", { name: "Germany" });
+  await germanyOption.focus();
+  state = await globeState(page);
+  expect(state.visualStates.filter(({ hovered }) => hovered).map(({ id }) => id)).toEqual(["germany"]);
+  expect(getVisualOpacity(state, "germany")).toBeGreaterThan(0);
+  expect(getVisualOpacity(state, "france")).toBe(0);
+
+  await germanyOption.click();
+  await expect.poll(async () => (await globeState(page)).scopeId).toBe("germany");
+  state = await globeState(page);
+  expect(state.visualStates.filter(({ hovered }) => hovered)).toEqual([]);
+  expect(state.visualStates.filter(({ selected }) => selected).map(({ id }) => id)).toEqual(["germany"]);
+  expect(getVisualOpacity(state, "germany")).toBeGreaterThan(0);
+  expect(getVisualOpacity(state, "france")).toBe(0);
 });
 
 test("world geometry makes countries across every represented continent honest geographic destinations", async ({ page }, testInfo) => {
