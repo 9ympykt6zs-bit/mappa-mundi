@@ -97,10 +97,10 @@ const indexSource = readFileSync(new URL("../index.html", import.meta.url), "utf
 const configSource = readFileSync(new URL("../src/globe-navigation-prototype.js", import.meta.url), "utf8");
 assert.match(runtimeSource, /isGlobeNavigationPrototypeEnabled\(window\.location\.search\)/);
 assert.match(runtimeSource, /startAcrossUnitedStatesGlobeLearning\(\)/);
-assert.match(runtimeSource, /activeExpeditionModel\.recommendedStepId/);
 assert.match(runtimeSource, /hasMeaningfulContinuation/);
-assert.match(runtimeSource, /directJourneyStepId/);
-assert.match(runtimeSource, /configuredDirectLaunch\?\.journeyId\s*&&/);
+assert.match(runtimeSource, /selectUnitedStatesEvidenceDrivenContinuation\(\{/);
+assert.match(runtimeSource, /continuation\.destination\.stepId/);
+assert.match(runtimeSource, /runtimeUnitedStatesContinuationTrace = continuation/);
 assert.match(runtimeSource, /createGlobeNavigationModel\(mergedWorldCountries/);
 assert.match(runtimeSource, /getGlobeNavigationSelectableScopes\(activeGlobeNavigationModel\)/);
 assert.match(runtimeSource, /globeNavigationSelectable: true/);
@@ -121,4 +121,4 @@ assert.match(indexSource, /id="main-menu-us-expedition-button"/, "The current U.
 assert.match(indexSource, /id="main-menu-choose-button"/, "The current journey menu must remain intact.");
 assert.doesNotMatch(configSource, /localStorage|sessionStorage/, "Navigation configuration must not create learner state.");
 
-console.log("Globe navigation prototype preserves the legacy entry, geographic drill-down, honest availability, and the existing U.S. handoff.");
+console.log("Globe navigation prototype preserves manual entry, geographic drill-down, honest availability, and the evidence-driven U.S. handoff.");

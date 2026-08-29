@@ -120,7 +120,7 @@ const transition = createLearningInspectorTransition({
 
 `createLearningInspectorDebugObject()` combines item views, selection explanations, canonical evidence, transitions, and optional continuation-foundation output into one JSON-safe export. Library callers supply the existing state/plan/result objects they want to inspect; the local runtime panel composes those adapters over the currently active U.S./Daily planner state and persisted stores.
 
-The local runtime snapshot includes the read-only U.S. continuation foundation when available: physical-family classifications, objective readiness, the blocking family, and the deterministic priority reason. A targeted Guided Learning request also appears as a selection trace with its requested section, resolved section, accepted/rejected status, and fallback reason. These fields explain foundation decisions; they do not route the primary Learn button or modify planner state.
+The local runtime snapshot includes the read-only U.S. continuation foundation when available: objective and family classifications, the blocking gap, and the deterministic priority reason. The primary **Learn the United States** action adds an Evidence-Driven U.S. Continuation selection trace with its chosen objective, skill/family, geographic section, considered alternatives, and destination. A targeted Guided Learning request also records its requested section, resolved section, accepted/rejected status, and fallback reason. The trace explains the recommendation without modifying canonical evidence or taking authority away from the Guided Learning scheduler.
 
 ## Still unavailable
 

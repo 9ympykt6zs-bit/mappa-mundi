@@ -382,6 +382,9 @@ const runtimeSource = fs.readFileSync(new URL("../src/maplibre-poc.js", import.m
 assert.match(runtimeSource, /function createRuntimeLearningInspectorSnapshot\(\)/);
 assert.match(runtimeSource, /if \(!isLocalDevAccessAllowed\(\) \|\| learningInspectorPanelController\) return;/);
 assert.match(runtimeSource, /createUnitedStatesProgressReportReadModel\(\{[\s\S]*storage: null[\s\S]*\}\)/, "Inspector readiness reads must not enroll or mutate Progress Report cohort state.");
+assert.match(runtimeSource, /createCanonicalUnitedStatesProgressReport\(\{[\s\S]*legacyPresentationReport: progressReadModel\.report[\s\S]*\}\)/, "Inspector continuation readiness must use canonical evidence even when the learner-facing report read path falls back.");
+assert.match(runtimeSource, /planner: "Evidence-Driven U\.S\. Continuation"/);
+assert.match(runtimeSource, /runtimeUnitedStatesContinuationTrace\.targetedEntry\?\.fallbackReason/);
 assert.match(runtimeSource, /window\.mappaLearningInspector =/);
 assert.match(runtimeSource, /recordCanonicalEvidenceEventWithInspector\(event\)/);
 assert.match(runtimeSource, /recordCanonicalEvidenceEventsWithInspector\(events\)/);

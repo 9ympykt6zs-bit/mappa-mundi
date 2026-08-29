@@ -9,11 +9,16 @@ export const CONTINUATION_CLASSIFICATION_POLICY = Object.freeze({
 });
 
 function classificationForCategory(category = {}) {
-  const id = category.displayCategory?.id || "unseen";
+  const recordClassifications = (category.records || [])
+    .map((record) => record.displayCategory?.id)
+    .filter(Boolean);
+  const id = recordClassifications.includes("needs-review")
+    ? "needs-review"
+    : category.displayCategory?.id || "unseen";
   const policy = CONTINUATION_CLASSIFICATION_POLICY[id] || CONTINUATION_CLASSIFICATION_POLICY.unseen;
   return {
     id,
-    label: category.displayCategory?.label || PROGRESS_REPORT_DISPLAY_CATEGORY_LABELS[id] || "Not started",
+    label: PROGRESS_REPORT_DISPLAY_CATEGORY_LABELS[id] || category.displayCategory?.label || "Not started",
     ...policy
   };
 }
@@ -72,26 +77,54 @@ export function createUnitedStatesContinuationFoundation({
   const physicalFeatures = evaluateContinuationObjective({
     id: "learn-physical-features",
     label: "Learn Physical Features",
-    requiredFamilyIds: ["physical-rivers", "physical-lakes", "physical-mountain-ranges", "physical-coasts"],
+    requiredFamilyIds: ["physical-rivers", "physical-lakes", "physical-mountain-ranges"],
     categories: physicalFeatureProgressReport.categories || []
   });
+  const connections = evaluateContinuationObjective({
+    id: "learn-connections",
+    label: "Learn Connections",
+    requiredFamilyIds: ["geographic-relationships"],
+    categories: progressReport.categories || []
+  });
+  const prerequisiteObjectives = [statesAndCapitals, physicalFeatures, connections];
+  const blockingObjective = prerequisiteObjectives.find(({ ready }) => !ready) || null;
+  const explore = {
+    id: "explore-united-states",
+    label: "Explore the United States",
+    readiness: blockingObjective ? "not-ready" : "ready",
+    ready: !blockingObjective,
+    rule: "all-prerequisite-objectives-ready",
+    prerequisiteObjectiveIds: prerequisiteObjectives.map(({ id }) => id),
+    blockingObjective: blockingObjective ? {
+      id: blockingObjective.id,
+      label: blockingObjective.label,
+      blockingFamily: blockingObjective.blockingFamily
+    } : null
+  };
+  const objectives = [...prerequisiteObjectives, explore];
   return {
     schemaVersion: 1,
     kind: "evidence-driven-continuation-foundation",
     readOnly: true,
-    objectives: [statesAndCapitals, physicalFeatures],
+    objectives,
     observability: {
       physicalFeatures: physicalFeatures.families.map((family) => ({
         id: family.id,
         label: family.label,
         classification: family.classification.label
       })),
-      objectiveReadiness: [statesAndCapitals, physicalFeatures].map((objective) => ({
+      coastPolicy: {
+        readinessRole: "connections-only",
+        physicalFeaturesRequired: false,
+        reason: "No authored coast location or identification learning activity exists in v1."
+      },
+      objectiveReadiness: objectives.map((objective) => ({
         id: objective.id,
         label: objective.label,
         readiness: objective.readiness,
         blockingFamily: objective.blockingFamily?.label || null,
-        priorityReason: objective.blockingFamily?.priorityReason || null
+        priorityReason: objective.blockingFamily?.priorityReason || null,
+        blockingObjective: objective.blockingObjective?.label || null
       }))
     }
   };

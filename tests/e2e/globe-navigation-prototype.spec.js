@@ -1,5 +1,61 @@
 import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import { learningProgressStorageKeys } from "../../src/learning-progress-reset.js";
+
+function createStrongStageOneCanonicalRepository() {
+  const events = [];
+  let sequence = 0;
+  for (let sectionNumber = 1; sectionNumber <= 11; sectionNumber += 1) {
+    const sectionId = String(sectionNumber).padStart(2, "0");
+    const activity = JSON.parse(readFileSync(new URL(
+      `../../assets/maps/data/us-states-capitals-${sectionId}.json`,
+      import.meta.url
+    ), "utf8"));
+    const features = activity.features || activity.targets || [];
+    const states = features.filter(({ type }) => type === "state");
+    const stateByAbbreviation = new Map(states.map((state) => [state.state, state]));
+    const capitals = features.filter(({ type, state }) => type === "capital" && stateByAbbreviation.has(state));
+    const addCorrectEvents = ({ conceptId, skillId, sourceActivityId }) => {
+      for (let repetition = 0; repetition < 5; repetition += 1) {
+        const eventId = `stage-one-${sequence}`;
+        events.push({
+          schemaVersion: 1,
+          eventId,
+          attemptId: eventId,
+          occurredAt: new Date(Date.UTC(2039, 0, 1, 0, 0, sequence)).toISOString(),
+          sequence,
+          conceptId,
+          skillId,
+          sourceMode: "journey",
+          sourceActivityId,
+          outcome: "correct"
+        });
+        sequence += 1;
+      }
+    };
+    for (const state of states) {
+      addCorrectEvents({
+        conceptId: `state-location:${state.id}`,
+        skillId: "locating",
+        sourceActivityId: `us-states-${sectionId}`
+      });
+      addCorrectEvents({
+        conceptId: `state-naming:${state.id}`,
+        skillId: "identifying",
+        sourceActivityId: `us-states-${sectionId}`
+      });
+    }
+    for (const capital of capitals) {
+      const state = stateByAbbreviation.get(capital.state);
+      addCorrectEvents({
+        conceptId: `capital-location:${state.id}:${capital.id}`,
+        skillId: "locating",
+        sourceActivityId: `us-capitals-${sectionId}`
+      });
+    }
+  }
+  return { storageVersion: 1, evidenceSchemaVersion: 1, events };
+}
 
 async function startPrototype(page, query = "?test=1&globeNavigation=on") {
   await page.goto(`/${query}`);
@@ -222,11 +278,34 @@ test("globe-first launch drills to direct U.S. learning while preserving objecti
   await expect(page.locator(".memory-trail-panel")).toBeVisible();
   await expect(page.getByRole("button", { name: "Label Map" })).toBeVisible();
   expect((await globeState(page)).screen).toBe("united-states-trail-gameplay");
+  const initialContinuationTrace = await page.evaluate(() => window.__MAPPA_TEST_API__.getUnitedStatesContinuationTrace());
+  expect(initialContinuationTrace.targetedEntry.accepted).toBe(true);
+  expect(initialContinuationTrace.targetedEntry.resolvedSectionId).toBe("us-states-01");
   await page.getByRole("button", { name: "Label Map" }).click();
   await expect(page.locator(".memory-trail-panel")).toBeHidden();
   await expect(page.getByRole("button", { name: "Guided Learning" })).toBeVisible();
   expect((await globeState(page)).screen).toBe("journey-gameplay");
   await expect(page.locator("#app-shell-screen")).toBeHidden();
+
+  await startPrototype(page);
+  await chooseSearchScope(page, "United States", "united");
+  await page.getByRole("button", { name: /Learn the United States/ }).click();
+  await expect.poll(
+    () => page.evaluate(() => window.__MAPPA_TEST_API__?.getGlobeNavigationState()?.screen),
+    { timeout: 20_000 }
+  ).toBe("united-states-trail-gameplay");
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getUnitedStatesContinuationTrace().selectedObjective))
+    .toBe("learn-states-and-capitals");
+  const continuationTrace = await page.evaluate(() => window.__MAPPA_TEST_API__.getUnitedStatesContinuationTrace());
+  expect(continuationTrace.targetedEntry.accepted).toBe(false);
+  expect(continuationTrace.targetedEntry.resolvedSectionId).toBe("us-states-01");
+  expect(continuationTrace.targetedEntry.fallbackReason).toBe("active-session-resume");
+  expect(continuationTrace.objectiveClassifications.map(({ id }) => id)).toEqual([
+    "learn-states-and-capitals",
+    "learn-physical-features",
+    "learn-connections",
+    "explore-united-states"
+  ]);
   expect(runtimeErrors).toEqual([]);
 });
 
@@ -279,7 +358,7 @@ test("Reset All Learning Progress starts U.S. learning in the actual Guided Lear
   await expect(page.getByRole("button", { name: "Guided Learning" })).toBeVisible();
 });
 
-test("returning U.S. learners resume meaningful Journey progress instead of restarting Guided Learning", async ({ page }) => {
+test("last Journey screen does not override evidence-driven U.S. continuation", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("atlasQuestProgress", JSON.stringify({
       version: 1,
@@ -303,9 +382,11 @@ test("returning U.S. learners resume meaningful Journey progress instead of rest
   await expect.poll(
     () => page.evaluate(() => window.__MAPPA_TEST_API__?.getCurrentActivity()?.id),
     { timeout: 20_000 }
-  ).toBe("us-states-02");
-  await expect(page.locator(".memory-trail-panel")).toBeHidden();
-  await expect(page.getByRole("button", { name: "Guided Learning" })).toBeVisible();
+  ).toBe("us-states-01");
+  await expect(page.locator(".memory-trail-panel")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Label Map" })).toBeVisible();
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getUnitedStatesContinuationTrace().reason))
+    .toBe("not-started");
 });
 
 test("scoped Guided Learning reset does not erase canonical U.S. returning-learner evidence", async ({ page }) => {
@@ -334,8 +415,40 @@ test("scoped Guided Learning reset does not erase canonical U.S. returning-learn
     () => page.evaluate(() => window.__MAPPA_TEST_API__?.getCurrentActivity()?.id),
     { timeout: 20_000 }
   ).toBe("us-states-01");
-  await expect(page.locator(".memory-trail-panel")).toBeHidden();
-  await expect(page.getByRole("button", { name: "Guided Learning" })).toBeVisible();
+  await expect(page.locator(".memory-trail-panel")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Label Map" })).toBeVisible();
+  expect(await page.evaluate(() => (
+    JSON.parse(localStorage.getItem("mappaMundiCanonicalEvidence") || "{}").events?.length
+  ))).toBe(1);
+});
+
+test("strong canonical Stage 1 evidence advances Learn to Rivers on desktop and mobile", async ({ page }) => {
+  const repository = createStrongStageOneCanonicalRepository();
+  await page.addInitScript((canonicalRepository) => {
+    localStorage.setItem("mappaMundiCanonicalEvidence", JSON.stringify(canonicalRepository));
+    localStorage.setItem("atlasQuestProgress", JSON.stringify({
+      version: 1,
+      activeJourneyId: "united-states",
+      activeStepIndex: 1,
+      activeDifficulty: "easy",
+      recentJourneyId: "united-states",
+      recentDifficulty: "easy",
+      journeys: {}
+    }));
+  }, repository);
+  await startPrototype(page);
+  await chooseSearchScope(page, "United States", "united");
+  await page.getByRole("button", { name: /Learn the United States/ }).click();
+
+  await expect.poll(
+    () => page.evaluate(() => window.__MAPPA_TEST_API__?.getCurrentActivity()?.id),
+    { timeout: 20_000 }
+  ).toBe("us-physical-rivers");
+  const trace = await page.evaluate(() => window.__MAPPA_TEST_API__.getUnitedStatesContinuationTrace());
+  expect(trace.selectedObjective).toBe("learn-physical-features");
+  expect(trace.selectedFamily).toBe("physical-rivers");
+  expect(trace.destination.stepId).toBe("us-physical-rivers");
+  expect(trace.reason).toBe("not-started");
 });
 
 test("map and search allow lateral region changes without requiring Back", async ({ page }, testInfo) => {

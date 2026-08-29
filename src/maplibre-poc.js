@@ -24,16 +24,17 @@ import { readUnitedStatesAtlasProgress } from "./atlas/united-states-atlas-progr
 import { renderUnitedStatesAtlasOverview, renderUnitedStatesAtlasProfile } from "./atlas/united-states-atlas-ui.js";
 import { renderProgressReport } from "./united-states-progress-report-ui.js?v=20260821-central-america-graduation-1";
 import { createUnitedStatesProgressReportReadModel } from "./united-states-progress-report-read-path.js?v=20260821-central-america-graduation-1";
+import { createCanonicalUnitedStatesProgressReport } from "./canonical-progress-report-shadow.js?v=20260829-evidence-driven-continuation-1";
 import {
   buildUnitedStatesPhysicalFeatureProgressItems,
   createUnitedStatesPhysicalFeatureProgressReport
 } from "./united-states-physical-feature-progress.js";
 import { createUnitedStatesContinuationFoundation } from "./continuation-readiness.js";
+import { selectUnitedStatesEvidenceDrivenContinuation } from "./united-states-evidence-driven-continuation.js";
 import {
   ACROSS_UNITED_STATES_EXPEDITION_ID,
   acrossUnitedStatesExpedition,
-  acrossUnitedStatesNavigation,
-  hasMeaningfulUnitedStatesLearningState
+  acrossUnitedStatesNavigation
 } from "./across-united-states-expedition.js?v=20260829-learning-terminology-1";
 import { CENTRAL_AMERICA_LEARNING_UNIT_ID } from "./central-america-learning-unit.js";
 import { geographyLearningUnits, getGeographyLearningUnit } from "./geography-learning-unit-registry.js";
@@ -3673,6 +3674,7 @@ let learningIntegrityFailure = null;
 let globeNavigationMapHoverBound = false;
 let runtimeMemoryTrailSelectionTrace = null;
 let runtimeUnitedStatesTargetedEntryTrace = null;
+let runtimeUnitedStatesContinuationTrace = null;
 let activeMentalMapChallenge = null;
 let activeMentalMapChallengeState = null;
 let activeMentalMapCanonicalAttemptIdentity = null;
@@ -4215,7 +4217,11 @@ async function createRuntimeLearningInspectorSnapshot() {
     storage: null
   });
   const continuationFoundation = createUnitedStatesContinuationFoundation({
-    progressReport: progressReadModel.report,
+    progressReport: createCanonicalUnitedStatesProgressReport({
+      items: unitedStatesItems,
+      repository: canonicalRepository,
+      legacyPresentationReport: progressReadModel.report
+    }),
     physicalFeatureProgressReport
   });
   const configuredLearningUnitItems = geographyLearningUnits.flatMap((unit) => createGeographyLearningUnitItems(unit));
@@ -4264,6 +4270,22 @@ async function createRuntimeLearningInspectorSnapshot() {
         fallbackReason: runtimeUnitedStatesTargetedEntryTrace.fallbackReason
       },
       selectionTrace: runtimeUnitedStatesTargetedEntryTrace
+    }] : []),
+    ...(runtimeUnitedStatesContinuationTrace ? [{
+      planner: "Evidence-Driven U.S. Continuation",
+      itemId: runtimeUnitedStatesContinuationTrace.selectedSection
+        || runtimeUnitedStatesContinuationTrace.selectedFamily
+        || runtimeUnitedStatesContinuationTrace.selectedObjective,
+      reasonCode: runtimeUnitedStatesContinuationTrace.reason,
+      priorityFactors: {
+        selectedObjective: runtimeUnitedStatesContinuationTrace.selectedObjective,
+        selectedFamily: runtimeUnitedStatesContinuationTrace.selectedFamily,
+        selectedSkill: runtimeUnitedStatesContinuationTrace.selectedSkill,
+        selectedSection: runtimeUnitedStatesContinuationTrace.selectedSection,
+        targetedEntryAccepted: runtimeUnitedStatesContinuationTrace.targetedEntry?.accepted ?? null,
+        fallbackReason: runtimeUnitedStatesContinuationTrace.targetedEntry?.fallbackReason || null
+      },
+      selectionTrace: runtimeUnitedStatesContinuationTrace
     }] : [])
   ];
   return createLearningInspectorDebugObject({
@@ -8687,37 +8709,75 @@ function createAcrossUnitedStatesExpeditionEvidence() {
 }
 
 async function startAcrossUnitedStatesGlobeLearning() {
+  await ensureActivityDataLoaded();
   activeExpeditionDefinition = acrossUnitedStatesExpedition;
   const expeditionEvidence = createAcrossUnitedStatesExpeditionEvidence();
   activeExpeditionModel = createExpeditionReadModel(acrossUnitedStatesExpedition, expeditionEvidence.evidence);
-  activeExpeditionObjectiveId = "";
-  if (!hasMeaningfulUnitedStatesLearningState(expeditionEvidence.evidence, expeditionEvidence.canonicalEvents)) {
-    returnToExpeditionId = ACROSS_UNITED_STATES_EXPEDITION_ID;
-    returnToExpeditionObjectiveId = "";
-    await startOrContinueUnitedStatesMemoryTrail();
+  const memoryTrailItems = getUnitedStatesMemoryTrailItems();
+  const canonicalRepository = loadCanonicalEvidenceRepository();
+  const progressReport = createCanonicalUnitedStatesProgressReport({
+    items: memoryTrailItems,
+    repository: canonicalRepository
+  });
+  const physicalFeatureProgressReport = createUnitedStatesPhysicalFeatureProgressReport({
+    items: buildUnitedStatesPhysicalFeatureProgressItems(activities),
+    repository: canonicalRepository
+  });
+  const continuationFoundation = createUnitedStatesContinuationFoundation({
+    progressReport,
+    physicalFeatureProgressReport
+  });
+  const continuation = selectUnitedStatesEvidenceDrivenContinuation({
+    continuationFoundation,
+    progressReport,
+    memoryTrailItems
+  });
+  runtimeUnitedStatesContinuationTrace = continuation;
+  const objectiveIdByContinuationId = {
+    "learn-states-and-capitals": "states-capitals",
+    "learn-physical-features": "physical-features",
+    "learn-connections": "connections",
+    "explore-united-states": "explore"
+  };
+  activeExpeditionObjectiveId = objectiveIdByContinuationId[continuation.selectedObjective] || "";
+  returnToExpeditionId = ACROSS_UNITED_STATES_EXPEDITION_ID;
+  returnToExpeditionObjectiveId = activeExpeditionObjectiveId;
+
+  if (continuation.destination.kind === "united-states-guided-learning") {
+    await startOrContinueUnitedStatesMemoryTrail({
+      targetSectionId: continuation.destination.targetSectionId
+    });
+    runtimeUnitedStatesContinuationTrace = {
+      ...continuation,
+      selectedSection: runtimeUnitedStatesTargetedEntryTrace?.resolvedSectionId
+        || continuation.selectedSection,
+      targetedEntry: runtimeUnitedStatesTargetedEntryTrace
+    };
     return;
   }
-  const recommendedStep = activeExpeditionModel.steps.find((step) => (
-    step.id === activeExpeditionModel.recommendedStepId
+
+  if (continuation.destination.kind === "journey-step") {
+    const physicalStep = activeExpeditionModel.steps.find(({ id }) => id === "follow-landscape");
+    launchExpeditionStep({
+      ...physicalStep,
+      launch: {
+        kind: "journey",
+        journeyId: continuation.destination.journeyId,
+        stepId: continuation.destination.stepId
+      }
+    }, {
+      allowLocked: true,
+      objectiveId: activeExpeditionObjectiveId
+    });
+    return;
+  }
+
+  const selectedStep = activeExpeditionModel.steps.find(({ id }) => (
+    id === (continuation.destination.stepId || "make-connections")
   ));
-
-  if (!recommendedStep) {
-    await openExpedition(ACROSS_UNITED_STATES_EXPEDITION_ID, { pushHistory: false });
-    return;
-  }
-
-  const configuredDirectLaunch = acrossUnitedStatesNavigation.objectives
-    .flatMap((objective) => objective.groups)
-    .flatMap((group) => group.activities)
-    .find((activity) => activity.stepId === recommendedStep.id && activity.launch?.stepId)
-    ?.launch;
-  launchExpeditionStep(recommendedStep, {
+  launchExpeditionStep(selectedStep, {
     allowLocked: true,
-    directJourney: true,
-    directJourneyStepId: configuredDirectLaunch?.journeyId
-      && configuredDirectLaunch.journeyId === recommendedStep.launch?.journeyId
-      ? configuredDirectLaunch.stepId
-      : ""
+    objectiveId: activeExpeditionObjectiveId
   });
 }
 
@@ -20460,6 +20520,7 @@ function resetUnitedStatesMemoryTrailProgress() {
   activeUnitedStatesMemoryTrailSession = null;
   pendingUnitedStatesMemoryTrailPlan = null;
   runtimeUnitedStatesTargetedEntryTrace = null;
+  runtimeUnitedStatesContinuationTrace = null;
   lastUnitedStatesMemoryTrailSummary = null;
   unitedStatesMemoryTrailResetConfirmationVisible = false;
   if (activeStudySession?.unitedStatesMemoryTrail) {
@@ -26657,6 +26718,12 @@ function getUnitedStatesMemoryTrailPlanForTest() {
   } : null;
 }
 
+function getUnitedStatesContinuationTraceForTest() {
+  return runtimeUnitedStatesContinuationTrace
+    ? JSON.parse(JSON.stringify(runtimeUnitedStatesContinuationTrace))
+    : null;
+}
+
 function startMentalMapQuestionForTest(challengeId) {
   if (currentAppScreen !== "mental-map-challenge") return false;
   const challenge = mentalMapChallengePool.find((candidate) => candidate.id === challengeId);
@@ -26854,6 +26921,7 @@ function installMappaTestApi() {
       getMountainRangeVisualState: getMountainRangeVisualStateForTest,
       getPoliticalDivisionVisualState: getPoliticalDivisionVisualStateForTest,
       getUnitedStatesMemoryTrailPlan: getUnitedStatesMemoryTrailPlanForTest,
+      getUnitedStatesContinuationTrace: getUnitedStatesContinuationTraceForTest,
       startUnitedStatesGuidedLearningAtSection: (targetSectionId) => (
         startOrContinueUnitedStatesMemoryTrail({ targetSectionId })
       ),

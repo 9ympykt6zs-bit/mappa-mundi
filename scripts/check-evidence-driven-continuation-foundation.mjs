@@ -110,7 +110,7 @@ assert.deepEqual(
   "Synthetic foundation profiles must replay deterministically."
 );
 
-assert.deepEqual(Object.values(profiles[0].classifications), ["Not started", "Not started", "Not started", "Not started"]);
+assert.deepEqual(Object.values(profiles[0].classifications), ["Not started", "Not started", "Not started"]);
 assert.equal(profiles[0].readiness, "not-ready");
 assert.equal(profiles[0].highestPriorityGap, "Rivers");
 assert.equal(profiles[1].classifications.Rivers, "Needs review");
@@ -121,7 +121,19 @@ assert.equal(profiles[2].classifications["Mountain Ranges"], "Needs review");
 assert.equal(profiles[2].highestPriorityGap, "Mountain Ranges");
 assert.equal(profiles[3].readiness, "ready");
 assert.equal(profiles[3].highestPriorityGap, null);
-assert.deepEqual(Object.values(profiles[3].classifications), ["Strong", "Strong", "Strong", "Strong"]);
+assert.deepEqual(Object.values(profiles[3].classifications), ["Strong", "Strong", "Strong"]);
+assert.equal(
+  profiles[3].report.categories.find(({ id }) => id === "physical-coasts").displayCategory.label,
+  "Strong",
+  "Coast relationship evidence remains canonical and reportable."
+);
+
+const coastsWeak = profile("coasts-weak", { weakFamilyId: "physical-coasts" });
+assert.equal(coastsWeak.readiness, "ready", "Coast relationships must not block Physical Features readiness in v1.");
+assert.equal(coastsWeak.continuation.objectives
+  .find(({ id }) => id === "learn-physical-features").families
+  .some(({ id }) => id === "physical-coasts"), false);
+assert.equal(coastsWeak.continuation.observability.coastPolicy.readinessRole, "connections-only");
 
 const building = profile("rivers-building", { buildingFamilyId: "physical-rivers" });
 assert.equal(building.classifications.Rivers, "Building");
@@ -154,6 +166,32 @@ const readyStatesWeakCapital = createUnitedStatesContinuationFoundation({
 const stateObjective = readyStatesWeakCapital.objectives.find(({ id }) => id === "learn-states-and-capitals");
 assert.equal(stateObjective.ready, false);
 assert.equal(stateObjective.blockingFamily.id, "state-capitals");
+
+const allObjectivesReady = createUnitedStatesContinuationFoundation({
+  progressReport: {
+    categories: [
+      { id: "state-locations", displayCategory: { id: "strong-evidence", label: "Strong" } },
+      { id: "state-identification", displayCategory: { id: "strong-evidence", label: "Strong" } },
+      { id: "state-capitals", displayCategory: { id: "strong-evidence", label: "Strong" } },
+      { id: "geographic-relationships", displayCategory: { id: "demonstrated", label: "Going well" } }
+    ]
+  },
+  physicalFeatureProgressReport: profiles[3].report
+});
+assert.equal(allObjectivesReady.objectives.find(({ id }) => id === "learn-connections").ready, true);
+assert.equal(allObjectivesReady.objectives.find(({ id }) => id === "explore-united-states").ready, true);
+
+const knownRecordWeakness = evaluateContinuationObjective({
+  id: "known-record-weakness",
+  requiredFamilyIds: ["state-locations"],
+  categories: [{
+    id: "state-locations",
+    displayCategory: { id: "strong-evidence", label: "Strong" },
+    records: [{ itemId: "state:texas", displayCategory: { id: "needs-review", label: "Needs review" } }]
+  }]
+});
+assert.equal(knownRecordWeakness.ready, false, "A known record weakness must not be hidden by a strong aggregate.");
+assert.equal(knownRecordWeakness.blockingFamily.priorityReason, "known-weakness");
 
 const riverCorrectDecision = classifyCanonicalProgressEvidence(createCanonicalEvidenceEvent({
   eventId: "river-policy-correct",

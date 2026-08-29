@@ -22,10 +22,11 @@ for (const oldLearnerLabel of [
 
 assert.match(indexSource, />Explore</);
 assert.match(indexSource, />Guided Learning</);
-assert.match(indexSource, /maplibre-poc\.js\?v=20260829-us-guided-entry-1/);
+assert.match(indexSource, /maplibre-poc\.js\?v=20260829-evidence-driven-continuation-1/);
 assert.match(runtimeSource, /const label = isGuidedLearning \? "Label Map" : "Guided Learning"/);
-assert.match(runtimeSource, /if \(!hasMeaningfulUnitedStatesLearningState/);
-assert.match(runtimeSource, /await startOrContinueUnitedStatesMemoryTrail\(\)/);
+assert.match(runtimeSource, /selectUnitedStatesEvidenceDrivenContinuation\(\{/);
+assert.match(runtimeSource, /continuation\.destination\.kind === "united-states-guided-learning"/);
+assert.match(runtimeSource, /await startOrContinueUnitedStatesMemoryTrail\(\{[\s\S]*targetSectionId:/);
 assert.match(expeditionSource, /United States Guided Learning|U\.S\. Guided Learning/);
 assert.match(plannerSource, /title: "United States Guided Learning"/);
 assert.match(progressReportSource, /label: "United States Guided Learning"/);

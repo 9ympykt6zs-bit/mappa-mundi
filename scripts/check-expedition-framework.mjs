@@ -101,8 +101,10 @@ assert.doesNotMatch(navigationSource, /localStorage|sessionStorage/, "Objective 
 assert.doesNotMatch(navigationUiSource, /localStorage|sessionStorage/, "Objective navigation UI must not create learner state.");
 assert.match(runtimeSource, /loadUnitedStatesMemoryTrailProgress\(\)/);
 assert.match(runtimeSource, /loadCanonicalEvidenceRepository\(\)/);
-assert.match(runtimeSource, /hasMeaningfulUnitedStatesLearningState\(expeditionEvidence\.evidence, expeditionEvidence\.canonicalEvents\)/);
-assert.match(runtimeSource, /await startOrContinueUnitedStatesMemoryTrail\(\)/);
+assert.match(runtimeSource, /selectUnitedStatesEvidenceDrivenContinuation\(\{/);
+assert.match(runtimeSource, /createUnitedStatesContinuationFoundation\(\{/);
+assert.match(runtimeSource, /await startOrContinueUnitedStatesMemoryTrail\(\{[\s\S]*targetSectionId:/);
+assert.match(runtimeSource, /continuation\.destination\.kind === "journey-step"/);
 assert.match(runtimeSource, /getJourneyProgress\(journeyId, loadProgress\(\)\)/);
 assert.match(runtimeSource, /returnFromExpeditionActivity/);
 assert.match(runtimeSource, /openExpedition\(expeditionId/);

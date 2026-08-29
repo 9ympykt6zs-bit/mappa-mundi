@@ -97,6 +97,8 @@ Capital-of Relationship answers a different question—knowing which capital bel
 
 The physical-feature Progress Report foundation groups canonical histories into Rivers, Lakes, Mountain Ranges, and Coasts without collapsing their underlying skills. A river record may consume its distinct location, identification, and authored river-through relationship histories. Lakes and mountain ranges follow the same pattern. Coasts currently consume only the authored `relationship:coast:{state}:{water}` relationship-recall histories because there is no standalone coast locating or naming activity. The grouping does not create duplicate evidence or claim a skill that was not assessed.
 
+For Evidence-Driven Continuation v1, the required **Learn Physical Features** readiness families are Rivers, Lakes, and Mountain Ranges. Coasts are deliberately excluded from that objective because Mappa Mundi does not yet have an authored coast-identification or coast-location learning activity, Guided Learning section, or direct coast-learning entry point. Coast concepts and evidence remain canonical and may contribute to **Learn Connections** through the existing Geographic Relationships policy; they must not be interpreted as invented coast-location evidence. If a dedicated coast-learning activity is authored later, this readiness boundary can be revisited.
+
 The existing Progress Report labels also provide the provisional continuation-readiness vocabulary:
 
 | Progress Report label | Continuation interpretation |
@@ -107,7 +109,7 @@ The existing Progress Report labels also provide the provisional continuation-re
 | Going well | Sufficient to continue |
 | Strong | Sufficient to continue |
 
-An objective is ready to advance only when every required family is Going well or Strong and none is a meaningful weakness. This read-only signal is not mastery, permanent retention, regional Demonstrated status, or activity completion. Within an objective, deterministic gap priority is Needs review, then Building, then Not started, then Going well/Strong; stable configured family order breaks ties.
+An objective is ready to advance only when every required family is Going well or Strong and none of its records is a meaningful known weakness. This read-only signal is not mastery, permanent retention, regional Demonstrated status, or activity completion. Within an objective, deterministic gap priority is Needs review, then Building, then Not started, then Going well/Strong; stable configured family order breaks ties.
 
 ## 9. Historical compatibility
 
@@ -143,6 +145,6 @@ Brand-new learners can start with canonical-only histories. Existing learners re
 
 ## 12. Migration readiness criteria
 
-A canonical-first implementation for brand-new learners is active for State Location, State Identification, Capital Location, Capital Identification, Capital-of Relationship, fixed Geographic Relationships, and the configured physical-feature retrieval histories behind the guarded selector. Physical family categories and continuation-readiness outputs are available in the data/developer foundation but are not added to the learner-facing Progress Report layout in this slice. The existing optional Geographic Relationships category appears only after canonical relationship evidence exists; Spatial Reconstruction remains policy-defined but is not promoted into the current UI. Context remains blocked because its canonical contract is incomplete.
+A canonical-first implementation for brand-new learners is active for State Location, State Identification, Capital Location, Capital Identification, Capital-of Relationship, fixed Geographic Relationships, and the configured physical-feature retrieval histories behind the guarded selector. Physical family categories remain absent from the learner-facing Progress Report layout, but their readiness outputs now inform the primary U.S. continuation recommendation. The existing optional Geographic Relationships category appears only after canonical relationship evidence exists and also supplies Connections readiness; Spatial Reconstruction remains policy-defined but is not promoted into the current UI. Context remains blocked because its canonical contract is incomplete.
 
 Existing learners are not migration-ready. U.S. Connections creates only new live relationship evidence and never fabricates historical events. Migration remains blocked on a versioned legacy-baseline format, a canonical cutover boundary, overlap prevention, and an explicit display treatment for combined historical state-practice evidence.
