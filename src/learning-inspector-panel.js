@@ -56,7 +56,8 @@ export function createLearningInspectorPanelViewModel(snapshot = {}, query = "")
     transitions,
     canonicalSummaries: envelopeValue(canonicalEvidence?.summaries) || [],
     canonicalSummaryCount: envelopeValue(canonicalEvidence?.summaries)?.length || 0,
-    recentCanonicalEvidence: envelopeValue(canonicalEvidence?.recentEvidence) || []
+    recentCanonicalEvidence: envelopeValue(canonicalEvidence?.recentEvidence) || [],
+    continuationFoundation: snapshot.continuationFoundation || null
   };
 }
 

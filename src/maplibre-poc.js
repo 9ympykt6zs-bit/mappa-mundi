@@ -3672,6 +3672,7 @@ let returnToGlobeNavigationScopeId = "";
 let learningIntegrityFailure = null;
 let globeNavigationMapHoverBound = false;
 let runtimeMemoryTrailSelectionTrace = null;
+let runtimeUnitedStatesTargetedEntryTrace = null;
 let activeMentalMapChallenge = null;
 let activeMentalMapChallengeState = null;
 let activeMentalMapCanonicalAttemptIdentity = null;
@@ -4200,6 +4201,22 @@ async function createRuntimeLearningInspectorSnapshot() {
   const dailyItems = activeDailyTrailSession?.plan?.allItems || [];
   const masteryState = loadPlaceMastery();
   const canonicalRepository = loadCanonicalEvidenceRepository();
+  const physicalFeatureProgressReport = createUnitedStatesPhysicalFeatureProgressReport({
+    items: buildUnitedStatesPhysicalFeatureProgressItems(activities),
+    repository: canonicalRepository
+  });
+  const progressReadModel = createUnitedStatesProgressReportReadModel({
+    items: unitedStatesItems,
+    unitedStatesMemoryTrailState: unitedStatesState,
+    dailyTrailState: dailyState,
+    dailyTrailItems: getUnitedStatesProgressReportDailyTrailItems(),
+    placeMasteryState: masteryState,
+    repository: canonicalRepository
+  });
+  const continuationFoundation = createUnitedStatesContinuationFoundation({
+    progressReport: progressReadModel.report,
+    physicalFeatureProgressReport
+  });
   const configuredLearningUnitItems = geographyLearningUnits.flatMap((unit) => createGeographyLearningUnitItems(unit));
   const items = [
     ...unitedStatesItems.map((item) => createUnitedStatesMemoryTrailInspectorItemView({ item, state: unitedStatesState })),
@@ -4236,6 +4253,16 @@ async function createRuntimeLearningInspectorSnapshot() {
       reasonCode: runtimeMemoryTrailSelectionTrace.reasonBucket,
       priorityFactors: runtimeMemoryTrailSelectionTrace.priorityFactors,
       selectionTrace: runtimeMemoryTrailSelectionTrace
+    }] : []),
+    ...(runtimeUnitedStatesTargetedEntryTrace ? [{
+      planner: "United States Guided Learning targeted entry",
+      itemId: runtimeUnitedStatesTargetedEntryTrace.resolvedSectionId,
+      reasonCode: runtimeUnitedStatesTargetedEntryTrace.accepted ? "target-accepted" : "target-fallback",
+      priorityFactors: {
+        requestedSectionId: runtimeUnitedStatesTargetedEntryTrace.requestedSectionId,
+        fallbackReason: runtimeUnitedStatesTargetedEntryTrace.fallbackReason
+      },
+      selectionTrace: runtimeUnitedStatesTargetedEntryTrace
     }] : [])
   ];
   return createLearningInspectorDebugObject({
@@ -4247,7 +4274,8 @@ async function createRuntimeLearningInspectorSnapshot() {
     items,
     selections,
     transitions: runtimeLearningInspectorTransitions,
-    canonicalRepository
+    canonicalRepository,
+    continuationFoundation
   });
 }
 
@@ -19959,27 +19987,39 @@ function countUnitedStatesMemoryTrailWeakItems(state, items = getUnitedStatesMem
   return items.filter((item) => isUnitedStatesMemoryTrailWeakReviewItem(state, item)).length;
 }
 
-async function startOrContinueUnitedStatesMemoryTrail() {
+async function startOrContinueUnitedStatesMemoryTrail(options = {}) {
   await ensureMapRuntimeLoaded();
   await ensureActivityDataLoaded();
 
   const items = getUnitedStatesMemoryTrailItems();
   const state = loadUnitedStatesMemoryTrailProgress(items);
   if (state.activeSession?.plan) {
+    const requestedSectionId = String(options.targetSectionId || "").trim();
+    runtimeUnitedStatesTargetedEntryTrace = requestedSectionId ? {
+      requestedSectionId,
+      resolvedSectionId: state.activeSession.plan.activeSectionId || state.activeSession.plan.activeActivityId || null,
+      accepted: false,
+      status: "rejected",
+      fallbackReason: "active-session-resume",
+      plannerAuthority: "existing-active-session"
+    } : null;
     await resumeUnitedStatesMemoryTrailSession(state);
     return;
   }
 
   pendingUnitedStatesMemoryTrailPlan = null;
-  await startUnitedStatesMemoryTrailSession();
+  await startUnitedStatesMemoryTrailSession(options);
 }
 
-async function startUnitedStatesMemoryTrailSession() {
+async function startUnitedStatesMemoryTrailSession(options = {}) {
   await ensureMapReady();
 
   const items = getUnitedStatesMemoryTrailItems();
   const baseState = loadUnitedStatesMemoryTrailProgress(items);
-  const plan = pendingUnitedStatesMemoryTrailPlan || planUnitedStatesMemoryTrailSession(baseState, items);
+  const plan = pendingUnitedStatesMemoryTrailPlan || planUnitedStatesMemoryTrailSession(baseState, items, {
+    targetSectionId: options.targetSectionId
+  });
+  runtimeUnitedStatesTargetedEntryTrace = plan.targetedEntry || null;
   const activity = getActivityById(plan.activeActivityId);
 
   if (!activity || plan.playItems.length === 0) {
@@ -20418,6 +20458,7 @@ function resetUnitedStatesMemoryTrailProgress() {
   resetUnitedStatesMemoryTrailPersistedProgress();
   activeUnitedStatesMemoryTrailSession = null;
   pendingUnitedStatesMemoryTrailPlan = null;
+  runtimeUnitedStatesTargetedEntryTrace = null;
   lastUnitedStatesMemoryTrailSummary = null;
   unitedStatesMemoryTrailResetConfirmationVisible = false;
   if (activeStudySession?.unitedStatesMemoryTrail) {
@@ -26609,7 +26650,9 @@ function getUnitedStatesMemoryTrailPlanForTest() {
     newItemIds: plan.newItems.map((item) => item.id),
     reviewItemIds: plan.reviewItems.map((item) => item.id),
     weakReviewItemIds: plan.weakReviewItems.map((item) => item.id),
-    fairnessReviewItemIds: plan.fairnessReviewItems.map((item) => item.id)
+    fairnessReviewItemIds: plan.fairnessReviewItems.map((item) => item.id),
+    activeSectionId: plan.activeSectionId,
+    targetedEntry: plan.targetedEntry || runtimeUnitedStatesTargetedEntryTrace
   } : null;
 }
 
@@ -26810,6 +26853,9 @@ function installMappaTestApi() {
       getMountainRangeVisualState: getMountainRangeVisualStateForTest,
       getPoliticalDivisionVisualState: getPoliticalDivisionVisualStateForTest,
       getUnitedStatesMemoryTrailPlan: getUnitedStatesMemoryTrailPlanForTest,
+      startUnitedStatesGuidedLearningAtSection: (targetSectionId) => (
+        startOrContinueUnitedStatesMemoryTrail({ targetSectionId })
+      ),
       startMentalMapQuestion: startMentalMapQuestionForTest,
       getMentalMapVisualState: getMentalMapVisualStateForTest,
       getGlobeNavigationState: getGlobeNavigationStateForTest,

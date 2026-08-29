@@ -527,7 +527,8 @@ export function createLearningInspectorDebugObject({
   context = {},
   canonicalEvidence = null,
   canonicalRepository = null,
-  canonicalEvidenceFilters = {}
+  canonicalEvidenceFilters = {},
+  continuationFoundation = null
 } = {}) {
   const output = {
     schemaVersion: LEARNING_INSPECTOR_SCHEMA_VERSION,
@@ -543,5 +544,6 @@ export function createLearningInspectorDebugObject({
       ...canonicalEvidenceFilters
     });
   }
+  if (continuationFoundation) output.continuationFoundation = continuationFoundation;
   return cloneJson(output);
 }

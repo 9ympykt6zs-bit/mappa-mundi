@@ -221,12 +221,82 @@ export function planUnitedStatesMemoryTrailSession(state, items = [], options = 
     || comparePlannerTie(normalized, left, right));
   const unseenItems = safeItems.filter((item) => getItemStatus(normalized, item) === "unseen");
   const eligibleNewItems = getEligibleNewItems(normalized, safeItems);
+  const targetedEntry = resolveUnitedStatesGuidedLearningTargetedEntry({
+    requestedSectionId: options.targetSectionId,
+    items: safeItems,
+    eligibleNewItems
+  });
 
   if (unseenItems.length === 0 || eligibleNewItems.length === 0) {
-    return buildUnitedStatesCumulativeReviewPlan(normalized, safeItems);
+    return attachTargetedEntryTrace(
+      buildUnitedStatesCumulativeReviewPlan(normalized, safeItems),
+      targetedEntry
+    );
   }
 
-  return buildUnitedStatesLearningPlan(normalized, safeItems, eligibleNewItems);
+  return attachTargetedEntryTrace(
+    buildUnitedStatesLearningPlan(normalized, safeItems, eligibleNewItems, targetedEntry),
+    targetedEntry
+  );
+}
+
+export function resolveUnitedStatesGuidedLearningTargetedEntry({
+  requestedSectionId,
+  items = [],
+  eligibleNewItems = []
+} = {}) {
+  const requested = String(requestedSectionId || "").trim();
+  if (!requested) return null;
+  const supportedItems = items.filter((item) => (
+    item.homeActivityId === requested
+    || item.sourceActivityId === requested
+    || item.sectionId === requested
+  ));
+  if (supportedItems.length === 0) {
+    return {
+      requestedSectionId: requested,
+      resolvedSectionId: null,
+      accepted: false,
+      status: "rejected",
+      fallbackReason: "unknown-section-id",
+      plannerAuthority: "existing-eligibility-and-prerequisites"
+    };
+  }
+  const supportedItemIds = new Set(supportedItems.map(({ id }) => id));
+  const eligibleTarget = eligibleNewItems.find((item) => supportedItemIds.has(item.id));
+  if (!eligibleTarget) {
+    return {
+      requestedSectionId: requested,
+      resolvedSectionId: null,
+      accepted: false,
+      status: "rejected",
+      fallbackReason: eligibleNewItems.length === 0
+        ? "no-eligible-new-content"
+        : "requested-section-ineligible",
+      plannerAuthority: "existing-eligibility-and-prerequisites"
+    };
+  }
+  return {
+    requestedSectionId: requested,
+    resolvedSectionId: eligibleTarget.homeActivityId,
+    accepted: true,
+    status: "accepted",
+    fallbackReason: null,
+    plannerAuthority: "existing-eligibility-and-prerequisites"
+  };
+}
+
+function attachTargetedEntryTrace(plan, targetedEntry) {
+  if (!targetedEntry) return plan;
+  return {
+    ...plan,
+    targetedEntry: {
+      ...targetedEntry,
+      resolvedSectionId: targetedEntry.accepted
+        ? targetedEntry.resolvedSectionId
+        : plan.activeSectionId || plan.activeActivityId || null
+    }
+  };
 }
 
 // Read-only projection of the candidate pool that the existing planner used.
@@ -493,8 +563,10 @@ function isPhaseTwoCapitalTarget(target) {
   return Boolean(target?.id && target?.kind === "point" && target?.type === "capital");
 }
 
-function buildUnitedStatesLearningPlan(state, items, eligibleNewItems) {
-  const activeSectionId = getNextSectionIdWithEligibleItems(state, items, eligibleNewItems);
+function buildUnitedStatesLearningPlan(state, items, eligibleNewItems, targetedEntry = null) {
+  const activeSectionId = targetedEntry?.accepted
+    ? targetedEntry.resolvedSectionId
+    : getNextSectionIdWithEligibleItems(state, items, eligibleNewItems);
   const playableItems = items.filter((item) => item.homeActivityId === activeSectionId);
   const eligibleSectionItems = playableItems
     .filter((item) => getItemStatus(state, item) === "unseen")

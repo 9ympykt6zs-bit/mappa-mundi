@@ -344,7 +344,11 @@ const debugExport = createLearningInspectorDebugObject({
   context: { learnerId: null, note: "fixture" },
   items: [masteryView, dailyView, usView, mentalView, reconstructionView],
   selections: [dailySelection, usSelection, mentalSelectionA],
-  transitions: [transition]
+  transitions: [transition],
+  continuationFoundation: {
+    kind: "evidence-driven-continuation-foundation",
+    objectives: [{ id: "learn-physical-features", readiness: "not-ready" }]
+  }
 });
 assert.doesNotThrow(() => JSON.stringify(debugExport));
 assert.equal(debugExport.kind, "learning-inspector-export");
@@ -354,6 +358,7 @@ const panelView = createLearningInspectorPanelViewModel(debugExport);
 assert.equal(panelView.visibleItemCount, 5);
 assert.equal(panelView.selections.length, 3);
 assert.equal(panelView.transitions.length, 1);
+assert.equal(panelView.continuationFoundation.objectives[0].readiness, "not-ready");
 assert.deepEqual(panelView.items[0].masterySignals, masteryView.learnerState.masterySignals.value);
 assert.equal(panelView.items[0].metrics.attempts.value, 5);
 assert.equal(panelView.items[0].metrics.failures.value, 2);
