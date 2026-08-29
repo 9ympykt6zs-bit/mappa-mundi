@@ -15,7 +15,7 @@ import {
   getCanonicalEvidenceRepositoryStatus,
   getRecentCanonicalEvidenceEvents
 } from "./canonical-learning-evidence-repository.js";
-import { getCanonicalRetrievalMappings } from "./canonical-learning-evidence.js?v=20260821-central-america-graduation-1";
+import { getCanonicalRetrievalMappings } from "./canonical-learning-evidence.js?v=20260829-physical-evidence-1";
 
 export const LEARNING_INSPECTOR_SCHEMA_VERSION = 1;
 export const LEARNING_INSPECTOR_AVAILABILITY = Object.freeze({

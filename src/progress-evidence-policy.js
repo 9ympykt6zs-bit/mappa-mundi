@@ -12,7 +12,13 @@ export const USER_FACING_PROGRESS_SKILLS = Object.freeze({
   SPATIAL_RECONSTRUCTION: "spatial-reconstruction",
   CONTEXTUAL_KNOWLEDGE: "contextual-knowledge",
   COUNTRY_LOCATION: "country-location",
-  COUNTRY_IDENTIFICATION: "country-identification"
+  COUNTRY_IDENTIFICATION: "country-identification",
+  RIVER_LOCATION: "river-location",
+  RIVER_IDENTIFICATION: "river-identification",
+  LAKE_LOCATION: "lake-location",
+  LAKE_IDENTIFICATION: "lake-identification",
+  MOUNTAIN_RANGE_LOCATION: "mountain-range-location",
+  MOUNTAIN_RANGE_IDENTIFICATION: "mountain-range-identification"
 });
 
 export const PROGRESS_EVIDENCE_OUTCOME_POLICY = Object.freeze({
@@ -79,6 +85,48 @@ export const PROGRESS_EVIDENCE_RULES = Object.freeze([
     id: "country-identification-retrieval",
     progressSkillId: USER_FACING_PROGRESS_SKILLS.COUNTRY_IDENTIFICATION,
     conceptPattern: /^country-naming:[^:]+$/,
+    canonicalSkillIds: ["identifying"],
+    validatedSourceModes: ["memory-trail"]
+  }),
+  rule({
+    id: "river-location-retrieval",
+    progressSkillId: USER_FACING_PROGRESS_SKILLS.RIVER_LOCATION,
+    conceptPattern: /^river-location:[^:]+$/,
+    canonicalSkillIds: ["locating"],
+    validatedSourceModes: ["journey", "memory-trail"]
+  }),
+  rule({
+    id: "river-identification-retrieval",
+    progressSkillId: USER_FACING_PROGRESS_SKILLS.RIVER_IDENTIFICATION,
+    conceptPattern: /^river-naming:[^:]+$/,
+    canonicalSkillIds: ["identifying"],
+    validatedSourceModes: ["memory-trail"]
+  }),
+  rule({
+    id: "lake-location-retrieval",
+    progressSkillId: USER_FACING_PROGRESS_SKILLS.LAKE_LOCATION,
+    conceptPattern: /^lake-location:[^:]+$/,
+    canonicalSkillIds: ["locating"],
+    validatedSourceModes: ["journey", "memory-trail"]
+  }),
+  rule({
+    id: "lake-identification-retrieval",
+    progressSkillId: USER_FACING_PROGRESS_SKILLS.LAKE_IDENTIFICATION,
+    conceptPattern: /^lake-naming:[^:]+$/,
+    canonicalSkillIds: ["identifying"],
+    validatedSourceModes: ["memory-trail"]
+  }),
+  rule({
+    id: "mountain-range-location-retrieval",
+    progressSkillId: USER_FACING_PROGRESS_SKILLS.MOUNTAIN_RANGE_LOCATION,
+    conceptPattern: /^mountain-range-location:[^:]+$/,
+    canonicalSkillIds: ["locating"],
+    validatedSourceModes: ["journey", "memory-trail"]
+  }),
+  rule({
+    id: "mountain-range-identification-retrieval",
+    progressSkillId: USER_FACING_PROGRESS_SKILLS.MOUNTAIN_RANGE_IDENTIFICATION,
+    conceptPattern: /^mountain-range-naming:[^:]+$/,
     canonicalSkillIds: ["identifying"],
     validatedSourceModes: ["memory-trail"]
   }),

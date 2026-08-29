@@ -1,6 +1,6 @@
 import { CANONICAL_LEARNING_SCHEMA_VERSION } from "./canonical-learning-evidence.js";
 import { createCanonicalUnitedStatesProgressReport } from "./canonical-progress-report-shadow.js?v=20260821-central-america-graduation-1";
-import { PROGRESS_EVIDENCE_POLICY_VERSION } from "./progress-evidence-policy.js?v=20260821-central-america-graduation-1";
+import { PROGRESS_EVIDENCE_POLICY_VERSION } from "./progress-evidence-policy.js?v=20260829-physical-evidence-1";
 import { createUnitedStatesProgressReport } from "./united-states-progress-report.js";
 
 export const CANONICAL_PROGRESS_REPORT_COHORT_STORAGE_KEY = "mappaProgressReportCanonicalCohort";

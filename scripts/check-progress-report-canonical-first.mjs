@@ -241,8 +241,8 @@ const runtimeSource = readFileSync(new URL("../src/maplibre-poc.js", import.meta
 const adapterSource = readFileSync(new URL("../src/canonical-progress-report-shadow.js", import.meta.url), "utf8");
 const coreSource = readFileSync(new URL("../src/canonical-progress-report.js", import.meta.url), "utf8");
 assert.match(runtimeSource, /createUnitedStatesProgressReportReadModel/);
-assert.match(runtimeSource, /repository: loadCanonicalEvidenceRepository\(\)/);
-assert.match(runtimeSource, /progressReportModel = readModel\.report/);
+assert.match(runtimeSource, /const repository = loadCanonicalEvidenceRepository\(\)/);
+assert.match(runtimeSource, /progressReportModel = \{[\s\S]*\.\.\.readModel\.report,[\s\S]*continuationFoundation/);
 assert.match(adapterSource, /applyProgressEvidencePolicy\(events\)/);
 assert.match(coreSource, /scoreBayesianEvidenceCounts\(correctCount, incorrectCount\)/);
 

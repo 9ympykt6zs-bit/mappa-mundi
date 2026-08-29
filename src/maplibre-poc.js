@@ -25,6 +25,11 @@ import { renderUnitedStatesAtlasOverview, renderUnitedStatesAtlasProfile } from 
 import { renderProgressReport } from "./united-states-progress-report-ui.js?v=20260821-central-america-graduation-1";
 import { createUnitedStatesProgressReportReadModel } from "./united-states-progress-report-read-path.js?v=20260821-central-america-graduation-1";
 import {
+  buildUnitedStatesPhysicalFeatureProgressItems,
+  createUnitedStatesPhysicalFeatureProgressReport
+} from "./united-states-physical-feature-progress.js";
+import { createUnitedStatesContinuationFoundation } from "./continuation-readiness.js";
+import {
   ACROSS_UNITED_STATES_EXPEDITION_ID,
   acrossUnitedStatesExpedition,
   acrossUnitedStatesNavigation,
@@ -80,7 +85,7 @@ import {
   adaptCanonicalMentalMapEvaluation,
   adaptCanonicalRetrievalAttempt,
   getCanonicalMentalMapConceptId
-} from "./canonical-learning-evidence.js?v=20260823-us-connections-map-hint-1";
+} from "./canonical-learning-evidence.js?v=20260829-physical-evidence-1";
 import { createMemoryTrailSelectionTrace } from "./selection-trace.js?v=20260821-central-america-graduation-1";
 import {
   loadCanonicalEvidenceRepository,
@@ -8851,16 +8856,34 @@ function launchExpeditionStep(step, options = {}) {
 async function openUnitedStatesProgressReport() {
   await ensureActivityDataLoaded();
   const items = getUnitedStatesMemoryTrailItems();
+  const repository = loadCanonicalEvidenceRepository();
   const readModel = createUnitedStatesProgressReportReadModel({
     items,
     unitedStatesMemoryTrailState: loadUnitedStatesMemoryTrailProgress(items),
     dailyTrailState: loadDailyTrailState(),
     dailyTrailItems: getUnitedStatesProgressReportDailyTrailItems(),
     placeMasteryState: loadPlaceMastery(),
-    repository: loadCanonicalEvidenceRepository()
+    repository
   });
-  progressReportModel = readModel.report;
-  if (isLocalDevAccessAllowed()) window.mappaProgressReportReadDebug = readModel.debug;
+  const physicalFeatureItems = buildUnitedStatesPhysicalFeatureProgressItems(activities);
+  const physicalFeatureProgressReport = createUnitedStatesPhysicalFeatureProgressReport({
+    items: physicalFeatureItems,
+    repository
+  });
+  const continuationFoundation = createUnitedStatesContinuationFoundation({
+    progressReport: readModel.report,
+    physicalFeatureProgressReport
+  });
+  progressReportModel = {
+    ...readModel.report,
+    continuationFoundation
+  };
+  if (isLocalDevAccessAllowed()) {
+    window.mappaProgressReportReadDebug = {
+      ...readModel.debug,
+      continuationFoundation
+    };
+  }
   if (readModel.selection.fallback && readModel.selection.reason.startsWith("canonical-")) {
     console.warn("Progress Report used its safe legacy fallback.", readModel.debug);
   }

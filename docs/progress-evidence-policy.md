@@ -26,6 +26,12 @@ The policy decision key is the canonical `conceptId + skillId`. Source mode and 
 | Capital Identification | `capital-naming:{state}:{capital}` + `identifying` | Supported |
 | Country Location | `country-location:{country}` + `locating` | Supported for configured Journey and Memory Trail producers |
 | Country Identification | `country-naming:{country}` + `identifying` | Supported for configured Memory Trail producers |
+| River Location | `river-location:{river}` + `locating` | Supported for configured Journey and Memory Trail producers |
+| River Identification | `river-naming:{river}` + `identifying` | Supported for configured Memory Trail producers |
+| Lake Location | `lake-location:{lake}` + `locating` | Supported for configured Journey and Memory Trail producers |
+| Lake Identification | `lake-naming:{lake}` + `identifying` | Supported for configured Memory Trail producers |
+| Mountain Range Location | `mountain-range-location:{range}` + `locating` | Supported for configured Journey and Memory Trail producers |
+| Mountain Range Identification | `mountain-range-naming:{range}` + `identifying` | Supported for configured Memory Trail producers |
 | Capital-of Relationship | `state-capital:{state}:{capital}` + `relationship-recall` | Supported by U.S. Connections |
 | Geographic Relationships | `relationship:*` + `relationship-recall` or `sequencing` | Supported for Mental Map and U.S. Connections evidence |
 | Spatial Reconstruction | `state-reconstruction:{state}` + `spatial-reconstruction` | Supported as a distinct skill, not State Location |
@@ -45,6 +51,8 @@ Context cannot yet contribute. Canonical v1 has no contextual-recall skill, and 
 | Capital place-to-name | `capital-naming:*` + `identifying` | Capital Identification | Include |
 | Configured country Journey/Memory Trail name-to-place | `country-location:*` + `locating` | Country Location | Include after activity-contract validation |
 | Configured country Memory Trail place-to-name | `country-naming:*` + `identifying` | Country Identification | Include after activity-contract validation |
+| Configured river, lake, or mountain-range Journey/Memory Trail name-to-place | Type-specific `*-location:*` + `locating` | Matching physical-feature location skill | Include after activity-contract validation |
+| Configured river, lake, or mountain-range Memory Trail place-to-name | Type-specific `*-naming:*` + `identifying` | Matching physical-feature identification skill | Include after activity-contract validation |
 | U.S. Connections capital question in either prompt direction | `state-capital:*` + `relationship-recall` | Capital-of Relationship | Include; both directions share one history |
 | U.S. Connections international-border, coast, river, Great Lake, or mountain-range question | `relationship:*` + `relationship-recall` | Geographic Relationships | Include under the state or states named by the fixed concept; Census-region metadata does not generate learner-facing evidence |
 | Correct U.S. Connections response after opening the unlabeled map | Same relationship mapping + `assisted` | Exposure provenance only | Retain as assisted evidence; add no correct/incorrect Bayesian count under the existing outcome policy |
@@ -85,7 +93,23 @@ Capital-of Relationship answers a different question—knowing which capital bel
 - Mental Map `relationship-recall` and `sequencing` contribute to Geographic Relationships. They do not contribute to State Location merely because the response contains state IDs.
 - Mental Map content cannot contribute to Contextual Knowledge until the canonical contract carries an approved contextual skill and taxonomy-qualified concept.
 
-## 8. Historical compatibility
+## 8. Physical-feature family and continuation treatment
+
+The physical-feature Progress Report foundation groups canonical histories into Rivers, Lakes, Mountain Ranges, and Coasts without collapsing their underlying skills. A river record may consume its distinct location, identification, and authored river-through relationship histories. Lakes and mountain ranges follow the same pattern. Coasts currently consume only the authored `relationship:coast:{state}:{water}` relationship-recall histories because there is no standalone coast locating or naming activity. The grouping does not create duplicate evidence or claim a skill that was not assessed.
+
+The existing Progress Report labels also provide the provisional continuation-readiness vocabulary:
+
+| Progress Report label | Continuation interpretation |
+| --- | --- |
+| Not started | Needs learning |
+| Building | Needs learning |
+| Needs review | Meaningful known weakness |
+| Going well | Sufficient to continue |
+| Strong | Sufficient to continue |
+
+An objective is ready to advance only when every required family is Going well or Strong and none is a meaningful weakness. This read-only signal is not mastery, permanent retention, regional Demonstrated status, or activity completion. Within an objective, deterministic gap priority is Needs review, then Building, then Not started, then Going well/Strong; stable configured family order breaks ties.
+
+## 9. Historical compatibility
 
 Do not create historical canonical events.
 
@@ -99,7 +123,7 @@ For a future existing-user migration:
 
 Brand-new learners can start with canonical-only histories. Existing learners require the baseline/cutover design above before migration.
 
-## 9. Double-counting rules
+## 10. Double-counting rules
 
 - `eventId` is the action identity and deduplication key.
 - A current v1 event maps to exactly one policy history. Multiple contributions would require an explicit future rule proving that the action measured multiple skills.
@@ -108,7 +132,7 @@ Brand-new learners can start with canonical-only histories. Existing learners re
 - Consumers score policy history counts. Those counts must never be added to the raw events that produced them.
 - Legacy baselines and canonical events require a recorded cutover boundary; otherwise their overlapping period must not be summed.
 
-## 10. Open questions
+## 11. Open questions
 
 - What canonical concept and skill vocabulary should represent contextual recall?
 - How should approved U.S. taxonomy tags be bound to evidence events without duplicating concept metadata?
@@ -117,8 +141,8 @@ Brand-new learners can start with canonical-only histories. Existing learners re
 - How should ambiguous combined legacy state-practice baselines appear after skill-separated canonical evidence begins?
 - What producer-parity threshold is required before a new mode may affect learner-facing progress?
 
-## 11. Migration readiness criteria
+## 12. Migration readiness criteria
 
-A canonical-first implementation for brand-new learners is active for State Location, State Identification, Capital Location, Capital Identification, Capital-of Relationship, and fixed Geographic Relationships behind the guarded selector. The existing optional Geographic Relationships category appears only after canonical relationship evidence exists; Spatial Reconstruction remains policy-defined but is not promoted into the current UI. Context remains blocked because its canonical contract is incomplete.
+A canonical-first implementation for brand-new learners is active for State Location, State Identification, Capital Location, Capital Identification, Capital-of Relationship, fixed Geographic Relationships, and the configured physical-feature retrieval histories behind the guarded selector. Physical family categories and continuation-readiness outputs are available in the data/developer foundation but are not added to the learner-facing Progress Report layout in this slice. The existing optional Geographic Relationships category appears only after canonical relationship evidence exists; Spatial Reconstruction remains policy-defined but is not promoted into the current UI. Context remains blocked because its canonical contract is incomplete.
 
 Existing learners are not migration-ready. U.S. Connections creates only new live relationship evidence and never fabricates historical events. Migration remains blocked on a versioned legacy-baseline format, a canonical cutover boundary, overlap prevention, and an explicit display treatment for combined historical state-practice evidence.

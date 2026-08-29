@@ -7,7 +7,7 @@ import {
   createEmptyCanonicalEvidenceRepository,
   getAllCanonicalEvidenceEvents
 } from "./canonical-learning-evidence-repository.js";
-import { applyProgressEvidencePolicy } from "./progress-evidence-policy.js?v=20260821-central-america-graduation-1";
+import { applyProgressEvidencePolicy } from "./progress-evidence-policy.js?v=20260829-physical-evidence-1";
 
 const demonstratedCategoryIds = new Set(["demonstrated", "strong-evidence"]);
 
