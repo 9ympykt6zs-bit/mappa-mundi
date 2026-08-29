@@ -8,7 +8,7 @@ const index = fs.readFileSync("index.html", "utf8");
   "UNITED_STATES_MEMORY_TRAIL_SOURCE",
   "source: UNITED_STATES_MEMORY_TRAIL_SOURCE",
   "currentAppScreen === \"united-states-trail-gameplay\"",
-  "function startUnitedStatesMemoryTrailSession()",
+  "function startUnitedStatesMemoryTrailSession(options = {})",
   "function resumeUnitedStatesMemoryTrailSession(",
   "function completeUnitedStatesMemoryTrailSession(",
   "function renderUnitedStatesMemoryTrailSummary()",

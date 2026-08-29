@@ -20,7 +20,7 @@ async function startMountainRangeLocatingActivity(page) {
   await page.locator('[data-difficulty-id="medium"]').click();
   await page.getByRole("button", { name: "Start Journey" }).click();
   await expect(page.locator("#memory-trail-overlay")).toBeVisible();
-  await page.locator("#memory-trail-overlay").getByRole("button", { name: "Play Now" }).click();
+  await page.locator("#memory-trail-overlay").getByRole("button", { name: "Label Map" }).click();
   await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__?.getCurrentActivity()?.id), {
     timeout: 20_000
   }).toBe("us-mountain-ranges");
