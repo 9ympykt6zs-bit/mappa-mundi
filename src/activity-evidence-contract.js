@@ -1,4 +1,17 @@
-const supportedEntityTypes = new Set(["state", "capital", "country"]);
+export const CANONICAL_RETRIEVAL_ENTITY_TYPES = Object.freeze([
+  "state",
+  "capital",
+  "country",
+  "river",
+  "lake",
+  "mountain-range"
+]);
+
+const supportedEntityTypes = new Set(CANONICAL_RETRIEVAL_ENTITY_TYPES);
+
+export function isCanonicalRetrievalEntityType(entityType) {
+  return supportedEntityTypes.has(entityType);
+}
 
 export function validateActivityEvidenceContract(contract = {}) {
   const errors = [];

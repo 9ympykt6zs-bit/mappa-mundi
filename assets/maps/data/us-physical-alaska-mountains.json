@@ -6,6 +6,7 @@
   "visibleAnswerLimit": 2,
   "memoryTrailNewTargetLimit": 2,
   "memoryTrailRequireAllTargets": true,
+  "canonicalEvidence": { "entityType": "mountain-range" },
   "map": {
     "region": "united-states",
     "regionView": { "center": [-153.8, 65.0], "zoom": 3.0 },

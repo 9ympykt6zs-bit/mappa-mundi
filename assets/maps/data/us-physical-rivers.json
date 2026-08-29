@@ -7,6 +7,7 @@
   "memoryTrailNewTargetLimit": 5,
   "memoryTrailRequireAllTargets": true,
   "memoryTrailAutoStart": true,
+  "canonicalEvidence": { "entityType": "river" },
   "map": {
     "region": "united-states",
     "regionView": { "center": [-98.5, 39.2], "zoom": 3.05 },

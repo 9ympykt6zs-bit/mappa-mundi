@@ -53,7 +53,10 @@ import {
   isGlobeNavigationPrototypeEnabled
 } from "./globe-navigation-prototype.js?v=20260827-globe-navigation-correctness-1";
 import { evaluateMapTargetSelection } from "./maplibre/learning-integrity.js";
-import { getCanonicalRetrievalItemForActivity } from "./activity-evidence-contract.js";
+import {
+  getCanonicalRetrievalItemForActivity,
+  isCanonicalRetrievalEntityType
+} from "./activity-evidence-contract.js";
 import { loadPlaceMastery } from "./place-mastery-store.js";
 import {
   activityProgressStorageKey,
@@ -3790,7 +3793,7 @@ function recordCanonicalMemoryTrailEvidence(memoryTrail, targetId, result, promp
   const plan = getCanonicalMemoryTrailPlan(memoryTrail);
   const item = (plan?.allItems || []).find((candidate) => candidate?.targetId === targetId)
     || getCanonicalRetrievalItemForActivity(session?.currentActivity, targetId);
-  if (!item || !["state", "capital", "country"].includes(item.type)) return;
+  if (!item || !isCanonicalRetrievalEntityType(item.type)) return;
   const sourceMode = isUnitedStatesTrail ? "us-memory-trail" : isDailyTrail ? "daily-trail" : "memory-trail";
   const sessionId = plan?.sessionId || `${sourceMode}:${memoryTrail.startedAt}`;
   const promptIdentity = memoryTrail.currentPromptKey || `${sequence}:${promptType}:${targetId}`;

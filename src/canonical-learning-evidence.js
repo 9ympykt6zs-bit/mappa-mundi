@@ -141,6 +141,19 @@ function countryConceptIds(countryId) {
   return [`country-location:${countryId}`, `country-naming:${countryId}`];
 }
 
+const physicalFeatureConceptNamespaceByType = Object.freeze({
+  river: "river",
+  lake: "lake",
+  "mountain-range": "mountain-range"
+});
+
+function physicalFeatureConceptIds(type, targetId) {
+  const namespace = physicalFeatureConceptNamespaceByType[type];
+  return namespace
+    ? [`${namespace}-location:${targetId}`, `${namespace}-naming:${targetId}`]
+    : null;
+}
+
 export function getCanonicalRetrievalMappings(item = {}) {
   const type = requireNonEmptyString(item.type, "item.type");
   const targetId = requireNonEmptyString(item.targetId, "item.targetId");
@@ -161,6 +174,13 @@ export function getCanonicalRetrievalMappings(item = {}) {
     return [
       { conceptId: countryConceptIds(targetId)[0], skillId: "locating", promptType: "name_to_place" },
       { conceptId: countryConceptIds(targetId)[1], skillId: "identifying", promptType: "place_to_name" }
+    ];
+  }
+  const physicalConceptIds = physicalFeatureConceptIds(type, targetId);
+  if (physicalConceptIds) {
+    return [
+      { conceptId: physicalConceptIds[0], skillId: "locating", promptType: "name_to_place" },
+      { conceptId: physicalConceptIds[1], skillId: "identifying", promptType: "place_to_name" }
     ];
   }
   throw new TypeError(`No canonical retrieval mapping exists for item type: ${type}`);

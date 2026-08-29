@@ -4,6 +4,7 @@
   "targetNoun": "body of water",
   "promptText": "Name these bodies of water.",
   "visibleAnswerLimit": 6,
+  "canonicalEvidence": { "entityType": "lake" },
   "map": {
     "region": "united-states",
     "regionView": { "center": [-96.0, 44.0], "zoom": 2.65 },
