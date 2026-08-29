@@ -79,7 +79,7 @@ function createMemorySource(unitedStatesMemoryTrailState, items = []) {
   const itemIdsByCanonicalKey = new Map(items.map((item) => [`${item.type}:${item.targetId}`, [item.id]]));
   return {
     id: "united-states-memory-trail",
-    label: "United States Memory Trail",
+    label: "United States Guided Learning",
     state: unitedStatesMemoryTrailState || {},
     itemIdsByCanonicalKey
   };
@@ -338,7 +338,7 @@ export function createUnitedStatesProgressReport({
     ],
     categories,
     dataSources: [
-      "United States Memory Trail item-level correct and miss counts",
+      "United States Guided Learning item-level correct and miss counts",
       "Daily Trail item-level correct and miss counts for matching U.S. targets",
       "Skill-specific place signals when available",
       "Scheduler status shown separately from progress"

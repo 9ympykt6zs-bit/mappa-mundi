@@ -137,7 +137,7 @@ test("Across the United States submenus preserve activity return context", async
   expect(runtimeErrors).toEqual([]);
 });
 
-test("Daily Trail and United States Memory Trail reach guided practice", async ({ page }) => {
+test("Daily Trail and United States Guided Learning reach guided practice", async ({ page }) => {
   const runtimeErrors = collectRuntimeErrors(page);
   await openFreshMainMenu(page);
 
@@ -241,8 +241,8 @@ test("scoped resets preserve canonical learning history", async ({ page }) => {
     unitedStates: localStorage.getItem("mappaUnitedStatesMemoryTrailProgress")
   }))).toEqual({ canonical: canonicalHistory, daily: null, unitedStates: JSON.stringify({ hasStarted: true }) });
 
-  await page.getByRole("button", { name: "Reset United States Memory Trail" }).click();
-  await expect(page.getByRole("alertdialog", { name: "Reset United States Memory Trail?" })).toBeVisible();
+  await page.getByRole("button", { name: "Reset United States Guided Learning" }).click();
+  await expect(page.getByRole("alertdialog", { name: "Reset United States Guided Learning?" })).toBeVisible();
   await page.getByRole("button", { name: "Reset United States Trail" }).click();
   expect(await page.evaluate(() => ({
     canonical: localStorage.getItem("mappaMundiCanonicalEvidence"),

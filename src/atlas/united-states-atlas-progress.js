@@ -130,7 +130,7 @@ export function createUnitedStatesAtlasProgress({ dailyTrailState, unitedStatesM
   const dailyEvidence = collectSourceEvidence(createDailyTrailState(dailyTrailState), "Daily Trail");
   const memoryTrailEvidence = collectSourceEvidence(
     createUnitedStatesMemoryTrailState(unitedStatesMemoryTrailState),
-    "United States Memory Trail"
+    "United States Guided Learning"
   );
   const statesById = {};
   const counts = Object.fromEntries(UNITED_STATES_ATLAS_LEARNING_STATUSES.map((status) => [status, 0]));

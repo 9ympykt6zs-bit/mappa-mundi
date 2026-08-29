@@ -15,7 +15,7 @@ const index = fs.readFileSync("index.html", "utf8");
   "function restoreUnitedStatesMemoryTrailGameplayFromSettings()",
   "function resetUnitedStatesMemoryTrailProgress()",
   "function createSettingsMemoryTrailExitControl()",
-  "Exit United States Memory Trail",
+  "Exit United States Guided Learning",
   "function isActiveAdaptiveTrailMapResponseScreen(memoryTrail = getActiveMemoryTrail())",
   "isActiveAdaptiveTrailMapResponseScreen(activeMemoryTrail)",
   "handleMemoryTrailTargetTap(resolvedMemoryTrailTargetIds, memoryTrailMapPoint);",
@@ -62,7 +62,7 @@ assert.ok(
 );
 
 assert.ok(index.includes("main-menu-us-memory-trail-button"), "Main menu card should exist.");
-assert.ok(index.includes("United States Memory Trail"), "Main menu card should use the approved title.");
+assert.ok(index.includes("United States Guided Learning"), "Main menu card should use the approved learner-facing title.");
 assert.ok(
   /pendingUnitedStatesMemoryTrailGameplaySettingsReturn/.test(source)
     && /restoreUnitedStatesMemoryTrailGameplayFromSettings/.test(source),

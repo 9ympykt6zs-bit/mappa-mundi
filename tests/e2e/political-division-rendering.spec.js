@@ -15,12 +15,12 @@ async function openPoliticalDivisionSection(page, { country, sectionTitle, activ
   await openLearnYourWorld(page);
   await page.getByRole("button", { name: `Select ${country}` }).click();
   const section = page.getByRole("article").filter({ hasText: sectionTitle });
-  await section.getByRole("button", { name: "Memory Trail" }).click();
+  await section.getByRole("button", { name: "Guided Learning" }).click();
   await expect.poll(
     () => page.evaluate(() => window.__MAPPA_TEST_API__?.getCurrentActivity()?.id),
     { timeout: 20_000 }
   ).toBe(activityId);
-  await expect(page.getByRole("dialog", { name: "Try Memory Trail?" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Try Guided Learning?" })).toBeVisible();
 }
 
 async function politicalDivisionState(page) {
@@ -67,7 +67,7 @@ test("France renders full context while Southern Regions remains the only eligib
   expect(beforeTrail.contextFeatureIds).toContain("brittany");
   expect(beforeTrail.eligibleFeatureIds).not.toContain("brittany");
 
-  await page.getByRole("button", { name: "Start Memory Trail" }).click();
+  await page.getByRole("button", { name: "Start Guided Learning" }).click();
   await waitForGuidedHighlight(page, "nouvelle-aquitaine");
   const guided = await politicalDivisionState(page);
   expect(guided.highlightFeatureIds).toEqual(["nouvelle-aquitaine"]);
@@ -121,7 +121,7 @@ for (const fixture of [
     expect(beforeTrail.contextFeatureIds).toContain(fixture.nonCurrentTargetId);
     expect(beforeTrail.eligibleFeatureIds).not.toContain(fixture.nonCurrentTargetId);
 
-    await page.getByRole("button", { name: "Start Memory Trail" }).click();
+    await page.getByRole("button", { name: "Start Guided Learning" }).click();
     await waitForGuidedHighlight(page, fixture.expectedFirstTargetId);
     const guided = await politicalDivisionState(page);
     expect(guided.highlightFeatureIds).toEqual([fixture.expectedFirstTargetId]);

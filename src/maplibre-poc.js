@@ -27,8 +27,9 @@ import { createUnitedStatesProgressReportReadModel } from "./united-states-progr
 import {
   ACROSS_UNITED_STATES_EXPEDITION_ID,
   acrossUnitedStatesExpedition,
-  acrossUnitedStatesNavigation
-} from "./across-united-states-expedition.js?v=20260825-us-objective-navigation-1";
+  acrossUnitedStatesNavigation,
+  hasMeaningfulUnitedStatesLearningState
+} from "./across-united-states-expedition.js?v=20260829-learning-terminology-1";
 import { CENTRAL_AMERICA_LEARNING_UNIT_ID } from "./central-america-learning-unit.js";
 import { geographyLearningUnits, getGeographyLearningUnit } from "./geography-learning-unit-registry.js";
 import { createExpeditionReadModel } from "./expedition-framework.js";
@@ -2171,14 +2172,14 @@ const activityCatalogMetadata = {
   "us-physical-rivers": {
     mapSet: "north-america",
     category: "Physical Features",
-    description: "Learn major U.S. rivers with section-aware Memory Trail practice.",
+    description: "Learn major U.S. rivers with section-aware Guided Learning practice.",
     sortOrder: 7.62,
     sectionNumber: 60.5
   },
   "us-mountain-ranges": {
     mapSet: "north-america",
     category: "Physical Features",
-    description: "Learn U.S. mountain ranges with section-aware Memory Trail practice.",
+    description: "Learn U.S. mountain ranges with section-aware Guided Learning practice.",
     sortOrder: 7.63,
     sectionNumber: 61
   },
@@ -3134,7 +3135,7 @@ const audioInstructionVisibleDurationMs = 5200;
 const audioInstructionPhrases = {
   chooseLabel: "Choose a label.",
   tapMatchingPlace: "Tap the matching place on the map.",
-  studyPreview: "Study the places, then try the challenge."
+  studyPreview: "Look over the places, then try the challenge."
 };
 
 const title = document.querySelector("#poc-title");
@@ -3284,11 +3285,17 @@ function updateJourneyMemoryTrailControlVisibility() {
     return;
   }
 
-  const shouldShow = shouldShowJourneyMemoryTrailControl();
+  const isGuidedLearning = currentAppScreen === "united-states-trail-gameplay"
+    && Boolean(activeUnitedStatesMemoryTrailSession?.activityId);
+  const shouldShow = shouldShowJourneyMemoryTrailControl() || isGuidedLearning;
   journeyMemoryTrailButton.hidden = !shouldShow;
   journeyMemoryTrailButton.disabled = !shouldShow;
   journeyMemoryTrailButton.tabIndex = shouldShow ? 0 : -1;
   journeyMemoryTrailButton.setAttribute("aria-hidden", String(!shouldShow));
+  const label = isGuidedLearning ? "Label Map" : "Guided Learning";
+  journeyMemoryTrailButton.textContent = label;
+  journeyMemoryTrailButton.setAttribute("aria-label", label);
+  journeyMemoryTrailButton.title = label;
 }
 
 function createAudioInstructionState(scope) {
@@ -5795,7 +5802,13 @@ function bindUiEvents() {
   });
   browseButton?.addEventListener("click", toggleBrowseDrawer);
   browseCloseButton?.addEventListener("click", closeBrowseDrawer);
-  journeyMemoryTrailButton?.addEventListener("click", startMemoryTrailFromJourneyGameplay);
+  journeyMemoryTrailButton?.addEventListener("click", () => {
+    if (currentAppScreen === "united-states-trail-gameplay") {
+      startLabelMapFromUnitedStatesGuidedLearning();
+      return;
+    }
+    startMemoryTrailFromJourneyGameplay();
+  });
   mainMenuDailyTrailButton?.addEventListener("click", openDailyTrailIntro);
   mainMenuUnitedStatesExpeditionButton?.addEventListener("click", () => { void openExpedition(acrossUnitedStatesExpedition.id); });
   mainMenuCentralAmericaUnitButton?.addEventListener("click", () => { void openExpedition(CENTRAL_AMERICA_LEARNING_UNIT_ID); });
@@ -6841,7 +6854,7 @@ function getAppShellScreenContent(screenId) {
       subtitle: getJourneyDetailSubtitle(selectedJourney)
     },
     study: {
-      title: `Study: ${selectedJourneyTitle}`,
+      title: `Guided Learning: ${selectedJourneyTitle}`,
       subtitle: getJourneyStudySubtitle(selectedJourney, detailIntent)
     },
     "choose-difficulty": {
@@ -6865,7 +6878,7 @@ function getAppShellScreenContent(screenId) {
       subtitle: "Today's trail is complete."
     },
     "united-states-trail-summary": {
-      title: "United States Memory Trail",
+      title: "United States Guided Learning",
       subtitle: "This session is complete."
     },
     expedition: {
@@ -7677,7 +7690,7 @@ function getJourneyMemoryTrailEligibleSteps(journey) {
 function getJourneyDetailSubtitle(journey) {
   const detailIntent = normalizeJourneyDetailIntent(selectedJourneyDetailIntent);
   if (detailIntent === "learn") {
-    return "Learn each section with Memory Trail, then play when you are ready.";
+    return "Learn each section with Guided Learning, then label the map when you are ready.";
   }
 
   if (detailIntent === "challenge") {
@@ -7688,24 +7701,24 @@ function getJourneyDetailSubtitle(journey) {
   const eligibleCount = getJourneyMemoryTrailEligibleSteps(journey).length;
 
   if (eligibleCount === 0) {
-    return "Study the places, then play when you are ready.";
+    return "Preview the places, then label the map when you are ready.";
   }
 
   if (eligibleCount === validSteps.length) {
-    return "Learn each section with Memory Trail, then play when you are ready.";
+    return "Learn each section with Guided Learning, then label the map when you are ready.";
   }
 
-  return "Use Memory Trail for focused sections, then play when you are ready.";
+  return "Use Guided Learning for focused sections, then label the map when you are ready.";
 }
 
 function getJourneyStudySubtitle(journey, intent = normalizeJourneyDetailIntent(selectedJourneyDetailIntent)) {
   if (intent === "learn") {
-    return "Choose a section to learn with Memory Trail.";
+    return "Choose a section for Guided Learning.";
   }
 
   return getJourneyMemoryTrailEligibleSteps(journey).length > 0
-    ? "Memory Trail is available for focused regional sets."
-    : "Study the places before playing.";
+    ? "Guided Learning is available for focused regional sets."
+    : "Preview the places before labeling the map.";
 }
 
 function shouldShowJourneyMemoryTrailRecommendation(context) {
@@ -7749,9 +7762,9 @@ function showJourneyMemoryTrailRecommendation(context) {
   configureMemoryTrailOverlay({
     mode: "journey-recommendation",
     titleText: "Learn this set first?",
-    messageText: "Memory Trail gives you a short adaptive practice session before playing.",
-    primaryText: "Start Memory Trail",
-    secondaryText: "Play Now",
+    messageText: "Guided Learning gives you a short adaptive practice session before labeling the map.",
+    primaryText: "Start Guided Learning",
+    secondaryText: "Label Map",
     showInfo: false
   });
 }
@@ -8082,7 +8095,7 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
   instruction.textContent = "Tap a target or name to show it. Tap it again to hide it.";
   studyCard.hidden = false;
   studyCard.querySelector("strong").textContent = step.title;
-  studyCard.querySelector("span").textContent = "Study Mode";
+  studyCard.querySelector("span").textContent = "Learning Preview";
   runner.enterStudyView();
   renderStudyExplorePanel();
   updateTopBarNavigation();
@@ -8191,17 +8204,17 @@ function renderStudyExplorePanel() {
   const controls = document.createElement("div");
   controls.className = "study-explore-controls";
   const controlDefinitions = activeStudySession?.retryReturnState
-    ? [["Exit Study", exitStudyExplore, "Exit"]]
+    ? [["Exit Preview", exitStudyExplore, "Exit"]]
     : activeStudySession?.journeyActivityReturnState
-      ? [["Return to Activity", () => { void returnToJourneyActivityFromStudy(); }, "Return"]]
+      ? [["Label Map", () => { void returnToJourneyActivityFromStudy(); }, "Label Map"]]
     : activeStudySession?.journeyPlayReturn
       ? [
-          ["Play Journey", startJourneyFromStudyRecommendation, "Play"],
-          ["Exit Study", exitStudyExplore, "Exit"]
+          ["Label Map", startJourneyFromStudyRecommendation, "Label Map"],
+          ["Exit Preview", exitStudyExplore, "Exit"]
         ]
     : [
-      ["Practice This Set", launchPracticeForStudySet, "Practice"],
-      ["Exit Study", exitStudyExplore, "Exit"]
+      ["Label Map", launchPracticeForStudySet, "Label Map"],
+      ["Exit Preview", exitStudyExplore, "Exit"]
     ];
 
   controlDefinitions.forEach(([label, handler, mobileLabel]) => {
@@ -8418,10 +8431,10 @@ function showMemoryTrailOfferOverlay() {
   trackEvent("memory_trail_prompt_shown", getMemoryTrailAnalyticsContext());
   configureMemoryTrailOverlay({
     mode: "offer",
-    titleText: "Try Memory Trail?",
+    titleText: "Try Guided Learning?",
     messageText: "First, learn a small group of places. Then practice finding them and naming them from memory.",
-    primaryText: "Start Memory Trail",
-    secondaryText: "Study Normally",
+    primaryText: "Start Guided Learning",
+    secondaryText: "View This Set",
     showInfo: true
   });
 }
@@ -8440,14 +8453,14 @@ function showMemoryTrailCompletionOverlay() {
     mode: "complete",
     titleText: hasNextSection && memoryTrail?.sectionTitle
       ? `${memoryTrail.sectionTitle} Complete`
-      : "Memory Trail Complete",
+      : "Guided Learning Complete",
     messageText: hasNextSection
       ? `Next: ${nextSection.title}`
       : "Do you want to repeat this exercise?",
     primaryText: hasNextSection
       ? `Continue: ${nextSection.title}`
-      : "Do Memory Trail Again",
-    secondaryText: canReturnToActivity ? "Return to Activity" : canPlayJourney ? "Play Journey" : "Return to Study",
+      : "Do Guided Learning Again",
+    secondaryText: canReturnToActivity ? "Label Map" : canPlayJourney ? "Label Map" : "Return to Preview",
     showInfo: false
   });
 }
@@ -8584,35 +8597,69 @@ function countCanonicalAttemptsForExpedition(events, predicate) {
 }
 
 async function createAcrossUnitedStatesExpeditionModel() {
+  return createExpeditionReadModel(acrossUnitedStatesExpedition, createAcrossUnitedStatesExpeditionEvidence().evidence);
+}
+
+function countSavedUnitedStatesActivityTargets() {
+  return Object.entries(activityProgress).reduce((count, [progressKey, targetIds]) => {
+    const activityId = progressKey.split(":")[0];
+    return /^us-(states|capitals|physical|mountain)/.test(activityId) && Array.isArray(targetIds)
+      ? count + targetIds.length
+      : count;
+  }, 0);
+}
+
+function countUnitedStatesJourneyContinuations() {
+  const progress = loadProgress();
+  return ["united-states", "us-capitals"].filter((journeyId) => {
+    const journeyProgress = getJourneyProgress(journeyId, progress);
+    return journeyProgress.currentStepIndex > 0
+      || Object.values(journeyProgress.completedSteps || {}).some((step) => Object.values(step).some(Boolean));
+  }).length;
+}
+
+function createAcrossUnitedStatesExpeditionEvidence() {
   const trailState = loadUnitedStatesMemoryTrailProgress();
   const canonicalEvents = loadCanonicalEvidenceRepository().events || [];
   const connectionActivityIds = new Set(["us-state-capital-relationships", "us-atlas-relationships"]);
   const reconstructionEvents = canonicalEvents.filter((event) => event.sourceMode === "map-reconstruction");
-  return createExpeditionReadModel(acrossUnitedStatesExpedition, {
-    usJourneyStateStepsCompleted: countCompletedJourneyStepsForExpedition("united-states", (step) => step.kind === "states"),
-    usJourneyPhysicalStepsCompleted: countCompletedJourneyStepsForExpedition("united-states", (step) => step.kind === "physical-features"),
-    usCapitalJourneyStepsCompleted: countCompletedJourneyStepsForExpedition("us-capitals"),
-    usTrailHasStarted: trailState.hasStarted,
-    usTrailIntroducedCount: trailState.introducedItemIds?.length || 0,
-    usConnectionsAttempts: countCanonicalAttemptsForExpedition(canonicalEvents, (event) => (
-      event.sourceMode === "mental-map" && connectionActivityIds.has(event.sourceActivityId)
-    )),
-    mentalMapAttempts: countCanonicalAttemptsForExpedition(canonicalEvents, (event) => (
-      event.sourceMode === "mental-map" && !connectionActivityIds.has(event.sourceActivityId)
-    )),
-    regionalReconstructionAttempts: countCanonicalAttemptsForExpedition(reconstructionEvents, (event) => (
-      event.sourceActivityId !== "rebuild-lower-48"
-    )),
-    lower48ReconstructionAttempts: countCanonicalAttemptsForExpedition(reconstructionEvents, (event) => (
-      event.sourceActivityId === "rebuild-lower-48"
-    ))
-  });
+  return {
+    canonicalEvents,
+    evidence: {
+      usJourneyStateStepsCompleted: countCompletedJourneyStepsForExpedition("united-states", (step) => step.kind === "states"),
+      usJourneyPhysicalStepsCompleted: countCompletedJourneyStepsForExpedition("united-states", (step) => step.kind === "physical-features"),
+      usCapitalJourneyStepsCompleted: countCompletedJourneyStepsForExpedition("us-capitals"),
+      usTrailHasStarted: trailState.hasStarted,
+      usTrailIntroducedCount: trailState.introducedItemIds?.length || 0,
+      usSavedActivityTargetCount: countSavedUnitedStatesActivityTargets(),
+      usJourneyContinuationCount: countUnitedStatesJourneyContinuations(),
+      usConnectionsAttempts: countCanonicalAttemptsForExpedition(canonicalEvents, (event) => (
+        event.sourceMode === "mental-map" && connectionActivityIds.has(event.sourceActivityId)
+      )),
+      mentalMapAttempts: countCanonicalAttemptsForExpedition(canonicalEvents, (event) => (
+        event.sourceMode === "mental-map" && !connectionActivityIds.has(event.sourceActivityId)
+      )),
+      regionalReconstructionAttempts: countCanonicalAttemptsForExpedition(reconstructionEvents, (event) => (
+        event.sourceActivityId !== "rebuild-lower-48"
+      )),
+      lower48ReconstructionAttempts: countCanonicalAttemptsForExpedition(reconstructionEvents, (event) => (
+        event.sourceActivityId === "rebuild-lower-48"
+      ))
+    }
+  };
 }
 
 async function startAcrossUnitedStatesGlobeLearning() {
   activeExpeditionDefinition = acrossUnitedStatesExpedition;
-  activeExpeditionModel = await createAcrossUnitedStatesExpeditionModel();
+  const expeditionEvidence = createAcrossUnitedStatesExpeditionEvidence();
+  activeExpeditionModel = createExpeditionReadModel(acrossUnitedStatesExpedition, expeditionEvidence.evidence);
   activeExpeditionObjectiveId = "";
+  if (!hasMeaningfulUnitedStatesLearningState(expeditionEvidence.evidence, expeditionEvidence.canonicalEvents)) {
+    returnToExpeditionId = ACROSS_UNITED_STATES_EXPEDITION_ID;
+    returnToExpeditionObjectiveId = "";
+    await startOrContinueUnitedStatesMemoryTrail();
+    return;
+  }
   const recommendedStep = activeExpeditionModel.steps.find((step) => (
     step.id === activeExpeditionModel.recommendedStepId
   ));
@@ -14995,7 +15042,7 @@ function createDailyTrailPromptTargetChip(memoryTrail) {
   const chip = document.createElement("div");
   chip.className = "label-chip memory-trail-response-chip daily-trail-prompt-target-chip";
   chip.setAttribute("role", "status");
-  chip.setAttribute("aria-label", `Memory Trail target: ${labelText}`);
+  chip.setAttribute("aria-label", `Guided Learning target: ${labelText}`);
   chip.appendChild(createChipLabelText(labelText));
 
   const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(labelText);
@@ -15045,7 +15092,7 @@ function renderMemoryTrailPanel() {
   } else {
     const kicker = document.createElement("span");
     kicker.className = "memory-trail-kicker";
-    kicker.textContent = "Memory Trail";
+    kicker.textContent = "Guided Learning";
 
     const title = document.createElement("strong");
     const phaseLabel = memoryTrail.sessionPhase === "learn" ? "Learn" : "Practice";
@@ -15125,7 +15172,7 @@ function renderMemoryTrailPanel() {
   controls.className = "study-explore-controls memory-trail-controls";
 
   if (memoryTrail.phase !== "complete" && !usesCompactAdaptivePrompt && currentAppScreen === "study-explore") {
-    appendStudyControlButton(controls, "Exit Memory Trail", exitMemoryTrail, "Exit Trail");
+    appendStudyControlButton(controls, "Exit Guided Learning", exitMemoryTrail, "Exit");
   }
 
   panel.appendChild(status);
@@ -15231,7 +15278,7 @@ function createMemoryTrailResponseChip(memoryTrail) {
   const chip = document.createElement("div");
   chip.className = "label-chip memory-trail-response-chip";
   chip.setAttribute("role", "status");
-  chip.setAttribute("aria-label", `Memory Trail target: ${labelText}`);
+  chip.setAttribute("aria-label", `Guided Learning target: ${labelText}`);
   chip.appendChild(createChipLabelText(labelText));
 
   const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(labelText);
@@ -15715,7 +15762,7 @@ function renderOnboardingScreen() {
     ["1.", "Pick a Journey", "Choose a guided path like Continents and Oceans."],
     ["2.", "Select a Label", "Tap one of the answer chips at the bottom of the screen."],
     ["3.", "Tap the Map", "Tap the matching place on the globe. Correct answers stay on the map."],
-    ["4.", "Study When Needed", "Use Study to preview or practice without changing journey progress."]
+    ["4.", "Learn Before Labeling", "Use Guided Learning or a preview when you want support before labeling the map."]
   ].forEach(([stepText, titleText, copyText]) => {
     const card = document.createElement("article");
     card.className = "onboarding-card";
@@ -19910,7 +19957,7 @@ async function startUnitedStatesMemoryTrailSession() {
   const activity = getActivityById(plan.activeActivityId);
 
   if (!activity || plan.playItems.length === 0) {
-    showFeedback("United States Memory Trail is not ready yet.");
+    showFeedback("United States Guided Learning is not ready yet.");
     return false;
   }
 
@@ -20302,6 +20349,11 @@ function persistActiveUnitedStatesMemoryTrailSnapshot(memoryTrail = getActiveMem
 function exitUnitedStatesMemoryTrailGameplay() {
   persistActiveUnitedStatesMemoryTrailSnapshot(getActiveMemoryTrail(), "exited");
   trackMemoryTrailAbandoned();
+  clearUnitedStatesMemoryTrailGameplay();
+  returnFromExpeditionActivity("main-menu");
+}
+
+function clearUnitedStatesMemoryTrailGameplay() {
   clearMemoryTrailState({ restoreReveals: false });
   activeStudySession = null;
   activeUnitedStatesMemoryTrailSession = null;
@@ -20315,7 +20367,25 @@ function exitUnitedStatesMemoryTrailGameplay() {
     answerBank.innerHTML = "";
   }
   resetActivityAttemptState();
-  returnFromExpeditionActivity("main-menu");
+}
+
+function startLabelMapFromUnitedStatesGuidedLearning() {
+  const activityId = activeUnitedStatesMemoryTrailSession?.activityId;
+  const journeyId = activityId?.startsWith("us-capitals-") ? "us-capitals" : "united-states";
+  const journey = journeyPresets.find((candidate) => candidate.id === journeyId);
+  if (!journey) return;
+  const stepIndex = getValidJourneySteps(journey).findIndex((step) => step.activityId === activityId);
+  if (stepIndex < 0) return;
+
+  persistActiveUnitedStatesMemoryTrailSnapshot(getActiveMemoryTrail(), "exited");
+  trackMemoryTrailAbandoned();
+  clearUnitedStatesMemoryTrailGameplay();
+  startJourneyGameplayFromLaunchContext({
+    journeyId,
+    stepIndex,
+    difficultyId: getPreferredJourneyDifficultyId(journey, loadProgress()),
+    preserveProgress: true
+  });
 }
 
 function resetUnitedStatesMemoryTrailProgress() {
@@ -20601,7 +20671,7 @@ function renderJourneyDetail(journey) {
     const pathMessage = document.createElement("p");
     pathMessage.className = "journey-detail-progress";
     pathMessage.textContent = isLearnIntent
-      ? "Learn each section with Memory Trail, then play when you are ready."
+      ? "Learn each section with Guided Learning, then label the map when you are ready."
       : "Choose your difficulty, then start the journey.";
     summary.appendChild(pathMessage);
   }
@@ -20674,15 +20744,15 @@ function renderJourneyDetail(journey) {
 
     const studyAction = hasMemoryTrailEligibleStep
       ? {
-          title: "Learn with Memory Trail",
-          description: "Study a section with guided map memory before playing.",
-          buttonLabel: "Learn with Memory Trail",
+          title: "Guided Learning",
+          description: "Learn a section with guided map memory before labeling the map.",
+          buttonLabel: "Start Guided Learning",
           infoText: "Learn a few places, then practice finding and naming them from memory. Missed places come back for review, and the session adjusts as you play."
         }
       : {
-          title: "Study This Journey",
-          description: "Preview the places before playing.",
-          buttonLabel: "Study This Journey",
+          title: "Preview This Journey",
+          description: "Preview the places before labeling the map.",
+          buttonLabel: "Preview This Journey",
           infoText: ""
         };
 
@@ -21004,10 +21074,10 @@ function renderStudySelectionScreen(journey) {
   const message = document.createElement("p");
   message.className = "journey-mode-message";
   message.textContent = isLearnIntent
-    ? "Choose a section to learn with Memory Trail."
+    ? "Choose a section for Guided Learning."
     : eligibleMemoryTrailCount > 0
-    ? "Study a section, then practice it when you're ready. Memory Trail is available for focused regional sets."
-    : "Study the places, then practice when you're ready.";
+    ? "Preview a section, then label it when you're ready. Guided Learning is available for focused regional sets."
+    : "Preview the places, then label the map when you're ready.";
 
   const stepList = document.createElement("div");
   stepList.className = "study-step-list";
@@ -21037,7 +21107,7 @@ function renderStudySelectionScreen(journey) {
     previewButton.textContent = isJourneyLink
       ? "Open"
       : isLearnIntent && isMemoryTrailEligible(activity)
-      ? "Memory Trail"
+      ? "Guided Learning"
       : "Learn";
     previewButton.disabled = !activity && !isJourneyLink;
     previewButton.addEventListener("click", () => {
@@ -21308,7 +21378,7 @@ function createSettingsMemoryTrailExitControl() {
   const exitButton = document.createElement("button");
   exitButton.type = "button";
   exitButton.className = "settings-reset-button settings-hub-button";
-  exitButton.textContent = "Exit United States Memory Trail";
+  exitButton.textContent = "Exit United States Guided Learning";
   exitButton.dataset.settingsControl = "exit-us-memory-trail";
   exitButton.addEventListener("click", () => {
     pendingUnitedStatesMemoryTrailGameplaySettingsReturn = false;
@@ -21338,7 +21408,7 @@ function renderCustomizeScreen() {
   const audioSection = createSettingsMenuSection("Audio", "Control optional spoken directions separately from place-name pronunciation.", false, "settings-menu-section", "audio");
   audioSection.content.appendChild(renderAudioSettings());
 
-  const studyTargetsSection = createSettingsMenuSection("Study Targets", "Saved preferences for planning study sets. Gameplay filtering is not fully wired yet.", false, "settings-menu-section", "study-targets");
+  const studyTargetsSection = createSettingsMenuSection("Learning Targets", "Saved preferences for planning learning sets. Gameplay filtering is not fully wired yet.", false, "settings-menu-section", "study-targets");
   studyTargetsSection.content.appendChild(renderStudyTargetHierarchy());
 
   const resetSection = createSettingsMenuSection("Reset / Defaults", "Restore the default map layer and study-target preferences.", false, "settings-menu-section", "reset-defaults");
@@ -21547,7 +21617,7 @@ function renderAudioSettings() {
   audioGroup.className = "settings-layer-group";
 
   const heading = document.createElement("h3");
-  heading.textContent = "Memory Trail";
+  heading.textContent = "Guided Learning";
 
   const audioGrid = document.createElement("div");
   audioGrid.className = "settings-layer-grid";
@@ -21565,10 +21635,10 @@ function createMemoryTrailInstructionSpeechToggle() {
   copy.className = "settings-layer-copy";
 
   const labelText = document.createElement("strong");
-  labelText.textContent = "Speak Memory Trail Instructions";
+  labelText.textContent = "Speak Guided Learning Instructions";
 
   const helper = document.createElement("span");
-  helper.textContent = "Speak task directions when Memory Trail changes phase or prompt type.";
+  helper.textContent = "Speak task directions when Guided Learning changes phase or prompt type.";
 
   copy.append(labelText, helper);
 
@@ -21986,12 +22056,12 @@ function renderUnitedStatesMemoryTrailResetControl() {
 
   const copy = document.createElement("p");
   copy.className = "settings-panel-copy";
-  copy.textContent = "Erase United States Memory Trail progress only. Daily Trail, journeys, regional activities, settings, and preferences stay as they are.";
+  copy.textContent = "Erase United States Guided Learning progress only. Daily Trail, journeys, regional activities, settings, and preferences stay as they are.";
 
   const resetButton = document.createElement("button");
   resetButton.type = "button";
   resetButton.className = "settings-reset-button";
-  resetButton.textContent = "Reset United States Memory Trail";
+  resetButton.textContent = "Reset United States Guided Learning";
   resetButton.dataset.settingsControl = "reset-us-memory-trail-progress";
   resetButton.addEventListener("click", () => {
     unitedStatesMemoryTrailResetConfirmationVisible = true;
@@ -22016,7 +22086,7 @@ function renderUnitedStatesMemoryTrailResetConfirmation() {
 
   const title = document.createElement("h3");
   title.id = "us-memory-trail-reset-title";
-  title.textContent = "Reset United States Memory Trail?";
+  title.textContent = "Reset United States Guided Learning?";
 
   const body = document.createElement("p");
   body.id = "us-memory-trail-reset-copy";
@@ -22044,7 +22114,7 @@ function renderUnitedStatesMemoryTrailResetConfirmation() {
     resetUnitedStatesMemoryTrailProgress();
     unitedStatesMemoryTrailResetConfirmationVisible = false;
     rerenderSettingsPreservingUiState("reset-us-memory-trail-progress");
-    showFeedback("United States Memory Trail reset.", true);
+    showFeedback("United States Guided Learning reset.", true);
   });
 
   actions.append(cancelButton, confirmButton);
@@ -22090,7 +22160,7 @@ function renderAllLearningProgressResetConfirmation() {
 
   const body = document.createElement("p");
   body.id = "all-learning-reset-copy";
-  body.textContent = "This permanently erases journey and activity progress, Daily Trail and United States Memory Trail history, reconstruction progress, mastery records, and canonical learning evidence. Your map, study, audio, difficulty, and other ordinary preferences will not change.";
+  body.textContent = "This permanently erases journey and activity progress, Daily Trail and United States Guided Learning history, reconstruction progress, mastery records, and canonical learning evidence. Your map, learning, audio, difficulty, and other ordinary preferences will not change.";
 
   const actions = document.createElement("div");
   actions.className = "settings-reset-confirmation-actions";
@@ -23460,7 +23530,7 @@ function createMobileBrowseChip() {
   const chip = document.createElement("button");
   chip.className = "label-chip navigation-chip mobile-browse-chip";
   chip.type = "button";
-  chip.textContent = "Browse";
+  chip.textContent = "Explore";
   chip.addEventListener("click", toggleBrowseDrawer);
   return chip;
 }
@@ -23622,7 +23692,7 @@ function setAnswerPanelMode(mode) {
     titleNode.textContent = isNavigation
       ? "Choose Region"
       : isStudyExplore
-        ? "Study Targets"
+        ? "Learning Targets"
         : "Word Bank";
   }
 
@@ -25587,7 +25657,7 @@ function showStudyPracticeCompletionCard() {
   }
 
   if (journeyCompletionKicker) {
-    journeyCompletionKicker.textContent = "Study Practice";
+    journeyCompletionKicker.textContent = "Label Map";
   }
 
   if (journeyCompletionTitle) {
@@ -25599,7 +25669,7 @@ function showStudyPracticeCompletionCard() {
   }
 
   if (journeyCompletionNext) {
-    journeyCompletionNext.textContent = "Ready to review it again or head back to Study.";
+    journeyCompletionNext.textContent = "Ready to label it again or return to the preview.";
   }
 
   if (journeyCompletionPrimary) {
@@ -25611,7 +25681,7 @@ function showStudyPracticeCompletionCard() {
   if (journeyCompletionSecondary) {
     journeyCompletionSecondary.hidden = false;
     journeyCompletionSecondary.disabled = false;
-    journeyCompletionSecondary.textContent = "Back to Study";
+    journeyCompletionSecondary.textContent = "Back to Preview";
   }
 
   if (journeyCompletionFeedback) {

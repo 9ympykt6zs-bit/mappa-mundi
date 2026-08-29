@@ -124,7 +124,7 @@
           <button id="main-menu-us-memory-trail-button" class="main-menu-daily-trail-card main-menu-us-memory-trail-card" type="button">
             <span class="main-menu-daily-trail-panel">
               <span class="main-menu-daily-trail-kicker">United States</span>
-              <span class="main-menu-daily-trail-title">United States Memory Trail</span>
+              <span class="main-menu-daily-trail-title">United States Guided Learning</span>
               <span class="main-menu-daily-trail-description">A continuous path through all 50 states with cumulative review.</span>
               <span id="main-menu-us-memory-trail-action" class="main-menu-daily-trail-action">Start</span>
             </span>
@@ -158,14 +158,14 @@
           <div id="main-menu-actions" class="main-menu-actions main-menu-learn-actions">
             <div class="main-menu-action-row info-anchor">
               <button id="main-menu-choose-button" class="main-menu-button main-menu-button-purple" type="button">Choose Journey</button>
-              <button class="info-button" type="button" data-info-text="Pick a guided path, study sections with Memory Trail, and progress through activities in order." aria-label="More info about Choose Journey">i</button>
+              <button class="info-button" type="button" data-info-text="Pick a guided path, learn sections with Guided Learning, and progress through activities in order." aria-label="More info about Choose Journey">i</button>
             </div>
             <div class="main-menu-action-row info-anchor">
               <button id="main-menu-central-america-unit-button" class="main-menu-button main-menu-button-teal" type="button">Central America Countries</button>
               <button class="info-button" type="button" data-info-text="A compact path for locating and identifying Belize, Guatemala, Honduras, El Salvador, Nicaragua, Costa Rica, and Panama." aria-label="More info about Central America Countries">i</button>
             </div>
           </div>
-          <p class="main-menu-section-note">After choosing a journey, you can pick Study or Memory Trail before you play.</p>
+          <p class="main-menu-section-note">After choosing a journey, you can use Guided Learning or label the map.</p>
         </section>
         <section id="main-menu-challenge-section" class="main-menu-section main-menu-challenge-section" aria-labelledby="main-menu-challenge-heading" hidden>
           <div class="main-menu-section-copy">
@@ -224,8 +224,8 @@
           <p id="poc-instruction">Choose a place on the globe or pick a label below.</p>
         </div>
         <div class="top-bar-side top-bar-right">
-          <button id="browse-button" class="top-bar-button" type="button" aria-expanded="false" aria-controls="region-panel">Browse</button>
-          <button id="journey-memory-trail-button" class="top-bar-button journey-memory-trail-button" type="button" hidden aria-label="Start Memory Trail" title="Start Memory Trail">Study</button>
+          <button id="browse-button" class="top-bar-button" type="button" aria-expanded="false" aria-controls="region-panel">Explore</button>
+          <button id="journey-memory-trail-button" class="top-bar-button journey-memory-trail-button" type="button" hidden aria-label="Guided Learning" title="Guided Learning">Guided Learning</button>
           <button id="reset-button" class="top-bar-button reset-button" type="button" hidden>Restart Activity</button>
           <button id="audio-mute-button" class="top-bar-button audio-mute-button" type="button" aria-label="Mute audio" title="Mute audio">
             <span class="audio-mute-icon" aria-hidden="true"></span>
@@ -290,16 +290,16 @@
         </div>
       </section>
 
-      <section id="region-panel" class="region-panel" aria-label="Browse geography" aria-hidden="true">
+      <section id="region-panel" class="region-panel" aria-label="Explore geography" aria-hidden="true">
         <div class="region-panel-intro">
           <div class="drawer-heading">
             <div>
-              <h2>Browse</h2>
+              <h2>Explore</h2>
               <p>Jump to a continent, region, or activity.</p>
             </div>
             <button id="browse-close-button" class="top-bar-button" type="button">Close</button>
           </div>
-          <div id="header-map-set-tabs" class="header-map-set-tabs" role="tablist" aria-label="Browse continents"></div>
+          <div id="header-map-set-tabs" class="header-map-set-tabs" role="tablist" aria-label="Explore continents"></div>
           <p id="activity-count" class="activity-count">Showing 0 activities</p>
         </div>
         <div class="library-panel">
@@ -350,9 +350,9 @@
       <section class="activity-retry-card" role="dialog" aria-modal="true" aria-labelledby="activity-retry-message">
         <p class="activity-retry-kicker">Quick Review</p>
         <h2 id="activity-retry-message">This set needs a little more practice.</h2>
-        <p>Study the answers first, or try the activity again.</p>
+        <p>Review the answers first, or try the activity again.</p>
         <div class="activity-retry-actions">
-          <button id="activity-retry-study-button" type="button">Study This Set</button>
+          <button id="activity-retry-study-button" type="button">Review This Set</button>
           <button id="activity-retry-again-button" type="button">Try Again</button>
         </div>
       </section>
@@ -361,15 +361,15 @@
     <div id="memory-trail-overlay" class="memory-trail-overlay" hidden>
       <section class="memory-trail-card" role="dialog" aria-modal="true" aria-labelledby="memory-trail-title">
         <div class="memory-trail-card-heading">
-          <p class="memory-trail-kicker">Study Preview</p>
-          <button id="memory-trail-info-button" class="memory-trail-info-button" type="button" aria-expanded="false" aria-controls="memory-trail-info-copy" aria-label="More about Memory Trail">i</button>
+          <p class="memory-trail-kicker">Learning Preview</p>
+          <button id="memory-trail-info-button" class="memory-trail-info-button" type="button" aria-expanded="false" aria-controls="memory-trail-info-copy" aria-label="More about Guided Learning">i</button>
         </div>
-        <h2 id="memory-trail-title">Try Memory Trail?</h2>
+        <h2 id="memory-trail-title">Try Guided Learning?</h2>
         <p id="memory-trail-message">First, learn a small group of places. Then practice finding them and naming them from memory.</p>
-        <p id="memory-trail-info-copy" class="memory-trail-info-copy" hidden>Memory Trail helps you learn a small group of places, then practice them from memory. First, you'll see and hear the places in a short Learn phase. Then you'll practice in two ways: find the place named by the app, and name the highlighted place using the answer chips. If you miss one, Memory Trail will bring it back for review. The session adjusts as you play so you get more practice with places that are harder for you.</p>
+        <p id="memory-trail-info-copy" class="memory-trail-info-copy" hidden>Guided Learning helps you learn a small group of places, then practice them from memory. First, you'll see and hear the places in a short Learn phase. Then you'll practice in two ways: find the place named by the app, and name the highlighted place using the answer chips. If you miss one, Guided Learning will bring it back for review. The session adjusts as you play so you get more practice with places that are harder for you.</p>
         <div class="memory-trail-actions">
-          <button id="memory-trail-primary-button" type="button">Start Memory Trail</button>
-          <button id="memory-trail-secondary-button" type="button">Study Normally</button>
+          <button id="memory-trail-primary-button" type="button">Start Guided Learning</button>
+          <button id="memory-trail-secondary-button" type="button">View This Set</button>
         </div>
       </section>
     </div>

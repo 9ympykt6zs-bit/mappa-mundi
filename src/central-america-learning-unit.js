@@ -66,7 +66,7 @@ export const centralAmericaLearningUnit = Object.freeze({
   expedition: Object.freeze({
     id: CENTRAL_AMERICA_LEARNING_UNIT_ID,
     title: "Central America Countries",
-    description: "Locate and identify seven countries using the same Journey, Memory Trail, evidence, and progress contracts as the U.S. reference path.",
+    description: "Locate and identify seven countries using the same Journey, Guided Learning, evidence, and progress contracts as the U.S. reference path.",
     steps: Object.freeze([
       Object.freeze({
         id: "locate-countries",
@@ -80,8 +80,8 @@ export const centralAmericaLearningUnit = Object.freeze({
       Object.freeze({
         id: "identify-countries",
         title: "Identify the seven countries",
-        description: "Use the existing Memory Trail to name highlighted countries without seeing the answer first.",
-        mechanicLabel: "Memory Trail",
+        description: "Use existing Guided Learning to name highlighted countries without seeing the answer first.",
+        mechanicLabel: "Guided Learning",
         launch: Object.freeze({ kind: "memory-trail", journeyId: "north-america", stepId: "central-america" }),
         prerequisiteStepIds: Object.freeze(["locate-countries"]),
         completionRules: Object.freeze([{ metric: "identificationConceptCount", atLeast: 7 }]),

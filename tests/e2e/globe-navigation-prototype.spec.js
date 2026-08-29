@@ -218,8 +218,74 @@ test("globe-first launch drills to direct U.S. learning while preserving objecti
     () => page.evaluate(() => window.__MAPPA_TEST_API__?.getCurrentActivity()?.id),
     { timeout: 20_000 }
   ).toBe("us-states-01");
+  await expect(page.locator(".memory-trail-panel")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Label Map" })).toBeVisible();
+  expect((await globeState(page)).screen).toBe("united-states-trail-gameplay");
+  await page.getByRole("button", { name: "Label Map" }).click();
+  await expect(page.locator(".memory-trail-panel")).toBeHidden();
+  await expect(page.getByRole("button", { name: "Guided Learning" })).toBeVisible();
+  expect((await globeState(page)).screen).toBe("journey-gameplay");
   await expect(page.locator("#app-shell-screen")).toBeHidden();
   expect(runtimeErrors).toEqual([]);
+});
+
+test("returning U.S. learners resume meaningful Journey progress instead of restarting Guided Learning", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("atlasQuestProgress", JSON.stringify({
+      version: 1,
+      activeJourneyId: "united-states",
+      activeStepIndex: 1,
+      activeDifficulty: "easy",
+      recentJourneyId: "united-states",
+      recentDifficulty: "easy",
+      journeys: {
+        "united-states": {
+          currentStepIndex: 1,
+          completedSteps: { "us-states-01": { easy: true, medium: false, hard: false } },
+          completedDifficulties: { easy: false, medium: false, hard: false }
+        }
+      }
+    }));
+  });
+  await startPrototype(page);
+  await chooseSearchScope(page, "United States", "united");
+  await page.getByRole("button", { name: /Learn the United States/ }).click();
+  await expect.poll(
+    () => page.evaluate(() => window.__MAPPA_TEST_API__?.getCurrentActivity()?.id),
+    { timeout: 20_000 }
+  ).toBe("us-states-02");
+  await expect(page.locator(".memory-trail-panel")).toBeHidden();
+  await expect(page.getByRole("button", { name: "Guided Learning" })).toBeVisible();
+});
+
+test("scoped Guided Learning reset does not erase canonical U.S. returning-learner evidence", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.removeItem("mappaUnitedStatesMemoryTrailProgress");
+    localStorage.setItem("mappaMundiCanonicalEvidence", JSON.stringify({
+      storageVersion: 1,
+      evidenceSchemaVersion: 1,
+      events: [{
+        schemaVersion: 1,
+        eventId: "retained-us-history",
+        attemptId: "retained-us-attempt",
+        occurredAt: "2026-08-29T12:00:00.000Z",
+        conceptId: "state-location:maine",
+        skillId: "locating",
+        sourceMode: "united-states-memory-trail",
+        sourceActivityId: "us-states-01",
+        outcome: "correct"
+      }]
+    }));
+  });
+  await startPrototype(page);
+  await chooseSearchScope(page, "United States", "united");
+  await page.getByRole("button", { name: /Learn the United States/ }).click();
+  await expect.poll(
+    () => page.evaluate(() => window.__MAPPA_TEST_API__?.getCurrentActivity()?.id),
+    { timeout: 20_000 }
+  ).toBe("us-states-01");
+  await expect(page.locator(".memory-trail-panel")).toBeHidden();
+  await expect(page.getByRole("button", { name: "Guided Learning" })).toBeVisible();
 });
 
 test("map and search allow lateral region changes without requiring Back", async ({ page }, testInfo) => {

@@ -45,7 +45,7 @@ const mastered = createUnitedStatesAtlasProgress({
   }
 });
 assert.equal(getStatus(mastered, "louisiana"), "mastered");
-assert.deepEqual(getUnitedStatesAtlasStateLearningStatus(mastered, "louisiana").sources, ["Daily Trail", "United States Memory Trail"]);
+assert.deepEqual(getUnitedStatesAtlasStateLearningStatus(mastered, "louisiana").sources, ["Daily Trail", "United States Guided Learning"]);
 
 const malformedStorage = { getItem: () => "{not-json" };
 const fromMalformedStorage = readUnitedStatesAtlasProgress(malformedStorage);

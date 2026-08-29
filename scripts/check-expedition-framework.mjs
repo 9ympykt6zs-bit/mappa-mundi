@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import {
   acrossUnitedStatesExpedition,
-  acrossUnitedStatesNavigation
+  acrossUnitedStatesNavigation,
+  hasMeaningfulUnitedStatesLearningState,
+  isUnitedStatesCanonicalEvidenceEvent
 } from "../src/across-united-states-expedition.js";
 import {
   createExpeditionReadModel,
@@ -16,6 +18,18 @@ assert.equal(empty.recommendedStepId, "learn-regions");
 assert.equal(empty.steps.find(({ id }) => id === "open-atlas").status, "available");
 assert.equal(empty.steps.find(({ id }) => id === "build-state-recall").status, "locked");
 assert.equal(empty.progress.completedCount, 0);
+assert.equal(hasMeaningfulUnitedStatesLearningState({}, []), false);
+assert.equal(hasMeaningfulUnitedStatesLearningState({ usTrailHasStarted: true }, []), true);
+const retainedUnitedStatesEvidence = {
+  sourceActivityId: "us-states-01",
+  conceptId: "state-location:maine"
+};
+assert.equal(isUnitedStatesCanonicalEvidenceEvent(retainedUnitedStatesEvidence), true);
+assert.equal(hasMeaningfulUnitedStatesLearningState({}, [retainedUnitedStatesEvidence]), true);
+assert.equal(isUnitedStatesCanonicalEvidenceEvent({
+  sourceActivityId: "central-america-country-locations",
+  conceptId: "country-location:belize"
+}), false);
 
 const partial = createExpeditionReadModel(acrossUnitedStatesExpedition, {
   usJourneyStateStepsCompleted: 2,
@@ -74,6 +88,7 @@ assert.equal(
 );
 assert.ok(acrossUnitedStatesNavigation.utilities.some(({ id }) => id === "atlas"));
 assert.ok(acrossUnitedStatesNavigation.utilities.some(({ id }) => id === "progress"));
+assert.equal(JSON.stringify(acrossUnitedStatesExpedition).includes("Memory Trail"), false);
 assert.equal(JSON.stringify(acrossUnitedStatesNavigation).includes("Show What I Know"), false, "Do not expose an unimplemented demonstration pathway.");
 
 const frameworkSource = fs.readFileSync(new URL("../src/expedition-framework.js", import.meta.url), "utf8");
@@ -86,6 +101,8 @@ assert.doesNotMatch(navigationSource, /localStorage|sessionStorage/, "Objective 
 assert.doesNotMatch(navigationUiSource, /localStorage|sessionStorage/, "Objective navigation UI must not create learner state.");
 assert.match(runtimeSource, /loadUnitedStatesMemoryTrailProgress\(\)/);
 assert.match(runtimeSource, /loadCanonicalEvidenceRepository\(\)/);
+assert.match(runtimeSource, /hasMeaningfulUnitedStatesLearningState\(expeditionEvidence\.evidence, expeditionEvidence\.canonicalEvents\)/);
+assert.match(runtimeSource, /await startOrContinueUnitedStatesMemoryTrail\(\)/);
 assert.match(runtimeSource, /getJourneyProgress\(journeyId, loadProgress\(\)\)/);
 assert.match(runtimeSource, /returnFromExpeditionActivity/);
 assert.match(runtimeSource, /openExpedition\(expeditionId/);

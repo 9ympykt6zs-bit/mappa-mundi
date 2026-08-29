@@ -527,7 +527,7 @@ function buildUnitedStatesLearningPlan(state, items, eligibleNewItems) {
   return createPlan({
     state,
     sessionType: "learning-session",
-    title: "United States Memory Trail",
+    title: "United States Guided Learning",
     activeActivityId: activeSectionId,
     newItems,
     reviewItems,

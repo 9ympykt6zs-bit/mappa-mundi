@@ -1,5 +1,34 @@
 export const ACROSS_UNITED_STATES_EXPEDITION_ID = "across-united-states";
 
+export function isUnitedStatesCanonicalEvidenceEvent(event = {}) {
+  const sourceActivityId = String(event.sourceActivityId || "");
+  const conceptId = String(event.conceptId || "");
+  return sourceActivityId.startsWith("us-")
+    || sourceActivityId === "rebuild-lower-48"
+    || conceptId.startsWith("state-location:")
+    || conceptId.startsWith("state-naming:")
+    || conceptId.startsWith("capital-location:")
+    || conceptId.startsWith("capital-naming:");
+}
+
+export function hasMeaningfulUnitedStatesLearningState(evidence = {}, canonicalEvents = []) {
+  const meaningfulMetricIds = [
+    "usJourneyStateStepsCompleted",
+    "usJourneyPhysicalStepsCompleted",
+    "usCapitalJourneyStepsCompleted",
+    "usTrailHasStarted",
+    "usTrailIntroducedCount",
+    "usSavedActivityTargetCount",
+    "usJourneyContinuationCount",
+    "usConnectionsAttempts",
+    "mentalMapAttempts",
+    "regionalReconstructionAttempts",
+    "lower48ReconstructionAttempts"
+  ];
+  return meaningfulMetricIds.some((metricId) => Number(evidence[metricId]) > 0)
+    || canonicalEvents.some(isUnitedStatesCanonicalEvidenceEvent);
+}
+
 export const acrossUnitedStatesExpedition = Object.freeze({
   id: ACROSS_UNITED_STATES_EXPEDITION_ID,
   title: "Across the United States",
@@ -25,8 +54,8 @@ export const acrossUnitedStatesExpedition = Object.freeze({
     {
       id: "build-state-recall",
       title: "Build state recall",
-      description: "Let U.S. Memory Trail introduce a small active set and bring weak or due states back for retrieval.",
-      mechanicLabel: "U.S. Memory Trail",
+      description: "Let U.S. Guided Learning introduce a small active set and bring weak or due states back for retrieval.",
+      mechanicLabel: "U.S. Guided Learning",
       launch: { kind: "united-states-memory-trail" },
       prerequisiteStepIds: ["learn-regions"],
       completionRules: [{ metric: "usTrailIntroducedCount", atLeast: 8 }],
