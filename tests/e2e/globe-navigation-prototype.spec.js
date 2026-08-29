@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { learningProgressStorageKeys } from "../../src/learning-progress-reset.js";
 
 async function startPrototype(page, query = "?test=1&globeNavigation=on") {
   await page.goto(`/${query}`);
@@ -227,6 +228,55 @@ test("globe-first launch drills to direct U.S. learning while preserving objecti
   expect((await globeState(page)).screen).toBe("journey-gameplay");
   await expect(page.locator("#app-shell-screen")).toBeHidden();
   expect(runtimeErrors).toEqual([]);
+});
+
+test("Reset All Learning Progress starts U.S. learning in the actual Guided Learning mode", async ({ page }) => {
+  await page.goto("/?test=1&globeNavigation=off");
+  await page.evaluate((learningKeys) => {
+    learningKeys.forEach((key) => localStorage.setItem(key, `seeded:${key}`));
+  }, learningProgressStorageKeys);
+  await page.locator("#launch-start-button").click();
+  await page.evaluate(() => window.__mappaMundiLoadApp());
+  if (await page.locator("#launch-screen").isVisible()) {
+    await page.locator("#launch-start-button").click();
+  }
+  await expect(page.locator("#app-shell-title")).toHaveText("Main Menu");
+  await page.locator("#app-shell-settings-gear").click();
+  await expect(page.locator("#app-shell-title")).toHaveText("Settings");
+  await page.getByRole("button", { name: "Customize" }).click();
+  await page.locator('details[data-settings-key="reset-defaults"] > summary').click();
+  await page.getByRole("button", { name: "Reset All Learning Progress" }).click();
+  const dialog = page.getByRole("alertdialog", { name: "Reset all learning progress across Mappa Mundi?" });
+  await Promise.all([
+    page.waitForNavigation(),
+    dialog.getByRole("button", { name: "Erase All Learning Progress" }).click()
+  ]);
+
+  await expect(page.locator("#launch-screen")).toBeVisible();
+  expect(await page.evaluate((learningKeys) => (
+    learningKeys.every((key) => localStorage.getItem(key) === null)
+  ), learningProgressStorageKeys)).toBe(true);
+  await startPrototype(page);
+  await chooseSearchScope(page, "United States", "united");
+  await page.getByRole("button", { name: /Learn the United States/ }).click();
+
+  await expect.poll(
+    () => page.evaluate(() => window.__MAPPA_TEST_API__?.getGlobeNavigationState()?.screen),
+    { timeout: 20_000 }
+  ).toBe("united-states-trail-gameplay");
+  await expect(page.locator(".memory-trail-panel")).toBeVisible();
+  await expect(page.locator(".daily-trail-primary-instruction")).toBeVisible();
+  await expect(page.locator("#answer-bank .memory-trail-response-chip")).toBeVisible();
+  await expect(page.locator("#answer-bank .label-chip:not(.memory-trail-response-chip)")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Label Map" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Label Map" }).click();
+  await expect.poll(
+    () => page.evaluate(() => window.__MAPPA_TEST_API__?.getGlobeNavigationState()?.screen)
+  ).toBe("journey-gameplay");
+  await expect(page.locator(".memory-trail-panel")).toBeHidden();
+  await expect(page.locator("#answer-bank .label-chip")).toHaveCount(5);
+  await expect(page.getByRole("button", { name: "Guided Learning" })).toBeVisible();
 });
 
 test("returning U.S. learners resume meaningful Journey progress instead of restarting Guided Learning", async ({ page }) => {
