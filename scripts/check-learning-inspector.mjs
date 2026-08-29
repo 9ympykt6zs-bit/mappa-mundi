@@ -381,6 +381,7 @@ assert.equal(canonicalPanelView.recentCanonicalEvidence[0].outcome, "correct");
 const runtimeSource = fs.readFileSync(new URL("../src/maplibre-poc.js", import.meta.url), "utf8");
 assert.match(runtimeSource, /function createRuntimeLearningInspectorSnapshot\(\)/);
 assert.match(runtimeSource, /if \(!isLocalDevAccessAllowed\(\) \|\| learningInspectorPanelController\) return;/);
+assert.match(runtimeSource, /createUnitedStatesProgressReportReadModel\(\{[\s\S]*storage: null[\s\S]*\}\)/, "Inspector readiness reads must not enroll or mutate Progress Report cohort state.");
 assert.match(runtimeSource, /window\.mappaLearningInspector =/);
 assert.match(runtimeSource, /recordCanonicalEvidenceEventWithInspector\(event\)/);
 assert.match(runtimeSource, /recordCanonicalEvidenceEventsWithInspector\(events\)/);

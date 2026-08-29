@@ -4211,7 +4211,8 @@ async function createRuntimeLearningInspectorSnapshot() {
     dailyTrailState: dailyState,
     dailyTrailItems: getUnitedStatesProgressReportDailyTrailItems(),
     placeMasteryState: masteryState,
-    repository: canonicalRepository
+    repository: canonicalRepository,
+    storage: null
   });
   const continuationFoundation = createUnitedStatesContinuationFoundation({
     progressReport: progressReadModel.report,
