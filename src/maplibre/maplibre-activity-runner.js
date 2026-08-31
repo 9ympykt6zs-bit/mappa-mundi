@@ -2131,8 +2131,8 @@ export class MapLibreActivityRunner {
       this.moveCamera({
         center: target.center,
         zoom: target.zoom,
-        pitch: 0,
-        bearing: 0,
+        pitch: Number.isFinite(Number(target.pitch)) ? Number(target.pitch) : 0,
+        bearing: Number.isFinite(Number(target.bearing)) ? Number(target.bearing) : 0,
         duration,
         essential: true
       }, {
@@ -2144,6 +2144,27 @@ export class MapLibreActivityRunner {
         targetLabel: target.name || target.label || ""
       }, "flyTo");
     });
+  }
+
+  fitFeatureBounds(bounds, options = {}) {
+    if (!this.map || !this.hasValidBounds(bounds)) return false;
+    this.moveCamera({
+      bounds,
+      padding: options.padding || { top: 96, right: 64, bottom: 160, left: 64 },
+      maxZoom: Number.isFinite(Number(options.maxZoom)) ? Number(options.maxZoom) : 6,
+      pitch: Number.isFinite(Number(options.pitch)) ? Number(options.pitch) : 0,
+      bearing: Number.isFinite(Number(options.bearing)) ? Number(options.bearing) : 0,
+      duration: Number.isFinite(Number(options.duration)) ? Number(options.duration) : 650,
+      essential: true
+    }, {
+      cameraContext: options.cameraContext || "feature-bounds",
+      source: "fitFeatureBounds",
+      requestType: "fitBounds",
+      activityId: this.activity?.id,
+      targetId: options.targetId || "",
+      targetLabel: options.targetLabel || ""
+    }, "fitBounds");
+    return true;
   }
 
   fitStudyView(options = {}) {

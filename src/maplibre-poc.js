@@ -39,11 +39,13 @@ import {
   GUIDED_LEARNING_BLOCK_TYPES,
   loadGuidedLearningOrchestrationState,
   resetGuidedLearningOrchestrationState,
+  satisfyGuidedLearningPhysicalInterleave,
   saveGuidedLearningOrchestrationState,
   selectGuidedLearningOrchestrationBlock,
   startGuidedLearningOrchestrationBlock,
   UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
 } from "./guided-learning-orchestration.js";
+import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js";
 import {
   ACROSS_UNITED_STATES_EXPEDITION_ID,
   acrossUnitedStatesExpedition,
@@ -3887,10 +3889,16 @@ function getGuidedLearningOrchestrationSnapshot() {
     window.localStorage,
     UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
   );
+  const guidedItems = getUnitedStatesMemoryTrailItems();
+  const guidedProgress = loadUnitedStatesMemoryTrailProgress(guidedItems);
+  const hasUnfinishedNonPhysicalLearning = guidedItems.some((item) => (
+    isUnitedStatesMemoryTrailItemUnseen(guidedProgress, item)
+  ));
   const decision = selectGuidedLearningOrchestrationBlock({
     config: UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1,
     state,
-    repository: loadCanonicalEvidenceRepository()
+    repository: loadCanonicalEvidenceRepository(),
+    hasUnfinishedNonPhysicalLearning
   });
   return {
     ...decision,
@@ -3899,7 +3907,10 @@ function getGuidedLearningOrchestrationSnapshot() {
       blockId: activeGuidedLearningOrchestrationBlock.id,
       blockType: activeGuidedLearningOrchestrationBlock.type,
       status: activeGuidedLearningOrchestrationBlock.status,
-      returnContext: activeGuidedLearningOrchestrationBlock.returnContext
+      returnContext: activeGuidedLearningOrchestrationBlock.returnContext,
+      physicalFeatureFamily: activeStudySession?.physicalFeatureFamily || null,
+      physicalFeatureGeometry: activeStudySession?.physicalFeatureGeometry || null,
+      guidedCameraDecision: activeStudySession?.guidedCameraDecision || null
     } : null
   };
 }
@@ -4066,9 +4077,10 @@ async function launchNextGuidedLearningOrchestrationBlock() {
       guidedOrchestration: true,
       focusTargetIds: block.destination.targetIds,
       revealedTargetIds: block.destination.targetIds,
-      teachingMessage: `${block.destination.targetLabel} extend across ${block.destination.prerequisiteStateIds
-        .map((stateId) => stateId.split("-").map((word) => word[0].toUpperCase() + word.slice(1)).join(" "))
-        .join(" and ")}.`
+      teachingMessage: block.destination.teachingMessage,
+      physicalFeatureFamily: block.destination.featureFamily,
+      physicalFeatureCamera: block.destination.camera,
+      physicalFeatureGeometry: block.destination.geometry
     });
     return true;
   }
@@ -4079,7 +4091,10 @@ async function launchNextGuidedLearningOrchestrationBlock() {
       guidedOrchestration: true,
       focusTargetIds: block.destination.targetIds,
       memoryTrailTargetIds: block.destination.targetIds,
-      memoryTrailNewTargetIds: []
+      memoryTrailNewTargetIds: [],
+      physicalFeatureFamily: block.destination.featureFamily,
+      physicalFeatureCamera: block.destination.camera,
+      physicalFeatureGeometry: block.destination.geometry
     });
     return true;
   }
@@ -8271,7 +8286,10 @@ async function startStudyPreviewActivity(journeyId, stepId, options = {}) {
     memoryTrailNewTargetIds: options.memoryTrailNewTargetIds,
     memoryTrailTargetIds: options.memoryTrailTargetIds,
     revealedTargetIds: options.revealedTargetIds,
-    teachingMessage: options.teachingMessage
+    teachingMessage: options.teachingMessage,
+    physicalFeatureFamily: options.physicalFeatureFamily,
+    physicalFeatureCamera: options.physicalFeatureCamera,
+    physicalFeatureGeometry: options.physicalFeatureGeometry
   });
 }
 
@@ -8366,7 +8384,11 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
     memoryTrailSectionIndex: getMemoryTrailSections(activity).length ? 0 : null,
     focusTargetIds: [...new Set((Array.isArray(options.focusTargetIds) ? options.focusTargetIds : []).filter(Boolean))],
     guidedOrchestration: options.guidedOrchestration === true,
-    teachingMessage: String(options.teachingMessage || "").trim()
+    teachingMessage: String(options.teachingMessage || "").trim(),
+    physicalFeatureFamily: String(options.physicalFeatureFamily || "").trim() || null,
+    physicalFeatureCamera: options.physicalFeatureCamera || null,
+    physicalFeatureGeometry: options.physicalFeatureGeometry || null,
+    guidedCameraDecision: null
   };
   activeStudyPracticeSession = null;
   hideStudyPracticeCompletionCard();
@@ -8414,6 +8436,9 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
   studyCard.hidden = false;
   studyCard.querySelector("strong").textContent = step.title;
   studyCard.querySelector("span").textContent = "Learning Preview";
+  if (activeStudySession.guidedOrchestration && activeStudySession.physicalFeatureCamera) {
+    runner.suppressStudyIntroCameraOnce?.("guided-physical-feature-fit", 5000);
+  }
   runner.enterStudyView();
   renderStudyExplorePanel();
   updateTopBarNavigation();
@@ -8429,7 +8454,52 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
   } else {
     playInstructionOnce("study-preview", audioInstructionPhrases.studyPreview);
   }
+  applyGuidedPhysicalFeatureCamera();
   return true;
+}
+
+function applyGuidedPhysicalFeatureCamera() {
+  if (!activeStudySession?.guidedOrchestration || !activeStudySession.physicalFeatureCamera) return null;
+  const targetId = activeStudySession.focusTargetIds?.[0];
+  const target = session.currentActivity?.targets?.find(({ id }) => id === targetId);
+  const sourceFeature = target ? runner?.findSourceShapeFeature?.(target, session.currentActivity) : null;
+  const viewport = window.matchMedia?.("(max-width: 720px)")?.matches ? "mobile" : "desktop";
+  const decision = calculateGuidedLearningPhysicalFeatureCamera({
+    feature: sourceFeature,
+    family: activeStudySession.physicalFeatureFamily,
+    camera: activeStudySession.physicalFeatureCamera,
+    viewport
+  });
+  if (!decision) return null;
+  activeStudySession.guidedCameraDecision = decision;
+  if (decision.mode === "override") {
+    runner?.flyToCameraTarget?.({
+      center: decision.center,
+      zoom: decision.zoom,
+      pitch: decision.pitch,
+      bearing: decision.bearing,
+      duration: 650,
+      cameraContext: "guided-physical-feature-override",
+      targetId
+    });
+  } else {
+    runner?.fitFeatureBounds?.(decision.bounds, {
+      padding: decision.padding,
+      maxZoom: decision.maxZoom,
+      pitch: decision.pitch,
+      bearing: decision.bearing,
+      duration: 650,
+      cameraContext: "guided-physical-feature-fit",
+      targetId,
+      targetLabel: target?.name || ""
+    });
+  }
+  publishGuidedLearningOrchestrationTrace({
+    lifecycleEvent: "physical-feature-camera-applied",
+    cameraFeatureId: activeGuidedLearningOrchestrationBlock?.destination?.featureId || null,
+    cameraDecision: decision
+  });
+  return decision;
 }
 
 function revealStudyTarget(targetId) {
@@ -14144,6 +14214,29 @@ function completeUnitedStatesMemoryTrailSession(memoryTrail) {
   );
   const savedState = saveUnitedStatesMemoryTrailProgress(nextState, items);
   lastUnitedStatesMemoryTrailSummary = savedState.lastSessionSummary;
+  const orchestrationState = loadGuidedLearningOrchestrationState(
+    window.localStorage,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  const pacedState = satisfyGuidedLearningPhysicalInterleave(
+    orchestrationState,
+    {
+      sessionNumber: savedState.lastSessionSummary?.sessionNumber || Math.max(1, savedState.currentSessionNumber - 1),
+      activeSectionId: savedState.lastSessionSummary?.activeSectionId || savedState.curriculumCursor?.sectionId || null
+    },
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  if (orchestrationState.physicalInterleaveRequired && !pacedState.physicalInterleaveRequired) {
+    saveGuidedLearningOrchestrationState(
+      pacedState,
+      window.localStorage,
+      UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+    );
+    publishGuidedLearningOrchestrationTrace({
+      lifecycleEvent: "physical-interleave-satisfied",
+      nonPhysicalSource: "guided-session-completed"
+    });
+  }
   activeUnitedStatesMemoryTrailSession = null;
   clearMemoryTrailState({ restoreReveals: false });
   activeStudySession = null;
@@ -26935,6 +27028,35 @@ function getMountainRangeVisualStateForTest() {
   };
 }
 
+function getGuidedPhysicalFeatureVisualStateForTest() {
+  if (!runner || !activeStudySession?.guidedOrchestration || !activeStudySession.physicalFeatureFamily) {
+    return null;
+  }
+  const targetId = activeStudySession.focusTargetIds?.[0] || "";
+  const target = session?.currentActivity?.targets?.find(({ id }) => id === targetId);
+  const sourceFeature = target ? runner.findSourceShapeFeature?.(target, session.currentActivity) : null;
+  const mapCenter = runner.map?.getCenter?.();
+  return {
+    activityId: session.currentActivity?.id || null,
+    targetId,
+    targetName: target?.name || null,
+    targetCount: session.currentActivity?.targets?.length || 0,
+    family: activeStudySession.physicalFeatureFamily,
+    geometryMetadata: activeStudySession.physicalFeatureGeometry,
+    sourceFeatureId: sourceFeature?.properties?.id || sourceFeature?.properties?.name || sourceFeature?.id || null,
+    sourceBounds: sourceFeature?.geometry ? runner.getGeometryBounds?.(sourceFeature.geometry) : null,
+    cameraDecision: activeStudySession.guidedCameraDecision,
+    camera: {
+      center: mapCenter ? [mapCenter.lng, mapCenter.lat] : null,
+      zoom: runner.map?.getZoom?.() ?? null,
+      pitch: runner.map?.getPitch?.() ?? null,
+      bearing: runner.map?.getBearing?.() ?? null
+    },
+    dragPanEnabled: Boolean(runner.map?.dragPan?.isEnabled?.()),
+    scrollZoomEnabled: Boolean(runner.map?.scrollZoom?.isEnabled?.())
+  };
+}
+
 function getPoliticalDivisionVisualStateForTest() {
   const visualState = runner?.getPoliticalDivisionVisualState?.();
   if (!visualState?.enabled) return null;
@@ -27294,6 +27416,7 @@ function installMappaTestApi() {
       answerCurrentPromptIncorrectly: answerCurrentPromptIncorrectlyForTest,
       getActivityAttempt: getActivityAttemptForTest,
       getMountainRangeVisualState: getMountainRangeVisualStateForTest,
+      getGuidedPhysicalFeatureVisualState: getGuidedPhysicalFeatureVisualStateForTest,
       getPoliticalDivisionVisualState: getPoliticalDivisionVisualStateForTest,
       getUnitedStatesMemoryTrailPlan: getUnitedStatesMemoryTrailPlanForTest,
       getUnitedStatesContinuationTrace: getUnitedStatesContinuationTraceForTest,

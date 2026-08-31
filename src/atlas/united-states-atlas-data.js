@@ -6,8 +6,70 @@ const SOURCE_ASSETS = Object.freeze({
   capitals: "assets/maps/data/us-capitals.json",
   rivers: "assets/maps/data/us-physical-rivers.json",
   lakes: "assets/maps/data/us-physical-lakes.json",
-  mountainRanges: "assets/data/physical-features/us-mountain-ranges.geojson"
+  mountainRanges: "assets/data/physical-features/us-mountain-ranges.geojson",
+  riverGeometry: "assets/data/physical-features/proof-sheet-rivers.geojson",
+  lakeGeometry: "assets/maps/data/inland-waters.geojson"
 });
+
+export const PHYSICAL_GEOMETRY_REPRESENTATIONS = Object.freeze({
+  FULL: "full",
+  SCOPE_LIMITED: "scope-limited",
+  INCOMPLETE: "incomplete"
+});
+
+const PHYSICAL_GEOMETRY_METADATA = Object.freeze({
+  "river:colorado-river": Object.freeze({ crossesInternationalBorder: true }),
+  "river:columbia-river": Object.freeze({ crossesInternationalBorder: true }),
+  "river:rio-grande-river": Object.freeze({ crossesInternationalBorder: true }),
+  "river:st-lawrence-river": Object.freeze({
+    representation: PHYSICAL_GEOMETRY_REPRESENTATIONS.INCOMPLETE,
+    crossesInternationalBorder: true,
+    reason: "The current source contains only a short western segment of the river."
+  }),
+  "lake:lake-superior": Object.freeze({ crossesInternationalBorder: true }),
+  "lake:lake-huron": Object.freeze({ crossesInternationalBorder: true }),
+  "lake:lake-erie": Object.freeze({ crossesInternationalBorder: true }),
+  "lake:lake-ontario": Object.freeze({ crossesInternationalBorder: true }),
+  "mountain-range:rocky-mountains": Object.freeze({
+    representation: PHYSICAL_GEOMETRY_REPRESENTATIONS.SCOPE_LIMITED,
+    crossesInternationalBorder: true,
+    hasCrossBorderVisualContinuation: true,
+    reason: "The U.S. learning region stops at the border; authored visual ridge context continues into Canada."
+  }),
+  "mountain-range:cascade-mountains": Object.freeze({
+    representation: PHYSICAL_GEOMETRY_REPRESENTATIONS.SCOPE_LIMITED,
+    crossesInternationalBorder: true,
+    reason: "The current learning geometry represents the U.S. portion of the range."
+  }),
+  "mountain-range:appalachian-mountains": Object.freeze({
+    representation: PHYSICAL_GEOMETRY_REPRESENTATIONS.SCOPE_LIMITED,
+    crossesInternationalBorder: true,
+    reason: "The current learning geometry represents the U.S. portion of the mountain system."
+  }),
+  "mountain-range:coast-ranges": Object.freeze({
+    representation: PHYSICAL_GEOMETRY_REPRESENTATIONS.SCOPE_LIMITED,
+    crossesInternationalBorder: true,
+    reason: "The current learning geometry represents the lower-48 portion of the ranges."
+  })
+});
+
+function getPhysicalGeometryMetadata(kind, id, name) {
+  const entityKey = entityId(kind, id);
+  const override = PHYSICAL_GEOMETRY_METADATA[entityKey] || {};
+  const asset = kind === "river"
+    ? SOURCE_ASSETS.riverGeometry
+    : kind === "lake"
+      ? SOURCE_ASSETS.lakeGeometry
+      : SOURCE_ASSETS.mountainRanges;
+  return Object.freeze({
+    asset,
+    featureId: kind === "lake" ? name : id,
+    representation: override.representation || PHYSICAL_GEOMETRY_REPRESENTATIONS.FULL,
+    crossesInternationalBorder: override.crossesInternationalBorder === true,
+    hasCrossBorderVisualContinuation: override.hasCrossBorderVisualContinuation === true,
+    reason: override.reason || "The authored source adequately represents the current learning feature."
+  });
+}
 
 const REGION_RECORDS = Object.freeze([
   { id: "northeast", name: "Northeast" },
@@ -182,9 +244,9 @@ function buildUnitedStatesAtlas({ states = STATE_RECORDS, rivers = RIVER_RECORDS
       { id: entityId("state", id), kind: "state", name, abbreviation: STATE_ABBREVIATIONS[id], source: { asset: SOURCE_ASSETS.states, featureId: id } },
       { id: entityId("capital", capitalId), kind: "capital", name: displayNameFromId(capitalId), source: { asset: SOURCE_ASSETS.capitals, featureId: capitalSourceId } }
     ]),
-    ...rivers.map(([id, name, sourceFeatureId]) => ({ id: entityId("river", id), kind: "river", name, source: { asset: SOURCE_ASSETS.rivers, featureId: sourceFeatureId } })),
-    ...lakes.map(([id, name, sourceFeatureId]) => ({ id: entityId("lake", id), kind: "lake", name, source: { asset: SOURCE_ASSETS.lakes, featureId: sourceFeatureId } })),
-    ...mountainRanges.map(([id, name]) => ({ id: entityId("mountain-range", id), kind: "mountain-range", name, source: { asset: SOURCE_ASSETS.mountainRanges, featureId: id } })),
+    ...rivers.map(([id, name, sourceFeatureId]) => ({ id: entityId("river", id), kind: "river", name, source: { asset: SOURCE_ASSETS.rivers, featureId: sourceFeatureId }, geometry: getPhysicalGeometryMetadata("river", id, name) })),
+    ...lakes.map(([id, name, sourceFeatureId]) => ({ id: entityId("lake", id), kind: "lake", name, source: { asset: SOURCE_ASSETS.lakes, featureId: sourceFeatureId }, geometry: getPhysicalGeometryMetadata("lake", id, name) })),
+    ...mountainRanges.map(([id, name]) => ({ id: entityId("mountain-range", id), kind: "mountain-range", name, source: { asset: SOURCE_ASSETS.mountainRanges, featureId: id }, geometry: getPhysicalGeometryMetadata("mountain-range", id, name) })),
     ...COUNTRY_RECORDS.map(([id, name]) => ({ id: entityId("country", id), kind: "country", name })),
     ...WATER_RECORDS.map(([id, name, waterType, alternateNames = [], namePolicyNote = ""]) => ({
       id: entityId("water", id),
@@ -290,6 +352,9 @@ function validateUnitedStatesAtlas(atlas) {
   for (const entity of atlas.entities) {
     if (!["river", "lake", "mountain-range"].includes(entity.kind)) continue;
     if (!entity.source?.featureId) errors.push(`Physical feature lacks an existing source feature ID: ${entity.id}`);
+    if (!Object.values(PHYSICAL_GEOMETRY_REPRESENTATIONS).includes(entity.geometry?.representation)) {
+      errors.push(`Physical feature lacks valid geometry representation metadata: ${entity.id}`);
+    }
   }
   return errors;
 }

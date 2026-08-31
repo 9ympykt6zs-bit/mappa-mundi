@@ -80,9 +80,10 @@ assert.equal(evaluateCoveredPrerequisite({
 
 const config = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1;
 const reconstruction = config.blocks[0];
-const introduction = config.blocks[1];
-const practice = config.blocks[2];
-const connection = config.blocks[3];
+const whiteMountainsSequence = config.physicalFeatures.find(({ targetId }) => targetId === "white-mountains");
+const introduction = config.blocks.find(({ id }) => id === whiteMountainsSequence.introductionBlockId);
+const practice = config.blocks.find(({ id }) => id === whiteMountainsSequence.practiceBlockId);
+const connection = config.blocks.find(({ id }) => id === whiteMountainsSequence.connectionBlockId);
 const allNewEnglandStates = ["maine", "new-hampshire", "vermont", "massachusetts", "rhode-island", "connecticut"];
 const missingVermont = stateCoverageEvents(allNewEnglandStates.filter((stateId) => stateId !== "vermont"));
 
