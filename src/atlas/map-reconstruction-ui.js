@@ -1374,10 +1374,26 @@ export function createMapReconstructionActivity(container, options) {
 
   const createActions = () => {
     const actions = createElement("footer", "map-reconstruction-actions");
+    const appendContinueAction = () => {
+      if (typeof options.onContinue === "function") {
+        actions.appendChild(createButton(
+          options.continueLabel || "Continue",
+          "map-reconstruction-primary-action map-reconstruction-continue-action",
+          options.onContinue
+        ));
+      }
+      return actions;
+    };
     if (session.phase === "result") {
       if (session.evaluation?.isComplete) {
-        actions.appendChild(createButton("Try again", "map-reconstruction-primary-action", resetAttempt));
-        return actions;
+        actions.appendChild(createButton(
+          "Try again",
+          typeof options.onContinue === "function"
+            ? "map-reconstruction-secondary-action"
+            : "map-reconstruction-primary-action",
+          resetAttempt
+        ));
+        return appendContinueAction();
       }
       if (["preparing", "playing"].includes(session.correctionState)) {
         actions.append(
@@ -1391,7 +1407,7 @@ export function createMapReconstructionActivity(container, options) {
           ),
           createButton("Try again", "map-reconstruction-secondary-action", resetAttempt)
         );
-        return actions;
+        return appendContinueAction();
       }
       if (session.viewMode === "learner") {
         const hasSeenCorrection = session.correctionState === "complete";
@@ -1405,7 +1421,7 @@ export function createMapReconstructionActivity(container, options) {
           ),
           createButton("Try again", "map-reconstruction-secondary-action", resetAttempt)
         );
-        return actions;
+        return appendContinueAction();
       }
       actions.append(
         createButton(
@@ -1420,7 +1436,7 @@ export function createMapReconstructionActivity(container, options) {
         ),
         createButton("Try again", "map-reconstruction-secondary-action", resetAttempt)
       );
-      return actions;
+      return appendContinueAction();
     }
     const selectedStateIds = getSelectedStateIds();
     const selectedPiece = session.selectedStateId ? session.piecesById[session.selectedStateId] : null;

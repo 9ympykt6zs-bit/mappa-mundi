@@ -12,6 +12,7 @@ import {
 } from "./atlas/mental-map-challenge-engine.js?v=20260823-connections-atlas-context-1";
 import {
   getUnifiedMentalMapChallenges,
+  getTargetedMentalMapChallengePool,
   selectNextUnifiedMentalMapChallenge
 } from "./atlas/mental-map-challenge-registry.js";
 import { renderMentalMapChallenge } from "./atlas/mental-map-challenge-ui.js?v=20260823-us-connections-map-hint-1";
@@ -31,6 +32,18 @@ import {
 } from "./united-states-physical-feature-progress.js";
 import { createUnitedStatesContinuationFoundation } from "./continuation-readiness.js";
 import { selectUnitedStatesEvidenceDrivenContinuation } from "./united-states-evidence-driven-continuation.js";
+import {
+  completeGuidedLearningOrchestrationBlock,
+  createPhysicalFeatureIntroductionEvidence,
+  deferGuidedLearningOrchestrationBlock,
+  GUIDED_LEARNING_BLOCK_TYPES,
+  loadGuidedLearningOrchestrationState,
+  resetGuidedLearningOrchestrationState,
+  saveGuidedLearningOrchestrationState,
+  selectGuidedLearningOrchestrationBlock,
+  startGuidedLearningOrchestrationBlock,
+  UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+} from "./guided-learning-orchestration.js";
 import {
   ACROSS_UNITED_STATES_EXPEDITION_ID,
   acrossUnitedStatesExpedition,
@@ -3026,6 +3039,8 @@ let pendingDailyTrailGameplaySettingsReturn = false;
 let activeUnitedStatesMemoryTrailSession = null;
 let pendingUnitedStatesMemoryTrailPlan = null;
 let lastUnitedStatesMemoryTrailSummary = null;
+let activeGuidedLearningOrchestrationBlock = null;
+let runtimeGuidedLearningOrchestrationTrace = null;
 let pendingUnitedStatesMemoryTrailGameplaySettingsReturn = false;
 let unitedStatesMemoryTrailResetConfirmationVisible = false;
 let dailyTrailDevReplayCursor = null;
@@ -3689,6 +3704,7 @@ let mentalMapLastQuestionId = "";
 let mentalMapLastCategory = "";
 let mentalMapRecentAnswerModes = [];
 let mentalMapUnitedStatesRelationshipsOnly = false;
+let mentalMapTargetChallengeIds = [];
 let mapReconstructionController = null;
 let activeMapReconstructionRegionId = "";
 let mapReconstructionFeatureCollectionPromise = null;
@@ -3783,7 +3799,9 @@ function recordCanonicalJourneyPlacementEvidence(result = {}) {
       sourceActivityId: activityId,
       response: { selectedTargetId: result.targetId || result.completedId || null }
     });
-    reportCanonicalEvidenceWrite(recordCanonicalEvidenceEventWithInspector(event));
+    const result = recordCanonicalEvidenceEventWithInspector(event);
+    reportCanonicalEvidenceWrite(result);
+    if (!result?.ok) return false;
   } catch (error) {
     console.warn("[canonical-evidence] Journey evidence could not be created.", error);
   }
@@ -3862,6 +3880,225 @@ function recordCanonicalReconstructionEvaluation(evaluation, sourceActivityId) {
   } catch (error) {
     console.warn("[canonical-evidence] Reconstruction evidence could not be created.", error);
   }
+}
+
+function getGuidedLearningOrchestrationSnapshot() {
+  const state = loadGuidedLearningOrchestrationState(
+    window.localStorage,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  const decision = selectGuidedLearningOrchestrationBlock({
+    config: UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1,
+    state,
+    repository: loadCanonicalEvidenceRepository()
+  });
+  return {
+    ...decision,
+    state,
+    runtime: activeGuidedLearningOrchestrationBlock ? {
+      blockId: activeGuidedLearningOrchestrationBlock.id,
+      blockType: activeGuidedLearningOrchestrationBlock.type,
+      status: activeGuidedLearningOrchestrationBlock.status,
+      returnContext: activeGuidedLearningOrchestrationBlock.returnContext
+    } : null
+  };
+}
+
+function publishGuidedLearningOrchestrationTrace(details = {}) {
+  runtimeGuidedLearningOrchestrationTrace = {
+    ...getGuidedLearningOrchestrationSnapshot(),
+    ...details
+  };
+  return runtimeGuidedLearningOrchestrationTrace;
+}
+
+function getGuidedLearningOrchestrationReturnContext() {
+  const items = getUnitedStatesMemoryTrailItems();
+  const state = loadUnitedStatesMemoryTrailProgress(items);
+  return {
+    currentSessionNumber: state.currentSessionNumber,
+    curriculumCursor: state.curriculumCursor,
+    activeSectionId: state.curriculumCursor?.sectionId || null,
+    returnBehavior: "resume-existing-guided-planner"
+  };
+}
+
+function saveActiveGuidedLearningOrchestrationBlock(block, returnContext) {
+  const current = loadGuidedLearningOrchestrationState(
+    window.localStorage,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  const next = startGuidedLearningOrchestrationBlock(
+    current,
+    block.id,
+    returnContext,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  saveGuidedLearningOrchestrationState(
+    next,
+    window.localStorage,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  activeGuidedLearningOrchestrationBlock = {
+    ...block,
+    status: "launched",
+    returnContext
+  };
+  publishGuidedLearningOrchestrationTrace({
+    lifecycleEvent: "external-activity-launched",
+    launchedBlockId: block.id
+  });
+}
+
+function completeActiveGuidedLearningOrchestrationBlock(blockId = activeGuidedLearningOrchestrationBlock?.id) {
+  if (!blockId) return false;
+  const current = loadGuidedLearningOrchestrationState(
+    window.localStorage,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  if (current.completedBlockIds.includes(blockId)) return false;
+  const next = completeGuidedLearningOrchestrationBlock(
+    current,
+    blockId,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  saveGuidedLearningOrchestrationState(
+    next,
+    window.localStorage,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  if (activeGuidedLearningOrchestrationBlock?.id === blockId) {
+    activeGuidedLearningOrchestrationBlock.status = "completed";
+  }
+  publishGuidedLearningOrchestrationTrace({
+    lifecycleEvent: "external-activity-completed",
+    completedBlockId: blockId
+  });
+  return true;
+}
+
+function deferActiveGuidedLearningOrchestrationBlock(blockId = activeGuidedLearningOrchestrationBlock?.id) {
+  if (!blockId) return false;
+  const current = loadGuidedLearningOrchestrationState(
+    window.localStorage,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  if (current.completedBlockIds.includes(blockId)) return false;
+  const next = deferGuidedLearningOrchestrationBlock(
+    current,
+    blockId,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  saveGuidedLearningOrchestrationState(
+    next,
+    window.localStorage,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  publishGuidedLearningOrchestrationTrace({
+    lifecycleEvent: "external-activity-deferred",
+    deferredBlockId: blockId
+  });
+  return true;
+}
+
+async function returnToGuidedLearningFromOrchestration() {
+  const block = activeGuidedLearningOrchestrationBlock;
+  if (!block) return false;
+  if (block.status !== "completed") deferActiveGuidedLearningOrchestrationBlock(block.id);
+  const returnedBlockId = block.id;
+  activeGuidedLearningOrchestrationBlock = null;
+  publishGuidedLearningOrchestrationTrace({
+    lifecycleEvent: "returned-to-guided-learning",
+    returnedBlockId
+  });
+  pendingUnitedStatesMemoryTrailPlan = null;
+  lastUnitedStatesMemoryTrailSummary = null;
+  await startOrContinueUnitedStatesMemoryTrail();
+  return true;
+}
+
+function recordActivePhysicalFeatureIntroduction() {
+  const block = activeGuidedLearningOrchestrationBlock;
+  if (block?.type !== GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_INTRODUCTION || block.status === "completed") {
+    return false;
+  }
+  try {
+    const identity = createCanonicalRuntimeAttemptIdentity("guided-learning-orchestration", block.destination.activityId);
+    const event = createPhysicalFeatureIntroductionEvidence({
+      block,
+      identity: {
+        ...identity,
+        sessionId: `guided-learning-orchestration:${block.id}`
+      }
+    });
+    reportCanonicalEvidenceWrite(recordCanonicalEvidenceEventWithInspector(event));
+    completeActiveGuidedLearningOrchestrationBlock(block.id);
+    return true;
+  } catch (error) {
+    console.warn("[guided-learning-orchestration] Physical introduction evidence could not be created.", error);
+    return false;
+  }
+}
+
+async function acknowledgeActivePhysicalFeatureIntroduction() {
+  if (!recordActivePhysicalFeatureIntroduction()) return false;
+  exitStudyExplore({ returnToGuidedOrchestration: true });
+  return true;
+}
+
+async function launchNextGuidedLearningOrchestrationBlock() {
+  const trace = publishGuidedLearningOrchestrationTrace({ lifecycleEvent: "eligibility-evaluated" });
+  const block = trace.currentBlock;
+  if (!block || block.type === GUIDED_LEARNING_BLOCK_TYPES.GUIDED_SECTION) {
+    return false;
+  }
+
+  const returnContext = getGuidedLearningOrchestrationReturnContext();
+  saveActiveGuidedLearningOrchestrationBlock(block, returnContext);
+
+  if (block.destination.kind === "map-reconstruction") {
+    await openMapReconstructionWithOptions({ regionId: block.destination.regionId });
+    return true;
+  }
+
+  if (block.destination.kind === "physical-feature-introduction") {
+    await startStudyPreviewActivity(block.destination.journeyId, block.destination.stepId, {
+      guidedOrchestration: true,
+      focusTargetIds: block.destination.targetIds,
+      revealedTargetIds: block.destination.targetIds,
+      teachingMessage: `${block.destination.targetLabel} extend across ${block.destination.prerequisiteStateIds
+        .map((stateId) => stateId.split("-").map((word) => word[0].toUpperCase() + word.slice(1)).join(" "))
+        .join(" and ")}.`
+    });
+    return true;
+  }
+
+  if (block.destination.kind === "targeted-memory-trail") {
+    await startStudyPreviewActivity(block.destination.journeyId, block.destination.stepId, {
+      autoStartMemoryTrail: true,
+      guidedOrchestration: true,
+      focusTargetIds: block.destination.targetIds,
+      memoryTrailTargetIds: block.destination.targetIds,
+      memoryTrailNewTargetIds: []
+    });
+    return true;
+  }
+
+  if (block.destination.kind === "targeted-connection") {
+    await openMentalMapChallenge({
+      unitedStatesRelationshipsOnly: true,
+      challengeIds: block.destination.challengeIds
+    });
+    return true;
+  }
+
+  deferActiveGuidedLearningOrchestrationBlock(block.id);
+  activeGuidedLearningOrchestrationBlock = null;
+  publishGuidedLearningOrchestrationTrace({
+    lifecycleEvent: "fallback",
+    fallbackReason: `unsupported-destination:${block.destination.kind}`
+  });
+  return false;
 }
 
 const journeyDifficultyOptions = [
@@ -4298,7 +4535,9 @@ async function createRuntimeLearningInspectorSnapshot() {
     selections,
     transitions: runtimeLearningInspectorTransitions,
     canonicalRepository,
-    continuationFoundation
+    continuationFoundation,
+    guidedLearningOrchestration: runtimeGuidedLearningOrchestrationTrace
+      || getGuidedLearningOrchestrationSnapshot()
   });
 }
 
@@ -4312,6 +4551,10 @@ function installRuntimeLearningInspector() {
     open: () => learningInspectorPanelController.open(),
     refresh: () => learningInspectorPanelController.refresh(),
     getSnapshot: createRuntimeLearningInspectorSnapshot
+  };
+  window.mappaGuidedLearningOrchestration = {
+    getSnapshot: getGuidedLearningOrchestrationSnapshot,
+    launchNext: launchNextGuidedLearningOrchestrationBlock
   };
 }
 
@@ -5807,7 +6050,9 @@ function bindUiEvents() {
       return;
     }
     if (currentAppScreen === "map-reconstruction") {
-      if (activeMapReconstructionRegionId) {
+      if (activeGuidedLearningOrchestrationBlock?.type === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT) {
+        exitMapReconstruction();
+      } else if (activeMapReconstructionRegionId) {
         showMapReconstructionRegionSelection();
       } else {
         exitMapReconstruction();
@@ -8020,7 +8265,13 @@ async function startStudyPreviewActivity(journeyId, stepId, options = {}) {
 
   selectedJourneyId = journey.id;
   await openStudyExploreActivity(journey, step, activity, {
-    autoStartMemoryTrail: Boolean(options.autoStartMemoryTrail)
+    autoStartMemoryTrail: Boolean(options.autoStartMemoryTrail),
+    focusTargetIds: options.focusTargetIds,
+    guidedOrchestration: options.guidedOrchestration === true,
+    memoryTrailNewTargetIds: options.memoryTrailNewTargetIds,
+    memoryTrailTargetIds: options.memoryTrailTargetIds,
+    revealedTargetIds: options.revealedTargetIds,
+    teachingMessage: options.teachingMessage
   });
 }
 
@@ -8105,12 +8356,17 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
     journeyId: journey.id,
     stepId: step.id,
     activityId: activity.id,
-    revealedTargetIds: options.revealAll ? activity.targets.map((target) => target.id) : [],
+    revealedTargetIds: options.revealAll
+      ? activity.targets.map((target) => target.id)
+      : [...new Set((Array.isArray(options.revealedTargetIds) ? options.revealedTargetIds : []).filter(Boolean))],
     memoryTrail: null,
     retryReturnState: options.retryReturnState || null,
     journeyPlayReturn: options.journeyPlayReturn || null,
     journeyActivityReturnState: options.journeyActivityReturnState || null,
-    memoryTrailSectionIndex: getMemoryTrailSections(activity).length ? 0 : null
+    memoryTrailSectionIndex: getMemoryTrailSections(activity).length ? 0 : null,
+    focusTargetIds: [...new Set((Array.isArray(options.focusTargetIds) ? options.focusTargetIds : []).filter(Boolean))],
+    guidedOrchestration: options.guidedOrchestration === true,
+    teachingMessage: String(options.teachingMessage || "").trim()
   };
   activeStudyPracticeSession = null;
   hideStudyPracticeCompletionCard();
@@ -8152,6 +8408,9 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
   runner.setCompletedTargets(activeStudySession.revealedTargetIds);
   setActiveActivityHeaderTitle(presentedActivity);
   instruction.textContent = "Tap a target or name to show it. Tap it again to hide it.";
+  if (activeStudySession.guidedOrchestration && activeStudySession.teachingMessage) {
+    instruction.textContent = activeStudySession.teachingMessage;
+  }
   studyCard.hidden = false;
   studyCard.querySelector("strong").textContent = step.title;
   studyCard.querySelector("span").textContent = "Learning Preview";
@@ -8160,13 +8419,17 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
   updateTopBarNavigation();
   const canUseMemoryTrail = isMemoryTrailEligible(session.currentActivity);
   if (options.autoStartMemoryTrail && canUseMemoryTrail) {
-    startMemoryTrail();
-  } else if (canUseMemoryTrail) {
+    startMemoryTrail({
+      newTargetIds: options.memoryTrailNewTargetIds,
+      targetIds: options.memoryTrailTargetIds
+    });
+  } else if (canUseMemoryTrail && !activeStudySession.guidedOrchestration) {
     showMemoryTrailOfferOverlay();
     playInstructionOnce("study-preview", audioInstructionPhrases.studyPreview);
   } else {
     playInstructionOnce("study-preview", audioInstructionPhrases.studyPreview);
   }
+  return true;
 }
 
 function revealStudyTarget(targetId) {
@@ -8225,7 +8488,7 @@ function startJourneyFromStudyRecommendation() {
   });
 }
 
-function exitStudyExplore() {
+function exitStudyExplore(options = {}) {
   const journeyActivityReturnState = activeStudySession?.journeyActivityReturnState || null;
   const retryReturnState = activeStudySession?.retryReturnState || null;
 
@@ -8241,6 +8504,11 @@ function exitStudyExplore() {
   runner.setStudyPreviewMode(false);
   runner.setMemoryTrailHighlight([]);
   runner.setCompletedTargets([]);
+
+  if (options.returnToGuidedOrchestration || activeGuidedLearningOrchestrationBlock) {
+    void returnToGuidedLearningFromOrchestration();
+    return;
+  }
 
   if (retryReturnState) {
     returnToRetryReviewActivity(retryReturnState);
@@ -8262,7 +8530,14 @@ function renderStudyExplorePanel() {
 
   const controls = document.createElement("div");
   controls.className = "study-explore-controls";
-  const controlDefinitions = activeStudySession?.retryReturnState
+  const isGuidedOrchestrationIntroduction = activeStudySession?.guidedOrchestration
+    && activeGuidedLearningOrchestrationBlock?.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_INTRODUCTION;
+  const controlDefinitions = isGuidedOrchestrationIntroduction
+    ? [
+        ["Continue Guided Learning", acknowledgeActivePhysicalFeatureIntroduction, "Continue"],
+        ["Back to Guided Learning", exitStudyExplore, "Back"]
+      ]
+    : activeStudySession?.retryReturnState
     ? [["Exit Preview", exitStudyExplore, "Exit"]]
     : activeStudySession?.journeyActivityReturnState
       ? [["Label Map", () => { void returnToJourneyActivityFromStudy(); }, "Label Map"]]
@@ -8282,24 +8557,27 @@ function renderStudyExplorePanel() {
 
   const list = document.createElement("div");
   list.className = "study-target-list";
-  session.currentActivity.targets.forEach((target) => {
-    const item = document.createElement("button");
-    item.type = "button";
-    item.className = "study-target-list-item";
-    item.classList.toggle("revealed", activeStudySession?.revealedTargetIds.includes(target.id));
-    item.addEventListener("click", () => revealStudyTarget(target.id));
+  const focusTargetIds = new Set(activeStudySession?.focusTargetIds || []);
+  session.currentActivity.targets
+    .filter((target) => focusTargetIds.size === 0 || focusTargetIds.has(target.id))
+    .forEach((target) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "study-target-list-item";
+      item.classList.toggle("revealed", activeStudySession?.revealedTargetIds.includes(target.id));
+      item.addEventListener("click", () => revealStudyTarget(target.id));
 
-    const name = document.createElement("span");
-    name.textContent = target.name;
-    item.appendChild(name);
+      const name = document.createElement("span");
+      name.textContent = target.name;
+      item.appendChild(name);
 
-    const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(getStudyPreviewSpeechLabel(target));
-    if (speaker) {
-      item.appendChild(speaker);
-    }
+      const speaker = window.GeographyChipSpeech?.createChipSpeakerControl(getStudyPreviewSpeechLabel(target));
+      if (speaker) {
+        item.appendChild(speaker);
+      }
 
-    list.appendChild(item);
-  });
+      list.appendChild(item);
+    });
 
   answerBank.append(list, controls);
   ensureActiveTrayContentVisible();
@@ -8506,20 +8784,30 @@ function showMemoryTrailCompletionOverlay() {
   const canPlayJourney = Boolean(activeStudySession.journeyPlayReturn);
   const canReturnToActivity = Boolean(activeStudySession.journeyActivityReturnState);
   const memoryTrail = activeStudySession.memoryTrail;
+  const isGuidedOrchestrationPractice = activeStudySession.guidedOrchestration
+    && activeGuidedLearningOrchestrationBlock?.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE;
   const nextSection = getNextMemoryTrailSection(session.currentActivity);
   const hasNextSection = Boolean(nextSection);
   configureMemoryTrailOverlay({
     mode: "complete",
-    titleText: hasNextSection && memoryTrail?.sectionTitle
+    titleText: isGuidedOrchestrationPractice
+      ? `${activeGuidedLearningOrchestrationBlock.destination.targetLabel} practice complete`
+      : hasNextSection && memoryTrail?.sectionTitle
       ? `${memoryTrail.sectionTitle} Complete`
       : "Guided Learning Complete",
-    messageText: hasNextSection
+    messageText: isGuidedOrchestrationPractice
+      ? "Return to Guided Learning when you are ready."
+      : hasNextSection
       ? `Next: ${nextSection.title}`
       : "Do you want to repeat this exercise?",
-    primaryText: hasNextSection
+    primaryText: isGuidedOrchestrationPractice
+      ? "Continue Guided Learning"
+      : hasNextSection
       ? `Continue: ${nextSection.title}`
       : "Do Guided Learning Again",
-    secondaryText: canReturnToActivity ? "Label Map" : canPlayJourney ? "Label Map" : "Return to Preview",
+    secondaryText: isGuidedOrchestrationPractice
+      ? "Practice Again"
+      : canReturnToActivity ? "Label Map" : canPlayJourney ? "Label Map" : "Return to Preview",
     showInfo: false
   });
 }
@@ -8583,6 +8871,10 @@ function handleMemoryTrailOverlayPrimary() {
 
   if (memoryTrailOverlayMode === "complete") {
     hideMemoryTrailOverlay();
+    if (activeStudySession?.guidedOrchestration && activeGuidedLearningOrchestrationBlock) {
+      exitStudyExplore({ returnToGuidedOrchestration: true });
+      return;
+    }
     if (startNextMemoryTrailSection()) {
       return;
     }
@@ -8602,6 +8894,11 @@ function handleMemoryTrailOverlaySecondary() {
   }
 
   if (memoryTrailOverlayMode === "complete") {
+    if (activeStudySession?.guidedOrchestration && activeGuidedLearningOrchestrationBlock) {
+      hideMemoryTrailOverlay();
+      restartMemoryTrail();
+      return;
+    }
     if (activeStudySession?.journeyActivityReturnState) {
       hideMemoryTrailOverlay();
       void returnToJourneyActivityFromStudy();
@@ -9154,7 +9451,16 @@ async function startMapReconstructionRegion(regionId) {
     mapReconstructionController = createMapReconstructionActivity(mapReconstructionPanel, {
       region,
       geometry,
-      onEvaluation: (evaluation) => recordCanonicalReconstructionEvaluation(evaluation, region.id)
+      onEvaluation: (evaluation) => {
+        recordCanonicalReconstructionEvaluation(evaluation, region.id);
+        if (activeGuidedLearningOrchestrationBlock?.type === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT) {
+          completeActiveGuidedLearningOrchestrationBlock(activeGuidedLearningOrchestrationBlock.id);
+        }
+      },
+      onContinue: activeGuidedLearningOrchestrationBlock?.type === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT
+        ? () => exitMapReconstruction()
+        : null,
+      continueLabel: "Continue Guided Learning"
     });
   } catch (error) {
     if (currentAppScreen !== "map-reconstruction" || activeMapReconstructionRegionId !== region.id) return;
@@ -9221,16 +9527,24 @@ async function openMapReconstructionWithOptions(options = {}) {
   showMapReconstructionRegionSelection();
   if (options.capstoneId) {
     await startMapReconstructionCapstone(options.capstoneId);
+  } else if (options.regionId) {
+    await startMapReconstructionRegion(options.regionId);
   }
 }
 
 function exitMapReconstruction() {
+  const returnsToGuidedLearning = activeGuidedLearningOrchestrationBlock?.type
+    === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT;
   mapReconstructionController?.destroy();
   mapReconstructionController = null;
   activeMapReconstructionRegionId = "";
   if (mapReconstructionPanel) mapReconstructionPanel.hidden = true;
   if (mapElement) mapElement.removeAttribute("aria-hidden");
   document.body.classList.remove("map-reconstruction-mode", "overview-mode", "browse-mode");
+  if (returnsToGuidedLearning) {
+    void returnToGuidedLearningFromOrchestration();
+    return;
+  }
   returnFromExpeditionActivity("main-menu");
 }
 
@@ -9262,13 +9576,21 @@ async function openMentalMapChallenge(options = {}) {
   runner.setUnitedStatesAtlasLearningStatuses({});
   runner.prepareMentalMapChallenge();
   mentalMapUnitedStatesRelationshipsOnly = options.unitedStatesRelationshipsOnly === true;
-  mentalMapChallengePool = getUnifiedMentalMapChallenges({
+  mentalMapTargetChallengeIds = [...new Set((Array.isArray(options.challengeIds) ? options.challengeIds : [])
+    .map((challengeId) => String(challengeId || "").trim())
+    .filter(Boolean))];
+  const availableChallenges = getUnifiedMentalMapChallenges({
     includeGenerated: !mentalMapUnitedStatesRelationshipsOnly,
     includeUnitedStatesRelationships: mentalMapUnitedStatesRelationshipsOnly
   }).filter((challenge) => !mentalMapUnitedStatesRelationshipsOnly || [
     "us-state-capital-relationships",
     "us-atlas-relationships"
   ].includes(challenge.sourceActivityId));
+  const targetedPool = getTargetedMentalMapChallengePool(availableChallenges, mentalMapTargetChallengeIds);
+  mentalMapChallengePool = mentalMapTargetChallengeIds.length > 0 ? targetedPool.pool : availableChallenges;
+  if (mentalMapTargetChallengeIds.length > 0 && targetedPool.missingIds.length > 0) {
+    console.warn("[mental-map] Requested targeted challenges were not found.", targetedPool.missingIds);
+  }
   mentalMapUsedQuestionIds = new Set();
   mentalMapLastQuestionId = "";
   mentalMapLastCategory = "";
@@ -9390,7 +9712,13 @@ function renderActiveMentalMapChallenge() {
     },
     onSubmit: submitActiveMentalMapChallenge,
     onNewQuestion: startNextMentalMapQuestion,
-    onNextQuestion: startNextMentalMapQuestion
+    hideNewQuestion: Boolean(activeGuidedLearningOrchestrationBlock),
+    nextQuestionLabel: activeGuidedLearningOrchestrationBlock
+      ? "Continue Guided Learning"
+      : "Next Question",
+    onNextQuestion: activeGuidedLearningOrchestrationBlock
+      ? exitMentalMapChallenge
+      : startNextMentalMapQuestion
   });
 }
 
@@ -9398,6 +9726,9 @@ function submitActiveMentalMapChallenge() {
   activeMentalMapChallengeState = submitMentalMapAnswer(activeMentalMapChallengeState, activeMentalMapChallenge);
   if (!activeMentalMapChallengeState?.evaluation) return;
   recordCanonicalMentalMapEvaluation();
+  if (activeGuidedLearningOrchestrationBlock?.type === GUIDED_LEARNING_BLOCK_TYPES.CONNECTION_CHECKPOINT) {
+    completeActiveGuidedLearningOrchestrationBlock(activeGuidedLearningOrchestrationBlock.id);
+  }
   document.body.classList.add("mental-map-result-mode");
   if (mapElement) mapElement.setAttribute("aria-hidden", "false");
   runner?.enterMentalMapChallengeResult({
@@ -9407,6 +9738,8 @@ function submitActiveMentalMapChallenge() {
 }
 
 function exitMentalMapChallenge() {
+  const returnsToGuidedLearning = activeGuidedLearningOrchestrationBlock?.type
+    === GUIDED_LEARNING_BLOCK_TYPES.CONNECTION_CHECKPOINT;
   window.GeographyChipSpeech?.stopAudio?.();
   if (mentalMapChallengePanel) mentalMapChallengePanel.hidden = true;
   activeMentalMapChallenge = null;
@@ -9420,9 +9753,14 @@ function exitMentalMapChallenge() {
   mentalMapLastCategory = "";
   mentalMapRecentAnswerModes = [];
   mentalMapUnitedStatesRelationshipsOnly = false;
+  mentalMapTargetChallengeIds = [];
   runner?.prepareMentalMapChallenge();
   if (mapElement) mapElement.removeAttribute("aria-hidden");
   document.body.classList.remove("mental-map-challenge-mode", "mental-map-result-mode", "overview-mode", "browse-mode");
+  if (returnsToGuidedLearning) {
+    void returnToGuidedLearningFromOrchestration();
+    return;
+  }
   returnFromExpeditionActivity("main-menu");
 }
 
@@ -13784,6 +14122,10 @@ function completeMemoryTrailSession(memoryTrail) {
   if (activeUnitedStatesMemoryTrailSession && currentAppScreen === "united-states-trail-gameplay") {
     completeUnitedStatesMemoryTrailSession(memoryTrail);
     return;
+  }
+  if (activeStudySession?.guidedOrchestration
+    && activeGuidedLearningOrchestrationBlock?.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE) {
+    completeActiveGuidedLearningOrchestrationBlock(activeGuidedLearningOrchestrationBlock.id);
   }
   showMemoryTrailCompletionOverlay();
 }
@@ -20517,10 +20859,13 @@ function startLabelMapFromUnitedStatesGuidedLearning() {
 
 function resetUnitedStatesMemoryTrailProgress() {
   resetUnitedStatesMemoryTrailPersistedProgress();
+  resetGuidedLearningOrchestrationState(window.localStorage);
   activeUnitedStatesMemoryTrailSession = null;
+  activeGuidedLearningOrchestrationBlock = null;
   pendingUnitedStatesMemoryTrailPlan = null;
   runtimeUnitedStatesTargetedEntryTrace = null;
   runtimeUnitedStatesContinuationTrace = null;
+  runtimeGuidedLearningOrchestrationTrace = null;
   lastUnitedStatesMemoryTrailSummary = null;
   unitedStatesMemoryTrailResetConfirmationVisible = false;
   if (activeStudySession?.unitedStatesMemoryTrail) {
@@ -20535,6 +20880,10 @@ function resetUnitedStatesMemoryTrailProgress() {
 
 async function continueUnitedStatesMemoryTrailFromSummary() {
   pendingUnitedStatesMemoryTrailPlan = null;
+  if (await launchNextGuidedLearningOrchestrationBlock()) {
+    lastUnitedStatesMemoryTrailSummary = null;
+    return;
+  }
   lastUnitedStatesMemoryTrailSummary = null;
   await startUnitedStatesMemoryTrailSession();
 }
@@ -26724,6 +27073,32 @@ function getUnitedStatesContinuationTraceForTest() {
     : null;
 }
 
+function getActiveMemoryTrailStateForTest() {
+  const memoryTrail = getActiveMemoryTrail();
+  return memoryTrail ? {
+    activityId: memoryTrail.activityId,
+    phase: memoryTrail.phase,
+    sessionPhase: memoryTrail.sessionPhase,
+    currentPromptTargetId: memoryTrail.currentPromptTargetId,
+    currentPromptType: memoryTrail.currentPromptType,
+    correctCount: memoryTrail.correctCount,
+    incorrectCount: memoryTrail.incorrectCount,
+    targetPoolIds: [...memoryTrail.targetPoolIds]
+  } : null;
+}
+
+function answerActiveMemoryTrailCorrectlyForTest() {
+  const memoryTrail = getActiveMemoryTrail();
+  const targetId = memoryTrail?.currentPromptTargetId;
+  if (!targetId || memoryTrail.phase !== "answering") return false;
+  if (memoryTrail.currentPromptType === "place_to_name") {
+    handleMemoryTrailNameChoice(targetId);
+  } else {
+    handleMemoryTrailTargetTap([targetId]);
+  }
+  return true;
+}
+
 function startMentalMapQuestionForTest(challengeId) {
   if (currentAppScreen !== "mental-map-challenge") return false;
   const challenge = mentalMapChallengePool.find((candidate) => candidate.id === challengeId);
@@ -26922,6 +27297,10 @@ function installMappaTestApi() {
       getPoliticalDivisionVisualState: getPoliticalDivisionVisualStateForTest,
       getUnitedStatesMemoryTrailPlan: getUnitedStatesMemoryTrailPlanForTest,
       getUnitedStatesContinuationTrace: getUnitedStatesContinuationTraceForTest,
+      getActiveMemoryTrailState: getActiveMemoryTrailStateForTest,
+      answerActiveMemoryTrailCorrectly: answerActiveMemoryTrailCorrectlyForTest,
+      getGuidedLearningOrchestration: getGuidedLearningOrchestrationSnapshot,
+      launchNextGuidedLearningOrchestration: launchNextGuidedLearningOrchestrationBlock,
       startUnitedStatesGuidedLearningAtSection: (targetSectionId) => (
         startOrContinueUnitedStatesMemoryTrail({ targetSectionId })
       ),

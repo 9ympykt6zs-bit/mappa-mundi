@@ -111,6 +111,22 @@ export function getUnifiedMentalMapChallenges(options = {}) {
   });
 }
 
+export function getTargetedMentalMapChallengePool(challenges = [], challengeIds = []) {
+  const requestedIds = [...new Set((Array.isArray(challengeIds) ? challengeIds : [])
+    .map((id) => String(id || "").trim())
+    .filter(Boolean))];
+  const challengeById = new Map((challenges || [])
+    .filter((challenge) => challenge?.id)
+    .map((challenge) => [challenge.id, challenge]));
+  const pool = requestedIds.map((id) => challengeById.get(id)).filter(Boolean);
+  return {
+    requestedIds,
+    matchedIds: pool.map(({ id }) => id),
+    missingIds: requestedIds.filter((id) => !challengeById.has(id)),
+    pool
+  };
+}
+
 export function selectNextUnifiedMentalMapChallenge(challenges, options = {}) {
   return selectNextUnifiedMentalMapChallengeWithDebug(challenges, options).selected;
 }

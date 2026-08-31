@@ -337,9 +337,11 @@ function createPreSubmitControls(challenge, state, options) {
     createButton("Clear", "mental-map-secondary-action", options.onClear, {
       disabled: !state.selectedStateIds.length
     }),
-    createButton("Submit", "mental-map-primary-action", options.onSubmit),
-    createButton("New Question", "mental-map-secondary-action", options.onNewQuestion)
+    createButton("Submit", "mental-map-primary-action", options.onSubmit)
   );
+  if (!options.hideNewQuestion) {
+    controls.appendChild(createButton("New Question", "mental-map-secondary-action", options.onNewQuestion));
+  }
   return controls;
 }
 
@@ -549,7 +551,11 @@ function createResultContent(challenge, state, options) {
     "Hear explanation"
   );
   if (explanationSpeaker) explanationRow.appendChild(explanationSpeaker);
-  wrapper.append(explanationRow, createResultLegend(challenge), createButton("Next Question", "mental-map-primary-action", options.onNextQuestion));
+  wrapper.append(
+    explanationRow,
+    createResultLegend(challenge),
+    createButton(options.nextQuestionLabel || "Next Question", "mental-map-primary-action", options.onNextQuestion)
+  );
   return wrapper;
 }
 

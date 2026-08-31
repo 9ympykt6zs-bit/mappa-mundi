@@ -528,7 +528,8 @@ export function createLearningInspectorDebugObject({
   canonicalEvidence = null,
   canonicalRepository = null,
   canonicalEvidenceFilters = {},
-  continuationFoundation = null
+  continuationFoundation = null,
+  guidedLearningOrchestration = null
 } = {}) {
   const output = {
     schemaVersion: LEARNING_INSPECTOR_SCHEMA_VERSION,
@@ -545,5 +546,6 @@ export function createLearningInspectorDebugObject({
     });
   }
   if (continuationFoundation) output.continuationFoundation = continuationFoundation;
+  if (guidedLearningOrchestration) output.guidedLearningOrchestration = guidedLearningOrchestration;
   return cloneJson(output);
 }
