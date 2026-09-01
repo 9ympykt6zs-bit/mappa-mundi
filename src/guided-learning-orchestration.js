@@ -7,7 +7,7 @@ import {
 } from "./united-states-physical-feature-orchestration.js";
 
 export const GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY = "mappaGuidedLearningOrchestration";
-export const GUIDED_LEARNING_ORCHESTRATION_VERSION = 3;
+export const GUIDED_LEARNING_ORCHESTRATION_VERSION = 4;
 export const UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_ID = "united-states-guided-learning-v1";
 
 export const GUIDED_LEARNING_BLOCK_TYPES = Object.freeze({
@@ -24,6 +24,36 @@ const validActiveStatuses = new Set(["pending", "launched", "completed"]);
 
 function uniqueStrings(values = []) {
   return [...new Set((Array.isArray(values) ? values : []).map((value) => String(value || "").trim()).filter(Boolean))];
+}
+
+function normalizePhysicalTeachingProgress(value = {}, config = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1) {
+  const source = value && typeof value === "object" ? value : {};
+  const introductionBlocks = new Map((config?.blocks || [])
+    .filter(({ type }) => type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_INTRODUCTION)
+    .map((block) => [block.id, block]));
+  const validTargetIds = new Set((config?.physicalFeatures || []).map(({ targetId }) => targetId));
+  const validCohortIds = new Set((config?.physicalCohorts || []).map(({ id }) => id));
+
+  return Object.fromEntries(Object.entries(source).flatMap(([blockId, progress]) => {
+    if (!introductionBlocks.has(blockId) || !progress || typeof progress !== "object") return [];
+    const teachingTargetIds = uniqueStrings(progress.teachingTargetIds).filter((targetId) => validTargetIds.has(targetId));
+    if (teachingTargetIds.length === 0) return [];
+    const taughtTargetIds = uniqueStrings(progress.taughtTargetIds)
+      .filter((targetId) => teachingTargetIds.includes(targetId));
+    const pendingTargetIds = teachingTargetIds.filter((targetId) => !taughtTargetIds.includes(targetId));
+    const requestedCurrentTargetId = String(progress.currentTargetId || "").trim();
+    const currentTargetId = pendingTargetIds.includes(requestedCurrentTargetId)
+      ? requestedCurrentTargetId
+      : pendingTargetIds[0] || null;
+    return [[blockId, {
+      blockId,
+      cohortId: validCohortIds.has(progress.cohortId) ? progress.cohortId : null,
+      teachingTargetIds,
+      taughtTargetIds,
+      currentTargetId,
+      phase: pendingTargetIds.length > 0 ? "teaching" : "teaching-complete"
+    }]];
+  }));
 }
 
 function cloneJson(value) {
@@ -374,6 +404,7 @@ export function createGuidedLearningOrchestrationState(value = {}, config = UNIT
     lastCompletedPhysicalCohortId: cohortIds.has(source.lastCompletedPhysicalCohortId)
       ? source.lastCompletedPhysicalCohortId
       : null,
+    physicalTeachingProgress: normalizePhysicalTeachingProgress(source.physicalTeachingProgress, config),
     retrievedPhysicalCohortTargetIds,
     lastNonPhysicalMilestone: source.lastNonPhysicalMilestone && typeof source.lastNonPhysicalMilestone === "object"
       ? cloneJson(source.lastNonPhysicalMilestone)
@@ -385,6 +416,85 @@ export function createGuidedLearningOrchestrationState(value = {}, config = UNIT
       ? cloneJson(source.lastTransition)
       : null
   };
+}
+
+export function beginGuidedLearningPhysicalTeaching(
+  state,
+  { blockId, cohortId = null, targetIds = [] } = {},
+  config = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+) {
+  const normalized = createGuidedLearningOrchestrationState(state, config);
+  const block = config.blocks.find(({ id }) => id === blockId);
+  if (
+    block?.type !== GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_INTRODUCTION
+    || normalized.activeBlockId !== blockId
+  ) {
+    return normalized;
+  }
+  const validTargetIds = new Set((config.physicalFeatures || []).map(({ targetId }) => targetId));
+  const teachingTargetIds = uniqueStrings(targetIds).filter((targetId) => validTargetIds.has(targetId));
+  if (teachingTargetIds.length === 0) return normalized;
+  const previous = normalized.physicalTeachingProgress[blockId];
+  const taughtTargetIds = uniqueStrings(previous?.taughtTargetIds)
+    .filter((targetId) => teachingTargetIds.includes(targetId));
+  const currentTargetId = teachingTargetIds.find((targetId) => !taughtTargetIds.includes(targetId)) || null;
+  return createGuidedLearningOrchestrationState({
+    ...normalized,
+    physicalTeachingProgress: {
+      ...normalized.physicalTeachingProgress,
+      [blockId]: {
+        blockId,
+        cohortId,
+        teachingTargetIds,
+        taughtTargetIds,
+        currentTargetId,
+        phase: currentTargetId ? "teaching" : "teaching-complete"
+      }
+    },
+    lastTransition: {
+      kind: previous ? "physical-teaching-resumed" : "physical-teaching-started",
+      blockId,
+      currentTargetId
+    }
+  }, config);
+}
+
+export function recordGuidedLearningPhysicalTeachingTarget(
+  state,
+  { blockId, targetId } = {},
+  config = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+) {
+  const normalized = createGuidedLearningOrchestrationState(state, config);
+  const progress = normalized.physicalTeachingProgress[blockId];
+  if (
+    normalized.activeBlockId !== blockId
+    || !progress
+    || progress.currentTargetId !== targetId
+    || !progress.teachingTargetIds.includes(targetId)
+  ) {
+    return normalized;
+  }
+  const taughtTargetIds = uniqueStrings([...progress.taughtTargetIds, targetId]);
+  const currentTargetId = progress.teachingTargetIds
+    .find((candidateId) => !taughtTargetIds.includes(candidateId)) || null;
+  return createGuidedLearningOrchestrationState({
+    ...normalized,
+    physicalTeachingProgress: {
+      ...normalized.physicalTeachingProgress,
+      [blockId]: {
+        ...progress,
+        taughtTargetIds,
+        currentTargetId,
+        phase: currentTargetId ? "teaching" : "teaching-complete"
+      }
+    },
+    lastTransition: {
+      kind: "physical-teaching-target-completed",
+      blockId,
+      targetId,
+      currentTargetId
+    }
+  }, config);
 }
 
 function resolveStorage(storage) {
@@ -595,8 +705,31 @@ function getPhysicalFeatureProgress(feature, completedBlockIds, evaluationsById)
   };
 }
 
-function createDynamicPhysicalIntroductionBlock(block, cohortProgress, featuresByTargetId) {
-  if (!cohortProgress) return block;
+function createDynamicPhysicalIntroductionBlock(block, cohortProgress, featuresByTargetId, normalizedState) {
+  if (!cohortProgress) {
+    const teachingTargetIds = uniqueStrings(block.destination.targetIds);
+    const persistedTeachingProgress = normalizedState?.physicalTeachingProgress?.[block.id] || null;
+    const taughtTargetIds = persistedTeachingProgress?.taughtTargetIds
+      ?.filter((targetId) => teachingTargetIds.includes(targetId)) || [];
+    const pendingTeachingTargetIds = teachingTargetIds.filter((targetId) => !taughtTargetIds.includes(targetId));
+    const targetFeatures = teachingTargetIds.map((targetId) => featuresByTargetId.get(targetId)).filter(Boolean);
+    return {
+      ...block,
+      introductionBlockIds: [block.id],
+      destination: {
+        ...block.destination,
+        newTargetIds: teachingTargetIds,
+        newTargetLabels: targetFeatures.map(({ name }) => name),
+        newTargetConceptIds: targetFeatures.map(({ conceptId }) => conceptId),
+        teachingTargetIds,
+        taughtTargetIds,
+        pendingTeachingTargetIds,
+        currentTeachingTargetId: pendingTeachingTargetIds[0] || null,
+        teachingPhase: pendingTeachingTargetIds.length > 0 ? "teaching" : "teaching-complete",
+        cameraSource: block.destination.camera ? "authored-feature-override" : "automatic-feature-fit"
+      }
+    };
+  }
   const introduced = cohortProgress.introducedTargetIds;
   const preferredSize = Math.max(2, Number(cohortProgress.cohort.preferredRetrievalSize) || 3);
   const selectedTargetId = block.destination.targetIds[0];
@@ -616,8 +749,15 @@ function createDynamicPhysicalIntroductionBlock(block, cohortProgress, featuresB
   const targetIds = cohortProgress.cohort.supportedMemberTargetIds
     .filter((targetId) => comparisonSet.has(targetId))
     .slice(0, preferredSize);
+  const persistedTeachingProgress = normalizedState?.physicalTeachingProgress?.[block.id] || null;
+  const teachingTargetIds = persistedTeachingProgress?.teachingTargetIds?.length
+    ? persistedTeachingProgress.teachingTargetIds.filter((targetId) => targetIds.includes(targetId))
+    : newTargetIds;
+  const taughtTargetIds = persistedTeachingProgress?.taughtTargetIds
+    ?.filter((targetId) => teachingTargetIds.includes(targetId)) || [];
+  const pendingTeachingTargetIds = teachingTargetIds.filter((targetId) => !taughtTargetIds.includes(targetId));
   const targetFeatures = targetIds.map((targetId) => featuresByTargetId.get(targetId)).filter(Boolean);
-  const newFeatures = newTargetIds.map((targetId) => featuresByTargetId.get(targetId)).filter(Boolean);
+  const newFeatures = teachingTargetIds.map((targetId) => featuresByTargetId.get(targetId)).filter(Boolean);
   return {
     ...block,
     cohortId: cohortProgress.cohort.id,
@@ -628,9 +768,14 @@ function createDynamicPhysicalIntroductionBlock(block, cohortProgress, featuresB
       targetIds,
       targetLabels: targetFeatures.map(({ name }) => name),
       targetConceptIds: targetFeatures.map(({ conceptId }) => conceptId),
-      newTargetIds,
+      newTargetIds: teachingTargetIds,
       newTargetLabels: newFeatures.map(({ name }) => name),
       newTargetConceptIds: newFeatures.map(({ conceptId }) => conceptId),
+      teachingTargetIds,
+      taughtTargetIds,
+      pendingTeachingTargetIds,
+      currentTeachingTargetId: pendingTeachingTargetIds[0] || null,
+      teachingPhase: pendingTeachingTargetIds.length > 0 ? "teaching" : "teaching-complete",
       camera: cohortProgress.cohort.camera || block.destination.camera,
       cameraSource: cohortProgress.cohort.camera ? "authored-cohort-override" : "automatic-feature-fit",
       teachingMessage: targetFeatures.length > 1
@@ -758,7 +903,8 @@ export function selectGuidedLearningOrchestrationBlock({
     selectedBlock = createDynamicPhysicalIntroductionBlock(
       selectedBlock,
       cohortProgress.find(({ cohort }) => cohort.id === feature?.learningCohortId),
-      featuresByTargetId
+      featuresByTargetId,
+      normalizedState
     );
   } else if (selectedBlock.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE) {
     selectedBlock = createDynamicPhysicalPracticeBlock(
@@ -842,6 +988,48 @@ export function selectGuidedLearningOrchestrationBlock({
       returnBehavior: null
     }))
   ];
+  const physicalTeachingTrace = selectedBlock.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_INTRODUCTION
+    ? {
+        cohortId: selectedBlock.destination.cohortId || null,
+        phase: selectedBlock.destination.teachingPhase || "teaching",
+        currentTargetId: selectedBlock.destination.currentTeachingTargetId || null,
+        currentTarget: selectedBlock.destination.currentTeachingTargetId
+          ? featuresByTargetId.get(selectedBlock.destination.currentTeachingTargetId)?.name || null
+          : null,
+        members: (selectedBlock.destination.teachingTargetIds || []).map((targetId) => ({
+          targetId,
+          name: featuresByTargetId.get(targetId)?.name || targetId,
+          introduced: (selectedBlock.destination.taughtTargetIds || []).includes(targetId),
+          current: selectedBlock.destination.currentTeachingTargetId === targetId
+        })),
+        interaction: {
+          type: "guided-locating",
+          highlight: Boolean(selectedBlock.destination.currentTeachingTargetId),
+          evidenceOutcome: "assisted"
+        },
+        camera: cloneJson(selectedBlock.destination.camera),
+        cameraSource: selectedBlock.destination.cameraSource || "automatic-feature-fit"
+      }
+    : selectedBlock.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE
+      ? {
+          cohortId: selectedBlock.destination.cohortId || null,
+          phase: "retrieval",
+          currentTargetId: null,
+          currentTarget: null,
+          members: (selectedBlock.destination.targetIds || []).map((targetId) => ({
+            targetId,
+            name: featuresByTargetId.get(targetId)?.name || targetId,
+            introduced: true,
+            current: false
+          })),
+          interaction: {
+            type: "locating",
+            highlightBeforeAnswer: false
+          },
+          camera: cloneJson(selectedBlock.destination.camera),
+          cameraSource: selectedBlock.destination.cameraSource || "automatic-feature-fit"
+        }
+      : null;
   return {
     orchestrationId: config.id,
     deterministicOrder: config.blocks.map(({ id }) => id),
@@ -898,6 +1086,7 @@ export function selectGuidedLearningOrchestrationBlock({
       pendingTargetIds: [...progress.pendingTargetIds]
     })),
     physicalFeatureTrace,
+    physicalTeachingTrace,
     evaluations
   };
 }
@@ -985,9 +1174,12 @@ export function completeGuidedLearningPhysicalFeatureIntroductions(
   }
   const completedBlockIds = uniqueStrings([...normalized.completedBlockIds, ...blockIds]);
   const completedSequenceBlock = blocks.find(({ sequenceCompletion }) => true);
+  const physicalTeachingProgress = Object.fromEntries(Object.entries(normalized.physicalTeachingProgress)
+    .filter(([progressBlockId]) => !blockIds.includes(progressBlockId) && progressBlockId !== normalized.activeBlockId));
   return createGuidedLearningOrchestrationState({
     ...normalized,
     completedBlockIds,
+    physicalTeachingProgress,
     activeBlockId: null,
     activeStatus: null,
     previousBlockId: normalized.activeBlockId,
@@ -1021,11 +1213,14 @@ export function satisfyGuidedLearningPhysicalInterleave(
   }, config);
 }
 
-export function createPhysicalFeatureIntroductionEvidence({ block, identity = {} } = {}) {
+export function createPhysicalFeatureIntroductionEvidence({ block, targetId: requestedTargetId = null, identity = {} } = {}) {
   const destination = block?.destination || {};
-  const targetId = destination.targetIds?.[0];
+  const targetId = requestedTargetId || destination.targetIds?.[0];
   if (block?.type !== GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_INTRODUCTION || !targetId) {
     throw new TypeError("A physical-feature introduction block with a target is required.");
+  }
+  if (!(destination.teachingTargetIds || destination.newTargetIds || destination.targetIds || []).includes(targetId)) {
+    throw new TypeError(`${targetId} is not a teaching target in ${block.id}.`);
   }
   return adaptCanonicalRetrievalAttempt({
     item: {
@@ -1047,18 +1242,13 @@ export function createPhysicalFeatureIntroductionEvidenceEvents({ block, identit
   if (block?.type !== GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_INTRODUCTION || targetIds.length === 0) {
     throw new TypeError("A physical-feature introduction block with at least one new target is required.");
   }
-  return targetIds.map((targetId) => adaptCanonicalRetrievalAttempt({
-    item: {
-      type: destination.targetType,
-      targetId,
-      sourceActivityId: destination.activityId
-    },
-    promptType: "guided",
-    result: "correct",
-    sourceMode: "guided-learning-orchestration",
-    sourceActivityId: destination.activityId,
-    ...identity,
-    eventId: `${identity.eventId || "guided-physical-introduction"}:${targetId}`
+  return targetIds.map((targetId) => createPhysicalFeatureIntroductionEvidence({
+    block,
+    targetId,
+    identity: {
+      ...identity,
+      eventId: `${identity.eventId || "guided-physical-introduction"}:${targetId}`
+    }
   }));
 }
 
