@@ -34,7 +34,8 @@ import { createUnitedStatesContinuationFoundation } from "./continuation-readine
 import { selectUnitedStatesEvidenceDrivenContinuation } from "./united-states-evidence-driven-continuation.js";
 import {
   completeGuidedLearningOrchestrationBlock,
-  createPhysicalFeatureIntroductionEvidence,
+  completeGuidedLearningPhysicalFeatureIntroductions,
+  createPhysicalFeatureIntroductionEvidenceEvents,
   deferGuidedLearningOrchestrationBlock,
   GUIDED_LEARNING_BLOCK_TYPES,
   loadGuidedLearningOrchestrationState,
@@ -44,8 +45,8 @@ import {
   selectGuidedLearningOrchestrationBlock,
   startGuidedLearningOrchestrationBlock,
   UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
-} from "./guided-learning-orchestration.js";
-import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js";
+} from "./guided-learning-orchestration.js?v=20260831-physical-learning-cohorts-1";
+import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js?v=20260831-physical-learning-cohorts-1";
 import {
   ACROSS_UNITED_STATES_EXPEDITION_ID,
   acrossUnitedStatesExpedition,
@@ -3910,6 +3911,11 @@ function getGuidedLearningOrchestrationSnapshot() {
       returnContext: activeGuidedLearningOrchestrationBlock.returnContext,
       physicalFeatureFamily: activeStudySession?.physicalFeatureFamily || null,
       physicalFeatureGeometry: activeStudySession?.physicalFeatureGeometry || null,
+      physicalCohortId: activeGuidedLearningOrchestrationBlock.cohortId
+        || activeGuidedLearningOrchestrationBlock.destination?.cohortId
+        || null,
+      physicalCohortTargetIds: [...(activeStudySession?.focusTargetIds || [])],
+      persistentLearningCamera: activeStudySession?.persistentLearningCamera || null,
       guidedCameraDecision: activeStudySession?.guidedCameraDecision || null
     } : null
   };
@@ -3935,6 +3941,13 @@ function getGuidedLearningOrchestrationReturnContext() {
 }
 
 function saveActiveGuidedLearningOrchestrationBlock(block, returnContext) {
+  const persistedReturnContext = block.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE
+    ? {
+        ...returnContext,
+        physicalCohortId: block.cohortId || block.destination.cohortId || null,
+        physicalCohortTargetIds: [...(block.destination.targetIds || [])]
+      }
+    : returnContext;
   const current = loadGuidedLearningOrchestrationState(
     window.localStorage,
     UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
@@ -3942,7 +3955,7 @@ function saveActiveGuidedLearningOrchestrationBlock(block, returnContext) {
   const next = startGuidedLearningOrchestrationBlock(
     current,
     block.id,
-    returnContext,
+    persistedReturnContext,
     UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
   );
   saveGuidedLearningOrchestrationState(
@@ -3953,7 +3966,7 @@ function saveActiveGuidedLearningOrchestrationBlock(block, returnContext) {
   activeGuidedLearningOrchestrationBlock = {
     ...block,
     status: "launched",
-    returnContext
+    returnContext: persistedReturnContext
   };
   publishGuidedLearningOrchestrationTrace({
     lifecycleEvent: "external-activity-launched",
@@ -4035,15 +4048,36 @@ function recordActivePhysicalFeatureIntroduction() {
   }
   try {
     const identity = createCanonicalRuntimeAttemptIdentity("guided-learning-orchestration", block.destination.activityId);
-    const event = createPhysicalFeatureIntroductionEvidence({
+    const events = createPhysicalFeatureIntroductionEvidenceEvents({
       block,
       identity: {
         ...identity,
         sessionId: `guided-learning-orchestration:${block.id}`
       }
     });
-    reportCanonicalEvidenceWrite(recordCanonicalEvidenceEventWithInspector(event));
-    completeActiveGuidedLearningOrchestrationBlock(block.id);
+    reportCanonicalEvidenceWrite(recordCanonicalEvidenceEventsWithInspector(events));
+    const current = loadGuidedLearningOrchestrationState(
+      window.localStorage,
+      UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+    );
+    const introductionBlockIds = block.introductionBlockIds?.length
+      ? block.introductionBlockIds
+      : [block.id];
+    const next = completeGuidedLearningPhysicalFeatureIntroductions(
+      current,
+      introductionBlockIds,
+      UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+    );
+    saveGuidedLearningOrchestrationState(
+      next,
+      window.localStorage,
+      UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+    );
+    activeGuidedLearningOrchestrationBlock.status = "completed";
+    publishGuidedLearningOrchestrationTrace({
+      lifecycleEvent: "physical-feature-introductions-completed",
+      completedBlockIds: introductionBlockIds
+    });
     return true;
   } catch (error) {
     console.warn("[guided-learning-orchestration] Physical introduction evidence could not be created.", error);
@@ -4080,7 +4114,8 @@ async function launchNextGuidedLearningOrchestrationBlock() {
       teachingMessage: block.destination.teachingMessage,
       physicalFeatureFamily: block.destination.featureFamily,
       physicalFeatureCamera: block.destination.camera,
-      physicalFeatureGeometry: block.destination.geometry
+      physicalFeatureGeometry: block.destination.geometry,
+      persistentLearningCamera: block.destination.persistentLearningCamera
     });
     return true;
   }
@@ -4094,7 +4129,8 @@ async function launchNextGuidedLearningOrchestrationBlock() {
       memoryTrailNewTargetIds: [],
       physicalFeatureFamily: block.destination.featureFamily,
       physicalFeatureCamera: block.destination.camera,
-      physicalFeatureGeometry: block.destination.geometry
+      physicalFeatureGeometry: block.destination.geometry,
+      persistentLearningCamera: block.destination.persistentLearningCamera
     });
     return true;
   }
@@ -8289,7 +8325,8 @@ async function startStudyPreviewActivity(journeyId, stepId, options = {}) {
     teachingMessage: options.teachingMessage,
     physicalFeatureFamily: options.physicalFeatureFamily,
     physicalFeatureCamera: options.physicalFeatureCamera,
-    physicalFeatureGeometry: options.physicalFeatureGeometry
+    physicalFeatureGeometry: options.physicalFeatureGeometry,
+    persistentLearningCamera: options.persistentLearningCamera
   });
 }
 
@@ -8388,6 +8425,7 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
     physicalFeatureFamily: String(options.physicalFeatureFamily || "").trim() || null,
     physicalFeatureCamera: options.physicalFeatureCamera || null,
     physicalFeatureGeometry: options.physicalFeatureGeometry || null,
+    persistentLearningCamera: options.persistentLearningCamera || null,
     guidedCameraDecision: null
   };
   activeStudyPracticeSession = null;
@@ -8446,7 +8484,8 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
   if (options.autoStartMemoryTrail && canUseMemoryTrail) {
     startMemoryTrail({
       newTargetIds: options.memoryTrailNewTargetIds,
-      targetIds: options.memoryTrailTargetIds
+      targetIds: options.memoryTrailTargetIds,
+      guidedPersistentCamera: options.persistentLearningCamera
     });
   } else if (canUseMemoryTrail && !activeStudySession.guidedOrchestration) {
     showMemoryTrailOfferOverlay();
@@ -8861,7 +8900,8 @@ function showMemoryTrailCompletionOverlay() {
   configureMemoryTrailOverlay({
     mode: "complete",
     titleText: isGuidedOrchestrationPractice
-      ? `${activeGuidedLearningOrchestrationBlock.destination.targetLabel} practice complete`
+      ? `${activeGuidedLearningOrchestrationBlock.destination.targetLabels?.join(" and ")
+        || activeGuidedLearningOrchestrationBlock.destination.targetLabel} practice complete`
       : hasNextSection && memoryTrail?.sectionTitle
       ? `${memoryTrail.sectionTitle} Complete`
       : "Guided Learning Complete",
@@ -10014,6 +10054,7 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
   });
   const sessionSeconds = options.sessionSeconds || DEFAULT_SESSION_SECONDS;
   const dailyTrailFixedCamera = normalizeDailyTrailFixedCamera(options.dailyTrailFixedCamera);
+  const guidedPersistentCamera = normalizeMemoryTrailSectionQuizView(options.guidedPersistentCamera);
   const memoryTrail = {
     active: true,
     adaptive: true,
@@ -10056,6 +10097,7 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     sectionCount: Number.isInteger(options.sectionCount) ? options.sectionCount : null,
     sectionQuizView: normalizeMemoryTrailSectionQuizView(options.sectionQuizView),
     dailyTrailFixedCamera,
+    guidedPersistentCamera,
     dailyTrailFixedCameraLocked: false,
     dailyTrailMobileSectionQuizCamera: normalizeMemoryTrailSectionQuizView(options.dailyTrailMobileSectionQuizCamera),
     lastMobileSectionQuizCameraKey: "",
@@ -10695,6 +10737,9 @@ function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options 
   if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
     return false;
   }
+  if (memoryTrail?.guidedPersistentCamera) {
+    return false;
+  }
 
   const mobileSectionQuizCamera = getActiveDailyTrailMobileSectionQuizCamera(memoryTrail);
   if (mobileSectionQuizCamera) {
@@ -10881,6 +10926,9 @@ function applyDailyTrailTargetQuizCamera(memoryTrail, selection = {}, options = 
 
 function scheduleMemoryTrailSectionQuizCameraCheck(memoryTrail, selection = {}) {
   if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
+    return false;
+  }
+  if (memoryTrail?.guidedPersistentCamera) {
     return false;
   }
 
@@ -11890,7 +11938,8 @@ function startMemoryTrail(options = {}) {
     dailyTrailNonLearnCamera: getDailyTrailMemoryTrailNonLearnCamera(session.currentActivity, options),
     dailyTrailQuizCamera: isDailyTrail ? session.currentActivity?.map?.dailyTrailQuizCamera || null : null,
     checkpointReview,
-    completedTrailReview: options.completedTrailReview === true
+    completedTrailReview: options.completedTrailReview === true,
+    guidedPersistentCamera: options.guidedPersistentCamera
   });
   publishDailyTrailCheckpointRuntimeSnapshot(activeStudySession.memoryTrail, {
     stage: "memory-trail-created"
@@ -11913,7 +11962,9 @@ function startMemoryTrail(options = {}) {
   }
   runner.setCompletedTargets([]);
   instruction.textContent = "First learn the small group, then practice from memory.";
-  fitMapToPracticeWindow(activeStudySession.memoryTrail.currentPracticeWindow, "start");
+  if (!activeStudySession.memoryTrail.guidedPersistentCamera) {
+    fitMapToPracticeWindow(activeStudySession.memoryTrail.currentPracticeWindow, "start");
+  }
   renderStudyExplorePanel();
   if (!options.suppressInitialPrompt) {
     promptNextMemoryTrailTarget(activeStudySession?.memoryTrail);
@@ -11990,14 +12041,19 @@ function restartMemoryTrail() {
   resetAudioInstructionState(`memory-trail:${activeStudySession.activityId}:${Date.now()}`);
   window.GeographyChipSpeech?.primeLocalAudio?.();
   const memoryTrailSection = getActiveMemoryTrailSection(session.currentActivity);
+  const guidedPersistentCamera = activeStudySession.guidedOrchestration
+    ? activeStudySession.persistentLearningCamera
+    : null;
   activeStudySession.memoryTrail = createMemoryTrailSession(session.currentActivity, {
-    targetIds: memoryTrailSection?.targetIds,
+    newTargetIds: guidedPersistentCamera ? [] : undefined,
+    targetIds: guidedPersistentCamera ? activeStudySession.focusTargetIds : memoryTrailSection?.targetIds,
     maxNewTargets: memoryTrailSection?.targetIds?.length,
     sectionTitle: memoryTrailSection?.title,
     sectionIndex: memoryTrailSection?.sectionIndex,
     sectionCount: memoryTrailSection?.sectionCount,
     sectionQuizView: memoryTrailSection?.map?.quizView || session.currentActivity?.map?.quizView || null,
-    dailyTrailMobileSectionQuizCamera: session.currentActivity?.map?.dailyTrailMobileSectionQuizCamera || null
+    dailyTrailMobileSectionQuizCamera: session.currentActivity?.map?.dailyTrailMobileSectionQuizCamera || null,
+    guidedPersistentCamera
   });
   activeStudySession.memoryTrail.previousRevealedTargetIds = previousRevealedTargetIds;
   currentMemoryTrailAnalyticsKey = [
@@ -12016,7 +12072,11 @@ function restartMemoryTrail() {
   }
   runner.setCompletedTargets([]);
   instruction.textContent = "First learn the small group, then practice from memory.";
-  fitMapToPracticeWindow(activeStudySession.memoryTrail.currentPracticeWindow, "restart");
+  if (guidedPersistentCamera) {
+    applyGuidedPhysicalFeatureCamera();
+  } else {
+    fitMapToPracticeWindow(activeStudySession.memoryTrail.currentPracticeWindow, "restart");
+  }
   renderStudyExplorePanel();
   promptNextMemoryTrailTarget(activeStudySession?.memoryTrail);
 }
@@ -12457,7 +12517,8 @@ function debugContinentsOceansLearnCamera(label, details = {}, memoryTrail = get
 
 function scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target) {
   if (
-    session.currentActivity?.id === continentsOceansActivityId
+    memoryTrail?.guidedPersistentCamera
+    || session.currentActivity?.id === continentsOceansActivityId
     || selection?.promptType !== "guided"
     || memoryTrail?.sessionPhase !== "learn"
     || getActiveDailyTrailFixedCamera(memoryTrail)
@@ -14897,6 +14958,9 @@ function fitMapToPracticeWindow(targets = [], reason = "practice-window") {
   }
 
   const memoryTrail = getActiveMemoryTrail();
+  if (memoryTrail?.guidedPersistentCamera) {
+    return false;
+  }
   if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
     return applyMixedDailyTrailCheckpointCamera(memoryTrail, { duration: 820 });
   }
@@ -27039,6 +27103,8 @@ function getGuidedPhysicalFeatureVisualStateForTest() {
   return {
     activityId: session.currentActivity?.id || null,
     targetId,
+    focusTargetIds: [...(activeStudySession.focusTargetIds || [])],
+    memoryTrailTargetIds: [...(activeStudySession.memoryTrail?.targetPoolIds || [])],
     targetName: target?.name || null,
     targetCount: session.currentActivity?.targets?.length || 0,
     family: activeStudySession.physicalFeatureFamily,
@@ -27046,6 +27112,7 @@ function getGuidedPhysicalFeatureVisualStateForTest() {
     sourceFeatureId: sourceFeature?.properties?.id || sourceFeature?.properties?.name || sourceFeature?.id || null,
     sourceBounds: sourceFeature?.geometry ? runner.getGeometryBounds?.(sourceFeature.geometry) : null,
     cameraDecision: activeStudySession.guidedCameraDecision,
+    persistentLearningCamera: activeStudySession.persistentLearningCamera,
     camera: {
       center: mapCenter ? [mapCenter.lng, mapCenter.lat] : null,
       zoom: runner.map?.getZoom?.() ?? null,

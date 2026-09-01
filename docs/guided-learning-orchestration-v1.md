@@ -11,12 +11,25 @@ The orchestration configuration uses stable block IDs and five bounded block typ
 - `guided-section`: the fallback that resumes the existing Guided Learning planner;
 - `reconstruction-checkpoint`: the existing New England Regional Reconstruction activity;
 - `physical-feature-introduction`: a focused teaching view using the feature family's existing rendering;
-- `physical-feature-practice`: the existing Memory Trail engine targeted to one feature;
+- `physical-feature-practice`: the existing Memory Trail engine targeted to a small learned comparison cohort;
 - `connection-checkpoint`: the existing U.S. Connections engine targeted to one authored relationship, when one exists.
 
-Rivers, lakes, and mountain ranges are generated from the shared U.S. atlas, canonical concept contracts, existing activity targets, and authored state–feature relationships. Each supported feature follows **Introduce → Retrieve → optional Connection → Return**. The configuration does not duplicate activity mechanics or geographic facts. Great Salt Lake deliberately omits the Connection step because none is authored.
+Rivers, lakes, and mountain ranges are generated from the shared U.S. atlas, canonical concept contracts, existing activity targets, and authored state–feature relationships. A feature can follow **Introduce → Compare → Retrieve → optional Connection → Return**, but retrieval runs only when at least two compatible features have been introduced. A valid Connection may follow an individual introduction while cohort retrieval waits for another member. The configuration does not duplicate activity mechanics or geographic facts. Great Salt Lake deliberately omits the Connection step because none is authored.
 
 The original White Mountains slice and its New England Reconstruction dependency remain intact. The generalized contract adds the other safely supported physical features without changing Reconstruction itself.
+
+## Physical learning cohorts
+
+Physical retrieval requires meaningful alternatives: two introduced members minimum and three preferred when a safe small authored grouping supports them. Introduction and retrieval readiness are separate. Each feature keeps its own political prerequisites, so an eligible member may be taught without prematurely introducing a cohort neighbor. If only one member is introduced, it remains available for later cohort practice and the one-answer identification loop is skipped.
+
+The authored-data audit found:
+
+- Rivers already define `western-rivers` and `central-eastern-rivers` Memory Trail sections. The western group is the authored three-feature Colorado/Columbia/Rio Grande cohort. The supported central/eastern members are presented in deterministic groups of up to three; St. Lawrence remains excluded because its geometry is incomplete.
+- The Eastern Mountains activity is one broad eight-feature activity and does not contain a small Northeast subsection. The product-approved White Mountains, Green Mountains, and Adirondack Mountains subset is therefore recorded explicitly as a bounded subgroup of that authored activity, rather than described as pre-existing authored curriculum.
+- Midwestern Mountains is an authored three-feature activity, and Alaska Mountains is an authored two-feature activity; both are safe cohorts.
+- Western Mountains is too broad for novice cohort retrieval, the remaining Eastern Mountains lack an approved small subgroup, and Lakes currently provide one broad six-feature activity with no authored small group. Those retrieval groupings are deferred instead of fabricating distractors. Their introductions and eligible Connections remain available.
+
+For the Northeast cohort, White Mountains retains its Maine/New Hampshire prerequisite, Green Mountains retains Vermont, and Adirondack Mountains retains New York. White and Green can therefore be introduced and retrieved together before New York is covered. Adirondacks joins a later comparison/retrieval set after its own prerequisite becomes covered. If all three are eligible initially, all three are introduced together.
 
 ## Covered prerequisites
 
@@ -33,7 +46,7 @@ By default, introduction requires coverage for every U.S. state in the feature's
 
 When several physical features become eligible, the queue is ordered by the milestone at which each feature first had all introduction prerequisites covered, with stable atlas-authored order as the tie-breaker. The same evidence and state therefore produce the same queue.
 
-While unfinished non-physical Guided Learning curriculum remains, two newly introduced physical sequences do not run consecutively. Completing a full physical sequence returns to the Guided planner and requires one real Guided session or non-physical orchestration checkpoint before another new feature begins. Opening the coordinator or an activity does not satisfy that requirement. An in-progress feature always finishes its own introduction, retrieval, and optional Connection before another feature can start.
+While unfinished non-physical Guided Learning curriculum remains, two completed physical sequences do not run consecutively. Completing cohort retrieval or the final eligible integration step returns to the Guided planner and requires one real Guided session or non-physical orchestration checkpoint before another new physical sequence begins. Opening the coordinator or an activity does not satisfy that requirement. When retrieval is deferred because only one cohort member is introduced, normal political Guided Learning continues rather than forcing a trivial physical activity.
 
 When the existing political Guided curriculum has no unseen items left, the remaining physical backlog may drain one complete sequence at a time. Each sequence still returns through the coordinator; no parallel activity engine is created.
 
@@ -49,24 +62,24 @@ The renderer reuses source geometry without country clipping. Foreign geography 
 
 Guided physical views use a feature-first camera. The coordinator resolves the real source geometry, including authored visual continuation, calculates bounds, expands them by a family-appropriate amount for political context, and fits the viewport with a maximum zoom. Mountain, river, and lake profiles differ, and mobile uses different panel-aware padding. Learner pan and zoom remain available.
 
-A per-feature camera override contract supports a center, zoom, bearing, and pitch when later visual review finds automatic fitting inadequate. Automatic fit is the default, and no current feature is manually tuned.
+A per-feature or cohort camera override contract supports a center, zoom, bearing, and pitch when visual review finds automatic fitting inadequate. The Northeast Mountains cohort uses the approved authored override at longitude `-76.24`, latitude `40.39`, and zoom `5.16` (bearing and pitch `0`). It remains authoritative through the cohort introduction and focused retrieval. Legacy activity-section, practice-window, and small-target camera moves are suppressed for that Guided entry, while learner pan and zoom remain enabled. Other cohorts retain automatic feature fitting until a camera is intentionally authored; no provisional regional cameras are invented. Standalone Mountain Ranges behavior is unchanged.
 
 ## Handoffs and evidence ownership
 
 The orchestrator selects an eligible block from the deterministic queue, records only a minimal block cursor and pacing marker, launches the existing activity, and returns to the existing Guided Learning planner afterward.
 
 - Reconstruction owns its evaluation and canonical reconstruction evidence. Submission completes the checkpoint even when the reconstruction is imperfect.
-- A physical introduction records an existing canonical `assisted` locating outcome only after the learner acknowledges the teaching view. Opening or leaving the view alone records no exposure.
+- A physical introduction records one existing canonical `assisted` locating outcome for each newly introduced cohort member only after the learner acknowledges the teaching view. Previously introduced comparison members do not receive duplicate exposure. Opening or leaving the view alone records no exposure.
 - Memory Trail owns physical-feature retrieval and its canonical evidence.
 - U.S. Connections owns question scoring, feedback, hint behavior, and canonical relationship evidence. The orchestration contract only filters the existing pool by stable challenge ID.
 
-The orchestration store contains completed or pending block IDs, the pacing marker, and the Guided Learning return context. It is not a learner-history database. Canonical evidence remains the durable shared history, and the existing Guided Learning scheduler remains the authority for the next Guided Learning session.
+The orchestration store contains completed or pending block IDs, the pacing marker, the Guided Learning return context, and the member IDs already included in cohort retrieval. It is not a learner-history database. Canonical evidence remains the durable shared history, and the existing Guided Learning scheduler remains the authority for the next Guided Learning session.
 
 Reset All Learning Progress clears the orchestration store. Reset United States Guided Learning also clears its associated orchestration cursor while retaining canonical history under the existing scoped-reset authority.
 
 ## Observability and determinism
 
-The Learning Inspector export includes the current block, every block's eligibility and prerequisite evidence, the previous and intended next blocks, the external destination, completion status, return context, and fallback reason. Its physical-feature trace also includes concept and family identity, geometry representation, prerequisite source and coverage, first-eligible milestone, queue position, pacing reason, generated block IDs, camera mode and calculated values, cross-border metadata, and return behavior.
+The Learning Inspector export includes the current block, every block's eligibility and prerequisite evidence, the previous and intended next blocks, the external destination, completion status, return context, and fallback reason. Its physical-feature trace also includes concept and family identity, cohort ID and grouping status, geometry representation, prerequisite source and coverage, first-eligible milestone, queue position, pacing reason, generated block IDs, camera mode and calculated values, cross-border metadata, and return behavior. A cohort trace exposes authored and supported members, each member's prerequisite status, introduced and retrieved members, whether retrieval is ready, its deferred reason, the current retrieval subset, the cohort camera and source, and members still waiting on prerequisites.
 
 The same evidence, Guided Learning state, and configuration always produce the same selection. No orchestration choice uses randomness.
 

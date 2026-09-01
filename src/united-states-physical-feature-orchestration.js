@@ -13,6 +13,83 @@ export const UNITED_STATES_PHYSICAL_FEATURE_FAMILIES = Object.freeze({
   MOUNTAIN_RANGE: "mountain-range"
 });
 
+export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
+  Object.freeze({
+    id: "western-rivers",
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.RIVER,
+    source: "authored-memory-trail-section",
+    sourceId: "western-rivers",
+    authoredMemberTargetIds: Object.freeze(["colorado-river", "columbia-river", "rio-grande-river"]),
+    minimumRetrievalSize: 2,
+    preferredRetrievalSize: 3
+  }),
+  Object.freeze({
+    id: "central-eastern-rivers",
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.RIVER,
+    source: "authored-memory-trail-section",
+    sourceId: "central-eastern-rivers",
+    authoredMemberTargetIds: Object.freeze([
+      "arkansas-river",
+      "mississippi-river",
+      "missouri-river",
+      "ohio-river",
+      "st-lawrence-river"
+    ]),
+    minimumRetrievalSize: 2,
+    preferredRetrievalSize: 3
+  }),
+  Object.freeze({
+    id: "northeast-mountains",
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.MOUNTAIN_RANGE,
+    source: "product-approved-subgroup-of-authored-eastern-mountains",
+    sourceId: "us-physical-eastern-mountains",
+    authoredMemberTargetIds: Object.freeze([
+      "white-mountains",
+      "green-mountains",
+      "adirondack-mountains"
+    ]),
+    minimumRetrievalSize: 2,
+    preferredRetrievalSize: 3,
+    camera: Object.freeze({ mode: "override", center: Object.freeze([-76.24, 40.39]), zoom: 5.16, bearing: 0, pitch: 0 })
+  }),
+  Object.freeze({
+    id: "central-mountains",
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.MOUNTAIN_RANGE,
+    source: "authored-activity-section",
+    sourceId: "us-physical-midwestern-mountains",
+    authoredMemberTargetIds: Object.freeze(["ozark-mountains", "ouachita-mountains", "black-hills"]),
+    minimumRetrievalSize: 2,
+    preferredRetrievalSize: 3
+  }),
+  Object.freeze({
+    id: "alaska-mountains",
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.MOUNTAIN_RANGE,
+    source: "authored-activity-section",
+    sourceId: "us-physical-alaska-mountains",
+    authoredMemberTargetIds: Object.freeze(["alaska-range", "brooks-range"]),
+    minimumRetrievalSize: 2,
+    preferredRetrievalSize: 2
+  })
+]);
+
+export const UNITED_STATES_PHYSICAL_COHORT_DEFERRED_GROUPS = Object.freeze([
+  Object.freeze({
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.MOUNTAIN_RANGE,
+    sourceId: "us-physical-western-mountains",
+    reason: "authored-group-too-large-for-novice-cohort"
+  }),
+  Object.freeze({
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.MOUNTAIN_RANGE,
+    sourceId: "us-physical-eastern-mountains:remaining-members",
+    reason: "no-authored-small-subgroup"
+  }),
+  Object.freeze({
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.LAKE,
+    sourceId: "us-physical-lakes",
+    reason: "no-authored-small-cohort"
+  })
+]);
+
 const familyConfigs = Object.freeze({
   [UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.RIVER]: Object.freeze({
     activityId: "us-physical-rivers",
@@ -105,12 +182,22 @@ export function buildUnitedStatesPhysicalFeatureOrchestrationInventory({
   atlas = unitedStatesAtlas,
   challenges = getUnitedStatesRelationshipChallenges(atlas),
   introductionPrerequisiteStateIdsByFeature = {},
-  cameraOverridesByFeature = {}
+  cameraOverridesByFeature = {},
+  learningCohorts = UNITED_STATES_PHYSICAL_LEARNING_COHORTS
 } = {}) {
   const statesById = new Map((atlas.entities || [])
     .filter(({ kind }) => kind === "state")
     .map((state) => [publicId(state.id), state]));
   const physicalEntities = (atlas.entities || []).filter(({ kind }) => familyConfigs[kind]);
+  const cohortsByTargetId = new Map();
+  learningCohorts.forEach((cohort) => {
+    cohort.authoredMemberTargetIds.forEach((targetId) => {
+      if (cohortsByTargetId.has(targetId)) {
+        throw new TypeError(`${targetId} belongs to more than one physical learning cohort.`);
+      }
+      cohortsByTargetId.set(targetId, cohort);
+    });
+  });
 
   return physicalEntities.map((entity, authoredOrder) => {
     const featureId = publicId(entity.id);
@@ -133,6 +220,10 @@ export function buildUnitedStatesPhysicalFeatureOrchestrationInventory({
     const stateNames = introductionPrerequisiteStateIds
       .map((stateId) => statesById.get(stateId)?.name)
       .filter(Boolean);
+    const learningCohort = cohortsByTargetId.get(featureId) || null;
+    if (learningCohort && learningCohort.family !== entity.kind) {
+      throw new TypeError(`${entity.id} has a physical learning cohort in the wrong family.`);
+    }
     return Object.freeze({
       id: entity.id,
       targetId: featureId,
@@ -174,7 +265,10 @@ export function buildUnitedStatesPhysicalFeatureOrchestrationInventory({
         stateId: challenge.referenceStateId
       }))),
       camera: normalizeCamera(cameraOverride),
-      teachingMessage: createTeachingMessage(entity, stateNames)
+      teachingMessage: createTeachingMessage(entity, stateNames),
+      learningCohortId: learningCohort?.id || null,
+      retrievalGroupingStatus: learningCohort ? "cohort-authored" : "deferred-no-safe-small-cohort",
+      retrievalGroupingReason: learningCohort ? null : "No safe authored small cohort is configured for this feature."
     });
   });
 }
