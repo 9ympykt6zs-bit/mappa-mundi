@@ -27430,6 +27430,89 @@ function getGuidedPhysicalFeatureVisualStateForTest() {
   };
 }
 
+function getCapitalMarkerVisualStateForTest() {
+  if (!runner || !session?.currentActivity) return null;
+  const memoryTrail = getActiveMemoryTrail();
+  const targetId = memoryTrail?.currentPromptTargetId || "";
+  const target = session.currentActivity.targets?.find((candidate) => candidate.id === targetId) || null;
+  const capitalFeature = (runner.getCapitalGeoJson?.().features || [])
+    .find((feature) => feature.properties?.id === targetId) || null;
+  const map = runner.map;
+  const mapRect = map?.getContainer?.().getBoundingClientRect?.() || null;
+  const projectedPoint = capitalFeature?.geometry?.coordinates && map?.project
+    ? map.project(capitalFeature.geometry.coordinates)
+    : null;
+  const point = projectedPoint ? [projectedPoint.x, projectedPoint.y] : null;
+  const renderedTargetIds = (layerId, queryPoint = point) => {
+    if (!queryPoint || !map?.getLayer?.(layerId)) return [];
+    return [...new Set(map.queryRenderedFeatures(queryPoint, { layers: [layerId] })
+      .map((feature) => feature.properties?.id)
+      .filter(Boolean))];
+  };
+  const offStarPoint = point ? [point[0] + 16, point[1]] : null;
+
+  return {
+    activityId: session.currentActivity.id,
+    phase: memoryTrail?.phase || "",
+    sessionPhase: memoryTrail?.sessionPhase || "",
+    promptType: memoryTrail?.currentPromptType || "",
+    targetId,
+    activeHighlightIds: runner.getMemoryTrailActiveHighlightIds?.() || [],
+    authoredCoordinate: target && Number.isFinite(target.lon) && Number.isFinite(target.lat)
+      ? [target.lon, target.lat]
+      : null,
+    sourceCoordinate: capitalFeature?.geometry?.coordinates || null,
+    relatedStateTargetId: target?.easyAcceptShapeTargetId || "",
+    sourceProperties: capitalFeature?.properties || null,
+    clientPoint: projectedPoint ? {
+      x: projectedPoint.x,
+      y: projectedPoint.y,
+      clientX: projectedPoint.x + (mapRect?.left || 0),
+      clientY: projectedPoint.y + (mapRect?.top || 0)
+    } : null,
+    offStarClientPoint: offStarPoint ? {
+      x: offStarPoint[0],
+      y: offStarPoint[1],
+      clientX: offStarPoint[0] + (mapRect?.left || 0),
+      clientY: offStarPoint[1] + (mapRect?.top || 0)
+    } : null,
+    star: {
+      visible: map?.getLayer?.("state-capital-star")
+        ? (map.getLayoutProperty("state-capital-star", "visibility") || "visible")
+        : "missing",
+      filter: map?.getFilter?.("state-capital-star") || map?.getLayer?.("state-capital-star")?.filter || null,
+      iconImage: map?.getLayoutProperty?.("state-capital-star", "icon-image") || null,
+      iconSize: map?.getLayoutProperty?.("state-capital-star", "icon-size") || null,
+      opacity: map?.getPaintProperty?.("state-capital-star", "icon-opacity") ?? null,
+      renderedTargetIds: renderedTargetIds("state-capital-star"),
+      renderedAtOffStarTargetIds: renderedTargetIds("state-capital-star", offStarPoint)
+    },
+    halo: {
+      visible: map?.getLayer?.("state-capital-active-halo")
+        ? (map.getLayoutProperty("state-capital-active-halo", "visibility") || "visible")
+        : "missing",
+      radius: map?.getPaintProperty?.("state-capital-active-halo", "circle-radius") ?? null,
+      renderedTargetIds: renderedTargetIds("state-capital-active-halo")
+    },
+    hitTarget: {
+      visible: map?.getLayer?.("capital-hit")
+        ? (map.getLayoutProperty("capital-hit", "visibility") || "visible")
+        : "missing",
+      radius: map?.getPaintProperty?.("capital-hit", "circle-radius") ?? null,
+      renderedTargetIds: renderedTargetIds("capital-hit"),
+      renderedAtOffStarTargetIds: renderedTargetIds("capital-hit", offStarPoint),
+      resolvedAtOffStarTargetIds: offStarPoint
+        ? runner.getTargetIdsAtMapPoint?.(offStarPoint, target, { priorityTarget: target }) || []
+        : []
+    },
+    insideRelatedState: Boolean(
+      point
+      && target?.easyAcceptShapeTargetId
+      && runner.isMapPointInsideStateTarget?.(point, target.easyAcceptShapeTargetId)
+    )
+  };
+}
+
 function getPoliticalDivisionVisualStateForTest() {
   const visualState = runner?.getPoliticalDivisionVisualState?.();
   if (!visualState?.enabled) return null;
@@ -27853,6 +27936,7 @@ function installMappaTestApi() {
       answerCurrentPromptIncorrectly: answerCurrentPromptIncorrectlyForTest,
       getActivityAttempt: getActivityAttemptForTest,
       getMountainRangeVisualState: getMountainRangeVisualStateForTest,
+      getCapitalMarkerVisualState: getCapitalMarkerVisualStateForTest,
       getGuidedPhysicalFeatureVisualState: getGuidedPhysicalFeatureVisualStateForTest,
       getPoliticalDivisionVisualState: getPoliticalDivisionVisualStateForTest,
       getUnitedStatesMemoryTrailPlan: getUnitedStatesMemoryTrailPlanForTest,

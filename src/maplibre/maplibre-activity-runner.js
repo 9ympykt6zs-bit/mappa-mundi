@@ -4078,11 +4078,7 @@ export class MapLibreActivityRunner {
       id: "state-capital-star",
       type: "symbol",
       source: "study-capitals",
-      filter: [
-        "all",
-        ["==", ["get", "capitalMarkerType"], "state-capital"],
-        ["!=", ["get", "showProgressStar"], false]
-      ],
+      filter: ["==", ["get", "capitalMarkerType"], "state-capital"],
       layout: {
         visibility: "none",
         "icon-image": "mappa-state-capital-star",
@@ -8248,6 +8244,8 @@ export class MapLibreActivityRunner {
       "case",
       ["in", ["get", "id"], ["literal", this.getMemoryTrailActiveHighlightIds()]],
       1,
+      ["==", ["get", "showProgressStar"], false],
+      0,
       [
         "*",
         this.getCapitalOpacityExpression(),
