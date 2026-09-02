@@ -113,7 +113,11 @@ async function finishTargetedPhysicalPractice(
   }
   await expect(page.locator("#memory-trail-overlay")).toBeVisible();
   await expect(page.locator("#memory-trail-primary-button")).toHaveText("Continue Guided Learning");
+  const completedState = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState());
+  expect(completedState.promptCount).toBe(targetIds.length);
+  expect(completedState.promptHistory.map(({ targetId }) => targetId).sort()).toEqual([...targetIds].sort());
   expect([...promptedTargetIds].sort()).toEqual([...targetIds].sort());
+  return completedState.promptHistory.map(({ targetId }) => targetId);
 }
 
 async function finishGuidedPhysicalTeaching(page, { expectPractice = true, verifyWrongTap = false } = {}) {
@@ -631,11 +635,13 @@ test("the eligible three-range Northeast cohort teaches by map tap before mixed 
   const retrievalCameraBeforeTap = await panToAndClickRenderedMountainTarget(page, retrievalTargetId);
   await page.waitForTimeout(700);
   await expectGuidedPhysicalCameraToMatch(page, retrievalCameraBeforeTap);
-  await finishTargetedPhysicalPractice(page, [
+  const retrievalSequence = await finishTargetedPhysicalPractice(page, [
     "white-mountains",
     "green-mountains",
     "adirondack-mountains"
   ], [retrievalTargetId]);
+  expect(retrievalSequence).toHaveLength(3);
+  expect(new Set(retrievalSequence).size).toBe(3);
   const evidence = await page.evaluate((key) => (
     (JSON.parse(localStorage.getItem(key) || "{}").events || [])
       .filter(({ conceptId }) => conceptId.startsWith("mountain-range-location:"))
@@ -647,6 +653,122 @@ test("the eligible three-range Northeast cohort teaches by map tap before mixed 
     "mountain-range-location:green-mountains",
     "mountain-range-location:adirondack-mountains"
   ]);
+});
+
+test("a missed Northeast retrieval gets one later retry and then returns to Guided Learning", async ({ page }) => {
+  await openSeededPhysicalSequence(page, "white-mountains", { extraStateIds: ["vermont", "new-york"] });
+  await launchNextBlock(page, "us-guided:introduce-white-mountains");
+  await finishGuidedPhysicalTeaching(page);
+
+  const firstPrompt = await page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.currentPromptTargetId
+  ));
+  const evidenceCountBeforeRetrieval = await page.evaluate((key) => (
+    JSON.parse(localStorage.getItem(key) || "{}").events?.length || 0
+  ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.answerActiveMemoryTrailIncorrectly())).toBe(true);
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase
+  ))).toBe("correction");
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.completeActiveMemoryTrailCorrection())).toBe(true);
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase
+  ))).toBe("answering");
+
+  const secondPrompt = await page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.currentPromptTargetId
+  ));
+  expect(secondPrompt).not.toBe(firstPrompt);
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.answerActiveMemoryTrailCorrectly())).toBe(true);
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase
+  ))).toBe("answering");
+  const thirdPrompt = await page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.currentPromptTargetId
+  ));
+  expect(new Set([firstPrompt, secondPrompt, thirdPrompt]).size).toBe(3);
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.answerActiveMemoryTrailCorrectly())).toBe(true);
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase
+  ))).toBe("answering");
+  expect(await page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.currentPromptTargetId
+  ))).toBe(firstPrompt);
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.answerActiveMemoryTrailCorrectly())).toBe(true);
+
+  await expect(page.locator("#memory-trail-overlay")).toBeVisible({ timeout: 20_000 });
+  const completed = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState());
+  expect(completed.promptCount).toBe(4);
+  expect(completed.guidedPhysicalRetrievalCheckpoint.complete).toBe(true);
+  expect(completed.guidedPhysicalRetrievalCheckpoint.targets
+    .find(({ targetId }) => targetId === firstPrompt)).toMatchObject({
+      attemptCount: 2,
+      incorrectCount: 1,
+      finalOutcome: "correct"
+    });
+  expect(await page.evaluate((key) => (
+    JSON.parse(localStorage.getItem(key) || "{}").events?.length || 0
+  ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY)).toBe(evidenceCountBeforeRetrieval + 4);
+});
+
+test("a due Northeast cohort launches as a new spaced Guided Learning review", async ({ page }) => {
+  const targetIds = ["white-mountains", "green-mountains", "adirondack-mountains"];
+  const completedBlockIds = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.blocks
+    .filter(({ repeatable }) => !repeatable)
+    .map(({ id }) => id);
+  await page.addInitScript(({ orchestrationKey, configId, completedIds, cohortTargets }) => {
+    localStorage.setItem(orchestrationKey, JSON.stringify({
+      version: 5,
+      orchestrationId: configId,
+      completedBlockIds: completedIds,
+      activeBlockId: null,
+      activeStatus: null,
+      previousBlockId: completedIds.at(-1),
+      physicalInterleaveRequired: false,
+      physicalTeachingProgress: {},
+      retrievedPhysicalCohortTargetIds: { "northeast-mountains": cohortTargets },
+      guidedLearningEventCount: 2,
+      physicalReviewProgress: {
+        "northeast-mountains": {
+          cohortId: "northeast-mountains",
+          generation: 1,
+          previousOrder: [...cohortTargets].reverse(),
+          targets: Object.fromEntries(cohortTargets.map((targetId) => [targetId, {
+            targetId,
+            lastLearningEvent: 0,
+            dueAfterLearningEvent: 2,
+            lastOutcome: "correct"
+          }]))
+        }
+      }
+    }));
+  }, {
+    orchestrationKey: GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY,
+    configId: UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.id,
+    completedIds: completedBlockIds,
+    cohortTargets: targetIds
+  });
+  await page.goto("/?test=1&globeNavigation=off");
+  await page.locator("#launch-start-button").click();
+  await page.evaluate(() => window.__mappaMundiLoadApp());
+  await expect(page.locator("#app-shell-title")).toHaveText("Main Menu");
+
+  await launchNextBlock(page, "us-guided:review-northeast-mountains");
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.guidedPhysicalRetrievalCheckpoint
+  ))).toMatchObject({
+    cohortId: "northeast-mountains",
+    kind: "review",
+    generation: 1,
+    complete: false
+  });
+  await finishTargetedPhysicalPractice(page, targetIds);
+  const trace = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedLearningOrchestration());
+  expect(trace.state.completedBlockIds).not.toContain("us-guided:review-northeast-mountains");
+  expect(trace.state.physicalInterleaveRequired).toBe(true);
+  expect(trace.state.physicalReviewProgress["northeast-mountains"].generation).toBe(2);
+  expect(trace.physicalCohortTrace.find(({ cohortId }) => cohortId === "northeast-mountains").review.eligible)
+    .toBe(false);
 });
 
 test("an interrupted physical teaching cohort resumes at the first untaught target without duplicate evidence", async ({ page }) => {

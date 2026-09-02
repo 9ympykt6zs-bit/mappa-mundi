@@ -7,7 +7,7 @@ import {
 } from "./united-states-physical-feature-orchestration.js";
 
 export const GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY = "mappaGuidedLearningOrchestration";
-export const GUIDED_LEARNING_ORCHESTRATION_VERSION = 4;
+export const GUIDED_LEARNING_ORCHESTRATION_VERSION = 5;
 export const UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_ID = "united-states-guided-learning-v1";
 
 export const GUIDED_LEARNING_BLOCK_TYPES = Object.freeze({
@@ -52,6 +52,33 @@ function normalizePhysicalTeachingProgress(value = {}, config = UNITED_STATES_GU
       taughtTargetIds,
       currentTargetId,
       phase: pendingTargetIds.length > 0 ? "teaching" : "teaching-complete"
+    }]];
+  }));
+}
+
+function normalizePhysicalReviewProgress(value = {}, config = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1) {
+  const source = value && typeof value === "object" ? value : {};
+  const cohortsById = new Map((config?.physicalCohorts || []).map((cohort) => [cohort.id, cohort]));
+  return Object.fromEntries(Object.entries(source).flatMap(([cohortId, progress]) => {
+    const cohort = cohortsById.get(cohortId);
+    if (!cohort || !progress || typeof progress !== "object") return [];
+    const validTargetIds = new Set(cohort.supportedMemberTargetIds);
+    const targets = Object.fromEntries(Object.entries(progress.targets || {}).flatMap(([targetId, target]) => {
+      if (!validTargetIds.has(targetId) || !target || typeof target !== "object") return [];
+      return [[targetId, {
+        targetId,
+        dueAfterLearningEvent: Math.max(0, Number(target.dueAfterLearningEvent) || 0),
+        lastLearningEvent: Math.max(0, Number(target.lastLearningEvent) || 0),
+        lastOutcome: target.lastOutcome === "incorrect" ? "incorrect" : "correct",
+        priority: target.lastOutcome === "incorrect" ? "earlier" : "later",
+        reason: target.lastOutcome === "incorrect" ? "incorrect-retrieval" : "successful-retrieval"
+      }]];
+    }));
+    return [[cohortId, {
+      cohortId,
+      generation: Math.max(0, Number(progress.generation) || 0),
+      previousOrder: uniqueStrings(progress.previousOrder).filter((targetId) => validTargetIds.has(targetId)),
+      targets
     }]];
   }));
 }
@@ -235,12 +262,46 @@ function createPhysicalLearningCohorts(physicalFeatures, cohortDefinitions = UNI
   }).filter(({ supportedMemberTargetIds }) => supportedMemberTargetIds.length > 0);
 }
 
+function createPhysicalReviewBlocks(physicalFeatures, physicalCohorts) {
+  const featuresByTargetId = new Map(physicalFeatures.map((feature) => [feature.targetId, feature]));
+  return physicalCohorts.flatMap((cohort) => {
+    const feature = cohort.supportedMemberTargetIds
+      .map((targetId) => featuresByTargetId.get(targetId))
+      .find(Boolean);
+    if (!feature || cohort.supportedMemberTargetIds.length < 2) return [];
+    return [freezeBlock({
+      id: `us-guided:review-${cohort.id}`,
+      type: GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE,
+      repeatable: true,
+      sequenceKind: "physical-review",
+      cohortId: cohort.id,
+      featurePhase: "spaced-review",
+      prerequisiteBlockIds: [],
+      prerequisites: [],
+      destination: {
+        kind: "targeted-memory-trail",
+        journeyId: feature.journeyId,
+        stepId: feature.stepId,
+        activityId: feature.activityId,
+        targetIds: [],
+        targetType: feature.targetType,
+        featureFamily: feature.family,
+        cohortId: cohort.id,
+        checkpointKind: "review"
+      },
+      completion: { kind: "memory-trail-session-completed" },
+      returnBehavior: { kind: "guided-learning-resume" }
+    })];
+  });
+}
+
 export function createUnitedStatesGuidedLearningOrchestrationConfig({
   physicalFeatureInventory = UNITED_STATES_PHYSICAL_FEATURE_ORCHESTRATION_INVENTORY,
   physicalLearningCohorts = UNITED_STATES_PHYSICAL_LEARNING_COHORTS
 } = {}) {
   const physicalFeatures = createSupportedPhysicalFeatures(physicalFeatureInventory);
   const physicalCohorts = createPhysicalLearningCohorts(physicalFeatures, physicalLearningCohorts);
+  const physicalReviewBlocks = createPhysicalReviewBlocks(physicalFeatures, physicalCohorts);
   const deferredPhysicalFeatures = physicalFeatureInventory.filter(({ supported }) => !supported);
   return Object.freeze({
     id: UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_ID,
@@ -268,7 +329,8 @@ export function createUnitedStatesGuidedLearningOrchestrationConfig({
         kind: "guided-learning-resume"
       }
     }),
-      ...physicalFeatures.flatMap(({ blocks }) => blocks)
+      ...physicalFeatures.flatMap(({ blocks }) => blocks),
+      ...physicalReviewBlocks
     ]),
     fallbackBlock: freezeBlock({
       id: "us-guided:continue-guided-learning",
@@ -406,6 +468,8 @@ export function createGuidedLearningOrchestrationState(value = {}, config = UNIT
       : null,
     physicalTeachingProgress: normalizePhysicalTeachingProgress(source.physicalTeachingProgress, config),
     retrievedPhysicalCohortTargetIds,
+    guidedLearningEventCount: Math.max(0, Number(source.guidedLearningEventCount) || 0),
+    physicalReviewProgress: normalizePhysicalReviewProgress(source.physicalReviewProgress, config),
     lastNonPhysicalMilestone: source.lastNonPhysicalMilestone && typeof source.lastNonPhysicalMilestone === "object"
       ? cloneJson(source.lastNonPhysicalMilestone)
       : null,
@@ -785,7 +849,7 @@ function createDynamicPhysicalIntroductionBlock(block, cohortProgress, featuresB
   };
 }
 
-function createDynamicPhysicalPracticeBlock(block, cohortProgress, featuresByTargetId) {
+function createDynamicPhysicalPracticeBlock(block, cohortProgress, featuresByTargetId, normalizedState) {
   if (!cohortProgress?.retrievalReady) return block;
   const targetFeatures = cohortProgress.retrievalTargetIds
     .map((targetId) => featuresByTargetId.get(targetId))
@@ -801,7 +865,109 @@ function createDynamicPhysicalPracticeBlock(block, cohortProgress, featuresByTar
       targetConceptIds: targetFeatures.map(({ conceptId }) => conceptId),
       camera: cohortProgress.cohort.camera || block.destination.camera,
       cameraSource: cohortProgress.cohort.camera ? "authored-cohort-override" : "automatic-feature-fit",
-      persistentLearningCamera: cohortProgress.cohort.camera || null
+      persistentLearningCamera: cohortProgress.cohort.camera || null,
+      checkpointKind: "initial",
+      guidedPhysicalCheckpoint: {
+        cohortId: cohortProgress.cohort.id,
+        kind: "initial",
+        generation: normalizedState.physicalReviewProgress[cohortProgress.cohort.id]?.generation || 0,
+        previousOrder: normalizedState.physicalReviewProgress[cohortProgress.cohort.id]?.previousOrder || [],
+        targetIds: targetFeatures.map(({ targetId }) => targetId)
+      }
+    }
+  };
+}
+
+export function getGuidedLearningPhysicalReviewEligibility(
+  state,
+  cohortId,
+  config = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+) {
+  const normalized = createGuidedLearningOrchestrationState(state, config);
+  const cohort = (config.physicalCohorts || []).find(({ id }) => id === cohortId);
+  const progress = normalized.physicalReviewProgress[cohortId];
+  const learningEvent = normalized.guidedLearningEventCount;
+  if (!cohort || !progress) {
+    return {
+      cohortId,
+      eligible: false,
+      reason: "no-retrieval-checkpoint-history",
+      learningEvent,
+      dueTargetIds: [],
+      targetIds: []
+    };
+  }
+  const records = cohort.supportedMemberTargetIds
+    .map((targetId) => progress.targets[targetId])
+    .filter(Boolean);
+  const due = records.filter(({ dueAfterLearningEvent }) => dueAfterLearningEvent <= learningEvent)
+    .sort((left, right) => (
+      (left.priority === "earlier" ? 0 : 1) - (right.priority === "earlier" ? 0 : 1)
+      || left.dueAfterLearningEvent - right.dueAfterLearningEvent
+      || cohort.supportedMemberTargetIds.indexOf(left.targetId) - cohort.supportedMemberTargetIds.indexOf(right.targetId)
+    ));
+  if (due.length === 0) {
+    return {
+      cohortId,
+      eligible: false,
+      reason: "intervening-learning-required",
+      learningEvent,
+      dueTargetIds: [],
+      targetIds: [],
+      nextEligibleLearningEvent: Math.min(...records.map(({ dueAfterLearningEvent }) => dueAfterLearningEvent))
+    };
+  }
+  const minimumSize = Math.max(2, Number(cohort.minimumRetrievalSize) || 2);
+  const preferredSize = Math.max(minimumSize, Number(cohort.preferredRetrievalSize) || 3);
+  const selected = new Set(due.map(({ targetId }) => targetId));
+  records
+    .filter(({ targetId, lastLearningEvent }) => !selected.has(targetId) && learningEvent > lastLearningEvent)
+    .forEach(({ targetId }) => {
+      if (selected.size < preferredSize) selected.add(targetId);
+    });
+  const targetIds = cohort.supportedMemberTargetIds.filter((targetId) => selected.has(targetId));
+  return {
+    cohortId,
+    eligible: targetIds.length >= minimumSize,
+    reason: targetIds.length >= minimumSize
+      ? "spaced-review-due"
+      : "awaiting-comparison-member-spacing",
+    learningEvent,
+    dueTargetIds: due.map(({ targetId }) => targetId),
+    targetIds: targetIds.length >= minimumSize ? targetIds : [],
+    generation: progress.generation,
+    previousOrder: [...progress.previousOrder],
+    candidates: records.map((record) => ({
+      ...record,
+      due: record.dueAfterLearningEvent <= learningEvent,
+      interveningLearningSatisfied: learningEvent > record.lastLearningEvent
+    }))
+  };
+}
+
+function createDynamicPhysicalReviewBlock(block, eligibility, cohort, featuresByTargetId) {
+  const targetFeatures = eligibility.targetIds
+    .map((targetId) => featuresByTargetId.get(targetId))
+    .filter(Boolean);
+  return {
+    ...block,
+    cohortId: cohort.id,
+    destination: {
+      ...block.destination,
+      cohortId: cohort.id,
+      targetIds: targetFeatures.map(({ targetId }) => targetId),
+      targetLabels: targetFeatures.map(({ name }) => name),
+      targetConceptIds: targetFeatures.map(({ conceptId }) => conceptId),
+      camera: cohort.camera || null,
+      cameraSource: cohort.camera ? "authored-cohort-override" : "automatic-fit",
+      persistentLearningCamera: cohort.camera || null,
+      guidedPhysicalCheckpoint: {
+        cohortId: cohort.id,
+        kind: "review",
+        generation: eligibility.generation,
+        previousOrder: eligibility.previousOrder,
+        targetIds: targetFeatures.map(({ targetId }) => targetId)
+      }
     }
   };
 }
@@ -818,10 +984,24 @@ export function selectGuidedLearningOrchestrationBlock({
   const completedBlockIds = new Set(normalizedState.completedBlockIds);
   let cohortProgress = getPhysicalCohortProgress(config, completedBlockIds, evaluationsById, normalizedState);
   const cohortProgressById = new Map(cohortProgress.map((progress) => [progress.cohort.id, progress]));
+  const reviewEligibilityByCohortId = new Map((config.physicalCohorts || []).map((cohort) => [
+    cohort.id,
+    getGuidedLearningPhysicalReviewEligibility(normalizedState, cohort.id, config)
+  ]));
   evaluations = evaluations.map((evaluation) => {
     const block = config.blocks.find(({ id }) => id === evaluation.blockId);
     if (block?.type !== GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE || !block.cohortId) {
       return evaluation;
+    }
+    if (block.repeatable) {
+      const reviewEligibility = reviewEligibilityByCohortId.get(block.cohortId);
+      return {
+        ...evaluation,
+        eligible: Boolean(reviewEligibility?.eligible),
+        reason: reviewEligibility?.reason || "no-retrieval-checkpoint-history",
+        cohortId: block.cohortId,
+        retrievalTargetIds: reviewEligibility?.targetIds || []
+      };
     }
     const progress = cohortProgressById.get(block.cohortId);
     const feature = config.physicalFeatures.find(({ id }) => id === block.featureId);
@@ -856,8 +1036,24 @@ export function selectGuidedLearningOrchestrationBlock({
     : null;
   const eligibleNonPhysicalEvaluation = evaluations.find(({ blockId, eligible }) => {
     const block = config.blocks.find(({ id }) => id === blockId);
-    return eligible && block?.sequenceKind !== "physical-feature";
+    return eligible && !["physical-feature", "physical-review"].includes(block?.sequenceKind);
   }) || null;
+  const physicalReviewQueue = (config.physicalCohorts || []).flatMap((cohort) => {
+    const block = config.blocks.find((candidate) => candidate.repeatable && candidate.cohortId === cohort.id);
+    const eligibility = reviewEligibilityByCohortId.get(cohort.id);
+    if (!block || !eligibility?.eligible) return [];
+    const candidates = eligibility.candidates || [];
+    return [{
+      blockId: block.id,
+      cohortId: cohort.id,
+      hasWeakDueTarget: candidates.some(({ due, priority }) => due && priority === "earlier"),
+      earliestDueLearningEvent: Math.min(...candidates.filter(({ due }) => due).map(({ dueAfterLearningEvent }) => dueAfterLearningEvent))
+    }];
+  }).sort((left, right) => (
+    Number(right.hasWeakDueTarget) - Number(left.hasWeakDueTarget)
+    || left.earliestDueLearningEvent - right.earliestDueLearningEvent
+    || left.cohortId.localeCompare(right.cohortId)
+  ));
   const physicalQueue = featureProgress
     .filter(({ completed, inProgress, introductionEvaluation }) => (
       !completed && !inProgress && introductionEvaluation?.eligible
@@ -886,11 +1082,16 @@ export function selectGuidedLearningOrchestrationBlock({
   } else if (eligibleNonPhysicalEvaluation) {
     selectedEvaluation = eligibleNonPhysicalEvaluation;
     selectionReason = "eligible-nonphysical-block";
+  } else if (!physicalInterleaveBlocked && physicalReviewQueue.length > 0) {
+    selectedEvaluation = evaluationsById.get(physicalReviewQueue[0].blockId);
+    selectionReason = "spaced-physical-review-due";
   } else if (!physicalInterleaveBlocked && physicalQueue.length > 0) {
     selectedEvaluation = evaluationsById.get(physicalQueue[0].blockId);
     selectionReason = hasUnfinishedNonPhysicalLearning
       ? "eligible-physical-feature"
       : "nonphysical-curriculum-exhausted-drain-physical-backlog";
+  } else if (physicalInterleaveBlocked && physicalReviewQueue.length > 0) {
+    selectionReason = "physical-review-interleave-required";
   } else if (physicalInterleaveBlocked && physicalQueue.length > 0) {
     selectionReason = "physical-feature-interleave-required";
   }
@@ -907,11 +1108,22 @@ export function selectGuidedLearningOrchestrationBlock({
       normalizedState
     );
   } else if (selectedBlock.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE) {
-    selectedBlock = createDynamicPhysicalPracticeBlock(
-      selectedBlock,
-      cohortProgress.find(({ cohort }) => cohort.id === selectedBlock.cohortId),
-      featuresByTargetId
-    );
+    if (selectedBlock.repeatable) {
+      const cohort = (config.physicalCohorts || []).find(({ id }) => id === selectedBlock.cohortId);
+      selectedBlock = createDynamicPhysicalReviewBlock(
+        selectedBlock,
+        reviewEligibilityByCohortId.get(selectedBlock.cohortId),
+        cohort,
+        featuresByTargetId
+      );
+    } else {
+      selectedBlock = createDynamicPhysicalPracticeBlock(
+        selectedBlock,
+        cohortProgress.find(({ cohort }) => cohort.id === selectedBlock.cohortId),
+        featuresByTargetId,
+        normalizedState
+      );
+    }
   }
   const selectedFeature = featureProgress.find(({ feature }) => feature.blockIds.includes(selectedBlock.id));
   const selectedFeatureIndex = selectedFeature?.feature.blockIds.indexOf(selectedBlock.id) ?? -1;
@@ -1057,7 +1269,8 @@ export function selectGuidedLearningOrchestrationBlock({
       hasUnfinishedNonPhysicalLearning: Boolean(hasUnfinishedNonPhysicalLearning),
       physicalInterleaveBlocked,
       lastCompletedPhysicalFeatureId: normalizedState.lastCompletedPhysicalFeatureId,
-      lastNonPhysicalMilestone: cloneJson(normalizedState.lastNonPhysicalMilestone)
+      lastNonPhysicalMilestone: cloneJson(normalizedState.lastNonPhysicalMilestone),
+      guidedLearningEventCount: normalizedState.guidedLearningEventCount
     },
     pendingPhysicalFeatureOrder: physicalQueue.map(({ featureId, blockId, eligibilityMilestone }) => ({
       featureId,
@@ -1081,6 +1294,7 @@ export function selectGuidedLearningOrchestrationBlock({
       retrievalReady: progress.retrievalReady,
       retrievalDeferredReason: progress.retrievalReady ? null : progress.reason,
       retrievalTargetIds: [...progress.retrievalTargetIds],
+      review: cloneJson(reviewEligibilityByCohortId.get(progress.cohort.id)),
       camera: cloneJson(progress.cohort.camera),
       cameraSource: progress.cohort.camera ? "authored-cohort-override" : "automatic-fit",
       pendingTargetIds: [...progress.pendingTargetIds]
@@ -1114,12 +1328,56 @@ export function deferGuidedLearningOrchestrationBlock(state, blockId, config = U
   }, config);
 }
 
-export function completeGuidedLearningOrchestrationBlock(state, blockId, config = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1) {
+function updatePhysicalReviewProgress(normalized, block, checkpoint = {}) {
+  if (block.type !== GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE || !block.cohortId) {
+    return normalized.physicalReviewProgress;
+  }
+  const targetResults = Array.isArray(checkpoint.targets) ? checkpoint.targets : [];
+  if (targetResults.length === 0) return normalized.physicalReviewProgress;
+  const previous = normalized.physicalReviewProgress[block.cohortId] || {
+    cohortId: block.cohortId,
+    generation: 0,
+    previousOrder: [],
+    targets: {}
+  };
+  const learningEvent = normalized.guidedLearningEventCount;
+  const targets = { ...previous.targets };
+  targetResults.forEach((target) => {
+    const targetId = String(target?.targetId || "").trim();
+    if (!targetId) return;
+    const needsEarlierReview = Number(target.incorrectCount) > 0 || target.finalOutcome === "incorrect";
+    targets[targetId] = {
+      targetId,
+      lastLearningEvent: learningEvent,
+      dueAfterLearningEvent: learningEvent + (needsEarlierReview ? 1 : 2),
+      lastOutcome: needsEarlierReview ? "incorrect" : "correct",
+      priority: needsEarlierReview ? "earlier" : "later",
+      reason: needsEarlierReview ? "incorrect-retrieval" : "successful-retrieval"
+    };
+  });
+  return {
+    ...normalized.physicalReviewProgress,
+    [block.cohortId]: {
+      cohortId: block.cohortId,
+      generation: previous.generation + 1,
+      previousOrder: uniqueStrings(checkpoint.targetOrder),
+      targets
+    }
+  };
+}
+
+export function completeGuidedLearningOrchestrationBlock(
+  state,
+  blockId,
+  config = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1,
+  details = {}
+) {
   const normalized = createGuidedLearningOrchestrationState(state, config);
   const block = config.blocks.find(({ id }) => id === blockId);
   if (!block || normalized.activeBlockId !== blockId) return normalized;
-  const completedPhysicalSequence = block.sequenceKind === "physical-feature" && block.sequenceCompletion === true;
-  const completedNonPhysicalBlock = block.sequenceKind !== "physical-feature";
+  const completedPhysicalSequence = (block.sequenceKind === "physical-feature" && block.sequenceCompletion === true)
+    || block.sequenceKind === "physical-review";
+  const completedNonPhysicalBlock = !["physical-feature", "physical-review"].includes(block.sequenceKind);
   const cohortTargetIds = block.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE
     ? uniqueStrings(normalized.returnContext?.physicalCohortTargetIds)
     : [];
@@ -1132,9 +1390,13 @@ export function completeGuidedLearningOrchestrationBlock(state, blockId, config 
         ])
       }
     : normalized.retrievedPhysicalCohortTargetIds;
+  const physicalReviewProgress = updatePhysicalReviewProgress(normalized, block, details.guidedPhysicalCheckpoint);
+  const completedBlockIds = block.repeatable
+    ? normalized.completedBlockIds
+    : [...normalized.completedBlockIds, blockId];
   return createGuidedLearningOrchestrationState({
     ...normalized,
-    completedBlockIds: [...normalized.completedBlockIds, blockId],
+    completedBlockIds,
     activeBlockId: null,
     activeStatus: null,
     previousBlockId: blockId,
@@ -1144,12 +1406,16 @@ export function completeGuidedLearningOrchestrationBlock(state, blockId, config 
         ? false
         : normalized.physicalInterleaveRequired,
     lastCompletedPhysicalFeatureId: completedPhysicalSequence
-      ? block.featureId
+      ? block.featureId || normalized.lastCompletedPhysicalFeatureId
       : normalized.lastCompletedPhysicalFeatureId,
     lastCompletedPhysicalCohortId: block.cohortId && cohortTargetIds.length >= 2
       ? block.cohortId
       : normalized.lastCompletedPhysicalCohortId,
     retrievedPhysicalCohortTargetIds,
+    physicalReviewProgress,
+    guidedLearningEventCount: completedNonPhysicalBlock
+      ? normalized.guidedLearningEventCount + 1
+      : normalized.guidedLearningEventCount,
     lastNonPhysicalMilestone: completedNonPhysicalBlock
       ? { kind: "external-block-completed", blockId }
       : normalized.lastNonPhysicalMilestone,
@@ -1198,16 +1464,18 @@ export function satisfyGuidedLearningPhysicalInterleave(
   config = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
 ) {
   const normalized = createGuidedLearningOrchestrationState(state, config);
-  if (!normalized.physicalInterleaveRequired) return normalized;
   return createGuidedLearningOrchestrationState({
     ...normalized,
     physicalInterleaveRequired: false,
+    guidedLearningEventCount: normalized.guidedLearningEventCount + 1,
     lastNonPhysicalMilestone: {
       kind: "guided-session-completed",
       ...cloneJson(details)
     },
     lastTransition: {
-      kind: "physical-interleave-satisfied",
+      kind: normalized.physicalInterleaveRequired
+        ? "physical-interleave-satisfied"
+        : "guided-learning-event-recorded",
       source: "guided-session-completed"
     }
   }, config);

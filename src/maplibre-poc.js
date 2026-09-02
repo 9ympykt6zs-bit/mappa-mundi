@@ -47,8 +47,15 @@ import {
   selectGuidedLearningOrchestrationBlock,
   startGuidedLearningOrchestrationBlock,
   UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
-} from "./guided-learning-orchestration.js?v=20260901-guided-physical-teaching-1";
+} from "./guided-learning-orchestration.js?v=20260901-guided-physical-retrieval-1";
 import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js?v=20260901-guided-physical-teaching-1";
+import {
+  chooseNextGuidedPhysicalRetrievalTarget,
+  createGuidedPhysicalRetrievalCheckpoint,
+  getGuidedPhysicalRetrievalCheckpointSnapshot,
+  isGuidedPhysicalRetrievalCheckpointComplete,
+  recordGuidedPhysicalRetrievalResult
+} from "./guided-physical-retrieval-checkpoint.js?v=20260901-guided-physical-retrieval-1";
 import {
   ACROSS_UNITED_STATES_EXPEDITION_ID,
   acrossUnitedStatesExpedition,
@@ -3917,6 +3924,9 @@ function getGuidedLearningOrchestrationSnapshot() {
         || activeGuidedLearningOrchestrationBlock.destination?.cohortId
         || null,
       physicalCohortTargetIds: [...(activeStudySession?.focusTargetIds || [])],
+      guidedPhysicalRetrievalCheckpoint: getGuidedPhysicalRetrievalCheckpointSnapshot(
+        activeStudySession?.memoryTrail?.guidedPhysicalCheckpoint
+      ),
       physicalTeaching: activeStudySession?.guidedPhysicalTeaching ? {
         phase: "teaching",
         currentTargetId: activeStudySession.guidedPhysicalTeaching.currentTargetId,
@@ -4007,7 +4017,10 @@ function saveActiveGuidedLearningOrchestrationBlock(block, returnContext) {
   });
 }
 
-function completeActiveGuidedLearningOrchestrationBlock(blockId = activeGuidedLearningOrchestrationBlock?.id) {
+function completeActiveGuidedLearningOrchestrationBlock(
+  blockId = activeGuidedLearningOrchestrationBlock?.id,
+  details = {}
+) {
   if (!blockId) return false;
   const current = loadGuidedLearningOrchestrationState(
     window.localStorage,
@@ -4017,7 +4030,8 @@ function completeActiveGuidedLearningOrchestrationBlock(blockId = activeGuidedLe
   const next = completeGuidedLearningOrchestrationBlock(
     current,
     blockId,
-    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1,
+    details
   );
   saveGuidedLearningOrchestrationState(
     next,
@@ -4029,7 +4043,8 @@ function completeActiveGuidedLearningOrchestrationBlock(blockId = activeGuidedLe
   }
   publishGuidedLearningOrchestrationTrace({
     lifecycleEvent: "external-activity-completed",
-    completedBlockId: blockId
+    completedBlockId: blockId,
+    guidedPhysicalCheckpoint: details.guidedPhysicalCheckpoint || null
   });
   return true;
 }
@@ -4116,6 +4131,7 @@ async function launchNextGuidedLearningOrchestrationBlock() {
       memoryTrailTargetIds: block.destination.targetIds,
       memoryTrailNewTargetIds: [],
       guidedLocatingOnly: true,
+      guidedPhysicalCheckpoint: block.destination.guidedPhysicalCheckpoint,
       physicalFeatureFamily: block.destination.featureFamily,
       physicalFeatureCamera: block.destination.camera,
       physicalFeatureGeometry: block.destination.geometry,
@@ -8311,6 +8327,7 @@ async function startStudyPreviewActivity(journeyId, stepId, options = {}) {
     memoryTrailNewTargetIds: options.memoryTrailNewTargetIds,
     memoryTrailTargetIds: options.memoryTrailTargetIds,
     guidedLocatingOnly: options.guidedLocatingOnly === true,
+    guidedPhysicalCheckpoint: options.guidedPhysicalCheckpoint,
     revealedTargetIds: options.revealedTargetIds,
     teachingMessage: options.teachingMessage,
     physicalTeachingTargetIds: options.physicalTeachingTargetIds,
@@ -8428,6 +8445,7 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
     physicalFeatureCamera: options.physicalFeatureCamera || null,
     physicalFeatureGeometry: options.physicalFeatureGeometry || null,
     persistentLearningCamera: options.persistentLearningCamera || null,
+    guidedPhysicalCheckpointConfig: options.guidedPhysicalCheckpoint || null,
     guidedCameraDecision: null
   };
   activeStudyPracticeSession = null;
@@ -8493,7 +8511,8 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
       newTargetIds: options.memoryTrailNewTargetIds,
       targetIds: options.memoryTrailTargetIds,
       guidedPersistentCamera: options.persistentLearningCamera,
-      guidedLocatingOnly: options.guidedLocatingOnly === true
+      guidedLocatingOnly: options.guidedLocatingOnly === true,
+      guidedPhysicalCheckpoint: options.guidedPhysicalCheckpoint
     });
   } else if (canUseMemoryTrail && !activeStudySession.guidedOrchestration) {
     showMemoryTrailOfferOverlay();
@@ -10273,6 +10292,12 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
   const sessionSeconds = options.sessionSeconds || DEFAULT_SESSION_SECONDS;
   const dailyTrailFixedCamera = normalizeDailyTrailFixedCamera(options.dailyTrailFixedCamera);
   const guidedPersistentCamera = normalizeMemoryTrailSectionQuizView(options.guidedPersistentCamera);
+  const guidedPhysicalCheckpoint = options.guidedPhysicalCheckpoint && targetPool.length >= 2
+    ? createGuidedPhysicalRetrievalCheckpoint({
+        ...options.guidedPhysicalCheckpoint,
+        targetIds: targetPool.map((target) => target.id)
+      })
+    : null;
   const memoryTrail = {
     active: true,
     adaptive: true,
@@ -10317,6 +10342,7 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     dailyTrailFixedCamera,
     guidedPersistentCamera,
     guidedLocatingOnly: options.guidedLocatingOnly === true,
+    guidedPhysicalCheckpoint,
     dailyTrailFixedCameraLocked: false,
     dailyTrailMobileSectionQuizCamera: normalizeMemoryTrailSectionQuizView(options.dailyTrailMobileSectionQuizCamera),
     lastMobileSectionQuizCameraKey: "",
@@ -12159,7 +12185,8 @@ function startMemoryTrail(options = {}) {
     checkpointReview,
     completedTrailReview: options.completedTrailReview === true,
     guidedPersistentCamera: options.guidedPersistentCamera,
-    guidedLocatingOnly: options.guidedLocatingOnly === true
+    guidedLocatingOnly: options.guidedLocatingOnly === true,
+    guidedPhysicalCheckpoint: options.guidedPhysicalCheckpoint
   });
   publishDailyTrailCheckpointRuntimeSnapshot(activeStudySession.memoryTrail, {
     stage: "memory-trail-created"
@@ -12275,7 +12302,8 @@ function restartMemoryTrail() {
     sectionQuizView: memoryTrailSection?.map?.quizView || session.currentActivity?.map?.quizView || null,
     dailyTrailMobileSectionQuizCamera: session.currentActivity?.map?.dailyTrailMobileSectionQuizCamera || null,
     guidedPersistentCamera,
-    guidedLocatingOnly
+    guidedLocatingOnly,
+    guidedPhysicalCheckpoint: activeStudySession.guidedPhysicalCheckpointConfig
   });
   activeStudySession.memoryTrail.previousRevealedTargetIds = previousRevealedTargetIds;
   currentMemoryTrailAnalyticsKey = [
@@ -13487,6 +13515,17 @@ function speakMemoryTrailTarget(target, onComplete) {
 }
 
 function chooseNextPrompt(memoryTrail) {
+  if (memoryTrail.guidedPhysicalCheckpoint) {
+    const next = chooseNextGuidedPhysicalRetrievalTarget(memoryTrail.guidedPhysicalCheckpoint);
+    return next ? {
+      targetId: next.targetId,
+      promptType: "name_to_place",
+      mode: next.attempt === "retry" ? "retrieval-check-retry" : "retrieval-check",
+      reason: next.attempt === "retry"
+        ? "one spaced same-checkpoint retry after comparison targets"
+        : "independent locating opportunity for taught cohort member"
+    } : null;
+  }
   if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
     return chooseNextCheckpointReviewPrompt(memoryTrail);
   }
@@ -14117,6 +14156,13 @@ function updateMemoryTrailStats(memoryTrail, targetId, result, options = {}) {
     lastHistory.result = result;
     lastHistory.guided = false;
   }
+  if (memoryTrail.guidedPhysicalCheckpoint) {
+    memoryTrail.guidedPhysicalCheckpoint = recordGuidedPhysicalRetrievalResult(
+      memoryTrail.guidedPhysicalCheckpoint,
+      targetId,
+      result
+    );
+  }
   debugMemoryTrail("updated stats", {
     targetId,
     result,
@@ -14374,6 +14420,10 @@ function shouldEndMemoryTrailSession(memoryTrail) {
     return true;
   }
 
+  if (memoryTrail.guidedPhysicalCheckpoint) {
+    return isGuidedPhysicalRetrievalCheckpointComplete(memoryTrail.guidedPhysicalCheckpoint);
+  }
+
   if (memoryTrail.promptCount >= SESSION_PROMPT_CAP) {
     return true;
   }
@@ -14479,7 +14529,9 @@ function completeMemoryTrailSession(memoryTrail) {
   }
   if (activeStudySession?.guidedOrchestration
     && activeGuidedLearningOrchestrationBlock?.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE) {
-    completeActiveGuidedLearningOrchestrationBlock(activeGuidedLearningOrchestrationBlock.id);
+    completeActiveGuidedLearningOrchestrationBlock(activeGuidedLearningOrchestrationBlock.id, {
+      guidedPhysicalCheckpoint: getGuidedPhysicalRetrievalCheckpointSnapshot(memoryTrail.guidedPhysicalCheckpoint)
+    });
   }
   showMemoryTrailCompletionOverlay();
 }
@@ -14510,14 +14562,16 @@ function completeUnitedStatesMemoryTrailSession(memoryTrail) {
     },
     UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
   );
-  if (orchestrationState.physicalInterleaveRequired && !pacedState.physicalInterleaveRequired) {
+  if (pacedState.guidedLearningEventCount > orchestrationState.guidedLearningEventCount) {
     saveGuidedLearningOrchestrationState(
       pacedState,
       window.localStorage,
       UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
     );
     publishGuidedLearningOrchestrationTrace({
-      lifecycleEvent: "physical-interleave-satisfied",
+      lifecycleEvent: orchestrationState.physicalInterleaveRequired
+        ? "physical-interleave-satisfied"
+        : "guided-learning-event-recorded",
       nonPhysicalSource: "guided-session-completed"
     });
   }
@@ -15934,9 +15988,12 @@ function renderMemoryTrailPanel() {
     const title = document.createElement("strong");
     const phaseLabel = memoryTrail.sessionPhase === "learn" ? "Learn" : "Practice";
     const sectionPrefix = memoryTrail.sectionTitle ? `${memoryTrail.sectionTitle} | ` : "";
+    const physicalCheckpoint = getGuidedPhysicalRetrievalCheckpointSnapshot(memoryTrail.guidedPhysicalCheckpoint);
     title.textContent = memoryTrail.phase === "complete"
       ? "Session complete"
-      : `${sectionPrefix}${phaseLabel} | Prompt ${memoryTrail.promptCount + 1} of ${SESSION_PROMPT_CAP}`;
+      : physicalCheckpoint
+        ? `${sectionPrefix}Retrieval check | ${physicalCheckpoint.remainingImmediateTargetIds.length} remaining`
+        : `${sectionPrefix}${phaseLabel} | Prompt ${memoryTrail.promptCount + 1} of ${SESSION_PROMPT_CAP}`;
 
     const message = document.createElement("p");
     message.className = "memory-trail-message";
@@ -27558,8 +27615,13 @@ function getActiveMemoryTrailStateForTest() {
     currentPromptMode: memoryTrail.currentPromptMode,
     correctCount: memoryTrail.correctCount,
     incorrectCount: memoryTrail.incorrectCount,
+    promptCount: memoryTrail.promptCount,
+    promptHistory: memoryTrail.promptHistory.map((entry) => ({ ...entry })),
     targetPoolIds: [...memoryTrail.targetPoolIds],
     guidedLocatingOnly: memoryTrail.guidedLocatingOnly === true,
+    guidedPhysicalRetrievalCheckpoint: getGuidedPhysicalRetrievalCheckpointSnapshot(
+      memoryTrail.guidedPhysicalCheckpoint
+    ),
     activeHighlightIds: runner?.getMemoryTrailActiveHighlightIds?.() || [],
     completedLabelTargetIds: (runner?.getCompletedLabelGeoJson?.().features || [])
       .map(({ properties }) => properties?.id)
@@ -27576,6 +27638,23 @@ function answerActiveMemoryTrailCorrectlyForTest() {
   } else {
     handleMemoryTrailTargetTap([targetId]);
   }
+  return true;
+}
+
+function answerActiveMemoryTrailIncorrectlyForTest() {
+  const memoryTrail = getActiveMemoryTrail();
+  const expectedTargetId = memoryTrail?.currentPromptTargetId;
+  const wrongTargetId = memoryTrail?.targetPoolIds?.find((targetId) => targetId !== expectedTargetId);
+  if (!expectedTargetId || !wrongTargetId || memoryTrail.phase !== "answering") return false;
+  handleMemoryTrailTargetTap([wrongTargetId]);
+  return memoryTrail.phase === "correction";
+}
+
+function completeActiveMemoryTrailCorrectionForTest() {
+  const memoryTrail = getActiveMemoryTrail();
+  const expectedTargetId = memoryTrail?.correction?.expectedTargetId;
+  if (!expectedTargetId || memoryTrail.phase !== "correction") return false;
+  handleMemoryTrailTargetTap([expectedTargetId]);
   return true;
 }
 
@@ -27783,6 +27862,8 @@ function installMappaTestApi() {
       answerGuidedPhysicalTeachingIncorrectly: answerGuidedPhysicalTeachingIncorrectlyForTest,
       getActiveMemoryTrailState: getActiveMemoryTrailStateForTest,
       answerActiveMemoryTrailCorrectly: answerActiveMemoryTrailCorrectlyForTest,
+      answerActiveMemoryTrailIncorrectly: answerActiveMemoryTrailIncorrectlyForTest,
+      completeActiveMemoryTrailCorrection: completeActiveMemoryTrailCorrectionForTest,
       getGuidedLearningOrchestration: getGuidedLearningOrchestrationSnapshot,
       launchNextGuidedLearningOrchestration: launchNextGuidedLearningOrchestrationBlock,
       startUnitedStatesGuidedLearningAtSection: (targetSectionId) => (
