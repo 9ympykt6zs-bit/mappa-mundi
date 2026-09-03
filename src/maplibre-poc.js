@@ -55,6 +55,11 @@ import {
   loadGuidedChildLaunchContract,
   saveGuidedChildLaunchContract
 } from "./guided-child-launch-contract.js?v=20260902-guided-child-provenance-1";
+import {
+  createUnitedStatesGuidedPoliticalCameraDecision,
+  isManagedUnitedStatesGuidedPoliticalCamera,
+  UNITED_STATES_GUIDED_POLITICAL_CAMERA_CONTEXT
+} from "./united-states-guided-political-camera.js?v=20260903-guided-political-camera-1";
 import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js?v=20260901-guided-physical-teaching-1";
 import {
   chooseNextGuidedPhysicalRetrievalTarget,
@@ -319,7 +324,7 @@ const activityDataPaths = [
   "assets/maps/data/us-states-capitals-06.json?v=20260621-us-states-06-camera-2",
   "assets/maps/data/us-states-capitals-07.json?v=20260621-us-states-07-camera-1",
   "assets/maps/data/us-states-capitals-08.json?v=20260621-us-states-08-camera-2",
-  "assets/maps/data/us-states-capitals-09.json?v=20260621-us-states-09-camera-1",
+  "assets/maps/data/us-states-capitals-09.json?v=20260903-guided-political-camera-1",
   "assets/maps/data/us-states-capitals-10.json",
   "assets/maps/data/us-states-capitals-11.json?v=20260621-us-states-11-camera-5",
   "assets/maps/data/us-physical-lakes.json",
@@ -10609,6 +10614,7 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     sectionQuizView: normalizeMemoryTrailSectionQuizView(options.sectionQuizView),
     dailyTrailFixedCamera,
     guidedPersistentCamera,
+    guidedPoliticalCamera: options.guidedPoliticalCamera || null,
     guidedLocatingOnly: options.guidedLocatingOnly === true,
     guidedPhysicalCheckpoint,
     dailyTrailFixedCameraLocked: false,
@@ -11253,6 +11259,9 @@ function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options 
   if (memoryTrail?.guidedPersistentCamera) {
     return false;
   }
+  if (isManagedUnitedStatesGuidedPoliticalCamera(memoryTrail?.guidedPoliticalCamera)) {
+    return false;
+  }
 
   const mobileSectionQuizCamera = getActiveDailyTrailMobileSectionQuizCamera(memoryTrail);
   if (mobileSectionQuizCamera) {
@@ -11442,6 +11451,9 @@ function scheduleMemoryTrailSectionQuizCameraCheck(memoryTrail, selection = {}) 
     return false;
   }
   if (memoryTrail?.guidedPersistentCamera) {
+    return false;
+  }
+  if (isManagedUnitedStatesGuidedPoliticalCamera(memoryTrail?.guidedPoliticalCamera)) {
     return false;
   }
 
@@ -12453,6 +12465,7 @@ function startMemoryTrail(options = {}) {
     checkpointReview,
     completedTrailReview: options.completedTrailReview === true,
     guidedPersistentCamera: options.guidedPersistentCamera,
+    guidedPoliticalCamera: options.guidedPoliticalCamera,
     guidedLocatingOnly: options.guidedLocatingOnly === true,
     guidedPhysicalCheckpoint: options.guidedPhysicalCheckpoint
   });
@@ -12477,7 +12490,9 @@ function startMemoryTrail(options = {}) {
   }
   runner.setCompletedTargets([]);
   instruction.textContent = "First learn the small group, then practice from memory.";
-  if (!activeStudySession.memoryTrail.guidedPersistentCamera) {
+  if (isManagedUnitedStatesGuidedPoliticalCamera(activeStudySession.memoryTrail.guidedPoliticalCamera)) {
+    applyUnitedStatesGuidedPoliticalCamera(activeStudySession.memoryTrail);
+  } else if (!activeStudySession.memoryTrail.guidedPersistentCamera) {
     fitMapToPracticeWindow(activeStudySession.memoryTrail.currentPracticeWindow, "start");
   }
   renderStudyExplorePanel();
@@ -13036,6 +13051,7 @@ function debugContinentsOceansLearnCamera(label, details = {}, memoryTrail = get
 function scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target) {
   if (
     memoryTrail?.guidedPersistentCamera
+    || isManagedUnitedStatesGuidedPoliticalCamera(memoryTrail?.guidedPoliticalCamera)
     || session.currentActivity?.id === continentsOceansActivityId
     || selection?.promptType !== "guided"
     || memoryTrail?.sessionPhase !== "learn"
@@ -15504,6 +15520,9 @@ function fitMapToPracticeWindow(targets = [], reason = "practice-window") {
 
   const memoryTrail = getActiveMemoryTrail();
   if (memoryTrail?.guidedPersistentCamera) {
+    return false;
+  }
+  if (isManagedUnitedStatesGuidedPoliticalCamera(memoryTrail?.guidedPoliticalCamera)) {
     return false;
   }
   if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
@@ -21238,6 +21257,104 @@ function getUnitedStatesMemoryTrailPlannedItemsForActivity(activity, plan) {
   return [...new Map([...directItems, ...cumulativeItems].map((item) => [item.id, item])).values()];
 }
 
+function getUnitedStatesGuidedPoliticalCameraTarget(targetId, sectionId) {
+  const directTarget = session.currentActivity?.targets?.find((target) => target.id === targetId);
+  if (directTarget) return directTarget;
+
+  const sectionSuffix = String(sectionId || "").match(/^us-states-(\d{2})$/)?.[1] || "";
+  const candidateActivityIds = [
+    sectionId,
+    sectionSuffix ? `us-capitals-${sectionSuffix}` : ""
+  ].filter(Boolean);
+  for (const activityId of candidateActivityIds) {
+    const target = getActivityById(activityId)?.targets?.find((candidate) => candidate.id === targetId);
+    if (target) return target;
+  }
+
+  for (const activity of activities) {
+    const target = activity?.targets?.find((candidate) => candidate.id === targetId);
+    if (target) return target;
+  }
+  return null;
+}
+
+function getUnitedStatesGuidedPoliticalCameraPadding() {
+  if (isCompactTouchLayout()) {
+    return getMobileSectionQuizFitPadding();
+  }
+  return { top: 86, right: 82, bottom: 142, left: 82 };
+}
+
+function applyUnitedStatesGuidedPoliticalCamera(memoryTrail) {
+  const decision = memoryTrail?.guidedPoliticalCamera;
+  if (!isManagedUnitedStatesGuidedPoliticalCamera(decision)) return false;
+
+  const metadata = {
+    cameraContext: UNITED_STATES_GUIDED_POLITICAL_CAMERA_CONTEXT,
+    source: decision.cameraSource,
+    activityId: memoryTrail.activityId,
+    sectionIndex: memoryTrail.sectionIndex,
+    sectionTitle: memoryTrail.sectionTitle || "",
+    targetIds: decision.activeTargetIds,
+    targetLabels: [],
+    skipCameraDevOverride: false
+  };
+  let didMove = false;
+
+  if (decision.mode === "override" && decision.camera && typeof runner?.moveCamera === "function") {
+    didMove = runner.moveCamera({
+      center: decision.camera.center,
+      zoom: decision.camera.zoom,
+      bearing: decision.camera.bearing,
+      pitch: decision.camera.pitch,
+      padding: { top: 0, right: 0, bottom: 0, left: 0 },
+      duration: decision.camera.duration,
+      retainPadding: false,
+      essential: true
+    }, {
+      ...metadata,
+      requestType: "easeTo"
+    }, "easeTo");
+  } else if (decision.mode === "fit" && typeof runner?.fitTargets === "function") {
+    const targets = decision.focusTargetIds
+      .map((targetId) => getUnitedStatesGuidedPoliticalCameraTarget(targetId, decision.sectionId))
+      .filter(Boolean);
+    const fitBounds = runner.getCombinedTargetBounds?.(targets) || null;
+    memoryTrail.guidedPoliticalCamera = {
+      ...decision,
+      fitBounds
+    };
+    didMove = runner.fitTargets(targets, {
+      padding: getUnitedStatesGuidedPoliticalCameraPadding(),
+      offset: isCompactTouchLayout() ? getMobileSectionQuizFitOffset() : [0, -12],
+      maxZoom: 5.35,
+      duration: 650,
+      cameraContext: UNITED_STATES_GUIDED_POLITICAL_CAMERA_CONTEXT,
+      source: decision.cameraSource,
+      sectionIndex: memoryTrail.sectionIndex,
+      sectionTitle: memoryTrail.sectionTitle || ""
+    });
+  }
+
+  recordCameraDevTraceEvent({
+    eventType: "guided-political-camera",
+    status: didMove ? "applied" : "skipped",
+    activityId: memoryTrail.activityId,
+    sectionIndex: memoryTrail.sectionIndex,
+    sectionTitle: memoryTrail.sectionTitle || "",
+    targetIds: decision.activeTargetIds,
+    cameraContext: UNITED_STATES_GUIDED_POLITICAL_CAMERA_CONTEXT,
+    cameraSource: decision.cameraSource,
+    requestType: decision.mode === "override" ? "easeTo" : "fitBounds",
+    requestedCamera: decision.camera,
+    sectionBounds: memoryTrail.guidedPoliticalCamera?.fitBounds || null,
+    reason: didMove
+      ? `${decision.cameraSource} selected for active Guided political learning area`
+      : "Guided political camera could not resolve a usable movement"
+  });
+  return didMove;
+}
+
 function startUnitedStatesMemoryTrailStepIfNeeded(resumeSnapshot = null) {
   if (!activeUnitedStatesMemoryTrailSession || currentAppScreen !== "united-states-trail-gameplay") {
     return false;
@@ -21258,6 +21375,11 @@ function startUnitedStatesMemoryTrailStepIfNeeded(resumeSnapshot = null) {
     .filter((item) => isUnitedStatesMemoryTrailWeakReviewItem(activeUnitedStatesMemoryTrailSession.state, item))
     .map((item) => item.targetId)
     .filter(Boolean);
+  const guidedPoliticalCamera = createUnitedStatesGuidedPoliticalCameraDecision({
+    activityId: activity.id,
+    plan: activeUnitedStatesMemoryTrailSession.plan,
+    activityMap: activity.map
+  });
 
   activeStudySession = {
     journeyId: unitedStatesMemoryTrailJourneyId,
@@ -21290,6 +21412,7 @@ function startUnitedStatesMemoryTrailStepIfNeeded(resumeSnapshot = null) {
     sectionTitle: activity.title || "",
     sectionIndex: Number.isFinite(Number(activity.sequence)) ? Number(activity.sequence) - 1 : null,
     sectionQuizView: activity.map?.regionView || null,
+    guidedPoliticalCamera,
     suppressInitialPrompt: hasUsTrailResumeSnapshot
   });
 
@@ -28062,6 +28185,10 @@ function getActiveMemoryTrailStateForTest() {
     promptCount: memoryTrail.promptCount,
     promptHistory: memoryTrail.promptHistory.map((entry) => ({ ...entry })),
     targetPoolIds: [...memoryTrail.targetPoolIds],
+    guidedPoliticalCamera: memoryTrail.guidedPoliticalCamera
+      ? JSON.parse(JSON.stringify(memoryTrail.guidedPoliticalCamera))
+      : null,
+    camera: getMemoryTrailCameraSnapshot(),
     guidedLocatingOnly: memoryTrail.guidedLocatingOnly === true,
     guidedPhysicalRetrievalCheckpoint: getGuidedPhysicalRetrievalCheckpointSnapshot(
       memoryTrail.guidedPhysicalCheckpoint

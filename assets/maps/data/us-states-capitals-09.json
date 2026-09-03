@@ -4,6 +4,19 @@
   "baseMap": "usa-map",
   "baseMapPath": "assets/maps/usa/usa-map.svg",
   "map": {
+    "guidedLearningCameraOverrides": [
+      {
+        "id": "utah-arizona",
+        "stateIds": ["utah", "arizona"],
+        "camera": {
+          "center": [-109.01691, 37.55051],
+          "zoom": 4.7034,
+          "bearing": 0,
+          "pitch": 0,
+          "duration": 650
+        }
+      }
+    ],
     "dailyTrailNonLearnCamera": {
       "center": [-113.30046, 37.47135],
       "zoom": 4.7266,
