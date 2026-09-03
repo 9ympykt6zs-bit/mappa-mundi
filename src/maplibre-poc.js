@@ -3095,6 +3095,7 @@ let mountainFindDevPanel = null;
 let activeStudySession = null;
 let activeStudyPracticeSession = null;
 let journeyCompletionState = null;
+let journeyCompletionReconciliationTrace = null;
 let studyPracticeCompletionState = null;
 let isJourneyTransitioning = false;
 let journeyAutoAdvanceTimer = null;
@@ -7999,6 +8000,12 @@ async function openJourneyStep(stepIndex, options = {}) {
     forceGameplayVisible: true,
     presentationSettings: getJourneyActivityPresentationSettings(step)
   });
+  reconcileRestoredJourneyActivityCompletion({
+    journey,
+    step,
+    difficultyId: stepDifficulty,
+    restoredFromActivityProgress: Boolean(options.preserveProgress)
+  });
 }
 
 function getJourneyLaunchContextParts(context) {
@@ -8162,7 +8169,7 @@ function startJourneyGameplayFromLaunchContext(context) {
   resetJourneyGameplayInstructionSession();
   trackJourneyStarted(journey, context.difficultyId, stepIndex);
   atlasProgress = setActiveJourney(journey.id, stepIndex, context.difficultyId, atlasProgress);
-  void openJourneyStep(stepIndex, {
+  return openJourneyStep(stepIndex, {
     preserveProgress: Boolean(context.preserveProgress),
     skipMemoryTrailRecommendation: true
   });
@@ -26658,6 +26665,74 @@ function returnToStudyScreen() {
   showAppScreen(selectedJourneyId ? "study" : "main-menu", { pushHistory: false });
 }
 
+function reconcileRestoredJourneyActivityCompletion({
+  journey,
+  step,
+  difficultyId,
+  restoredFromActivityProgress = false
+} = {}) {
+  const { completedCount, targetCount } = getSessionCompletionSummary();
+  const journeyProgress = getJourneyProgress(journey?.id, atlasProgress);
+  const journeyStepCompleteBeforeReconcile = Boolean(
+    step?.id && journeyProgress.completedSteps?.[step.id]?.[difficultyId]
+  );
+  const journeyContextActive = Boolean(
+    journey?.id
+    && step?.id
+    && activeJourneySession?.mode === "journey"
+    && activeJourneySession.journeyId === journey.id
+    && getValidJourneySteps(journey)[activeJourneySession.currentStepIndex]?.id === step.id
+    && currentAppScreen === "journey-gameplay"
+    && session?.currentActivity?.id === step.activityId
+  );
+  const activityCompleteOnRestore = Boolean(
+    restoredFromActivityProgress
+    && targetCount > 0
+    && completedCount === targetCount
+  );
+
+  journeyCompletionReconciliationTrace = {
+    journeyId: journey?.id || null,
+    stepId: step?.id || null,
+    activityId: step?.activityId || null,
+    difficultyId: difficultyId || null,
+    restoredFromActivityProgress: Boolean(restoredFromActivityProgress),
+    journeyContextActive,
+    activityCompleteOnRestore,
+    completedCount,
+    targetCount,
+    journeyStepCompleteBeforeReconcile,
+    journeyCompletionReconciled: false,
+    journeyStepCompleteAfterReconcile: journeyStepCompleteBeforeReconcile
+  };
+
+  if (
+    !restoredFromActivityProgress
+    || !journeyContextActive
+    || !activityCompleteOnRestore
+    || journeyStepCompleteBeforeReconcile
+    || journeyCompletionState?.isVisible
+    || isJourneyTransitioning
+  ) {
+    return false;
+  }
+
+  handleJourneyActivityCompletion();
+  const updatedJourneyProgress = getJourneyProgress(journey.id, atlasProgress);
+  const journeyStepCompleteAfterReconcile = Boolean(
+    updatedJourneyProgress.completedSteps?.[step.id]?.[difficultyId]
+  );
+  const journeyCompletionReconciled = Boolean(
+    journeyStepCompleteAfterReconcile && journeyCompletionState?.isVisible
+  );
+  journeyCompletionReconciliationTrace = {
+    ...journeyCompletionReconciliationTrace,
+    journeyCompletionReconciled,
+    journeyStepCompleteAfterReconcile
+  };
+  return journeyCompletionReconciled;
+}
+
 function handleJourneyActivityCompletion() {
   if (activeJourneySession?.mode !== "journey" || journeyCompletionState?.isVisible || isJourneyTransitioning) {
     return;
@@ -27259,6 +27334,25 @@ function getCurrentJourneyStepForTest() {
         title: step.title
       }
     : null;
+}
+
+function getJourneyCompletionReconciliationForTest() {
+  return journeyCompletionReconciliationTrace
+    ? JSON.parse(JSON.stringify(journeyCompletionReconciliationTrace))
+    : null;
+}
+
+function startJourneyStepForTest(journeyId, stepId, difficultyId = "medium", preserveProgress = true) {
+  const journey = journeyPresets.find((candidate) => candidate.id === journeyId);
+  if (!journey) return Promise.resolve(false);
+  const stepIndex = getValidJourneySteps(journey).findIndex((step) => step.id === stepId);
+  if (stepIndex < 0) return Promise.resolve(false);
+  return startJourneyGameplayFromLaunchContext({
+    journeyId,
+    stepIndex,
+    difficultyId,
+    preserveProgress
+  }).then(() => true);
 }
 
 function getCurrentActivityForTest() {
@@ -27931,6 +28025,12 @@ function installMappaTestApi() {
       getCurrentActivity: getCurrentActivityForTest,
       getCurrentJourney: getCurrentJourneyForTest,
       getCurrentJourneyStep: getCurrentJourneyStepForTest,
+      getJourneyCompletionReconciliation: getJourneyCompletionReconciliationForTest,
+      startJourneyStep: startJourneyStepForTest,
+      openStandaloneActivity: (activityId, difficultyId = "medium") => openActivity(activityId, {
+        difficultyId,
+        forceGameplayVisible: true
+      }),
       getCorrectTargets: getCorrectTargetsForTest,
       answerCurrentPrompt: answerCurrentPromptForTest,
       answerCurrentPromptIncorrectly: answerCurrentPromptIncorrectlyForTest,
