@@ -5,6 +5,7 @@ import {
   GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY,
   UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
 } from "../../src/guided-learning-orchestration.js";
+import { GUIDED_CHILD_LAUNCH_STORAGE_KEY } from "../../src/guided-child-launch-contract.js";
 
 const newEnglandStateIds = [
   "maine",
@@ -282,12 +283,15 @@ function createTargetedPhysicalSeed(targetId, { extraStateIds = [] } = {}) {
 
 async function openSeededPhysicalSequence(page, targetId, options = {}) {
   const seed = createTargetedPhysicalSeed(targetId, options);
-  await page.addInitScript(({ repositoryKey, orchestrationKey, repository, orchestrationState }) => {
+  await page.addInitScript(({ repositoryKey, orchestrationKey, repository, orchestrationState, seedMarker }) => {
+    if (localStorage.getItem(seedMarker) === "applied") return;
     localStorage.setItem(repositoryKey, JSON.stringify(repository));
     localStorage.setItem(orchestrationKey, JSON.stringify(orchestrationState));
+    localStorage.setItem(seedMarker, "applied");
   }, {
     repositoryKey: CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY,
     orchestrationKey: GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY,
+    seedMarker: `mappaTestGuidedPhysicalSeed:${targetId}`,
     repository: seed.repository,
     orchestrationState: seed.orchestrationState
   });
@@ -296,6 +300,15 @@ async function openSeededPhysicalSequence(page, targetId, options = {}) {
   await page.evaluate(() => window.__mappaMundiLoadApp());
   await expect(page.locator("#app-shell-title")).toHaveText("Main Menu");
   return seed.targetFeature;
+}
+
+async function reloadAndReenterGuidedLearning(page) {
+  await page.reload();
+  await expect(page.locator("#launch-screen")).toBeVisible();
+  await page.locator("#launch-start-button").click();
+  await page.evaluate(() => window.__mappaMundiLoadApp());
+  await expect(page.locator("#app-shell-title")).toHaveText("Main Menu");
+  await page.locator("#main-menu-us-memory-trail-button").click();
 }
 
 async function completeGeneratedPhysicalSequence(page, {
@@ -570,6 +583,114 @@ test("leaving an orchestration checkpoint keeps it pending and resumes the Guide
   expect(trace.currentBlock.id).toBe("us-guided:rebuild-new-england");
   expect(trace.state.activeStatus).toBe("pending");
   expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getUnitedStatesMemoryTrailPlan())).toEqual(guidedPlanBefore);
+});
+
+test("a bounded Guided physical child preserves provenance, subset, and completion across reload", async ({ page }) => {
+  const feature = await openSeededPhysicalSequence(page, "white-mountains", {
+    extraStateIds: ["vermont", "new-york"]
+  });
+  await launchNextBlock(page, feature.introductionBlockId);
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingState()?.currentTargetId
+  ))).toBe("white-mountains");
+  const originalContract = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), GUIDED_CHILD_LAUNCH_STORAGE_KEY);
+  expect(originalContract).toMatchObject({
+    source: "guided-learning",
+    orchestrationBlockId: feature.introductionBlockId,
+    status: "launched",
+    returnTo: "guided-learning",
+    child: {
+      destinationKind: "physical-feature-introduction"
+    }
+  });
+  const boundedTargetIds = originalContract.child.targetIds;
+  expect(boundedTargetIds).toEqual(["white-mountains", "green-mountains", "adirondack-mountains"]);
+  expect(originalContract.child.teachingTargetIds).toEqual(boundedTargetIds);
+  expect(JSON.stringify(originalContract)).not.toContain("function");
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.answerGuidedPhysicalTeachingCorrectly())).toBe(true);
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingState()?.currentTargetId
+  ))).toBe("green-mountains");
+  const evidenceAfterFirstIntroduction = await page.evaluate((key) => (
+    JSON.parse(localStorage.getItem(key) || "{}").events || []
+  ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
+
+  await reloadAndReenterGuidedLearning(page);
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingState()?.currentTargetId
+  ))).toBe("green-mountains");
+  const resumedIntroduction = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedLearningOrchestration());
+  expect(resumedIntroduction.rehydratedLaunchContract).toBe(true);
+  expect(resumedIntroduction.runtime).toMatchObject({
+    blockId: feature.introductionBlockId,
+    rehydratedLaunchContract: true
+  });
+  expect(resumedIntroduction.childLaunchContract.child.targetIds).toEqual(originalContract.child.targetIds);
+  expect(await page.evaluate((key) => (
+    JSON.parse(localStorage.getItem(key) || "{}").events || []
+  ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY)).toEqual(evidenceAfterFirstIntroduction);
+
+  for (const remainingTargetId of boundedTargetIds.slice(1)) {
+    await expect.poll(() => page.evaluate(() => (
+      window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingState()?.currentTargetId
+    ))).toBe(remainingTargetId);
+    expect(await page.evaluate(() => window.__MAPPA_TEST_API__.answerGuidedPhysicalTeachingCorrectly())).toBe(true);
+  }
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.targetPoolIds
+  )), { timeout: 20_000 }).toEqual(boundedTargetIds);
+  const practiceContract = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), GUIDED_CHILD_LAUNCH_STORAGE_KEY);
+  expect(practiceContract).toMatchObject({
+    orchestrationBlockId: feature.practiceBlockId,
+    status: "launched",
+    child: {
+      destinationKind: "targeted-memory-trail",
+      targetIds: boundedTargetIds
+    }
+  });
+
+  await reloadAndReenterGuidedLearning(page);
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.targetPoolIds
+  )), { timeout: 20_000 }).toEqual(boundedTargetIds);
+  const resumedPractice = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedLearningOrchestration());
+  expect(resumedPractice.runtime.rehydratedLaunchContract).toBe(true);
+  expect(resumedPractice.runtime.physicalCohortTargetIds).toEqual(boundedTargetIds);
+  expect(resumedPractice.runtime.physicalCohortTargetIds.length).toBeLessThan(
+    (await page.evaluate(() => window.__MAPPA_TEST_API__.getMountainRangeVisualState().mountainSymbolTargetIds.length))
+  );
+
+  await finishTargetedPhysicalPractice(page, boundedTargetIds);
+  const evidenceAtCompletion = await page.evaluate((key) => (
+    JSON.parse(localStorage.getItem(key) || "{}").events || []
+  ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
+  expect(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).status, GUIDED_CHILD_LAUNCH_STORAGE_KEY))
+    .toBe("completed");
+
+  await reloadAndReenterGuidedLearning(page);
+  await expect(page.locator("#memory-trail-overlay")).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator("#memory-trail-primary-button")).toHaveText("Continue Guided Learning");
+  await expect(page.locator("#memory-trail-secondary-button")).toBeHidden();
+  const completedResume = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedLearningOrchestration());
+  expect(completedResume.runtime).toMatchObject({
+    blockId: feature.practiceBlockId,
+    status: "completed",
+    rehydratedLaunchContract: true
+  });
+  expect(await page.evaluate((key) => (
+    JSON.parse(localStorage.getItem(key) || "{}").events || []
+  ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY)).toEqual(evidenceAtCompletion);
+
+  await page.locator("#memory-trail-primary-button").click();
+  await expect(page.locator(".memory-trail-panel")).toBeVisible({ timeout: 20_000 });
+  expect(await page.evaluate((key) => localStorage.getItem(key), GUIDED_CHILD_LAUNCH_STORAGE_KEY)).toBeNull();
+  await reloadAndReenterGuidedLearning(page);
+  await expect(page.locator(".memory-trail-panel")).toBeVisible({ timeout: 20_000 });
+  expect(await page.evaluate((key) => localStorage.getItem(key), GUIDED_CHILD_LAUNCH_STORAGE_KEY)).toBeNull();
+  await page.evaluate(() => window.__MAPPA_TEST_API__.openStandaloneActivity("us-physical-lakes", "medium"));
+  await expect(page.locator("#answer-bank .label-chip")).toHaveCount(6);
+  expect(await page.evaluate((key) => localStorage.getItem(key), GUIDED_CHILD_LAUNCH_STORAGE_KEY)).toBeNull();
+  expect((await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedLearningOrchestration())).runtime).toBeNull();
 });
 
 test("the eligible three-range Northeast cohort teaches by map tap before mixed locating retrieval", async ({ page }) => {

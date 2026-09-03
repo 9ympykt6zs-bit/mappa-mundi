@@ -22,7 +22,7 @@ for (const oldLearnerLabel of [
 
 assert.match(indexSource, />Explore</);
 assert.match(indexSource, />Guided Learning</);
-assert.match(indexSource, /maplibre-poc\.js\?v=20260901-guided-physical-retrieval-1/);
+assert.match(indexSource, /maplibre-poc\.js\?v=20260902-guided-child-provenance-1/);
 assert.match(runtimeSource, /const label = isGuidedLearning \? "Label Map" : "Guided Learning"/);
 assert.match(runtimeSource, /selectUnitedStatesEvidenceDrivenContinuation\(\{/);
 assert.match(runtimeSource, /continuation\.destination\.kind === "united-states-guided-learning"/);

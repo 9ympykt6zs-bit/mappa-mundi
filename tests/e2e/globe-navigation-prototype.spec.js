@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { learningProgressStorageKeys } from "../../src/learning-progress-reset.js";
+import { GUIDED_CHILD_LAUNCH_STORAGE_KEY } from "../../src/guided-child-launch-contract.js";
 
 function createStrongStageOneCanonicalRepository() {
   const events = [];
@@ -55,6 +56,52 @@ function createStrongStageOneCanonicalRepository() {
     }
   }
   return { storageVersion: 1, evidenceSchemaVersion: 1, events };
+}
+
+function createLakesNeedCanonicalRepository() {
+  const repository = createStrongStageOneCanonicalRepository();
+  let sequence = repository.events.length;
+  const families = [
+    {
+      type: "river",
+      files: ["us-physical-rivers.json"]
+    },
+    {
+      type: "mountain-range",
+      files: [
+        "us-physical-western-mountains.json",
+        "us-physical-midwestern-mountains.json",
+        "us-physical-eastern-mountains.json",
+        "us-physical-alaska-mountains.json"
+      ]
+    }
+  ];
+  for (const family of families) {
+    for (const file of family.files) {
+      const activity = JSON.parse(readFileSync(new URL(`../../assets/maps/data/${file}`, import.meta.url), "utf8"));
+      for (const target of activity.features || activity.targets || []) {
+        for (const [skillId, conceptSuffix] of [["locating", "location"], ["identifying", "naming"]]) {
+          for (let repetition = 0; repetition < 5; repetition += 1) {
+            const eventId = `physical-${sequence}`;
+            repository.events.push({
+              schemaVersion: 1,
+              eventId,
+              attemptId: eventId,
+              occurredAt: new Date(Date.UTC(2039, 0, 2, 0, 0, sequence)).toISOString(),
+              sequence,
+              conceptId: `${family.type}-${conceptSuffix}:${target.id}`,
+              skillId,
+              sourceMode: "journey",
+              sourceActivityId: activity.id,
+              outcome: "correct"
+            });
+            sequence += 1;
+          }
+        }
+      }
+    }
+  }
+  return repository;
 }
 
 async function startPrototype(page, query = "?test=1&globeNavigation=on") {
@@ -438,6 +485,7 @@ test("strong canonical Stage 1 evidence advances Learn to Rivers on desktop and 
   }, repository);
   await startPrototype(page);
   await chooseSearchScope(page, "United States", "united");
+  const journeyBefore = await page.evaluate(() => window.__MAPPA_TEST_API__.getSavedJourneyProgress());
   await page.getByRole("button", { name: /Learn the United States/ }).click();
 
   await expect.poll(
@@ -447,8 +495,64 @@ test("strong canonical Stage 1 evidence advances Learn to Rivers on desktop and 
   const trace = await page.evaluate(() => window.__MAPPA_TEST_API__.getUnitedStatesContinuationTrace());
   expect(trace.selectedObjective).toBe("learn-physical-features");
   expect(trace.selectedFamily).toBe("physical-rivers");
-  expect(trace.destination.stepId).toBe("us-physical-rivers");
+  expect(trace.destination.kind).toBe("united-states-guided-learning");
+  expect(trace.destination.targetedNeed.familyId).toBe("physical-rivers");
+  expect(trace.routing).toMatchObject({
+    destinationType: "guided-learning",
+    targetedNeed: "physical-rivers",
+    legacyJourneyLaunch: false,
+    boundedChildLaunched: true
+  });
+  expect(trace.childLaunchContract).toMatchObject({
+    source: "guided-learning",
+    entrySource: "evidence-driven-primary-learn",
+    returnTo: "guided-learning",
+    child: {
+      destinationKind: "physical-feature-introduction",
+      activityId: "us-physical-rivers",
+      featureFamily: "river"
+    }
+  });
+  expect(trace.childLaunchContract.child.targetIds.length).toBeGreaterThan(0);
+  expect(trace.childLaunchContract.child.targetIds.length).toBeLessThan(9);
+  expect((await globeState(page)).screen).toBe("study-explore");
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getSavedJourneyProgress())).toEqual(journeyBefore);
   expect(trace.reason).toBe("not-started");
+});
+
+test("a Lakes continuation enters bounded Guided Learning while manual Lakes remains full and open", async ({ page }) => {
+  const repository = createLakesNeedCanonicalRepository();
+  await page.addInitScript(({ canonicalRepository, childKey }) => {
+    localStorage.setItem("mappaMundiCanonicalEvidence", JSON.stringify(canonicalRepository));
+    localStorage.removeItem(childKey);
+  }, { canonicalRepository: repository, childKey: GUIDED_CHILD_LAUNCH_STORAGE_KEY });
+  await startPrototype(page);
+  await chooseSearchScope(page, "United States", "united");
+  const journeyBefore = await page.evaluate(() => window.__MAPPA_TEST_API__.getSavedJourneyProgress());
+  await page.getByRole("button", { name: /Learn the United States/ }).click();
+
+  await expect.poll(
+    () => page.evaluate(() => window.__MAPPA_TEST_API__?.getCurrentActivity()?.id),
+    { timeout: 20_000 }
+  ).toBe("us-physical-lakes");
+  const trace = await page.evaluate(() => window.__MAPPA_TEST_API__.getUnitedStatesContinuationTrace());
+  expect(trace.selectedFamily).toBe("physical-lakes");
+  expect(trace.routing).toMatchObject({
+    destinationType: "guided-learning",
+    targetedNeed: "physical-lakes",
+    legacyJourneyLaunch: false,
+    boundedChildLaunched: true
+  });
+  expect(trace.childLaunchContract.child.targetIds).toHaveLength(1);
+  expect(trace.childLaunchContract.child.targetIds).toEqual(trace.childLaunchContract.child.teachingTargetIds);
+  expect((await globeState(page)).screen).toBe("study-explore");
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getSavedJourneyProgress())).toEqual(journeyBefore);
+
+  await page.evaluate(() => window.__MAPPA_TEST_API__.openStandaloneActivity("us-physical-lakes", "medium"));
+  await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getGlobeNavigationState().screen)).toBe("free-play");
+  await expect(page.locator("#answer-bank .label-chip")).toHaveCount(6);
+  expect(await page.evaluate((key) => localStorage.getItem(key), GUIDED_CHILD_LAUNCH_STORAGE_KEY)).toBeNull();
+  expect((await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedLearningOrchestration())).runtime).toBeNull();
 });
 
 test("map and search allow lateral region changes without requiring Back", async ({ page }, testInfo) => {

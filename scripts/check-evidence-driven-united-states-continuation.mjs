@@ -196,6 +196,7 @@ scenario("fresh", fresh, (value) => {
   assert.equal(value.selectedFamily, "state-locations");
   assert.equal(value.selectedSection, "us-states-01");
   assert.equal(value.destination.kind, "united-states-guided-learning");
+  assert.equal(value.routing.legacyJourneyLaunch, false);
 });
 
 const regionalWeakness = decision({
@@ -252,7 +253,10 @@ scenario("Stage 1 ready / rivers weak", decision({
   })
 }), (value) => {
   assert.equal(value.selectedFamily, "physical-rivers");
-  assert.equal(value.destination.stepId, "us-physical-rivers");
+  assert.equal(value.destination.kind, "united-states-guided-learning");
+  assert.equal(value.destination.targetedNeed.familyId, "physical-rivers");
+  assert.equal(value.routing.destinationType, "guided-learning");
+  assert.equal(value.routing.legacyJourneyLaunch, false);
   assert.equal(value.alternatives.some(({ familyId }) => familyId === "physical-coasts"), false);
 });
 
@@ -265,7 +269,22 @@ scenario("Stage 1 ready / mountains weak", decision({
   })
 }), (value) => {
   assert.equal(value.selectedFamily, "physical-mountain-ranges");
-  assert.equal(value.destination.stepId, "us-mountain-ranges");
+  assert.equal(value.destination.kind, "united-states-guided-learning");
+  assert.equal(value.destination.targetedNeed.familyId, "physical-mountain-ranges");
+});
+
+scenario("Stage 1 ready / lakes weak", decision({
+  categories: strongStageOne,
+  physical: physicalReport({
+    "physical-rivers": "strong-evidence",
+    "physical-lakes": "needs-review",
+    "physical-mountain-ranges": "strong-evidence"
+  })
+}), (value) => {
+  assert.equal(value.selectedFamily, "physical-lakes");
+  assert.equal(value.destination.kind, "united-states-guided-learning");
+  assert.equal(value.destination.targetedNeed.familyId, "physical-lakes");
+  assert.equal(value.selectedSection, "physical-lakes");
 });
 
 scenario("Stage 1 ready / physical fresh", decision({ categories: strongStageOne }), (value) => {
@@ -279,7 +298,8 @@ scenario("Stage 1 + physical ready / Connections weak", decision({
   physical: strongPhysical
 }), (value) => {
   assert.equal(value.selectedObjective, "learn-connections");
-  assert.equal(value.destination.kind, "united-states-connections");
+  assert.equal(value.destination.kind, "united-states-guided-learning");
+  assert.equal(value.destination.targetedNeed.familyId, "geographic-relationships");
   assert.equal(value.reason, "known-weakness", "Canonical coast relationship misses belong to Connections readiness.");
 });
 
@@ -330,7 +350,7 @@ assert.deepEqual(
   scenarios.map((entry) => ({ ...entry })),
   "Equivalent evidence and configuration must replay deterministically."
 );
-assert.equal(scenarios.length, 12);
+assert.equal(scenarios.length, 13);
 for (const result of scenarios) {
   console.log(`${result.name} -> ${result.objective} -> ${result.family || "none"} -> ${result.section}`);
 }

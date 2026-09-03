@@ -26,6 +26,8 @@ None of those actions deletes canonical evidence. A learner's durable history th
 | Completed activities | `geography-memory-completed-activities` | Activity-level completion registry |
 | Daily Trail | `mappaDailyTrailProgress` | Goals, item learning state, scheduling, checkpoints, and session resume |
 | U.S. Memory Trail | `mappaUnitedStatesMemoryTrailProgress` | State/capital item learning state, scheduling, and session resume |
+| Guided Learning orchestration | `mappaGuidedLearningOrchestration` | Guided block completion, teaching cursor, review timing, and return context |
+| Guided child launch | `mappaGuidedChildLaunch` | Serializable parent/child provenance, bounded subset, completion, and reload handoff |
 | Place mastery | `mappaPlaceMastery` | Legacy mastery-signal counters |
 | Canonical evidence | `mappaMundiCanonicalEvidence` | Durable cross-mode attempt history |
 | Canonical Progress Report cohort | `mappaProgressReportCanonicalCohort` | Versioned canonical-read-path enrollment metadata |
@@ -39,6 +41,6 @@ Because the reset removes only the manifest above, it preserves map/study/audio 
 
 ## Verification
 
-`scripts/check-learning-progress-reset.mjs` pins the nine-store manifest, unique/frozen ordering, deterministic replay, idempotence, storage-failure continuation, scoped canonical retention, runtime wiring, explicit labels, and preservation of known plus unknown preference keys.
+`scripts/check-learning-progress-reset.mjs` pins the complete store manifest, unique/frozen ordering, deterministic replay, idempotence, storage-failure continuation, scoped canonical retention, runtime wiring, explicit labels, and preservation of known plus unknown preference keys.
 
 The Playwright reset flows run on desktop and mobile-sized Chromium. They verify explicit confirmation/cancellation, scoped Daily Trail and U.S. Memory Trail retention of canonical history, activity restart retention of canonical history, global removal of every manifest key, preference survival after reload, and absence of runtime errors.

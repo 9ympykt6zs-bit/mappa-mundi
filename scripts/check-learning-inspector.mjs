@@ -385,6 +385,10 @@ assert.match(runtimeSource, /createUnitedStatesProgressReportReadModel\(\{[\s\S]
 assert.match(runtimeSource, /createCanonicalUnitedStatesProgressReport\(\{[\s\S]*legacyPresentationReport: progressReadModel\.report[\s\S]*\}\)/, "Inspector continuation readiness must use canonical evidence even when the learner-facing report read path falls back.");
 assert.match(runtimeSource, /planner: "Evidence-Driven U\.S\. Continuation"/);
 assert.match(runtimeSource, /runtimeUnitedStatesContinuationTrace\.targetedEntry\?\.fallbackReason/);
+assert.match(runtimeSource, /runtimeUnitedStatesContinuationTrace\.routing\?\.legacyJourneyLaunch/);
+assert.match(runtimeSource, /childLaunchContract: durableChildLaunch/);
+assert.match(runtimeSource, /targetSubset: \[\.\.\.durableChildLaunch\.child\.targetIds\]/);
+assert.match(runtimeSource, /rehydratedLaunchContract/);
 assert.match(runtimeSource, /window\.mappaLearningInspector =/);
 assert.match(runtimeSource, /recordCanonicalEvidenceEventWithInspector\(event\)/);
 assert.match(runtimeSource, /recordCanonicalEvidenceEventsWithInspector\(events\)/);

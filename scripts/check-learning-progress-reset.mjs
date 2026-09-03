@@ -15,6 +15,7 @@ import { clearProgress, progressStorageKey, resetJourneyDifficulty } from "../sr
 import { unitedStatesMemoryTrailStorageKey, resetUnitedStatesMemoryTrailProgress } from "../src/united-states-memory-trail-planner.js";
 import { CANONICAL_PROGRESS_REPORT_COHORT_STORAGE_KEY } from "../src/united-states-progress-report-read-path.js";
 import { GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY } from "../src/guided-learning-orchestration.js";
+import { GUIDED_CHILD_LAUNCH_STORAGE_KEY } from "../src/guided-child-launch-contract.js";
 
 function createMemoryStorage(initial = {}) {
   const values = new Map(Object.entries(initial));
@@ -33,6 +34,7 @@ const expectedManifest = [
   ["daily-trail", dailyTrailStorageKey],
   ["united-states-memory-trail", unitedStatesMemoryTrailStorageKey],
   ["guided-learning-orchestration", GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY],
+  ["guided-child-launch", GUIDED_CHILD_LAUNCH_STORAGE_KEY],
   ["place-mastery", placeMasteryStorageKey],
   ["canonical-evidence", CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY],
   ["canonical-progress-report-cohort", CANONICAL_PROGRESS_REPORT_COHORT_STORAGE_KEY],
@@ -94,7 +96,8 @@ const scopedStorage = createMemoryStorage({
   [unitedStatesMemoryTrailStorageKey]: "us-memory-history",
   [placeMasteryStorageKey]: "mastery-history",
   [LOWER_48_RECONSTRUCTION_STORAGE_KEY]: "reconstruction-history",
-  [GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY]: "orchestration-history"
+  [GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY]: "orchestration-history",
+  [GUIDED_CHILD_LAUNCH_STORAGE_KEY]: "guided-child-history"
 });
 resetDailyTrailProgress(scopedStorage);
 assert.equal(scopedStorage.getItem(dailyTrailStorageKey), null);
@@ -127,6 +130,7 @@ assert.match(runtimeSource, /Erase All Learning Progress/);
 assert.match(runtimeSource, /Settings and preferences will be kept/);
 assert.match(runtimeSource, /resetDailyTrailPersistedProgress\(window\.localStorage\)/);
 assert.match(runtimeSource, /resetGuidedLearningOrchestrationState\(window\.localStorage\)/);
+assert.match(runtimeSource, /clearGuidedChildLaunchContract\(window\.localStorage\)/);
 assert.match(indexSource, />Restart Activity<\/button>/);
 assert.doesNotMatch(runtimeSource, /resetCanonicalEvidenceRepository\([^)]*\).*resetDailyTrailProgress/s, "Scoped reset code must not delete canonical history.");
 

@@ -48,6 +48,13 @@ import {
   startGuidedLearningOrchestrationBlock,
   UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
 } from "./guided-learning-orchestration.js?v=20260901-guided-physical-retrieval-1";
+import {
+  clearGuidedChildLaunchContract,
+  completeGuidedChildLaunchContract,
+  createGuidedChildLaunchContract,
+  loadGuidedChildLaunchContract,
+  saveGuidedChildLaunchContract
+} from "./guided-child-launch-contract.js?v=20260902-guided-child-provenance-1";
 import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js?v=20260901-guided-physical-teaching-1";
 import {
   chooseNextGuidedPhysicalRetrievalTarget,
@@ -3895,7 +3902,9 @@ function recordCanonicalReconstructionEvaluation(evaluation, sourceActivityId) {
   }
 }
 
-function getGuidedLearningOrchestrationSnapshot() {
+function getGuidedLearningOrchestrationSnapshot(requestedTargetedNeed = null) {
+  const durableChildLaunch = loadGuidedChildLaunchContract(window.localStorage);
+  const targetedNeed = requestedTargetedNeed || durableChildLaunch?.targetedNeed || null;
   const state = loadGuidedLearningOrchestrationState(
     window.localStorage,
     UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
@@ -3909,15 +3918,31 @@ function getGuidedLearningOrchestrationSnapshot() {
     config: UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1,
     state,
     repository: loadCanonicalEvidenceRepository(),
-    hasUnfinishedNonPhysicalLearning
+    hasUnfinishedNonPhysicalLearning,
+    targetedNeed
   });
   return {
     ...decision,
     state,
+    childLaunchContract: durableChildLaunch,
+    child: durableChildLaunch ? {
+      source: durableChildLaunch.source,
+      entrySource: durableChildLaunch.entrySource,
+      orchestrationBlockId: durableChildLaunch.orchestrationBlockId,
+      activity: durableChildLaunch.child.activityId || durableChildLaunch.child.destinationKind,
+      type: durableChildLaunch.child.type,
+      targetSubset: [...durableChildLaunch.child.targetIds],
+      challengeSubset: [...durableChildLaunch.child.challengeIds],
+      returnTo: durableChildLaunch.returnTo,
+      status: durableChildLaunch.status
+    } : null,
+    rehydratedLaunchContract: activeGuidedLearningOrchestrationBlock?.rehydratedLaunchContract === true,
     runtime: activeGuidedLearningOrchestrationBlock ? {
       blockId: activeGuidedLearningOrchestrationBlock.id,
       blockType: activeGuidedLearningOrchestrationBlock.type,
       status: activeGuidedLearningOrchestrationBlock.status,
+      entrySource: activeGuidedLearningOrchestrationBlock.entrySource || durableChildLaunch?.entrySource || "guided-learning",
+      rehydratedLaunchContract: activeGuidedLearningOrchestrationBlock.rehydratedLaunchContract === true,
       returnContext: activeGuidedLearningOrchestrationBlock.returnContext,
       physicalFeatureFamily: activeStudySession?.physicalFeatureFamily || null,
       physicalFeatureGeometry: activeStudySession?.physicalFeatureGeometry || null,
@@ -3954,9 +3979,9 @@ function getGuidedLearningOrchestrationSnapshot() {
   };
 }
 
-function publishGuidedLearningOrchestrationTrace(details = {}) {
+function publishGuidedLearningOrchestrationTrace(details = {}, targetedNeed = null) {
   runtimeGuidedLearningOrchestrationTrace = {
-    ...getGuidedLearningOrchestrationSnapshot(),
+    ...getGuidedLearningOrchestrationSnapshot(targetedNeed),
     ...details
   };
   return runtimeGuidedLearningOrchestrationTrace;
@@ -3973,7 +3998,51 @@ function getGuidedLearningOrchestrationReturnContext() {
   };
 }
 
-function saveActiveGuidedLearningOrchestrationBlock(block, returnContext) {
+function createGuidedChildLaunchContractForBlock(block, {
+  entrySource = "guided-learning",
+  launchReason = "guided-orchestration",
+  targetedNeed = null
+} = {}) {
+  const destination = block.destination || {};
+  return createGuidedChildLaunchContract({
+    entrySource,
+    orchestrationId: UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.id,
+    orchestrationBlockId: block.id,
+    launchReason,
+    targetedNeed,
+    status: "launched",
+    child: {
+      type: block.type,
+      destinationKind: destination.kind,
+      activityId: destination.activityId,
+      journeyId: destination.journeyId,
+      stepId: destination.stepId,
+      regionId: destination.regionId,
+      featureId: block.featureId || destination.featureId,
+      featureFamily: destination.featureFamily,
+      cohortId: block.cohortId || destination.cohortId,
+      targetType: destination.targetType,
+      teachingMessage: destination.teachingMessage,
+      targetIds: destination.targetIds,
+      targetLabels: destination.targetLabels?.length
+        ? destination.targetLabels
+        : destination.targetLabel ? [destination.targetLabel] : [],
+      targetConceptIds: destination.targetConceptIds?.length
+        ? destination.targetConceptIds
+        : destination.targetConceptId ? [destination.targetConceptId] : [],
+      newTargetIds: destination.newTargetIds,
+      teachingTargetIds: destination.teachingTargetIds,
+      introductionBlockIds: block.introductionBlockIds,
+      challengeIds: destination.challengeIds,
+      camera: destination.camera,
+      geometry: destination.geometry,
+      persistentLearningCamera: destination.persistentLearningCamera,
+      guidedPhysicalCheckpoint: destination.guidedPhysicalCheckpoint
+    }
+  });
+}
+
+function saveActiveGuidedLearningOrchestrationBlock(block, returnContext, launchContext = {}) {
   const persistedReturnContext = block.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE
     ? {
         ...returnContext,
@@ -4007,15 +4076,22 @@ function saveActiveGuidedLearningOrchestrationBlock(block, returnContext) {
     window.localStorage,
     UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
   );
+  const childLaunchContract = saveGuidedChildLaunchContract(
+    createGuidedChildLaunchContractForBlock(block, launchContext),
+    window.localStorage
+  );
   activeGuidedLearningOrchestrationBlock = {
     ...block,
     status: "launched",
-    returnContext: persistedReturnContext
+    returnContext: persistedReturnContext,
+    entrySource: childLaunchContract.entrySource,
+    rehydratedLaunchContract: false
   };
   publishGuidedLearningOrchestrationTrace({
     lifecycleEvent: "external-activity-launched",
-    launchedBlockId: block.id
-  });
+    launchedBlockId: block.id,
+    rehydratedLaunchContract: false
+  }, childLaunchContract.targetedNeed);
 }
 
 function completeActiveGuidedLearningOrchestrationBlock(
@@ -4027,7 +4103,13 @@ function completeActiveGuidedLearningOrchestrationBlock(
     window.localStorage,
     UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
   );
-  if (current.completedBlockIds.includes(blockId)) return false;
+  if (current.completedBlockIds.includes(blockId)) {
+    completeGuidedChildLaunchContract(blockId, window.localStorage);
+    if (activeGuidedLearningOrchestrationBlock?.id === blockId) {
+      activeGuidedLearningOrchestrationBlock.status = "completed";
+    }
+    return false;
+  }
   const next = completeGuidedLearningOrchestrationBlock(
     current,
     blockId,
@@ -4039,6 +4121,7 @@ function completeActiveGuidedLearningOrchestrationBlock(
     window.localStorage,
     UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
   );
+  completeGuidedChildLaunchContract(blockId, window.localStorage);
   if (activeGuidedLearningOrchestrationBlock?.id === blockId) {
     activeGuidedLearningOrchestrationBlock.status = "completed";
   }
@@ -4080,6 +4163,7 @@ async function returnToGuidedLearningFromOrchestration() {
   if (block.status !== "completed") deferActiveGuidedLearningOrchestrationBlock(block.id);
   const returnedBlockId = block.id;
   activeGuidedLearningOrchestrationBlock = null;
+  clearGuidedChildLaunchContract(window.localStorage);
   publishGuidedLearningOrchestrationTrace({
     lifecycleEvent: "returned-to-guided-learning",
     returnedBlockId
@@ -4090,18 +4174,32 @@ async function returnToGuidedLearningFromOrchestration() {
   return true;
 }
 
-async function launchNextGuidedLearningOrchestrationBlock() {
-  const trace = publishGuidedLearningOrchestrationTrace({ lifecycleEvent: "eligibility-evaluated" });
+async function launchNextGuidedLearningOrchestrationBlock(options = {}) {
+  const targetedNeed = options.targetedNeed || null;
+  const trace = publishGuidedLearningOrchestrationTrace(
+    { lifecycleEvent: "eligibility-evaluated" },
+    targetedNeed
+  );
   const block = trace.currentBlock;
   if (!block || block.type === GUIDED_LEARNING_BLOCK_TYPES.GUIDED_SECTION) {
     return false;
   }
 
   const returnContext = getGuidedLearningOrchestrationReturnContext();
-  saveActiveGuidedLearningOrchestrationBlock(block, returnContext);
+  saveActiveGuidedLearningOrchestrationBlock(block, returnContext, {
+    entrySource: options.entrySource,
+    launchReason: options.launchReason || trace.selectionReason,
+    targetedNeed
+  });
+
+  return launchGuidedLearningChildBlock(block);
+}
+
+async function launchGuidedLearningChildBlock(block, { completed = false } = {}) {
 
   if (block.destination.kind === "map-reconstruction") {
     await openMapReconstructionWithOptions({ regionId: block.destination.regionId });
+    if (completed) showRehydratedGuidedChildCompletion(block);
     return true;
   }
 
@@ -4110,7 +4208,7 @@ async function launchNextGuidedLearningOrchestrationBlock() {
       guidedOrchestration: true,
       focusTargetIds: block.destination.targetIds,
       revealedTargetIds: [],
-      physicalTeachingTargetIds: block.destination.teachingTargetIds
+      physicalTeachingTargetIds: completed ? [] : block.destination.teachingTargetIds
         || block.destination.newTargetIds
         || block.destination.targetIds,
       physicalTeachingTaughtTargetIds: block.destination.taughtTargetIds,
@@ -4121,12 +4219,13 @@ async function launchNextGuidedLearningOrchestrationBlock() {
       physicalFeatureGeometry: block.destination.geometry,
       persistentLearningCamera: block.destination.persistentLearningCamera
     });
+    if (completed) showRehydratedGuidedChildCompletion(block);
     return true;
   }
 
   if (block.destination.kind === "targeted-memory-trail") {
     await startStudyPreviewActivity(block.destination.journeyId, block.destination.stepId, {
-      autoStartMemoryTrail: true,
+      autoStartMemoryTrail: !completed,
       guidedOrchestration: true,
       focusTargetIds: block.destination.targetIds,
       memoryTrailTargetIds: block.destination.targetIds,
@@ -4138,6 +4237,7 @@ async function launchNextGuidedLearningOrchestrationBlock() {
       physicalFeatureGeometry: block.destination.geometry,
       persistentLearningCamera: block.destination.persistentLearningCamera
     });
+    if (completed) showRehydratedGuidedChildCompletion(block);
     return true;
   }
 
@@ -4146,16 +4246,129 @@ async function launchNextGuidedLearningOrchestrationBlock() {
       unitedStatesRelationshipsOnly: true,
       challengeIds: block.destination.challengeIds
     });
+    if (completed) showRehydratedGuidedChildCompletion(block);
     return true;
   }
 
   deferActiveGuidedLearningOrchestrationBlock(block.id);
   activeGuidedLearningOrchestrationBlock = null;
+  clearGuidedChildLaunchContract(window.localStorage);
   publishGuidedLearningOrchestrationTrace({
     lifecycleEvent: "fallback",
     fallbackReason: `unsupported-destination:${block.destination.kind}`
   });
   return false;
+}
+
+function rehydrateGuidedLearningChildBlock(contract) {
+  const configuredBlock = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.blocks
+    .find(({ id }) => id === contract?.orchestrationBlockId);
+  if (!configuredBlock) return null;
+  const state = loadGuidedLearningOrchestrationState(
+    window.localStorage,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  if (contract.status === "launched" && state.activeBlockId !== configuredBlock.id) return null;
+  const decision = selectGuidedLearningOrchestrationBlock({
+    config: UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1,
+    state,
+    repository: loadCanonicalEvidenceRepository(),
+    hasUnfinishedNonPhysicalLearning: true,
+    targetedNeed: contract.targetedNeed
+  });
+  const liveBlock = decision.currentBlock?.id === configuredBlock.id
+    ? decision.currentBlock
+    : configuredBlock;
+  const child = contract.child;
+  const teachingProgress = state.physicalTeachingProgress?.[configuredBlock.id] || null;
+  const destination = {
+    ...liveBlock.destination,
+    kind: child.destinationKind,
+    activityId: child.activityId || liveBlock.destination.activityId,
+    journeyId: child.journeyId || liveBlock.destination.journeyId,
+    stepId: child.stepId || liveBlock.destination.stepId,
+    regionId: child.regionId || liveBlock.destination.regionId,
+    featureId: child.featureId || liveBlock.destination.featureId,
+    featureFamily: child.featureFamily || liveBlock.destination.featureFamily,
+    cohortId: child.cohortId || liveBlock.destination.cohortId,
+    targetType: child.targetType || liveBlock.destination.targetType,
+    teachingMessage: child.teachingMessage || liveBlock.destination.teachingMessage,
+    targetIds: [...child.targetIds],
+    targetLabels: [...child.targetLabels],
+    targetConceptIds: [...child.targetConceptIds],
+    newTargetIds: [...child.newTargetIds],
+    teachingTargetIds: [...child.teachingTargetIds],
+    challengeIds: [...child.challengeIds],
+    camera: child.camera || liveBlock.destination.camera,
+    geometry: child.geometry || liveBlock.destination.geometry,
+    persistentLearningCamera: child.persistentLearningCamera || liveBlock.destination.persistentLearningCamera,
+    guidedPhysicalCheckpoint: child.guidedPhysicalCheckpoint || liveBlock.destination.guidedPhysicalCheckpoint
+  };
+  if (teachingProgress) {
+    destination.taughtTargetIds = [...teachingProgress.taughtTargetIds];
+    destination.pendingTeachingTargetIds = destination.teachingTargetIds
+      .filter((targetId) => !teachingProgress.taughtTargetIds.includes(targetId));
+    destination.currentTeachingTargetId = teachingProgress.currentTargetId;
+    destination.teachingPhase = teachingProgress.phase;
+  }
+  return {
+    ...liveBlock,
+    id: configuredBlock.id,
+    type: child.type,
+    featureId: child.featureId || liveBlock.featureId,
+    cohortId: child.cohortId || liveBlock.cohortId,
+    introductionBlockIds: child.introductionBlockIds.length > 0
+      ? [...child.introductionBlockIds]
+      : liveBlock.introductionBlockIds,
+    destination
+  };
+}
+
+async function resumeDurableGuidedChildLaunch() {
+  const contract = loadGuidedChildLaunchContract(window.localStorage);
+  if (!contract) return false;
+  const block = rehydrateGuidedLearningChildBlock(contract);
+  if (!block) {
+    clearGuidedChildLaunchContract(window.localStorage);
+    return false;
+  }
+  const state = loadGuidedLearningOrchestrationState(
+    window.localStorage,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  activeGuidedLearningOrchestrationBlock = {
+    ...block,
+    status: contract.status,
+    returnContext: state.returnContext,
+    entrySource: contract.entrySource,
+    rehydratedLaunchContract: true
+  };
+  const launched = await launchGuidedLearningChildBlock(block, {
+    completed: contract.status === "completed"
+  });
+  if (launched) {
+    publishGuidedLearningOrchestrationTrace({
+      lifecycleEvent: contract.status === "completed"
+        ? "completed-child-rehydrated"
+        : "incomplete-child-rehydrated",
+      rehydratedLaunchContract: true
+    }, contract.targetedNeed);
+  }
+  return launched;
+}
+
+function showRehydratedGuidedChildCompletion(block) {
+  const targetLabel = block.destination.targetLabels?.join(" and ")
+    || block.destination.targetLabel
+    || "Guided activity";
+  configureMemoryTrailOverlay({
+    mode: "complete",
+    titleText: `${targetLabel} complete`,
+    messageText: "This Guided Learning activity is complete. Continue when you are ready.",
+    primaryText: "Continue Guided Learning",
+    secondaryText: "",
+    showInfo: false
+  });
 }
 
 const journeyDifficultyOptions = [
@@ -4576,6 +4789,10 @@ async function createRuntimeLearningInspectorSnapshot() {
         selectedFamily: runtimeUnitedStatesContinuationTrace.selectedFamily,
         selectedSkill: runtimeUnitedStatesContinuationTrace.selectedSkill,
         selectedSection: runtimeUnitedStatesContinuationTrace.selectedSection,
+        destinationType: runtimeUnitedStatesContinuationTrace.routing?.destinationType || null,
+        targetedNeed: runtimeUnitedStatesContinuationTrace.routing?.targetedNeed || null,
+        legacyJourneyLaunch: runtimeUnitedStatesContinuationTrace.routing?.legacyJourneyLaunch ?? null,
+        orchestrationBlockId: runtimeUnitedStatesContinuationTrace.routing?.orchestrationBlockId || null,
         targetedEntryAccepted: runtimeUnitedStatesContinuationTrace.targetedEntry?.accepted ?? null,
         fallbackReason: runtimeUnitedStatesContinuationTrace.targetedEntry?.fallbackReason || null
       },
@@ -8151,6 +8368,8 @@ function setJourneyPreviewHeader(activity) {
 }
 
 function startJourneyGameplayFromLaunchContext(context) {
+  clearGuidedChildLaunchContract(window.localStorage);
+  activeGuidedLearningOrchestrationBlock = null;
   const { journey, step, stepIndex } = getJourneyLaunchContextParts(context);
 
   if (!journey || !step) {
@@ -8319,6 +8538,9 @@ function getStudyStepContext(journeyId, stepId) {
 
 async function startStudyPreviewActivity(journeyId, stepId, options = {}) {
   await ensureMapReady();
+  if (!activeGuidedLearningOrchestrationBlock) {
+    clearGuidedChildLaunchContract(window.localStorage);
+  }
   const { journey, step, activity } = getStudyStepContext(journeyId, stepId);
 
   if (!journey || !step || !activity) {
@@ -8601,6 +8823,7 @@ function updateGuidedPhysicalTeachingVisualState() {
 }
 
 async function continueAfterGuidedPhysicalTeaching() {
+  const completedContract = loadGuidedChildLaunchContract(window.localStorage);
   const returnedBlockId = activeGuidedLearningOrchestrationBlock?.id || null;
   hideMemoryTrailOverlay();
   clearMemoryTrailState({ restoreReveals: false });
@@ -8610,12 +8833,17 @@ async function continueAfterGuidedPhysicalTeaching() {
   runner?.setMemoryTrailHighlight([]);
   runner?.setCompletedTargets([]);
   activeGuidedLearningOrchestrationBlock = null;
+  clearGuidedChildLaunchContract(window.localStorage);
   const trace = publishGuidedLearningOrchestrationTrace({
     lifecycleEvent: "physical-teaching-returned",
     returnedBlockId
   });
   if (trace.currentBlock?.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE) {
-    return launchNextGuidedLearningOrchestrationBlock();
+    return launchNextGuidedLearningOrchestrationBlock({
+      entrySource: completedContract?.entrySource,
+      targetedNeed: completedContract?.targetedNeed,
+      launchReason: "guided-physical-introduction-completed"
+    });
   }
   pendingUnitedStatesMemoryTrailPlan = null;
   lastUnitedStatesMemoryTrailSummary = null;
@@ -8686,6 +8914,7 @@ function recordActiveGuidedPhysicalTeachingTarget(targetId) {
         window.localStorage,
         UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
       );
+      completeGuidedChildLaunchContract(block.id, window.localStorage);
       runner?.setMemoryTrailHighlight([]);
       showFeedback("Good. You have learned this group.", true);
       publishGuidedLearningOrchestrationTrace({
@@ -9091,7 +9320,8 @@ function configureMemoryTrailOverlay({ mode, titleText, messageText, primaryText
   memoryTrailTitle.textContent = titleText;
   memoryTrailMessage.textContent = messageText;
   memoryTrailPrimaryButton.textContent = primaryText;
-  memoryTrailSecondaryButton.textContent = secondaryText;
+  memoryTrailSecondaryButton.textContent = secondaryText || "";
+  memoryTrailSecondaryButton.hidden = !secondaryText;
   memoryTrailOverlay.hidden = false;
 
   if (memoryTrailInfoButton) {
@@ -9225,6 +9455,10 @@ function handleMemoryTrailOverlayPrimary() {
 
   if (memoryTrailOverlayMode === "complete") {
     hideMemoryTrailOverlay();
+    if (activeGuidedLearningOrchestrationBlock?.status === "completed") {
+      void returnToGuidedLearningFromOrchestration();
+      return;
+    }
     if (activeStudySession?.guidedOrchestration && activeGuidedLearningOrchestrationBlock) {
       exitStudyExplore({ returnToGuidedOrchestration: true });
       return;
@@ -9383,6 +9617,7 @@ async function startAcrossUnitedStatesGlobeLearning() {
     progressReport,
     memoryTrailItems
   });
+  runtimeUnitedStatesTargetedEntryTrace = null;
   runtimeUnitedStatesContinuationTrace = continuation;
   const objectiveIdByContinuationId = {
     "learn-states-and-capitals": "states-capitals",
@@ -9394,32 +9629,52 @@ async function startAcrossUnitedStatesGlobeLearning() {
   returnToExpeditionId = ACROSS_UNITED_STATES_EXPEDITION_ID;
   returnToExpeditionObjectiveId = activeExpeditionObjectiveId;
 
-  if (continuation.destination.kind === "united-states-guided-learning") {
-    await startOrContinueUnitedStatesMemoryTrail({
-      targetSectionId: continuation.destination.targetSectionId
-    });
+  if (await resumeDurableGuidedChildLaunch()) {
+    const childContract = loadGuidedChildLaunchContract(window.localStorage);
     runtimeUnitedStatesContinuationTrace = {
       ...continuation,
-      selectedSection: runtimeUnitedStatesTargetedEntryTrace?.resolvedSectionId
-        || continuation.selectedSection,
-      targetedEntry: runtimeUnitedStatesTargetedEntryTrace
+      entrySource: childContract?.entrySource || "guided-learning",
+      routing: {
+        ...continuation.routing,
+        destinationType: "guided-learning",
+        targetedNeed: childContract?.targetedNeed?.familyId || continuation.routing?.targetedNeed || null,
+        legacyJourneyLaunch: false
+      },
+      rehydratedLaunchContract: true,
+      childLaunchContract: childContract
     };
     return;
   }
 
-  if (continuation.destination.kind === "journey-step") {
-    const physicalStep = activeExpeditionModel.steps.find(({ id }) => id === "follow-landscape");
-    launchExpeditionStep({
-      ...physicalStep,
-      launch: {
-        kind: "journey",
-        journeyId: continuation.destination.journeyId,
-        stepId: continuation.destination.stepId
-      }
-    }, {
-      allowLocked: true,
-      objectiveId: activeExpeditionObjectiveId
+  if (continuation.destination.kind === "united-states-guided-learning") {
+    const targetedNeed = continuation.destination.targetedNeed || null;
+    const launchedChild = !continuation.destination.targetSectionId && await launchNextGuidedLearningOrchestrationBlock({
+      entrySource: "evidence-driven-primary-learn",
+      targetedNeed,
+      launchReason: continuation.reason
     });
+    if (!launchedChild) {
+      await startOrContinueUnitedStatesMemoryTrail({
+        targetSectionId: continuation.destination.targetSectionId
+      });
+    }
+    const orchestrationTrace = getGuidedLearningOrchestrationSnapshot(targetedNeed);
+    runtimeUnitedStatesContinuationTrace = {
+      ...continuation,
+      selectedSection: continuation.destination.targetSectionId && runtimeUnitedStatesTargetedEntryTrace?.resolvedSectionId
+        || continuation.selectedSection,
+      entrySource: "evidence-driven-primary-learn",
+      targetedEntry: runtimeUnitedStatesTargetedEntryTrace,
+      routing: {
+        ...continuation.routing,
+        destinationType: "guided-learning",
+        targetedNeed: targetedNeed?.familyId || null,
+        legacyJourneyLaunch: false,
+        orchestrationBlockId: launchedChild ? orchestrationTrace.runtime?.blockId || null : null,
+        boundedChildLaunched: launchedChild
+      },
+      childLaunchContract: orchestrationTrace.childLaunchContract
+    };
     return;
   }
 
@@ -9832,6 +10087,9 @@ async function openMapReconstruction() {
 }
 
 async function openMapReconstructionWithOptions(options = {}) {
+  if (!activeGuidedLearningOrchestrationBlock) {
+    clearGuidedChildLaunchContract(window.localStorage);
+  }
   saveCurrentActivityProgress();
   cancelGrabbedAnswer();
   clearFeedback();
@@ -9904,6 +10162,9 @@ function exitMapReconstruction() {
 
 async function openMentalMapChallenge(options = {}) {
   await ensureMapReady();
+  if (!activeGuidedLearningOrchestrationBlock) {
+    clearGuidedChildLaunchContract(window.localStorage);
+  }
   saveCurrentActivityProgress();
   cancelGrabbedAnswer();
   clearFeedback();
@@ -20837,6 +21098,9 @@ function countUnitedStatesMemoryTrailWeakItems(state, items = getUnitedStatesMem
 async function startOrContinueUnitedStatesMemoryTrail(options = {}) {
   await ensureMapRuntimeLoaded();
   await ensureActivityDataLoaded();
+  if (options.resumeGuidedChild !== false && await resumeDurableGuidedChildLaunch()) {
+    return;
+  }
 
   const items = getUnitedStatesMemoryTrailItems();
   const state = loadUnitedStatesMemoryTrailProgress(items);
@@ -21304,6 +21568,7 @@ function startLabelMapFromUnitedStatesGuidedLearning() {
 function resetUnitedStatesMemoryTrailProgress() {
   resetUnitedStatesMemoryTrailPersistedProgress();
   resetGuidedLearningOrchestrationState(window.localStorage);
+  clearGuidedChildLaunchContract(window.localStorage);
   activeUnitedStatesMemoryTrailSession = null;
   activeGuidedLearningOrchestrationBlock = null;
   pendingUnitedStatesMemoryTrailPlan = null;
@@ -24724,6 +24989,8 @@ function getMemoryTrailAnalyticsContext() {
 async function openActivity(activityId, options = {}) {
   markPerf("mappa-first-activity-start");
   await ensureMapReady();
+  clearGuidedChildLaunchContract(window.localStorage);
+  activeGuidedLearningOrchestrationBlock = null;
   const integrityActivity = getActivityById(activityId);
   if (!requireLearningIntegrity(integrityActivity)) return false;
   closeRiverPreview({ restoreActivityUi: true });

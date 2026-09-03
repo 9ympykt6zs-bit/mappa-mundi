@@ -2,19 +2,25 @@ import { CONTINUATION_CLASSIFICATION_POLICY } from "./continuation-readiness.js"
 
 export const UNITED_STATES_CONTINUATION_DESTINATIONS = Object.freeze({
   "physical-rivers": Object.freeze({
-    kind: "journey-step",
-    journeyId: "united-states",
-    stepId: "us-physical-rivers"
+    kind: "united-states-guided-learning",
+    targetedNeed: Object.freeze({
+      objectiveId: "learn-physical-features",
+      familyId: "physical-rivers"
+    })
   }),
   "physical-lakes": Object.freeze({
-    kind: "journey-step",
-    journeyId: "united-states",
-    stepId: "us-physical-lakes"
+    kind: "united-states-guided-learning",
+    targetedNeed: Object.freeze({
+      objectiveId: "learn-physical-features",
+      familyId: "physical-lakes"
+    })
   }),
   "physical-mountain-ranges": Object.freeze({
-    kind: "journey-step",
-    journeyId: "united-states",
-    stepId: "us-mountain-ranges"
+    kind: "united-states-guided-learning",
+    targetedNeed: Object.freeze({
+      objectiveId: "learn-physical-features",
+      familyId: "physical-mountain-ranges"
+    })
   })
 });
 
@@ -105,7 +111,11 @@ function selectStateAndCapitalDestination(objective, progressReport, memoryTrail
     destination: {
       kind: "united-states-guided-learning",
       targetSectionId: targetSectionId || null,
-      expectedSectionId: resolvedSectionId || null
+      expectedSectionId: resolvedSectionId || null,
+      targetedNeed: {
+        objectiveId: "learn-states-and-capitals",
+        familyId
+      }
     }
   };
 }
@@ -120,7 +130,7 @@ function selectPhysicalDestination(objective) {
     selectedFamily: familyId,
     selectedSkill: familyId,
     selectedItem: null,
-    selectedSection: destination.stepId,
+    selectedSection: familyId,
     reason: objective.blockingFamily?.priorityReason || "not-started",
     alternatives: (objective.families || []).map((family) => ({
       familyId: family.id,
@@ -166,7 +176,13 @@ export function selectUnitedStatesEvidenceDrivenContinuation({
         classification: family.classification.id,
         priorityReason: family.classification.reason
       })),
-      destination: { kind: "united-states-connections" }
+      destination: {
+        kind: "united-states-guided-learning",
+        targetedNeed: {
+          objectiveId: "learn-connections",
+          familyId: "geographic-relationships"
+        }
+      }
     };
   } else {
     decision = {
@@ -183,6 +199,7 @@ export function selectUnitedStatesEvidenceDrivenContinuation({
     };
   }
 
+  const targetedNeed = decision.destination?.targetedNeed || null;
   return {
     schemaVersion: 1,
     kind: "evidence-driven-united-states-continuation",
@@ -196,6 +213,18 @@ export function selectUnitedStatesEvidenceDrivenContinuation({
       readiness: objective.readiness,
       blockingFamily: objective.blockingFamily?.id || null
     })),
+    continuationNeed: {
+      objective: selectedObjective.id,
+      family: decision.selectedFamily,
+      reason: decision.reason
+    },
+    routing: {
+      destinationType: decision.destination?.kind === "united-states-guided-learning"
+        ? "guided-learning"
+        : decision.destination?.kind || null,
+      targetedNeed: targetedNeed?.familyId || null,
+      legacyJourneyLaunch: false
+    },
     targetedEntry: null
   };
 }

@@ -21,6 +21,11 @@ export const GUIDED_LEARNING_BLOCK_TYPES = Object.freeze({
 const coveredOutcomes = new Set(["correct", "assisted"]);
 const orchestrationBlockTypes = new Set(Object.values(GUIDED_LEARNING_BLOCK_TYPES));
 const validActiveStatuses = new Set(["pending", "launched", "completed"]);
+const physicalContinuationFamilyByNeedId = Object.freeze({
+  "physical-rivers": "river",
+  "physical-lakes": "lake",
+  "physical-mountain-ranges": "mountain-range"
+});
 
 function uniqueStrings(values = []) {
   return [...new Set((Array.isArray(values) ? values : []).map((value) => String(value || "").trim()).filter(Boolean))];
@@ -976,9 +981,24 @@ export function selectGuidedLearningOrchestrationBlock({
   config = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1,
   state = createGuidedLearningOrchestrationState(null, config),
   repository = {},
-  hasUnfinishedNonPhysicalLearning = true
+  hasUnfinishedNonPhysicalLearning = true,
+  targetedNeed = null
 } = {}) {
   const normalizedState = createGuidedLearningOrchestrationState(state, config);
+  const normalizedTargetedNeed = targetedNeed && typeof targetedNeed === "object"
+    ? {
+        objectiveId: String(targetedNeed.objectiveId || "").trim() || null,
+        familyId: String(targetedNeed.familyId || "").trim() || null
+      }
+    : null;
+  const targetedPhysicalFamily = physicalContinuationFamilyByNeedId[normalizedTargetedNeed?.familyId] || null;
+  const targetsConnections = normalizedTargetedNeed?.familyId === "geographic-relationships";
+  const blockMatchesTargetedNeed = (block) => {
+    if (!normalizedTargetedNeed?.familyId) return true;
+    if (targetedPhysicalFamily) return block?.destination?.featureFamily === targetedPhysicalFamily;
+    if (targetsConnections) return block?.type === GUIDED_LEARNING_BLOCK_TYPES.CONNECTION_CHECKPOINT;
+    return false;
+  };
   let evaluations = config.blocks.map((block) => evaluateGuidedLearningBlock(block, normalizedState, repository));
   let evaluationsById = new Map(evaluations.map((evaluation) => [evaluation.blockId, evaluation]));
   const completedBlockIds = new Set(normalizedState.completedBlockIds);
@@ -1027,21 +1047,38 @@ export function selectGuidedLearningOrchestrationBlock({
     feature,
     ...getPhysicalFeatureProgress(feature, completedBlockIds, evaluationsById)
   }));
-  const activeEvaluation = normalizedState.activeBlockId
+  const activeBlock = normalizedState.activeBlockId
+    ? config.blocks.find(({ id }) => id === normalizedState.activeBlockId)
+    : null;
+  const activeEvaluation = activeBlock && blockMatchesTargetedNeed(activeBlock)
     ? evaluationsById.get(normalizedState.activeBlockId)
     : null;
-  const inProgressFeature = featureProgress.find(({ inProgress }) => inProgress);
+  const inProgressFeature = featureProgress.find(({ feature, inProgress }) => (
+    inProgress && !targetsConnections && (!targetedPhysicalFamily || feature.family === targetedPhysicalFamily)
+  ));
   const inProgressEvaluation = inProgressFeature?.nextEvaluation?.eligible
     ? inProgressFeature.nextEvaluation
     : null;
   const eligibleNonPhysicalEvaluation = evaluations.find(({ blockId, eligible }) => {
     const block = config.blocks.find(({ id }) => id === blockId);
-    return eligible && !["physical-feature", "physical-review"].includes(block?.sequenceKind);
+    return eligible
+      && !normalizedTargetedNeed?.familyId
+      && !["physical-feature", "physical-review"].includes(block?.sequenceKind);
   }) || null;
+  const targetedConnectionEvaluation = targetsConnections
+    ? evaluations.find(({ blockId, eligible }) => (
+        eligible && config.blocks.find(({ id }) => id === blockId)?.type === GUIDED_LEARNING_BLOCK_TYPES.CONNECTION_CHECKPOINT
+      )) || null
+    : null;
   const physicalReviewQueue = (config.physicalCohorts || []).flatMap((cohort) => {
     const block = config.blocks.find((candidate) => candidate.repeatable && candidate.cohortId === cohort.id);
     const eligibility = reviewEligibilityByCohortId.get(cohort.id);
-    if (!block || !eligibility?.eligible) return [];
+    if (
+      !block
+      || !eligibility?.eligible
+      || targetsConnections
+      || (targetedPhysicalFamily && cohort.family !== targetedPhysicalFamily)
+    ) return [];
     const candidates = eligibility.candidates || [];
     return [{
       blockId: block.id,
@@ -1055,8 +1092,12 @@ export function selectGuidedLearningOrchestrationBlock({
     || left.cohortId.localeCompare(right.cohortId)
   ));
   const physicalQueue = featureProgress
-    .filter(({ completed, inProgress, introductionEvaluation }) => (
-      !completed && !inProgress && introductionEvaluation?.eligible
+    .filter(({ feature, completed, inProgress, introductionEvaluation }) => (
+      !completed
+      && !inProgress
+      && introductionEvaluation?.eligible
+      && !targetsConnections
+      && (!targetedPhysicalFamily || feature.family === targetedPhysicalFamily)
     ))
     .map(({ feature, eligibilityMilestone }) => ({
       featureId: feature.id,
@@ -1079,6 +1120,9 @@ export function selectGuidedLearningOrchestrationBlock({
     } else {
       selectionReason = "physical-feature-sequence-prerequisite-pending";
     }
+  } else if (targetedConnectionEvaluation) {
+    selectedEvaluation = targetedConnectionEvaluation;
+    selectionReason = "targeted-connections-need";
   } else if (eligibleNonPhysicalEvaluation) {
     selectedEvaluation = eligibleNonPhysicalEvaluation;
     selectionReason = "eligible-nonphysical-block";
@@ -1264,6 +1308,10 @@ export function selectGuidedLearningOrchestrationBlock({
       : "not-started",
     fallbackReason: selectedEvaluation ? null : selectionReason,
     selectionReason,
+    targetedNeed: normalizedTargetedNeed,
+    targetedNeedSatisfied: normalizedTargetedNeed?.familyId
+      ? blockMatchesTargetedNeed(selectedBlock)
+      : null,
     pacing: {
       physicalInterleaveRequired: normalizedState.physicalInterleaveRequired,
       hasUnfinishedNonPhysicalLearning: Boolean(hasUnfinishedNonPhysicalLearning),

@@ -313,4 +313,43 @@ const firstDecision = selectGuidedLearningOrchestrationBlock({ state, repository
 const secondDecision = selectGuidedLearningOrchestrationBlock({ state, repository: withFeatureExposure });
 assert.deepEqual(secondDecision, firstDecision, "Identical evidence, state, and config must select the same block.");
 
+const allStateIds = unitedStatesAtlas.entities
+  .filter(({ kind }) => kind === "state")
+  .map(({ id }) => id.split(":").at(-1));
+const allStatesCoveredRepository = repository(stateCoverageEvents(allStateIds));
+for (const [familyId, expectedFamily] of [
+  ["physical-rivers", "river"],
+  ["physical-lakes", "lake"],
+  ["physical-mountain-ranges", "mountain-range"]
+]) {
+  const targetedDecision = selectGuidedLearningOrchestrationBlock({
+    state: createGuidedLearningOrchestrationState(),
+    repository: allStatesCoveredRepository,
+    targetedNeed: { objectiveId: "learn-physical-features", familyId }
+  });
+  assert.equal(targetedDecision.currentBlock.destination.featureFamily, expectedFamily);
+  assert.equal(targetedDecision.targetedNeedSatisfied, true);
+  assert.ok(targetedDecision.currentBlock.destination.targetIds.length > 0);
+  assert.ok(
+    targetedDecision.currentBlock.destination.targetIds.length < 6,
+    `${familyId} must use a bounded Guided subset rather than the full authored family.`
+  );
+}
+
+const targetedConnectionsDecision = selectGuidedLearningOrchestrationBlock({
+  state,
+  repository: withFeatureExposure,
+  targetedNeed: { objectiveId: "learn-connections", familyId: "geographic-relationships" }
+});
+assert.equal(targetedConnectionsDecision.currentBlock.id, connection.id);
+assert.equal(targetedConnectionsDecision.targetedNeedSatisfied, true);
+assert.deepEqual(targetedConnectionsDecision.currentBlock.destination.challengeIds, connection.destination.challengeIds);
+const unavailableConnectionsDecision = selectGuidedLearningOrchestrationBlock({
+  state: createGuidedLearningOrchestrationState(),
+  repository: repository(),
+  targetedNeed: { objectiveId: "learn-connections", familyId: "geographic-relationships" }
+});
+assert.equal(unavailableConnectionsDecision.currentBlock.type, GUIDED_LEARNING_BLOCK_TYPES.GUIDED_SECTION);
+assert.equal(unavailableConnectionsDecision.targetedNeedSatisfied, false);
+
 console.log("Guided Learning orchestration foundation validation passed.");
