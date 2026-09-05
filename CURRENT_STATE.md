@@ -1,5 +1,7 @@
 # Current State
 
+Engineering entry point (2026-09-05): see [engineering state](docs/engineering-state.md) for the concise code-checked map and current verification record, and [engineering orchestration](docs/engineering-orchestration.md) for Lead/specialist workflow. The dated snapshots below remain historical evidence; their test counts and unresolved findings must be rechecked against the current checkout.
+
 Snapshot date: 2026-08-12  
 Inspected revision: `5e76f37b78c18414cf32bdc99e653fac0b95685c` (`test: cover completed journey reload persistence`, 2026-08-07)  
 Working tree at inspection time: clean except for a pre-existing, untracked `VISION.md` and this document.
