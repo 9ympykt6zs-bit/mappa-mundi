@@ -242,6 +242,14 @@ async function expectGuidedPhysicalCameraToMatch(page, expectedCamera) {
   }, expectedCamera)).toBe(true);
 }
 
+async function expectGuidedMountainRetrievalCamera(page) {
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState()?.cameraDecision
+  ))).toMatchObject({ cameraPhase: "retrieval", searchSpace: "lower48" });
+  const decision = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState().cameraDecision);
+  await expectGuidedPhysicalCameraToMatch(page, decision);
+}
+
 function createTargetedPhysicalSeed(targetId, { extraStateIds = [] } = {}) {
   const targetFeature = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
     .find((feature) => feature.targetId === targetId);
@@ -472,15 +480,7 @@ test("Guided Learning orchestrates New England reconstruction, White Mountains l
     "white-mountains",
     "green-mountains"
   ]);
-  await expect.poll(() => page.evaluate(() => {
-    const camera = window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState()?.camera;
-    return Boolean(
-      camera?.center
-      && Math.abs(camera.center[0] - (-76.24)) < 0.001
-      && Math.abs(camera.center[1] - 40.39) < 0.001
-      && Math.abs(camera.zoom - 5.16) < 0.001
-    );
-  })).toBe(true);
+  await expectGuidedMountainRetrievalCamera(page);
   const introductionEvidence = await page.evaluate((key) => (
     JSON.parse(localStorage.getItem(key)).events
       .filter(({ sourceMode }) => sourceMode === "guided-learning-orchestration")
@@ -497,22 +497,7 @@ test("Guided Learning orchestrates New England reconstruction, White Mountains l
   expect(Math.abs(teachingCamera.center[0] - (-76.24))).toBeLessThan(0.001);
   expect(Math.abs(teachingCamera.center[1] - 40.39)).toBeLessThan(0.001);
   expect(Math.abs(teachingCamera.zoom - 5.16)).toBeLessThan(0.001);
-  await expect.poll(() => page.evaluate(() => (
-    window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState()?.cameraDecision
-  ))).toMatchObject({
-    mode: "override",
-    center: [-76.24, 40.39],
-    zoom: 5.16
-  });
-  await expect.poll(() => page.evaluate(() => {
-    const camera = window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState()?.camera;
-    return Boolean(
-      camera?.center
-      && Math.abs(camera.center[0] - (-76.24)) < 0.001
-      && Math.abs(camera.center[1] - 40.39) < 0.001
-      && Math.abs(camera.zoom - 5.16) < 0.001
-    );
-  })).toBe(true);
+  await expectGuidedMountainRetrievalCamera(page);
   await expect.poll(() => page.evaluate(() => (
     window.__MAPPA_TEST_API__.getActiveMemoryTrailState()
   ))).toMatchObject({
@@ -523,15 +508,7 @@ test("Guided Learning orchestrates New England reconstruction, White Mountains l
     completedLabelTargetIds: []
   });
   await finishTargetedPhysicalPractice(page, ["white-mountains", "green-mountains"]);
-  await expect.poll(() => page.evaluate(() => {
-    const camera = window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState()?.camera;
-    return Boolean(
-      camera?.center
-      && Math.abs(camera.center[0] - (-76.24)) < 0.001
-      && Math.abs(camera.center[1] - 40.39) < 0.001
-      && Math.abs(camera.zoom - 5.16) < 0.001
-    );
-  })).toBe(true);
+  await expectGuidedMountainRetrievalCamera(page);
   await page.locator("#memory-trail-primary-button").click();
   await expect(page.locator(".memory-trail-panel")).toBeVisible({ timeout: 20_000 });
 
@@ -737,15 +714,7 @@ test("the eligible three-range Northeast cohort teaches by map tap before mixed 
       await expect.poll(() => page.evaluate(() => (
         window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.guidedLocatingOnly
       ))).toBe(true);
-      await expect.poll(() => page.evaluate(() => {
-        const camera = window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState()?.camera;
-        return Boolean(
-          camera?.center
-          && Math.abs(camera.center[0] - (-76.24)) < 0.001
-          && Math.abs(camera.center[1] - 40.39) < 0.001
-          && Math.abs(camera.zoom - 5.16) < 0.001
-        );
-      })).toBe(true);
+      await expectGuidedMountainRetrievalCamera(page);
     }
   }
 

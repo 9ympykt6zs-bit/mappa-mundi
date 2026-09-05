@@ -19,7 +19,7 @@ import {
 import {
   GUIDED_PHYSICAL_PULSE_PERIOD_MS,
   GuidedPhysicalTeachingPulse
-} from "./guided-physical-teaching-highlight.js?v=20260904-guided-physical-presentation-1";
+} from "./guided-physical-teaching-highlight.js?v=20260905-guided-physical-search-space-1";
 
 const colors = {
   ink: "#172033",
@@ -1347,13 +1347,21 @@ export class MapLibreActivityRunner {
       targetConcept: highlight.targetConcept || target.id,
       family: target.type === "water-body" ? "lake" : target.type
     };
+    const addedHalo = this.guidedPhysicalTeachingHighlight.family === "mountain-range"
+      && this.ensureGuidedPhysicalMountainHalo();
     this.guidedPhysicalTeachingPulse = new GuidedPhysicalTeachingPulse((state) => {
       this.guidedPhysicalTeachingPulseState = state;
       this.refreshGuidedPhysicalTeachingPulsePaint();
     });
     // Allow a pending enterStudyView/idle transition to finish before paint
     // animation begins; otherwise repeated paint changes can starve map idle.
-    if (this.currentView === "study" && this.guidedPhysicalStudyReady) this.guidedPhysicalTeachingPulse.start();
+    if (this.currentView === "study" && this.guidedPhysicalStudyReady && !addedHalo) this.guidedPhysicalTeachingPulse.start();
+    if (addedHalo) {
+      const pulse = this.guidedPhysicalTeachingPulse;
+      this.map.once("idle", () => {
+        if (this.guidedPhysicalTeachingPulse === pulse && this.currentView === "study" && this.guidedPhysicalStudyReady) pulse.start();
+      });
+    }
     this.refreshStudyPaint();
     this.refreshGuidedPhysicalTeachingHaloLayers();
   }
@@ -1370,14 +1378,37 @@ export class MapLibreActivityRunner {
     }
   }
 
+  ensureGuidedPhysicalMountainHalo() {
+    if (!this.map?.addLayer || this.map.getLayer("guided-physical-mountain-halo")) return false;
+    // Install only for Guided teaching, keeping standalone source/layer work unchanged.
+    this.map.addLayer({
+      id: "guided-physical-mountain-halo",
+      type: "circle",
+      source: "mountain-range-symbols",
+      filter: ["==", ["get", "targetId"], ""],
+      layout: { visibility: "none" },
+      paint: {
+        "circle-color": "#f5a623", "circle-blur": 0.6,
+        "circle-radius": 24, "circle-opacity": 0.41,
+        "circle-radius-transition": { duration: 0 }, "circle-opacity-transition": { duration: 0 }
+      }
+    }, "mountain-range-symbol-glow");
+    return true;
+  }
+
   getGuidedPhysicalTeachingHighlightState() {
     const highlight = this.guidedPhysicalTeachingHighlight;
     const family = highlight?.family;
     const layerIds = family === "mountain-range"
-      ? ["mountain-range-symbol", "mountain-range-symbol-glow"]
+      ? ["mountain-range-symbol", "mountain-range-symbol-glow", "guided-physical-mountain-halo"]
       : family === "river"
         ? ["river-line", "guided-physical-river-halo"]
         : family === "lake" ? ["state-fill", "state-line", "guided-physical-lake-halo"] : [];
+    const renderedLayerIds = layerIds.filter((id) => this.map?.getLayer?.(id)
+      && this.map.getLayoutProperty(id, "visibility") !== "none"
+      && this.map.queryRenderedFeatures?.({ layers: [id] })?.some(({ properties }) => (
+        (properties?.targetId || properties?.id) === highlight?.targetId
+      )));
     return {
       phase: highlight ? "teaching" : "retrieval",
       targetId: highlight?.targetId || null,
@@ -1386,12 +1417,16 @@ export class MapLibreActivityRunner {
       animated: Boolean(highlight && this.guidedPhysicalTeachingPulseState?.animated),
       reducedMotion: Boolean(this.guidedPhysicalTeachingPulseState?.reducedMotion),
       nonTargetMuted: Boolean(highlight),
+      staticEmphasis: Boolean(highlight),
+      pulseRequested: Boolean(highlight),
+      pulseRunning: Boolean(highlight && this.guidedPhysicalTeachingPulseState?.animated && this.guidedPhysicalStudyReady && renderedLayerIds.length),
+      renderedLayerIds,
       pulsePeriodMs: GUIDED_PHYSICAL_PULSE_PERIOD_MS,
       pulseProgress: this.guidedPhysicalTeachingPulseState?.progress ?? 0.5,
       layerIds,
       layers: layerIds.map((id) => {
         const layer = this.map?.getLayer?.(id);
-        const properties = layer?.type === "symbol" ? ["icon-opacity"] : layer?.type === "fill" ? ["fill-color", "fill-opacity"] : ["line-color", "line-width", "line-opacity"];
+        const properties = layer?.type === "symbol" ? ["icon-opacity"] : layer?.type === "circle" ? ["circle-radius", "circle-opacity"] : layer?.type === "fill" ? ["fill-color", "fill-opacity"] : ["line-color", "line-width", "line-opacity"];
         return {
           id,
           source: layer?.source,
@@ -1411,9 +1446,9 @@ export class MapLibreActivityRunner {
 
   refreshGuidedPhysicalTeachingHaloLayers() {
     const highlight = this.guidedPhysicalTeachingHighlight;
-    [["guided-physical-river-halo", "river"], ["guided-physical-lake-halo", "lake"]].forEach(([id, family]) => {
+    [["guided-physical-mountain-halo", "mountain-range"], ["guided-physical-river-halo", "river"], ["guided-physical-lake-halo", "lake"]].forEach(([id, family]) => {
       if (!this.map?.getLayer(id)) return;
-      this.map.setFilter(id, ["==", ["get", "id"], highlight?.family === family ? highlight.targetId : ""]);
+      this.map.setFilter(id, ["==", ["get", family === "mountain-range" ? "targetId" : "id"], highlight?.family === family ? highlight.targetId : ""]);
       this.map.setLayoutProperty(id, "visibility", highlight?.family === family && this.currentView === "study" ? "visible" : "none");
     });
   }
@@ -1421,12 +1456,15 @@ export class MapLibreActivityRunner {
   refreshGuidedPhysicalTeachingPulsePaint() {
     const family = this.guidedPhysicalTeachingHighlight?.family;
     if (!this.map || !family) return;
-    if (family === "mountain-range" && this.map.getLayer("mountain-range-symbol-glow")) {
-      this.map.setPaintProperty("mountain-range-symbol-glow", "icon-opacity", this.getMountainRangeSymbolGlowOpacityExpression());
+    const progress = this.guidedPhysicalTeachingPulseState.progress;
+    if (family === "mountain-range" && this.map.getLayer("guided-physical-mountain-halo")) {
+      this.map.setPaintProperty("guided-physical-mountain-halo", "circle-radius", 14 + 20 * progress);
+      this.map.setPaintProperty("guided-physical-mountain-halo", "circle-opacity", 0.12 + 0.58 * progress);
     }
     const haloId = family === "river" ? "guided-physical-river-halo" : family === "lake" ? "guided-physical-lake-halo" : null;
     if (haloId && this.map.getLayer(haloId)) {
-      this.map.setPaintProperty(haloId, "line-opacity", 0.48 + 0.16 * this.guidedPhysicalTeachingPulseState.progress);
+      this.map.setPaintProperty(haloId, "line-opacity", 0.25 + 0.5 * progress);
+      this.map.setPaintProperty(haloId, "line-width", 8 + 7 * progress);
     }
   }
 
@@ -1736,6 +1774,7 @@ export class MapLibreActivityRunner {
 
   updateActivity(activity) {
     this.clearGuidedPhysicalTeachingHighlight();
+    if (this.map?.getLayer("guided-physical-mountain-halo")) this.map.removeLayer("guided-physical-mountain-halo");
     this.guidedPhysicalStudyReady = false;
     this.activity = activity;
     this.shapeTargets = activity.targets.filter((target) => target.kind === "shape");
@@ -2258,6 +2297,41 @@ export class MapLibreActivityRunner {
         targetLabel: target.name || target.label || ""
       }, "flyTo");
     });
+  }
+
+  resolveGuidedPhysicalSearchSpaceCamera(decision) {
+    // Use the national atlas, never the requested answer or child target subset.
+    const features = (this.usStatesAtlas?.features || []).filter(({ properties, id }) => {
+      const stateId = String(properties?.id || properties?.state || id).toLowerCase();
+      return decision.searchSpace === "alaska" ? stateId === "alaska" : !["alaska", "hawaii"].includes(stateId);
+    });
+    const coordinates = [];
+    const collect = (value) => {
+      if (!Array.isArray(value)) return;
+      if (typeof value[0] === "number") coordinates.push(value);
+      else value.forEach(collect);
+    };
+    features.forEach(({ geometry }) => collect(geometry.coordinates));
+    // Alaska's authored regional view deliberately excludes the distant Aleutians.
+    if (decision.searchSpace === "alaska") return decision;
+    if (!coordinates.length) return decision;
+    const bounds = coordinates.reduce((result, [lng, lat]) => [
+      [Math.min(result[0][0], lng), Math.min(result[0][1], lat)],
+      [Math.max(result[1][0], lng), Math.max(result[1][1], lat)]
+    ], [[180, 90], [-180, -90]]);
+    const rect = this.map.getContainer().getBoundingClientRect();
+    const padding = rect.width <= 720
+      ? { top: 100, bottom: 210, left: 24, right: 24 }
+      : { top: 90, bottom: 160, left: 64, right: 64 };
+    const fit = this.map.cameraForBounds(bounds, { padding, maxZoom: decision.zoom });
+    return fit ? {
+      ...decision,
+      center: [fit.center.lng, fit.center.lat],
+      zoom: fit.zoom,
+      searchSpaceBounds: bounds,
+      searchSpacePadding: padding,
+      viewport: [rect.width, rect.height]
+    } : decision;
   }
 
   fitFeatureBounds(bounds, options = {}) {
@@ -3675,7 +3749,8 @@ export class MapLibreActivityRunner {
       source: "target-shapes",
       filter: ["==", ["get", "id"], ""],
       layout: { visibility: "none", "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": "#f5c542", "line-width": 8, "line-blur": 2, "line-opacity": 0.56 }
+      paint: { "line-color": "#f5c542", "line-width": 8, "line-blur": 2, "line-opacity": 0.56,
+        "line-width-transition": { duration: 0 }, "line-opacity-transition": { duration: 0 } }
     });
 
     this.map.addLayer({
@@ -4089,7 +4164,8 @@ export class MapLibreActivityRunner {
       source: "river-lines",
       filter: ["==", ["get", "id"], ""],
       layout: { visibility: "none", "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": "#f5c542", "line-width": 10, "line-blur": 2.5, "line-opacity": 0.56 }
+      paint: { "line-color": "#f5c542", "line-width": 10, "line-blur": 2.5, "line-opacity": 0.56,
+        "line-width-transition": { duration: 0 }, "line-opacity-transition": { duration: 0 } }
     });
 
     this.map.addLayer({
@@ -7740,7 +7816,7 @@ export class MapLibreActivityRunner {
 
   getMountainRangeSymbolGlowOpacityExpression() {
     if (this.guidedPhysicalTeachingHighlight?.family === "mountain-range") {
-      return ["case", this.getGuidedPhysicalTeachingTargetExpression("targetId"), 0.64 + 0.16 * (this.guidedPhysicalTeachingPulseState?.progress ?? 0.5), 0.025];
+      return ["case", this.getGuidedPhysicalTeachingTargetExpression("targetId"), 0.72, 0.025];
     }
     if (this.getDifficultyVisualState().isHard && !this.studyPreviewMode) {
       return [

@@ -60,7 +60,7 @@ import {
   isManagedUnitedStatesGuidedPoliticalCamera,
   UNITED_STATES_GUIDED_POLITICAL_CAMERA_CONTEXT
 } from "./united-states-guided-political-camera.js?v=20260903-guided-political-camera-1";
-import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js?v=20260904-guided-physical-presentation-1";
+import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js?v=20260905-guided-physical-search-space-1";
 import {
   chooseNextGuidedPhysicalRetrievalTarget,
   createGuidedPhysicalRetrievalCheckpoint,
@@ -4527,7 +4527,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260821-central-america-graduation-1"),
       import("./maplibre/activity-session.js?v=20260821-central-america-graduation-1"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260904-guided-physical-presentation-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260905-guided-physical-search-space-1"),
       import("./chip-speech.js?v=20260728-activity-audio-1")
     ]).then(([
       ,
@@ -8772,9 +8772,14 @@ function resolveGuidedPhysicalFeatureCamera() {
     camera: activeStudySession.physicalFeatureCamera,
     cohortCamera: activeStudySession.persistentLearningCamera,
     targetId,
+    cameraPhase: activeStudySession.guidedPhysicalTeaching ? "teaching" : "retrieval",
     activityMap: new Map(activities.map((activity) => [activity.id, activity]))
   });
   if (!decision) return null;
+  decision.cameraPhase ||= activeStudySession.guidedPhysicalTeaching ? "teaching" : "retrieval";
+  if (decision.searchSpace) {
+    Object.assign(decision, runner.resolveGuidedPhysicalSearchSpaceCamera(decision));
+  }
   activeStudySession.guidedCameraDecision = decision;
   return decision;
 }

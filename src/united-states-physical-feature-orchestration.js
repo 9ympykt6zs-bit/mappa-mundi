@@ -334,8 +334,20 @@ export function calculateGuidedLearningPhysicalFeatureCamera({
   authoredStateIds = [],
   regionId = null,
   activityMap = null,
-  regionalCameraPresets = UNITED_STATES_GUIDED_PHYSICAL_REGIONAL_CAMERA_PRESETS
+  regionalCameraPresets = UNITED_STATES_GUIDED_PHYSICAL_REGIONAL_CAMERA_PRESETS,
+  cameraPhase = "teaching"
 } = {}) {
+  if (cameraPhase === "retrieval" && family === "mountain-range") {
+    const regionalPreset = regionalCameraPresets.find((preset) => preset.targetIds?.includes(targetId));
+    if (!regionalPreset) return {
+      ...fixedPhysicalCameraDecision(UNITED_STATES_GUIDED_LOWER48_PHYSICAL_CAMERA, "lower48-physical-default"),
+      cameraPhase,
+      searchSpace: "lower48"
+    };
+    const activity = activityMap?.get?.(regionalPreset.authoredActivityId) || activityMap?.[regionalPreset.authoredActivityId];
+    const presetCamera = regionalPreset.camera || activity?.map?.[regionalPreset.cameraKey];
+    return presetCamera ? { ...fixedPhysicalCameraDecision(presetCamera, regionalPreset.source), cameraPhase, searchSpace: regionalPreset.id } : null;
+  }
   if (camera?.mode === "override") {
     return fixedPhysicalCameraDecision(camera, camera.source || "authored-override");
   }

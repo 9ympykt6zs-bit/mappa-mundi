@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { writeFile } from "node:fs/promises";
 import { CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY } from "../../src/canonical-learning-evidence-repository.js";
 import {
   GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY,
@@ -131,7 +132,11 @@ async function tapVisibleMountain(page, targetId) {
     ));
   }, targetId);
   expect(point, `${targetId} should have a visible authored mountain glyph`).toBeTruthy();
-  await page.mouse.click(point.clientX, point.clientY);
+  if (await page.evaluate(() => navigator.maxTouchPoints > 0)) {
+    await page.touchscreen.tap(point.clientX, point.clientY);
+  } else {
+    await page.mouse.click(point.clientX, point.clientY);
+  }
 }
 
 async function findVisiblePhysicalHitPoint(page, targetId, family) {
@@ -248,7 +253,7 @@ test("teaching emphasis follows the cohort and clears before independent retriev
     activeHighlightIds: [],
     completedLabelTargetIds: []
   });
-  await expectCamera(page, lower48Camera);
+  await expectSearchSpace(page);
   const retrieval = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState());
   expect(retrieval.teachingHighlight).toMatchObject({ phase: "retrieval", animated: false, nonTargetMuted: false });
   expect(retrieval.teachingHighlight.targetId).toBeFalsy();
@@ -258,6 +263,108 @@ test("teaching emphasis follows the cohort and clears before independent retriev
   ))).toBe(1);
   await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase)).toBe("answering");
   expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.activeHighlightIds)).toEqual([]);
+});
+
+async function expectSearchSpace(page, searchSpace = "lower48") {
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState()?.cameraDecision
+  ))).toMatchObject({ cameraPhase: "retrieval", searchSpace });
+  const decision = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState().cameraDecision);
+  await expectCamera(page, decision);
+  if (searchSpace === "lower48") {
+    const projected = await page.evaluate(() => {
+      const decision = window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState().cameraDecision;
+      const map = window.maplibrePocMap;
+      const [[west, south], [east, north]] = decision.searchSpaceBounds;
+      const { width, height } = map.getContainer().getBoundingClientRect();
+      return [[west, south], [west, north], [east, south], [east, north]].map((point) => {
+        const { x, y } = map.project(point);
+        return { x, y, inside: x >= 0 && x <= width && y >= 0 && y <= height };
+      });
+    });
+    expect(projected.every(({ inside }) => inside), JSON.stringify(projected)).toBe(true);
+    const coverage = await page.evaluate(async () => {
+      const atlas = await (await fetch("/assets/maps/data/maplibre-us-states-atlas.geojson")).json();
+      const map = window.maplibrePocMap;
+      const rect = map.getContainer().getBoundingClientRect();
+      const states = atlas.features.filter(({ properties }) => !["alaska", "hawaii"].includes(properties.id));
+      const outside = [];
+      function visit(value) {
+        if (typeof value[0] === "number") {
+          const point = map.project(value);
+          if (point.x < 0 || point.x > rect.width || point.y < 0 || point.y > rect.height) outside.push(value);
+        } else value.forEach(visit);
+      }
+      states.forEach(({ geometry }) => visit(geometry.coordinates));
+      return { stateCount: states.length, outside: outside.slice(0, 5) };
+    });
+    expect(coverage.stateCount).toBeGreaterThanOrEqual(48);
+    expect(coverage.outside).toEqual([]);
+  }
+  return decision;
+}
+
+for (const targetId of ["white-mountains", "ozark-mountains", "alaska-range"]) {
+  test(`search-space retrieval for ${targetId} is stable and tappable without a hint`, async ({ page }, testInfo) => {
+    await launchPhysicalTeaching(page, targetId, { extraStateIds: ["vermont", "new-york", "south-dakota", "wyoming"] });
+    const targets = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingState().teachingTargetIds);
+    for (const id of targets) {
+      await expectTeachingHighlight(page, id);
+      await page.evaluate(() => window.__MAPPA_TEST_API__.answerGuidedPhysicalTeachingCorrectly());
+      await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingHighlight()?.targetId)).not.toBe(id);
+    }
+    const decision = await expectSearchSpace(page, targetId === "alaska-range" ? "alaska" : "lower48");
+    await writeFile(testInfo.outputPath("retrieval-camera.json"), JSON.stringify(decision, null, 2));
+    await captureTeaching(page, testInfo, `${targetId}-retrieval`);
+    const hitSizes = await page.evaluate(() => {
+      const state = window.__MAPPA_TEST_API__.getMountainRangeVisualState();
+      return Object.fromEntries(Object.entries(state.targetClientPointSets).map(([id, points]) => [id, {
+        width: Math.max(...points.map(({ x }) => x)) - Math.min(...points.map(({ x }) => x)),
+        height: Math.max(...points.map(({ y }) => y)) - Math.min(...points.map(({ y }) => y))
+      }]));
+    });
+    await testInfo.attach("projected-range-spans", { body: JSON.stringify(hitSizes, null, 2), contentType: "application/json" });
+    let expectedCamera = decision;
+    for (let count = 0; count < targets.length; count += 1) {
+      await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase)).toBe("answering");
+      const state = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState());
+      expect(state.activeHighlightIds).toEqual([]);
+      expect(state.completedLabelTargetIds).toEqual([]);
+      expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingHighlight().pulseRunning)).toBe(false);
+      await expectCamera(page, expectedCamera);
+      await tapVisibleMountain(page, state.currentPromptTargetId);
+      await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.correctCount)).toBe(count + 1);
+      if (count === 0 && targetId === "ozark-mountains") {
+        expectedCamera = await page.evaluate(() => {
+          window.maplibrePocMap.panBy([8, 0], { duration: 0 });
+          return window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState().camera;
+        });
+      }
+    }
+  });
+}
+
+test("rendered Black Hills halo has visibly different resting and peak frames", async ({ page }, testInfo) => {
+  await launchPhysicalTeaching(page, "black-hills");
+  await expectCamera(page, lower48Camera);
+  await expectTeachingHighlight(page, "black-hills");
+  for (const phase of ["rest", "peak", "rest", "peak"]) {
+    const frame = await page.evaluate((phase) => new Promise((resolve) => {
+      const map = window.maplibrePocMap;
+      const onRender = () => {
+        const radius = map.getPaintProperty("guided-physical-mountain-halo", "circle-radius");
+        if (!(phase === "rest" ? radius < 16 : radius > 32)) return;
+        map.off("render", onRender);
+        resolve({ radius, image: map.getCanvas().toDataURL("image/png") });
+      };
+      map.on("render", onRender);
+      map.triggerRepaint();
+    }), phase);
+    const name = `black-hills-rendered-${phase}-${Date.now()}`;
+    const path = testInfo.outputPath(`${name}.png`);
+    await writeFile(path, Buffer.from(frame.image.split(",")[1], "base64"));
+    await testInfo.attach(name, { path, contentType: "image/png" });
+  }
 });
 
 test("reduced motion preserves static teaching hierarchy and leaving clears it", async ({ page }, testInfo) => {

@@ -268,6 +268,23 @@ assert.equal(alaskaPreset.cameraKey, "quizView");
   }), null, "Missing Alaska camera data must not silently frame lower 48.");
 });
 assert.equal(JSON.stringify(alaskaActivity.map), originalAlaskaMap, "Guided camera selection does not mutate standalone Alaska views.");
+const retrievalDecisions = ["black-hills", "green-mountains", "ozark-mountains"].map((targetId) => calculateGuidedLearningPhysicalFeatureCamera({
+  targetId,
+  family: "mountain-range",
+  cameraPhase: "retrieval",
+  camera: { mode: "override", center: [-76.24, 40.39], zoom: 5.16 },
+  cohortCamera: { mode: "override", center: [-76.24, 40.39], zoom: 5.16 }
+}));
+assert.deepEqual(retrievalDecisions[0], retrievalDecisions[1]);
+assert.deepEqual(retrievalDecisions[1], retrievalDecisions[2]);
+assert.equal(retrievalDecisions[0].searchSpace, "lower48");
+assert.equal(retrievalDecisions[0].cameraPhase, "retrieval");
+assert.deepEqual(retrievalDecisions[0].center, expectedLower48Camera.center);
+for (const targetId of ["alaska-range", "brooks-range"]) {
+  const decision = calculateGuidedLearningPhysicalFeatureCamera({ targetId, family: "mountain-range", cameraPhase: "retrieval", activityMap: alaskaActivityMap });
+  assert.equal(decision.searchSpace, "alaska");
+  assert.deepEqual(decision.center, alaskaActivity.map.quizView.center);
+}
 assert.deepEqual(calculateGuidedLearningPhysicalFeatureCamera({
   family: "lake",
   authoredStateIds: ["alaska"],

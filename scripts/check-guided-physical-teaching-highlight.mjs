@@ -73,9 +73,9 @@ for (const family of ["mountain-range", "river", "lake"]) {
   assert.ok(evaluate(opacity, target) >= 0.9, `${family} remains strongly visible without animation.`);
   assert.ok(evaluate(opacity, other) <= 0.3, `${family} context remains secondary.`);
   if (family === "mountain-range") {
-    assert.equal(evaluate(runner.getMountainRangeSymbolGlowOpacityExpression(), target), 0.64);
+    assert.equal(evaluate(runner.getMountainRangeSymbolGlowOpacityExpression(), target), 0.72);
     runner.guidedPhysicalTeachingPulseState.progress = 1;
-    assert.equal(evaluate(runner.getMountainRangeSymbolGlowOpacityExpression(), target), 0.8);
+    assert.equal(evaluate(runner.getMountainRangeSymbolGlowOpacityExpression(), target), 0.72, "Authored glow remains static; only the outer halo pulses.");
     assert.equal(evaluate(runner.getMountainRangeSymbolOpacityExpression(), target), 1, "The target itself never pulses off.");
   }
 }
@@ -96,4 +96,38 @@ transitioningRunner.setGuidedPhysicalTeachingHighlight({ targetId: "black-hills"
 assert.equal(transitioningRunner.getGuidedPhysicalTeachingHighlightState().animated, true);
 transitioningRunner.clearGuidedPhysicalTeachingHighlight();
 assert.equal(transitioningRunner.getGuidedPhysicalTeachingHighlightState().animated, false);
+let haloInstalled = false;
+let onHaloIdle;
+transitioningRunner.map = {
+  getLayer: () => haloInstalled,
+  addLayer: (layer, before) => {
+    assert.equal(layer.id, "guided-physical-mountain-halo");
+    assert.equal(before, "mountain-range-symbol-glow");
+    haloInstalled = true;
+  },
+  once: (event, callback) => { assert.equal(event, "idle"); onHaloIdle = callback; }
+};
+transitioningRunner.setGuidedPhysicalTeachingHighlight({ targetId: "black-hills" });
+assert.equal(haloInstalled, true);
+assert.equal(transitioningRunner.guidedPhysicalTeachingPulse.timer, null, "A newly installed halo must settle before animation starts.");
+onHaloIdle();
+assert.notEqual(transitioningRunner.guidedPhysicalTeachingPulse.timer, null);
+transitioningRunner.clearGuidedPhysicalTeachingHighlight();
+onHaloIdle();
+assert.equal(transitioningRunner.guidedPhysicalTeachingPulse, null, "A stale layer-ready callback cannot restart a cleared pulse.");
+const paints = {};
+runner.map = {
+  getLayer: () => true,
+  setPaintProperty: (id, property, value) => { paints[`${id}:${property}`] = value; }
+};
+runner.guidedPhysicalTeachingHighlight = { targetId: "target", family: "mountain-range" };
+runner.guidedPhysicalTeachingPulseState.progress = 0;
+runner.refreshGuidedPhysicalTeachingPulsePaint();
+assert.equal(paints["guided-physical-mountain-halo:circle-radius"], 14);
+assert.equal(paints["guided-physical-mountain-halo:circle-opacity"], 0.12);
+runner.guidedPhysicalTeachingPulseState.progress = 1;
+runner.refreshGuidedPhysicalTeachingPulsePaint();
+assert.equal(paints["guided-physical-mountain-halo:circle-radius"], 34);
+assert.equal(paints["guided-physical-mountain-halo:circle-opacity"], 0.7);
+assert.equal(paints["mountain-range-symbol:icon-opacity"], undefined, "Animation never changes the geographic glyph itself.");
 console.log("Guided physical teaching highlight and pulse lifecycle validation passed.");
