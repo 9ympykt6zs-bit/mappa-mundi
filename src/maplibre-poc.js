@@ -60,7 +60,7 @@ import {
   isManagedUnitedStatesGuidedPoliticalCamera,
   UNITED_STATES_GUIDED_POLITICAL_CAMERA_CONTEXT
 } from "./united-states-guided-political-camera.js?v=20260903-guided-political-camera-1";
-import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js?v=20260901-guided-physical-teaching-1";
+import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js?v=20260904-guided-physical-presentation-1";
 import {
   chooseNextGuidedPhysicalRetrievalTarget,
   createGuidedPhysicalRetrievalCheckpoint,
@@ -3979,7 +3979,8 @@ function getGuidedLearningOrchestrationSnapshot(requestedTargetedNeed = null) {
         }
       } : null,
       persistentLearningCamera: activeStudySession?.persistentLearningCamera || null,
-      guidedCameraDecision: activeStudySession?.guidedCameraDecision || null
+      guidedCameraDecision: activeStudySession?.guidedCameraDecision || null,
+      teachingHighlight: runner?.getGuidedPhysicalTeachingHighlightState?.() || null
     } : null
   };
 }
@@ -4526,7 +4527,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260821-central-america-graduation-1"),
       import("./maplibre/activity-session.js?v=20260821-central-america-graduation-1"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260827-globe-navigation-correctness-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260904-guided-physical-presentation-1"),
       import("./chip-speech.js?v=20260728-activity-audio-1")
     ]).then(([
       ,
@@ -8733,8 +8734,9 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
   studyCard.hidden = false;
   studyCard.querySelector("strong").textContent = step.title;
   studyCard.querySelector("span").textContent = "Learning Preview";
-  if (activeStudySession.guidedOrchestration && activeStudySession.physicalFeatureCamera) {
-    runner.suppressStudyIntroCameraOnce?.("guided-physical-feature-fit", 5000);
+  if (activeStudySession.guidedOrchestration && activeStudySession.physicalFeatureFamily) {
+    resolveGuidedPhysicalFeatureCamera();
+    runner.suppressStudyIntroCameraOnce?.("guided-physical-presentation", 5000);
   }
   runner.enterStudyView();
   renderStudyExplorePanel();
@@ -8744,7 +8746,7 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
     startMemoryTrail({
       newTargetIds: options.memoryTrailNewTargetIds,
       targetIds: options.memoryTrailTargetIds,
-      guidedPersistentCamera: options.persistentLearningCamera,
+      guidedPersistentCamera: activeStudySession.guidedCameraDecision || options.persistentLearningCamera,
       guidedLocatingOnly: options.guidedLocatingOnly === true,
       guidedPhysicalCheckpoint: options.guidedPhysicalCheckpoint
     });
@@ -8758,42 +8760,38 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
   return true;
 }
 
-function applyGuidedPhysicalFeatureCamera() {
-  if (!activeStudySession?.guidedOrchestration || !activeStudySession.physicalFeatureCamera) return null;
+function resolveGuidedPhysicalFeatureCamera() {
+  if (!activeStudySession?.guidedOrchestration || !activeStudySession.physicalFeatureFamily) return null;
+  if (activeStudySession.guidedCameraDecision) return activeStudySession.guidedCameraDecision;
   const targetId = activeStudySession.focusTargetIds?.[0];
   const target = session.currentActivity?.targets?.find(({ id }) => id === targetId);
   const sourceFeature = target ? runner?.findSourceShapeFeature?.(target, session.currentActivity) : null;
-  const viewport = window.matchMedia?.("(max-width: 720px)")?.matches ? "mobile" : "desktop";
   const decision = calculateGuidedLearningPhysicalFeatureCamera({
     feature: sourceFeature,
     family: activeStudySession.physicalFeatureFamily,
     camera: activeStudySession.physicalFeatureCamera,
-    viewport
+    cohortCamera: activeStudySession.persistentLearningCamera,
+    targetId,
+    activityMap: new Map(activities.map((activity) => [activity.id, activity]))
   });
   if (!decision) return null;
   activeStudySession.guidedCameraDecision = decision;
-  if (decision.mode === "override") {
-    runner?.flyToCameraTarget?.({
-      center: decision.center,
-      zoom: decision.zoom,
-      pitch: decision.pitch,
-      bearing: decision.bearing,
-      duration: 650,
-      cameraContext: "guided-physical-feature-override",
-      targetId
-    });
-  } else {
-    runner?.fitFeatureBounds?.(decision.bounds, {
-      padding: decision.padding,
-      maxZoom: decision.maxZoom,
-      pitch: decision.pitch,
-      bearing: decision.bearing,
-      duration: 650,
-      cameraContext: "guided-physical-feature-fit",
-      targetId,
-      targetLabel: target?.name || ""
-    });
-  }
+  return decision;
+}
+
+function applyGuidedPhysicalFeatureCamera() {
+  const decision = resolveGuidedPhysicalFeatureCamera();
+  if (!decision) return null;
+  const targetId = activeStudySession.focusTargetIds?.[0];
+  runner?.flyToCameraTarget?.({
+    center: decision.center,
+    zoom: decision.zoom,
+    pitch: decision.pitch,
+    bearing: decision.bearing,
+    duration: 650,
+    cameraContext: `guided-physical-${decision.source}`,
+    targetId
+  });
   publishGuidedLearningOrchestrationTrace({
     lifecycleEvent: "physical-feature-camera-applied",
     cameraFeatureId: activeGuidedLearningOrchestrationBlock?.destination?.featureId || null,
@@ -8815,6 +8813,12 @@ function updateGuidedPhysicalTeachingVisualState() {
   const target = getActiveGuidedPhysicalTeachingTarget();
   runner?.setCompletedTargets([]);
   runner?.setMemoryTrailHighlight(target ? [target.id] : []);
+  runner?.setGuidedPhysicalTeachingHighlight?.(target ? {
+    targetId: target.id,
+    family: activeStudySession.physicalFeatureFamily,
+    targetConcept: UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
+      .find(({ targetId }) => targetId === target.id)?.conceptId || null
+  } : null);
   instruction.textContent = target
     ? `Tap the highlighted ${getTargetChipLabel(target) || target.name}.`
     : "Teaching complete.";
@@ -12341,6 +12345,7 @@ function scheduleMemoryTrailStep(memoryTrail, callback, delay) {
 }
 
 function clearMemoryTrailState({ restoreReveals = true, render = false } = {}) {
+  runner?.setGuidedPhysicalTeachingHighlight?.(null);
   const memoryTrail = getActiveMemoryTrail();
 
   if (!memoryTrail) {
@@ -12573,7 +12578,7 @@ function restartMemoryTrail() {
   window.GeographyChipSpeech?.primeLocalAudio?.();
   const memoryTrailSection = getActiveMemoryTrailSection(session.currentActivity);
   const guidedPersistentCamera = activeStudySession.guidedOrchestration
-    ? activeStudySession.persistentLearningCamera
+    ? activeStudySession.guidedCameraDecision || activeStudySession.persistentLearningCamera
     : null;
   activeStudySession.memoryTrail = createMemoryTrailSession(session.currentActivity, {
     newTargetIds: guidedPersistentCamera ? [] : undefined,
@@ -27902,6 +27907,7 @@ function getGuidedPhysicalFeatureVisualStateForTest() {
     sourceFeatureId: sourceFeature?.properties?.id || sourceFeature?.properties?.name || sourceFeature?.id || null,
     sourceBounds: sourceFeature?.geometry ? runner.getGeometryBounds?.(sourceFeature.geometry) : null,
     cameraDecision: activeStudySession.guidedCameraDecision,
+    teachingHighlight: runner.getGuidedPhysicalTeachingHighlightState?.() || null,
     persistentLearningCamera: activeStudySession.persistentLearningCamera,
     camera: {
       center: mapCenter ? [mapCenter.lng, mapCenter.lat] : null,
@@ -28432,6 +28438,7 @@ function installMappaTestApi() {
       getMountainRangeVisualState: getMountainRangeVisualStateForTest,
       getCapitalMarkerVisualState: getCapitalMarkerVisualStateForTest,
       getGuidedPhysicalFeatureVisualState: getGuidedPhysicalFeatureVisualStateForTest,
+      getGuidedPhysicalTeachingHighlight: () => runner?.getGuidedPhysicalTeachingHighlightState?.() || null,
       getPoliticalDivisionVisualState: getPoliticalDivisionVisualStateForTest,
       getUnitedStatesMemoryTrailPlan: getUnitedStatesMemoryTrailPlanForTest,
       getUnitedStatesContinuationTrace: getUnitedStatesContinuationTraceForTest,

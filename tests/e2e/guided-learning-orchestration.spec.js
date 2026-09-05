@@ -169,6 +169,10 @@ async function finishGuidedPhysicalTeaching(page, { expectPractice = true, verif
 }
 
 async function panToAndClickRenderedMountainTarget(page, targetId) {
+  await expect.poll(() => page.evaluate(() => (
+    window.maplibrePocMap.getLayoutProperty("mountain-range-symbol", "visibility")
+  ))).toBe("visible");
+  await expect.poll(() => page.evaluate(() => window.maplibrePocMap.isMoving())).toBe(false);
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const target = await page.evaluate((activeTargetId) => {
       const points = window.__MAPPA_TEST_API__.getMountainRangeVisualState()?.targetClientPointSets?.[activeTargetId] || [];
@@ -181,12 +185,14 @@ async function panToAndClickRenderedMountainTarget(page, targetId) {
       const usableBottom = teachingOverlapsMap
         ? Math.min(mapRect.bottom, teachingRect.top)
         : mapRect.bottom;
-      const visiblePoint = points.find(({ clientX, clientY }) => (
+      const visiblePoint = points.find(({ clientX, clientY, x, y }) => (
         clientX >= mapRect.left + 8
         && clientX <= mapRect.right - 8
         && clientY >= mapRect.top + 8
         && clientY <= usableBottom - 8
         && Boolean(document.elementFromPoint(clientX, clientY)?.closest?.("#map"))
+        && window.maplibrePocMap.queryRenderedFeatures([x, y], { layers: ["target-hit-fill"] })
+          .some(({ properties }) => properties.id === activeTargetId)
       ));
       const usableCenter = {
         clientX: mapRect.left + (mapRect.width / 2),
@@ -337,9 +343,12 @@ async function completeGeneratedPhysicalSequence(page, {
   ));
   expect(physicalVisualState.focusTargetIds).toContain(targetId);
   expect(physicalVisualState.sourceBounds.flat(2).every(Number.isFinite)).toBe(true);
-  if (physicalVisualState.cameraDecision.mode === "fit-feature") {
-    expect(physicalVisualState.cameraDecision.bounds.flat(2).every(Number.isFinite)).toBe(true);
-  }
+  expect(physicalVisualState.cameraDecision).toMatchObject({
+    source: "lower48-physical-default",
+    center: [-97.76220, 39.30636],
+    zoom: 4.1407
+  });
+  await expectGuidedPhysicalCameraToMatch(page, { center: [-97.76220, 39.30636], zoom: 4.1407 });
 
   const taughtTargetIds = await finishGuidedPhysicalTeaching(page, {
     expectPractice: Boolean(feature.practiceBlockId)
@@ -949,7 +958,7 @@ test("an interrupted physical teaching cohort resumes at the first untaught targ
   expect(new Set(guidedEvidence.map(({ eventId }) => eventId)).size).toBe(guidedEvidence.length);
 });
 
-test("a generated cross-border river sequence uses feature-fit framing and returns to Guided Learning", async ({ page }) => {
+test("a generated cross-border river sequence uses national framing and returns to Guided Learning", async ({ page }) => {
   await completeGeneratedPhysicalSequence(page, {
     targetId: "columbia-river",
     title: "U.S. Rivers",

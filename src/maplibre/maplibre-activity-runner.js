@@ -16,6 +16,10 @@ import {
   validateMapRetrievalActivity,
   validateRetrievalTarget
 } from "./learning-integrity.js";
+import {
+  GUIDED_PHYSICAL_PULSE_PERIOD_MS,
+  GuidedPhysicalTeachingPulse
+} from "./guided-physical-teaching-highlight.js?v=20260904-guided-physical-presentation-1";
 
 const colors = {
   ink: "#172033",
@@ -518,6 +522,10 @@ export class MapLibreActivityRunner {
       dragging: false
     };
     this.horizontalWheelPanHandler = null;
+    this.guidedPhysicalTeachingHighlight = null;
+    this.guidedPhysicalTeachingPulse = null;
+    this.guidedPhysicalStudyReady = false;
+    this.guidedPhysicalTeachingPulseState = { animated: false, reducedMotion: false, progress: 0.5 };
   }
 
   suppressStudyIntroCameraOnce(reason = "external target focus", ttlMs = 5000) {
@@ -634,6 +642,7 @@ export class MapLibreActivityRunner {
       }
     });
     window.maplibrePocMap = this.map;
+    this.map.on("remove", () => this.clearGuidedPhysicalTeachingHighlight(false));
     this.installHorizontalWheelPan();
 
     await new Promise((resolve) => {
@@ -720,6 +729,8 @@ export class MapLibreActivityRunner {
     this.setStudyVisibility("visible");
     this.updateParentCountryOutline();
     this.refreshDifficultyVisuals();
+    this.guidedPhysicalStudyReady = true;
+    this.guidedPhysicalTeachingPulse?.start();
 
     const suppressedIntroCameraReason = this.consumeStudyIntroCameraSuppression();
     if (suppressedIntroCameraReason) {
@@ -841,6 +852,7 @@ export class MapLibreActivityRunner {
   setStudyPreviewMode(isActive) {
     this.studyPreviewMode = Boolean(isActive);
     if (!this.studyPreviewMode) {
+      this.clearGuidedPhysicalTeachingHighlight();
       this.memoryTrailHighlightIds = [];
       this.memoryTrailCorrectHighlightIds = [];
       this.memoryTrailWrongHighlightIds = [];
@@ -1310,12 +1322,112 @@ export class MapLibreActivityRunner {
     this.memoryTrailHighlightIds = Array.isArray(targetIds)
       ? targetIds.filter(Boolean)
       : [targetIds].filter(Boolean);
+    if (this.guidedPhysicalTeachingHighlight && !this.memoryTrailHighlightIds.includes(this.guidedPhysicalTeachingHighlight.targetId)) {
+      this.clearGuidedPhysicalTeachingHighlight();
+    }
     if (this.memoryTrailHighlightIds.length > 0) {
       this.memoryTrailCheckpointPreAnswerStyle = false;
     }
     this.memoryTrailCorrectHighlightIds = [];
     this.memoryTrailWrongHighlightIds = [];
     this.refreshDifficultyVisuals();
+  }
+
+  setGuidedPhysicalTeachingHighlight(highlight = null) {
+    const target = this.activity?.targets?.find(({ id }) => id === highlight?.targetId);
+    if (!target || !["mountain-range", "river", "lake", "water-body"].includes(target.type)) {
+      this.clearGuidedPhysicalTeachingHighlight();
+      return;
+    }
+    if (this.guidedPhysicalTeachingHighlight?.targetId === target.id) return;
+
+    this.clearGuidedPhysicalTeachingHighlight(false);
+    this.guidedPhysicalTeachingHighlight = {
+      targetId: target.id,
+      targetConcept: highlight.targetConcept || target.id,
+      family: target.type === "water-body" ? "lake" : target.type
+    };
+    this.guidedPhysicalTeachingPulse = new GuidedPhysicalTeachingPulse((state) => {
+      this.guidedPhysicalTeachingPulseState = state;
+      this.refreshGuidedPhysicalTeachingPulsePaint();
+    });
+    // Allow a pending enterStudyView/idle transition to finish before paint
+    // animation begins; otherwise repeated paint changes can starve map idle.
+    if (this.currentView === "study" && this.guidedPhysicalStudyReady) this.guidedPhysicalTeachingPulse.start();
+    this.refreshStudyPaint();
+    this.refreshGuidedPhysicalTeachingHaloLayers();
+  }
+
+  clearGuidedPhysicalTeachingHighlight(refresh = true) {
+    if (!this.guidedPhysicalTeachingHighlight && !this.guidedPhysicalTeachingPulse) return;
+    this.guidedPhysicalTeachingPulse?.stop();
+    this.guidedPhysicalTeachingPulse = null;
+    this.guidedPhysicalTeachingHighlight = null;
+    this.guidedPhysicalTeachingPulseState = { animated: false, reducedMotion: false, progress: 0.5 };
+    if (refresh) {
+      this.refreshStudyPaint();
+      this.refreshGuidedPhysicalTeachingHaloLayers();
+    }
+  }
+
+  getGuidedPhysicalTeachingHighlightState() {
+    const highlight = this.guidedPhysicalTeachingHighlight;
+    const family = highlight?.family;
+    const layerIds = family === "mountain-range"
+      ? ["mountain-range-symbol", "mountain-range-symbol-glow"]
+      : family === "river"
+        ? ["river-line", "guided-physical-river-halo"]
+        : family === "lake" ? ["state-fill", "state-line", "guided-physical-lake-halo"] : [];
+    return {
+      phase: highlight ? "teaching" : "retrieval",
+      targetId: highlight?.targetId || null,
+      targetConcept: highlight?.targetConcept || null,
+      family: family || null,
+      animated: Boolean(highlight && this.guidedPhysicalTeachingPulseState?.animated),
+      reducedMotion: Boolean(this.guidedPhysicalTeachingPulseState?.reducedMotion),
+      nonTargetMuted: Boolean(highlight),
+      pulsePeriodMs: GUIDED_PHYSICAL_PULSE_PERIOD_MS,
+      pulseProgress: this.guidedPhysicalTeachingPulseState?.progress ?? 0.5,
+      layerIds,
+      layers: layerIds.map((id) => {
+        const layer = this.map?.getLayer?.(id);
+        const properties = layer?.type === "symbol" ? ["icon-opacity"] : layer?.type === "fill" ? ["fill-color", "fill-opacity"] : ["line-color", "line-width", "line-opacity"];
+        return {
+          id,
+          source: layer?.source,
+          filter: this.map?.getFilter?.(id),
+          paint: Object.fromEntries(properties.map((property) => [property, this.map?.getPaintProperty?.(id, property)])),
+          visibility: this.map?.getLayoutProperty?.(id, "visibility")
+        };
+      }),
+      targetOpacity: highlight ? (family === "lake" ? 0.9 : 1) : null,
+      contextOpacity: highlight ? (family === "mountain-range" ? "authored symbol opacity × 0.38" : 0.3) : null
+    };
+  }
+
+  getGuidedPhysicalTeachingTargetExpression(property = "id") {
+    return ["==", ["get", property], this.guidedPhysicalTeachingHighlight?.targetId || ""];
+  }
+
+  refreshGuidedPhysicalTeachingHaloLayers() {
+    const highlight = this.guidedPhysicalTeachingHighlight;
+    [["guided-physical-river-halo", "river"], ["guided-physical-lake-halo", "lake"]].forEach(([id, family]) => {
+      if (!this.map?.getLayer(id)) return;
+      this.map.setFilter(id, ["==", ["get", "id"], highlight?.family === family ? highlight.targetId : ""]);
+      this.map.setLayoutProperty(id, "visibility", highlight?.family === family && this.currentView === "study" ? "visible" : "none");
+    });
+  }
+
+  refreshGuidedPhysicalTeachingPulsePaint() {
+    const family = this.guidedPhysicalTeachingHighlight?.family;
+    if (!this.map || !family) return;
+    if (family === "mountain-range" && this.map.getLayer("mountain-range-symbol-glow")) {
+      this.map.setPaintProperty("mountain-range-symbol-glow", "icon-opacity", this.getMountainRangeSymbolGlowOpacityExpression());
+    }
+    const haloId = family === "river" ? "guided-physical-river-halo" : family === "lake" ? "guided-physical-lake-halo" : null;
+    if (haloId && this.map.getLayer(haloId)) {
+      this.map.setPaintProperty(haloId, "line-opacity", 0.48 + 0.16 * this.guidedPhysicalTeachingPulseState.progress);
+    }
   }
 
   getPoliticalDivisionVisualState() {
@@ -1623,6 +1735,8 @@ export class MapLibreActivityRunner {
   }
 
   updateActivity(activity) {
+    this.clearGuidedPhysicalTeachingHighlight();
+    this.guidedPhysicalStudyReady = false;
     this.activity = activity;
     this.shapeTargets = activity.targets.filter((target) => target.kind === "shape");
     this.pointTargets = activity.targets.filter((target) => target.kind === "point");
@@ -3553,6 +3667,17 @@ export class MapLibreActivityRunner {
       }
     });
 
+    // A Guided-only halo follows the authoritative lake polygon. This layer is
+    // visual only; target-hit-fill remains the sole polygon hit geometry.
+    this.map.addLayer({
+      id: "guided-physical-lake-halo",
+      type: "line",
+      source: "target-shapes",
+      filter: ["==", ["get", "id"], ""],
+      layout: { visibility: "none", "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#f5c542", "line-width": 8, "line-blur": 2, "line-opacity": 0.56 }
+    });
+
     this.map.addLayer({
       id: "state-line",
       type: "line",
@@ -3956,6 +4081,15 @@ export class MapLibreActivityRunner {
           0.01
         ]
       }
+    });
+
+    this.map.addLayer({
+      id: "guided-physical-river-halo",
+      type: "line",
+      source: "river-lines",
+      filter: ["==", ["get", "id"], ""],
+      layout: { visibility: "none", "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#f5c542", "line-width": 10, "line-blur": 2.5, "line-opacity": 0.56 }
     });
 
     this.map.addLayer({
@@ -7013,6 +7147,7 @@ export class MapLibreActivityRunner {
     if (labelSource) {
       labelSource.setData(this.getCompletedLabelGeoJson());
     }
+    this.refreshGuidedPhysicalTeachingHaloLayers();
   }
 
   refreshOceanRegionPaint() {
@@ -7176,6 +7311,9 @@ export class MapLibreActivityRunner {
   }
 
   getStateFillExpression() {
+    if (this.guidedPhysicalTeachingHighlight?.family === "lake") {
+      return ["case", this.getGuidedPhysicalTeachingTargetExpression(), "#248bbd", "#b8cfdc"];
+    }
     if (this.isContinentsOceansActivity()) {
       return this.getContinentsOceansFillExpression();
     }
@@ -7252,6 +7390,9 @@ export class MapLibreActivityRunner {
   }
 
   getShapeFillOpacityExpression() {
+    if (this.guidedPhysicalTeachingHighlight?.family === "lake") {
+      return ["case", this.getGuidedPhysicalTeachingTargetExpression(), 0.9, 0.3];
+    }
     if (this.isContinentsOceansActivity()) {
       return this.getContinentsOceansFillOpacityExpression();
     }
@@ -7354,6 +7495,9 @@ export class MapLibreActivityRunner {
   }
 
   getStateLineExpression() {
+    if (this.guidedPhysicalTeachingHighlight?.family === "lake") {
+      return ["case", this.getGuidedPhysicalTeachingTargetExpression(), colors.riverLineHighlight, "#6f99ae"];
+    }
     if (this.studyPreviewMode) {
       const suppressStudyTargetEmphasis = this.isMemoryTrailStudyTargetEmphasisSuppressed();
       return [
@@ -7383,6 +7527,9 @@ export class MapLibreActivityRunner {
   }
 
   getShapeLineOpacityExpression() {
+    if (this.guidedPhysicalTeachingHighlight?.family === "lake") {
+      return ["case", this.getGuidedPhysicalTeachingTargetExpression(), 1, 0.38];
+    }
     if (this.studyPreviewMode) {
       const suppressStudyTargetEmphasis = this.isMemoryTrailStudyTargetEmphasisSuppressed();
       return [
@@ -7446,6 +7593,9 @@ export class MapLibreActivityRunner {
   }
 
   getShapeLineWidthExpression() {
+    if (this.guidedPhysicalTeachingHighlight?.family === "lake") {
+      return ["case", this.getGuidedPhysicalTeachingTargetExpression(), 3.5, 1.2];
+    }
     if (this.studyPreviewMode) {
       const suppressStudyTargetEmphasis = this.isMemoryTrailStudyTargetEmphasisSuppressed();
       return [
@@ -7486,6 +7636,9 @@ export class MapLibreActivityRunner {
   }
 
   getMountainRangeSymbolSizeExpression() {
+    if (this.guidedPhysicalTeachingHighlight?.family === "mountain-range") {
+      return ["*", ["coalesce", ["get", "iconScale"], 0.72], ["case", this.getGuidedPhysicalTeachingTargetExpression("targetId"), 1.6, 0.92]];
+    }
     return [
       "*",
       ["coalesce", ["get", "iconScale"], 0.72],
@@ -7522,6 +7675,9 @@ export class MapLibreActivityRunner {
   }
 
   getMountainRangeSymbolGlowSizeExpression() {
+    if (this.guidedPhysicalTeachingHighlight?.family === "mountain-range") {
+      return ["*", ["coalesce", ["get", "iconScale"], 0.72], ["case", this.getGuidedPhysicalTeachingTargetExpression("targetId"), 2.5, 1.28]];
+    }
     return [
       "*",
       ["coalesce", ["get", "iconScale"], 0.72],
@@ -7537,6 +7693,9 @@ export class MapLibreActivityRunner {
   }
 
   getMountainRangeSymbolOpacityExpression() {
+    if (this.guidedPhysicalTeachingHighlight?.family === "mountain-range") {
+      return ["case", this.getGuidedPhysicalTeachingTargetExpression("targetId"), 1, ["*", ["coalesce", ["get", "symbolOpacity"], 0.58], 0.38]];
+    }
     if (this.studyPreviewMode) {
       return [
         "case",
@@ -7580,6 +7739,9 @@ export class MapLibreActivityRunner {
   }
 
   getMountainRangeSymbolGlowOpacityExpression() {
+    if (this.guidedPhysicalTeachingHighlight?.family === "mountain-range") {
+      return ["case", this.getGuidedPhysicalTeachingTargetExpression("targetId"), 0.64 + 0.16 * (this.guidedPhysicalTeachingPulseState?.progress ?? 0.5), 0.025];
+    }
     if (this.getDifficultyVisualState().isHard && !this.studyPreviewMode) {
       return [
         "case",
@@ -7644,6 +7806,9 @@ export class MapLibreActivityRunner {
   }
 
   getMountainRangeCorridorOpacityExpression() {
+    if (this.guidedPhysicalTeachingHighlight?.family === "mountain-range") {
+      return ["*", ["coalesce", ["get", "corridorOpacityScale"], 1], ["case", this.getGuidedPhysicalTeachingTargetExpression("targetId"), 0.32, 0.025]];
+    }
     if (this.getDifficultyVisualState().isHard && !this.studyPreviewMode) {
       return [
         "*",
@@ -8349,6 +8514,9 @@ export class MapLibreActivityRunner {
   }
 
   getRiverLineColorExpression() {
+    if (this.guidedPhysicalTeachingHighlight?.family === "river") {
+      return ["case", this.getGuidedPhysicalTeachingTargetExpression(), colors.riverLineHighlight, colors.riverLineMuted];
+    }
     return [
       "case",
       ["in", ["get", "id"], ["literal", this.memoryTrailWrongHighlightIds]],
@@ -8364,6 +8532,9 @@ export class MapLibreActivityRunner {
   }
 
   getRiverLineWidthExpression() {
+    if (this.guidedPhysicalTeachingHighlight?.family === "river") {
+      return ["case", this.getGuidedPhysicalTeachingTargetExpression(), ["max", 5.5, ["coalesce", ["get", "highlightWidthPx"], 5]], ["coalesce", ["get", "lineWidthPx"], 2]];
+    }
     return [
       "case",
       ["in", ["get", "id"], ["literal", [...this.memoryTrailHighlightIds, ...this.memoryTrailCorrectHighlightIds, ...this.memoryTrailWrongHighlightIds]]],
@@ -8373,6 +8544,9 @@ export class MapLibreActivityRunner {
   }
 
   getRiverLineOpacityExpression() {
+    if (this.guidedPhysicalTeachingHighlight?.family === "river") {
+      return ["case", this.getGuidedPhysicalTeachingTargetExpression(), 1, 0.3];
+    }
     return [
       "case",
       ["in", ["get", "id"], ["literal", [...this.memoryTrailHighlightIds, ...this.memoryTrailCorrectHighlightIds, ...this.memoryTrailWrongHighlightIds]]],
@@ -8454,6 +8628,7 @@ export class MapLibreActivityRunner {
 
   updateDifficultyLayerVisibility() {
     if (!this.map || this.currentView !== "study") {
+      this.clearGuidedPhysicalTeachingHighlight();
       ["ocean-target-raster", "political-division-context-fill", "political-division-context-line", "state-fill", "state-line", "political-division-guided-highlight-fill", "political-division-guided-highlight-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-active-halo", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
         if (this.map?.getLayer(layerId)) {
           this.map.setLayoutProperty(layerId, "visibility", "none");
@@ -8554,9 +8729,14 @@ export class MapLibreActivityRunner {
     if (this.map.getLayer("completed-label")) {
       this.map.setLayoutProperty("completed-label", "visibility", visualState.showsCompletedLabels ? "visible" : "none");
     }
+    this.refreshGuidedPhysicalTeachingHaloLayers();
   }
 
   setStudyVisibility(visibility) {
+    if (visibility === "none") {
+      this.guidedPhysicalStudyReady = false;
+      this.clearGuidedPhysicalTeachingHighlight();
+    }
     ["ocean-target-raster", "political-division-context-fill", "political-division-context-line", "state-fill", "state-line", "political-division-guided-highlight-fill", "political-division-guided-highlight-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-active-halo", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
       if (this.map.getLayer(layerId)) {
         this.map.setLayoutProperty(layerId, "visibility", visibility);

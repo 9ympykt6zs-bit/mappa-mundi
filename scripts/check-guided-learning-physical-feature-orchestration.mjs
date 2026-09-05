@@ -21,7 +21,9 @@ import {
 import {
   buildUnitedStatesPhysicalFeatureOrchestrationInventory,
   calculateGuidedLearningPhysicalFeatureCamera,
-  UNITED_STATES_PHYSICAL_FEATURE_ORCHESTRATION_INVENTORY
+  UNITED_STATES_PHYSICAL_FEATURE_ORCHESTRATION_INVENTORY,
+  UNITED_STATES_GUIDED_LOWER48_PHYSICAL_CAMERA,
+  UNITED_STATES_GUIDED_PHYSICAL_REGIONAL_CAMERA_PRESETS
 } from "../src/united-states-physical-feature-orchestration.js";
 import { unitedStatesAtlas } from "../src/atlas/united-states-atlas-data.js";
 
@@ -205,30 +207,95 @@ const assistedRockyDecision = selectGuidedLearningOrchestrationBlock({
 assert.equal(assistedRockyDecision.currentBlock.id, overriddenIntro.id);
 
 const representativeFeatures = [
-  inventory.find(({ targetId }) => targetId === "white-mountains"),
+  inventory.find(({ targetId }) => targetId === "black-hills"),
+  inventory.find(({ targetId }) => targetId === "ozark-mountains"),
   columbia,
   inventory.find(({ targetId }) => targetId === "lake-superior")
 ];
+const expectedLower48Camera = {
+  mode: "override",
+  source: "lower48-physical-default",
+  center: [-97.76220, 39.30636],
+  zoom: 4.1407,
+  bearing: 0,
+  pitch: 0
+};
+assert.deepEqual(UNITED_STATES_GUIDED_LOWER48_PHYSICAL_CAMERA, {
+  mode: "override",
+  center: [-97.76220, 39.30636],
+  zoom: 4.1407,
+  bearing: 0,
+  pitch: 0
+});
 representativeFeatures.forEach((feature) => {
   const sourceFeature = findSourceFeature(feature);
   const originalGeometry = JSON.stringify(sourceFeature.geometry);
-  const camera = calculateGuidedLearningPhysicalFeatureCamera({
-    feature: sourceFeature,
-    family: feature.family,
-    camera: feature.camera,
-    viewport: "desktop"
+  ["desktop", "mobile"].forEach((viewport) => {
+    const camera = calculateGuidedLearningPhysicalFeatureCamera({
+      feature: sourceFeature,
+      family: feature.family,
+      camera: feature.camera,
+      viewport
+    });
+    assert.deepEqual(camera, expectedLower48Camera, `${feature.name} uses the reviewed national camera on ${viewport}.`);
   });
-  assert.equal(camera.mode, "fit-feature");
-  assert.ok(camera.bounds.flat(2).every(Number.isFinite));
-  assert.ok(camera.bounds[0][0] < camera.sourceBounds[0][0] && camera.bounds[1][0] > camera.sourceBounds[1][0]);
   assert.equal(JSON.stringify(sourceFeature.geometry), originalGeometry, "Camera calculation does not mutate standalone geometry.");
 });
+const alaskaActivity = mountainActivities.find(({ id }) => id === "us-physical-alaska-mountains");
+const originalAlaskaMap = JSON.stringify(alaskaActivity.map);
+const alaskaActivityMap = new Map([[alaskaActivity.id, alaskaActivity]]);
+const alaskaPreset = UNITED_STATES_GUIDED_PHYSICAL_REGIONAL_CAMERA_PRESETS.find(({ id }) => id === "alaska");
+assert.equal(alaskaPreset.authoredActivityId, alaskaActivity.id);
+assert.equal(alaskaPreset.cameraKey, "quizView");
+["alaska-range", "brooks-range"].forEach((targetId) => {
+  const feature = inventory.find((candidate) => candidate.targetId === targetId);
+  const decision = calculateGuidedLearningPhysicalFeatureCamera({
+    feature: findSourceFeature(feature),
+    family: feature.family,
+    activityMap: alaskaActivityMap
+  });
+  assert.deepEqual(decision, {
+    mode: "override",
+    source: "alaska-preset",
+    center: [...alaskaActivity.map.quizView.center],
+    zoom: alaskaActivity.map.quizView.zoom,
+    bearing: alaskaActivity.map.quizView.bearing,
+    pitch: alaskaActivity.map.quizView.pitch
+  }, `${feature.name} reuses the authored Alaska camera instead of the lower-48 camera.`);
+  assert.equal(calculateGuidedLearningPhysicalFeatureCamera({
+    feature: findSourceFeature(feature),
+    family: feature.family
+  }), null, "Missing Alaska camera data must not silently frame lower 48.");
+});
+assert.equal(JSON.stringify(alaskaActivity.map), originalAlaskaMap, "Guided camera selection does not mutate standalone Alaska views.");
+assert.deepEqual(calculateGuidedLearningPhysicalFeatureCamera({
+  family: "lake",
+  authoredStateIds: ["alaska"],
+  activityMap: alaskaActivityMap
+}).center, alaskaActivity.map.quizView.center, "Regional matching can support another family without a feature-ID exception.");
+assert.deepEqual(calculateGuidedLearningPhysicalFeatureCamera({
+  family: "lake",
+  regionId: "test-special-region",
+  regionalCameraPresets: [{
+    id: "test-special-region",
+    source: "test-special-preset",
+    camera: { center: [12, 34], zoom: 3.25 }
+  }]
+}), {
+  mode: "override", source: "test-special-preset", center: [12, 34], zoom: 3.25, bearing: 0, pitch: 0
+}, "Future disconnected regions can provide a preset using configuration.");
+assert.deepEqual(calculateGuidedLearningPhysicalFeatureCamera({
+  family: "river",
+  camera: expectedLower48Camera
+}), expectedLower48Camera, "A resolved default retains its source if reused for retrieval.");
 assert.deepEqual(calculateGuidedLearningPhysicalFeatureCamera({
   feature: findSourceFeature(rocky),
   family: rocky.family,
-  camera: { mode: "override", center: [-106, 40], zoom: 4.5, bearing: 2, pitch: 8 }
+  camera: { mode: "override", center: [-106, 40], zoom: 4.5, bearing: 2, pitch: 8 },
+  cohortCamera: { mode: "override", center: [-105, 39], zoom: 4 }
 }), {
   mode: "override",
+  source: "authored-override",
   center: [-106, 40],
   zoom: 4.5,
   bearing: 2,
@@ -251,6 +318,20 @@ assert.deepEqual(northeastCohort.camera, {
   bearing: 0,
   pitch: 0
 });
+assert.deepEqual(calculateGuidedLearningPhysicalFeatureCamera({
+  family: "mountain-range",
+  targetId: "white-mountains",
+  cohortCamera: northeastCohort.camera
+}), {
+  ...northeastCohort.camera,
+  source: "authored-override"
+}, "The approved Northeast cohort override takes precedence over the national default.");
+assert.deepEqual(calculateGuidedLearningPhysicalFeatureCamera({
+  family: "mountain-range",
+  targetId: "alaska-range",
+  cohortCamera: northeastCohort.camera,
+  activityMap: alaskaActivityMap
+}).source, "authored-override", "An explicit authored override also takes precedence over a regional preset.");
 assert.equal(selectPhysicalCohortRetrievalSubset({
   cohort: northeastCohort,
   introducedTargetIds: ["white-mountains"]

@@ -298,48 +298,65 @@ export function getPhysicalFeatureGeometryExtent(feature = {}, { includeVisualCo
   ];
 }
 
-const cameraFitProfiles = Object.freeze({
-  river: Object.freeze({ longitudeRatio: 0.13, latitudeRatio: 0.18, minimumLongitude: 1.15, minimumLatitude: 0.8, maxZoom: 5.2 }),
-  lake: Object.freeze({ longitudeRatio: 0.3, latitudeRatio: 0.42, minimumLongitude: 0.9, minimumLatitude: 0.7, maxZoom: 6.1 }),
-  "mountain-range": Object.freeze({ longitudeRatio: 0.2, latitudeRatio: 0.24, minimumLongitude: 1.1, minimumLatitude: 0.85, maxZoom: 5.6 })
+export const UNITED_STATES_GUIDED_LOWER48_PHYSICAL_CAMERA = Object.freeze({
+  mode: "override",
+  center: Object.freeze([-97.76220, 39.30636]),
+  zoom: 4.1407,
+  bearing: 0,
+  pitch: 0
 });
+
+// Keep disconnected geography in its own authored frame. Resolve the camera
+// from the already-loaded activity so it shares the authored source of truth.
+// Future regional presets can follow this contract without changing lower 48.
+export const UNITED_STATES_GUIDED_PHYSICAL_REGIONAL_CAMERA_PRESETS = Object.freeze([
+  Object.freeze({
+    id: "alaska",
+    source: "alaska-preset",
+    authoredActivityId: "us-physical-alaska-mountains",
+    cameraKey: "quizView",
+    targetIds: Object.freeze(["alaska-range", "brooks-range"]),
+    stateIds: Object.freeze(["alaska"])
+  })
+]);
+
+function fixedPhysicalCameraDecision(camera, source) {
+  const normalized = normalizeCamera({ ...camera, mode: "override" });
+  return { ...normalized, center: [...normalized.center], source };
+}
 
 export function calculateGuidedLearningPhysicalFeatureCamera({
   feature,
   family,
   camera = { mode: "fit-feature" },
-  viewport = "desktop"
+  cohortCamera = null,
+  targetId = feature?.properties?.id || feature?.id || "",
+  authoredStateIds = [],
+  regionId = null,
+  activityMap = null,
+  regionalCameraPresets = UNITED_STATES_GUIDED_PHYSICAL_REGIONAL_CAMERA_PRESETS
 } = {}) {
   if (camera?.mode === "override") {
-    return {
-      mode: "override",
-      center: [...camera.center],
-      zoom: camera.zoom,
-      bearing: camera.bearing || 0,
-      pitch: camera.pitch || 0
-    };
+    return fixedPhysicalCameraDecision(camera, camera.source || "authored-override");
   }
-  const extent = getPhysicalFeatureGeometryExtent(feature, { includeVisualContinuation: true });
-  const profile = cameraFitProfiles[family];
-  if (!extent || !profile) return null;
-  const longitudeSpan = Math.max(0, extent[1][0] - extent[0][0]);
-  const latitudeSpan = Math.max(0, extent[1][1] - extent[0][1]);
-  const longitudePadding = Math.max(profile.minimumLongitude, longitudeSpan * profile.longitudeRatio);
-  const latitudePadding = Math.max(profile.minimumLatitude, latitudeSpan * profile.latitudeRatio);
-  return {
-    mode: "fit-feature",
-    sourceBounds: extent,
-    bounds: [
-      [extent[0][0] - longitudePadding, Math.max(-85, extent[0][1] - latitudePadding)],
-      [extent[1][0] + longitudePadding, Math.min(85, extent[1][1] + latitudePadding)]
-    ],
-    padding: viewport === "mobile"
-      ? { top: 104, right: 28, bottom: 244, left: 28 }
-      : { top: 112, right: 72, bottom: 188, left: 72 },
-    maxZoom: profile.maxZoom,
-    bearing: 0,
-    pitch: 0
-  };
+  if (cohortCamera?.mode === "override") {
+    return fixedPhysicalCameraDecision(cohortCamera, cohortCamera.source || "authored-override");
+  }
+  if (!familyConfigs[family]) return null;
+  const regionalPreset = regionalCameraPresets.find((preset) => (
+    (regionId && preset.id === regionId)
+    || preset.targetIds?.includes(targetId)
+    || (authoredStateIds.length > 0 && authoredStateIds.every((stateId) => preset.stateIds?.includes(stateId)))
+  ));
+  if (regionalPreset) {
+    const authoredActivity = activityMap?.get?.(regionalPreset.authoredActivityId)
+      || activityMap?.[regionalPreset.authoredActivityId];
+    const regionalCamera = regionalPreset.camera || authoredActivity?.map?.[regionalPreset.cameraKey];
+    // A missing disconnected-geography source must never silently select lower 48.
+    if (!regionalCamera) return null;
+    return fixedPhysicalCameraDecision(regionalCamera, regionalPreset.source);
+  }
+  return fixedPhysicalCameraDecision(UNITED_STATES_GUIDED_LOWER48_PHYSICAL_CAMERA, "lower48-physical-default");
 }
 
 export const UNITED_STATES_PHYSICAL_FEATURE_ORCHESTRATION_INVENTORY = Object.freeze(
