@@ -89,10 +89,10 @@ const introduction = config.blocks.find(({ id }) => id === whiteMountainsSequenc
 const practice = config.blocks.find(({ id }) => id === whiteMountainsSequence.practiceBlockId);
 const connection = config.blocks.find(({ id }) => id === whiteMountainsSequence.connectionBlockId);
 const allNewEnglandStates = ["maine", "new-hampshire", "vermont", "massachusetts", "rhode-island", "connecticut"];
-const missingVermont = stateCoverageEvents(allNewEnglandStates.filter((stateId) => stateId !== "vermont"));
+const missingMaine = stateCoverageEvents(allNewEnglandStates.filter((stateId) => stateId !== "maine" && stateId !== "vermont"));
 
 let state = createGuidedLearningOrchestrationState();
-let decision = selectGuidedLearningOrchestrationBlock({ state, repository: repository(missingVermont) });
+let decision = selectGuidedLearningOrchestrationBlock({ state, repository: repository(missingMaine) });
 assert.equal(decision.currentBlock.type, GUIDED_LEARNING_BLOCK_TYPES.GUIDED_SECTION);
 assert.equal(decision.evaluations[0].reason, "prerequisite-not-covered");
 
@@ -323,7 +323,9 @@ for (const [familyId, expectedFamily] of [
   ["physical-mountain-ranges", "mountain-range"]
 ]) {
   const targetedDecision = selectGuidedLearningOrchestrationBlock({
-    state: createGuidedLearningOrchestrationState(),
+    state: createGuidedLearningOrchestrationState({
+      completedBlockIds: config.blocks.filter(({ type }) => type === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT).map(({ id }) => id)
+    }),
     repository: allStatesCoveredRepository,
     targetedNeed: { objectiveId: "learn-physical-features", familyId }
   });

@@ -2,21 +2,21 @@
 
 ## Purpose
 
-Guided Learning coordinates a sequence of existing learning activities. It does not replace their gameplay, scoring, evidence, rendering, or persistence. The learning rhythm is **Teach → Retrieve → Integrate → Continue**, with handoffs from Guided Learning to an existing activity and back to the existing Guided planner.
+Guided Learning coordinates a sequence of existing learning activities. It reuses their gameplay, evidence, rendering, and persistence, with the approved Guided-only anchored Reconstruction scoring described below. The learning rhythm is **Teach → Retrieve → Integrate → Continue**, with handoffs from Guided Learning to an existing activity and back to the existing Guided planner.
 
 ## Generated physical-feature blocks
 
 The orchestration configuration uses stable block IDs and five bounded block types:
 
 - `guided-section`: the fallback that resumes the existing Guided Learning planner;
-- `reconstruction-checkpoint`: the existing New England Regional Reconstruction activity;
+- `reconstruction-checkpoint`: ten section-aligned contiguous-state groups, using Reconstruction with locked prior context after checkpoint 1;
 - `physical-feature-introduction`: a focused teaching view using the feature family's existing rendering;
 - `physical-feature-practice`: the existing Memory Trail engine targeted to a small learned comparison cohort;
 - `connection-checkpoint`: the existing U.S. Connections engine targeted to one authored relationship, when one exists.
 
 Rivers, lakes, and mountain ranges are generated from the shared U.S. atlas, canonical concept contracts, existing activity targets, and authored state–feature relationships. A feature can follow **Show → Name → Highlight → Guided tap → Retrieve → optional Connection → Return**, but retrieval runs only when at least two compatible features have been introduced. During teaching, one new feature is named and highlighted at a time while the other cohort geography remains available as context. The learner must tap the highlighted feature before teaching advances. A valid Connection may follow an individual introduction while cohort retrieval waits for another member. The configuration does not duplicate activity mechanics or geographic facts. Great Salt Lake deliberately omits the Connection step because none is authored.
 
-The original White Mountains slice and its New England Reconstruction dependency remain intact. The generalized contract adds the other safely supported physical features without changing Reconstruction itself.
+White Mountains retains its original checkpoint completion dependency. That stable checkpoint now matches the first five-state Guided section; Vermont joins checkpoint 2. See [Guided Reconstruction checkpoints](guided-reconstruction-checkpoints.md) for the ten-group sequence, targeted routing, legacy-progress compatibility, and Guided-only anchored evaluation. Standalone Reconstruction scoring remains unchanged.
 
 ## Physical learning cohorts
 

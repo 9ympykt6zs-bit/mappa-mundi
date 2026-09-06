@@ -1,3 +1,4 @@
+import { GUIDED_RECONSTRUCTION_CHECKPOINTS } from "./guided-reconstruction.js";
 import { adaptCanonicalRetrievalAttempt } from "./canonical-learning-evidence.js";
 import {
   UNITED_STATES_PHYSICAL_FEATURE_DEFERRED_FAMILIES,
@@ -127,16 +128,7 @@ function freezeBlock(block) {
   });
 }
 
-const newEnglandStateIds = Object.freeze([
-  "maine",
-  "new-hampshire",
-  "vermont",
-  "massachusetts",
-  "rhode-island",
-  "connecticut"
-]);
-
-const reconstructionBlockId = "us-guided:rebuild-new-england";
+const reconstructionBlockId = GUIDED_RECONSTRUCTION_CHECKPOINTS[0].blockId;
 
 function createPhysicalFeatureBlocks(feature, { introductionPrerequisiteBlockIds = [] } = {}) {
   if (!feature?.supported) return [];
@@ -317,23 +309,20 @@ export function createUnitedStatesGuidedLearningOrchestrationConfig({
     deferredPhysicalFeatures: Object.freeze(deferredPhysicalFeatures),
     deferredPhysicalFamilies: UNITED_STATES_PHYSICAL_FEATURE_DEFERRED_FAMILIES,
     blocks: Object.freeze([
-    freezeBlock({
-      id: reconstructionBlockId,
-      type: GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT,
-      prerequisiteBlockIds: [],
-      prerequisites: newEnglandStateIds.map(stateCoveredPrerequisite),
-      destination: {
-        kind: "map-reconstruction",
-        regionId: "rebuild-new-england"
-      },
-      completion: {
-        kind: "evaluation-submitted",
-        requiresPerfectResult: false
-      },
-      returnBehavior: {
-        kind: "guided-learning-resume"
-      }
-    }),
+      ...GUIDED_RECONSTRUCTION_CHECKPOINTS.map((checkpoint, index) => freezeBlock({
+        id: checkpoint.blockId,
+        type: GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT,
+        prerequisiteBlockIds: index ? [GUIDED_RECONSTRUCTION_CHECKPOINTS[index - 1].blockId] : [],
+        prerequisites: checkpoint.stateIds.map(stateCoveredPrerequisite),
+        destination: {
+          kind: "map-reconstruction",
+          regionId: checkpoint.regionId,
+          checkpointNumber: checkpoint.number,
+          sectionId: checkpoint.sectionId
+        },
+        completion: { kind: "evaluation-submitted", requiresPerfectResult: false },
+        returnBehavior: { kind: "guided-learning-resume" }
+      })),
       ...physicalFeatures.flatMap(({ blocks }) => blocks),
       ...physicalReviewBlocks
     ]),
@@ -993,6 +982,7 @@ export function selectGuidedLearningOrchestrationBlock({
     : null;
   const targetedPhysicalFamily = physicalContinuationFamilyByNeedId[normalizedTargetedNeed?.familyId] || null;
   const targetsConnections = normalizedTargetedNeed?.familyId === "geographic-relationships";
+  const allowsPhysicalSequence = !normalizedTargetedNeed?.familyId || Boolean(targetedPhysicalFamily);
   const blockMatchesTargetedNeed = (block) => {
     if (!normalizedTargetedNeed?.familyId) return true;
     if (targetedPhysicalFamily) return block?.destination?.featureFamily === targetedPhysicalFamily;
@@ -1050,11 +1040,12 @@ export function selectGuidedLearningOrchestrationBlock({
   const activeBlock = normalizedState.activeBlockId
     ? config.blocks.find(({ id }) => id === normalizedState.activeBlockId)
     : null;
-  const activeEvaluation = activeBlock && blockMatchesTargetedNeed(activeBlock)
+  const activeEvaluation = activeBlock && (blockMatchesTargetedNeed(activeBlock)
+    || activeBlock.type === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT)
     ? evaluationsById.get(normalizedState.activeBlockId)
     : null;
   const inProgressFeature = featureProgress.find(({ feature, inProgress }) => (
-    inProgress && !targetsConnections && (!targetedPhysicalFamily || feature.family === targetedPhysicalFamily)
+    inProgress && allowsPhysicalSequence && (!targetedPhysicalFamily || feature.family === targetedPhysicalFamily)
   ));
   const inProgressEvaluation = inProgressFeature?.nextEvaluation?.eligible
     ? inProgressFeature.nextEvaluation
@@ -1062,8 +1053,7 @@ export function selectGuidedLearningOrchestrationBlock({
   const eligibleNonPhysicalEvaluation = evaluations.find(({ blockId, eligible }) => {
     const block = config.blocks.find(({ id }) => id === blockId);
     return eligible
-      && !normalizedTargetedNeed?.familyId
-      && !["physical-feature", "physical-review"].includes(block?.sequenceKind);
+      && block?.type === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT;
   }) || null;
   const targetedConnectionEvaluation = targetsConnections
     ? evaluations.find(({ blockId, eligible }) => (
@@ -1076,7 +1066,7 @@ export function selectGuidedLearningOrchestrationBlock({
     if (
       !block
       || !eligibility?.eligible
-      || targetsConnections
+      || !allowsPhysicalSequence
       || (targetedPhysicalFamily && cohort.family !== targetedPhysicalFamily)
     ) return [];
     const candidates = eligibility.candidates || [];
@@ -1096,7 +1086,7 @@ export function selectGuidedLearningOrchestrationBlock({
       !completed
       && !inProgress
       && introductionEvaluation?.eligible
-      && !targetsConnections
+      && allowsPhysicalSequence
       && (!targetedPhysicalFamily || feature.family === targetedPhysicalFamily)
     ))
     .map(({ feature, eligibilityMilestone }) => ({
@@ -1120,12 +1110,12 @@ export function selectGuidedLearningOrchestrationBlock({
     } else {
       selectionReason = "physical-feature-sequence-prerequisite-pending";
     }
-  } else if (targetedConnectionEvaluation) {
-    selectedEvaluation = targetedConnectionEvaluation;
-    selectionReason = "targeted-connections-need";
   } else if (eligibleNonPhysicalEvaluation) {
     selectedEvaluation = eligibleNonPhysicalEvaluation;
     selectionReason = "eligible-nonphysical-block";
+  } else if (targetedConnectionEvaluation) {
+    selectedEvaluation = targetedConnectionEvaluation;
+    selectionReason = "targeted-connections-need";
   } else if (!physicalInterleaveBlocked && physicalReviewQueue.length > 0) {
     selectedEvaluation = evaluationsById.get(physicalReviewQueue[0].blockId);
     selectionReason = "spaced-physical-review-due";

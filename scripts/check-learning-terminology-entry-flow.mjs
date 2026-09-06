@@ -22,7 +22,9 @@ for (const oldLearnerLabel of [
 
 assert.match(indexSource, />Explore</);
 assert.match(indexSource, />Guided Learning</);
-assert.match(indexSource, /maplibre-poc\.js\?v=20260905-guided-physical-search-space-1/);
+const runtimeVersionPattern = /src\/maplibre-poc\.js\?v=([a-zA-Z0-9-]+)/;
+assert.match(indexSource, runtimeVersionPattern);
+assert.equal(indexSource.match(runtimeVersionPattern)[1], read("../maplibre-poc.html").match(runtimeVersionPattern)?.[1], "Both entry pages must load the same versioned runtime.");
 assert.match(runtimeSource, /const label = isGuidedLearning \? "Label Map" : "Guided Learning"/);
 assert.match(runtimeSource, /selectUnitedStatesEvidenceDrivenContinuation\(\{/);
 assert.match(runtimeSource, /continuation\.destination\.kind === "united-states-guided-learning"/);

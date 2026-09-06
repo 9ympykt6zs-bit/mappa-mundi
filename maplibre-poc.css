@@ -9491,3 +9491,16 @@ body.about-page {
     top: calc(190px + env(safe-area-inset-top));
   }
 }
+
+/* Guided checkpoints expose only previously learned states as fixed context. */
+.map-reconstruction-locked-layer {
+  pointer-events: none;
+}
+.map-reconstruction-piece.is-locked .map-reconstruction-piece-shape {
+  fill: #243e52;
+  stroke: #7b9bad;
+  opacity: 0.85;
+}
+.map-reconstruction-piece.is-locked .map-reconstruction-piece-label {
+  fill: #b8cedb;
+}

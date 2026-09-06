@@ -1,10 +1,10 @@
 # Engineering state
 
-Inspected 2026-09-05 at `5564c13` on `feature/evidence-driven-learning-foundation`; checkout was clean before engineering documentation setup. This is a concise navigation and coordination record, not a release certification. Recheck Git status/revision at task start.
+Updated 2026-09-05 for the Guided Reconstruction implementation on `feature/evidence-driven-learning-foundation`, based on clean commit `66509f0`. This is a concise navigation and coordination record, not a release certification. Recheck Git status/revision at task start.
 
 ## Ownership and current work
 
-The designated Lead Codex task owns engineering orchestration under [AGENTS.md](../AGENTS.md) and [the workflow](engineering-orchestration.md). No permanent specialists, background automation, or additional worktrees were created. No specialist assignments are active. The next application priority is the user's next development request; this setup does not select a new product feature.
+The designated Lead Codex task owns engineering orchestration under [AGENTS.md](../AGENTS.md) and [the workflow](engineering-orchestration.md). No permanent specialists, background automation, or additional worktrees were created. One temporary scoring specialist was used for Guided Reconstruction and returned control to the Lead; no specialist is active. See [the assignment and acceptance record](handoffs/guided-reconstruction.md).
 
 ## Architecture entry map
 
@@ -14,6 +14,7 @@ The designated Lead Codex task owns engineering orchestration under [AGENTS.md](
 | Activity/session/map plumbing | `src/maplibre/activity-session.js`, `src/maplibre/maplibre-activity-runner.js`, `src/map-engines/activity-normalizer.js` | Check input, completion, mode behavior, and cameras together when changing shared activity logic. |
 | Journeys and persistence | `src/journey-presets.js`, `src/progress-store.js` | Preserve saved Journey progress and resume/completion semantics. |
 | Guided and adaptive learning | `src/guided-learning-orchestration.js`, `src/united-states-evidence-driven-continuation.js`, `src/united-states-memory-trail-planner.js`, `src/daily-trail-planner.js` | Guided orchestration is learner-facing application logic, separate from this engineering workflow. Recent commits route guided children and refine political/physical cameras and teaching. Keep exposure, retrieval, Daily Trail, and Journey contracts distinct. |
+| Guided Reconstruction | `src/guided-reconstruction.js`, `src/atlas/map-reconstruction-evaluation.js`, `src/atlas/map-reconstruction-ui.js` | Ten contiguous-state checkpoints match Guided sections. Only new states are scored against locked prior context from checkpoint 2 onward; standalone scoring and canonical meanings are preserved. |
 | Evidence and progress | `src/canonical-learning-evidence.js`, `src/canonical-learning-evidence-repository.js`, `src/progress-evidence-policy.js`, `src/canonical-progress-report.js`, `src/place-mastery-store.js`, `src/learning-progress-reset.js` | Canonical evidence coexists with mode-specific state. Do not assume migration to one store is complete; preserve evidence identity, assistance semantics, and reset boundaries. |
 | Regional reuse | `src/geography-learning-unit.js`, `src/geography-learning-unit-registry.js`, `src/central-america-learning-unit.js` | Consult the bounded Central America reuse precedent before generalizing the U.S. experience. |
 | Atlas and content | `src/atlas/`, `assets/maps/data/`, `src/across-united-states-expedition.js` | Content IDs, geographic sources, activity registries, and learning/reporting identities need coordinated validation. |
@@ -24,15 +25,16 @@ The repository uses browser JavaScript modules and static assets. `package.json`
 ## Targeted reading
 
 - Product intent: [VISION](../VISION.md), [learning-system vision](learning-system-vision.md).
-- Learning runtime: [guided learning](guided-learning-orchestration-v1.md), [canonical evidence contract](canonical-learning-evidence-contract.md), [evidence repository](canonical-learning-evidence-repository.md), [progress policy](progress-evidence-policy.md).
+- Learning runtime: [Guided Reconstruction checkpoints](guided-reconstruction-checkpoints.md), [guided learning](guided-learning-orchestration-v1.md), [canonical evidence contract](canonical-learning-evidence-contract.md), [evidence repository](canonical-learning-evidence-repository.md), [progress policy](progress-evidence-policy.md).
 - Regional expansion: [Central America architecture graduation](central-america-architecture-graduation.md), [U.S. content taxonomy](US_CONTENT_TAXONOMY.md).
 - Quality: [testing](testing.md), [geographic visualization principles](geographic-visualization-principles.md), [learning reset](learning-progress-reset.md).
 - Historical context: [CURRENT_STATE](../CURRENT_STATE.md) and [project history](CODEX_PROJECT_HISTORY.md). Read relevant sections only; dated plans and pass counts are not current verification.
 
 ## Verification and risks
 
-- Setup changes documentation only. On 2026-09-05, `npm test` passed **101/101 checks** at the inspected application revision. Documentation links and architecture paths also passed validation, and `git diff --check` passed.
-- Browser tests were not run for this documentation-only setup. Historical pass counts in `testing.md` were not revalidated here.
+- On resumption, the five focused Reconstruction/Guided Node checks passed, followed by **103/103** checks in `npm test` after correcting two stale asset-version assertions.
+- The complete implementation browser run finished **156/168 passed**. Ten failures reproduced on unchanged base `66509f0`; two mobile camera failures passed both the base comparison and the resumed acceptance run. The resumed affected-flow browser set passed **18/18 desktop/mobile cases**. See [testing](testing.md) for exact cases and proof boundaries. This is not a green full-suite claim.
+- Alaska/Hawaii Reconstruction stays deferred: section 11 exists, but no sufficient Reconstruction layout is authored. Standalone global-translation scoring and Journey progress are preserved.
 - Main review boundaries: large shared runtime/mode wiring; multiple learner-state models; geographic/content identity alignment; camera framing and mobile interaction. These are inspection priorities, not newly demonstrated bugs.
 - No current real-device, accessibility, audio-quality, deployment, or pedagogical sign-off is claimed.
 

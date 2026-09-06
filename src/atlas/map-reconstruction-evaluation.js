@@ -197,11 +197,11 @@ function getFeedbackRuleViolations(session, region, alignedPositions, referenceS
   });
 }
 
-export function evaluateMapReconstruction(session, region, geometry) {
+function evaluateMapReconstructionWithAlignment(session, region, geometry, alignmentOverride, scoredStateIds = region?.stateIds) {
   if (!session || !region || !geometry || session.regionId !== region.id) return null;
   const settings = region.evaluation;
   const referenceScale = Math.max(1, geometry.medianStateDiagonal);
-  const alignment = getAlignmentOffset(session, region);
+  const alignment = alignmentOverride || getAlignmentOffset(session, region);
   const alignedPositions = getAlignedPositions(session, region, alignment);
   const adjacencyPairs = getMapReconstructionAdjacencyPairs(region);
   const adjacentPairKeys = new Set(adjacencyPairs.map((pair) => pair.join(":")));
@@ -248,7 +248,7 @@ export function evaluateMapReconstruction(session, region, geometry) {
   }
 
   const placements = {};
-  for (const stateId of region.stateIds) {
+  for (const stateId of scoredStateIds) {
     const pieceState = session.piecesById[stateId];
     const pieceGeometry = geometry.piecesById[stateId];
     const alignedPosition = alignedPositions[stateId];
@@ -311,7 +311,7 @@ export function evaluateMapReconstruction(session, region, geometry) {
   for (const rule of feedbackRuleViolations) {
     const affectedIds = rule.stateIds || [rule.subjectId];
     affectedIds.forEach((stateId) => {
-      if (placements[stateId]?.status !== MAP_RECONSTRUCTION_PLACEMENT_STATUSES.UNPLACED) {
+      if (placements[stateId] && placements[stateId].status !== MAP_RECONSTRUCTION_PLACEMENT_STATUSES.UNPLACED) {
         placements[stateId].status = MAP_RECONSTRUCTION_PLACEMENT_STATUSES.MISPLACED;
       }
     });
@@ -325,7 +325,7 @@ export function evaluateMapReconstruction(session, region, geometry) {
   feedbackRuleViolations.forEach((rule) => {
     if (!feedback.includes(rule.message)) feedback.push(rule.message);
   });
-  for (const stateId of region.stateIds) {
+  for (const stateId of scoredStateIds) {
     const placement = placements[stateId];
     if (placement.status === MAP_RECONSTRUCTION_PLACEMENT_STATUSES.UNPLACED) {
       feedback.push(`${getStateById(stateId)?.name || stateId} was not placed.`);
@@ -340,7 +340,7 @@ export function evaluateMapReconstruction(session, region, geometry) {
       }
     }
   }
-  if (!feedback.length && counts[MAP_RECONSTRUCTION_PLACEMENT_STATUSES.WELL_PLACED] === region.stateIds.length) {
+  if (!feedback.length && counts[MAP_RECONSTRUCTION_PLACEMENT_STATUSES.WELL_PLACED] === scoredStateIds.length) {
     feedback.push("The regional structure is correct.");
   }
   const isComplete = counts[MAP_RECONSTRUCTION_PLACEMENT_STATUSES.UNPLACED] === 0
@@ -354,4 +354,47 @@ export function evaluateMapReconstruction(session, region, geometry) {
     feedback: feedback.slice(0, 5),
     isComplete
   };
+}
+
+export function evaluateMapReconstruction(session, region, geometry) {
+  return evaluateMapReconstructionWithAlignment(session, region, geometry);
+}
+
+export function evaluateGuidedMapReconstruction(session, region, geometry, lockedStateIds = []) {
+  if (!session || !region || !geometry || session.regionId !== region.id) return null;
+  const lockedIds = new Set(Array.isArray(lockedStateIds) ? lockedStateIds : []);
+  const newStateIds = region.stateIds.filter((stateId) => !lockedIds.has(stateId));
+  const referenceStateIds = [...newStateIds, ...[...lockedIds].filter((stateId) => (
+    !newStateIds.includes(stateId) && geometry.piecesById?.[stateId]
+  ))];
+  const guidedFeedbackRules = (region.feedbackRules || []).filter((rule) => {
+    const referencedIds = [rule.subjectId, ...(rule.stateIds || [])].filter(Boolean);
+    return referencedIds.some((stateId) => newStateIds.includes(stateId))
+      && referencedIds.every((stateId) => referenceStateIds.includes(stateId));
+  });
+  const guidedRegion = {
+    ...region,
+    stateIds: referenceStateIds,
+    feedbackRules: guidedFeedbackRules
+  };
+  const guidedSession = {
+    ...session,
+    piecesById: { ...session.piecesById }
+  };
+  for (const stateId of lockedIds) {
+    if (!geometry.piecesById[stateId]) continue;
+    const correctPosition = geometry.piecesById[stateId].correctPosition;
+    guidedSession.piecesById[stateId] = {
+      stateId,
+      correctPosition: { ...correctPosition },
+      position: { ...correctPosition }
+    };
+  }
+  return evaluateMapReconstructionWithAlignment(
+    guidedSession,
+    guidedRegion,
+    geometry,
+    { x: 0, y: 0, applied: false },
+    newStateIds
+  );
 }

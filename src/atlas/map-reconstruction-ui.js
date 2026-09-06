@@ -1,3 +1,4 @@
+import { getStateById } from "./united-states-atlas-queries.js";
 import {
   beginMapReconstructionDrag,
   clearMapReconstructionSelection,
@@ -19,7 +20,7 @@ import {
   submitMapReconstructionSession,
   toggleMapReconstructionStateSelection
 } from "./map-reconstruction-engine.js";
-import { evaluateMapReconstruction } from "./map-reconstruction-evaluation.js";
+import { evaluateGuidedMapReconstruction, evaluateMapReconstruction } from "./map-reconstruction-evaluation.js";
 import {
   getMapReconstructionInteractionLayout,
   getMapReconstructionThumbnailTransform,
@@ -557,6 +558,7 @@ export function createMapReconstructionRegionSelection(container, options = {}) 
 export function createMapReconstructionActivity(container, options) {
   const { region, geometry } = options || {};
   if (!container || !region || !geometry) return null;
+  const lockedStateIds = options.lockedStateIds || [];
   let session = createMapReconstructionSession(region, geometry, { random: options.random });
   let destroyed = false;
   let workspaceSvg = null;
@@ -1110,12 +1112,16 @@ export function createMapReconstructionActivity(container, options) {
     }
     workspaceSvg = createSvgElement("svg", {
       class: "map-reconstruction-workspace",
-      viewBox: visualPlan.viewBox,
+      viewBox: lockedStateIds.length
+        ? `${geometry.workspace.x || 0} ${geometry.workspace.y || 0} ${geometry.workspace.width} ${geometry.workspace.height}`
+        : visualPlan.viewBox,
       preserveAspectRatio: "xMidYMid meet",
       tabindex: "0",
       role: "group",
       "aria-label": session.phase === "arranging"
-        ? `Blank ${region.regionName} reconstruction workspace`
+        ? lockedStateIds.length
+          ? `${region.regionName} reconstruction workspace with locked prior states`
+          : `Blank ${region.regionName} reconstruction workspace`
         : visualPlan.isSuccess
           ? `Completed ${region.regionName} reconstruction`
           : visualPlan.isCorrectPlacement
@@ -1124,6 +1130,25 @@ export function createMapReconstructionActivity(container, options) {
     });
     workspaceSvg.dataset.mapReconstructionPhase = session.phase;
     if (visualPlan.isSuccess) workspaceSvg.dataset.mapReconstructionSuccessful = "true";
+    if (lockedStateIds.length) {
+      const lockedLayer = createSvgElement("g", {
+        class: "map-reconstruction-locked-layer",
+        "data-map-reconstruction-locked-context": "true",
+        "aria-label": "Previously learned states, locked in place"
+      });
+      lockedStateIds.forEach((stateId) => {
+        const piece = geometry.piecesById[stateId];
+        const group = createPieceGroup(piece, piece.correctPosition, {
+          className: "map-reconstruction-piece is-locked",
+          smallLabel: region.smallLabelStateIds?.includes(stateId)
+        });
+        group.querySelector("text").textContent = getStateById(stateId)?.abbreviation || piece.name;
+        group.setAttribute("aria-label", `${piece.name}, locked`);
+        group.dataset.mapReconstructionLockedStateId = stateId;
+        lockedLayer.appendChild(group);
+      });
+      workspaceSvg.appendChild(lockedLayer);
+    }
     if (visualPlan.showLearnerLayout) {
       const learnerLayer = createSvgElement("g", {
         class: `map-reconstruction-learner-layer${visualPlan.isSuccess ? " is-completed" : ""}${visualPlan.isCorrectPlacement ? " is-corrected" : ""}${visualPlan.useStaticGlow ? " is-static-success" : ""}`,
@@ -1493,11 +1518,9 @@ export function createMapReconstructionActivity(container, options) {
         container.querySelector(`[data-map-reconstruction-bank-state-id="${stateId}"]`)?.focus();
       }, { disabled: !selectedPiece?.position }),
       createButton("Submit", "map-reconstruction-primary-action", () => {
-        const evaluation = evaluateMapReconstruction(
-          session,
-          region,
-          getInteractionGeometry()
-        );
+        const evaluation = lockedStateIds.length
+          ? evaluateGuidedMapReconstruction(session, region, getInteractionGeometry(), lockedStateIds)
+          : evaluateMapReconstruction(session, region, getInteractionGeometry());
         session = submitMapReconstructionSession(session, evaluation);
         successVisualPending = evaluation.isComplete;
         render();

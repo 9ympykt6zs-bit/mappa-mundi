@@ -1,3 +1,4 @@
+import { GUIDED_RECONSTRUCTION_CHECKPOINTS } from "../../src/guided-reconstruction.js";
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { learningProgressStorageKeys } from "../../src/learning-progress-reset.js";
@@ -471,7 +472,8 @@ test("scoped Guided Learning reset does not erase canonical U.S. returning-learn
 
 test("strong canonical Stage 1 evidence advances Learn to Rivers on desktop and mobile", async ({ page }) => {
   const repository = createStrongStageOneCanonicalRepository();
-  await page.addInitScript((canonicalRepository) => {
+  await page.addInitScript(({ canonicalRepository, completedBlockIds }) => {
+    localStorage.setItem("mappaGuidedLearningOrchestration", JSON.stringify({ version: 5, completedBlockIds }));
     localStorage.setItem("mappaMundiCanonicalEvidence", JSON.stringify(canonicalRepository));
     localStorage.setItem("atlasQuestProgress", JSON.stringify({
       version: 1,
@@ -482,7 +484,7 @@ test("strong canonical Stage 1 evidence advances Learn to Rivers on desktop and 
       recentDifficulty: "easy",
       journeys: {}
     }));
-  }, repository);
+  }, { canonicalRepository: repository, completedBlockIds: GUIDED_RECONSTRUCTION_CHECKPOINTS.map(({ blockId }) => blockId) });
   await startPrototype(page);
   await chooseSearchScope(page, "United States", "united");
   const journeyBefore = await page.evaluate(() => window.__MAPPA_TEST_API__.getSavedJourneyProgress());
@@ -522,10 +524,12 @@ test("strong canonical Stage 1 evidence advances Learn to Rivers on desktop and 
 
 test("a Lakes continuation enters bounded Guided Learning while manual Lakes remains full and open", async ({ page }) => {
   const repository = createLakesNeedCanonicalRepository();
-  await page.addInitScript(({ canonicalRepository, childKey }) => {
+  await page.addInitScript(({ canonicalRepository, childKey, completedBlockIds }) => {
+    localStorage.setItem("mappaGuidedLearningOrchestration", JSON.stringify({ version: 5, completedBlockIds }));
     localStorage.setItem("mappaMundiCanonicalEvidence", JSON.stringify(canonicalRepository));
     localStorage.removeItem(childKey);
-  }, { canonicalRepository: repository, childKey: GUIDED_CHILD_LAUNCH_STORAGE_KEY });
+  }, { canonicalRepository: repository, childKey: GUIDED_CHILD_LAUNCH_STORAGE_KEY,
+    completedBlockIds: GUIDED_RECONSTRUCTION_CHECKPOINTS.map(({ blockId }) => blockId) });
   await startPrototype(page);
   await chooseSearchScope(page, "United States", "united");
   const journeyBefore = await page.evaluate(() => window.__MAPPA_TEST_API__.getSavedJourneyProgress());

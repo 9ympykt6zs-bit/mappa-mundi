@@ -230,3 +230,31 @@ npm run report:eligibility-delays
 ```
 
 See [`eligibility-delay-report.md`](eligibility-delay-report.md) for the measurement model and limits.
+
+## Guided Reconstruction checkpoints (2026-09-05)
+
+The fast suite now includes `check-guided-reconstruction-checkpoints.mjs` and `check-guided-reconstruction-evaluation.mjs`. They cover section parity, all ten layouts, sequential prerequisites, targeted continuation reachability, target-only canonical events, legacy completion, and anchored scoring with unchanged standalone normalization. `tests/e2e/guided-reconstruction.spec.js` covers primary Learn entry, locked context, keyboard/reset behavior, submission, reload/return, and standalone isolation on desktop/mobile Chromium. Physical-family continuation fixtures explicitly mark Reconstruction checkpoints submitted so those tests continue to isolate family routing. See [the design and proof boundaries](guided-reconstruction-checkpoints.md).
+
+### Interruption recovery and broader-suite disposition
+
+The interrupted implementation completed `npx playwright test --output=/tmp/mappa-guided-full-playwright`: **156 passed, 12 failed (168 total)**. Its new Guided Reconstruction spec passed all 8 desktop/mobile cases. On resumption, the Lead recovered the complete log rather than treating the unfinished run as a green baseline.
+
+An isolated `git archive 66509f0` copy, with the same installed Playwright dependencies and a separate localhost port 4175, reran the seven logical failing scenarios on both browser profiles (14 cases): **4 passed, 10 failed**. The ten failures reproduce unchanged on the base commit:
+
+| Existing failure | Cases | Observed boundary |
+| --- | --- | --- |
+| `canonical-physical-evidence.spec.js`: correct river placement | 2 | Expected Journey canonical river evidence is absent. |
+| `central-america-graduation.spec.js`: shared architecture graduation | 2 | Expected Journey canonical country-location evidence is absent. |
+| `us-journey-smoke.spec.js`: initial save/advance, miss/correction/reset, activity-two reload | 6 | Recommendation overlay does not expose the expected `Play Now` action; timeout before the tested flow. |
+
+These remain follow-up work, outside the bounded Guided Reconstruction implementation. The full suite is not green. The other two original failures were mobile physical-camera assertions (Northeast teaching-to-retrieval camera and Ozark national search-space coverage); both passed on the base reproduction and are included in the resumed implementation acceptance run.
+
+The resumed fast suite initially exposed two stale assertions pinned to old runtime/CSS cache keys. `check-learning-terminology-entry-flow.mjs` and `check-mental-map-challenge.mjs` now verify nonempty, matching asset versions across both HTML entries. After that correction, **103/103 fast checks passed**.
+
+The resumed acceptance command below passed **18/18 desktop/mobile cases (2.6 minutes)**, including both previously failing mobile camera cases. Those two failures were not reproduced; they remain possible intermittent camera/timing issues rather than established regressions. The complete 168-case suite was not redundantly rerun after these test/documentation-only corrections.
+
+```sh
+npx playwright test tests/e2e/guided-reconstruction.spec.js tests/e2e/guided-learning-orchestration.spec.js tests/e2e/globe-navigation-prototype.spec.js tests/e2e/guided-physical-presentation.spec.js --grep 'Guided checkpoint|standalone New England|Guided Learning orchestrates|leaving an orchestration checkpoint|strong canonical Stage 1|a Lakes continuation|search-space retrieval for ozark' --output=/tmp/mappa-guided-resumed-acceptance
+```
+
+The Lead also reran the five focused Node scripts (`check-map-reconstruction`, `check-guided-reconstruction-evaluation`, `check-guided-reconstruction-checkpoints`, `check-guided-learning-orchestration`, and `check-guided-learning-physical-feature-orchestration`), reviewed all changes, checked documentation links, and passed `git diff --check` before commit.

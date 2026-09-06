@@ -407,7 +407,7 @@ async function completeGeneratedPhysicalSequence(page, {
   expect(new Set(evidence.map(({ eventId }) => eventId)).size).toBe(evidence.length);
 }
 
-test("Guided Learning orchestrates New England reconstruction, White Mountains learning, and Connections", async ({ page }) => {
+test("Guided Learning orchestrates the first five states, White Mountains learning, and Connections", async ({ page }) => {
   const runtimeErrors = [];
   page.on("pageerror", (error) => runtimeErrors.push(`pageerror: ${error.message}`));
   page.on("console", (message) => {
@@ -429,10 +429,10 @@ test("Guided Learning orchestrates New England reconstruction, White Mountains l
   const reconstructionEvidence = await page.evaluate((key) => (
     JSON.parse(localStorage.getItem(key)).events.filter(({ sourceMode }) => sourceMode === "map-reconstruction")
   ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
-  expect(reconstructionEvidence).toHaveLength(6);
+  expect(reconstructionEvidence).toHaveLength(5);
   expect(new Set(reconstructionEvidence.map(({ attemptId }) => attemptId)).size).toBe(1);
   expect(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).events.length, CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY))
-    .toBe(evidenceCountBeforeReconstruction + 6);
+    .toBe(evidenceCountBeforeReconstruction + 5);
   await page.getByRole("button", { name: "Continue Guided Learning" }).click();
   await expect(page.locator(".memory-trail-panel")).toBeVisible({ timeout: 20_000 });
   expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getUnitedStatesMemoryTrailPlan())).toEqual(guidedPlanBefore);

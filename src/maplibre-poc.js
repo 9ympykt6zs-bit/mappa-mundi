@@ -1,3 +1,4 @@
+import { getGuidedReconstructionRegion, prepareGuidedReconstructionGeometry } from "./guided-reconstruction.js";
 import { journeyPresets } from "./journey-presets.js?v=20260621-us-rivers-menu-1";
 import {
   clearMentalMapAnswers,
@@ -9662,7 +9663,8 @@ async function startAcrossUnitedStatesGlobeLearning() {
 
   if (continuation.destination.kind === "united-states-guided-learning") {
     const targetedNeed = continuation.destination.targetedNeed || null;
-    const launchedChild = !continuation.destination.targetSectionId && await launchNextGuidedLearningOrchestrationBlock({
+    const launchedChild = !loadUnitedStatesMemoryTrailProgress(memoryTrailItems).activeSession?.plan
+      && await launchNextGuidedLearningOrchestrationBlock({
       entrySource: "evidence-driven-primary-learn",
       targetedNeed,
       launchReason: continuation.reason
@@ -10060,20 +10062,28 @@ async function startMapReconstructionCapstone(capstoneId, selectionOptions = {})
 }
 
 async function startMapReconstructionRegion(regionId) {
-  const region = getMapReconstructionRegion(regionId);
+  const guidedCheckpoint = activeGuidedLearningOrchestrationBlock?.type
+    === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT
+    && activeGuidedLearningOrchestrationBlock.destination.regionId === regionId;
+  const region = guidedCheckpoint
+    ? getGuidedReconstructionRegion(regionId)
+    : getMapReconstructionRegion(regionId);
   if (!mapReconstructionPanel || !region || currentAppScreen !== "map-reconstruction") return;
   mapReconstructionController?.destroy();
   mapReconstructionController = null;
   activeMapReconstructionRegionId = region.id;
   setHeaderTitle(region.title, { shortTitle: "Rebuild" });
-  instruction.textContent = "Build the region from memory, then compare.";
+  instruction.textContent = guidedCheckpoint ? region.prompt : "Build the region from memory, then compare.";
   mapReconstructionPanel.innerHTML = '<p class="map-reconstruction-loading" role="status">Preparing state pieces...</p>';
   try {
-    const geometry = await loadMapReconstructionGeometry(region.id);
+    const geometry = guidedCheckpoint
+      ? prepareGuidedReconstructionGeometry(await fetchJson(usStatesAtlasPath), region)
+      : await loadMapReconstructionGeometry(region.id);
     if (currentAppScreen !== "map-reconstruction" || activeMapReconstructionRegionId !== region.id) return;
     mapReconstructionController = createMapReconstructionActivity(mapReconstructionPanel, {
       region,
       geometry,
+      lockedStateIds: guidedCheckpoint ? region.lockedStateIds : [],
       onEvaluation: (evaluation) => {
         recordCanonicalReconstructionEvaluation(evaluation, region.id);
         if (activeGuidedLearningOrchestrationBlock?.type === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT) {

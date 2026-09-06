@@ -114,7 +114,7 @@ assert.match(uiSource, /pointerType === "mouse"/);
 assert.match(uiSource, /restoreMobileDragAssistance/);
 assert.match(uiSource, /cancelMobileAssistance/);
 assert.doesNotMatch(uiSource, /announce\(|aria-live|map-reconstruction-live-region|speakAudioPathAndWait/);
-assert.match(uiSource, /viewBox: visualPlan\.viewBox/);
+assert.match(uiSource, /viewBox: lockedStateIds\.length[\s\S]*?: visualPlan\.viewBox/);
 assert.doesNotMatch(uiSource, /data-map-reconstruction-correct-layout/);
 assert.doesNotMatch(uiSource, /map-reconstruction-correct-layer/);
 assert.doesNotMatch(uiSource, /map-reconstruction-view-button/);
