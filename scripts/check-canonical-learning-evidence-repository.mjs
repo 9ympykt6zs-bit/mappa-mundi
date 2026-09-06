@@ -243,7 +243,7 @@ assert.equal("canonicalEvidence" in createLearningInspectorDebugObject(), false)
 
 const runtimeSource = readFileSync(new URL("../src/maplibre-poc.js", import.meta.url), "utf8");
 assert.match(runtimeSource, /const result = session\.tryAnswer\(targetId\);\n  recordCanonicalJourneyPlacementEvidence\(result\);/);
-assert.match(runtimeSource, /handleIncorrectPlacement\(result\);/);
+assert.match(runtimeSource, /recordCanonicalJourneyPlacementEvidence\(result\);[\s\S]*handleIncorrectPlacement\(result, capitalLocationFeedback\);/);
 assert.match(runtimeSource, /updateMemoryTrailDebugObject\(memoryTrail\);\n  recordCanonicalMemoryTrailEvidence/);
 assert.match(runtimeSource, /recordCanonicalMentalMapEvaluation\(\);/);
 assert.match(runtimeSource, /onEvaluation: \(evaluation\) => recordCanonicalReconstructionEvaluation/);

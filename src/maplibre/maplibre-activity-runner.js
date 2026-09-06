@@ -24,6 +24,11 @@ import {
   getUsStateHardColorStops,
   hardContextPalette
 } from "./political-map-style.js";
+import {
+  createCapitalLocationQuestionState,
+  getCapitalLocationQuestionChoice,
+  getCapitalLocationQuestionGeoJson
+} from "./capital-location-question.js?v=20260906-capital-location-choices-1";
 
 const colors = {
   ink: "#172033",
@@ -501,6 +506,7 @@ export class MapLibreActivityRunner {
     this.memoryTrailHighlightIds = [];
     this.memoryTrailCorrectHighlightIds = [];
     this.memoryTrailWrongHighlightIds = [];
+    this.capitalLocationQuestion = null;
     this.coContinentOverrides = [];
     this.coContinentLand = emptyFeatureCollection;
     this.mountainRanges = emptyFeatureCollection;
@@ -838,6 +844,15 @@ export class MapLibreActivityRunner {
 
   setSelectedTarget(targetId = "") {
     this.selectedTargetId = targetId || "";
+    const target = [...this.pointTargets, ...this.visualPointTargets]
+      .find((candidate) => candidate.id === targetId);
+    if (target?.type === "capital") {
+      if (this.capitalLocationQuestion?.targetId !== targetId || this.capitalLocationQuestion.phase === "answering") {
+        this.setCapitalLocationQuestion({ targetId, phase: "answering" }, false);
+      }
+    } else if (targetId || this.capitalLocationQuestion?.phase === "answering") {
+      this.setCapitalLocationQuestion(null, false);
+    }
     this.refreshDifficultyVisuals();
   }
 
@@ -848,6 +863,9 @@ export class MapLibreActivityRunner {
       this.memoryTrailHighlightIds = [];
       this.memoryTrailCorrectHighlightIds = [];
       this.memoryTrailWrongHighlightIds = [];
+      this.capitalLocationQuestion = null;
+      const capitalSource = this.map?.getSource?.("study-capitals");
+      if (capitalSource) capitalSource.setData(this.getCapitalGeoJson());
       this.memoryTrailCheckpointPreAnswerStyle = false;
       this.memoryTrailSuppressPreAnswerOutlines = false;
       this.memoryTrailSuppressStudyTargetEmphasis = false;
@@ -1488,6 +1506,62 @@ export class MapLibreActivityRunner {
     this.refreshDifficultyVisuals();
   }
 
+  setCapitalLocationQuestion(config = null, refresh = true) {
+    this.capitalLocationQuestion = config?.targetId
+      ? createCapitalLocationQuestionState({
+          capitalTargets: [...this.pointTargets, ...this.visualPointTargets],
+          targetId: config.targetId,
+          phase: config.phase || "answering",
+          selectedChoiceId: config.selectedChoiceId || ""
+        })
+      : null;
+    const capitalSource = this.map?.getSource?.("study-capitals");
+    if (capitalSource) capitalSource.setData(this.getCapitalGeoJson());
+    if (this.capitalLocationQuestion && this.map?.getCanvas) {
+      this.map.getCanvas().style.cursor = "";
+    }
+    if (refresh) this.refreshDifficultyVisuals();
+  }
+
+  revealCapitalLocationQuestion({ targetId = "", selectedChoiceId = "" } = {}) {
+    const expectedTargetId = targetId || this.capitalLocationQuestion?.targetId || "";
+    this.setCapitalLocationQuestion({
+      targetId: expectedTargetId,
+      phase: "feedback",
+      selectedChoiceId
+    });
+    return this.getCapitalLocationQuestionChoice(selectedChoiceId);
+  }
+
+  getCapitalLocationQuestionChoice(choiceId) {
+    return getCapitalLocationQuestionChoice(this.capitalLocationQuestion, choiceId);
+  }
+
+  getCapitalLocationQuestionVisualState() {
+    const question = this.capitalLocationQuestion;
+    return {
+      active: Boolean(question),
+      targetId: question?.targetId || "",
+      targetStateId: question?.targetStateId || "",
+      phase: question?.phase || "",
+      selectedChoiceId: question?.selectedChoiceId || "",
+      choices: (question?.choices || []).map((choice) => ({ ...choice })),
+      markerVisibility: this.map?.getLayer?.("capital-location-choice-marker")
+        ? this.map.getLayoutProperty("capital-location-choice-marker", "visibility") || "visible"
+        : "missing",
+      hitVisibility: this.map?.getLayer?.("capital-location-choice-hit")
+        ? this.map.getLayoutProperty("capital-location-choice-hit", "visibility") || "visible"
+        : "missing",
+      starVisibility: this.map?.getLayer?.("capital-location-choice-star")
+        ? this.map.getLayoutProperty("capital-location-choice-star", "visibility") || "visible"
+        : "missing",
+      labelVisibility: this.map?.getLayer?.("capital-location-choice-label")
+        ? this.map.getLayoutProperty("capital-location-choice-label", "visibility") || "visible"
+        : "missing",
+      cursor: this.map?.getCanvas?.().style.cursor || ""
+    };
+  }
+
   getMemoryTrailActiveHighlightIds() {
     return [...new Set([
       ...this.memoryTrailHighlightIds,
@@ -1761,7 +1835,9 @@ export class MapLibreActivityRunner {
   }
 
   canUseTargetHoverCursor() {
-    return this.currentView === "study" && !this.placementInteractionState.active;
+    return this.currentView === "study"
+      && !this.placementInteractionState.active
+      && !this.capitalLocationQuestion;
   }
 
   updateActivity(activity) {
@@ -1777,6 +1853,7 @@ export class MapLibreActivityRunner {
     this.memoryTrailCheckpointPreAnswerStyle = false;
     this.memoryTrailSuppressStudyTargetEmphasis = false;
     this.memoryTrailSuppressStudyTargetEmphasisReason = "";
+    this.capitalLocationQuestion = null;
 
     const capitalSource = this.map.getSource("study-capitals");
     const mountainCorridorSource = this.map.getSource("mountain-range-corridors");
@@ -4327,10 +4404,97 @@ export class MapLibreActivityRunner {
     });
 
     this.map.addLayer({
+      id: "capital-location-choice-marker",
+      type: "circle",
+      source: "study-capitals",
+      filter: ["==", ["get", "capitalLocationChoice"], true],
+      layout: { visibility: "none" },
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 4.5, 7, 6.5, 10, 8],
+        "circle-color": [
+          "case",
+          ["==", ["get", "isSelected"], true], colors.memoryTrailWrongFill,
+          colors.neutralMarker
+        ],
+        "circle-stroke-color": [
+          "case",
+          ["==", ["get", "isSelected"], true], colors.memoryTrailWrongLine,
+          colors.neutralMarkerStroke
+        ],
+        "circle-stroke-width": 2
+      }
+    });
+
+    this.map.addLayer({
+      id: "capital-location-choice-star",
+      type: "symbol",
+      source: "study-capitals",
+      filter: ["==", ["get", "revealCapital"], true],
+      layout: {
+        visibility: "none",
+        "icon-image": "mappa-state-capital-star",
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 3, 0.9, 7, 1.15],
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true
+      },
+      paint: { "icon-opacity": 1 }
+    });
+
+    this.map.addLayer({
+      id: "capital-location-choice-label",
+      type: "symbol",
+      source: "study-capitals",
+      filter: ["==", ["get", "revealLabel"], true],
+      layout: {
+        visibility: "none",
+        "text-field": ["get", "name"],
+        "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+        "text-size": ["case", ["==", ["get", "capitalLocationRole"], "capital"], 14, 12],
+        "text-anchor": [
+          "match", ["get", "capitalLocationChoiceIndex"],
+          0, "top",
+          1, "bottom-right",
+          "bottom-left"
+        ],
+        "text-offset": [
+          "match", ["get", "capitalLocationChoiceIndex"],
+          0, ["literal", [0, 1.25]],
+          1, ["literal", [-0.55, -0.75]],
+          ["literal", [0.55, -0.75]]
+        ],
+        "text-allow-overlap": true,
+        "text-ignore-placement": true
+      },
+      paint: {
+        "text-color": colors.ink,
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 2.2
+      }
+    });
+
+    this.map.addLayer({
+      id: "capital-location-choice-hit",
+      type: "circle",
+      source: "study-capitals",
+      filter: ["==", ["get", "capitalLocationChoice"], true],
+      layout: { visibility: "none" },
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 12, 7, 16, 10, 18],
+        "circle-color": colors.neutralMarker,
+        "circle-opacity": 0.001,
+        "circle-stroke-opacity": 0
+      }
+    });
+
+    this.map.addLayer({
       id: "capital-hit",
       type: "circle",
       source: "study-capitals",
-      filter: ["!=", ["get", "visualOnly"], true],
+      filter: [
+        "all",
+        ["!=", ["get", "visualOnly"], true],
+        ["!=", ["get", "capitalLocationChoice"], true]
+      ],
       layout: {
         visibility: "none"
       },
@@ -5002,11 +5166,25 @@ export class MapLibreActivityRunner {
     const targetIds = [];
 
     if (!selectedTarget || selectedTarget.kind === "point") {
-      const pointFeatures = this.map.queryRenderedFeatures(queryPoint, {
-        layers: ["capital-hit"]
+      const isCapitalChoiceQuestion = Boolean(this.capitalLocationQuestion);
+      let pointFeatures = [];
+      try {
+        pointFeatures = this.map.queryRenderedFeatures(queryPoint, {
+          layers: [isCapitalChoiceQuestion ? "capital-location-choice-hit" : "capital-hit"]
+        });
+      } catch {
+        pointFeatures = [];
+      }
+      pointFeatures.sort((left, right) => {
+        if (!isCapitalChoiceQuestion) return 0;
+        const distance = (feature) => {
+          const projected = this.map.project(feature.geometry.coordinates);
+          return Math.hypot(projected.x - queryPoint[0], projected.y - queryPoint[1]);
+        };
+        return distance(left) - distance(right);
       });
 
-      pointFeatures.forEach((feature) => {
+      pointFeatures.slice(0, isCapitalChoiceQuestion ? 1 : pointFeatures.length).forEach((feature) => {
         if (!targetIds.includes(feature.properties.id)) {
           targetIds.push(feature.properties.id);
         }
@@ -5544,6 +5722,9 @@ export class MapLibreActivityRunner {
   }
 
   getCapitalGeoJson() {
+    if (this.capitalLocationQuestion) {
+      return getCapitalLocationQuestionGeoJson(this.capitalLocationQuestion);
+    }
     const playablePointIds = new Set(this.pointTargets.map((feature) => feature.id));
     const pointFeatures = [...this.pointTargets, ...this.visualPointTargets]
       .filter((feature) => feature?.id)
@@ -8694,7 +8875,7 @@ export class MapLibreActivityRunner {
   updateDifficultyLayerVisibility() {
     if (!this.map || this.currentView !== "study") {
       this.clearGuidedPhysicalTeachingHighlight();
-      ["ocean-target-raster", "political-division-context-fill", "political-division-context-line", "state-fill", "state-line", "political-division-guided-highlight-fill", "political-division-guided-highlight-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-active-halo", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
+      ["ocean-target-raster", "political-division-context-fill", "political-division-context-line", "state-fill", "state-line", "political-division-guided-highlight-fill", "political-division-guided-highlight-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-active-halo", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-location-choice-marker", "capital-location-choice-star", "capital-location-choice-label", "capital-location-choice-hit", "capital-hit", "completed-label"].forEach((layerId) => {
         if (this.map?.getLayer(layerId)) {
           this.map.setLayoutProperty(layerId, "visibility", "none");
         }
@@ -8791,6 +8972,13 @@ export class MapLibreActivityRunner {
       this.map.setLayoutProperty("capital-hit", "visibility", "visible");
     }
 
+    const capitalChoiceVisibility = this.capitalLocationQuestion ? "visible" : "none";
+    ["capital-location-choice-marker", "capital-location-choice-star", "capital-location-choice-label", "capital-location-choice-hit"].forEach((layerId) => {
+      if (this.map.getLayer(layerId)) {
+        this.map.setLayoutProperty(layerId, "visibility", capitalChoiceVisibility);
+      }
+    });
+
     if (this.map.getLayer("completed-label")) {
       this.map.setLayoutProperty("completed-label", "visibility", visualState.showsCompletedLabels ? "visible" : "none");
     }
@@ -8802,7 +8990,7 @@ export class MapLibreActivityRunner {
       this.guidedPhysicalStudyReady = false;
       this.clearGuidedPhysicalTeachingHighlight();
     }
-    ["ocean-target-raster", "political-division-context-fill", "political-division-context-line", "state-fill", "state-line", "political-division-guided-highlight-fill", "political-division-guided-highlight-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-active-halo", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-hit", "completed-label"].forEach((layerId) => {
+    ["ocean-target-raster", "political-division-context-fill", "political-division-context-line", "state-fill", "state-line", "political-division-guided-highlight-fill", "political-division-guided-highlight-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-active-halo", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-location-choice-marker", "capital-location-choice-star", "capital-location-choice-label", "capital-location-choice-hit", "capital-hit", "completed-label"].forEach((layerId) => {
       if (this.map.getLayer(layerId)) {
         this.map.setLayoutProperty(layerId, "visibility", visibility);
       }

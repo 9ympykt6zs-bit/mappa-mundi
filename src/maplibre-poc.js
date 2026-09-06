@@ -4528,7 +4528,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260821-central-america-graduation-1"),
       import("./maplibre/activity-session.js?v=20260821-central-america-graduation-1"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260905-guided-physical-search-space-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260906-capital-location-choices-1"),
       import("./chip-speech.js?v=20260728-activity-audio-1")
     ]).then(([
       ,
@@ -12751,6 +12751,11 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
   logDailyTrailRuntimeDebug("prompt-selected", createDailyTrailPromptSelectedDebug(memoryTrail, selection, stats));
   const shouldHighlightPromptTarget = !isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
     && (selection.promptType === "guided" || selection.promptType === "place_to_name");
+  runner?.setCapitalLocationQuestion?.(
+    selection.promptType === "name_to_place" && target.type === "capital"
+      ? { targetId: target.id, phase: "answering" }
+      : null
+  );
   const checkpointPreAnswerStyle = isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
     && memoryTrail.phase === "answering";
   runner?.setMemoryTrailStudyTargetEmphasisSuppressed?.(
@@ -15970,6 +15975,37 @@ function showDailyTrailCorrectAnswerSuccessVisual(memoryTrail, targetId) {
   return true;
 }
 
+function isCapitalLocationRetrieval(memoryTrail, targetId) {
+  const target = getTargetById(memoryTrail, targetId);
+  return Boolean(
+    target?.type === "capital"
+    && memoryTrail?.currentPromptType === "name_to_place"
+  );
+}
+
+function getCapitalLocationFeedback(expectedTargetId, selectedChoiceId) {
+  const state = runner?.getCapitalLocationQuestionVisualState?.();
+  if (!state?.active || state.targetId !== expectedTargetId) return "";
+  const correctChoice = runner.getCapitalLocationQuestionChoice?.(expectedTargetId);
+  const selectedChoice = runner.getCapitalLocationQuestionChoice?.(selectedChoiceId);
+  if (!correctChoice) return "";
+  if (selectedChoice?.id === correctChoice.id) {
+    return `Correct. ${correctChoice.name} is the capital of ${correctChoice.stateName}.`;
+  }
+  return selectedChoice
+    ? `You chose ${selectedChoice.name}. The correct answer was ${correctChoice.name}.`
+    : `The correct answer was ${correctChoice.name}.`;
+}
+
+function revealCapitalLocationQuestion(memoryTrail, expectedTargetId, selectedChoiceId) {
+  if (!isCapitalLocationRetrieval(memoryTrail, expectedTargetId)) return "";
+  runner?.revealCapitalLocationQuestion?.({
+    targetId: expectedTargetId,
+    selectedChoiceId
+  });
+  return getCapitalLocationFeedback(expectedTargetId, selectedChoiceId);
+}
+
 function getMemoryTrailCorrectAnswerPauseMs(memoryTrail) {
   return isDailyTrailMemoryTrail(memoryTrail)
     && !isGuidedMemoryTrailPrompt(memoryTrail)
@@ -15990,6 +16026,7 @@ function handleCorrectMemoryTrailAnswer(memoryTrail, targetId, options = {}) {
   }
   memoryTrail.responseChipTargetId = targetId;
   recordOldReviewOutlineDebugVisualTrace("correct-answer:suppression-preserved", { targetId });
+  const capitalLocationFeedback = revealCapitalLocationQuestion(memoryTrail, targetId, targetId);
   runner.setMemoryTrailHighlight(targetId);
   recordOldReviewOutlineDebugVisualTrace("correct-answer:after-set-highlight", { targetId });
   updateMemoryTrailStats(memoryTrail, targetId, "correct", { promptType: memoryTrail.currentPromptType });
@@ -16011,7 +16048,7 @@ function handleCorrectMemoryTrailAnswer(memoryTrail, targetId, options = {}) {
     return;
   }
 
-  showFeedback("Yes.", true);
+  showFeedback(capitalLocationFeedback || "Yes.", true);
   showDailyTrailCorrectAnswerSuccessVisual(memoryTrail, targetId);
   recordOldReviewOutlineDebugVisualTrace("correct-answer:after-success-visual", { targetId });
 
@@ -16046,12 +16083,15 @@ function handleIncorrectMemoryTrailAnswer(memoryTrail, expectedTargetId, options
   updateMemoryTrailStats(memoryTrail, expectedTargetId, "incorrect", { promptType: memoryTrail.currentPromptType });
   recordOldReviewOutlineDebugVisualTrace("incorrect-answer:after-update-stats", { expectedTargetId, selectedTargetId: options.selectedTargetId || "" });
   const selectedTargetId = options.selectedTargetId || "";
+  const capitalLocationFeedback = revealCapitalLocationQuestion(memoryTrail, expectedTargetId, selectedTargetId);
   recordOldReviewOutlineDebugVisualTrace("incorrect-answer:suppression-preserved", { expectedTargetId, selectedTargetId });
   memoryTrail.phase = "correction";
   memoryTrail.promptName = getMemoryTrailTargetLabel(expectedTargetId);
   memoryTrail.responseChipTargetId = expectedTargetId;
   memoryTrail.answerChoices = [];
-  memoryTrail.message = "Not quite. Tap the correct place to continue.";
+  memoryTrail.message = capitalLocationFeedback
+    ? `${capitalLocationFeedback} Tap the capital star to continue.`
+    : "Not quite. Tap the correct place to continue.";
   memoryTrail.correction = {
     expectedTargetId,
     selectedTargetId,
@@ -16099,9 +16139,12 @@ function createMemoryTrailCorrectionFeedback(memoryTrail, expectedTargetId, opti
   const selectedTargetId = options.selectedTargetId || "";
   const expectedName = getMemoryTrailTargetLabel(expectedTargetId);
   const selectedName = selectedTargetId ? getMemoryTrailTargetLabel(selectedTargetId) : "";
-  const message = selectedName
-    ? `Not quite - that was ${selectedName}. Tap ${expectedName} to continue.`
-    : `Not quite. Tap ${expectedName} to continue.`;
+  const capitalLocationFeedback = getCapitalLocationFeedback(expectedTargetId, selectedTargetId);
+  const message = capitalLocationFeedback
+    ? `${capitalLocationFeedback} Tap ${expectedName} to continue.`
+    : selectedName
+      ? `Not quite - that was ${selectedName}. Tap ${expectedName} to continue.`
+      : `Not quite. Tap ${expectedName} to continue.`;
 
   return {
     type: "incorrect",
@@ -26043,7 +26086,8 @@ function placeGrabbedAnswer(targetIds, options = {}) {
   }
 
   if (result.status === "incorrect") {
-    handleIncorrectPlacement(result);
+    const capitalLocationFeedback = revealGameplayCapitalLocationAnswer(result.selectedId, result.targetId);
+    handleIncorrectPlacement(result, capitalLocationFeedback);
     if (!options.keepGrabbedOnIncorrect) {
       cancelGrabbedAnswer();
     }
@@ -26052,6 +26096,7 @@ function placeGrabbedAnswer(targetIds, options = {}) {
   }
 
   if (result.status === "correct") {
+    const capitalLocationFeedback = revealGameplayCapitalLocationAnswer(result.completedId, result.completedId);
     runner.setCompletedTargets(session.completedIds);
     saveCurrentActivityProgress();
     cancelGrabbedAnswer({ clearSelection: false });
@@ -26062,8 +26107,15 @@ function placeGrabbedAnswer(targetIds, options = {}) {
     handleStudyPracticeCompletion();
     handleDailyTrailActivityCompletion();
     ensureActivityNavControls();
-    showFeedback(`Correct: ${getTargetChipLabel(result.feature) || result.feature.name}`, true);
+    showFeedback(capitalLocationFeedback || `Correct: ${getTargetChipLabel(result.feature) || result.feature.name}`, true);
   }
+}
+
+function revealGameplayCapitalLocationAnswer(expectedTargetId, selectedChoiceId) {
+  const expectedTarget = session?.getFeature(expectedTargetId);
+  if (expectedTarget?.type !== "capital") return "";
+  runner?.revealCapitalLocationQuestion?.({ targetId: expectedTargetId, selectedChoiceId });
+  return getCapitalLocationFeedback(expectedTargetId, selectedChoiceId);
 }
 
 function recordJourneyIncorrectPlacement() {
@@ -26115,7 +26167,7 @@ function isActivityInputLocked() {
     || activityAttemptState?.isReviewingRetry;
 }
 
-function handleIncorrectPlacement(result) {
+function handleIncorrectPlacement(result, answerFeedback = "") {
   const missedTargetId = result?.selectedId;
   const missCountForTarget = recordIncorrectPlacementAttempt(missedTargetId);
 
@@ -26129,7 +26181,7 @@ function handleIncorrectPlacement(result) {
     return;
   }
 
-  showFeedback("Not quite - try again.");
+  showFeedback(answerFeedback || "Not quite - try again.");
 }
 
 function recordIncorrectPlacementAttempt(targetId) {
@@ -28018,6 +28070,87 @@ function getCapitalMarkerVisualStateForTest() {
   };
 }
 
+function getCapitalLocationQuestionVisualStateForTest() {
+  const state = runner?.getCapitalLocationQuestionVisualState?.();
+  if (!state?.active) return state || null;
+  const map = runner.map;
+  const mapRect = map?.getContainer?.().getBoundingClientRect?.();
+  const sourceById = new Map((runner.getCapitalGeoJson?.().features || [])
+    .map((feature) => [feature.properties?.id, feature]));
+  const choices = state.choices.map((choice) => {
+    const feature = sourceById.get(choice.id);
+    const point = feature?.geometry?.coordinates && map?.project
+      ? map.project(feature.geometry.coordinates)
+      : null;
+    return {
+      ...choice,
+      sourceProperties: feature?.properties || null,
+      clientPoint: point ? {
+        x: point.x,
+        y: point.y,
+        clientX: point.x + (mapRect?.left || 0),
+        clientY: point.y + (mapRect?.top || 0)
+      } : null
+    };
+  });
+  const renderedIds = (layerId) => {
+    if (!map?.getLayer?.(layerId)) return [];
+    const ids = new Set();
+    for (const feature of sourceById.values()) {
+      const point = map.project(feature.geometry.coordinates);
+      if (
+        point.x < 0
+        || point.y < 0
+        || point.x > (mapRect?.width || 0)
+        || point.y > (mapRect?.height || 0)
+      ) {
+        continue;
+      }
+      try {
+        const queryGeometry = layerId === "capital-location-choice-label"
+          ? [[point.x - 90, point.y - 70], [point.x + 90, point.y + 70]]
+          : [point.x, point.y];
+        map.queryRenderedFeatures(queryGeometry, { layers: [layerId] })
+          .map((renderedFeature) => renderedFeature.properties?.id)
+          .filter(Boolean)
+          .forEach((id) => ids.add(id));
+      } catch {
+        // A source replacement can briefly invalidate MapLibre's feature index.
+      }
+    }
+    return [...ids];
+  };
+  return {
+    ...state,
+    choices,
+    markerRenderedIds: renderedIds("capital-location-choice-marker"),
+    hitRenderedIds: renderedIds("capital-location-choice-hit"),
+    starRenderedIds: renderedIds("capital-location-choice-star"),
+    labelRenderedIds: renderedIds("capital-location-choice-label"),
+    markerRadius: map?.getPaintProperty?.("capital-location-choice-marker", "circle-radius") || null,
+    markerColor: map?.getPaintProperty?.("capital-location-choice-marker", "circle-color") || null,
+    markerStrokeColor: map?.getPaintProperty?.("capital-location-choice-marker", "circle-stroke-color") || null,
+    markerStrokeWidth: map?.getPaintProperty?.("capital-location-choice-marker", "circle-stroke-width") || null,
+    hitRadius: map?.getPaintProperty?.("capital-location-choice-hit", "circle-radius") || null,
+    starIconImage: map?.getLayoutProperty?.("capital-location-choice-star", "icon-image") || null,
+    starIconSize: map?.getLayoutProperty?.("capital-location-choice-star", "icon-size") || null,
+    labelTextSize: map?.getLayoutProperty?.("capital-location-choice-label", "text-size") || null,
+    cursor: map?.getCanvas?.().style.cursor || "",
+    dragPanEnabled: Boolean(map?.dragPan?.isEnabled?.()),
+    scrollZoomEnabled: Boolean(map?.scrollZoom?.isEnabled?.()),
+    mapCenter: map?.getCenter ? [map.getCenter().lng, map.getCenter().lat] : null,
+    mapZoom: map?.getZoom?.() ?? null,
+    mapRect: mapRect ? {
+      left: mapRect.left,
+      top: mapRect.top,
+      right: mapRect.right,
+      bottom: mapRect.bottom,
+      width: mapRect.width,
+      height: mapRect.height
+    } : null
+  };
+}
+
 function getPoliticalDivisionVisualStateForTest() {
   const visualState = runner?.getPoliticalDivisionVisualState?.();
   if (!visualState?.enabled) return null;
@@ -28442,9 +28575,10 @@ function installMappaTestApi() {
       getCurrentJourneyStep: getCurrentJourneyStepForTest,
       getJourneyCompletionReconciliation: getJourneyCompletionReconciliationForTest,
       startJourneyStep: startJourneyStepForTest,
-      openStandaloneActivity: (activityId, difficultyId = "medium") => openActivity(activityId, {
+      openStandaloneActivity: (activityId, difficultyId = "medium", reviewMode = studyModes.cumulative) => openActivity(activityId, {
         difficultyId,
-        forceGameplayVisible: true
+        forceGameplayVisible: true,
+        presentationSettings: { reviewMode }
       }),
       getCorrectTargets: getCorrectTargetsForTest,
       answerCurrentPrompt: answerCurrentPromptForTest,
@@ -28452,6 +28586,7 @@ function installMappaTestApi() {
       getActivityAttempt: getActivityAttemptForTest,
       getMountainRangeVisualState: getMountainRangeVisualStateForTest,
       getCapitalMarkerVisualState: getCapitalMarkerVisualStateForTest,
+      getCapitalLocationQuestionVisualState: getCapitalLocationQuestionVisualStateForTest,
       getGuidedPhysicalFeatureVisualState: getGuidedPhysicalFeatureVisualStateForTest,
       getGuidedPhysicalTeachingHighlight: () => runner?.getGuidedPhysicalTeachingHighlightState?.() || null,
       getPoliticalDivisionVisualState: getPoliticalDivisionVisualStateForTest,

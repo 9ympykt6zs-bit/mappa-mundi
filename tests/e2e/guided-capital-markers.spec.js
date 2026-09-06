@@ -153,20 +153,44 @@ test("Guided Learning separates Cheyenne's precise star from its forgiving tap t
     currentPromptType: "name_to_place",
     activeHighlightIds: []
   });
-  const retrieval = await page.evaluate(() => window.__MAPPA_TEST_API__.getCapitalMarkerVisualState());
-  expect(retrieval.sourceProperties.showProgressStar).toBe(false);
-  expect(retrieval.star.opacity.slice(0, 5)).toEqual([
-    "case",
-    ["in", ["get", "id"], ["literal", []]],
-    1,
-    ["==", ["get", "showProgressStar"], false],
-    0
-  ]);
-  expect(retrieval.halo.radius).toEqual([
-    "case",
-    ["in", ["get", "id"], ["literal", []]],
-    14,
-    0
+  const retrieval = await page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()
+  ));
+  expect(retrieval).toMatchObject({
+    active: true,
+    phase: "answering",
+    dragPanEnabled: true,
+    scrollZoomEnabled: true
+  });
+  expect(retrieval.choices).toHaveLength(150);
+  expect(retrieval.choices.filter(({ inTargetState }) => inTargetState)).toHaveLength(3);
+  expect(retrieval.starRenderedIds).toEqual([]);
+  expect(retrieval.labelRenderedIds).toEqual([]);
+
+  const distractor = retrieval.choices.find(({ inTargetState, role }) => inTargetState && role === "distractor");
+  const evidenceCountBefore = await page.evaluate((key) => (
+    JSON.parse(localStorage.getItem(key) || "{}").events?.length || 0
+  ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
+  await page.mouse.click(distractor.clientPoint.clientX, distractor.clientPoint.clientY);
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase
+  ))).toBe("correction");
+  const evidence = await page.evaluate((key) => (
+    JSON.parse(localStorage.getItem(key) || "{}").events
+  ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
+  expect(evidence).toHaveLength(evidenceCountBefore + 1);
+  expect(evidence.at(-1)).toMatchObject({
+    conceptId: `capital-location:${retrieval.targetStateId}:${retrieval.targetId}`,
+    sourceMode: "us-memory-trail",
+    outcome: "incorrect"
+  });
+  expect(evidence.at(-1).conceptId).not.toContain("capital-location-choice:");
+  const correction = await page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()
+  ));
+  expect(correction.choices.filter(({ revealLabel }) => revealLabel)).toHaveLength(3);
+  expect(correction.choices.filter(({ revealCapital }) => revealCapital).map(({ id }) => id)).toEqual([
+    retrieval.targetId
   ]);
 });
 
