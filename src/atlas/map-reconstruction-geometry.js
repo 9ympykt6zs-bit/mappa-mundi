@@ -1,3 +1,5 @@
+import { getHardContextColor } from "../maplibre/political-map-style.js";
+
 const MAX_MERCATOR_LATITUDE = 85.05112878;
 
 export function normalizeMapReconstructionStateId(value) {
@@ -218,7 +220,7 @@ function getOutlineSamples(polygons, maximumSamples = 240) {
   });
 }
 
-function normalizeFeature(feature, combinedBounds, workspace) {
+function normalizeFeature(feature, combinedBounds, workspace, displayColor) {
   const projectedCoordinates = mapGeometryCoordinates(feature.geometry, projectCoordinate);
   const projectedPolygons = asPolygons(feature.geometry.type, projectedCoordinates);
   const availableWidth = workspace.width - workspace.padding * 2;
@@ -246,6 +248,7 @@ function normalizeFeature(feature, combinedBounds, workspace) {
   return {
     stateId,
     name: getFeatureName(feature, stateId),
+    displayColor,
     geometryType: feature.geometry.type,
     polygons: localPolygons,
     path: toPath(localPolygons),
@@ -268,35 +271,37 @@ export function prepareMapReconstructionGeometry(featureCollection, region) {
     throw new Error("A valid reconstruction region is required.");
   }
   const featureMap = new Map();
-  for (const feature of featureCollection.features) {
+  for (const [featureIndex, feature] of featureCollection.features.entries()) {
     const stateId = getFeatureStateId(feature);
     if (!stateId) continue;
     if (featureMap.has(stateId)) {
       throw new Error(`Duplicate state geometry: ${stateId}`);
     }
-    featureMap.set(stateId, feature);
+    featureMap.set(stateId, { feature, featureIndex });
   }
   const requestedIds = region.stateIds.map(normalizeMapReconstructionStateId);
   if (new Set(requestedIds).size !== requestedIds.length) {
     throw new Error("Reconstruction region state IDs must be unique.");
   }
   const features = requestedIds.map((stateId) => {
-    const feature = featureMap.get(stateId);
-    if (!feature) throw new Error(`Missing state geometry: ${stateId}`);
+    const featureEntry = featureMap.get(stateId);
+    if (!featureEntry) throw new Error(`Missing state geometry: ${stateId}`);
+    const { feature } = featureEntry;
     if (!["Polygon", "MultiPolygon"].includes(feature.geometry?.type)) {
       throw new Error(`Unsupported state geometry for ${stateId}.`);
     }
-    return feature;
+    return featureEntry;
   });
-  const projectedBounds = features.map((feature) => {
+  const projectedBounds = features.map(({ feature }) => {
     const coordinates = mapGeometryCoordinates(feature.geometry, projectCoordinate);
     return getCoordinateBounds(asPolygons(feature.geometry.type, coordinates));
   });
   const combinedProjectedBounds = mergeBounds(projectedBounds);
-  const pieces = features.map((feature) => normalizeFeature(
+  const pieces = features.map(({ feature, featureIndex }) => normalizeFeature(
     feature,
     combinedProjectedBounds,
-    region.workspace
+    region.workspace,
+    getHardContextColor(featureIndex)
   ));
   const piecesById = Object.fromEntries(pieces.map((piece) => [piece.stateId, piece]));
   const diagonals = pieces.map((piece) => Math.hypot(piece.width, piece.height)).sort((a, b) => a - b);

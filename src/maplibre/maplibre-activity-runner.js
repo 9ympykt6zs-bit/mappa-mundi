@@ -20,6 +20,10 @@ import {
   GUIDED_PHYSICAL_PULSE_PERIOD_MS,
   GuidedPhysicalTeachingPulse
 } from "./guided-physical-teaching-highlight.js?v=20260905-guided-physical-search-space-1";
+import {
+  getUsStateHardColorStops,
+  hardContextPalette
+} from "./political-map-style.js";
 
 const colors = {
   ink: "#172033",
@@ -65,18 +69,6 @@ const colors = {
     "#d9e8d0",
     "#f1ddd4",
     "#d7e9ef"
-  ],
-  hardContextPalette: [
-    "#cfe8d5",
-    "#f6d7c9",
-    "#d7d9f2",
-    "#f5e3a8",
-    "#cbe1ed",
-    "#e7cdec",
-    "#dcecc8",
-    "#f3c9ce",
-    "#c9e7df",
-    "#ead9bb"
   ]
 };
 
@@ -7954,25 +7946,25 @@ export class MapLibreActivityRunner {
     return [
       "step",
       ["coalesce", ["get", "MAPCOLOR13"], 1],
-      colors.hardContextPalette[0],
+      hardContextPalette[0],
       2,
-      colors.hardContextPalette[1],
+      hardContextPalette[1],
       3,
-      colors.hardContextPalette[2],
+      hardContextPalette[2],
       4,
-      colors.hardContextPalette[3],
+      hardContextPalette[3],
       5,
-      colors.hardContextPalette[4],
+      hardContextPalette[4],
       6,
-      colors.hardContextPalette[5],
+      hardContextPalette[5],
       7,
-      colors.hardContextPalette[6],
+      hardContextPalette[6],
       8,
-      colors.hardContextPalette[7],
+      hardContextPalette[7],
       9,
-      colors.hardContextPalette[8],
+      hardContextPalette[8],
       10,
-      colors.hardContextPalette[9]
+      hardContextPalette[9]
     ];
   }
 
@@ -8153,15 +8145,12 @@ export class MapLibreActivityRunner {
       "match",
       ["coalesce", ["get", "id"], ["get", "state"], ["get", "fips"]],
       ...this.getUsStateHardColorStops(),
-      colors.hardContextPalette[9]
+      hardContextPalette[9]
     ];
   }
 
   getUsStateHardColorStops() {
-    return this.stateTargets.features.flatMap((feature, index) => [
-      feature.properties.id,
-      colors.hardContextPalette[index % colors.hardContextPalette.length]
-    ]);
+    return getUsStateHardColorStops(this.stateTargets);
   }
 
   getCapitalFillExpression() {

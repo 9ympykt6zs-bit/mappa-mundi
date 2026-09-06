@@ -72,6 +72,7 @@ export function createMapReconstructionDragPreview(piece, workspaceSvg, options 
     options.className || ""
   ].filter(Boolean).join(" ");
   preview.setAttribute("aria-hidden", "true");
+  preview.style.setProperty("--reconstruction-state-fill", piece.displayColor || "#dbeafe");
   preview.style.width = `${layout.width}px`;
   preview.style.height = `${layout.height}px`;
   preview.dataset.previewScaleX = String(layout.scaleX);

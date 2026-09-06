@@ -31,7 +31,7 @@ This covers each contiguous state exactly once as a new Reconstruction target. A
 
 Checkpoint 1 uses the existing translation-tolerant evaluator. From checkpoint 2, `evaluateGuidedMapReconstruction` uses a fixed geographic frame with the prior locked states as references for relative vectors, adjacency, and overlap. A new cluster shifted away from that frame is not normalized back into place. Existing distance/overlap thresholds and placement statuses remain in use; this is not pixel-perfect grading.
 
-Only new states exist in the mutable session, bank, result counts, and returned evaluation placements. Anchors live in a separate noninteractive SVG layer and geometry references. Reset, selection, dragging, and correction cannot move them. All prior shapes share the new targets' coordinate frame; the viewport fits the current group and adjacent locked context, so distant prior states may be clipped. Locked labels use state abbreviations to reduce crowding. No new-state outline is shown before submission.
+Only new states exist in the mutable session, bank, result counts, and returned evaluation placements. Anchors live in a separate noninteractive SVG layer and geometry references. Reset, selection, dragging, and correction cannot move them. All prior shapes share the new targets' coordinate frame; the initial viewport fits all prior and incoming states (see the navigation update below). Locked labels use state abbreviations to reduce crowding. No new-state outline is shown before submission.
 
 The existing canonical adapter remains unchanged: `state-reconstruction:<id>` concepts, `spatial-reconstruction` skill, and `map-reconstruction` source mode. `well-placed` means `correct`, `close` means `partial`, `misplaced` means `incorrect`, and `unplaced` means `skipped`. Locked context emits no events. Checkpoint completion and child reload use the existing orchestration/child-launch stores; reopening a completed child emits no new evaluation.
 
@@ -49,3 +49,15 @@ Inspector traces retain the requested family and report `targetedNeedSatisfied: 
 - `tests/e2e/guided-reconstruction.spec.js`: primary Learn entry for checkpoints 1, 2, and 10; new-piece bank and locked context; keyboard/reset immutability; submission/evidence boundaries; completed-child reload and return; standalone six-state New England. Runs on desktop and mobile Chromium.
 
 See `engineering-state.md` for the final integrated test record. Real-device touch, Safari, narration quality, and a pedagogical efficacy study are outside this change.
+
+## Map appearance and navigation (2026-09-05)
+
+Reconstruction and the main political map share `src/maplibre/political-map-style.js`: the original pastel palette and full GeoJSON feature-order color assignment. Prepared pieces carry a display color without changing their geometry. Locked states, bank thumbnails, placed pieces, and drag previews use that assignment, with the main map's water background, white boundaries, and dark labels. Selection and evaluation colors remain distinct.
+
+`map-reconstruction-viewport.js` fits the union of **all locked and incoming states' canonical bounds**, including incoming pieces still in the bank, with 28 CSS pixels of padding (reduced only for very small viewports). It matches the rendered SVG aspect ratio. This replaces the earlier initial camera that clipped distant locked context. The logical placement workspace, neighboring-anchor focus bounds, coordinate normalization, evaluator, and evidence adapter are unchanged.
+
+Camera view state survives selection, placement, submission, and result rerenders. Resize refits an untouched camera; after manual navigation it preserves center and horizontal world span while adapting the aspect ratio. Fit map and Reset restore the intended fit. Wheel, zoom buttons, background drag, two-finger background pinch, and focused-workspace arrow keys control the camera. Zoom is bounded to one-eighth through four times the fitted world span. Panning is unrestricted so learners can explore and recover using Fit map.
+
+A piece or bank gesture owns its pointer sequence: additional fingers cannot start a map gesture or replace that piece drag. Conversely, a background camera gesture blocks piece pickup until it ends. Select multiple retains its selection-box gesture. Existing inverse SVG screen transforms convert drops/drags back to world coordinates. After manual navigation, the temporary mobile drag camera zoom is suppressed; mobile snapping remains enabled under its existing rules.
+
+Browser regression coverage in `reconstruction-navigation.spec.js` uses the production activity and real geometry in a direct fixture to inspect coordinate invariants, plus the existing Guided production-route tests. Emulated touch is covered; Safari and physical-device gestures are not certified. At a full-country mobile fit, northeastern labels can crowd; manual zoom is available. Alaska/Hawaii remain deferred.

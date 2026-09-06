@@ -1,3 +1,5 @@
+import { baseWaterColor } from "../maplibre/ocean-textures.js";
+import { fitReconstructionViewport, zoomReconstructionViewport, panReconstructionViewport } from "./map-reconstruction-viewport.js";
 import { getStateById } from "./united-states-atlas-queries.js";
 import {
   beginMapReconstructionDrag,
@@ -235,6 +237,7 @@ function createPieceGroup(piece, position, options = {}) {
     transform: `translate(${position.x} ${position.y})`,
     "data-map-reconstruction-state-id": piece.stateId
   });
+  group.style.setProperty("--reconstruction-state-fill", piece.displayColor || "#dbeafe");
   const path = createSvgElement("path", {
     d: piece.path,
     "fill-rule": "evenodd",
@@ -380,6 +383,7 @@ function createBankThumbnail(piece) {
     d: piece.path,
     "fill-rule": "evenodd"
   }));
+  svg.style.setProperty("--reconstruction-state-fill", piece.displayColor || "#dbeafe");
   svg.appendChild(group);
   return svg;
 }
@@ -568,6 +572,11 @@ export function createMapReconstructionActivity(container, options) {
   let workspaceResizeObserver = null;
   let activeBankPointerCancel = null;
   let activePiecePointerCancel = null;
+  let cameraGestureActive = false;
+  let cameraView = null;
+  let fittedView = null;
+  let cameraSize = null;
+  let manualCamera = false;
   let selectionMode = false;
   let lastPieceClick = null;
   let lastConnectedSelectionAt = -Infinity;
@@ -598,6 +607,7 @@ export function createMapReconstructionActivity(container, options) {
 
   const setWorkspaceView = (view) => {
     if (!workspaceSvg || !view) return;
+    cameraView = { ...view };
     workspaceSvg.setAttribute("viewBox", `${view.x} ${view.y} ${view.width} ${view.height}`);
   };
 
@@ -620,6 +630,7 @@ export function createMapReconstructionActivity(container, options) {
       || !isMapReconstructionMobileAssistanceEnabled()
       || !workspaceSvg) return;
     mobileDragPointerType = pointerType || "touch";
+    if (manualCamera) return;
     const currentView = getWorkspaceView();
     if (!currentView) return;
     if (!mobileCameraHomeView) mobileCameraHomeView = { ...currentView };
@@ -763,16 +774,22 @@ export function createMapReconstructionActivity(container, options) {
   );
 
   const refreshWorkspaceInteractionLayout = () => {
-    if (!workspaceSvg || session.phase !== "arranging") {
-      interactionGeometry = geometry;
-      return;
-    }
+    if (!workspaceSvg) return;
     const rect = workspaceSvg.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
     const layout = getMapReconstructionInteractionLayout(geometry.workspace, rect, {
       insetCssPixels: MAP_RECONSTRUCTION_WORKSPACE_INSET_CSS_PIXELS
     });
     if (!layout) return;
-    workspaceSvg.setAttribute("viewBox", layout.viewBox.value);
+    fittedView = fitReconstructionViewport(geometry.combinedBounds, rect);
+    const resized = cameraSize && (cameraSize.width !== rect.width || cameraSize.height !== rect.height);
+    if (!cameraView || resized && !manualCamera) cameraView = fittedView;
+    else if (resized) {
+      const height = cameraView.width * rect.height / rect.width;
+      cameraView = { ...cameraView, y: cameraView.y + (cameraView.height - height) / 2, height };
+    }
+    cameraSize = { width: rect.width, height: rect.height };
+    setWorkspaceView(cameraView);
     interactionGeometry = {
       ...geometry,
       workspace: layout.workspace
@@ -793,7 +810,7 @@ export function createMapReconstructionActivity(container, options) {
     const piece = geometry.piecesById[stateId];
     let ignoreNextClick = false;
     button.addEventListener("pointerdown", (event) => {
-      if (mobileSnapPending) return;
+      if (mobileSnapPending || cameraGestureActive || activePiecePointerCancel || activeBankPointerCancel) return;
       if (event.button != null && event.button !== 0) return;
       if (event.target.closest?.(".chip-speaker-button")) return;
       if (event.pointerType === "touch"
@@ -972,7 +989,7 @@ export function createMapReconstructionActivity(container, options) {
       focusPiece(stateId);
     });
     group.addEventListener("pointerdown", (event) => {
-      if (mobileSnapPending) return;
+      if (mobileSnapPending || cameraGestureActive || activePiecePointerCancel || activeBankPointerCancel) return;
       if (event.button != null && event.button !== 0) return;
       const startPoint = mapClientPointToReconstructionWorkspace(workspaceSvg, event.clientX, event.clientY);
       const pieceGeometry = geometry.piecesById[stateId];
@@ -1086,6 +1103,79 @@ export function createMapReconstructionActivity(container, options) {
       group.addEventListener("pointerup", up);
       group.addEventListener("pointercancel", cancel);
       group.addEventListener("lostpointercapture", lostCapture);
+    });
+  };
+
+  const attachCameraNavigation = (svg) => {
+    const pointers = new Map();
+    let moved = false;
+    const blocked = () => activePiecePointerCancel || activeBankPointerCancel || mobileSnapPending;
+    const gesture = () => {
+      const points = [...pointers.values()];
+      const a = points[0], b = points[1] || a;
+      return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2,
+        distance: Math.hypot(a.x - b.x, a.y - b.y) };
+    };
+    svg.addEventListener("pointerdown", (event) => {
+      if (blocked() || selectionMode || event.button > 0
+        || event.target.closest?.(".map-reconstruction-piece:not(.is-locked)")) return;
+      event.preventDefault();
+      cancelMobileAssistance();
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      cameraGestureActive = true;
+      if (pointers.size === 1) moved = false;
+      else moved = true;
+      svg.setPointerCapture?.(event.pointerId);
+    });
+    svg.addEventListener("pointermove", (event) => {
+      if (!pointers.has(event.pointerId)) return;
+      if (blocked()) { pointers.clear(); cameraGestureActive = false; return; }
+      const before = gesture();
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      const after = gesture();
+      const dx = after.x - before.x, dy = after.y - before.y;
+      if (!dx && !dy && before.distance === after.distance) return;
+      moved = true;
+      manualCamera = true;
+      const rect = svg.getBoundingClientRect();
+      let view = getWorkspaceView();
+      if (before.distance > 0 && after.distance > 0) {
+        const anchor = { x: view.x + (before.x - rect.left) / rect.width * view.width,
+          y: view.y + (before.y - rect.top) / rect.height * view.height };
+        view = zoomReconstructionViewport(view, after.distance / before.distance, anchor, fittedView);
+      }
+      setWorkspaceView(panReconstructionViewport(view, dx, dy, rect));
+    });
+    const end = (event) => {
+      if (!pointers.delete(event.pointerId)) return;
+      cameraGestureActive = pointers.size > 0;
+      if (event.type === "pointerup" && !moved && !pointers.size && session.phase === "arranging") {
+        session = clearMapReconstructionSelection(session);
+        render();
+      }
+    };
+    svg.addEventListener("pointerup", end);
+    svg.addEventListener("pointercancel", end);
+    svg.addEventListener("lostpointercapture", end);
+    svg.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      if (blocked() || pointers.size) return;
+      cancelMobileAssistance();
+      const anchor = mapClientPointToReconstructionWorkspace(svg, event.clientX, event.clientY);
+      if (!anchor) return;
+      manualCamera = true;
+      const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 500 : 1);
+      setWorkspaceView(zoomReconstructionViewport(getWorkspaceView(), Math.exp(-Math.max(-250, Math.min(250, delta)) * 0.002), anchor, fittedView));
+    }, { passive: false });
+    svg.addEventListener("keydown", (event) => {
+      if (event.target !== svg || blocked()) return;
+      const offsets = { ArrowLeft: [40, 0], ArrowRight: [-40, 0], ArrowUp: [0, 40], ArrowDown: [0, -40] };
+      const offset = offsets[event.key];
+      if (!offset) return;
+      event.preventDefault();
+      cancelMobileAssistance();
+      manualCamera = true;
+      setWorkspaceView(panReconstructionViewport(getWorkspaceView(), ...offset, svg.getBoundingClientRect()));
     });
   };
 
@@ -1214,7 +1304,7 @@ export function createMapReconstructionActivity(container, options) {
     if (session.phase === "arranging") {
       let blankPointer = null;
       workspaceSvg.addEventListener("pointerdown", (event) => {
-        if (event.target !== workspaceSvg || event.button != null && event.button !== 0) return;
+        if (!selectionMode || blankPointer || event.target !== workspaceSvg || event.button != null && event.button !== 0) return;
         const point = mapClientPointToReconstructionWorkspace(
           workspaceSvg,
           event.clientX,
@@ -1304,7 +1394,34 @@ export function createMapReconstructionActivity(container, options) {
       });
     }
     if (visualPlan.isSuccess && successVisualPending) successVisualPending = false;
-    workspace.append(title, workspaceSvg);
+    const heading = createElement("div", "map-reconstruction-map-heading");
+    const navigation = createElement("div", "map-reconstruction-map-controls");
+    navigation.setAttribute("role", "group");
+    navigation.setAttribute("aria-label", "Map navigation");
+    const changeZoom = (factor) => {
+      if (activePiecePointerCancel || activeBankPointerCancel || mobileSnapPending) return;
+      cancelMobileAssistance();
+      const view = getWorkspaceView();
+      manualCamera = true;
+      setWorkspaceView(zoomReconstructionViewport(view, factor,
+        { x: view.x + view.width / 2, y: view.y + view.height / 2 }, fittedView));
+    };
+    navigation.append(
+      createButton("−", "map-reconstruction-map-control", () => changeZoom(1 / 1.35)),
+      createButton("+", "map-reconstruction-map-control", () => changeZoom(1.35)),
+      createButton("Fit map", "map-reconstruction-map-control", () => {
+        if (activePiecePointerCancel || activeBankPointerCancel || mobileSnapPending) return;
+        cancelMobileAssistance();
+        manualCamera = false;
+        setWorkspaceView(fittedView);
+      })
+    );
+    navigation.children[0].setAttribute("aria-label", "Zoom out");
+    navigation.children[1].setAttribute("aria-label", "Zoom in");
+    heading.append(title, navigation);
+    workspaceSvg.style.backgroundColor = baseWaterColor;
+    attachCameraNavigation(workspaceSvg);
+    workspace.append(heading, workspaceSvg);
     return workspace;
   };
 
@@ -1392,6 +1509,8 @@ export function createMapReconstructionActivity(container, options) {
     cancelMobileAssistance();
     clearCorrectionTimer();
     successVisualPending = false;
+    cameraView = null;
+    manualCamera = false;
     session = resetMapReconstructionSession(session);
     render();
     container.querySelector(".map-reconstruction-bank-piece")?.focus();
@@ -1534,6 +1653,7 @@ export function createMapReconstructionActivity(container, options) {
   };
 
   function render() {
+    cameraGestureActive = false;
     if (destroyed) return;
     workspaceResizeObserver?.disconnect();
     document.querySelectorAll(".map-reconstruction-drag-proxy").forEach((proxy) => proxy.remove());
@@ -1561,6 +1681,8 @@ export function createMapReconstructionActivity(container, options) {
       activePiecePointerCancel?.();
       cancelMobileAssistance();
       clearCorrectionTimer();
+      cameraView = null;
+      manualCamera = false;
       session = resetMapReconstructionSession(session);
       render();
     },

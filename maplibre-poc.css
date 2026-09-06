@@ -9504,3 +9504,19 @@ body.about-page {
 .map-reconstruction-piece.is-locked .map-reconstruction-piece-label {
   fill: #b8cedb;
 }
+
+/* Reconstruction shares the political map palette; the camera is independent of placement. */
+.map-reconstruction-map-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.map-reconstruction-map-controls { display: flex; gap: 6px; }
+.map-reconstruction-map-control { min-width: 40px; min-height: 40px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; color: #172033; font: inherit; font-weight: 700; cursor: pointer; }
+.map-reconstruction-workspace { touch-action: none; cursor: grab; }
+.map-reconstruction-piece-shape, .map-reconstruction-bank-thumbnail path, .map-reconstruction-drag-preview-shape { fill: var(--reconstruction-state-fill, #dbeafe); }
+.map-reconstruction-piece.is-arranging .map-reconstruction-piece-shape { stroke: #ffffff; }
+.map-reconstruction-piece.is-selected .map-reconstruction-piece-shape { stroke: #155bb8; }
+.map-reconstruction-piece.is-primary-selected .map-reconstruction-piece-shape { stroke: #0d477f; }
+.map-reconstruction-locked-layer * { pointer-events: none; }
+.map-reconstruction-piece.is-locked .map-reconstruction-piece-shape { fill: var(--reconstruction-state-fill, #dbeafe); stroke: #ffffff; stroke-width: 1.2; opacity: 1; }
+.map-reconstruction-piece.is-locked .map-reconstruction-piece-label { fill: #172033; }
+
+.map-reconstruction-piece.is-arranging:hover .map-reconstruction-piece-shape,
+.map-reconstruction-piece.is-arranging:focus-visible .map-reconstruction-piece-shape { stroke: #155bb8; }
