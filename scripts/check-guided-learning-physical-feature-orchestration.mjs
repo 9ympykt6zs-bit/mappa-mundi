@@ -9,6 +9,7 @@ import {
   createPhysicalFeatureIntroductionEvidenceEvents,
   createUnitedStatesGuidedLearningOrchestrationConfig,
   deferGuidedLearningOrchestrationBlock,
+  getGuidedLearningPhysicalReviewEligibility,
   GUIDED_LEARNING_BLOCK_TYPES,
   resetGuidedLearningOrchestrationState,
   selectPhysicalCohortRetrievalSubset,
@@ -89,11 +90,7 @@ assert.deepEqual(UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.deferredPhysical
 assert.deepEqual(validateGuidedLearningOrchestrationConfig(), []);
 assert.deepEqual(
   UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.deferredPhysicalCohortGroups,
-  [
-    { family: "mountain-range", sourceId: "us-physical-western-mountains", reason: "authored-group-too-large-for-novice-cohort" },
-    { family: "mountain-range", sourceId: "us-physical-eastern-mountains:remaining-members", reason: "no-authored-small-subgroup" },
-    { family: "lake", sourceId: "us-physical-lakes", reason: "no-authored-small-cohort" }
-  ]
+  []
 );
 
 const familyCounts = Object.groupBy(supported, ({ family }) => family);
@@ -102,6 +99,15 @@ assert.deepEqual(Object.fromEntries(Object.entries(familyCounts).map(([family, f
   lake: 6,
   "mountain-range": 20
 });
+const mountainReviewPool = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalReviewPools
+  .find(({ id }) => id === "physical-family-review:mountain-range");
+const alaskaReviewPool = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalReviewPools
+  .find(({ id }) => id === "physical-region-review:alaska-mountains");
+const mixedReviewPool = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalReviewPools
+  .find(({ id }) => id === "physical-mixed-review");
+assert.equal(mountainReviewPool.targetIds.includes("alaska-range"), false);
+assert.deepEqual(alaskaReviewPool.targetIds, ["alaska-range", "brooks-range"]);
+assert.equal(mixedReviewPool.targetIds.includes("brooks-range"), false);
 
 const activities = new Map([
   ["us-physical-rivers", asActivity("../assets/maps/data/us-physical-rivers.json")],
@@ -134,11 +140,15 @@ assert.deepEqual(
 assert.equal(mountainActivities[1].memoryTrailSections, undefined, "Eastern Mountains has no authored small subgroup.");
 assert.equal(activities.get("us-physical-lakes").memoryTrailSections, undefined, "Lakes has no authored small subgroup.");
 supported.forEach((feature) => {
+  const orchestratedFeature = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
+    .find(({ targetId }) => targetId === feature.targetId);
   assert.ok(
     activities.get(feature.activityId)?.targets.some(({ id }) => id === feature.targetId),
     `${feature.name} resolves to a real target in ${feature.activityId}.`
   );
   assert.ok(findSourceFeature(feature), `${feature.name} resolves to its declared geometry feature.`);
+  assert.ok(feature.learningCohortId, `${feature.name} belongs to a bounded Guided introduction cohort.`);
+  assert.ok(orchestratedFeature?.practiceBlockId, `${feature.name} has an immediate Guided retrieval checkpoint.`);
 });
 
 const stLawrence = inventory.find(({ targetId }) => targetId === "st-lawrence-river");
@@ -154,13 +164,13 @@ assert.equal(findSourceFeature(columbia).geometry.coordinates.length > 0, true, 
 
 const greatSaltLake = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
   .find(({ targetId }) => targetId === "great-salt-lake");
-assert.equal(greatSaltLake.blockIds.length, 1);
-assert.equal(greatSaltLake.practiceBlockId, null);
+assert.equal(greatSaltLake.blockIds.length, 2);
+assert.ok(greatSaltLake.practiceBlockId);
 assert.equal(greatSaltLake.connectionBlockId, null);
 assert.equal(
-  UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.blocks.find(({ id }) => id === greatSaltLake.introductionBlockId)?.sequenceCompletion,
+  UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.blocks.find(({ id }) => id === greatSaltLake.practiceBlockId)?.sequenceCompletion,
   true,
-  "A lake without a safe cohort or Connection returns after introduction instead of trivial retrieval."
+  "Every lake ends its introduction batch with independent retrieval."
 );
 
 const rocky = inventory.find(({ targetId }) => targetId === "rocky-mountains");
@@ -173,8 +183,8 @@ const overriddenInventory = buildUnitedStatesPhysicalFeatureOrchestrationInvento
   }
 });
 const overriddenRocky = overriddenInventory.find(({ id }) => id === rocky.id);
-assert.equal(rocky.prerequisiteSource, "derived-authored-relationships");
-assert.deepEqual(rocky.introductionPrerequisiteStateIds, rocky.authoredStateIds);
+assert.equal(rocky.prerequisiteSource, "physical-geography-scaffold");
+assert.deepEqual(rocky.introductionPrerequisiteStateIds, []);
 assert.equal(overriddenRocky.prerequisiteSource, "explicit-introduction-override");
 assert.deepEqual(overriddenRocky.introductionPrerequisiteStateIds, ["colorado"]);
 assert.deepEqual(overriddenRocky.authoredStateIds, rocky.authoredStateIds);
@@ -191,17 +201,26 @@ const overriddenIntro = overriddenConfig.blocks.find(({ featureId, featurePhase 
 ));
 assert.equal(selectGuidedLearningOrchestrationBlock({
   config: overriddenConfig,
+  state: createGuidedLearningOrchestrationState({
+    completedBlockIds: ["us-guided:rebuild-new-england"]
+  }, overriddenConfig),
   repository: { events: stateEvents(["colorado"]) },
   hasUnfinishedNonPhysicalLearning: true
 }).currentBlock.id, overriddenIntro.id);
 
 const incorrectRockyDecision = selectGuidedLearningOrchestrationBlock({
   config: overriddenConfig,
+  state: createGuidedLearningOrchestrationState({
+    completedBlockIds: ["us-guided:rebuild-new-england"]
+  }, overriddenConfig),
   repository: { events: stateEvents(["colorado"], { outcome: "incorrect" }) }
 });
 assert.equal(incorrectRockyDecision.currentBlock.type, GUIDED_LEARNING_BLOCK_TYPES.GUIDED_SECTION);
 const assistedRockyDecision = selectGuidedLearningOrchestrationBlock({
   config: overriddenConfig,
+  state: createGuidedLearningOrchestrationState({
+    completedBlockIds: ["us-guided:rebuild-new-england"]
+  }, overriddenConfig),
   repository: { events: stateEvents(["colorado"], { outcome: "assisted" }) }
 });
 assert.equal(assistedRockyDecision.currentBlock.id, overriddenIntro.id);
@@ -379,13 +398,16 @@ let northeastDecision = selectGuidedLearningOrchestrationBlock({
   repository: { events: northeastPrerequisitesWithoutNewYork }
 });
 assert.equal(northeastDecision.currentBlock.id, "us-guided:introduce-white-mountains");
-assert.deepEqual(northeastDecision.currentBlock.destination.newTargetIds, ["white-mountains", "green-mountains"]);
-assert.ok(!northeastDecision.currentBlock.destination.targetIds.includes("adirondack-mountains"));
+assert.deepEqual(northeastDecision.currentBlock.destination.newTargetIds, [
+  "white-mountains",
+  "green-mountains",
+  "adirondack-mountains"
+]);
 const northeastTrace = northeastDecision.physicalCohortTrace.find(({ cohortId }) => cohortId === "northeast-mountains");
 assert.equal(northeastTrace.retrievalReady, false);
 assert.equal(
   northeastTrace.members.find(({ targetId }) => targetId === "adirondack-mountains").prerequisiteStatus,
-  "prerequisite-not-covered"
+  "covered-awaiting-introduction"
 );
 const northeastIntroductionEvents = createPhysicalFeatureIntroductionEvidenceEvents({
   block: northeastDecision.currentBlock,
@@ -397,9 +419,9 @@ const northeastIntroductionEvents = createPhysicalFeatureIntroductionEvidenceEve
     sequence: 50
   }
 });
-assert.equal(northeastIntroductionEvents.length, 2);
+assert.equal(northeastIntroductionEvents.length, 3);
 assert.ok(northeastIntroductionEvents.every(({ outcome }) => outcome === "assisted"));
-assert.equal(new Set(northeastIntroductionEvents.map(({ eventId }) => eventId)).size, 2);
+assert.equal(new Set(northeastIntroductionEvents.map(({ eventId }) => eventId)).size, 3);
 let northeastState = startGuidedLearningOrchestrationBlock(
   northeastBaseState,
   northeastDecision.currentBlock.id
@@ -413,7 +435,11 @@ northeastDecision = selectGuidedLearningOrchestrationBlock({
   repository: { events: [...northeastPrerequisitesWithoutNewYork, ...northeastIntroductionEvents] }
 });
 assert.equal(northeastDecision.currentBlock.id, "us-guided:practice-white-mountains");
-assert.deepEqual(northeastDecision.currentBlock.destination.targetIds, ["white-mountains", "green-mountains"]);
+assert.deepEqual(northeastDecision.currentBlock.destination.targetIds, [
+  "white-mountains",
+  "green-mountains",
+  "adirondack-mountains"
+]);
 assert.equal(northeastDecision.currentBlock.destination.targetIds.length >= 2, true);
 const pendingNortheastPractice = deferGuidedLearningOrchestrationBlock(
   startGuidedLearningOrchestrationBlock(
@@ -462,137 +488,166 @@ const riverDecision = selectGuidedLearningOrchestrationBlock({
 assert.equal(riverDecision.currentBlock.destination.cohortId, "western-rivers");
 assert.equal(riverDecision.currentBlock.destination.newTargetIds.length, 3, "The authored western-river group is reused.");
 
-const queueInventory = inventory.filter(({ targetId }) => ["columbia-river", "lake-huron"].includes(targetId));
-const queueConfig = createUnitedStatesGuidedLearningOrchestrationConfig({ physicalFeatureInventory: queueInventory });
-const lakeHuron = queueConfig.physicalFeatures.find(({ targetId }) => targetId === "lake-huron");
-const queueColumbia = queueConfig.physicalFeatures.find(({ targetId }) => targetId === "columbia-river");
-const queueEvents = [
-  ...stateEvents(["michigan"], { start: 1, occurredAt: "2036-01-01T11:00:00.000Z" }),
-  ...stateEvents(["oregon", "washington"], { start: 2, occurredAt: "2036-01-02T11:00:00.000Z" })
-];
-let queueState = createGuidedLearningOrchestrationState(null, queueConfig);
-let decision = selectGuidedLearningOrchestrationBlock({
-  config: queueConfig,
-  state: queueState,
-  repository: { events: queueEvents },
-  hasUnfinishedNonPhysicalLearning: true
+const completedNortheastBlockIds = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
+  .filter(({ learningCohortId }) => learningCohortId === "northeast-mountains")
+  .flatMap(({ introductionBlockId, practiceBlockId }) => [introductionBlockId, practiceBlockId]);
+const coloradoNewMexicoState = createGuidedLearningOrchestrationState({
+  completedBlockIds: ["us-guided:rebuild-new-england", ...completedNortheastBlockIds],
+  physicalInterleaveRequired: false
 });
-assert.equal(decision.currentBlock.id, lakeHuron.introductionBlockId, "First-eligible milestone precedes authored order.");
-assert.deepEqual(decision.pendingPhysicalFeatureOrder.map(({ featureId }) => featureId), [lakeHuron.id, queueColumbia.id]);
+const coloradoNewMexicoRepository = { events: stateEvents(["colorado", "new-mexico"]) };
+const mountainBatch = selectGuidedLearningOrchestrationBlock({
+  state: coloradoNewMexicoState,
+  repository: coloradoNewMexicoRepository,
+  targetedNeed: { objectiveId: "learn-physical-features", familyId: "physical-mountain-ranges" }
+});
+assert.equal(mountainBatch.currentBlock.destination.cohortId, "western-major-mountains");
+assert.deepEqual(mountainBatch.currentBlock.destination.newTargetIds, [
+  "rocky-mountains",
+  "cascade-mountains",
+  "sierra-nevada"
+]);
 assert.deepEqual(
-  selectGuidedLearningOrchestrationBlock({
-    config: queueConfig,
-    state: queueState,
-    repository: { events: queueEvents },
-    hasUnfinishedNonPhysicalLearning: true
-  }).pendingPhysicalFeatureOrder,
-  decision.pendingPhysicalFeatureOrder,
-  "Identical state and evidence produce identical queue order."
+  mountainBatch.currentBlock.destination.prerequisiteStateIds,
+  [],
+  "Lower 48 physical features can scaffold states that have not been introduced yet."
 );
 
-queueState = startGuidedLearningOrchestrationBlock(queueState, lakeHuron.introductionBlockId, {}, queueConfig);
-const lakeIntroBlock = queueConfig.blocks.find(({ id }) => id === lakeHuron.introductionBlockId);
-const exposure = createPhysicalFeatureIntroductionEvidence({
-  block: lakeIntroBlock,
-  identity: {
-    eventId: "physical-orchestration:lake-huron:introduction",
-    attemptId: "physical-orchestration:lake-huron:introduction",
-    occurredAt: "2036-01-03T12:00:00.000Z",
-    sessionId: "physical-orchestration:test",
-    sequence: 9
+for (const [familyId, expectedCohortId, expectedSize] of [
+  ["physical-rivers", "western-rivers", 3],
+  ["physical-lakes", "upper-great-lakes", 3]
+]) {
+  const batch = selectGuidedLearningOrchestrationBlock({
+    state: createGuidedLearningOrchestrationState({ completedBlockIds: ["us-guided:rebuild-new-england"] }),
+    repository: { events: [] },
+    targetedNeed: { objectiveId: "learn-physical-features", familyId }
+  });
+  assert.equal(batch.currentBlock.destination.cohortId, expectedCohortId);
+  assert.equal(batch.currentBlock.destination.newTargetIds.length, expectedSize);
+}
+
+const dueNortheastReview = {
+  "northeast-mountains": {
+    cohortId: "northeast-mountains",
+    generation: 1,
+    previousOrder: [],
+    targets: Object.fromEntries(northeastCohort.supportedMemberTargetIds.map((targetId) => [targetId, {
+      targetId,
+      dueAfterLearningEvent: 0,
+      lastLearningEvent: 0,
+      lastOutcome: "correct"
+    }]))
   }
-});
-assert.equal(exposure.outcome, "assisted");
-assert.equal(exposure.conceptId, lakeHuron.conceptId);
-assert.ok(!exposure.conceptId.includes("canada"), "Visible cross-border geography does not fabricate foreign evidence.");
-queueState = completeGuidedLearningOrchestrationBlock(queueState, lakeHuron.introductionBlockId, queueConfig);
-const withLakeExposure = { events: [...queueEvents, exposure] };
-decision = selectGuidedLearningOrchestrationBlock({
-  config: queueConfig,
-  state: queueState,
-  repository: withLakeExposure,
-  hasUnfinishedNonPhysicalLearning: true
-});
-assert.equal(decision.currentBlock.id, lakeHuron.connectionBlockId);
-assert.equal(lakeHuron.practiceBlockId, null, "Lakes defer retrieval rather than fabricating a comparison group.");
-queueState = startGuidedLearningOrchestrationBlock(queueState, lakeHuron.connectionBlockId, {}, queueConfig);
-queueState = completeGuidedLearningOrchestrationBlock(queueState, lakeHuron.connectionBlockId, queueConfig);
-assert.equal(queueState.physicalInterleaveRequired, true);
-
-decision = selectGuidedLearningOrchestrationBlock({
-  config: queueConfig,
-  state: queueState,
-  repository: withLakeExposure,
-  hasUnfinishedNonPhysicalLearning: true
-});
-assert.equal(decision.currentBlock.type, GUIDED_LEARNING_BLOCK_TYPES.GUIDED_SECTION);
-assert.equal(decision.fallbackReason, "physical-feature-interleave-required");
-assert.equal(decision.physicalFeatureTrace.find(({ featureId }) => featureId === queueColumbia.id).reason, "physical-feature-interleave-required");
-
-const pendingState = queueState;
-assert.equal(
-  selectGuidedLearningOrchestrationBlock({
-    config: queueConfig,
-    state: pendingState,
-    repository: withLakeExposure,
-    hasUnfinishedNonPhysicalLearning: true
-  }).currentBlock.type,
-  GUIDED_LEARNING_BLOCK_TYPES.GUIDED_SECTION,
-  "Merely reopening the coordinator does not satisfy the interleave."
-);
-const checkpointRepository = {
-  events: [
-    ...withLakeExposure.events,
-    ...stateEvents(
-      ["maine", "new-hampshire", "vermont", "massachusetts", "rhode-island", "connecticut"],
-      { start: 20, occurredAt: "2036-01-04T12:00:00.000Z" }
-    )
-  ]
 };
-let checkpointState = pendingState;
-const checkpointDecision = selectGuidedLearningOrchestrationBlock({
-  config: queueConfig,
-  state: checkpointState,
-  repository: checkpointRepository,
-  hasUnfinishedNonPhysicalLearning: true
+const noStarvationDecision = selectGuidedLearningOrchestrationBlock({
+  state: createGuidedLearningOrchestrationState({
+    ...coloradoNewMexicoState,
+    physicalReviewProgress: dueNortheastReview
+  }),
+  repository: coloradoNewMexicoRepository,
+  targetedNeed: { objectiveId: "learn-physical-features", familyId: "physical-mountain-ranges" }
 });
-assert.equal(checkpointDecision.currentBlock.type, GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT);
-checkpointState = startGuidedLearningOrchestrationBlock(
-  checkpointState,
-  checkpointDecision.currentBlock.id,
-  {},
-  queueConfig
-);
-checkpointState = completeGuidedLearningOrchestrationBlock(
-  checkpointState,
-  checkpointDecision.currentBlock.id,
-  queueConfig
-);
-assert.equal(checkpointState.physicalInterleaveRequired, false, "A real Reconstruction checkpoint satisfies interleaving.");
-queueState = satisfyGuidedLearningPhysicalInterleave(queueState, { sessionNumber: 7 }, queueConfig);
-assert.equal(queueState.physicalInterleaveRequired, false);
-assert.equal(queueState.lastNonPhysicalMilestone.kind, "guided-session-completed");
-assert.equal(selectGuidedLearningOrchestrationBlock({
-  config: queueConfig,
-  state: queueState,
-  repository: withLakeExposure,
-  hasUnfinishedNonPhysicalLearning: true
-}).currentBlock.id, queueColumbia.introductionBlockId);
+assert.equal(noStarvationDecision.currentBlock.destination.cohortId, "western-major-mountains");
+assert.equal(noStarvationDecision.selectionReason, "eligible-physical-feature");
 
-const exhaustedState = createGuidedLearningOrchestrationState({
-  ...pendingState,
-  physicalInterleaveRequired: true
-}, queueConfig);
-decision = selectGuidedLearningOrchestrationBlock({
-  config: queueConfig,
-  state: exhaustedState,
-  repository: withLakeExposure,
+const completedNonrepeatableBlockIds = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.blocks
+  .filter(({ repeatable }) => !repeatable)
+  .map(({ id }) => id);
+const reviewProgress = Object.fromEntries(UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalCohorts.map((cohort) => [
+  cohort.id,
+  {
+    cohortId: cohort.id,
+    generation: 1,
+    previousOrder: [],
+    targets: Object.fromEntries(cohort.supportedMemberTargetIds.map((targetId) => [targetId, {
+      targetId,
+      dueAfterLearningEvent: 2,
+      lastLearningEvent: 0,
+      lastOutcome: "correct"
+    }]))
+  }
+]));
+let reviewState = createGuidedLearningOrchestrationState({
+  completedBlockIds: completedNonrepeatableBlockIds,
+  guidedLearningEventCount: 5,
+  physicalReviewProgress: reviewProgress
+});
+const riverReviewPoolId = "physical-family-review:river";
+const firstRiverReview = getGuidedLearningPhysicalReviewEligibility(reviewState, riverReviewPoolId);
+assert.equal(firstRiverReview.eligible, true);
+assert.equal(firstRiverReview.targetIds.length, 4);
+let riverReviewDecision = selectGuidedLearningOrchestrationBlock({
+  state: reviewState,
+  repository: { events: [] },
+  hasUnfinishedNonPhysicalLearning: false,
+  targetedNeed: { objectiveId: "learn-physical-features", familyId: "physical-rivers" }
+});
+assert.equal(riverReviewDecision.currentBlock.cohortId, riverReviewPoolId);
+reviewState = startGuidedLearningOrchestrationBlock(reviewState, riverReviewDecision.currentBlock.id, {
+  physicalCohortTargetIds: riverReviewDecision.currentBlock.destination.targetIds
+});
+reviewState = completeGuidedLearningOrchestrationBlock(
+  reviewState,
+  riverReviewDecision.currentBlock.id,
+  UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1,
+  {
+    guidedPhysicalCheckpoint: {
+      targetOrder: riverReviewDecision.currentBlock.destination.targetIds,
+      targets: riverReviewDecision.currentBlock.destination.targetIds.map((targetId) => ({
+        targetId,
+        incorrectCount: 0,
+        finalOutcome: "correct"
+      }))
+    }
+  }
+);
+reviewState = satisfyGuidedLearningPhysicalInterleave(reviewState, { sessionNumber: 7 });
+const secondRiverReview = getGuidedLearningPhysicalReviewEligibility(reviewState, riverReviewPoolId);
+assert.equal(secondRiverReview.eligible, true);
+assert.notDeepEqual(
+  new Set(secondRiverReview.targetIds),
+  new Set(firstRiverReview.targetIds),
+  "Completed categories rotate review membership instead of repeating one fixed subset."
+);
+
+const mixedPoolId = "physical-mixed-review";
+const mixedEligibility = getGuidedLearningPhysicalReviewEligibility(reviewState, mixedPoolId);
+assert.equal(mixedEligibility.eligible, true);
+assert.equal(new Set(mixedEligibility.targetIds.map((targetId) => (
+  UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures.find((feature) => feature.targetId === targetId).family
+))).size, 3);
+const mixedBlockId = `us-guided:review-${mixedPoolId}`;
+const mixedDecision = selectGuidedLearningOrchestrationBlock({
+  state: createGuidedLearningOrchestrationState({ ...reviewState, activeBlockId: mixedBlockId, activeStatus: "pending" }),
+  repository: { events: [] },
   hasUnfinishedNonPhysicalLearning: false
 });
-assert.equal(decision.currentBlock.id, queueColumbia.introductionBlockId);
-assert.equal(decision.selectionReason, "nonphysical-curriculum-exhausted-drain-physical-backlog");
+assert.equal(mixedDecision.currentBlock.id, mixedBlockId);
+assert.equal(mixedDecision.currentBlock.destination.physicalReviewActivity, true);
+assert.deepEqual(mixedDecision.currentBlock.destination.sourceActivityIds.sort(), [
+  "us-mountain-ranges",
+  "us-physical-lakes",
+  "us-physical-rivers"
+]);
 
-const storageValues = new Map([["mappaGuidedLearningOrchestration", JSON.stringify(queueState)]]);
+const insufficientMixedState = createGuidedLearningOrchestrationState({
+  completedBlockIds: [
+    "us-guided:rebuild-new-england",
+    ...UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
+      .filter(({ targetId }) => [
+        "white-mountains", "green-mountains", "colorado-river", "columbia-river", "lake-superior"
+      ].includes(targetId))
+      .map(({ introductionBlockId }) => introductionBlockId)
+  ],
+  guidedLearningEventCount: 5,
+  physicalReviewProgress: reviewProgress
+});
+assert.equal(
+  getGuidedLearningPhysicalReviewEligibility(insufficientMixedState, mixedPoolId).reason,
+  "mixed-review-introductions-insufficient"
+);
+
+const storageValues = new Map([["mappaGuidedLearningOrchestration", JSON.stringify(reviewState)]]);
 const storage = {
   getItem: (key) => storageValues.get(key) || null,
   setItem: (key, value) => storageValues.set(key, value),

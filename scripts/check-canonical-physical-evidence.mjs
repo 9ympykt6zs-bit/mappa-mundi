@@ -62,6 +62,35 @@ assert.equal(lakeItem.type, "lake");
 assert.equal(retrievalEvent(lakeItem).conceptId, "lake-location:lake-erie");
 assert.equal(retrievalEvent(lakeItem, { promptType: "place_to_name", suffix: "naming" }).conceptId, "lake-naming:lake-erie");
 
+const mixedPhysicalActivity = {
+  id: "us-guided-physical-review",
+  canonicalEvidence: {
+    entityTypesByTargetId: {
+      "rocky-mountains": "mountain-range",
+      "mississippi-river": "river",
+      "lake-erie": "lake"
+    }
+  },
+  targets: [
+    { id: "rocky-mountains", name: "Rocky Mountains" },
+    { id: "mississippi-river", name: "Mississippi River" },
+    { id: "lake-erie", name: "Lake Erie" }
+  ]
+};
+assert.deepEqual(validateActivityEvidenceContract(mixedPhysicalActivity.canonicalEvidence), []);
+assert.equal(
+  retrievalEvent(getCanonicalRetrievalItemForActivity(mixedPhysicalActivity, "rocky-mountains"), { suffix: "mixed-mountain" }).conceptId,
+  "mountain-range-location:rocky-mountains"
+);
+assert.equal(
+  retrievalEvent(getCanonicalRetrievalItemForActivity(mixedPhysicalActivity, "mississippi-river"), { suffix: "mixed-river" }).conceptId,
+  "river-location:mississippi-river"
+);
+assert.equal(
+  retrievalEvent(getCanonicalRetrievalItemForActivity(mixedPhysicalActivity, "lake-erie"), { suffix: "mixed-lake" }).conceptId,
+  "lake-location:lake-erie"
+);
+
 const coastChallenge = getUnitedStatesRelationshipChallenges()
   .find(({ relationshipType }) => relationshipType === UNITED_STATES_RELATIONSHIP_TYPES.COAST);
 assert.ok(coastChallenge, "Current U.S. Connections content must contain an authored coast relationship.");

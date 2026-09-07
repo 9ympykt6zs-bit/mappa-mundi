@@ -158,7 +158,7 @@ const earlyDecision = selectGuidedLearningOrchestrationBlock({
   repository: { events: [] },
   hasUnfinishedNonPhysicalLearning: false
 });
-assert.equal(earlyDecision.currentBlock.id, `us-guided:review-${cohortId}`);
+assert.equal(earlyDecision.currentBlock.id, "us-guided:review-physical-family-review:mountain-range");
 assert.equal(earlyDecision.currentBlock.destination.checkpointKind, "review");
 const pacedReviewDecision = selectGuidedLearningOrchestrationBlock({
   state: createGuidedLearningOrchestrationState({

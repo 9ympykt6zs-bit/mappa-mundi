@@ -118,14 +118,14 @@ const onlyMaineCovered = repository(stateCoverageEvents(["maine"]));
 assert.equal(
   selectGuidedLearningOrchestrationBlock({ state, repository: onlyMaineCovered }).evaluations
     .find(({ blockId }) => blockId === introduction.id).reason,
-  "prerequisite-not-covered",
-  "The physical introduction waits for every touched state prerequisite."
+  "eligible",
+  "Lower 48 physical geography can scaffold states that have not been introduced."
 );
 decision = selectGuidedLearningOrchestrationBlock({ state, repository: repository(newEnglandCovered) });
 assert.equal(decision.currentBlock.id, introduction.id);
-assert.deepEqual(decision.currentBlock.destination.targetIds, ["white-mountains", "green-mountains"]);
-assert.deepEqual(decision.currentBlock.destination.newTargetIds, ["white-mountains", "green-mountains"]);
-assert.deepEqual(decision.currentBlock.destination.teachingTargetIds, ["white-mountains", "green-mountains"]);
+assert.deepEqual(decision.currentBlock.destination.targetIds, ["white-mountains", "green-mountains", "adirondack-mountains"]);
+assert.deepEqual(decision.currentBlock.destination.newTargetIds, ["white-mountains", "green-mountains", "adirondack-mountains"]);
+assert.deepEqual(decision.currentBlock.destination.teachingTargetIds, ["white-mountains", "green-mountains", "adirondack-mountains"]);
 assert.equal(decision.currentBlock.destination.currentTeachingTargetId, "white-mountains");
 assert.deepEqual(decision.physicalTeachingTrace, {
   cohortId: "northeast-mountains",
@@ -134,7 +134,8 @@ assert.deepEqual(decision.physicalTeachingTrace, {
   currentTarget: "White Mountains",
   members: [
     { targetId: "white-mountains", name: "White Mountains", introduced: false, current: true },
-    { targetId: "green-mountains", name: "Green Mountains", introduced: false, current: false }
+    { targetId: "green-mountains", name: "Green Mountains", introduced: false, current: false },
+    { targetId: "adirondack-mountains", name: "Adirondack Mountains", introduced: false, current: false }
   ],
   interaction: { type: "guided-locating", highlight: true, evidenceOutcome: "assisted" },
   camera: {
@@ -146,7 +147,7 @@ assert.deepEqual(decision.physicalTeachingTrace, {
   },
   cameraSource: "authored-cohort-override"
 });
-assert.deepEqual(introduction.destination.prerequisiteStateIds, ["maine", "new-hampshire"]);
+assert.deepEqual(introduction.destination.prerequisiteStateIds, []);
 const whiteMountainsEntity = unitedStatesAtlas.entities.find(({ id }) => id === "mountain-range:white-mountains");
 assert.equal(whiteMountainsEntity?.source?.featureId, "white-mountains", "The introduction reuses the atlas canonical feature identity.");
 const mountainGeometry = JSON.parse(readFileSync(new URL(
@@ -181,6 +182,19 @@ const greenExposure = createPhysicalFeatureIntroductionEvidence({
 });
 assert.equal(greenExposure.conceptId, "mountain-range-location:green-mountains");
 assert.equal(greenExposure.outcome, "assisted");
+const adirondackExposure = createPhysicalFeatureIntroductionEvidence({
+  block: decision.currentBlock,
+  targetId: "adirondack-mountains",
+  identity: {
+    eventId: "guided-introduction:adirondack-mountains",
+    attemptId: "guided-introduction:adirondack-mountains",
+    occurredAt: "2026-08-30T12:01:02.000Z",
+    sessionId: "guided-orchestration:test",
+    sequence: 3
+  }
+});
+assert.equal(adirondackExposure.conceptId, "mountain-range-location:adirondack-mountains");
+assert.equal(adirondackExposure.outcome, "assisted");
 
 let teachingState = startGuidedLearningOrchestrationBlock(postReconstructionState, introduction.id);
 teachingState = beginGuidedLearningPhysicalTeaching(teachingState, {
@@ -191,7 +205,7 @@ teachingState = beginGuidedLearningPhysicalTeaching(teachingState, {
 assert.deepEqual(teachingState.physicalTeachingProgress[introduction.id], {
   blockId: introduction.id,
   cohortId: "northeast-mountains",
-  teachingTargetIds: ["white-mountains", "green-mountains"],
+  teachingTargetIds: ["white-mountains", "green-mountains", "adirondack-mountains"],
   taughtTargetIds: [],
   currentTargetId: "white-mountains",
   phase: "teaching"
@@ -207,10 +221,18 @@ const resumedTeachingDecision = selectGuidedLearningOrchestrationBlock({
   repository: repository([...newEnglandCovered, exposure])
 });
 assert.equal(resumedTeachingDecision.currentBlock.destination.currentTeachingTargetId, "green-mountains");
-assert.deepEqual(resumedTeachingDecision.currentBlock.destination.pendingTeachingTargetIds, ["green-mountains"]);
+assert.deepEqual(resumedTeachingDecision.currentBlock.destination.pendingTeachingTargetIds, [
+  "green-mountains",
+  "adirondack-mountains"
+]);
 teachingState = recordGuidedLearningPhysicalTeachingTarget(teachingState, {
   blockId: introduction.id,
   targetId: "green-mountains"
+});
+assert.equal(teachingState.physicalTeachingProgress[introduction.id].currentTargetId, "adirondack-mountains");
+teachingState = recordGuidedLearningPhysicalTeachingTarget(teachingState, {
+  blockId: introduction.id,
+  targetId: "adirondack-mountains"
 });
 assert.equal(teachingState.physicalTeachingProgress[introduction.id].phase, "teaching-complete");
 assert.equal(teachingState.physicalTeachingProgress[introduction.id].currentTargetId, null);
@@ -230,7 +252,7 @@ const singleFeatureDecision = selectGuidedLearningOrchestrationBlock({
   state: singleFeatureState,
   repository: whiteOnlyRepository
 });
-assert.equal(singleFeatureDecision.currentBlock.id, connection.id, "A single introduced feature may integrate through Connections.");
+assert.equal(singleFeatureDecision.currentBlock.type, GUIDED_LEARNING_BLOCK_TYPES.GUIDED_SECTION);
 assert.equal(
   singleFeatureDecision.evaluations.find(({ blockId }) => blockId === practice.id).reason,
   "awaiting-second-introduced-member",
@@ -253,7 +275,8 @@ const introductionEvents = createPhysicalFeatureIntroductionEvidenceEvents({
 });
 assert.deepEqual(introductionEvents.map(({ conceptId }) => conceptId), [
   "mountain-range-location:white-mountains",
-  "mountain-range-location:green-mountains"
+  "mountain-range-location:green-mountains",
+  "mountain-range-location:adirondack-mountains"
 ]);
 assert.ok(introductionEvents.every(({ outcome }) => outcome === "assisted"));
 state = startGuidedLearningOrchestrationBlock(state, introduction.id);
@@ -265,7 +288,7 @@ state = completeGuidedLearningPhysicalFeatureIntroductions(
 const withFeatureExposure = repository([...newEnglandCovered, ...introductionEvents]);
 decision = selectGuidedLearningOrchestrationBlock({ state, repository: withFeatureExposure });
 assert.equal(decision.currentBlock.id, practice.id);
-assert.deepEqual(decision.currentBlock.destination.targetIds, ["white-mountains", "green-mountains"]);
+assert.deepEqual(decision.currentBlock.destination.targetIds, ["white-mountains", "green-mountains", "adirondack-mountains"]);
 assert.equal(decision.currentBlock.destination.targetIds.length >= 2, true, "Physical retrieval always has meaningful alternatives.");
 assert.deepEqual(decision.currentBlock.destination.persistentLearningCamera, {
   mode: "override",
@@ -281,9 +304,14 @@ state = startGuidedLearningOrchestrationBlock(state, practice.id, {
 state = completeGuidedLearningOrchestrationBlock(state, practice.id);
 assert.deepEqual(state.retrievedPhysicalCohortTargetIds["northeast-mountains"], [
   "white-mountains",
-  "green-mountains"
+  "green-mountains",
+  "adirondack-mountains"
 ]);
-decision = selectGuidedLearningOrchestrationBlock({ state, repository: withFeatureExposure });
+decision = selectGuidedLearningOrchestrationBlock({
+  state,
+  repository: withFeatureExposure,
+  targetedNeed: { objectiveId: "learn-connections", familyId: "geographic-relationships" }
+});
 assert.equal(decision.currentBlock.id, connection.id);
 assert.deepEqual(decision.currentBlock.destination.challengeIds, ["us-relationship-mountain-range-maine-white-mountains"]);
 assert.equal(decision.currentBlockEvaluation.prerequisites.every(({ covered }) => covered), true);
@@ -299,7 +327,7 @@ assert.equal(getTargetedMentalMapChallengePool(allConnections, []).pool.length, 
 
 const missingFeatureContext = repository(newEnglandCovered);
 assert.equal(selectGuidedLearningOrchestrationBlock({ state, repository: missingFeatureContext }).currentBlock.type, GUIDED_LEARNING_BLOCK_TYPES.GUIDED_SECTION);
-assert.equal(selectGuidedLearningOrchestrationBlock({ state, repository: withFeatureExposure }).currentBlock.id, connection.id);
+assert.equal(selectGuidedLearningOrchestrationBlock({ state, repository: withFeatureExposure }).currentBlock.type, GUIDED_LEARNING_BLOCK_TYPES.GUIDED_SECTION);
 
 const storage = memoryStorage();
 const launchedConnection = startGuidedLearningOrchestrationBlock(state, connection.id, { activeSectionId: "us-states-03" });

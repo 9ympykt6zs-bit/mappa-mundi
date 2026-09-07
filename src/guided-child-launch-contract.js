@@ -1,5 +1,5 @@
 export const GUIDED_CHILD_LAUNCH_STORAGE_KEY = "mappaGuidedChildLaunch";
-export const GUIDED_CHILD_LAUNCH_VERSION = 1;
+export const GUIDED_CHILD_LAUNCH_VERSION = 2;
 
 const validStatuses = new Set(["launched", "completed"]);
 const validEntrySources = new Set(["guided-learning", "evidence-driven-primary-learn"]);
@@ -43,6 +43,8 @@ function normalizeChild(value = {}) {
     camera: cloneJson(source.camera),
     geometry: cloneJson(source.geometry),
     persistentLearningCamera: cloneJson(source.persistentLearningCamera),
+    physicalReviewActivity: source.physicalReviewActivity === true,
+    sourceActivityIds: uniqueStrings(source.sourceActivityIds),
     guidedPhysicalCheckpoint: cloneJson(source.guidedPhysicalCheckpoint)
   };
 }

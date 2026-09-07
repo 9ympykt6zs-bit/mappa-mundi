@@ -15,30 +15,6 @@ export const UNITED_STATES_PHYSICAL_FEATURE_FAMILIES = Object.freeze({
 
 export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
   Object.freeze({
-    id: "western-rivers",
-    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.RIVER,
-    source: "authored-memory-trail-section",
-    sourceId: "western-rivers",
-    authoredMemberTargetIds: Object.freeze(["colorado-river", "columbia-river", "rio-grande-river"]),
-    minimumRetrievalSize: 2,
-    preferredRetrievalSize: 3
-  }),
-  Object.freeze({
-    id: "central-eastern-rivers",
-    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.RIVER,
-    source: "authored-memory-trail-section",
-    sourceId: "central-eastern-rivers",
-    authoredMemberTargetIds: Object.freeze([
-      "arkansas-river",
-      "mississippi-river",
-      "missouri-river",
-      "ohio-river",
-      "st-lawrence-river"
-    ]),
-    minimumRetrievalSize: 2,
-    preferredRetrievalSize: 3
-  }),
-  Object.freeze({
     id: "northeast-mountains",
     family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.MOUNTAIN_RANGE,
     source: "product-approved-subgroup-of-authored-eastern-mountains",
@@ -50,7 +26,108 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     ]),
     minimumRetrievalSize: 2,
     preferredRetrievalSize: 3,
+    curriculumOrder: 10,
     camera: Object.freeze({ mode: "override", center: Object.freeze([-76.24, 40.39]), zoom: 5.16, bearing: 0, pitch: 0 })
+  }),
+  Object.freeze({
+    id: "western-rivers",
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.RIVER,
+    source: "authored-memory-trail-section",
+    sourceId: "western-rivers",
+    authoredMemberTargetIds: Object.freeze(["colorado-river", "columbia-river", "rio-grande-river"]),
+    minimumRetrievalSize: 2,
+    preferredRetrievalSize: 3,
+    curriculumOrder: 20
+  }),
+  Object.freeze({
+    id: "upper-great-lakes",
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.LAKE,
+    source: "guided-physical-curriculum",
+    sourceId: "us-physical-lakes",
+    authoredMemberTargetIds: Object.freeze(["lake-superior", "lake-michigan", "lake-huron"]),
+    minimumRetrievalSize: 2,
+    preferredRetrievalSize: 3,
+    curriculumOrder: 30
+  }),
+  Object.freeze({
+    id: "western-major-mountains",
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.MOUNTAIN_RANGE,
+    source: "guided-physical-curriculum",
+    sourceId: "us-physical-western-mountains",
+    authoredMemberTargetIds: Object.freeze(["rocky-mountains", "cascade-mountains", "sierra-nevada"]),
+    minimumRetrievalSize: 2,
+    preferredRetrievalSize: 3,
+    curriculumOrder: 40
+  }),
+  Object.freeze({
+    id: "central-rivers",
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.RIVER,
+    source: "guided-physical-curriculum",
+    sourceId: "central-eastern-rivers",
+    authoredMemberTargetIds: Object.freeze(["mississippi-river", "missouri-river"]),
+    minimumRetrievalSize: 2,
+    preferredRetrievalSize: 2,
+    curriculumOrder: 50
+  }),
+  Object.freeze({
+    id: "eastern-and-interior-rivers",
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.RIVER,
+    source: "guided-physical-curriculum",
+    sourceId: "central-eastern-rivers",
+    authoredMemberTargetIds: Object.freeze(["arkansas-river", "ohio-river"]),
+    minimumRetrievalSize: 2,
+    preferredRetrievalSize: 2,
+    curriculumOrder: 60
+  }),
+  Object.freeze({
+    id: "eastern-and-interior-lakes",
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.LAKE,
+    source: "guided-physical-curriculum",
+    sourceId: "us-physical-lakes",
+    authoredMemberTargetIds: Object.freeze(["lake-erie", "lake-ontario", "great-salt-lake"]),
+    minimumRetrievalSize: 2,
+    preferredRetrievalSize: 3,
+    curriculumOrder: 70
+  }),
+  Object.freeze({
+    id: "southern-appalachian-ranges",
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.MOUNTAIN_RANGE,
+    source: "guided-physical-curriculum",
+    sourceId: "us-physical-eastern-mountains",
+    authoredMemberTargetIds: Object.freeze(["allegheny-mountains", "blue-ridge-mountains", "great-smoky-mountains"]),
+    minimumRetrievalSize: 2,
+    preferredRetrievalSize: 3,
+    curriculumOrder: 80
+  }),
+  Object.freeze({
+    id: "appalachian-system-ranges",
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.MOUNTAIN_RANGE,
+    source: "guided-physical-curriculum",
+    sourceId: "us-physical-eastern-mountains",
+    authoredMemberTargetIds: Object.freeze(["cumberland-mountains", "appalachian-mountains"]),
+    minimumRetrievalSize: 2,
+    preferredRetrievalSize: 2,
+    curriculumOrder: 90
+  }),
+  Object.freeze({
+    id: "pacific-ranges",
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.MOUNTAIN_RANGE,
+    source: "guided-physical-curriculum",
+    sourceId: "us-physical-western-mountains",
+    authoredMemberTargetIds: Object.freeze(["coast-ranges", "olympic-mountains"]),
+    minimumRetrievalSize: 2,
+    preferredRetrievalSize: 2,
+    curriculumOrder: 100
+  }),
+  Object.freeze({
+    id: "interior-west-ranges",
+    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.MOUNTAIN_RANGE,
+    source: "guided-physical-curriculum",
+    sourceId: "us-physical-western-mountains",
+    authoredMemberTargetIds: Object.freeze(["wasatch-range", "teton-range"]),
+    minimumRetrievalSize: 2,
+    preferredRetrievalSize: 2,
+    curriculumOrder: 110
   }),
   Object.freeze({
     id: "central-mountains",
@@ -59,7 +136,8 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     sourceId: "us-physical-midwestern-mountains",
     authoredMemberTargetIds: Object.freeze(["ozark-mountains", "ouachita-mountains", "black-hills"]),
     minimumRetrievalSize: 2,
-    preferredRetrievalSize: 3
+    preferredRetrievalSize: 3,
+    curriculumOrder: 120
   }),
   Object.freeze({
     id: "alaska-mountains",
@@ -68,27 +146,12 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     sourceId: "us-physical-alaska-mountains",
     authoredMemberTargetIds: Object.freeze(["alaska-range", "brooks-range"]),
     minimumRetrievalSize: 2,
-    preferredRetrievalSize: 2
+    preferredRetrievalSize: 2,
+    curriculumOrder: 130
   })
 ]);
 
-export const UNITED_STATES_PHYSICAL_COHORT_DEFERRED_GROUPS = Object.freeze([
-  Object.freeze({
-    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.MOUNTAIN_RANGE,
-    sourceId: "us-physical-western-mountains",
-    reason: "authored-group-too-large-for-novice-cohort"
-  }),
-  Object.freeze({
-    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.MOUNTAIN_RANGE,
-    sourceId: "us-physical-eastern-mountains:remaining-members",
-    reason: "no-authored-small-subgroup"
-  }),
-  Object.freeze({
-    family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.LAKE,
-    sourceId: "us-physical-lakes",
-    reason: "no-authored-small-cohort"
-  })
-]);
+export const UNITED_STATES_PHYSICAL_COHORT_DEFERRED_GROUPS = Object.freeze([]);
 
 const familyConfigs = Object.freeze({
   [UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.RIVER]: Object.freeze({
@@ -205,9 +268,11 @@ export function buildUnitedStatesPhysicalFeatureOrchestrationInventory({
     const authoredStateIds = getAuthoredStateIds(atlas, entity, familyConfig);
     const override = introductionPrerequisiteStateIdsByFeature[entity.id]
       ?? introductionPrerequisiteStateIdsByFeature[featureId];
+    const requiresDisconnectedRegionState = authoredStateIds.length > 0
+      && authoredStateIds.every((stateId) => stateId === "alaska");
     const introductionPrerequisiteStateIds = override
       ? validateIntroductionOverride(entity.id, override, authoredStateIds)
-      : authoredStateIds;
+      : requiresDisconnectedRegionState ? authoredStateIds : [];
     const connectionChallenges = getAuthoredConnectionChallenges(challenges, entity, familyConfig);
     const geometryRepresentation = entity.geometry?.representation || PHYSICAL_GEOMETRY_REPRESENTATIONS.INCOMPLETE;
     const supported = Boolean(
@@ -217,7 +282,7 @@ export function buildUnitedStatesPhysicalFeatureOrchestrationInventory({
       && geometryRepresentation !== PHYSICAL_GEOMETRY_REPRESENTATIONS.INCOMPLETE
     );
     const cameraOverride = cameraOverridesByFeature[entity.id] ?? cameraOverridesByFeature[featureId];
-    const stateNames = introductionPrerequisiteStateIds
+    const stateNames = authoredStateIds
       .map((stateId) => statesById.get(stateId)?.name)
       .filter(Boolean);
     const learningCohort = cohortsByTargetId.get(featureId) || null;
@@ -249,7 +314,11 @@ export function buildUnitedStatesPhysicalFeatureOrchestrationInventory({
         : geometryRepresentation === PHYSICAL_GEOMETRY_REPRESENTATIONS.INCOMPLETE
           ? "incomplete-geometry"
           : "missing-or-untrusted-learning-contract",
-      prerequisiteSource: override ? "explicit-introduction-override" : "derived-authored-relationships",
+      prerequisiteSource: override
+        ? "explicit-introduction-override"
+        : requiresDisconnectedRegionState
+          ? "disconnected-region-state-gate"
+          : "physical-geography-scaffold",
       authoredStateIds: Object.freeze(authoredStateIds),
       introductionPrerequisiteStateIds: Object.freeze(introductionPrerequisiteStateIds),
       introductionPrerequisiteConceptIds: Object.freeze(introductionPrerequisiteStateIds.flatMap((stateId) => [

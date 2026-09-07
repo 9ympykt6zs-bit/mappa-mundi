@@ -473,7 +473,7 @@ test("scoped Guided Learning reset does not erase canonical U.S. returning-learn
 test("strong canonical Stage 1 evidence advances Learn to Rivers on desktop and mobile", async ({ page }) => {
   const repository = createStrongStageOneCanonicalRepository();
   await page.addInitScript(({ canonicalRepository, completedBlockIds }) => {
-    localStorage.setItem("mappaGuidedLearningOrchestration", JSON.stringify({ version: 5, completedBlockIds }));
+    localStorage.setItem("mappaGuidedLearningOrchestration", JSON.stringify({ version: 6, completedBlockIds }));
     localStorage.setItem("mappaMundiCanonicalEvidence", JSON.stringify(canonicalRepository));
     localStorage.setItem("atlasQuestProgress", JSON.stringify({
       version: 1,
@@ -547,7 +547,11 @@ test("a Lakes continuation enters bounded Guided Learning while manual Lakes rem
     legacyJourneyLaunch: false,
     boundedChildLaunched: true
   });
-  expect(trace.childLaunchContract.child.targetIds).toHaveLength(1);
+  expect(trace.childLaunchContract.child.targetIds).toEqual([
+    "lake-superior",
+    "lake-michigan",
+    "lake-huron"
+  ]);
   expect(trace.childLaunchContract.child.targetIds).toEqual(trace.childLaunchContract.child.teachingTargetIds);
   expect((await globeState(page)).screen).toBe("study-explore");
   expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getSavedJourneyProgress())).toEqual(journeyBefore);

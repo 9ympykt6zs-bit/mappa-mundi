@@ -48,20 +48,20 @@ import {
   selectGuidedLearningOrchestrationBlock,
   startGuidedLearningOrchestrationBlock,
   UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
-} from "./guided-learning-orchestration.js?v=20260901-guided-physical-retrieval-1";
+} from "./guided-learning-orchestration.js?v=20260907-guided-physical-pacing-1";
 import {
   clearGuidedChildLaunchContract,
   completeGuidedChildLaunchContract,
   createGuidedChildLaunchContract,
   loadGuidedChildLaunchContract,
   saveGuidedChildLaunchContract
-} from "./guided-child-launch-contract.js?v=20260902-guided-child-provenance-1";
+} from "./guided-child-launch-contract.js?v=20260907-guided-physical-pacing-1";
 import {
   createUnitedStatesGuidedPoliticalCameraDecision,
   isManagedUnitedStatesGuidedPoliticalCamera,
   UNITED_STATES_GUIDED_POLITICAL_CAMERA_CONTEXT
 } from "./united-states-guided-political-camera.js?v=20260903-guided-political-camera-1";
-import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js?v=20260905-guided-physical-search-space-1";
+import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js?v=20260907-guided-physical-pacing-1";
 import {
   chooseNextGuidedPhysicalRetrievalTarget,
   createGuidedPhysicalRetrievalCheckpoint,
@@ -100,7 +100,7 @@ import { evaluateMapTargetSelection } from "./maplibre/learning-integrity.js";
 import {
   getCanonicalRetrievalItemForActivity,
   isCanonicalRetrievalEntityType
-} from "./activity-evidence-contract.js";
+} from "./activity-evidence-contract.js?v=20260907-guided-physical-pacing-1";
 import { loadPlaceMastery } from "./place-mastery-store.js";
 import {
   activityProgressStorageKey,
@@ -4044,6 +4044,8 @@ function createGuidedChildLaunchContractForBlock(block, {
       camera: destination.camera,
       geometry: destination.geometry,
       persistentLearningCamera: destination.persistentLearningCamera,
+      physicalReviewActivity: destination.physicalReviewActivity === true,
+      sourceActivityIds: destination.sourceActivityIds,
       guidedPhysicalCheckpoint: destination.guidedPhysicalCheckpoint
     }
   });
@@ -4224,7 +4226,9 @@ async function launchGuidedLearningChildBlock(block, { completed = false } = {})
       physicalFeatureFamily: block.destination.featureFamily,
       physicalFeatureCamera: block.destination.camera,
       physicalFeatureGeometry: block.destination.geometry,
-      persistentLearningCamera: block.destination.persistentLearningCamera
+      persistentLearningCamera: block.destination.persistentLearningCamera,
+      physicalReviewActivity: block.destination.physicalReviewActivity === true,
+      sourceActivityIds: block.destination.sourceActivityIds
     });
     if (completed) showRehydratedGuidedChildCompletion(block);
     return true;
@@ -4242,7 +4246,9 @@ async function launchGuidedLearningChildBlock(block, { completed = false } = {})
       physicalFeatureFamily: block.destination.featureFamily,
       physicalFeatureCamera: block.destination.camera,
       physicalFeatureGeometry: block.destination.geometry,
-      persistentLearningCamera: block.destination.persistentLearningCamera
+      persistentLearningCamera: block.destination.persistentLearningCamera,
+      physicalReviewActivity: block.destination.physicalReviewActivity === true,
+      sourceActivityIds: block.destination.sourceActivityIds
     });
     if (completed) showRehydratedGuidedChildCompletion(block);
     return true;
@@ -4309,6 +4315,10 @@ function rehydrateGuidedLearningChildBlock(contract) {
     camera: child.camera || liveBlock.destination.camera,
     geometry: child.geometry || liveBlock.destination.geometry,
     persistentLearningCamera: child.persistentLearningCamera || liveBlock.destination.persistentLearningCamera,
+    physicalReviewActivity: child.physicalReviewActivity === true || liveBlock.destination.physicalReviewActivity === true,
+    sourceActivityIds: child.sourceActivityIds.length > 0
+      ? [...child.sourceActivityIds]
+      : liveBlock.destination.sourceActivityIds,
     guidedPhysicalCheckpoint: child.guidedPhysicalCheckpoint || liveBlock.destination.guidedPhysicalCheckpoint
   };
   if (teachingProgress) {
@@ -8543,12 +8553,56 @@ function getStudyStepContext(journeyId, stepId) {
   return { journey, step, activity };
 }
 
+function createGuidedPhysicalReviewActivity(targetIds = [], sourceActivityIds = []) {
+  const requestedTargetIds = [...new Set(targetIds.filter(Boolean))];
+  const sourceIds = [...new Set(sourceActivityIds.filter(Boolean))];
+  const sourceActivities = sourceIds.map((activityId) => getActivityById(activityId)).filter(Boolean);
+  const targets = requestedTargetIds.map((targetId) => sourceActivities
+    .flatMap((activity) => activity.targets || [])
+    .find((target) => target.id === targetId)).filter(Boolean);
+  if (targets.length !== requestedTargetIds.length) return null;
+  const entityTypesByTargetId = Object.fromEntries(targets.map((target) => [
+    target.id,
+    target.type === "water-body" ? "lake" : target.type
+  ]));
+  return {
+    ...(sourceActivities[0] || {}),
+    id: "us-guided-physical-review",
+    title: "U.S. Physical Geography Review",
+    targetNoun: "physical feature",
+    promptText: "Find these physical features",
+    visibleAnswerLimit: 8,
+    memoryTrailNewTargetLimit: 4,
+    memoryTrailRequireAllTargets: true,
+    memoryTrailAutoStart: true,
+    memoryTrailSections: [],
+    canonicalEvidence: { entityTypesByTargetId },
+    map: {
+      ...(sourceActivities[0]?.map || {}),
+      region: "united-states",
+      regionView: { center: [-97.7622, 39.30636], zoom: 4.1407 },
+      studyView: {
+        bounds: [[-126.5, 24], [-64, 50.5]],
+        padding: { top: 58, right: 58, bottom: 96, left: 58 },
+        duration: 850
+      }
+    },
+    targets,
+    answerBankItems: targets.map(({ id, name }) => ({ id, name }))
+  };
+}
+
 async function startStudyPreviewActivity(journeyId, stepId, options = {}) {
   await ensureMapReady();
   if (!activeGuidedLearningOrchestrationBlock) {
     clearGuidedChildLaunchContract(window.localStorage);
   }
-  const { journey, step, activity } = getStudyStepContext(journeyId, stepId);
+  const context = getStudyStepContext(journeyId, stepId);
+  const journey = context.journey;
+  const step = context.step;
+  const activity = options.physicalReviewActivity
+    ? createGuidedPhysicalReviewActivity(options.memoryTrailTargetIds, options.sourceActivityIds)
+    : context.activity;
 
   if (!journey || !step || !activity) {
     showStudyStepNotReady();

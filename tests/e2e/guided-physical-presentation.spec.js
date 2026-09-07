@@ -11,10 +11,13 @@ const lower48Camera = { center: [-97.76220, 39.30636], zoom: 4.1407 };
 async function launchPhysicalTeaching(page, targetId, { extraStateIds = [], reducedMotion = "no-preference" } = {}) {
   await page.emulateMedia({ reducedMotion });
   const feature = orchestration.physicalFeatures.find((candidate) => candidate.targetId === targetId);
+  const targetCohort = orchestration.physicalCohorts.find(({ id }) => id === feature.learningCohortId);
   const completedBlockIds = ["us-guided:rebuild-new-england"];
   for (const candidate of orchestration.physicalFeatures) {
-    if (candidate.id === feature.id) break;
-    completedBlockIds.push(...candidate.blockIds);
+    const cohort = orchestration.physicalCohorts.find(({ id }) => id === candidate.learningCohortId);
+    if ((cohort?.curriculumOrder ?? Infinity) < (targetCohort?.curriculumOrder ?? Infinity)) {
+      completedBlockIds.push(...candidate.sequenceBlockIds);
+    }
   }
   const stateIds = [...new Set([...feature.introductionPrerequisiteStateIds, ...extraStateIds])];
   await page.addInitScript(({ repositoryKey, orchestrationKey, stateIds, completedBlockIds, orchestrationId }) => {
@@ -35,7 +38,7 @@ async function launchPhysicalTeaching(page, targetId, { extraStateIds = [], redu
       }))
     }));
     localStorage.setItem(orchestrationKey, JSON.stringify({
-      version: 4,
+      version: 6,
       orchestrationId,
       completedBlockIds,
       activeBlockId: null,
@@ -61,11 +64,21 @@ async function launchPhysicalTeaching(page, targetId, { extraStateIds = [], redu
   await page.locator("#launch-start-button").click();
   await page.evaluate(() => window.__mappaMundiLoadApp());
   await expect(page.locator("#app-shell-title")).toHaveText("Main Menu");
+  const firstCohortFeature = orchestration.physicalFeatures.find((candidate) => (
+    candidate.targetId === targetCohort.supportedMemberTargetIds[0]
+  ));
   await expect.poll(() => page.evaluate(() => (
     window.__MAPPA_TEST_API__.getGuidedLearningOrchestration().currentBlock.id
-  ))).toBe(feature.introductionBlockId);
+  ))).toBe(firstCohortFeature.introductionBlockId);
   await page.evaluate(() => window.__MAPPA_TEST_API__.launchNextGuidedLearningOrchestration());
   await expect(page.locator(".guided-physical-teaching-panel")).toBeVisible({ timeout: 20_000 });
+  for (const cohortTargetId of targetCohort.supportedMemberTargetIds) {
+    if (cohortTargetId === targetId) break;
+    await expect.poll(() => page.evaluate(() => (
+      window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingState()?.currentTargetId
+    ))).toBe(cohortTargetId);
+    expect(await page.evaluate(() => window.__MAPPA_TEST_API__.answerGuidedPhysicalTeachingCorrectly())).toBe(true);
+  }
   await expect.poll(() => page.evaluate(() => (
     window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingState()?.currentTargetId
   ))).toBe(targetId);
