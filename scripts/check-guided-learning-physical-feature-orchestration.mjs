@@ -80,10 +80,8 @@ const supported = inventory.filter(({ supported: isSupported }) => isSupported);
 const deferred = inventory.filter(({ supported: isSupported }) => !isSupported);
 
 assert.equal(inventory.length, 34, "The audited inventory contains every authored river, lake, and mountain range.");
-assert.equal(supported.length, 33);
-assert.deepEqual(deferred.map(({ id, exclusionReason }) => [id, exclusionReason]), [
-  ["river:st-lawrence-river", "incomplete-geometry"]
-]);
+assert.equal(supported.length, 34);
+assert.deepEqual(deferred.map(({ id, exclusionReason }) => [id, exclusionReason]), []);
 assert.deepEqual(UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.deferredPhysicalFamilies, [
   { family: "coast", reason: "relationship-only-no-targeted-retrieval-path" }
 ]);
@@ -95,7 +93,7 @@ assert.deepEqual(
 
 const familyCounts = Object.groupBy(supported, ({ family }) => family);
 assert.deepEqual(Object.fromEntries(Object.entries(familyCounts).map(([family, features]) => [family, features.length])), {
-  river: 7,
+  river: 8,
   lake: 6,
   "mountain-range": 20
 });
@@ -152,8 +150,12 @@ supported.forEach((feature) => {
 });
 
 const stLawrence = inventory.find(({ targetId }) => targetId === "st-lawrence-river");
-assert.equal(stLawrence.geometry.representation, "incomplete");
-assert.ok(!UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.blocks.some(({ featureId }) => featureId === stLawrence.id));
+assert.equal(stLawrence.geometry.representation, "full");
+assert.equal(stLawrence.geometry.crossesInternationalBorder, true);
+assert.equal(stLawrence.geometry.hasCrossBorderVisualContinuation, true);
+assert.equal(stLawrence.supported, true);
+assert.ok(UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.blocks.some(({ featureId }) => featureId === stLawrence.id));
+assert.deepEqual(stLawrence.authoredStateIds, ["new-york"], "Canadian visual continuation does not create foreign curriculum relationships.");
 const cascades = inventory.find(({ targetId }) => targetId === "cascade-mountains");
 assert.equal(cascades.geometry.representation, "scope-limited");
 assert.equal(cascades.supported, true, "Scope-limited geometry remains usable without being called full.");
@@ -389,6 +391,31 @@ assert.deepEqual(selectPhysicalCohortRetrievalSubset({
   retrievedTargetIds: ["white-mountains", "green-mountains"]
 }).retrievalTargetIds, ["white-mountains", "green-mountains", "adirondack-mountains"]);
 
+const centralRiverCohort = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalCohorts
+  .find(({ id }) => id === "central-rivers");
+const easternRiverCohort = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalCohorts
+  .find(({ id }) => id === "eastern-rivers");
+assert.deepEqual(centralRiverCohort.supportedMemberTargetIds, ["mississippi-river", "missouri-river", "arkansas-river"]);
+assert.deepEqual(easternRiverCohort.supportedMemberTargetIds, ["ohio-river", "st-lawrence-river"]);
+assert.deepEqual(easternRiverCohort.camera, {
+  mode: "override",
+  center: [-77.2, 44.4],
+  zoom: 3.2,
+  zoomByViewport: { desktop: 4.05, mobile: 3.2 },
+  bearing: 0,
+  pitch: 0
+});
+assert.equal(calculateGuidedLearningPhysicalFeatureCamera({
+  family: "river",
+  cohortCamera: easternRiverCohort.camera,
+  viewport: "desktop"
+}).zoom, 4.05);
+assert.equal(calculateGuidedLearningPhysicalFeatureCamera({
+  family: "river",
+  cohortCamera: easternRiverCohort.camera,
+  viewport: "mobile"
+}).zoom, 3.2);
+
 const northeastPrerequisitesWithoutNewYork = stateEvents(["maine", "new-hampshire", "vermont"]);
 const northeastBaseState = createGuidedLearningOrchestrationState({
   completedBlockIds: ["us-guided:rebuild-new-england"]
@@ -576,6 +603,12 @@ const riverReviewPoolId = "physical-family-review:river";
 const firstRiverReview = getGuidedLearningPhysicalReviewEligibility(reviewState, riverReviewPoolId);
 assert.equal(firstRiverReview.eligible, true);
 assert.equal(firstRiverReview.targetIds.length, 4);
+assert.equal(
+  UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalReviewPools
+    .find(({ id }) => id === riverReviewPoolId).targetIds.includes("st-lawrence-river"),
+  true,
+  "St. Lawrence participates in rotating river review."
+);
 let riverReviewDecision = selectGuidedLearningOrchestrationBlock({
   state: reviewState,
   repository: { events: [] },
@@ -613,6 +646,7 @@ assert.notDeepEqual(
 const mixedPoolId = "physical-mixed-review";
 const mixedEligibility = getGuidedLearningPhysicalReviewEligibility(reviewState, mixedPoolId);
 assert.equal(mixedEligibility.eligible, true);
+assert.equal(mixedReviewPool.targetIds.includes("st-lawrence-river"), true, "St. Lawrence is eligible for mixed physical review.");
 assert.equal(new Set(mixedEligibility.targetIds.map((targetId) => (
   UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures.find((feature) => feature.targetId === targetId).family
 ))).size, 3);
@@ -656,4 +690,4 @@ const storage = {
 assert.equal(resetGuidedLearningOrchestrationState(storage).physicalInterleaveRequired, false);
 assert.equal(storage.getItem("mappaGuidedLearningOrchestration"), null);
 
-console.log("Guided Learning physical-feature orchestration validation passed (34 audited, 33 orchestrated, 1 geometry-deferred). ");
+console.log("Guided Learning physical-feature orchestration validation passed (34 audited and orchestrated, 0 geometry-deferred). ");

@@ -11,9 +11,11 @@ const sourceDirectory = path.join(repoRoot, "tools", "source-data", "natural-ear
 const sourceBaseName = "ne_10m_rivers_lake_centerlines";
 const sourceDbfPath = path.join(sourceDirectory, `${sourceBaseName}.dbf`);
 const sourceShpPath = path.join(sourceDirectory, `${sourceBaseName}.shp`);
+const stLawrenceSourcePath = path.join(repoRoot, "tools", "source-data", "openstreetmap", "st-lawrence-river-main-stream.geojson");
 const outputPath = path.join(repoRoot, "assets", "data", "physical-features", "proof-sheet-rivers.geojson");
 
 const naturalEarthSourceUrl = "https://naciscdn.org/naturalearth/10m/physical/ne_10m_rivers_lake_centerlines.zip";
+const openStreetMapCopyrightUrl = "https://www.openstreetmap.org/copyright";
 
 const requiredUsRivers = [
   { id: "arkansas-river", label: "Arkansas River", riverNumber: "131", nameField: "name_en", expectedName: "Arkansas", expectedBounds: [-112, 32, -88, 42] },
@@ -64,7 +66,19 @@ const requiredUsRivers = [
     deferredReason: "Natural Earth's record 409 is named Red of the South but its geometry is around 46-50 degrees north; the North America supplement has no verified main-stem Red River of the South feature."
   },
   { id: "rio-grande-river", label: "Rio Grande River", riverNumber: "110", nameField: "name", expectedName: "Rio Grande", includeLakeCenterlines: true, expectedBounds: [-108, 24, -96, 38] },
-  { id: "st-lawrence-river", label: "St. Lawrence River", riverNumber: "23", nameField: "name_en", expectedName: "St. Lawrence", expectedBounds: [-85, 42, -64, 48] }
+  {
+    id: "st-lawrence-river",
+    label: "St. Lawrence River",
+    sourceType: "openstreetmap-waterway-relation",
+    expectedBounds: [-77, 44, -64, 50],
+    requiredCoverage: [
+      { label: "Lake Ontario outlet", bounds: [-76.3, 44.1, -75.9, 44.45] },
+      { label: "New York–Ontario boundary reach", bounds: [-75.9, 44.35, -74.7, 45.1] },
+      { label: "Montreal reach", bounds: [-74.0, 45.25, -73.25, 45.9] },
+      { label: "Quebec City reach", bounds: [-71.5, 46.6, -70.9, 47.0] },
+      { label: "lower estuary and Gulf transition", bounds: [-67.2, 48.8, -64.0, 50.0] }
+    ]
+  }
 ];
 
 main().catch((error) => {
@@ -73,9 +87,10 @@ main().catch((error) => {
 });
 
 async function main() {
-  const [rows, shapes] = await Promise.all([
+  const [rows, shapes, stLawrenceSource] = await Promise.all([
     readDbfRows(sourceDbfPath),
-    readPolylineShapes(sourceShpPath)
+    readPolylineShapes(sourceShpPath),
+    readJson(stLawrenceSourcePath)
   ]);
 
   if (rows.length !== shapes.length) {
@@ -86,6 +101,10 @@ async function main() {
     .filter((river) => river.deferredReason)
     .map(({ id, label, deferredReason }) => ({ id, label, reason: deferredReason }));
   const features = requiredUsRivers.filter((river) => !river.deferredReason).map((river) => {
+    if (river.sourceType === "openstreetmap-waterway-relation") {
+      return buildOpenStreetMapRiverFeature(river, stLawrenceSource);
+    }
+
     const riverNumbers = river.riverNumbers || [river.riverNumber];
     const matches = riverNumbers.flatMap((riverNumber) => {
       const riverMatches = rows
@@ -165,15 +184,92 @@ async function main() {
   const output = {
     type: "FeatureCollection",
     name: "proof-sheet-rivers",
-    sourceStatus: "verified-natural-earth-10m",
-    sourceDataset: "Natural Earth 10m Rivers, lake centerlines",
-    sourceUrl: naturalEarthSourceUrl,
+    sourceStatus: "verified-composite-river-sources",
+    sourceDatasets: [
+      { name: "Natural Earth 10m Rivers, lake centerlines", url: naturalEarthSourceUrl, license: "Public domain" },
+      { name: "OpenStreetMap waterway relations", url: openStreetMapCopyrightUrl, license: "ODbL 1.0" }
+    ],
     deferredFeatures,
     features
   };
 
   await writeFile(outputPath, `${JSON.stringify(output, null, 2)}\n`, "utf8");
   console.log(`Wrote ${features.length} verified U.S. proof-sheet rivers and deferred ${deferredFeatures.length} to ${path.relative(repoRoot, outputPath)}.`);
+}
+
+function buildOpenStreetMapRiverFeature(river, source) {
+  const sourceFeature = source?.features?.find(({ properties }) => properties?.id === river.id);
+  if (!sourceFeature || !hasLineCoordinates(sourceFeature.geometry?.coordinates)) {
+    throw new Error(`${river.label} is missing usable checked-in OpenStreetMap main-stream geometry.`);
+  }
+  if (sourceFeature.properties?.relationId !== source?.source?.relationId) {
+    throw new Error(`${river.label} source relation metadata is inconsistent.`);
+  }
+
+  const bounds = getGeometryBounds(sourceFeature.geometry.coordinates);
+  if (!isWithinExpectedBounds(bounds, river.expectedBounds)) {
+    throw new Error(`${river.label} geometry bounds ${formatBounds(bounds)} fall outside ${formatBounds(river.expectedBounds)}.`);
+  }
+  for (const checkpoint of river.requiredCoverage || []) {
+    if (!geometryVisitsBounds(sourceFeature.geometry, checkpoint.bounds)) {
+      throw new Error(`${river.label} geometry does not reach the required ${checkpoint.label} coverage window ${formatBounds(checkpoint.bounds)}.`);
+    }
+  }
+
+  return {
+    type: "Feature",
+    properties: {
+      id: river.id,
+      label: river.label,
+      name: river.label,
+      sourceName: sourceFeature.properties.nameEn,
+      type: "river",
+      kind: "river",
+      sourceDataset: source.source.dataset,
+      sourceFile: path.relative(repoRoot, stLawrenceSourcePath),
+      sourceUrl: source.source.sourceUrl,
+      sourceCopyright: source.source.copyright,
+      sourceLicense: source.source.license,
+      sourceLicenseUrl: source.source.licenseUrl,
+      openStreetMapRelationId: source.source.relationId,
+      openStreetMapRelationVersion: source.source.relationVersion,
+      openStreetMapRelationTimestamp: source.source.relationTimestamp,
+      sourceRecords: [{
+        relationId: source.source.relationId,
+        relationVersion: source.source.relationVersion,
+        sourceName: sourceFeature.properties.nameEn,
+        partStart: 0,
+        partCount: 1,
+        memberWayIds: sourceFeature.properties.memberWayIds,
+        sourceNodeCount: sourceFeature.properties.sourceNodeCount,
+        simplifiedNodeCount: sourceFeature.properties.simplifiedNodeCount,
+        simplificationToleranceDegrees: sourceFeature.properties.simplificationToleranceDegrees,
+        bounds
+      }],
+      playableExposure: {
+        status: "memory-trail",
+        reason: "The named main-stream relation is accepted for normal Memory Trail and Guided Learning use from the eastern Lake Ontario outlet through the Gulf transition without country clipping."
+      },
+      lineWidthPx: 2,
+      highlightWidthPx: 5,
+      hitWidthPx: 30
+    },
+    geometry: sourceFeature.geometry
+  };
+}
+
+async function readJson(filePath) {
+  return JSON.parse(await readFile(filePath, "utf8"));
+}
+
+function geometryVisitsBounds(geometry, bounds) {
+  const lines = geometry.type === "LineString" ? [geometry.coordinates] : geometry.coordinates;
+  return lines.some((line) => line.some(([longitude, latitude]) => (
+    longitude >= bounds[0]
+    && latitude >= bounds[1]
+    && longitude <= bounds[2]
+    && latitude <= bounds[3]
+  )));
 }
 
 async function readDbfRows(filePath) {

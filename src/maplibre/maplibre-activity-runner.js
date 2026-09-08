@@ -3621,7 +3621,8 @@ export class MapLibreActivityRunner {
 
     this.map.addSource("river-lines", {
       type: "geojson",
-      data: this.getRiverLineGeoJson()
+      data: this.getRiverLineGeoJson(),
+      attribution: "Natural Earth public domain; St. Lawrence River © OpenStreetMap contributors (ODbL)"
     });
 
     this.map.addSource("study-capitals", {

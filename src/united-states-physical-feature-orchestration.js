@@ -1,7 +1,7 @@
 import {
   PHYSICAL_GEOMETRY_REPRESENTATIONS,
   unitedStatesAtlas
-} from "./atlas/united-states-atlas-data.js";
+} from "./atlas/united-states-atlas-data.js?v=20260908-st-lawrence-geometry-1";
 import {
   getUnitedStatesRelationshipChallenges,
   UNITED_STATES_RELATIONSHIP_TYPES
@@ -64,20 +64,28 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.RIVER,
     source: "guided-physical-curriculum",
     sourceId: "central-eastern-rivers",
-    authoredMemberTargetIds: Object.freeze(["mississippi-river", "missouri-river"]),
+    authoredMemberTargetIds: Object.freeze(["mississippi-river", "missouri-river", "arkansas-river"]),
     minimumRetrievalSize: 2,
-    preferredRetrievalSize: 2,
+    preferredRetrievalSize: 3,
     curriculumOrder: 50
   }),
   Object.freeze({
-    id: "eastern-and-interior-rivers",
+    id: "eastern-rivers",
     family: UNITED_STATES_PHYSICAL_FEATURE_FAMILIES.RIVER,
     source: "guided-physical-curriculum",
     sourceId: "central-eastern-rivers",
-    authoredMemberTargetIds: Object.freeze(["arkansas-river", "ohio-river"]),
+    authoredMemberTargetIds: Object.freeze(["ohio-river", "st-lawrence-river"]),
     minimumRetrievalSize: 2,
     preferredRetrievalSize: 2,
-    curriculumOrder: 60
+    curriculumOrder: 60,
+    camera: Object.freeze({
+      mode: "override",
+      center: Object.freeze([-77.2, 44.4]),
+      zoom: 3.2,
+      zoomByViewport: Object.freeze({ desktop: 4.05, mobile: 3.2 }),
+      bearing: 0,
+      pitch: 0
+    })
   }),
   Object.freeze({
     id: "eastern-and-interior-lakes",
@@ -223,10 +231,14 @@ function normalizeCamera(camera = {}) {
     if (![longitude, latitude, zoom].every(Number.isFinite)) {
       throw new TypeError("A physical-feature camera override needs finite longitude, latitude, and zoom values.");
     }
+    const zoomByViewport = Object.fromEntries(Object.entries(camera.zoomByViewport || {})
+      .filter(([, value]) => Number.isFinite(Number(value)))
+      .map(([viewport, value]) => [viewport, Number(value)]));
     return Object.freeze({
       mode: "override",
       center: Object.freeze([longitude, latitude]),
       zoom,
+      ...(Object.keys(zoomByViewport).length > 0 ? { zoomByViewport: Object.freeze(zoomByViewport) } : {}),
       bearing: Number.isFinite(Number(camera.bearing)) ? Number(camera.bearing) : 0,
       pitch: Number.isFinite(Number(camera.pitch)) ? Number(camera.pitch) : 0
     });
@@ -389,8 +401,13 @@ export const UNITED_STATES_GUIDED_PHYSICAL_REGIONAL_CAMERA_PRESETS = Object.free
   })
 ]);
 
-function fixedPhysicalCameraDecision(camera, source) {
-  const normalized = normalizeCamera({ ...camera, mode: "override" });
+function fixedPhysicalCameraDecision(camera, source, viewport = null) {
+  const responsiveZoom = Number(camera?.zoomByViewport?.[viewport]);
+  const normalized = normalizeCamera({
+    ...camera,
+    ...(Number.isFinite(responsiveZoom) ? { zoom: responsiveZoom } : {}),
+    mode: "override"
+  });
   return { ...normalized, center: [...normalized.center], source };
 }
 
@@ -404,24 +421,25 @@ export function calculateGuidedLearningPhysicalFeatureCamera({
   regionId = null,
   activityMap = null,
   regionalCameraPresets = UNITED_STATES_GUIDED_PHYSICAL_REGIONAL_CAMERA_PRESETS,
-  cameraPhase = "teaching"
+  cameraPhase = "teaching",
+  viewport = null
 } = {}) {
   if (cameraPhase === "retrieval" && family === "mountain-range") {
     const regionalPreset = regionalCameraPresets.find((preset) => preset.targetIds?.includes(targetId));
     if (!regionalPreset) return {
-      ...fixedPhysicalCameraDecision(UNITED_STATES_GUIDED_LOWER48_PHYSICAL_CAMERA, "lower48-physical-default"),
+      ...fixedPhysicalCameraDecision(UNITED_STATES_GUIDED_LOWER48_PHYSICAL_CAMERA, "lower48-physical-default", viewport),
       cameraPhase,
       searchSpace: "lower48"
     };
     const activity = activityMap?.get?.(regionalPreset.authoredActivityId) || activityMap?.[regionalPreset.authoredActivityId];
     const presetCamera = regionalPreset.camera || activity?.map?.[regionalPreset.cameraKey];
-    return presetCamera ? { ...fixedPhysicalCameraDecision(presetCamera, regionalPreset.source), cameraPhase, searchSpace: regionalPreset.id } : null;
+    return presetCamera ? { ...fixedPhysicalCameraDecision(presetCamera, regionalPreset.source, viewport), cameraPhase, searchSpace: regionalPreset.id } : null;
   }
   if (camera?.mode === "override") {
-    return fixedPhysicalCameraDecision(camera, camera.source || "authored-override");
+    return fixedPhysicalCameraDecision(camera, camera.source || "authored-override", viewport);
   }
   if (cohortCamera?.mode === "override") {
-    return fixedPhysicalCameraDecision(cohortCamera, cohortCamera.source || "authored-override");
+    return fixedPhysicalCameraDecision(cohortCamera, cohortCamera.source || "authored-override", viewport);
   }
   if (!familyConfigs[family]) return null;
   const regionalPreset = regionalCameraPresets.find((preset) => (
@@ -435,9 +453,9 @@ export function calculateGuidedLearningPhysicalFeatureCamera({
     const regionalCamera = regionalPreset.camera || authoredActivity?.map?.[regionalPreset.cameraKey];
     // A missing disconnected-geography source must never silently select lower 48.
     if (!regionalCamera) return null;
-    return fixedPhysicalCameraDecision(regionalCamera, regionalPreset.source);
+    return fixedPhysicalCameraDecision(regionalCamera, regionalPreset.source, viewport);
   }
-  return fixedPhysicalCameraDecision(UNITED_STATES_GUIDED_LOWER48_PHYSICAL_CAMERA, "lower48-physical-default");
+  return fixedPhysicalCameraDecision(UNITED_STATES_GUIDED_LOWER48_PHYSICAL_CAMERA, "lower48-physical-default", viewport);
 }
 
 export const UNITED_STATES_PHYSICAL_FEATURE_ORCHESTRATION_INVENTORY = Object.freeze(

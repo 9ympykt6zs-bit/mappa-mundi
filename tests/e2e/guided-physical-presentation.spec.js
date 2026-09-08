@@ -220,6 +220,177 @@ for (const targetId of ["black-hills", "ozark-mountains", "columbia-river", "lak
   });
 }
 
+test("St. Lawrence uses complete cross-border geometry for teaching and locating", async ({ page }, testInfo) => {
+  const feature = await launchPhysicalTeaching(page, "st-lawrence-river");
+  const easternCamera = {
+    center: [-77.2, 44.4],
+    zoom: page.viewportSize().width <= 760 ? 3.2 : 4.05
+  };
+  await expectCamera(page, easternCamera);
+  let state = await expectTeachingHighlight(page, "st-lawrence-river");
+  expect(state.cameraDecision.source).toBe("authored-override");
+  expect(feature.geometry).toMatchObject({
+    representation: "full",
+    crossesInternationalBorder: true,
+    hasCrossBorderVisualContinuation: true
+  });
+  expect(state.sourceBounds).toEqual([[-76.1642432, 44.2408546], [-64.3784112, 49.6605185]]);
+
+  const inspectRiverHitCorridor = () => page.evaluate(() => {
+    const map = window.maplibrePocMap;
+    const coordinates = [[-75.527706, 44.6918533], [-73.5003399, 45.5747457], [-71.1813017, 46.8305896], [-66.8855405, 49.2752054]];
+    const hits = coordinates.map((coordinate) => {
+      const point = map.project(coordinate);
+      return {
+        coordinate,
+        point,
+        hit: map.queryRenderedFeatures(point, { layers: ["river-hit-line"] })
+          .some(({ properties }) => properties.id === "st-lawrence-river")
+      };
+    });
+    const sourceLines = [];
+    map.querySourceFeatures("river-lines")
+      .filter(({ properties }) => properties.id === "st-lawrence-river")
+      .forEach(({ geometry }) => {
+        if (geometry.type === "LineString") sourceLines.push(geometry.coordinates);
+        if (geometry.type === "MultiLineString") sourceLines.push(...geometry.coordinates);
+      });
+    const projectedLines = sourceLines.map((line) => line.map((coordinate) => map.project(coordinate)));
+    const distanceToSegment = (point, start, end) => {
+      const segmentX = end.x - start.x;
+      const segmentY = end.y - start.y;
+      const lengthSquared = segmentX * segmentX + segmentY * segmentY;
+      const offsetX = point.x - start.x;
+      const offsetY = point.y - start.y;
+      const ratio = lengthSquared > 0
+        ? Math.max(0, Math.min(1, ((offsetX * segmentX) + (offsetY * segmentY)) / lengthSquared))
+        : 0;
+      return Math.hypot(point.x - (start.x + segmentX * ratio), point.y - (start.y + segmentY * ratio));
+    };
+    const distanceToRiver = (point) => Math.min(...projectedLines.flatMap((line) => (
+      line.slice(1).map((end, index) => distanceToSegment(point, line[index], end))
+    )));
+    const outsideAnchor = map.project([-71.1813017, 46.8305896]);
+    const mapRect = map.getContainer().getBoundingClientRect();
+    let outsidePoint = null;
+    let outsideDistancePx = null;
+    for (const radius of [30, 34, 38, 42, 46, 50, 54]) {
+      for (let degrees = 0; degrees < 360; degrees += 15) {
+        const radians = degrees * Math.PI / 180;
+        const candidate = {
+          x: outsideAnchor.x + Math.cos(radians) * radius,
+          y: outsideAnchor.y + Math.sin(radians) * radius
+        };
+        const clientX = mapRect.left + candidate.x;
+        const clientY = mapRect.top + candidate.y;
+        if (!document.elementFromPoint(clientX, clientY)?.closest?.("#map")) continue;
+        const sourceDistance = distanceToRiver(candidate);
+        if (sourceDistance < 30 || sourceDistance > 46) continue;
+        const hitsTarget = map.queryRenderedFeatures([candidate.x, candidate.y], { layers: ["river-hit-line"] })
+          .some(({ properties }) => properties.id === "st-lawrence-river");
+        if (!hitsTarget) {
+          outsidePoint = candidate;
+          outsideDistancePx = sourceDistance;
+          break;
+        }
+      }
+      if (outsidePoint) break;
+    }
+    return {
+      hits,
+      outsideCoordinate: outsidePoint ? map.unproject(outsidePoint).toArray() : null,
+      outsidePoint,
+      outsideDistancePx,
+      outsideHitsTarget: outsidePoint && map.queryRenderedFeatures([outsidePoint.x, outsidePoint.y], { layers: ["river-hit-line"] })
+        .some(({ properties }) => properties.id === "st-lawrence-river")
+    };
+  });
+
+  let hitAudit = await inspectRiverHitCorridor();
+  expect(hitAudit.hits.every(({ hit }) => hit), JSON.stringify(hitAudit)).toBe(true);
+  expect(hitAudit.outsidePoint, JSON.stringify(hitAudit)).toBeTruthy();
+  expect(hitAudit.outsideDistancePx).toBeGreaterThanOrEqual(30);
+  expect(hitAudit.outsideDistancePx).toBeLessThanOrEqual(46);
+  expect(hitAudit.outsideHitsTarget).toBe(false);
+  await captureTeaching(page, testInfo, "st-lawrence-teaching");
+
+  const beforeNavigation = state.camera;
+  await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+  await page.evaluate(() => window.maplibrePocMap.panBy([24, 12], { duration: 0 }));
+  await expect.poll(() => page.evaluate(() => window.maplibrePocMap.isMoving())).toBe(false);
+  const afterNavigation = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState().camera);
+  expect(afterNavigation.zoom).toBeGreaterThan(beforeNavigation.zoom);
+  expect(afterNavigation.center).not.toEqual(beforeNavigation.center);
+  await captureTeaching(page, testInfo, "st-lawrence-zoomed-and-panned");
+
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.answerGuidedPhysicalTeachingCorrectly())).toBe(true);
+  await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase)).toBe("answering");
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const retrieval = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState());
+    if (retrieval.currentPromptTargetId === "st-lawrence-river") break;
+    expect(retrieval.currentPromptTargetId).toBe("ohio-river");
+    expect(await page.evaluate(() => window.__MAPPA_TEST_API__.answerActiveMemoryTrailCorrectly())).toBe(true);
+    await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase)).toBe("answering");
+  }
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.currentPromptTargetId
+  ))).toBe("st-lawrence-river");
+  await expectCamera(page, easternCamera);
+  hitAudit = await inspectRiverHitCorridor();
+  expect(hitAudit.hits.every(({ hit }) => hit), JSON.stringify(hitAudit)).toBe(true);
+  expect(hitAudit.outsidePoint, JSON.stringify(hitAudit)).toBeTruthy();
+  expect(hitAudit.outsideDistancePx).toBeGreaterThanOrEqual(30);
+  expect(hitAudit.outsideDistancePx).toBeLessThanOrEqual(46);
+  expect(hitAudit.outsideHitsTarget).toBe(false);
+
+  const correctBeforeOutsideTap = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().correctCount);
+  const incorrectBeforeOutsideTap = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().incorrectCount);
+  const mapRect = await page.locator("#map").boundingBox();
+  expect(mapRect).toBeTruthy();
+  const outsideClientPoint = {
+    x: mapRect.x + hitAudit.outsidePoint.x,
+    y: mapRect.y + hitAudit.outsidePoint.y
+  };
+  if (await page.evaluate(() => navigator.maxTouchPoints > 0)) {
+    await page.touchscreen.tap(outsideClientPoint.x, outsideClientPoint.y);
+  } else {
+    await page.mouse.click(outsideClientPoint.x, outsideClientPoint.y);
+  }
+  await page.waitForTimeout(250);
+  const phaseAfterNearMiss = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase);
+  expect(phaseAfterNearMiss).not.toBe("feedback");
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().correctCount)).toBe(correctBeforeOutsideTap);
+  if (phaseAfterNearMiss === "answering") {
+    expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().incorrectCount)).toBe(incorrectBeforeOutsideTap);
+    const wrongRiverPoint = await findVisiblePhysicalHitPoint(page, "ohio-river", "river");
+    expect(wrongRiverPoint).toBeTruthy();
+    if (await page.evaluate(() => navigator.maxTouchPoints > 0)) {
+      await page.touchscreen.tap(wrongRiverPoint.clientX, wrongRiverPoint.clientY);
+    } else {
+      await page.mouse.click(wrongRiverPoint.clientX, wrongRiverPoint.clientY);
+    }
+  }
+  await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase)).toBe("correction");
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().correctCount)).toBe(correctBeforeOutsideTap);
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().incorrectCount)).toBe(incorrectBeforeOutsideTap + 1);
+
+  const targetPoint = await findVisiblePhysicalHitPoint(page, "st-lawrence-river", "river");
+  expect(targetPoint).toBeTruthy();
+  if (await page.evaluate(() => navigator.maxTouchPoints > 0)) {
+    await page.touchscreen.tap(targetPoint.clientX, targetPoint.clientY);
+  } else {
+    await page.mouse.click(targetPoint.clientX, targetPoint.clientY);
+  }
+  await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase)).not.toBe("correction");
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.correctCount ?? correctBeforeOutsideTap)).toBe(correctBeforeOutsideTap);
+
+  const evidence = await page.evaluate((key) => (
+    JSON.parse(localStorage.getItem(key)).events.filter(({ conceptId }) => conceptId === "river-location:st-lawrence-river")
+  ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
+  expect(evidence.map(({ outcome }) => outcome)).toEqual(["assisted", "incorrect"]);
+  expect(evidence.every(({ conceptId }) => conceptId === feature.conceptId)).toBe(true);
+});
+
 test("Alaska physical teaching preserves regional framing", async ({ page }, testInfo) => {
   await launchPhysicalTeaching(page, "alaska-range");
   await expectTeachingHighlight(page, "alaska-range");

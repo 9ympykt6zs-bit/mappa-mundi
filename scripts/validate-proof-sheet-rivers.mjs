@@ -50,7 +50,23 @@ const requiredUsRivers = [
     deferredReason: "Natural Earth's available Red of the South record does not match the requested southern U.S. river geometry."
   },
   { id: "rio-grande-river", label: "Rio Grande River", riverNumber: 110, sourceIds: [1159111317, 1159111297], expectedBounds: [-108, 24, -96, 38], playableExposure: "memory-trail" },
-  { id: "st-lawrence-river", label: "St. Lawrence River", riverNumber: 23, sourceIds: [1159114637], expectedBounds: [-85, 42, -64, 48], playableExposure: "memory-trail" }
+  {
+    id: "st-lawrence-river",
+    label: "St. Lawrence River",
+    sourceType: "openstreetmap-waterway-relation",
+    relationId: 6122656,
+    relationVersion: 37,
+    expectedBounds: [-77, 44, -64, 50],
+    playableExposure: "memory-trail",
+    minimumPointCount: 90,
+    requiredCoverage: [
+      { label: "Lake Ontario outlet", bounds: [-76.3, 44.1, -75.9, 44.45] },
+      { label: "New York–Ontario boundary reach", bounds: [-75.9, 44.35, -74.7, 45.1] },
+      { label: "Montreal reach", bounds: [-74.0, 45.25, -73.25, 45.9] },
+      { label: "Quebec City reach", bounds: [-71.5, 46.6, -70.9, 47.0] },
+      { label: "lower estuary and Gulf transition", bounds: [-67.2, 48.8, -64.0, 50.0] }
+    ]
+  }
 ];
 
 main().catch((error) => {
@@ -136,7 +152,8 @@ function validateRiverSource(source) {
     }
   });
 
-  requiredUsRivers.filter((river) => !river.deferredReason).forEach(({ id, label, riverNumber, riverNumbers, sourceIds, expectedBounds, playableExposure }) => {
+  requiredUsRivers.filter((river) => !river.deferredReason).forEach((river) => {
+    const { id, label, riverNumber, riverNumbers, sourceIds, expectedBounds, playableExposure } = river;
     const feature = featuresById.get(id);
 
     if (!feature) {
@@ -146,6 +163,42 @@ function validateRiverSource(source) {
 
     if (feature.properties?.label !== label) {
       errors.push(`${id} must use the exact label ${label}`);
+    }
+
+    if (river.sourceType === "openstreetmap-waterway-relation") {
+      if (feature.properties?.sourceDataset !== "OpenStreetMap") {
+        errors.push(`${id} must identify OpenStreetMap as its source dataset`);
+      }
+      if (feature.properties?.sourceCopyright !== "OpenStreetMap contributors" || feature.properties?.sourceLicense !== "ODbL 1.0") {
+        errors.push(`${id} must preserve OpenStreetMap attribution and license metadata`);
+      }
+      if (feature.properties?.openStreetMapRelationId !== river.relationId) {
+        errors.push(`${id} must use verified OpenStreetMap relation ${river.relationId}`);
+      }
+      if (feature.properties?.openStreetMapRelationVersion !== river.relationVersion) {
+        errors.push(`${id} must use verified OpenStreetMap relation version ${river.relationVersion}`);
+      }
+      const lines = feature.geometry.type === "LineString" ? [feature.geometry.coordinates] : feature.geometry.coordinates;
+      const pointCount = lines.reduce((total, line) => total + line.length, 0);
+      if (pointCount < river.minimumPointCount) {
+        errors.push(`${id} must retain at least ${river.minimumPointCount} points after source-derived simplification`);
+      }
+      for (const checkpoint of river.requiredCoverage) {
+        if (!geometryVisitsBounds(feature.geometry, checkpoint.bounds)) {
+          errors.push(`${id} does not reach the required ${checkpoint.label} coverage window ${formatBounds(checkpoint.bounds)}`);
+        }
+      }
+      if (!Array.isArray(feature.properties?.sourceRecords) || feature.properties.sourceRecords.length !== 1) {
+        errors.push(`${id} must include its verified waterway-relation provenance`);
+      }
+      if (playableExposure && feature.properties?.playableExposure?.status !== playableExposure) {
+        errors.push(`${id} must declare playableExposure.status as ${playableExposure}`);
+      }
+      const bounds = getGeometryBounds(feature.geometry);
+      if (!isWithinExpectedBounds(bounds, expectedBounds)) {
+        errors.push(`${id} has geographically suspicious bounds ${formatBounds(bounds)} outside ${formatBounds(expectedBounds)}`);
+      }
+      return;
     }
 
     if (feature.properties?.naturalEarthFeatureClass !== "River") {
@@ -188,6 +241,16 @@ function validateRiverSource(source) {
   });
 
   return errors;
+}
+
+function geometryVisitsBounds(geometry, bounds) {
+  const lines = geometry.type === "LineString" ? [geometry.coordinates] : geometry.coordinates;
+  return lines.some((line) => line.some(([longitude, latitude]) => (
+    longitude >= bounds[0]
+    && latitude >= bounds[1]
+    && longitude <= bounds[2]
+    && latitude <= bounds[3]
+  )));
 }
 
 function hasValidRiverGeometry(geometry) {
@@ -290,19 +353,24 @@ function getContinuityAudit(feature, thresholdKm = 60) {
   return {
     id: feature.properties?.id || "",
     label: feature.properties?.label || "",
-    sourceRecords: sourceRecords.map((record) => ({
+    sourceRecords: sourceRecords.map((record) => record.relationId ? {
+      openStreetMapRelationId: record.relationId,
+      relationVersion: record.relationVersion,
+      sourceNodeCount: record.sourceNodeCount,
+      simplifiedNodeCount: record.simplifiedNodeCount
+    } : {
       naturalEarthId: record.naturalEarthId,
       riverNumber: record.naturalEarthRiverNumber,
       featureClass: record.featureClass,
       partCount: record.partCount
-    })),
+    }),
     partCount: lines.length,
     partEndpoints: lines.map((line, partIndex) => {
       const sourceRecord = findSourceRecordForPart(sourceRecords, partIndex);
       return {
         part: partIndex + 1,
-        sourceRecordId: sourceRecord?.naturalEarthId || null,
-        featureClass: sourceRecord?.featureClass || "",
+        sourceRecordId: sourceRecord?.naturalEarthId || sourceRecord?.relationId || null,
+        featureClass: sourceRecord?.featureClass || (sourceRecord?.relationId ? "OpenStreetMap waterway main_stream" : ""),
         start: formatCoordinate(line[0]),
         end: formatCoordinate(line.at(-1))
       };

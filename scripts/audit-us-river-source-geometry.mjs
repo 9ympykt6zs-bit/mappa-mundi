@@ -9,6 +9,7 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
 const sourceRoot = path.join(repoRoot, "tools", "source-data", "natural-earth", "extracted");
 const builtRiverPath = path.join(repoRoot, "assets", "data", "physical-features", "proof-sheet-rivers.geojson");
+const stLawrenceSourcePath = path.join(repoRoot, "tools", "source-data", "openstreetmap", "st-lawrence-river-main-stream.geojson");
 
 const datasets = [
   {
@@ -45,6 +46,14 @@ const riverSpecs = [
     sourceNames: ["Mississippi"],
     expectedBounds: [-97, 28, -89, 50],
     mouth: { label: "Gulf of Mexico / Mississippi delta coast", bounds: [-90, 28.65, -88.8, 29.45] }
+  },
+  {
+    id: "st-lawrence-river",
+    label: "St. Lawrence River",
+    sourceNames: ["St. Lawrence", "Saint Lawrence", "St. Lawrence River", "Saint Lawrence River", "Fleuve Saint-Laurent"],
+    expectedBounds: [-77, 44, -64, 50],
+    mouth: { label: "lower estuary and Gulf of St. Lawrence transition", bounds: [-67.2, 48.8, -64.0, 50.0] },
+    replacementSource: "openstreetmap-waterway-relation"
   }
 ];
 
@@ -64,11 +73,12 @@ async function main() {
     throw new Error(`Unknown --only river id: ${onlyId}.`);
   }
 
-  const [builtData, sourceData] = await Promise.all([
+  const [builtData, sourceData, stLawrenceSource] = await Promise.all([
     readJson(builtRiverPath),
-    Promise.all(datasets.map(readDataset))
+    Promise.all(datasets.map(readDataset)),
+    readJson(stLawrenceSourcePath)
   ]);
-  const reports = selectedSpecs.map((spec) => buildRiverReport(spec, sourceData, builtData));
+  const reports = selectedSpecs.map((spec) => buildRiverReport(spec, sourceData, builtData, stLawrenceSource));
 
   console.log("U.S. river source geometry audit:");
   reports.forEach((report) => console.log(JSON.stringify(report)));
@@ -88,7 +98,7 @@ async function readDataset(dataset) {
   return { ...dataset, rows, shapes };
 }
 
-function buildRiverReport(spec, sourceData, builtData) {
+function buildRiverReport(spec, sourceData, builtData, stLawrenceSource) {
   const builtFeature = builtData.features?.find((feature) => feature.properties?.id === spec.id) || null;
   const datasetReports = sourceData.map((dataset) => {
     const candidates = dataset.rows
@@ -109,7 +119,7 @@ function buildRiverReport(spec, sourceData, builtData) {
     .map((candidate) => candidate.neId);
   const missedRelevantGlobalIds = relevantGlobalIds.filter((id) => !selectedIds.includes(id));
 
-  return {
+  const report = {
     id: spec.id,
     label: spec.label,
     fieldsUsedForMatching: ["name", "name_en", "name_alt", "name_full"],
@@ -126,6 +136,36 @@ function buildRiverReport(spec, sourceData, builtData) {
     sourceDatasets: datasetReports,
     conclusion: deriveConclusion(spec, datasetReports, selectedIds, missedRelevantGlobalIds)
   };
+
+  if (spec.replacementSource === "openstreetmap-waterway-relation") {
+    const replacementFeature = stLawrenceSource.features?.find(({ properties }) => properties?.id === spec.id);
+    const lines = replacementFeature?.geometry?.type === "LineString"
+      ? [replacementFeature.geometry.coordinates]
+      : replacementFeature?.geometry?.coordinates || [];
+    const replacementBounds = lines.length > 0 ? getBounds(lines) : null;
+    report.currentBuild = builtFeature ? {
+      sourceDataset: builtFeature.properties?.sourceDataset,
+      relationId: builtFeature.properties?.openStreetMapRelationId,
+      relationVersion: builtFeature.properties?.openStreetMapRelationVersion,
+      playableExposure: builtFeature.properties?.playableExposure || null
+    } : null;
+    report.replacementSource = {
+      dataset: stLawrenceSource.source?.dataset,
+      relationId: stLawrenceSource.source?.relationId,
+      relationVersion: stLawrenceSource.source?.relationVersion,
+      relationTimestamp: stLawrenceSource.source?.relationTimestamp,
+      sourceNodeCount: replacementFeature?.properties?.sourceNodeCount,
+      retainedPointCount: lines.reduce((total, line) => total + line.length, 0),
+      bounds: replacementBounds ? formatBounds(replacementBounds) : null,
+      reachesExpectedMouthAuditArea: lines.some((line) => line.some((point) => pointWithinBounds(point, spec.mouth.bounds)))
+    };
+    report.conclusion = {
+      status: "replacement-source-accepted",
+      reason: "The bundled Natural Earth inputs contain only one short western fragment. The checked-in named waterway relation supplies one continuous source-derived main-stream line from the eastern Lake Ontario outlet through the international reach and Canadian continuation to the Gulf transition."
+    };
+  }
+
+  return report;
 }
 
 function describeCandidate({ properties, recordIndex, shape }, spec) {

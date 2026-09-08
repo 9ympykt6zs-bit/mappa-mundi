@@ -48,7 +48,7 @@ import {
   selectGuidedLearningOrchestrationBlock,
   startGuidedLearningOrchestrationBlock,
   UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
-} from "./guided-learning-orchestration.js?v=20260907-guided-physical-pacing-1";
+} from "./guided-learning-orchestration.js?v=20260908-st-lawrence-geometry-1";
 import {
   clearGuidedChildLaunchContract,
   completeGuidedChildLaunchContract,
@@ -61,7 +61,7 @@ import {
   isManagedUnitedStatesGuidedPoliticalCamera,
   UNITED_STATES_GUIDED_POLITICAL_CAMERA_CONTEXT
 } from "./united-states-guided-political-camera.js?v=20260903-guided-political-camera-1";
-import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js?v=20260907-guided-physical-pacing-1";
+import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js?v=20260908-st-lawrence-geometry-1";
 import {
   chooseNextGuidedPhysicalRetrievalTarget,
   createGuidedPhysicalRetrievalCheckpoint,
@@ -352,7 +352,7 @@ const coContinentLandPath = "assets/maps/data/continents-oceans-land.geojson";
 const inlandWatersPath = "assets/maps/data/inland-waters.geojson";
 const coastalWaterMaskPath = "assets/maps/data/coastal-water-mask.geojson?v=20260623-coastal-water-mask-tiled-1";
 const mountainRangesPath = "assets/data/physical-features/us-mountain-ranges.geojson?v=20260618-us-mountain-ranges";
-const riverLinesPath = "assets/data/physical-features/proof-sheet-rivers.geojson?v=20260620-us-rivers-continuity-assembly-1";
+const riverLinesPath = "assets/data/physical-features/proof-sheet-rivers.geojson?v=20260908-st-lawrence-geometry-1";
 const riverCartographicRepairsPath = "assets/data/physical-features/us-river-cartographic-repairs.json?v=20260621-cartographic-repairs-1";
 const usStatesAtlasPath = "assets/maps/data/maplibre-us-states-atlas.geojson";
 const usCapitalFeedbackPath = "assets/maps/data/us-capitals.json";
@@ -4538,7 +4538,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260821-central-america-graduation-1"),
       import("./maplibre/activity-session.js?v=20260821-central-america-graduation-1"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260906-capital-location-choices-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260908-st-lawrence-geometry-1"),
       import("./chip-speech.js?v=20260728-activity-audio-1")
     ]).then(([
       ,
@@ -8828,6 +8828,7 @@ function resolveGuidedPhysicalFeatureCamera() {
     cohortCamera: activeStudySession.persistentLearningCamera,
     targetId,
     cameraPhase: activeStudySession.guidedPhysicalTeaching ? "teaching" : "retrieval",
+    viewport: runner?.isCompactFocusLayout?.() ? "mobile" : "desktop",
     activityMap: new Map(activities.map((activity) => [activity.id, activity]))
   });
   if (!decision) return null;
@@ -22757,9 +22758,15 @@ function getDataSourcesCreditEntries() {
     },
     {
       label: "World and regional geography",
-      text: "Natural Earth public-domain data for countries, administrative regions, oceans, coastal display layers, and river source geometry.",
+      text: "Natural Earth public-domain data for countries, administrative regions, oceans, coastal display layers, and most river source geometry.",
       href: "https://www.naturalearthdata.com/",
       linkText: "Natural Earth"
+    },
+    {
+      label: "St. Lawrence River geometry",
+      text: "© OpenStreetMap contributors, available under the Open Database License.",
+      href: "https://www.openstreetmap.org/copyright",
+      linkText: "OpenStreetMap copyright and license"
     },
     {
       label: "Physical-feature learning regions",

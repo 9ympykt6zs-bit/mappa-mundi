@@ -22,9 +22,10 @@ const PHYSICAL_GEOMETRY_METADATA = Object.freeze({
   "river:columbia-river": Object.freeze({ crossesInternationalBorder: true }),
   "river:rio-grande-river": Object.freeze({ crossesInternationalBorder: true }),
   "river:st-lawrence-river": Object.freeze({
-    representation: PHYSICAL_GEOMETRY_REPRESENTATIONS.INCOMPLETE,
+    representation: PHYSICAL_GEOMETRY_REPRESENTATIONS.FULL,
     crossesInternationalBorder: true,
-    reason: "The current source contains only a short western segment of the river."
+    hasCrossBorderVisualContinuation: true,
+    reason: "The named river course continues from the eastern Lake Ontario outlet through the New York–Ontario boundary and across Canada to the Gulf transition; curriculum evidence remains tied to New York."
   }),
   "lake:lake-superior": Object.freeze({ crossesInternationalBorder: true }),
   "lake:lake-huron": Object.freeze({ crossesInternationalBorder: true }),
