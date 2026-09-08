@@ -29,6 +29,7 @@ import {
   getCapitalLocationQuestionChoice,
   getCapitalLocationQuestionGeoJson
 } from "./capital-location-question.js?v=20260906-capital-location-choices-1";
+import { CapitalLocationFeedbackLabelOverlay } from "./capital-location-feedback-labels.js?v=20260908-capital-label-placement-1";
 
 const colors = {
   ink: "#172033",
@@ -507,6 +508,7 @@ export class MapLibreActivityRunner {
     this.memoryTrailCorrectHighlightIds = [];
     this.memoryTrailWrongHighlightIds = [];
     this.capitalLocationQuestion = null;
+    this.capitalLocationFeedbackLabels = null;
     this.coContinentOverrides = [];
     this.coContinentLand = emptyFeatureCollection;
     this.mountainRanges = emptyFeatureCollection;
@@ -651,6 +653,7 @@ export class MapLibreActivityRunner {
     this.addOceanRegionLayer();
     this.addOverviewLayers();
     this.addStudyLayers();
+    this.capitalLocationFeedbackLabels = new CapitalLocationFeedbackLabelOverlay({ map: this.map });
     this.setOverviewPreview(null);
     this.updateCoContinentOverrideDebugTool();
   }
@@ -864,6 +867,7 @@ export class MapLibreActivityRunner {
       this.memoryTrailCorrectHighlightIds = [];
       this.memoryTrailWrongHighlightIds = [];
       this.capitalLocationQuestion = null;
+      this.capitalLocationFeedbackLabels?.clear();
       const capitalSource = this.map?.getSource?.("study-capitals");
       if (capitalSource) capitalSource.setData(this.getCapitalGeoJson());
       this.memoryTrailCheckpointPreAnswerStyle = false;
@@ -1520,6 +1524,7 @@ export class MapLibreActivityRunner {
     if (this.capitalLocationQuestion && this.map?.getCanvas) {
       this.map.getCanvas().style.cursor = "";
     }
+    this.capitalLocationFeedbackLabels?.sync(this.capitalLocationQuestion);
     if (refresh) this.refreshDifficultyVisuals();
   }
 
@@ -1558,6 +1563,14 @@ export class MapLibreActivityRunner {
       labelVisibility: this.map?.getLayer?.("capital-location-choice-label")
         ? this.map.getLayoutProperty("capital-location-choice-label", "visibility") || "visible"
         : "missing",
+      feedbackLabelLayout: this.capitalLocationFeedbackLabels?.getVisualState?.() || {
+        visible: false,
+        ready: false,
+        placements: [],
+        capitalStarRect: null,
+        viewport: { width: 0, height: 0 },
+        leaderGap: 0
+      },
       cursor: this.map?.getCanvas?.().style.cursor || ""
     };
   }
@@ -1854,6 +1867,7 @@ export class MapLibreActivityRunner {
     this.memoryTrailSuppressStudyTargetEmphasis = false;
     this.memoryTrailSuppressStudyTargetEmphasisReason = "";
     this.capitalLocationQuestion = null;
+    this.capitalLocationFeedbackLabels?.clear();
 
     const capitalSource = this.map.getSource("study-capitals");
     const mountainCorridorSource = this.map.getSource("mountain-range-corridors");
@@ -8974,11 +8988,15 @@ export class MapLibreActivityRunner {
     }
 
     const capitalChoiceVisibility = this.capitalLocationQuestion ? "visible" : "none";
-    ["capital-location-choice-marker", "capital-location-choice-star", "capital-location-choice-label", "capital-location-choice-hit"].forEach((layerId) => {
+    ["capital-location-choice-marker", "capital-location-choice-star", "capital-location-choice-hit"].forEach((layerId) => {
       if (this.map.getLayer(layerId)) {
         this.map.setLayoutProperty(layerId, "visibility", capitalChoiceVisibility);
       }
     });
+    if (this.map.getLayer("capital-location-choice-label")) {
+      this.map.setLayoutProperty("capital-location-choice-label", "visibility", "none");
+    }
+    this.capitalLocationFeedbackLabels?.sync(this.currentView === "study" ? this.capitalLocationQuestion : null);
 
     if (this.map.getLayer("completed-label")) {
       this.map.setLayoutProperty("completed-label", "visibility", visualState.showsCompletedLabels ? "visible" : "none");
@@ -8996,5 +9014,9 @@ export class MapLibreActivityRunner {
         this.map.setLayoutProperty(layerId, "visibility", visibility);
       }
     });
+    if (this.map.getLayer("capital-location-choice-label")) {
+      this.map.setLayoutProperty("capital-location-choice-label", "visibility", "none");
+    }
+    this.capitalLocationFeedbackLabels?.sync(visibility === "visible" ? this.capitalLocationQuestion : null);
   }
 }

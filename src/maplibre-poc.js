@@ -4538,7 +4538,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260821-central-america-graduation-1"),
       import("./maplibre/activity-session.js?v=20260821-central-america-graduation-1"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260908-st-lawrence-geometry-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260908-capital-label-placement-1"),
       import("./chip-speech.js?v=20260728-activity-audio-1")
     ]).then(([
       ,

@@ -4287,6 +4287,78 @@ body.study-mode .map-shell {
   outline: none;
 }
 
+.capital-location-feedback-label-overlay,
+.capital-location-feedback-label-leaders,
+.capital-location-feedback-labels {
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.capital-location-feedback-label-overlay {
+  overflow: hidden;
+  z-index: 5;
+}
+
+.capital-location-feedback-label-overlay[hidden] {
+  display: none;
+}
+
+.capital-location-feedback-label-leaders {
+  height: 100%;
+  width: 100%;
+}
+
+.capital-location-feedback-leader {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.capital-location-feedback-leader--underlay {
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: 3.2px;
+}
+
+.capital-location-feedback-leader--line {
+  stroke: rgba(51, 65, 85, 0.72);
+  stroke-width: 1.15px;
+}
+
+.capital-location-feedback-label {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(71, 85, 105, 0.3);
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.16);
+  color: #172033;
+  font-family: "Open Sans", system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 650;
+  left: 0;
+  line-height: 1.2;
+  opacity: 0;
+  padding: 2px 5px;
+  position: absolute;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+  top: 0;
+  white-space: nowrap;
+}
+
+.capital-location-feedback-label-overlay[data-ready="true"] .capital-location-feedback-label {
+  opacity: 1;
+}
+
+.capital-location-feedback-label[data-role="capital"] {
+  border-color: rgba(30, 64, 175, 0.42);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.capital-location-feedback-label[data-selected="true"] {
+  background: rgba(254, 242, 242, 0.94);
+  border-color: rgba(153, 27, 27, 0.56);
+  color: #7f1d1d;
+}
+
 .globe-navigation-panel {
   color: #ffffff;
   inset: 0;
