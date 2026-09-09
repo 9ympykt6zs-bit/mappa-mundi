@@ -12829,11 +12829,7 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
   logDailyTrailRuntimeDebug("prompt-selected", createDailyTrailPromptSelectedDebug(memoryTrail, selection, stats));
   const shouldHighlightPromptTarget = !isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
     && (selection.promptType === "guided" || selection.promptType === "place_to_name");
-  runner?.setCapitalLocationQuestion?.(
-    selection.promptType === "name_to_place" && target.type === "capital"
-      ? { targetId: target.id, phase: "answering" }
-      : null
-  );
+  syncCapitalLocationVisualContext(memoryTrail, selection, target);
   const checkpointPreAnswerStyle = isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
     && memoryTrail.phase === "answering";
   runner?.setMemoryTrailStudyTargetEmphasisSuppressed?.(
@@ -12854,11 +12850,13 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
   const continentsOceansLearnCameraPromise = scheduleContinentsOceansLearnFocusCheck(memoryTrail, selection, target);
   const smallTargetLearnCameraPromise = scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target);
   const guidedPoliticalStateCameraPromise = scheduleUnitedStatesGuidedStateFocusCheck(memoryTrail, selection);
+  const capitalTeachingContextCameraPromise = scheduleUnitedStatesCapitalTeachingContextCamera(memoryTrail, selection);
   const learnCameraReadyPromise = Promise.all([
     dailyTrailLearnCameraPromise,
     continentsOceansLearnCameraPromise,
     smallTargetLearnCameraPromise,
-    guidedPoliticalStateCameraPromise
+    guidedPoliticalStateCameraPromise,
+    capitalTeachingContextCameraPromise
   ]);
   maybeFocusContinentsOceansNamePrompt(selection, target);
   publishDailyTrailCheckpointRuntimeSnapshot(memoryTrail, {
@@ -13316,6 +13314,69 @@ function scheduleUnitedStatesGuidedStateFocusCheck(memoryTrail, selection = {}) 
         && memoryTrail.currentPromptTargetId === selection.targetId
       );
     }, duration + 100);
+    memoryTrail.timers.push(timeoutId);
+  });
+}
+
+function scheduleUnitedStatesCapitalTeachingContextCamera(memoryTrail, selection = {}) {
+  const visualContext = runner?.getCapitalLocationQuestionVisualState?.();
+  if (
+    !isUnitedStatesMemoryTrail(memoryTrail)
+    || selection?.promptType !== "guided"
+    || visualContext?.phase !== "teaching"
+    || !["alaska", "hawaii"].includes(visualContext?.targetStateId)
+    || !Array.isArray(visualContext.choices)
+    || visualContext.choices.length !== 3
+    || !runner?.map?.cameraForBounds
+    || !runner?.moveCamera
+  ) {
+    return Promise.resolve(false);
+  }
+  const coordinates = visualContext.choices
+    .map(({ lon, lat }) => [Number(lon), Number(lat)])
+    .filter(([lon, lat]) => Number.isFinite(lon) && Number.isFinite(lat));
+  if (coordinates.length !== 3) return Promise.resolve(false);
+  const bounds = [
+    [Math.min(...coordinates.map(([lon]) => lon)), Math.min(...coordinates.map(([, lat]) => lat))],
+    [Math.max(...coordinates.map(([lon]) => lon)), Math.max(...coordinates.map(([, lat]) => lat))]
+  ];
+  const padding = isCompactTouchLayout()
+    ? { top: 90, right: 18, bottom: 190, left: 18 }
+    : { top: 94, right: 72, bottom: 154, left: 72 };
+  const maxZoom = visualContext.targetStateId === "hawaii" ? 7.4 : 5.35;
+  const fittedCamera = runner.map.cameraForBounds(bounds, { padding, maxZoom });
+  const center = [
+    (bounds[0][0] + bounds[1][0]) / 2,
+    (bounds[0][1] + bounds[1][1]) / 2
+  ];
+  const camera = fittedCamera && Number.isFinite(Number(fittedCamera.zoom))
+    ? { center, zoom: Number(fittedCamera.zoom) }
+    : null;
+  if (!camera) return Promise.resolve(false);
+  const promptKey = memoryTrail.currentPromptKey;
+  return new Promise((resolve) => {
+    const timeoutId = window.setTimeout(() => {
+      memoryTrail.timers = memoryTrail.timers.filter((timer) => timer !== timeoutId);
+      if (!isCurrentMemoryTrailState(memoryTrail) || memoryTrail.currentPromptKey !== promptKey) {
+        resolve(false);
+        return;
+      }
+      runner.moveCamera({
+        ...camera,
+        padding,
+        duration: 720,
+        essential: true
+      }, {
+        cameraContext: "guided-capital-teaching-context",
+        source: `${visualContext.targetStateId}-capital-city-context`,
+        requestType: "fitBounds"
+      }, "easeTo");
+      const settledTimeoutId = window.setTimeout(() => {
+        memoryTrail.timers = memoryTrail.timers.filter((timer) => timer !== settledTimeoutId);
+        resolve(isCurrentMemoryTrailState(memoryTrail) && memoryTrail.currentPromptKey === promptKey);
+      }, 820);
+      memoryTrail.timers.push(settledTimeoutId);
+    }, 40);
     memoryTrail.timers.push(timeoutId);
   });
 }
@@ -16131,6 +16192,30 @@ function isCapitalLocationRetrieval(memoryTrail, targetId) {
     target?.type === "capital"
     && memoryTrail?.currentPromptType === "name_to_place"
   );
+}
+
+function syncCapitalLocationVisualContext(memoryTrail, selection = {}, target = null) {
+  const promptType = selection.promptType || memoryTrail?.currentPromptType || "";
+  const promptTarget = target || getTargetById(memoryTrail, selection.targetId || memoryTrail?.currentPromptTargetId);
+  const isUnitedStatesCapital = isUnitedStatesMemoryTrail(memoryTrail) && promptTarget?.type === "capital";
+  const selectedChoiceId = memoryTrail?.correction?.selectedTargetId
+    || (memoryTrail?.phase === "feedback" ? memoryTrail?.responseChipTargetId : "")
+    || "";
+  const config = isUnitedStatesCapital && promptType === "guided"
+    ? {
+        targetId: promptTarget.id,
+        phase: "teaching",
+        scope: "target-state",
+        interaction: "capital-only"
+      }
+    : isUnitedStatesCapital && promptType === "name_to_place"
+      ? {
+          targetId: promptTarget.id,
+          phase: ["correction", "feedback"].includes(memoryTrail?.phase) ? "feedback" : "answering",
+          selectedChoiceId
+        }
+      : null;
+  runner?.setCapitalLocationQuestion?.(config);
 }
 
 function getCapitalLocationFeedback(expectedTargetId, selectedChoiceId) {
@@ -21743,6 +21828,11 @@ function restoreUnitedStatesMemoryTrailMemoryTrailSnapshot(memoryTrail, snapshot
       : []
   );
   const restoredSelection = getRestoredMemoryTrailPromptSelection(memoryTrail);
+  syncCapitalLocationVisualContext(
+    memoryTrail,
+    restoredSelection,
+    getTargetById(memoryTrail, memoryTrail.currentPromptTargetId)
+  );
   let restoredCameraPromise = Promise.resolve(false);
   if (isManagedUnitedStatesGuidedPoliticalCamera(memoryTrail.guidedPoliticalCamera)) {
     applyUnitedStatesGuidedPoliticalCamera(memoryTrail);
@@ -21752,13 +21842,17 @@ function restoreUnitedStatesMemoryTrailMemoryTrailSnapshot(memoryTrail, snapshot
   } else {
     applyMemoryTrailSectionQuizCamera(memoryTrail, restoredSelection, { duration: 0 });
   }
+  const restoredCapitalContextCameraPromise = scheduleUnitedStatesCapitalTeachingContextCamera(
+    memoryTrail,
+    restoredSelection
+  );
   renderStudyExplorePanel();
   const resumeAudioPromise = replayCurrentMemoryTrailPromptInstructionOnResume(memoryTrail);
   scheduleMemoryTrailPromptResponseTimer(
     memoryTrail,
     restoredSelection,
     memoryTrail.currentPromptKey,
-    Promise.allSettled([resumeAudioPromise, restoredCameraPromise])
+    Promise.allSettled([resumeAudioPromise, restoredCameraPromise, restoredCapitalContextCameraPromise])
   );
 
   if (memoryTrail.phase === "feedback") {
@@ -25803,6 +25897,9 @@ function handleTargetClick(targetIds) {
     const memoryTrailMapPoint = targetIds && !Array.isArray(targetIds) && typeof targetIds.x === "number"
       ? targetIds
       : null;
+    if (memoryTrailMapPoint && runner?.isCapitalLocationTeachingComparisonAtMapPoint?.(memoryTrailMapPoint)) {
+      return;
+    }
     const priorityTarget = memoryTrailMapPoint ? getMemoryTrailMapTapPriorityTarget() : null;
     const resolvedMemoryTrailTargetIds = memoryTrailMapPoint
       ? runner.getTargetIdsAtMapPoint(targetIds, null, { priorityTarget })
@@ -28396,18 +28493,23 @@ function getCapitalLocationQuestionVisualStateForTest() {
     }
     return [...ids];
   };
+  const activeHitLayer = state.phase === "teaching"
+    ? "capital-location-teaching-hit"
+    : "capital-location-choice-hit";
   return {
     ...state,
     choices,
     markerRenderedIds: renderedIds("capital-location-choice-marker"),
-    hitRenderedIds: renderedIds("capital-location-choice-hit"),
+    hitRenderedIds: renderedIds(activeHitLayer),
     starRenderedIds: renderedIds("capital-location-choice-star"),
     labelRenderedIds: renderedIds("capital-location-choice-label"),
     markerRadius: map?.getPaintProperty?.("capital-location-choice-marker", "circle-radius") || null,
     markerColor: map?.getPaintProperty?.("capital-location-choice-marker", "circle-color") || null,
     markerStrokeColor: map?.getPaintProperty?.("capital-location-choice-marker", "circle-stroke-color") || null,
     markerStrokeWidth: map?.getPaintProperty?.("capital-location-choice-marker", "circle-stroke-width") || null,
-    hitRadius: map?.getPaintProperty?.("capital-location-choice-hit", "circle-radius") || null,
+    hitRadius: map?.getLayer?.(activeHitLayer)
+      ? map.getPaintProperty(activeHitLayer, "circle-radius")
+      : null,
     starIconImage: map?.getLayoutProperty?.("capital-location-choice-star", "icon-image") || null,
     starIconSize: map?.getLayoutProperty?.("capital-location-choice-star", "icon-size") || null,
     labelTextSize: map?.getLayoutProperty?.("capital-location-choice-label", "text-size") || null,

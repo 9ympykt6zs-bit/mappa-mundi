@@ -27,7 +27,7 @@ assert.equal(answering.choices.every(({ revealLabel, revealCapital, isSelected }
 assert.deepEqual(getCapitalLocationQuestionChoice(answering, "baton-rouge-la"), {
   id: "baton-rouge-la", stateId: "louisiana", stateName: "Louisiana", name: "Baton Rouge",
   lon: -91.2, lat: 30.45, role: "capital", choiceIndex: 0, inTargetState: true,
-  revealLabel: false, revealCapital: false, isSelected: false
+  revealLabel: false, revealCapital: false, isSelected: false, isInteractive: true, isTeaching: false
 });
 
 const shreveport = answering.choices.find(({ name, stateId }) => name === "Shreveport" && stateId === "louisiana");
@@ -53,6 +53,24 @@ const wrongState = createCapitalLocationQuestionState({
 assert.equal(wrongState.choices.filter(({ revealLabel }) => revealLabel).length, 4);
 assert.equal(wrongState.choices.find(({ id }) => wrongStateChoice.id === id).revealLabel, true);
 assert.equal(wrongState.choices.filter(({ revealCapital }) => revealCapital).length, 1);
+
+const teaching = createCapitalLocationQuestionState({
+  capitalTargets,
+  targetId: "providence-ri",
+  phase: "teaching",
+  scope: "target-state",
+  interaction: "capital-only"
+});
+assert.equal(teaching.choices.length, 3);
+assert.equal(teaching.scope, "target-state");
+assert.equal(teaching.interaction, "capital-only");
+assert.deepEqual(teaching.choices.map(({ name }) => name), ["Providence", "Cranston", "Warwick"]);
+assert.equal(teaching.choices.every(({ revealLabel }) => revealLabel), true);
+assert.deepEqual(teaching.choices.filter(({ revealCapital }) => revealCapital).map(({ name }) => name), ["Providence"]);
+assert.deepEqual(teaching.choices.filter(({ isInteractive }) => isInteractive).map(({ name }) => name), ["Providence"]);
+assert.deepEqual(getCapitalLocationQuestionGeoJson(teaching).features.map(({ properties }) => properties.capitalLocationInteractive), [true, false, false]);
+assert.equal(teaching.choices.every(({ isTeaching }) => isTeaching), true);
+assert.equal(getCapitalLocationQuestionGeoJson(answering).features.every(({ properties }) => properties.capitalLocationTeaching === false), true);
 
 for (const targetId of ["providence-ri", "dover-de", "phoenix-az", "juneau-ak", "austin-tx"]) {
   const question = createCapitalLocationQuestionState({ capitalTargets, targetId });

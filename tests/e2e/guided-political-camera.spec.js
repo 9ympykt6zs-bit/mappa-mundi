@@ -152,7 +152,7 @@ test("Salt Lake City and Phoenix capital teaching focuses each capital's state",
   expect(state.currentPromptTargetId).toBe("salt-lake-city-ut");
   expect(state.camera.center[0]).toBeCloseTo(-111.55, 1);
   await expect.poll(() => page.evaluate(() => (
-    window.__MAPPA_TEST_API__.getCapitalMarkerVisualState()?.star.renderedTargetIds || []
+    window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()?.starRenderedIds || []
   ))).toContain("salt-lake-city-ut");
 
   await page.evaluate(() => window.__MAPPA_TEST_API__.answerActiveMemoryTrailCorrectly());
@@ -163,7 +163,7 @@ test("Salt Lake City and Phoenix capital teaching focuses each capital's state",
   expect(state.camera.zoom).toBeGreaterThanOrEqual(4.7 - 0.001);
   expect(state.camera.zoom).toBeGreaterThan(4.5);
   await expect.poll(() => page.evaluate(() => (
-    window.__MAPPA_TEST_API__.getCapitalMarkerVisualState()?.star.renderedTargetIds || []
+    window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()?.starRenderedIds || []
   ))).toContain("phoenix-az");
 });
 

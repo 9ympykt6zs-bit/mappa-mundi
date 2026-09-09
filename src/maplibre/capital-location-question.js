@@ -11,7 +11,9 @@ export function createCapitalLocationQuestionState({
   capitalTargets = [],
   targetId = "",
   phase = "answering",
-  selectedChoiceId = ""
+  selectedChoiceId = "",
+  scope = "all",
+  interaction = "all"
 } = {}) {
   const targetRecord = getUsCapitalLocationCityChoicesForCapital(targetId);
   if (!targetRecord) return null;
@@ -24,7 +26,10 @@ export function createCapitalLocationQuestionState({
     }
   });
   const reveal = phase !== "answering";
-  const choices = US_CAPITAL_LOCATION_CITY_CHOICES.flatMap((record) => {
+  const records = scope === "target-state"
+    ? [targetRecord]
+    : US_CAPITAL_LOCATION_CITY_CHOICES;
+  const choices = records.flatMap((record) => {
     const authoredCapital = targetByStateId.get(record.stateId);
     const capital = authoredCapital
       ? { ...record.capital, id: authoredCapital.id, name: authoredCapital.city || authoredCapital.name,
@@ -41,6 +46,9 @@ export function createCapitalLocationQuestionState({
         : choiceId(record.stateId, role, index);
       const inTargetState = record.stateId === targetRecord.stateId;
       const isSelected = id === selectedChoiceId;
+      const isInteractive = interaction === "capital-only"
+        ? role === "capital" && inTargetState
+        : true;
       return Object.freeze({
         id,
         stateId: record.stateId,
@@ -53,7 +61,9 @@ export function createCapitalLocationQuestionState({
         inTargetState,
         revealLabel: reveal && (inTargetState || isSelected),
         revealCapital: reveal && inTargetState && role === "capital",
-        isSelected
+        isSelected,
+        isInteractive,
+        isTeaching: phase === "teaching"
       });
     });
   });
@@ -64,6 +74,8 @@ export function createCapitalLocationQuestionState({
     targetStateId: targetRecord.stateId,
     phase,
     selectedChoiceId,
+    scope,
+    interaction,
     choices: Object.freeze(choices)
   });
 }
@@ -87,7 +99,9 @@ export function getCapitalLocationQuestionGeoJson(question) {
         capitalLocationChoiceIndex: choice.choiceIndex,
         revealLabel: choice.revealLabel,
         revealCapital: choice.revealCapital,
-        isSelected: choice.isSelected
+        isSelected: choice.isSelected,
+        capitalLocationInteractive: choice.isInteractive,
+        capitalLocationTeaching: choice.isTeaching
       },
       geometry: { type: "Point", coordinates: [choice.lon, choice.lat] }
     }))

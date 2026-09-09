@@ -1516,7 +1516,9 @@ export class MapLibreActivityRunner {
           capitalTargets: [...this.pointTargets, ...this.visualPointTargets],
           targetId: config.targetId,
           phase: config.phase || "answering",
-          selectedChoiceId: config.selectedChoiceId || ""
+          selectedChoiceId: config.selectedChoiceId || "",
+          scope: config.scope || "all",
+          interaction: config.interaction || "all"
         })
       : null;
     const capitalSource = this.map?.getSource?.("study-capitals");
@@ -1550,12 +1552,17 @@ export class MapLibreActivityRunner {
       targetStateId: question?.targetStateId || "",
       phase: question?.phase || "",
       selectedChoiceId: question?.selectedChoiceId || "",
+      scope: question?.scope || "",
+      interaction: question?.interaction || "",
       choices: (question?.choices || []).map((choice) => ({ ...choice })),
       markerVisibility: this.map?.getLayer?.("capital-location-choice-marker")
         ? this.map.getLayoutProperty("capital-location-choice-marker", "visibility") || "visible"
         : "missing",
       hitVisibility: this.map?.getLayer?.("capital-location-choice-hit")
         ? this.map.getLayoutProperty("capital-location-choice-hit", "visibility") || "visible"
+        : "missing",
+      teachingHitVisibility: this.map?.getLayer?.("capital-location-teaching-hit")
+        ? this.map.getLayoutProperty("capital-location-teaching-hit", "visibility") || "visible"
         : "missing",
       starVisibility: this.map?.getLayer?.("capital-location-choice-star")
         ? this.map.getLayoutProperty("capital-location-choice-star", "visibility") || "visible"
@@ -4491,10 +4498,34 @@ export class MapLibreActivityRunner {
       id: "capital-location-choice-hit",
       type: "circle",
       source: "study-capitals",
-      filter: ["==", ["get", "capitalLocationChoice"], true],
+      filter: [
+        "all",
+        ["==", ["get", "capitalLocationChoice"], true],
+        ["==", ["get", "capitalLocationInteractive"], true],
+        ["!=", ["get", "capitalLocationTeaching"], true]
+      ],
       layout: { visibility: "none" },
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 12, 7, 16, 10, 18],
+        "circle-color": colors.neutralMarker,
+        "circle-opacity": 0.001,
+        "circle-stroke-opacity": 0
+      }
+    });
+
+    this.map.addLayer({
+      id: "capital-location-teaching-hit",
+      type: "circle",
+      source: "study-capitals",
+      filter: [
+        "all",
+        ["==", ["get", "capitalLocationChoice"], true],
+        ["==", ["get", "capitalLocationInteractive"], true],
+        ["==", ["get", "capitalLocationTeaching"], true]
+      ],
+      layout: { visibility: "none" },
+      paint: {
+        "circle-radius": 22,
         "circle-color": colors.neutralMarker,
         "circle-opacity": 0.001,
         "circle-stroke-opacity": 0
@@ -5182,10 +5213,13 @@ export class MapLibreActivityRunner {
 
     if (!selectedTarget || selectedTarget.kind === "point") {
       const isCapitalChoiceQuestion = Boolean(this.capitalLocationQuestion);
+      const capitalHitLayer = this.capitalLocationQuestion?.phase === "teaching"
+        ? "capital-location-teaching-hit"
+        : "capital-location-choice-hit";
       let pointFeatures = [];
       try {
         pointFeatures = this.map.queryRenderedFeatures(queryPoint, {
-          layers: [isCapitalChoiceQuestion ? "capital-location-choice-hit" : "capital-hit"]
+          layers: [isCapitalChoiceQuestion ? capitalHitLayer : "capital-hit"]
         });
       } catch {
         pointFeatures = [];
@@ -5273,6 +5307,29 @@ export class MapLibreActivityRunner {
     }
 
     return this.filterContinentsOceansOceanHitsAtPoint(targetIds, queryPoint);
+  }
+
+  isCapitalLocationTeachingComparisonAtMapPoint(point) {
+    if (this.capitalLocationQuestion?.phase !== "teaching" || !this.map) return false;
+    const queryPoint = Array.isArray(point) ? point : [point?.x, point?.y];
+    if (!Number.isFinite(queryPoint[0]) || !Number.isFinite(queryPoint[1])) return false;
+    try {
+      const features = this.map.queryRenderedFeatures(queryPoint, {
+        layers: ["capital-location-choice-marker"]
+      });
+      const nearest = features
+        .map((feature) => {
+          const projected = this.map.project(feature.geometry.coordinates);
+          return {
+            feature,
+            distance: Math.hypot(projected.x - queryPoint[0], projected.y - queryPoint[1])
+          };
+        })
+        .sort((left, right) => left.distance - right.distance)[0]?.feature;
+      return Boolean(nearest && nearest.properties?.capitalLocationInteractive !== true);
+    } catch {
+      return false;
+    }
   }
 
   getPrioritizedShapeTargetIdsAtPoint(queryPoint, exactTargetIds = [], options = {}) {
@@ -8890,7 +8947,7 @@ export class MapLibreActivityRunner {
   updateDifficultyLayerVisibility() {
     if (!this.map || this.currentView !== "study") {
       this.clearGuidedPhysicalTeachingHighlight();
-      ["ocean-target-raster", "political-division-context-fill", "political-division-context-line", "state-fill", "state-line", "political-division-guided-highlight-fill", "political-division-guided-highlight-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-active-halo", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-location-choice-marker", "capital-location-choice-star", "capital-location-choice-label", "capital-location-choice-hit", "capital-hit", "completed-label"].forEach((layerId) => {
+      ["ocean-target-raster", "political-division-context-fill", "political-division-context-line", "state-fill", "state-line", "political-division-guided-highlight-fill", "political-division-guided-highlight-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-active-halo", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-location-choice-marker", "capital-location-choice-star", "capital-location-choice-label", "capital-location-choice-hit", "capital-location-teaching-hit", "capital-hit", "completed-label"].forEach((layerId) => {
         if (this.map?.getLayer(layerId)) {
           this.map.setLayoutProperty(layerId, "visibility", "none");
         }
@@ -8988,7 +9045,7 @@ export class MapLibreActivityRunner {
     }
 
     const capitalChoiceVisibility = this.capitalLocationQuestion ? "visible" : "none";
-    ["capital-location-choice-marker", "capital-location-choice-star", "capital-location-choice-hit"].forEach((layerId) => {
+    ["capital-location-choice-marker", "capital-location-choice-star", "capital-location-choice-hit", "capital-location-teaching-hit"].forEach((layerId) => {
       if (this.map.getLayer(layerId)) {
         this.map.setLayoutProperty(layerId, "visibility", capitalChoiceVisibility);
       }
@@ -9009,7 +9066,7 @@ export class MapLibreActivityRunner {
       this.guidedPhysicalStudyReady = false;
       this.clearGuidedPhysicalTeachingHighlight();
     }
-    ["ocean-target-raster", "political-division-context-fill", "political-division-context-line", "state-fill", "state-line", "political-division-guided-highlight-fill", "political-division-guided-highlight-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-active-halo", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-location-choice-marker", "capital-location-choice-star", "capital-location-choice-label", "capital-location-choice-hit", "capital-hit", "completed-label"].forEach((layerId) => {
+    ["ocean-target-raster", "political-division-context-fill", "political-division-context-line", "state-fill", "state-line", "political-division-guided-highlight-fill", "political-division-guided-highlight-line", "mountain-range-corridor", "mountain-range-symbol-glow", "mountain-range-symbol", "river-line", "river-hit-line", "target-hit-fill", "capital-marker-halo", "capital-marker", "state-capital-active-halo", "state-capital-star", "national-capital-ring", "national-capital-star", "capital-location-choice-marker", "capital-location-choice-star", "capital-location-choice-label", "capital-location-choice-hit", "capital-location-teaching-hit", "capital-hit", "completed-label"].forEach((layerId) => {
       if (this.map.getLayer(layerId)) {
         this.map.setLayoutProperty(layerId, "visibility", visibility);
       }
