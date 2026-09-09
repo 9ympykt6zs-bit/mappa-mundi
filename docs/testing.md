@@ -2,6 +2,14 @@
 
 The repository has a fast Node-based baseline and a separate Playwright browser layer. The fast baseline is the normal development check; Playwright covers selected browser flows and should be run in a supported local or CI environment.
 
+## Guided political current-state camera — 2026-09-08
+
+`scripts/check-united-states-guided-political-camera.mjs` covers state/capital prompt resolution, the 4.7 policy, name-to-place exclusion, and the Alaska/Hawaii exception. `scripts/check-daily-trail-us-states-11-alaska-learn-camera.mjs` confirms the authored disconnected-state cameras remain intact.
+
+`tests/e2e/guided-political-camera.spec.js` runs on desktop and mobile Chromium. It covers Utah/Arizona state and capital transitions, Minnesota, Kansas, Montana, Maine, complete-state viewport containment, reload/resume, manual pan retention for a subsequent locating prompt, section context metadata, Alaska/Hawaii, and standalone exclusion. The final workstream run passed **18/18**. Desktop and mobile Montana captures were visually inspected: both showed the whole highlighted state with useful surrounding context and no tray/header obstruction.
+
+The 4.7 requirement conflicts with full-state containment for Minnesota and Montana at the 390px portrait test width. Those two mobile cases settle above zoom 4.0 but below 4.7; forcing 4.7 visibly cropped state edges. The camera therefore preserves complete geography. No physical-device, Safari, or landscape-mobile claim is made.
+
 The baseline includes `scripts/check-matched-seed-simulation-matrix.mjs`, which verifies O6.2 seed matching and answer-seed separation, deterministic replay, aggregation math, serialization, immutability, and unchanged planner output. Generate the larger descriptive matrix separately with `npm run report:matched-seed-simulations`; see [`matched-seed-simulations.md`](matched-seed-simulations.md).
 
 The baseline also includes `scripts/check-long-horizon-mastery-report.mjs`. It checks O6.3 milestone and percentage calculations, status-count invariants, ordered diagnostic histories, exact replay, JSON serialization, fixture immutability, and unchanged planner output. Generate the six-seed 200-session analysis with `npm run report:long-horizon-mastery`; see [`long-horizon-mastery.md`](long-horizon-mastery.md).

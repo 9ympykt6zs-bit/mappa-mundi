@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 import {
+  createUnitedStatesGuidedStateFocusDecision,
   createUnitedStatesGuidedPoliticalCameraDecision,
-  isManagedUnitedStatesGuidedPoliticalCamera
+  isManagedUnitedStatesGuidedPoliticalCamera,
+  UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM
 } from "../src/united-states-guided-political-camera.js";
 
 const utahArizonaActivity = JSON.parse(fs.readFileSync(
@@ -85,6 +87,35 @@ assert.equal(alaskaHawaii.mode, "preserve-special");
 assert.equal(alaskaHawaii.cameraSource, "existing-alaska-hawaii-handling");
 assert.equal(isManagedUnitedStatesGuidedPoliticalCamera(alaskaHawaii), false);
 
+const stateFocus = createUnitedStatesGuidedStateFocusDecision({
+  guidedPoliticalCamera: utahArizonaStates,
+  selection: { targetId: "utah", promptType: "guided" },
+  item: { type: "state", targetId: "utah" }
+});
+assert.deepEqual(stateFocus, {
+  stateTargetId: "utah",
+  promptTargetId: "utah",
+  promptType: "guided",
+  minZoom: UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM,
+  cameraContext: "guided-political-state-focus",
+  cameraSource: "guided-political-current-state"
+});
+assert.equal(createUnitedStatesGuidedStateFocusDecision({
+  guidedPoliticalCamera: utahArizonaStates,
+  selection: { targetId: "utah", promptType: "name_to_place" },
+  item: { type: "state", targetId: "utah" }
+}), null, "A locating prompt must retain its broader search area instead of focusing the answer.");
+assert.equal(createUnitedStatesGuidedStateFocusDecision({
+  guidedPoliticalCamera: alaskaHawaii,
+  selection: { targetId: "alaska", promptType: "guided" },
+  item: { type: "state", targetId: "alaska" }
+}), null, "Alaska and Hawaii retain their authored disconnected-geography cameras.");
+assert.equal(createUnitedStatesGuidedStateFocusDecision({
+  guidedPoliticalCamera: utahArizonaCapitals,
+  selection: { targetId: "salt-lake-city-ut", promptType: "place_to_name" },
+  item: { type: "capital", targetId: "salt-lake-city-ut", relatedStateTargetId: "utah" }
+})?.stateTargetId, "utah", "Capital teaching and visible identification focus the related state.");
+
 assert.equal(createUnitedStatesGuidedPoliticalCameraDecision({
   activityId: "us-states-09",
   plan: { sessionType: "cumulative-review", newItems: [], playItems: [] },
@@ -98,5 +129,6 @@ assert.equal(createUnitedStatesGuidedPoliticalCameraDecision({
 const runtimeSource = fs.readFileSync(new URL("../src/maplibre-poc.js", import.meta.url), "utf8");
 assert.match(runtimeSource, /applyUnitedStatesGuidedPoliticalCamera\(activeStudySession\.memoryTrail\)/);
 assert.match(runtimeSource, /isManagedUnitedStatesGuidedPoliticalCamera\(memoryTrail\?\.guidedPoliticalCamera\)/);
+assert.match(runtimeSource, /scheduleUnitedStatesGuidedStateFocusCheck\(memoryTrail, selection\)/);
 
 console.log("United States Guided political camera validation passed.");

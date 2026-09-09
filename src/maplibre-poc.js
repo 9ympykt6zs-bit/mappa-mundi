@@ -57,10 +57,11 @@ import {
   saveGuidedChildLaunchContract
 } from "./guided-child-launch-contract.js?v=20260907-guided-physical-pacing-1";
 import {
+  createUnitedStatesGuidedStateFocusDecision,
   createUnitedStatesGuidedPoliticalCameraDecision,
   isManagedUnitedStatesGuidedPoliticalCamera,
   UNITED_STATES_GUIDED_POLITICAL_CAMERA_CONTEXT
-} from "./united-states-guided-political-camera.js?v=20260903-guided-political-camera-1";
+} from "./united-states-guided-political-camera.js?v=20260908-guided-state-focus-1";
 import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js?v=20260908-st-lawrence-geometry-1";
 import {
   chooseNextGuidedPhysicalRetrievalTarget,
@@ -11927,11 +11928,16 @@ function getRenderedMemoryTrailFindPromptDebug() {
 function getMemoryTrailCameraSnapshot() {
   try {
     const center = runner?.map?.getCenter?.();
+    const bounds = runner?.map?.getBounds?.();
     return {
       center: center ? [Number(center.lng.toFixed(5)), Number(center.lat.toFixed(5))] : null,
       zoom: Number.isFinite(runner?.map?.getZoom?.()) ? Number(runner.map.getZoom().toFixed(4)) : null,
       bearing: Number.isFinite(runner?.map?.getBearing?.()) ? Number(runner.map.getBearing().toFixed(2)) : null,
       pitch: Number.isFinite(runner?.map?.getPitch?.()) ? Number(runner.map.getPitch().toFixed(2)) : null,
+      bounds: bounds ? [
+        [Number(bounds.getWest().toFixed(5)), Number(bounds.getSouth().toFixed(5))],
+        [Number(bounds.getEast().toFixed(5)), Number(bounds.getNorth().toFixed(5))]
+      ] : null,
       isMoving: Boolean(runner?.map?.isMoving?.()),
       isEasing: Boolean(runner?.map?.isEasing?.())
     };
@@ -12830,10 +12836,12 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
   const dailyTrailLearnCameraPromise = scheduleDailyTrailTargetLearnCamera(memoryTrail, selection, target);
   const continentsOceansLearnCameraPromise = scheduleContinentsOceansLearnFocusCheck(memoryTrail, selection, target);
   const smallTargetLearnCameraPromise = scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target);
+  const guidedPoliticalStateCameraPromise = scheduleUnitedStatesGuidedStateFocusCheck(memoryTrail, selection);
   const learnCameraReadyPromise = Promise.all([
     dailyTrailLearnCameraPromise,
     continentsOceansLearnCameraPromise,
-    smallTargetLearnCameraPromise
+    smallTargetLearnCameraPromise,
+    guidedPoliticalStateCameraPromise
   ]);
   maybeFocusContinentsOceansNamePrompt(selection, target);
   publishDailyTrailCheckpointRuntimeSnapshot(memoryTrail, {
@@ -13221,6 +13229,76 @@ function scheduleSmallTargetLearnFocusCheck(memoryTrail, selection, target) {
       memoryTrail.timers.push(settleTimeoutId);
     };
     const timeoutId = window.setTimeout(() => attemptFocus(), delayMs);
+    memoryTrail.timers.push(timeoutId);
+  });
+}
+
+function getUnitedStatesGuidedPoliticalPromptItem(targetId) {
+  return activeUnitedStatesMemoryTrailSession?.plan?.playItems?.find((item) => item?.targetId === targetId)
+    || null;
+}
+
+function scheduleUnitedStatesGuidedStateFocusCheck(memoryTrail, selection = {}) {
+  const focusDecision = createUnitedStatesGuidedStateFocusDecision({
+    guidedPoliticalCamera: memoryTrail?.guidedPoliticalCamera,
+    selection,
+    item: getUnitedStatesGuidedPoliticalPromptItem(selection?.targetId)
+  });
+  if (!focusDecision) {
+    if (memoryTrail?.guidedPoliticalCamera?.activePromptFocus) {
+      const { activePromptFocus, ...sectionCamera } = memoryTrail.guidedPoliticalCamera;
+      memoryTrail.guidedPoliticalCamera = sectionCamera;
+    }
+    return Promise.resolve(false);
+  }
+  if (typeof runner?.focusTargetIfNeeded !== "function") {
+    return Promise.resolve(false);
+  }
+
+  const stateTarget = getUnitedStatesGuidedPoliticalCameraTarget(
+    focusDecision.stateTargetId,
+    memoryTrail.guidedPoliticalCamera.sectionId
+  );
+  if (!stateTarget) return Promise.resolve(false);
+
+  const promptKey = memoryTrail.currentPromptKey;
+  const duration = 720;
+  const padding = isCompactTouchLayout()
+    ? { top: 90, right: 12, bottom: 190, left: 12 }
+    : { top: 94, right: 64, bottom: 154, left: 64 };
+  const stateBounds = runner.getCombinedTargetBounds?.([stateTarget]) || null;
+  const fittedStateCamera = stateBounds
+    ? runner.map?.cameraForBounds?.(stateBounds, { padding, maxZoom: 7.25 })
+    : null;
+  const fittedZoom = Number(fittedStateCamera?.zoom);
+  const didFocus = runner.focusTargetIfNeeded(stateTarget, {
+    force: true,
+    maxZoom: 7.25,
+    duration,
+    padding,
+    cameraContext: focusDecision.cameraContext,
+    source: focusDecision.cameraSource
+  });
+
+  if (!didFocus) return Promise.resolve(false);
+  memoryTrail.guidedPoliticalCamera = {
+    ...memoryTrail.guidedPoliticalCamera,
+    activePromptFocus: {
+      ...focusDecision,
+      stateBounds,
+      fittedZoom: Number.isFinite(fittedZoom) ? Number(fittedZoom.toFixed(4)) : null,
+      minimumZoomApplied: Number.isFinite(fittedZoom) && fittedZoom >= focusDecision.minZoom
+    }
+  };
+  return new Promise((resolve) => {
+    const timeoutId = window.setTimeout(() => {
+      memoryTrail.timers = memoryTrail.timers.filter((timer) => timer !== timeoutId);
+      resolve(
+        isCurrentMemoryTrailState(memoryTrail)
+        && memoryTrail.currentPromptKey === promptKey
+        && memoryTrail.currentPromptTargetId === selection.targetId
+      );
+    }, duration + 100);
     memoryTrail.timers.push(timeoutId);
   });
 }
@@ -21635,23 +21713,23 @@ function restoreUnitedStatesMemoryTrailMemoryTrailSnapshot(memoryTrail, snapshot
       ? memoryTrail.currentPromptTargetId
       : []
   );
-  if (memoryTrail.currentPromptType === "guided") {
+  const restoredSelection = getRestoredMemoryTrailPromptSelection(memoryTrail);
+  let restoredCameraPromise = Promise.resolve(false);
+  if (isManagedUnitedStatesGuidedPoliticalCamera(memoryTrail.guidedPoliticalCamera)) {
+    applyUnitedStatesGuidedPoliticalCamera(memoryTrail);
+    restoredCameraPromise = scheduleUnitedStatesGuidedStateFocusCheck(memoryTrail, restoredSelection);
+  } else if (memoryTrail.currentPromptType === "guided") {
     fitMapToPracticeWindow(memoryTrail.currentPracticeWindow, "united-states-trail-restore");
   } else {
-    applyMemoryTrailSectionQuizCamera(memoryTrail, {
-      targetId: memoryTrail.currentPromptTargetId,
-      promptType: memoryTrail.currentPromptType,
-      mode: memoryTrail.currentPromptMode,
-      reason: memoryTrail.currentPromptReason
-    }, { duration: 0 });
+    applyMemoryTrailSectionQuizCamera(memoryTrail, restoredSelection, { duration: 0 });
   }
   renderStudyExplorePanel();
   const resumeAudioPromise = replayCurrentMemoryTrailPromptInstructionOnResume(memoryTrail);
   scheduleMemoryTrailPromptResponseTimer(
     memoryTrail,
-    { targetId: memoryTrail.currentPromptTargetId, promptType: memoryTrail.currentPromptType },
+    restoredSelection,
     memoryTrail.currentPromptKey,
-    resumeAudioPromise
+    Promise.allSettled([resumeAudioPromise, restoredCameraPromise])
   );
 
   if (memoryTrail.phase === "feedback") {

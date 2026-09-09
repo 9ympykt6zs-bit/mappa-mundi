@@ -33,6 +33,8 @@ The repository uses browser JavaScript modules and static assets. `package.json`
 
 ## Verification and risks
 
+- Guided political camera update: lower-48 state and capital teaching plus visible identification now use prompt-level complete-state fits after the initial section context view. Hidden-answer locating retains the wider search space, and Alaska/Hawaii keep authored handling. Feasible views meet the 4.7 minimum; 390px portrait Minnesota and Montana use lower complete-state fits because 4.7 would crop their geography. See [the camera contract](guided-political-camera.md) and [testing](testing.md).
+
 - St. Lawrence geometry update: all **34 physical targets are supported and orchestrated**. St. Lawrence now uses a checked-in, connected OpenStreetMap relation extract from the Lake Ontario outlet through the Canadian continuation, with validated coverage windows and retained attribution. Its U.S. curriculum relationship remains New York-only. The eastern river cohort supplies responsive desktop/mobile framing, while the ordinary visible-line and hit-corridor contracts remain shared with other rivers. Source, scope, and limitations are recorded in [the geometry decision](st-lawrence-river-geometry.md); validation is recorded in [testing](testing.md).
 
 - Guided physical pacing update: lower-48 physical introductions no longer wait for every related state; Alaska ranges retain their disconnected-region state gate. Family review uses rotating three- or four-target membership, mixed review contains already introduced mountains/rivers/lakes with per-target canonical types, and new eligible cohorts take precedence over old review. Focused and broader validation is recorded in [testing](testing.md).
