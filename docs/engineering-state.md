@@ -1,6 +1,6 @@
 # Engineering state
 
-Updated 2026-09-08 for capital-location feedback label placement on `feature/evidence-driven-learning-foundation`, from base commit `81268f9`. This is a concise navigation and coordination record, not a release certification. Recheck Git status/revision at task start.
+Updated 2026-09-09 for post-state-curriculum Guided Learning routing on `feature/evidence-driven-learning-foundation`, from base commit `0fed514`. This is a concise navigation and coordination record, not a release certification. Recheck Git status/revision at task start.
 
 ## Ownership and current work
 
@@ -38,6 +38,8 @@ The repository uses browser JavaScript modules and static assets. `package.json`
 - St. Lawrence geometry update: all **34 physical targets are supported and orchestrated**. St. Lawrence now uses a checked-in, connected OpenStreetMap relation extract from the Lake Ontario outlet through the Canadian continuation, with validated coverage windows and retained attribution. Its U.S. curriculum relationship remains New York-only. The eastern river cohort supplies responsive desktop/mobile framing, while the ordinary visible-line and hit-corridor contracts remain shared with other rivers. Source, scope, and limitations are recorded in [the geometry decision](st-lawrence-river-geometry.md); validation is recorded in [testing](testing.md).
 
 - Guided physical pacing update: lower-48 physical introductions no longer wait for every related state; Alaska ranges retain their disconnected-region state gate. Family review uses rotating three- or four-target membership, mixed review contains already introduced mountains/rivers/lakes with per-target canonical types, and new eligible cohorts take precedence over old review. Focused and broader validation is recorded in [testing](testing.md).
+
+- Post-state-curriculum routing: after all 50 validated state-location items are introduced and no U.S. trail session is active, Guided Learning presents a dedicated choice screen instead of auto-introducing remaining capitals. Mixed U.S. Review first uses any due existing physical review pool, otherwise it uses individually learned political items in a near-even state/capital mix; Physical Geography is review-only; repeatable lower-48 Reconstruction uses the existing Guided child return contract. The completion milestone is derived from stored state-item progress, not canonical-evidence strength or a new persistence flag.
 
 - Capital-location feedback labels use deterministic measured screen-space placement without changing authored city coordinates or map navigation. Validation covers Colorado, Connecticut, Rhode Island, Delaware, and Texas; capital-first and selected-wrong priority; label/marker/star clearance; selective leaders; correct, same-state-wrong, and wrong-state feedback; pan/zoom recomputation; desktop/mobile layouts; and unchanged canonical Guided evidence. Census points remain representative area points rather than street-level city-center claims. Exact current commands and outcomes are recorded in [testing](testing.md); no real-device or full browser-suite claim is made.
 

@@ -16,6 +16,7 @@ export const UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_ID = "united-states-gui
 export const GUIDED_LEARNING_BLOCK_TYPES = Object.freeze({
   GUIDED_SECTION: "guided-section",
   RECONSTRUCTION_CHECKPOINT: "reconstruction-checkpoint",
+  POST_STATE_RECONSTRUCTION_REVIEW: "post-state-reconstruction-review",
   PHYSICAL_FEATURE_INTRODUCTION: "physical-feature-introduction",
   PHYSICAL_FEATURE_PRACTICE: "physical-feature-practice",
   CONNECTION_CHECKPOINT: "connection-checkpoint"
@@ -380,6 +381,21 @@ export function createUnitedStatesGuidedLearningOrchestrationConfig({
         completion: { kind: "evaluation-submitted", requiresPerfectResult: false },
         returnBehavior: { kind: "guided-learning-resume" }
       })),
+      freezeBlock({
+        id: "us-guided:post-state-reconstruct-lower-48",
+        type: GUIDED_LEARNING_BLOCK_TYPES.POST_STATE_RECONSTRUCTION_REVIEW,
+        repeatable: true,
+        prerequisiteBlockIds: [],
+        prerequisites: [],
+        destination: {
+          kind: "map-reconstruction",
+          regionId: GUIDED_RECONSTRUCTION_CHECKPOINTS.at(-1).regionId,
+          checkpointNumber: GUIDED_RECONSTRUCTION_CHECKPOINTS.at(-1).number,
+          postStateReview: true
+        },
+        completion: { kind: "evaluation-submitted", requiresPerfectResult: false },
+        returnBehavior: { kind: "post-state-curriculum" }
+      }),
       ...physicalFeatures.flatMap(({ blocks }) => blocks),
       ...physicalReviewBlocks
     ]),
@@ -1103,6 +1119,42 @@ export function getGuidedLearningPhysicalReviewEligibility(
   };
 }
 
+// Deliberate review entry for the completed state curriculum. This only consults
+// repeatable review pools; it never considers an introduction or a new cohort.
+export function selectGuidedLearningPostStatePhysicalReview({
+  state = createGuidedLearningOrchestrationState(),
+  config = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+} = {}) {
+  const normalized = createGuidedLearningOrchestrationState(state, config);
+  const featuresByTargetId = new Map((config.physicalFeatures || []).map((feature) => [feature.targetId, feature]));
+  const candidates = (config.physicalReviewPools || []).flatMap((cohort) => {
+    const eligibility = getGuidedLearningPhysicalReviewEligibility(normalized, cohort.id, config);
+    const block = (config.blocks || []).find((candidate) => candidate.repeatable && candidate.cohortId === cohort.id);
+    if (!block || !eligibility.eligible) return [];
+    return [{ block, cohort, eligibility }];
+  }).sort((left, right) => {
+    const leftWeak = left.eligibility.candidates?.some(({ due, priority }) => due && priority === "earlier");
+    const rightWeak = right.eligibility.candidates?.some(({ due, priority }) => due && priority === "earlier");
+    return Number(rightWeak) - Number(leftWeak)
+      || left.cohort.curriculumOrder - right.cohort.curriculumOrder
+      || left.cohort.id.localeCompare(right.cohort.id);
+  });
+  const selected = candidates[0] || null;
+  return {
+    eligible: Boolean(selected),
+    reason: selected ? "spaced-physical-review-due" : "no-introduced-physical-review-due",
+    block: selected
+      ? createDynamicPhysicalReviewBlock(selected.block, selected.eligibility, selected.cohort, featuresByTargetId)
+      : null,
+    candidates: candidates.map(({ cohort, eligibility }) => ({
+      cohortId: cohort.id,
+      targetIds: [...eligibility.targetIds],
+      dueTargetIds: [...eligibility.dueTargetIds],
+      generation: eligibility.generation
+    }))
+  };
+}
+
 function createDynamicPhysicalReviewBlock(block, eligibility, cohort, featuresByTargetId) {
   const targetFeatures = eligibility.targetIds
     .map((targetId) => featuresByTargetId.get(targetId))
@@ -1209,7 +1261,8 @@ export function selectGuidedLearningOrchestrationBlock({
     ? config.blocks.find(({ id }) => id === normalizedState.activeBlockId)
     : null;
   const activeEvaluation = activeBlock && (blockMatchesTargetedNeed(activeBlock)
-    || activeBlock.type === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT)
+    || activeBlock.type === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT
+    || activeBlock.type === GUIDED_LEARNING_BLOCK_TYPES.POST_STATE_RECONSTRUCTION_REVIEW)
     ? evaluationsById.get(normalizedState.activeBlockId)
     : null;
   const inProgressFeature = featureProgress.find(({ feature, inProgress }) => (

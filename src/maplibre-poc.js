@@ -45,6 +45,7 @@ import {
   resetGuidedLearningOrchestrationState,
   satisfyGuidedLearningPhysicalInterleave,
   saveGuidedLearningOrchestrationState,
+  selectGuidedLearningPostStatePhysicalReview,
   selectGuidedLearningOrchestrationBlock,
   startGuidedLearningOrchestrationBlock,
   UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
@@ -192,10 +193,12 @@ import {
   applyUnitedStatesMemoryTrailSessionStart,
   buildUnitedStatesMemoryTrailItems,
   createUnitedStatesMemoryTrailState,
+  getUnitedStatesPostStateCurriculumStatus,
   hasUnitedStatesMemoryTrailProgress,
   isUnitedStatesMemoryTrailItemUnseen,
   isUnitedStatesMemoryTrailWeakReviewItem,
   loadUnitedStatesMemoryTrailProgress,
+  planUnitedStatesPostStateCurriculumReview,
   planUnitedStatesMemoryTrailSession,
   resetUnitedStatesMemoryTrailProgress as resetUnitedStatesMemoryTrailPersistedProgress,
   saveUnitedStatesMemoryTrailProgress,
@@ -436,6 +439,7 @@ const appShellScreenIds = new Set([
   "daily-trail-intro",
   "daily-trail-summary",
   "united-states-trail-summary",
+  "post-state-curriculum",
   "expedition",
   "progress-report",
   "begin-journey-placeholder",
@@ -3909,6 +3913,11 @@ function recordCanonicalReconstructionEvaluation(evaluation, sourceActivityId) {
   }
 }
 
+function isGuidedReconstructionBlock(block = activeGuidedLearningOrchestrationBlock) {
+  return block?.type === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT
+    || block?.type === GUIDED_LEARNING_BLOCK_TYPES.POST_STATE_RECONSTRUCTION_REVIEW;
+}
+
 function getGuidedLearningOrchestrationSnapshot(requestedTargetedNeed = null) {
   const durableChildLaunch = loadGuidedChildLaunchContract(window.localStorage);
   const targetedNeed = requestedTargetedNeed || durableChildLaunch?.targetedNeed || null;
@@ -4170,6 +4179,7 @@ function deferActiveGuidedLearningOrchestrationBlock(blockId = activeGuidedLearn
 async function returnToGuidedLearningFromOrchestration() {
   const block = activeGuidedLearningOrchestrationBlock;
   if (!block) return false;
+  const returnsToPostStateCurriculum = block.returnContext?.returnBehavior === "post-state-curriculum";
   if (block.status !== "completed") deferActiveGuidedLearningOrchestrationBlock(block.id);
   const returnedBlockId = block.id;
   activeGuidedLearningOrchestrationBlock = null;
@@ -4180,6 +4190,10 @@ async function returnToGuidedLearningFromOrchestration() {
   });
   pendingUnitedStatesMemoryTrailPlan = null;
   lastUnitedStatesMemoryTrailSummary = null;
+  if (returnsToPostStateCurriculum) {
+    showAppScreen("post-state-curriculum", { pushHistory: false });
+    return true;
+  }
   await startOrContinueUnitedStatesMemoryTrail();
   return true;
 }
@@ -6342,7 +6356,7 @@ function bindUiEvents() {
       return;
     }
     if (currentAppScreen === "map-reconstruction") {
-      if (activeGuidedLearningOrchestrationBlock?.type === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT) {
+      if (isGuidedReconstructionBlock()) {
         exitMapReconstruction();
       } else if (activeMapReconstructionRegionId) {
         showMapReconstructionRegionSelection();
@@ -7477,6 +7491,10 @@ function getAppShellScreenContent(screenId) {
       title: "United States Guided Learning",
       subtitle: "This session is complete."
     },
+    "post-state-curriculum": {
+      title: "United States Guided Learning",
+      subtitle: "Choose what to strengthen next."
+    },
     expedition: {
       title: activeExpeditionDefinition?.title || "Expedition",
       subtitle: activeExpeditionDefinition?.id === ACROSS_UNITED_STATES_EXPEDITION_ID
@@ -7551,6 +7569,7 @@ function isJourneyShellScreen(screenId) {
     "daily-trail-intro",
     "daily-trail-summary",
     "united-states-trail-summary",
+    "post-state-curriculum",
     "begin-journey-placeholder",
     "free-play-difficulty",
     "settings",
@@ -10118,8 +10137,7 @@ async function startMapReconstructionCapstone(capstoneId, selectionOptions = {})
 }
 
 async function startMapReconstructionRegion(regionId) {
-  const guidedCheckpoint = activeGuidedLearningOrchestrationBlock?.type
-    === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT
+  const guidedCheckpoint = isGuidedReconstructionBlock()
     && activeGuidedLearningOrchestrationBlock.destination.regionId === regionId;
   const region = guidedCheckpoint
     ? getGuidedReconstructionRegion(regionId)
@@ -10142,11 +10160,11 @@ async function startMapReconstructionRegion(regionId) {
       lockedStateIds: guidedCheckpoint ? region.lockedStateIds : [],
       onEvaluation: (evaluation) => {
         recordCanonicalReconstructionEvaluation(evaluation, region.id);
-        if (activeGuidedLearningOrchestrationBlock?.type === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT) {
+        if (isGuidedReconstructionBlock()) {
           completeActiveGuidedLearningOrchestrationBlock(activeGuidedLearningOrchestrationBlock.id);
         }
       },
-      onContinue: activeGuidedLearningOrchestrationBlock?.type === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT
+      onContinue: isGuidedReconstructionBlock()
         ? () => exitMapReconstruction()
         : null,
       continueLabel: "Continue Guided Learning"
@@ -10225,8 +10243,7 @@ async function openMapReconstructionWithOptions(options = {}) {
 }
 
 function exitMapReconstruction() {
-  const returnsToGuidedLearning = activeGuidedLearningOrchestrationBlock?.type
-    === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT;
+  const returnsToGuidedLearning = isGuidedReconstructionBlock();
   mapReconstructionController?.destroy();
   mapReconstructionController = null;
   activeMapReconstructionRegionId = "";
@@ -17092,6 +17109,11 @@ function renderJourneyShellContent(screenId) {
     return;
   }
 
+  if (screenId === "post-state-curriculum") {
+    renderPostStateCurriculumChoiceScreen();
+    return;
+  }
+
   if (!selectedJourney) {
     const missingCard = document.createElement("div");
     missingCard.className = "app-shell-placeholder-card";
@@ -21333,6 +21355,13 @@ async function startOrContinueUnitedStatesMemoryTrail(options = {}) {
     return;
   }
 
+  if (getUnitedStatesPostStateCurriculumStatus(state, items).stateCurriculumComplete) {
+    pendingUnitedStatesMemoryTrailPlan = null;
+    lastUnitedStatesMemoryTrailSummary = null;
+    showAppScreen("post-state-curriculum", { pushHistory: false });
+    return;
+  }
+
   pendingUnitedStatesMemoryTrailPlan = null;
   await startUnitedStatesMemoryTrailSession(options);
 }
@@ -21907,6 +21936,11 @@ function resetUnitedStatesMemoryTrailProgress() {
 }
 
 async function continueUnitedStatesMemoryTrailFromSummary() {
+  const items = getUnitedStatesMemoryTrailItems();
+  if (getUnitedStatesPostStateCurriculumStatus(loadUnitedStatesMemoryTrailProgress(items), items).stateCurriculumComplete) {
+    showAppScreen("post-state-curriculum", { pushHistory: false });
+    return;
+  }
   pendingUnitedStatesMemoryTrailPlan = null;
   if (await launchNextGuidedLearningOrchestrationBlock()) {
     lastUnitedStatesMemoryTrailSummary = null;
@@ -21914,6 +21948,56 @@ async function continueUnitedStatesMemoryTrailFromSummary() {
   }
   lastUnitedStatesMemoryTrailSummary = null;
   await startUnitedStatesMemoryTrailSession();
+}
+
+async function startPostStateCurriculumMixedReview() {
+  const orchestrationState = loadGuidedLearningOrchestrationState(
+    window.localStorage,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  const physicalReview = selectGuidedLearningPostStatePhysicalReview({ state: orchestrationState });
+  if (physicalReview.eligible) {
+    await startPostStateCurriculumPhysicalReview(physicalReview);
+    return;
+  }
+  const items = getUnitedStatesMemoryTrailItems();
+  const state = loadUnitedStatesMemoryTrailProgress(items);
+  const plan = planUnitedStatesPostStateCurriculumReview(state, items);
+  if (!plan?.playItems?.length) {
+    showFeedback("There are no learned U.S. places ready for review yet.");
+    return;
+  }
+  pendingUnitedStatesMemoryTrailPlan = plan;
+  await startUnitedStatesMemoryTrailSession();
+}
+
+async function startPostStateCurriculumPhysicalReview(existingSelection = null) {
+  const state = loadGuidedLearningOrchestrationState(window.localStorage, UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1);
+  const selection = existingSelection || selectGuidedLearningPostStatePhysicalReview({ state });
+  if (!selection.eligible || !selection.block) {
+    showFeedback("No introduced physical geography is due for review yet.");
+    return;
+  }
+  saveActiveGuidedLearningOrchestrationBlock(selection.block, {
+    ...getGuidedLearningOrchestrationReturnContext(),
+    returnBehavior: "post-state-curriculum"
+  }, { entrySource: "guided-learning", launchReason: selection.reason });
+  await launchGuidedLearningChildBlock(selection.block);
+}
+
+async function startPostStateCurriculumReconstruction() {
+  const block = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.blocks.find((candidate) => (
+    candidate.type === GUIDED_LEARNING_BLOCK_TYPES.POST_STATE_RECONSTRUCTION_REVIEW
+  ));
+  if (!block) {
+    showFeedback("All available Guided reconstruction checkpoints are complete.");
+    return;
+  }
+  saveActiveGuidedLearningOrchestrationBlock(block, {
+    ...getGuidedLearningOrchestrationReturnContext(),
+    returnBehavior: "post-state-curriculum"
+  }, { entrySource: "guided-learning", launchReason: "post-state-curriculum-reconstruction" });
+  await launchGuidedLearningChildBlock(block);
 }
 
 function finishUnitedStatesMemoryTrailFromSummary() {
@@ -21981,6 +22065,59 @@ function renderUnitedStatesMemoryTrailSummary() {
 
   actions.append(keepGoingButton, finishButton);
   panel.append(heading, practiced, stats, weak, actions);
+  journeyShellContent.appendChild(panel);
+}
+
+function renderPostStateCurriculumChoiceScreen() {
+  const items = getUnitedStatesMemoryTrailItems();
+  const status = getUnitedStatesPostStateCurriculumStatus(loadUnitedStatesMemoryTrailProgress(items), items);
+  const panel = document.createElement("section");
+  panel.className = "daily-trail-panel";
+  const heading = document.createElement("h2");
+  heading.textContent = "Your state map is ready";
+  const copy = document.createElement("p");
+  copy.textContent = "You have learned all 50 state locations. Choose a way to strengthen what you know.";
+  const stats = document.createElement("p");
+  stats.textContent = `${status.learnedStateCount} learned states and ${status.learnedCapitalCount} learned capitals are available for review.`;
+  const orchestrationState = loadGuidedLearningOrchestrationState(
+    window.localStorage,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  const physicalReview = selectGuidedLearningPostStatePhysicalReview({ state: orchestrationState });
+  const reconstructionAvailable = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.blocks.some((candidate) => (
+    candidate.type === GUIDED_LEARNING_BLOCK_TYPES.POST_STATE_RECONSTRUCTION_REVIEW
+  ));
+  const optionList = document.createElement("div");
+  optionList.className = "daily-trail-goal-options";
+  const choices = [
+    ["Mixed U.S. Review", physicalReview.eligible ? "Review learned states, capitals, and physical geography that is due now." : "Practice learned states and capitals. Physical geography joins when an introduced review is due.", startPostStateCurriculumMixedReview, status.learnedPoliticalCount === 0 && !physicalReview.eligible],
+    ["Physical Geography", physicalReview.eligible ? "Review physical features you have already learned." : "No introduced physical features are due for review yet.", startPostStateCurriculumPhysicalReview, !physicalReview.eligible],
+    ["Map Reconstruction", "Rebuild a region from memory.", startPostStateCurriculumReconstruction, !reconstructionAvailable]
+  ];
+  choices.forEach(([label, description, action, disabled]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "daily-trail-goal-option";
+    button.disabled = disabled;
+    const title = document.createElement("span");
+    title.className = "daily-trail-goal-option-title";
+    title.textContent = label;
+    const copy = document.createElement("span");
+    copy.className = "daily-trail-goal-option-copy";
+    copy.textContent = description;
+    button.append(title, copy);
+    button.addEventListener("click", () => { void action(); });
+    optionList.appendChild(button);
+  });
+  const actions = document.createElement("div");
+  actions.className = "daily-trail-actions";
+  const finish = document.createElement("button");
+  finish.type = "button";
+  finish.className = "main-menu-button main-menu-button-quiet";
+  finish.textContent = "Finish";
+  finish.addEventListener("click", finishUnitedStatesMemoryTrailFromSummary);
+  actions.appendChild(finish);
+  panel.append(heading, copy, stats, optionList, actions);
   journeyShellContent.appendChild(panel);
 }
 
@@ -28418,6 +28555,9 @@ function getUnitedStatesMemoryTrailPlanForTest() {
     weakReviewItemIds: plan.weakReviewItems.map((item) => item.id),
     fairnessReviewItemIds: plan.fairnessReviewItems.map((item) => item.id),
     activeSectionId: plan.activeSectionId,
+    postStateCurriculum: plan.postStateCurriculum
+      ? JSON.parse(JSON.stringify(plan.postStateCurriculum))
+      : null,
     targetedEntry: plan.targetedEntry || runtimeUnitedStatesTargetedEntryTrace
   } : null;
 }

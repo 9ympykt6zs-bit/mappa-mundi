@@ -1,5 +1,9 @@
 # Automated testing
 
+## Post-state-curriculum routing — 2026-09-09
+
+`scripts/check-post-state-curriculum.mjs` verifies the durable 50-state completion derivation, active-session precedence, near-even learned-only political review, deterministic replay, review-only physical selection, and the repeatable post-state reconstruction block. It confirms that unseen capitals cannot enter the mixed review and that normal Guided orchestration does not auto-select the post-state reconstruction block. `tests/e2e/post-state-curriculum.spec.js` passes **6/6** across desktop and mobile Chromium for the chooser layout, learned-only 5/5 political review, completed-checkpoint Reconstruction launch/reload/return, and introduced-only Physical Geography launch/return. Eight broader desktop/mobile checks also pass for ordinary incomplete Guided startup, deferred Reconstruction return, physical child reload/provenance, and rotating physical review. Desktop and mobile chooser screenshots were inspected; all option descriptions were visible, disabled state was clear, and no horizontal overflow or clipping was found.
+
 The repository has a fast Node-based baseline and a separate Playwright browser layer. The fast baseline is the normal development check; Playwright covers selected browser flows and should be run in a supported local or CI environment.
 
 ## Guided political current-state camera — 2026-09-08

@@ -535,6 +535,77 @@ export function areAllUnitedStatesMemoryTrailItemsMastered(state, items = []) {
   return items.length > 0 && items.every((item) => getItemStatus(normalized, item) === "mastered");
 }
 
+export function getUnitedStatesPostStateCurriculumStatus(state, items = []) {
+  const normalized = createUnitedStatesMemoryTrailState(state, items);
+  const stateItems = getStateItems(items);
+  const capitalItems = getCapitalItems(items);
+  const curriculumValid = stateItems.length === 50 && new Set(stateItems.map(({ targetId }) => targetId)).size === 50;
+  const stateCurriculumComplete = curriculumValid
+    && areAllUnitedStatesMemoryTrailItemsIntroduced(normalized, stateItems);
+  const learnedStateItems = stateItems.filter((item) => practiceEligibleStatuses.has(getItemStatus(normalized, item)));
+  const learnedCapitalItems = capitalItems.filter((item) => practiceEligibleStatuses.has(getItemStatus(normalized, item)));
+  return {
+    mode: stateCurriculumComplete && !normalized.activeSession ? "post-state-curriculum" : "guided-curriculum",
+    stateCurriculumComplete,
+    hasActiveSession: Boolean(normalized.activeSession),
+    stateItemCount: stateItems.length,
+    learnedStateCount: learnedStateItems.length,
+    learnedCapitalCount: learnedCapitalItems.length,
+    learnedPoliticalCount: learnedStateItems.length + learnedCapitalItems.length
+  };
+}
+
+export function planUnitedStatesPostStateCurriculumReview(state, items = [], options = {}) {
+  const normalized = attachPlannerContext(createUnitedStatesMemoryTrailState(state, items, options), items, options);
+  const status = getUnitedStatesPostStateCurriculumStatus(normalized, items);
+  if (!status.stateCurriculumComplete || status.hasActiveSession) return null;
+  const learnedItems = items.filter((item) => practiceEligibleStatuses.has(getItemStatus(normalized, item)));
+  const stateItems = learnedItems.filter((item) => item.type === "state");
+  const capitalItems = learnedItems.filter((item) => item.type === "capital");
+  const limit = Math.max(1, Number(options.limit) || UNITED_STATES_MEMORY_TRAIL_CONFIG.cumulativeReviewCount);
+  const ranked = [...learnedItems].sort((left, right) => compareReviewPriority(normalized, left, right));
+  const selected = [];
+  const selectFirst = (candidates) => {
+    const item = candidates.find((candidate) => !selected.some(({ id }) => id === candidate.id));
+    if (item) selected.push(item);
+  };
+  // Keep the two learned political forms near-even while retaining adaptive order inside each form.
+  const stateQuota = Math.min(stateItems.length, Math.ceil(limit / 2));
+  const capitalQuota = Math.min(capitalItems.length, Math.floor(limit / 2));
+  [...stateItems].sort((left, right) => compareReviewPriority(normalized, left, right))
+    .slice(0, stateQuota).forEach((item) => selectFirst([item]));
+  [...capitalItems].sort((left, right) => compareReviewPriority(normalized, left, right))
+    .slice(0, capitalQuota).forEach((item) => selectFirst([item]));
+  ranked.forEach((item) => {
+    if (selected.length < limit) selectFirst([item]);
+  });
+  const reviewItems = selected.slice(0, limit);
+  const activeActivityId = reviewItems[0]?.homeActivityId || items[0]?.homeActivityId || "";
+  return {
+    ...createPlan({
+      state: normalized,
+      sessionType: "post-state-curriculum-review",
+      title: "Mixed U.S. Review",
+      activeActivityId,
+      newItems: [],
+      reviewItems,
+      weakReviewItems: reviewItems.filter((item) => isWeakProgress(normalized.itemProgress[item.id] || {})),
+      oldReviewItems: [],
+      recentReviewItems: [],
+      fairnessReviewItems: [],
+      playItems: reviewItems,
+      allItems: items
+    }),
+    postStateCurriculum: {
+      learnedStateCount: stateItems.length,
+      learnedCapitalCount: capitalItems.length,
+      selectedStateCount: reviewItems.filter((item) => item.type === "state").length,
+      selectedCapitalCount: reviewItems.filter((item) => item.type === "capital").length,
+      learnedOnly: true
+    }
+  };
+}
+
 export function isUnitedStatesMemoryTrailItemUnseen(state, item) {
   return getItemStatus(createUnitedStatesMemoryTrailState(state, [item]), item) === "unseen";
 }
