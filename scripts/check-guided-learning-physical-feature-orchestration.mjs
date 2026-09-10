@@ -10,6 +10,7 @@ import {
   createUnitedStatesGuidedLearningOrchestrationConfig,
   deferGuidedLearningOrchestrationBlock,
   getGuidedLearningPhysicalReviewEligibility,
+  getGuidedLearningPhysicalProgression,
   GUIDED_LEARNING_BLOCK_TYPES,
   resetGuidedLearningOrchestrationState,
   selectPhysicalCohortRetrievalSubset,
@@ -58,6 +59,28 @@ function stateEvents(stateIds, { start = 0, occurredAt = "2036-01-01T12:00:00.00
     start + index,
     occurredAt
   ));
+}
+
+function guidedStateItemIdsThrough(stageNumber) {
+  const lowerFortyEight = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.blocks
+    .filter(({ type, destination }) => (
+      type === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT
+      && destination.checkpointNumber <= Math.min(10, stageNumber)
+    ))
+    .flatMap(({ guidedStatePrerequisiteItemIds }) => guidedStatePrerequisiteItemIds);
+  return [...new Set([
+    ...lowerFortyEight,
+    ...(stageNumber >= 11 ? ["state:alaska"] : [])
+  ])];
+}
+
+function reconstructionBlockIdsThrough(stageNumber, config = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1) {
+  return config.blocks
+    .filter(({ type, destination }) => (
+      type === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT
+      && destination.checkpointNumber <= Math.min(10, stageNumber)
+    ))
+    .map(({ id }) => id);
 }
 
 function findSourceFeature(feature) {
@@ -204,26 +227,29 @@ const overriddenIntro = overriddenConfig.blocks.find(({ featureId, featurePhase 
 assert.equal(selectGuidedLearningOrchestrationBlock({
   config: overriddenConfig,
   state: createGuidedLearningOrchestrationState({
-    completedBlockIds: ["us-guided:rebuild-new-england"]
+    completedBlockIds: reconstructionBlockIdsThrough(8, overriddenConfig)
   }, overriddenConfig),
   repository: { events: stateEvents(["colorado"]) },
+  introducedGuidedStateItemIds: guidedStateItemIdsThrough(8),
   hasUnfinishedNonPhysicalLearning: true
 }).currentBlock.id, overriddenIntro.id);
 
 const incorrectRockyDecision = selectGuidedLearningOrchestrationBlock({
   config: overriddenConfig,
   state: createGuidedLearningOrchestrationState({
-    completedBlockIds: ["us-guided:rebuild-new-england"]
+    completedBlockIds: reconstructionBlockIdsThrough(8, overriddenConfig)
   }, overriddenConfig),
-  repository: { events: stateEvents(["colorado"], { outcome: "incorrect" }) }
+  repository: { events: stateEvents(["colorado"], { outcome: "incorrect" }) },
+  introducedGuidedStateItemIds: guidedStateItemIdsThrough(8)
 });
 assert.equal(incorrectRockyDecision.currentBlock.type, GUIDED_LEARNING_BLOCK_TYPES.GUIDED_SECTION);
 const assistedRockyDecision = selectGuidedLearningOrchestrationBlock({
   config: overriddenConfig,
   state: createGuidedLearningOrchestrationState({
-    completedBlockIds: ["us-guided:rebuild-new-england"]
+    completedBlockIds: reconstructionBlockIdsThrough(8, overriddenConfig)
   }, overriddenConfig),
-  repository: { events: stateEvents(["colorado"], { outcome: "assisted" }) }
+  repository: { events: stateEvents(["colorado"], { outcome: "assisted" }) },
+  introducedGuidedStateItemIds: guidedStateItemIdsThrough(8)
 });
 assert.equal(assistedRockyDecision.currentBlock.id, overriddenIntro.id);
 
@@ -342,6 +368,30 @@ assert.deepEqual(calculateGuidedLearningPhysicalFeatureCamera({
 
 const northeastCohort = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalCohorts
   .find(({ id }) => id === "northeast-mountains");
+assert.deepEqual(
+  UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalCohorts
+    .map(({ id, geographyRegion, regionalStage, maximumLeadStages, curriculumOrder }) => ({
+      id, geographyRegion, regionalStage, maximumLeadStages, curriculumOrder
+    }))
+    .sort((left, right) => left.curriculumOrder - right.curriculumOrder)
+    .map(({ id, regionalStage, maximumLeadStages }) => [id, regionalStage, maximumLeadStages]),
+  [
+    ["northeast-mountains", 1, 0],
+    ["southern-appalachian-ranges", 3, 1],
+    ["appalachian-system-ranges", 3, 1],
+    ["eastern-rivers", 5, 1],
+    ["upper-great-lakes", 5, 1],
+    ["eastern-and-interior-lakes", 5, 1],
+    ["central-rivers", 6, 1],
+    ["central-mountains", 7, 1],
+    ["western-major-mountains", 8, 1],
+    ["western-rivers", 8, 1],
+    ["interior-west-ranges", 9, 1],
+    ["pacific-ranges", 10, 1],
+    ["alaska-mountains", 11, 0]
+  ],
+  "Introduction cohorts carry an explicit east-to-west Guided progression."
+);
 assert.equal(northeastCohort.source, "product-approved-subgroup-of-authored-eastern-mountains");
 assert.equal(northeastCohort.sourceId, "us-physical-eastern-mountains");
 assert.deepEqual(northeastCohort.authoredMemberTargetIds, [
@@ -422,7 +472,8 @@ const northeastBaseState = createGuidedLearningOrchestrationState({
 });
 let northeastDecision = selectGuidedLearningOrchestrationBlock({
   state: northeastBaseState,
-  repository: { events: northeastPrerequisitesWithoutNewYork }
+  repository: { events: northeastPrerequisitesWithoutNewYork },
+  introducedGuidedStateItemIds: guidedStateItemIdsThrough(1)
 });
 assert.equal(northeastDecision.currentBlock.id, "us-guided:introduce-white-mountains");
 assert.deepEqual(northeastDecision.currentBlock.destination.newTargetIds, [
@@ -459,7 +510,8 @@ northeastState = completeGuidedLearningPhysicalFeatureIntroductions(
 );
 northeastDecision = selectGuidedLearningOrchestrationBlock({
   state: northeastState,
-  repository: { events: [...northeastPrerequisitesWithoutNewYork, ...northeastIntroductionEvents] }
+  repository: { events: [...northeastPrerequisitesWithoutNewYork, ...northeastIntroductionEvents] },
+  introducedGuidedStateItemIds: guidedStateItemIdsThrough(1)
 });
 assert.equal(northeastDecision.currentBlock.id, "us-guided:practice-white-mountains");
 assert.deepEqual(northeastDecision.currentBlock.destination.targetIds, [
@@ -483,19 +535,91 @@ assert.equal(pendingNortheastPractice.activeStatus, "pending");
 assert.deepEqual(pendingNortheastPractice.retrievedPhysicalCohortTargetIds, {});
 assert.equal(selectGuidedLearningOrchestrationBlock({
   state: pendingNortheastPractice,
-  repository: { events: [...northeastPrerequisitesWithoutNewYork, ...northeastIntroductionEvents] }
+  repository: { events: [...northeastPrerequisitesWithoutNewYork, ...northeastIntroductionEvents] },
+  introducedGuidedStateItemIds: guidedStateItemIdsThrough(1)
 }).currentBlock.id, "us-guided:practice-white-mountains");
 
 const allNortheastPrerequisites = stateEvents(["maine", "new-hampshire", "vermont", "new-york"]);
 const threeMemberDecision = selectGuidedLearningOrchestrationBlock({
   state: northeastBaseState,
-  repository: { events: allNortheastPrerequisites }
+  repository: { events: allNortheastPrerequisites },
+  introducedGuidedStateItemIds: guidedStateItemIdsThrough(1)
 });
 assert.deepEqual(threeMemberDecision.currentBlock.destination.newTargetIds, [
   "white-mountains",
   "green-mountains",
   "adirondack-mountains"
 ]);
+
+const retainedAlaskaEvidence = { events: stateEvents(["alaska"]) };
+const resetWithRetainedAlaskaDecision = selectGuidedLearningOrchestrationBlock({
+  state: northeastBaseState,
+  repository: retainedAlaskaEvidence,
+  introducedGuidedStateItemIds: guidedStateItemIdsThrough(1),
+  targetedNeed: { objectiveId: "learn-physical-features", familyId: "physical-mountain-ranges" }
+});
+assert.equal(resetWithRetainedAlaskaDecision.currentBlock.destination.cohortId, "northeast-mountains");
+assert.equal(
+  resetWithRetainedAlaskaDecision.physicalCohortTrace
+    .find(({ cohortId }) => cohortId === "alaska-mountains").geographicEligibility.reason,
+  "geographic-progression-not-reached",
+  "Retained canonical Alaska evidence cannot bypass a fresh Guided state frontier."
+);
+assert.equal(getGuidedLearningPhysicalProgression(["state:alaska"]).frontierStage, 0);
+
+const completedCohortBlockIds = (...cohortIds) => UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
+  .filter(({ learningCohortId }) => cohortIds.includes(learningCohortId))
+  .flatMap(({ sequenceBlockIds }) => sequenceBlockIds);
+const selectMountainAtStage = (stageNumber, completedCohortIds = [], repository = { events: [] }) => (
+  selectGuidedLearningOrchestrationBlock({
+    state: createGuidedLearningOrchestrationState({
+      completedBlockIds: [
+        ...reconstructionBlockIdsThrough(stageNumber),
+        ...completedCohortBlockIds(...completedCohortIds)
+      ],
+      physicalInterleaveRequired: false
+    }),
+    repository,
+    introducedGuidedStateItemIds: guidedStateItemIdsThrough(stageNumber),
+    targetedNeed: { objectiveId: "learn-physical-features", familyId: "physical-mountain-ranges" }
+  })
+);
+assert.equal(selectMountainAtStage(2, ["northeast-mountains"]).currentBlock.destination.cohortId, "southern-appalachian-ranges");
+assert.equal(selectMountainAtStage(2, [
+  "northeast-mountains", "southern-appalachian-ranges"
+]).currentBlock.destination.cohortId, "appalachian-system-ranges");
+assert.equal(selectMountainAtStage(6, [
+  "northeast-mountains", "southern-appalachian-ranges", "appalachian-system-ranges"
+]).currentBlock.destination.cohortId, "central-mountains");
+const rockyProgressionDecision = selectMountainAtStage(7, [
+  "northeast-mountains", "southern-appalachian-ranges", "appalachian-system-ranges", "central-mountains"
+]);
+assert.equal(rockyProgressionDecision.currentBlock.destination.cohortId, "western-major-mountains");
+assert.equal(guidedStateItemIdsThrough(7).includes("state:colorado"), false, "Rockies lead related state coverage without an all-states gate.");
+assert.deepEqual(rockyProgressionDecision.currentBlock.destination.newTargetIds, [
+  "rocky-mountains", "cascade-mountains", "sierra-nevada"
+]);
+const completedLower48MountainCohorts = [
+  "northeast-mountains",
+  "southern-appalachian-ranges",
+  "appalachian-system-ranges",
+  "central-mountains",
+  "western-major-mountains",
+  "interior-west-ranges",
+  "pacific-ranges"
+];
+const alaskaBeforeGuidedStage = selectMountainAtStage(10, completedLower48MountainCohorts, retainedAlaskaEvidence);
+assert.equal(alaskaBeforeGuidedStage.currentBlock.type, GUIDED_LEARNING_BLOCK_TYPES.GUIDED_SECTION);
+const alaskaAtGuidedStage = selectMountainAtStage(11, completedLower48MountainCohorts, retainedAlaskaEvidence);
+assert.equal(alaskaAtGuidedStage.currentBlock.destination.cohortId, "alaska-mountains");
+assert.deepEqual(alaskaAtGuidedStage.currentBlock.destination.newTargetIds, ["alaska-range", "brooks-range"]);
+
+const lateFrontierWithEasternMountainBacklog = selectMountainAtStage(10, ["northeast-mountains"]);
+assert.equal(
+  lateFrontierWithEasternMountainBacklog.currentBlock.destination.cohortId,
+  "southern-appalachian-ranges",
+  "The oldest region-ready unseen cohort is drained instead of being starved by the current frontier."
+);
 
 const riverPrerequisites = stateEvents([
   "arizona", "colorado", "utah", "california", "nevada", "oregon", "washington", "new-mexico", "texas"
@@ -508,9 +632,10 @@ const westernRiverConfig = createUnitedStatesGuidedLearningOrchestrationConfig({
 const riverDecision = selectGuidedLearningOrchestrationBlock({
   config: westernRiverConfig,
   state: createGuidedLearningOrchestrationState({
-    completedBlockIds: ["us-guided:rebuild-new-england"]
+    completedBlockIds: reconstructionBlockIdsThrough(8, westernRiverConfig)
   }, westernRiverConfig),
-  repository: { events: riverPrerequisites }
+  repository: { events: riverPrerequisites },
+  introducedGuidedStateItemIds: guidedStateItemIdsThrough(8)
 });
 assert.equal(riverDecision.currentBlock.destination.cohortId, "western-rivers");
 assert.equal(riverDecision.currentBlock.destination.newTargetIds.length, 3, "The authored western-river group is reused.");
@@ -518,14 +643,24 @@ assert.equal(riverDecision.currentBlock.destination.newTargetIds.length, 3, "The
 const completedNortheastBlockIds = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
   .filter(({ learningCohortId }) => learningCohortId === "northeast-mountains")
   .flatMap(({ introductionBlockId, practiceBlockId }) => [introductionBlockId, practiceBlockId]);
+const completedPreWesternMountainBlockIds = completedCohortBlockIds(
+  "southern-appalachian-ranges",
+  "appalachian-system-ranges",
+  "central-mountains"
+);
 const coloradoNewMexicoState = createGuidedLearningOrchestrationState({
-  completedBlockIds: ["us-guided:rebuild-new-england", ...completedNortheastBlockIds],
+  completedBlockIds: [
+    ...reconstructionBlockIdsThrough(8),
+    ...completedNortheastBlockIds,
+    ...completedPreWesternMountainBlockIds
+  ],
   physicalInterleaveRequired: false
 });
 const coloradoNewMexicoRepository = { events: stateEvents(["colorado", "new-mexico"]) };
 const mountainBatch = selectGuidedLearningOrchestrationBlock({
   state: coloradoNewMexicoState,
   repository: coloradoNewMexicoRepository,
+  introducedGuidedStateItemIds: guidedStateItemIdsThrough(8),
   targetedNeed: { objectiveId: "learn-physical-features", familyId: "physical-mountain-ranges" }
 });
 assert.equal(mountainBatch.currentBlock.destination.cohortId, "western-major-mountains");
@@ -541,12 +676,13 @@ assert.deepEqual(
 );
 
 for (const [familyId, expectedCohortId, expectedSize] of [
-  ["physical-rivers", "western-rivers", 3],
+  ["physical-rivers", "eastern-rivers", 2],
   ["physical-lakes", "upper-great-lakes", 3]
 ]) {
   const batch = selectGuidedLearningOrchestrationBlock({
-    state: createGuidedLearningOrchestrationState({ completedBlockIds: ["us-guided:rebuild-new-england"] }),
+    state: createGuidedLearningOrchestrationState({ completedBlockIds: reconstructionBlockIdsThrough(4) }),
     repository: { events: [] },
+    introducedGuidedStateItemIds: guidedStateItemIdsThrough(4),
     targetedNeed: { objectiveId: "learn-physical-features", familyId }
   });
   assert.equal(batch.currentBlock.destination.cohortId, expectedCohortId);
@@ -572,6 +708,7 @@ const noStarvationDecision = selectGuidedLearningOrchestrationBlock({
     physicalReviewProgress: dueNortheastReview
   }),
   repository: coloradoNewMexicoRepository,
+  introducedGuidedStateItemIds: guidedStateItemIdsThrough(8),
   targetedNeed: { objectiveId: "learn-physical-features", familyId: "physical-mountain-ranges" }
 });
 assert.equal(noStarvationDecision.currentBlock.destination.cohortId, "western-major-mountains");

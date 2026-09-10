@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY } from "../../src/canonical-learning-evidence-repository.js";
+import { unitedStatesMemoryTrailStorageKey } from "../../src/united-states-memory-trail-planner.js";
 import {
   GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY,
   UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1 as orchestration
@@ -12,7 +13,15 @@ async function launchPhysicalTeaching(page, targetId, { extraStateIds = [], redu
   await page.emulateMedia({ reducedMotion });
   const feature = orchestration.physicalFeatures.find((candidate) => candidate.targetId === targetId);
   const targetCohort = orchestration.physicalCohorts.find(({ id }) => id === feature.learningCohortId);
-  const completedBlockIds = ["us-guided:rebuild-new-england"];
+  const progressionCheckpointBlocks = orchestration.blocks.filter(({ type, destination }) => (
+    type === "reconstruction-checkpoint"
+    && destination.checkpointNumber <= Math.min(10, targetCohort.regionalStage)
+  ));
+  const completedBlockIds = progressionCheckpointBlocks.map(({ id }) => id);
+  const introducedStateItemIds = [...new Set([
+    ...progressionCheckpointBlocks.flatMap(({ guidedStatePrerequisiteItemIds }) => guidedStatePrerequisiteItemIds),
+    ...(targetCohort.regionalStage >= 11 ? ["state:alaska"] : [])
+  ])];
   for (const candidate of orchestration.physicalFeatures) {
     const cohort = orchestration.physicalCohorts.find(({ id }) => id === candidate.learningCohortId);
     if ((cohort?.curriculumOrder ?? Infinity) < (targetCohort?.curriculumOrder ?? Infinity)) {
@@ -20,7 +29,7 @@ async function launchPhysicalTeaching(page, targetId, { extraStateIds = [], redu
     }
   }
   const stateIds = [...new Set([...feature.introductionPrerequisiteStateIds, ...extraStateIds])];
-  await page.addInitScript(({ repositoryKey, orchestrationKey, stateIds, completedBlockIds, orchestrationId }) => {
+  await page.addInitScript(({ repositoryKey, trailKey, orchestrationKey, stateIds, introducedStateItemIds, completedBlockIds, orchestrationId }) => {
     localStorage.setItem(repositoryKey, JSON.stringify({
       storageVersion: 1,
       evidenceSchemaVersion: 1,
@@ -36,6 +45,16 @@ async function launchPhysicalTeaching(page, targetId, { extraStateIds = [], redu
         sourceActivityId: "guided-physical-presentation-seed",
         outcome: "correct"
       }))
+    }));
+    localStorage.setItem(trailKey, JSON.stringify({
+      version: 2,
+      trailId: "united-states-memory-trail",
+      curriculumVersion: 2,
+      hasStarted: true,
+      currentSessionNumber: 12,
+      currentCategory: "states",
+      introducedItemIds: introducedStateItemIds,
+      itemProgress: {}
     }));
     localStorage.setItem(orchestrationKey, JSON.stringify({
       version: 6,
@@ -55,8 +74,10 @@ async function launchPhysicalTeaching(page, targetId, { extraStateIds = [], redu
     }));
   }, {
     repositoryKey: CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY,
+    trailKey: unitedStatesMemoryTrailStorageKey,
     orchestrationKey: GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY,
     stateIds,
+    introducedStateItemIds,
     completedBlockIds,
     orchestrationId: orchestration.id
   });
@@ -187,7 +208,11 @@ for (const targetId of ["black-hills", "ozark-mountains", "columbia-river", "lak
     await expectCamera(page, lower48Camera);
     const state = await expectTeachingHighlight(page, targetId);
     expect(state.cameraDecision.source).toBe("lower48-physical-default");
-    expect(state.geometryMetadata).toMatchObject(feature.geometry);
+    const blockFeature = orchestration.physicalFeatures.find((candidate) => (
+      candidate.targetId === orchestration.physicalCohorts
+        .find(({ id }) => id === feature.learningCohortId).supportedMemberTargetIds[0]
+    ));
+    expect(state.geometryMetadata).toMatchObject(blockFeature.geometry);
     expect(state.sourceBounds.flat(2).every(Number.isFinite)).toBe(true);
     await captureTeaching(page, testInfo, `${targetId}-teaching`);
     if (feature.family === "mountain-range") {

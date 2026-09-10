@@ -9,6 +9,7 @@ import {
   createPhysicalFeatureIntroductionEvidenceEvents,
   deferGuidedLearningOrchestrationBlock,
   evaluateCoveredPrerequisite,
+  getGuidedLearningPhysicalProgression,
   getInstructionalCoverage,
   GUIDED_LEARNING_BLOCK_TYPES,
   GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY,
@@ -134,7 +135,11 @@ assert.equal(
   "eligible",
   "Lower 48 physical geography can scaffold states that have not been introduced."
 );
-decision = selectGuidedLearningOrchestrationBlock({ state, repository: repository(newEnglandCovered) });
+decision = selectGuidedLearningOrchestrationBlock({
+  state,
+  repository: repository(newEnglandCovered),
+  introducedGuidedStateItemIds: newEnglandGuidedStateItems
+});
 assert.equal(decision.currentBlock.id, introduction.id);
 assert.deepEqual(decision.currentBlock.destination.targetIds, ["white-mountains", "green-mountains", "adirondack-mountains"]);
 assert.deepEqual(decision.currentBlock.destination.newTargetIds, ["white-mountains", "green-mountains", "adirondack-mountains"]);
@@ -231,7 +236,8 @@ assert.deepEqual(teachingState.physicalTeachingProgress[introduction.id].taughtT
 assert.equal(teachingState.physicalTeachingProgress[introduction.id].currentTargetId, "green-mountains");
 const resumedTeachingDecision = selectGuidedLearningOrchestrationBlock({
   state: deferGuidedLearningOrchestrationBlock(teachingState, introduction.id),
-  repository: repository([...newEnglandCovered, exposure])
+  repository: repository([...newEnglandCovered, exposure]),
+  introducedGuidedStateItemIds: newEnglandGuidedStateItems
 });
 assert.equal(resumedTeachingDecision.currentBlock.destination.currentTeachingTargetId, "green-mountains");
 assert.deepEqual(resumedTeachingDecision.currentBlock.destination.pendingTeachingTargetIds, [
@@ -358,6 +364,15 @@ const allStateIds = unitedStatesAtlas.entities
   .filter(({ kind }) => kind === "state")
   .map(({ id }) => id.split(":").at(-1));
 const allStatesCoveredRepository = repository(stateCoverageEvents(allStateIds));
+const allGuidedStateItemIds = allStateIds.map((stateId) => `state:${stateId}`);
+assert.deepEqual(getGuidedLearningPhysicalProgression(newEnglandGuidedStateItems), {
+  frontierStage: 1,
+  frontierSectionId: "us-states-01",
+  nextSectionId: "us-states-02",
+  nextRequiredItemIds: config.blocks[1].guidedStatePrerequisiteItemIds
+});
+assert.equal(getGuidedLearningPhysicalProgression(["state:alaska"]).frontierStage, 0);
+assert.equal(getGuidedLearningPhysicalProgression(allGuidedStateItemIds).frontierStage, 11);
 for (const [familyId, expectedFamily] of [
   ["physical-rivers", "river"],
   ["physical-lakes", "lake"],
@@ -368,6 +383,7 @@ for (const [familyId, expectedFamily] of [
       completedBlockIds: config.blocks.filter(({ type }) => type === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT).map(({ id }) => id)
     }),
     repository: allStatesCoveredRepository,
+    introducedGuidedStateItemIds: allGuidedStateItemIds,
     targetedNeed: { objectiveId: "learn-physical-features", familyId }
   });
   assert.equal(targetedDecision.currentBlock.destination.featureFamily, expectedFamily);

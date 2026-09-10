@@ -731,10 +731,58 @@ function comparePhysicalFeatureQueueEntries(left, right) {
   const leftMilestone = getEventMilestone(left.eligibilityMilestone || {});
   const rightMilestone = getEventMilestone(right.eligibilityMilestone || {});
   const milestoneComparison = compareMilestones(leftMilestone, rightMilestone);
-  return milestoneComparison
+  return left.regionalStage - right.regionalStage
     || left.curriculumOrder - right.curriculumOrder
+    || milestoneComparison
     || left.authoredOrder - right.authoredOrder
     || left.featureId.localeCompare(right.featureId);
+}
+
+const guidedPhysicalProgressionStages = Object.freeze([
+  ...GUIDED_RECONSTRUCTION_CHECKPOINTS.map((checkpoint) => Object.freeze({
+    number: checkpoint.number,
+    sectionId: checkpoint.sectionId,
+    requiredItemIds: Object.freeze(checkpoint.stateIds.map((stateId) => `state:${stateId}`))
+  })),
+  Object.freeze({
+    number: 11,
+    sectionId: "us-states-11",
+    // Alaska is the relevant frontier for Alaska-only physical geography.
+    // Hawaii does not have an authored physical cohort in this curriculum.
+    requiredItemIds: Object.freeze(["state:alaska"])
+  })
+]);
+
+export function getGuidedLearningPhysicalProgression(introducedGuidedStateItemIds = []) {
+  const introduced = new Set(uniqueStrings(introducedGuidedStateItemIds));
+  let frontierStage = 0;
+  for (const stage of guidedPhysicalProgressionStages) {
+    if (!stage.requiredItemIds.every((itemId) => introduced.has(itemId))) break;
+    frontierStage = stage.number;
+  }
+  const nextStage = guidedPhysicalProgressionStages.find(({ number }) => number === frontierStage + 1) || null;
+  return {
+    frontierStage,
+    frontierSectionId: guidedPhysicalProgressionStages.find(({ number }) => number === frontierStage)?.sectionId || null,
+    nextSectionId: nextStage?.sectionId || null,
+    nextRequiredItemIds: nextStage ? [...nextStage.requiredItemIds] : []
+  };
+}
+
+function getPhysicalCohortGeographicEligibility(cohort, progression) {
+  const regionalStage = Number(cohort?.regionalStage);
+  const maximumLeadStages = Math.max(0, Number(cohort?.maximumLeadStages) || 0);
+  const eligible = Number.isInteger(regionalStage)
+    && regionalStage > 0
+    && progression.frontierStage + maximumLeadStages >= regionalStage;
+  return {
+    eligible,
+    reason: eligible ? "geographic-progression-ready" : "geographic-progression-not-reached",
+    geographyRegion: cohort?.geographyRegion || null,
+    regionalStage: Number.isInteger(regionalStage) ? regionalStage : null,
+    maximumLeadStages,
+    frontierStage: progression.frontierStage
+  };
 }
 
 export function selectPhysicalCohortRetrievalSubset({
@@ -1211,6 +1259,12 @@ export function selectGuidedLearningOrchestrationBlock({
   targetedNeed = null
 } = {}) {
   const normalizedState = createGuidedLearningOrchestrationState(state, config);
+  const physicalProgression = getGuidedLearningPhysicalProgression(introducedGuidedStateItemIds);
+  const physicalCohortsById = new Map((config.physicalCohorts || []).map((cohort) => [cohort.id, cohort]));
+  const physicalGeographicEligibilityByCohortId = new Map((config.physicalCohorts || []).map((cohort) => [
+    cohort.id,
+    getPhysicalCohortGeographicEligibility(cohort, physicalProgression)
+  ]));
   const normalizedTargetedNeed = targetedNeed && typeof targetedNeed === "object"
     ? {
         objectiveId: String(targetedNeed.objectiveId || "").trim() || null,
@@ -1333,12 +1387,14 @@ export function selectGuidedLearningOrchestrationBlock({
       && introductionEvaluation?.eligible
       && allowsPhysicalSequence
       && (!targetedPhysicalFamily || feature.family === targetedPhysicalFamily)
+      && physicalGeographicEligibilityByCohortId.get(feature.learningCohortId)?.eligible
     ))
     .map(({ feature, eligibilityMilestone }) => ({
+      cohortId: feature.learningCohortId,
       featureId: feature.id,
       authoredOrder: feature.authoredOrder,
-      curriculumOrder: (config.physicalCohorts || [])
-        .find(({ id }) => id === feature.learningCohortId)?.curriculumOrder ?? Number.MAX_SAFE_INTEGER,
+      regionalStage: physicalCohortsById.get(feature.learningCohortId)?.regionalStage ?? Number.MAX_SAFE_INTEGER,
+      curriculumOrder: physicalCohortsById.get(feature.learningCohortId)?.curriculumOrder ?? Number.MAX_SAFE_INTEGER,
       blockId: feature.introductionBlockId,
       eligibilityMilestone
     }))
@@ -1418,6 +1474,7 @@ export function selectGuidedLearningOrchestrationBlock({
     ...featureProgress.map((progress) => {
       const queuedIndex = physicalQueue.findIndex(({ featureId }) => featureId === progress.feature.id);
       const paced = physicalInterleaveBlocked && queuedIndex >= 0;
+      const geographicEligibility = physicalGeographicEligibilityByCohortId.get(progress.feature.learningCohortId);
       return {
         featureId: progress.feature.id,
         targetId: progress.feature.targetId,
@@ -1439,6 +1496,8 @@ export function selectGuidedLearningOrchestrationBlock({
             ? "in-progress"
             : queuedIndex >= 0
               ? paced ? "pacing-blocked" : "queued"
+              : progress.introductionEvaluation?.eligible && geographicEligibility && !geographicEligibility.eligible
+                ? "geographic-progression-blocked"
               : "prerequisite-blocked",
         queuePosition: queuedIndex >= 0 ? queuedIndex + 1 : null,
         selected: progress.feature.blockIds.includes(selectedBlock.id),
@@ -1448,6 +1507,8 @@ export function selectGuidedLearningOrchestrationBlock({
             ? "physical-feature-interleave-required"
             : queuedIndex >= 0
               ? "waiting-in-deterministic-queue"
+              : progress.introductionEvaluation?.eligible && geographicEligibility && !geographicEligibility.eligible
+                ? geographicEligibility.reason
               : progress.completed
                 ? "sequence-completed"
                 : progress.inProgress
@@ -1555,11 +1616,14 @@ export function selectGuidedLearningOrchestrationBlock({
       physicalInterleaveBlocked,
       lastCompletedPhysicalFeatureId: normalizedState.lastCompletedPhysicalFeatureId,
       lastNonPhysicalMilestone: cloneJson(normalizedState.lastNonPhysicalMilestone),
-      guidedLearningEventCount: normalizedState.guidedLearningEventCount
+      guidedLearningEventCount: normalizedState.guidedLearningEventCount,
+      physicalProgression
     },
-    pendingPhysicalFeatureOrder: physicalQueue.map(({ featureId, blockId, eligibilityMilestone }) => ({
+    pendingPhysicalFeatureOrder: physicalQueue.map(({ cohortId, featureId, blockId, regionalStage, eligibilityMilestone }) => ({
+      cohortId,
       featureId,
       blockId,
+      regionalStage,
       eligibilityMilestone
     })),
     physicalCohortTrace: cohortProgress.map((progress) => ({
@@ -1567,12 +1631,18 @@ export function selectGuidedLearningOrchestrationBlock({
       family: progress.cohort.family,
       source: progress.cohort.source,
       sourceId: progress.cohort.sourceId,
+      geographyRegion: progress.cohort.geographyRegion,
+      regionalStage: progress.cohort.regionalStage,
+      maximumLeadStages: progress.cohort.maximumLeadStages,
+      geographicEligibility: cloneJson(physicalGeographicEligibilityByCohortId.get(progress.cohort.id)),
       authoredMemberTargetIds: [...progress.cohort.authoredMemberTargetIds],
       supportedMemberTargetIds: [...progress.cohort.supportedMemberTargetIds],
       members: cloneJson(progress.members),
-      currentlyEligibleTargetIds: progress.members
-        .filter(({ prerequisiteStatus }) => ["covered-and-introduced", "covered-awaiting-introduction"].includes(prerequisiteStatus))
-        .map(({ targetId }) => targetId),
+      currentlyEligibleTargetIds: physicalGeographicEligibilityByCohortId.get(progress.cohort.id)?.eligible
+        ? progress.members
+            .filter(({ prerequisiteStatus }) => ["covered-and-introduced", "covered-awaiting-introduction"].includes(prerequisiteStatus))
+            .map(({ targetId }) => targetId)
+        : [],
       introducedTargetIds: [...progress.introducedTargetIds],
       retrievedTargetIds: [...progress.retrievedTargetIds],
       newlyIntroducedTargetIds: [...progress.newlyIntroducedTargetIds],
@@ -1860,6 +1930,13 @@ export function validateGuidedLearningOrchestrationConfig(config = UNITED_STATES
   (config.physicalCohorts || []).forEach((cohort) => {
     if (cohortIds.has(cohort.id)) errors.push(`Physical cohort ID ${cohort.id} is duplicated.`);
     cohortIds.add(cohort.id);
+    if (!cohort.geographyRegion) errors.push(`${cohort.id} has no geographic progression region.`);
+    if (!Number.isInteger(cohort.regionalStage) || cohort.regionalStage < 1 || cohort.regionalStage > 11) {
+      errors.push(`${cohort.id} has an invalid regional progression stage.`);
+    }
+    if (!Number.isInteger(cohort.maximumLeadStages) || cohort.maximumLeadStages < 0 || cohort.maximumLeadStages > 1) {
+      errors.push(`${cohort.id} has an invalid regional lead allowance.`);
+    }
     if (cohort.minimumRetrievalSize < 2) errors.push(`${cohort.id} permits trivial one-target retrieval.`);
     if (cohort.preferredRetrievalSize < cohort.minimumRetrievalSize) {
       errors.push(`${cohort.id} prefers fewer members than its retrieval minimum.`);

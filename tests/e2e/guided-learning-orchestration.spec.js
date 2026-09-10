@@ -255,7 +255,17 @@ function createTargetedPhysicalSeed(targetId, { extraStateIds = [] } = {}) {
     .find((feature) => feature.targetId === targetId);
   const targetCohort = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalCohorts
     .find(({ id }) => id === targetFeature.learningCohortId);
-  const earlierCompletedBlockIds = ["us-guided:rebuild-new-england"];
+  const progressionStage = targetCohort.regionalStage;
+  const progressionCheckpointBlocks = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.blocks
+    .filter(({ type, destination }) => (
+      type === "reconstruction-checkpoint"
+      && destination.checkpointNumber <= Math.min(10, progressionStage)
+    ));
+  const introducedStateItemIds = [...new Set([
+    ...progressionCheckpointBlocks.flatMap(({ guidedStatePrerequisiteItemIds }) => guidedStatePrerequisiteItemIds),
+    ...(progressionStage >= 11 ? ["state:alaska"] : [])
+  ])];
+  const earlierCompletedBlockIds = progressionCheckpointBlocks.map(({ id }) => id);
   for (const feature of UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures) {
     const cohort = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalCohorts
       .find(({ id }) => id === feature.learningCohortId);
@@ -281,6 +291,16 @@ function createTargetedPhysicalSeed(targetId, { extraStateIds = [] } = {}) {
         outcome: sequence % 2 === 0 ? "assisted" : "correct"
       }))
     },
+    trailState: {
+      version: 2,
+      trailId: "united-states-memory-trail",
+      curriculumVersion: 2,
+      hasStarted: true,
+      currentSessionNumber: Math.max(3, progressionStage + 1),
+      currentCategory: "states",
+      introducedItemIds: introducedStateItemIds,
+      itemProgress: {}
+    },
     orchestrationState: {
       version: 6,
       orchestrationId: UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.id,
@@ -302,16 +322,19 @@ function createTargetedPhysicalSeed(targetId, { extraStateIds = [] } = {}) {
 
 async function openSeededPhysicalSequence(page, targetId, options = {}) {
   const seed = createTargetedPhysicalSeed(targetId, options);
-  await page.addInitScript(({ repositoryKey, orchestrationKey, repository, orchestrationState, seedMarker }) => {
+  await page.addInitScript(({ repositoryKey, trailKey, orchestrationKey, repository, trailState, orchestrationState, seedMarker }) => {
     if (localStorage.getItem(seedMarker) === "applied") return;
     localStorage.setItem(repositoryKey, JSON.stringify(repository));
+    localStorage.setItem(trailKey, JSON.stringify(trailState));
     localStorage.setItem(orchestrationKey, JSON.stringify(orchestrationState));
     localStorage.setItem(seedMarker, "applied");
   }, {
     repositoryKey: CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY,
+    trailKey: unitedStatesMemoryTrailStorageKey,
     orchestrationKey: GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY,
     seedMarker: `mappaTestGuidedPhysicalSeed:${targetId}`,
     repository: seed.repository,
+    trailState: seed.trailState,
     orchestrationState: seed.orchestrationState
   });
   await page.goto("/?test=1&globeNavigation=off");
@@ -398,6 +421,49 @@ async function completeGeneratedPhysicalSequence(page, {
   ))).toBe(false);
   expect(new Set(evidence.map(({ eventId }) => eventId)).size).toBe(evidence.length);
 }
+
+test("retained Alaska evidence cannot jump a reset Guided learner past eastern mountains", async ({ page }) => {
+  const repository = createCoveredNewEnglandRepository();
+  repository.events.push({
+    schemaVersion: 1,
+    eventId: "retained-alaska-before-guided-progression",
+    attemptId: "retained-alaska-before-guided-progression",
+    occurredAt: "2039-12-31T00:00:00.000Z",
+    sequence: -1,
+    conceptId: "state-location:alaska",
+    skillId: "locating",
+    sourceMode: "test",
+    sourceActivityId: "retained-canonical-evidence",
+    outcome: "correct"
+  });
+  await page.addInitScript(({ repositoryKey, trailKey, orchestrationKey, repository, trailState }) => {
+    localStorage.setItem(repositoryKey, JSON.stringify(repository));
+    localStorage.setItem(trailKey, JSON.stringify(trailState));
+    localStorage.setItem(orchestrationKey, JSON.stringify({
+      version: 6,
+      orchestrationId: "united-states-guided-learning-v1",
+      completedBlockIds: ["us-guided:rebuild-new-england"],
+      physicalInterleaveRequired: false
+    }));
+  }, {
+    repositoryKey: CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY,
+    trailKey: unitedStatesMemoryTrailStorageKey,
+    orchestrationKey: GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY,
+    repository,
+    trailState: createGuidedState()
+  });
+  await page.goto("/?test=1&globeNavigation=off");
+  await page.locator("#launch-start-button").click();
+  await page.evaluate(() => window.__mappaMundiLoadApp());
+  await page.locator("#main-menu-us-memory-trail-button").click();
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getGuidedLearningOrchestration().currentBlock.destination.cohortId
+  ))).toBe("northeast-mountains");
+  const trace = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedLearningOrchestration());
+  expect(trace.pacing.physicalProgression.frontierStage).toBe(1);
+  expect(trace.physicalCohortTrace.find(({ cohortId }) => cohortId === "alaska-mountains").geographicEligibility)
+    .toMatchObject({ eligible: false, reason: "geographic-progression-not-reached", regionalStage: 11 });
+});
 
 test("Guided Learning introduces and immediately quizzes a three-range physical batch", async ({ page }) => {
   const runtimeErrors = [];

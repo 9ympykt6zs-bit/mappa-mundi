@@ -13,6 +13,9 @@ export const UNITED_STATES_PHYSICAL_FEATURE_FAMILIES = Object.freeze({
   MOUNTAIN_RANGE: "mountain-range"
 });
 
+// regionalStage follows the authored Guided state-section order. Lower-48
+// cohorts may lead that frontier by one adjacent section; disconnected Alaska
+// waits for the Alaska stage itself. These fields pace introduction only.
 export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
   Object.freeze({
     id: "northeast-mountains",
@@ -26,6 +29,9 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     ]),
     minimumRetrievalSize: 2,
     preferredRetrievalSize: 3,
+    geographyRegion: "northeast",
+    regionalStage: 1,
+    maximumLeadStages: 0,
     curriculumOrder: 10,
     camera: Object.freeze({ mode: "override", center: Object.freeze([-76.24, 40.39]), zoom: 5.16, bearing: 0, pitch: 0 })
   }),
@@ -37,7 +43,10 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     authoredMemberTargetIds: Object.freeze(["colorado-river", "columbia-river", "rio-grande-river"]),
     minimumRetrievalSize: 2,
     preferredRetrievalSize: 3,
-    curriculumOrder: 20
+    geographyRegion: "southwest-and-west",
+    regionalStage: 8,
+    maximumLeadStages: 1,
+    curriculumOrder: 100
   }),
   Object.freeze({
     id: "upper-great-lakes",
@@ -47,7 +56,10 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     authoredMemberTargetIds: Object.freeze(["lake-superior", "lake-michigan", "lake-huron"]),
     minimumRetrievalSize: 2,
     preferredRetrievalSize: 3,
-    curriculumOrder: 30
+    geographyRegion: "great-lakes",
+    regionalStage: 5,
+    maximumLeadStages: 1,
+    curriculumOrder: 50
   }),
   Object.freeze({
     id: "western-major-mountains",
@@ -57,7 +69,10 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     authoredMemberTargetIds: Object.freeze(["rocky-mountains", "cascade-mountains", "sierra-nevada"]),
     minimumRetrievalSize: 2,
     preferredRetrievalSize: 3,
-    curriculumOrder: 40
+    geographyRegion: "rockies-and-west",
+    regionalStage: 8,
+    maximumLeadStages: 1,
+    curriculumOrder: 90
   }),
   Object.freeze({
     id: "central-rivers",
@@ -67,7 +82,10 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     authoredMemberTargetIds: Object.freeze(["mississippi-river", "missouri-river", "arkansas-river"]),
     minimumRetrievalSize: 2,
     preferredRetrievalSize: 3,
-    curriculumOrder: 50
+    geographyRegion: "mississippi-valley",
+    regionalStage: 6,
+    maximumLeadStages: 1,
+    curriculumOrder: 70
   }),
   Object.freeze({
     id: "eastern-rivers",
@@ -77,7 +95,10 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     authoredMemberTargetIds: Object.freeze(["ohio-river", "st-lawrence-river"]),
     minimumRetrievalSize: 2,
     preferredRetrievalSize: 2,
-    curriculumOrder: 60,
+    geographyRegion: "eastern-great-lakes",
+    regionalStage: 5,
+    maximumLeadStages: 1,
+    curriculumOrder: 40,
     camera: Object.freeze({
       mode: "override",
       center: Object.freeze([-77.2, 44.4]),
@@ -95,7 +116,10 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     authoredMemberTargetIds: Object.freeze(["lake-erie", "lake-ontario", "great-salt-lake"]),
     minimumRetrievalSize: 2,
     preferredRetrievalSize: 3,
-    curriculumOrder: 70
+    geographyRegion: "great-lakes-with-interior-comparison",
+    regionalStage: 5,
+    maximumLeadStages: 1,
+    curriculumOrder: 60
   }),
   Object.freeze({
     id: "southern-appalachian-ranges",
@@ -105,7 +129,10 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     authoredMemberTargetIds: Object.freeze(["allegheny-mountains", "blue-ridge-mountains", "great-smoky-mountains"]),
     minimumRetrievalSize: 2,
     preferredRetrievalSize: 3,
-    curriculumOrder: 80
+    geographyRegion: "southern-appalachians",
+    regionalStage: 3,
+    maximumLeadStages: 1,
+    curriculumOrder: 20
   }),
   Object.freeze({
     id: "appalachian-system-ranges",
@@ -115,7 +142,10 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     authoredMemberTargetIds: Object.freeze(["cumberland-mountains", "appalachian-mountains"]),
     minimumRetrievalSize: 2,
     preferredRetrievalSize: 2,
-    curriculumOrder: 90
+    geographyRegion: "appalachian-system",
+    regionalStage: 3,
+    maximumLeadStages: 1,
+    curriculumOrder: 30
   }),
   Object.freeze({
     id: "pacific-ranges",
@@ -125,7 +155,10 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     authoredMemberTargetIds: Object.freeze(["coast-ranges", "olympic-mountains"]),
     minimumRetrievalSize: 2,
     preferredRetrievalSize: 2,
-    curriculumOrder: 100
+    geographyRegion: "pacific",
+    regionalStage: 10,
+    maximumLeadStages: 1,
+    curriculumOrder: 120
   }),
   Object.freeze({
     id: "interior-west-ranges",
@@ -135,6 +168,9 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     authoredMemberTargetIds: Object.freeze(["wasatch-range", "teton-range"]),
     minimumRetrievalSize: 2,
     preferredRetrievalSize: 2,
+    geographyRegion: "interior-west",
+    regionalStage: 9,
+    maximumLeadStages: 1,
     curriculumOrder: 110
   }),
   Object.freeze({
@@ -145,7 +181,10 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     authoredMemberTargetIds: Object.freeze(["ozark-mountains", "ouachita-mountains", "black-hills"]),
     minimumRetrievalSize: 2,
     preferredRetrievalSize: 3,
-    curriculumOrder: 120
+    geographyRegion: "central",
+    regionalStage: 7,
+    maximumLeadStages: 1,
+    curriculumOrder: 80
   }),
   Object.freeze({
     id: "alaska-mountains",
@@ -155,6 +194,9 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     authoredMemberTargetIds: Object.freeze(["alaska-range", "brooks-range"]),
     minimumRetrievalSize: 2,
     preferredRetrievalSize: 2,
+    geographyRegion: "alaska",
+    regionalStage: 11,
+    maximumLeadStages: 0,
     curriculumOrder: 130
   })
 ]);
