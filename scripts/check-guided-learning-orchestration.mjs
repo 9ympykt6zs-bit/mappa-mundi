@@ -84,6 +84,7 @@ assert.equal(evaluateCoveredPrerequisite({
 
 const config = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1;
 const reconstruction = config.blocks[0];
+const newEnglandGuidedStateItems = [...reconstruction.guidedStatePrerequisiteItemIds];
 const whiteMountainsSequence = config.physicalFeatures.find(({ targetId }) => targetId === "white-mountains");
 const introduction = config.blocks.find(({ id }) => id === whiteMountainsSequence.introductionBlockId);
 const practice = config.blocks.find(({ id }) => id === whiteMountainsSequence.practiceBlockId);
@@ -92,12 +93,20 @@ const allNewEnglandStates = ["maine", "new-hampshire", "vermont", "massachusetts
 const missingMaine = stateCoverageEvents(allNewEnglandStates.filter((stateId) => stateId !== "maine" && stateId !== "vermont"));
 
 let state = createGuidedLearningOrchestrationState();
-let decision = selectGuidedLearningOrchestrationBlock({ state, repository: repository(missingMaine) });
+let decision = selectGuidedLearningOrchestrationBlock({
+  state,
+  repository: repository(missingMaine),
+  introducedGuidedStateItemIds: newEnglandGuidedStateItems.filter((itemId) => itemId !== "state:maine")
+});
 assert.equal(decision.currentBlock.type, GUIDED_LEARNING_BLOCK_TYPES.GUIDED_SECTION);
-assert.equal(decision.evaluations[0].reason, "prerequisite-not-covered");
+assert.equal(decision.evaluations[0].reason, "guided-state-introduction-not-completed");
 
 const newEnglandCovered = stateCoverageEvents(allNewEnglandStates);
-decision = selectGuidedLearningOrchestrationBlock({ state, repository: repository(newEnglandCovered) });
+decision = selectGuidedLearningOrchestrationBlock({
+  state,
+  repository: repository(newEnglandCovered),
+  introducedGuidedStateItemIds: newEnglandGuidedStateItems
+});
 assert.equal(decision.currentBlock.id, reconstruction.id);
 assert.equal(decision.externalActivity.regionId, "rebuild-new-england");
 
@@ -109,7 +118,11 @@ assert.equal(state.activeStatus, "launched");
 assert.equal(state.returnContext.activeSectionId, "us-states-02");
 state = deferGuidedLearningOrchestrationBlock(state, reconstruction.id);
 assert.equal(state.activeStatus, "pending");
-assert.equal(selectGuidedLearningOrchestrationBlock({ state, repository: repository(newEnglandCovered) }).currentBlock.id, reconstruction.id);
+assert.equal(selectGuidedLearningOrchestrationBlock({
+  state,
+  repository: repository(newEnglandCovered),
+  introducedGuidedStateItemIds: newEnglandGuidedStateItems
+}).currentBlock.id, reconstruction.id);
 
 state = completeGuidedLearningOrchestrationBlock(state, reconstruction.id);
 assert.ok(state.completedBlockIds.includes(reconstruction.id), "Imperfect or perfect submission completes the non-gating checkpoint.");

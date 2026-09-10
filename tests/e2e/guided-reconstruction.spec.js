@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 import { GUIDED_RECONSTRUCTION_CHECKPOINTS as checkpoints } from "../../src/guided-reconstruction.js";
 import { GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY as orchestrationKey } from "../../src/guided-learning-orchestration.js";
 import { CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY as evidenceKey } from "../../src/canonical-learning-evidence-repository.js";
+import { GUIDED_CHILD_LAUNCH_STORAGE_KEY as childLaunchKey } from "../../src/guided-child-launch-contract.js";
+import { unitedStatesMemoryTrailStorageKey as guidedProgressKey } from "../../src/united-states-memory-trail-planner.js";
 
 async function openPrimaryLearn(page) {
   await page.goto("/?test=1&globeNavigation=on");
@@ -19,10 +21,21 @@ for (const checkpointIndex of [0, 1, 9]) {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     const coveredIds = [...checkpoint.lockedStateIds, ...checkpoint.stateIds];
-    await page.addInitScript(({ coveredIds, completedBlockIds, orchestrationKey, evidenceKey }) => {
+    await page.addInitScript(({ coveredIds, completedBlockIds, orchestrationKey, evidenceKey, guidedProgressKey }) => {
       if (sessionStorage.getItem("guided-reconstruction-seeded")) return;
       sessionStorage.setItem("guided-reconstruction-seeded", "true");
       localStorage.setItem(orchestrationKey, JSON.stringify({ version: 5, completedBlockIds }));
+      localStorage.setItem(guidedProgressKey, JSON.stringify({
+        version: 2,
+        curriculumVersion: 2,
+        hasStarted: true,
+        introducedItemIds: coveredIds.map((id) => `state:${id}`),
+        itemProgress: Object.fromEntries(coveredIds.map((id) => [`state:${id}`, {
+          status: "introduced",
+          memoryState: "learning",
+          introducedSession: 1
+        }]))
+      }));
       localStorage.setItem(evidenceKey, JSON.stringify({
         storageVersion: 1, evidenceSchemaVersion: 1,
         events: coveredIds.map((id, sequence) => ({
@@ -31,7 +44,13 @@ for (const checkpointIndex of [0, 1, 9]) {
           conceptId: `state-location:${id}`, skillId: "locating", sourceMode: "us-memory-trail", outcome: "assisted"
         }))
       }));
-    }, { coveredIds, completedBlockIds: checkpoints.slice(0, checkpointIndex).map(({ blockId }) => blockId), orchestrationKey, evidenceKey });
+    }, {
+      coveredIds,
+      completedBlockIds: checkpoints.slice(0, checkpointIndex).map(({ blockId }) => blockId),
+      orchestrationKey,
+      evidenceKey,
+      guidedProgressKey
+    });
     await openPrimaryLearn(page);
     const activity = page.locator(`[data-map-reconstruction-region-id="${checkpoint.regionId}"]`);
     await expect(activity).toBeVisible({ timeout: 20_000 });
@@ -75,6 +94,44 @@ for (const checkpointIndex of [0, 1, 9]) {
     expect(errors).toEqual([]);
   });
 }
+
+test("a stale launched Reconstruction child cannot bypass state teaching after reload", async ({ page }) => {
+  const checkpoint = checkpoints[0];
+  await page.addInitScript(({ checkpoint, orchestrationKey, childLaunchKey, guidedProgressKey }) => {
+    localStorage.removeItem(guidedProgressKey);
+    localStorage.setItem(orchestrationKey, JSON.stringify({
+      version: 6,
+      activeBlockId: checkpoint.blockId,
+      activeStatus: "launched",
+      completedBlockIds: []
+    }));
+    localStorage.setItem(childLaunchKey, JSON.stringify({
+      version: 2,
+      source: "guided-learning",
+      entrySource: "guided-learning",
+      orchestrationId: "united-states-guided-learning-v1",
+      orchestrationBlockId: checkpoint.blockId,
+      launchReason: "guided-orchestration",
+      status: "launched",
+      returnTo: "guided-learning",
+      child: {
+        type: "reconstruction-checkpoint",
+        destinationKind: "map-reconstruction",
+        activityId: "map-reconstruction",
+        regionId: checkpoint.regionId
+      }
+    }));
+  }, { checkpoint, orchestrationKey, childLaunchKey, guidedProgressKey });
+
+  await openPrimaryLearn(page);
+  await expect(page.locator(".memory-trail-panel")).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator(`[data-map-reconstruction-region-id="${checkpoint.regionId}"]`)).toHaveCount(0);
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getCurrentActivity()?.id)).toBe("us-states-01");
+  expect(await page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getGuidedLearningOrchestration().currentBlock.type
+  ))).toBe("guided-section");
+  expect(await page.evaluate((key) => localStorage.getItem(key), childLaunchKey)).toBeNull();
+});
 
 test("standalone New England retains all six pieces and no locked context", async ({ page }) => {
   await page.goto("/?test=1&globeNavigation=off");

@@ -18,6 +18,8 @@ Rivers, lakes, and mountain ranges are generated from the shared U.S. atlas, can
 
 White Mountains retains its original checkpoint completion dependency. That stable checkpoint now matches the first five-state Guided section; Vermont joins checkpoint 2. See [Guided Reconstruction checkpoints](guided-reconstruction-checkpoints.md) for the ten-group sequence, targeted routing, legacy-progress compatibility, and Guided-only anchored evaluation. Standalone Reconstruction scoring remains unchanged.
 
+Each Reconstruction checkpoint additionally requires its own state items to be present in the U.S. Guided Learning progress as introduced. The prior-checkpoint chain makes earlier groups cumulative. Canonical `correct` or `assisted` state evidence remains available to the broader learning system, but cannot satisfy this Guided curriculum prerequisite after the Guided-only reset clears its state introductions. A launched child is revalidated against these prerequisites on reload.
+
 ## Physical learning cohorts
 
 Physical retrieval requires meaningful alternatives: each authored Guided cohort contains two or three compatible targets. When the first target in an eligible cohort is selected, the whole cohort is introduced together, one feature at a time, and immediately handed to a locating checkpoint containing the same members. Guided Learning removes teaching highlights and labels before each independent response.

@@ -1,5 +1,11 @@
 # Automated testing
 
+## Guided Reconstruction prerequisite regression — 2026-09-09
+
+Every authored checkpoint now requires its own persisted Guided `state:*` introductions, in addition to the preceding-checkpoint chain. The focused checks cover all ten groups, a missing member in checkpoint 1, retained canonical evidence after a Guided-only reset, targeted routes, anchored Guided scoring, standalone translated-region tolerance, and unchanged evidence identities. `npm test` passed **109/109**.
+
+Desktop and mobile Chromium acceptance passed **12/12** selected cases: Reset All Learning Progress starts ordinary Guided state teaching; a scoped reset with retained canonical evidence does not start Reconstruction; checkpoints 1, 2, and 10 launch only with their introduced Guided state groups; completed-child scoring/return remains intact; and a stale launched Reconstruction contract cannot bypass prerequisites after reload. A broader selected run passed 11/14; its two stale test expectations were corrected and the one unrelated mobile physical-camera timing assertion is tracked separately. `git diff --check` passed before commit.
+
 ## Guided capital-teaching city context — 2026-09-09
 
 The final run passed **109/109** fast checks and **12/12** Guided capital browser cases across desktop and mobile Chromium. The existing capital-location suite also passed **10/10** cases while running with the shared renderer. Broader Guided camera and post-state-curriculum acceptance passed **34/36** before two camera assertions were updated from the retired ordinary-capital layer to the new teaching-context layer; both corrected desktop/mobile cases then passed. Repeated Utah timing checks passed **6/6**.

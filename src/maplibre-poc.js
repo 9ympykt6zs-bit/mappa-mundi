@@ -3934,6 +3934,7 @@ function getGuidedLearningOrchestrationSnapshot(requestedTargetedNeed = null) {
     config: UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1,
     state,
     repository: loadCanonicalEvidenceRepository(),
+    introducedGuidedStateItemIds: guidedProgress.introducedItemIds,
     hasUnfinishedNonPhysicalLearning,
     targetedNeed
   });
@@ -4297,13 +4298,17 @@ function rehydrateGuidedLearningChildBlock(contract) {
     UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
   );
   if (contract.status === "launched" && state.activeBlockId !== configuredBlock.id) return null;
+  const guidedItems = getUnitedStatesMemoryTrailItems();
+  const guidedProgress = loadUnitedStatesMemoryTrailProgress(guidedItems);
   const decision = selectGuidedLearningOrchestrationBlock({
     config: UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1,
     state,
     repository: loadCanonicalEvidenceRepository(),
+    introducedGuidedStateItemIds: guidedProgress.introducedItemIds,
     hasUnfinishedNonPhysicalLearning: true,
     targetedNeed: contract.targetedNeed
   });
+  if (contract.status === "launched" && decision.currentBlock?.id !== configuredBlock.id) return null;
   const liveBlock = decision.currentBlock?.id === configuredBlock.id
     ? decision.currentBlock
     : configuredBlock;

@@ -21,6 +21,7 @@ import { getMapReconstructionRegion } from "../src/atlas/map-reconstruction-regi
 const readJson = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), "utf8").replace(/^\uFEFF/, ""));
 const featureCollection = readJson("../assets/maps/data/maplibre-us-states-atlas.geojson");
 const events = [];
+const introducedGuidedStateItemIds = [];
 let state = createGuidedLearningOrchestrationState();
 const previouslyTested = [];
 assert.equal(checkpoints.length, 10);
@@ -31,15 +32,26 @@ for (const checkpoint of checkpoints) {
   const block = config.blocks.find(({ id }) => id === checkpoint.blockId);
   assert.equal(block.type, types.RECONSTRUCTION_CHECKPOINT);
   assert.deepEqual(block.prerequisiteBlockIds, checkpoint.number === 1 ? [] : [checkpoints[checkpoint.number - 2].blockId]);
-  const beforeCoverage = selectGuidedLearningOrchestrationBlock({ state, repository: { events } });
+  assert.deepEqual(block.guidedStatePrerequisiteItemIds, checkpoint.stateIds.map((id) => `state:${id}`));
+  const beforeCoverage = selectGuidedLearningOrchestrationBlock({
+    state,
+    repository: { events },
+    introducedGuidedStateItemIds
+  });
   assert.equal(beforeCoverage.evaluations.find(({ blockId }) => blockId === block.id).eligible, false);
   checkpoint.stateIds.forEach((id) => events.push({
     schemaVersion: 1, eventId: `covered:${id}`, attemptId: `covered:${id}`,
     occurredAt: "2040-01-01T00:00:00.000Z", conceptId: `state-location:${id}`,
     skillId: "locating", sourceMode: "us-memory-trail", outcome: "assisted"
   }));
+  introducedGuidedStateItemIds.push(...checkpoint.stateIds.map((id) => `state:${id}`));
   for (const familyId of [null, "state-locations", "state-identification", "state-capitals", "physical-rivers", "physical-lakes", "physical-mountain-ranges", "geographic-relationships"]) {
-    const decision = selectGuidedLearningOrchestrationBlock({ state, repository: { events }, targetedNeed: familyId ? { familyId } : null });
+    const decision = selectGuidedLearningOrchestrationBlock({
+      state,
+      repository: { events },
+      introducedGuidedStateItemIds,
+      targetedNeed: familyId ? { familyId } : null
+    });
     assert.equal(decision.currentBlock.id, block.id, `${checkpoint.sectionId} is reachable through ${familyId || "ordinary"} selection`);
     if (familyId) assert.equal(decision.targetedNeedSatisfied, false, "A checkpoint does not pretend to satisfy a different requested skill.");
   }
@@ -68,5 +80,36 @@ assert.equal(getMapReconstructionRegion("rebuild-new-england").stateIds.length, 
 assert.equal(getGuidedReconstructionRegion("rebuild-new-england").stateIds.length, 5);
 const legacy = createGuidedLearningOrchestrationState({ version: 5, completedBlockIds: ["us-guided:rebuild-new-england"] });
 assert.ok(legacy.completedBlockIds.includes(checkpoints[0].blockId));
-assert.equal(selectGuidedLearningOrchestrationBlock({ state: legacy, repository: { events } }).currentBlock.id, checkpoints[1].blockId, "Existing checkpoint completion advances without replay or lost progress.");
+assert.equal(selectGuidedLearningOrchestrationBlock({
+  state: legacy,
+  repository: { events },
+  introducedGuidedStateItemIds
+}).currentBlock.id, checkpoints[1].blockId, "Existing checkpoint completion advances without replay or lost progress.");
+
+const retainedCanonicalEvidence = checkpoints[0].stateIds.map((id) => ({
+  schemaVersion: 1,
+  eventId: `retained:${id}`,
+  attemptId: `retained:${id}`,
+  occurredAt: "2039-01-01T00:00:00.000Z",
+  conceptId: `state-location:${id}`,
+  skillId: "locating",
+  sourceMode: "us-memory-trail",
+  outcome: "assisted"
+}));
+const freshGuidedDecision = selectGuidedLearningOrchestrationBlock({
+  state: createGuidedLearningOrchestrationState(),
+  repository: { events: retainedCanonicalEvidence },
+  introducedGuidedStateItemIds: []
+});
+assert.equal(freshGuidedDecision.currentBlock.type, types.GUIDED_SECTION, "Retained canonical evidence cannot start Reconstruction after a Guided-only reset.");
+assert.equal(
+  freshGuidedDecision.evaluations.find(({ blockId }) => blockId === checkpoints[0].blockId).reason,
+  "guided-state-introduction-not-completed"
+);
+const fourOfFive = checkpoints[0].stateIds.slice(0, -1).map((id) => `state:${id}`);
+assert.equal(selectGuidedLearningOrchestrationBlock({
+  state: createGuidedLearningOrchestrationState(),
+  repository: { events: retainedCanonicalEvidence },
+  introducedGuidedStateItemIds: fourOfFive
+}).currentBlock.type, types.GUIDED_SECTION, "Checkpoint 1 waits for every authored state introduction.");
 console.log("Guided Reconstruction checkpoint content, sequence, routing, geometry, and evidence checks passed.");

@@ -396,6 +396,9 @@ test("Reset All Learning Progress starts U.S. learning in the actual Guided Lear
   await expect(page.locator("#answer-bank .memory-trail-response-chip")).toBeVisible();
   await expect(page.locator("#answer-bank .label-chip:not(.memory-trail-response-chip)")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Label Map" })).toBeVisible();
+  expect(await page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getGuidedLearningOrchestration().currentBlock.type
+  ))).toBe("guided-section");
 
   await page.getByRole("button", { name: "Label Map" }).click();
   await expect.poll(
@@ -440,20 +443,23 @@ test("last Journey screen does not override evidence-driven U.S. continuation", 
 test("scoped Guided Learning reset does not erase canonical U.S. returning-learner evidence", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.removeItem("mappaUnitedStatesMemoryTrailProgress");
+    localStorage.removeItem("mappaGuidedLearningOrchestration");
+    const checkpointStateIds = ["maine", "new-hampshire", "massachusetts", "rhode-island", "connecticut"];
     localStorage.setItem("mappaMundiCanonicalEvidence", JSON.stringify({
       storageVersion: 1,
       evidenceSchemaVersion: 1,
-      events: [{
+      events: checkpointStateIds.map((stateId, index) => ({
         schemaVersion: 1,
-        eventId: "retained-us-history",
-        attemptId: "retained-us-attempt",
+        eventId: `retained-us-history-${stateId}`,
+        attemptId: `retained-us-attempt-${stateId}`,
         occurredAt: "2026-08-29T12:00:00.000Z",
-        conceptId: "state-location:maine",
+        sequence: index,
+        conceptId: `state-location:${stateId}`,
         skillId: "locating",
         sourceMode: "united-states-memory-trail",
         sourceActivityId: "us-states-01",
         outcome: "correct"
-      }]
+      }))
     }));
   });
   await startPrototype(page);
@@ -462,12 +468,15 @@ test("scoped Guided Learning reset does not erase canonical U.S. returning-learn
   await expect.poll(
     () => page.evaluate(() => window.__MAPPA_TEST_API__?.getCurrentActivity()?.id),
     { timeout: 20_000 }
-  ).toBe("us-states-01");
+  ).toBe("us-states-02");
   await expect(page.locator(".memory-trail-panel")).toBeVisible();
   await expect(page.getByRole("button", { name: "Label Map" })).toBeVisible();
   expect(await page.evaluate(() => (
     JSON.parse(localStorage.getItem("mappaMundiCanonicalEvidence") || "{}").events?.length
-  ))).toBe(1);
+  ))).toBe(5);
+  expect(await page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getGuidedLearningOrchestration().currentBlock.type
+  ))).toBe("guided-section");
 });
 
 test("strong canonical Stage 1 evidence advances Learn to Rivers on desktop and mobile", async ({ page }) => {

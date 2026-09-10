@@ -10,7 +10,7 @@ The fix follows the existing Guided sections instead of changing their content o
 
 ## Authored sequence
 
-`src/guided-reconstruction.js` owns the bounded checkpoint definitions. A content regression compares each group directly with its existing state-section JSON. Each checkpoint requires instructional coverage for every new state and, from checkpoint 2, submission of the preceding checkpoint. Submission remains non-gating: an imperfect or empty submission completes that checkpoint, but does not declare mastery. Previously tested states subsequently appear at their canonical positions as locked teaching context.
+`src/guided-reconstruction.js` owns the bounded checkpoint definitions. A content regression compares each group directly with its existing state-section JSON. Each checkpoint requires every new state's `state:<id>` item to appear in persisted Guided Learning `introducedItemIds` and, from checkpoint 2, submission of the preceding checkpoint. These state introductions are written only after Guided teaching/results; retained canonical state evidence from Journey or other practice cannot substitute for them after a Guided-only reset. Submission remains non-gating: an imperfect or empty submission completes that checkpoint, but does not declare mastery. Previously tested states subsequently appear at their canonical positions as locked teaching context.
 
 | Checkpoint / Guided section | New states | Locked prior states |
 | --- | --- | --- |
@@ -33,7 +33,7 @@ Checkpoint 1 uses the existing translation-tolerant evaluator. From checkpoint 2
 
 Only new states exist in the mutable session, bank, result counts, and returned evaluation placements. Anchors live in a separate noninteractive SVG layer and geometry references. Reset, selection, dragging, and correction cannot move them. All prior shapes share the new targets' coordinate frame; the initial viewport fits all prior and incoming states (see the navigation update below). Locked labels use state abbreviations to reduce crowding. No new-state outline is shown before submission.
 
-The existing canonical adapter remains unchanged: `state-reconstruction:<id>` concepts, `spatial-reconstruction` skill, and `map-reconstruction` source mode. `well-placed` means `correct`, `close` means `partial`, `misplaced` means `incorrect`, and `unplaced` means `skipped`. Locked context emits no events. Checkpoint completion and child reload use the existing orchestration/child-launch stores; reopening a completed child emits no new evaluation.
+The existing canonical adapter remains unchanged: `state-reconstruction:<id>` concepts, `spatial-reconstruction` skill, and `map-reconstruction` source mode. `well-placed` means `correct`, `close` means `partial`, `misplaced` means `incorrect`, and `unplaced` means `skipped`. Locked context emits no events. Checkpoint completion and child reload use the existing orchestration/child-launch stores; reopening a completed child emits no new evaluation. An incomplete child is rehydrated only while its checkpoint remains the currently eligible orchestration block, so a reset or prerequisite mismatch cannot revive stale Reconstruction work.
 
 ## Routing
 
@@ -43,7 +43,7 @@ Inspector traces retain the requested family and report `targetedNeedSatisfied: 
 
 ## Validation
 
-- `scripts/check-guided-reconstruction-checkpoints.mjs`: every section/group, prerequisite chain, targeted/untargeted reachability, all ten real-geometry layouts, target-only canonical evidence, legacy completion preservation, and 48-state coverage.
+- `scripts/check-guided-reconstruction-checkpoints.mjs`: every section/group, Guided state-introduction prerequisites, prerequisite chain, targeted/untargeted reachability, retained-evidence reset behavior, all ten real-geometry layouts, target-only canonical evidence, legacy completion preservation, and 48-state coverage.
 - `scripts/check-guided-reconstruction-evaluation.mjs`: fixed-frame translation rejection within the workspace, correct placements, anchor overlap/adjacency, missing targets, input immutability, and standalone translation preservation.
 - Existing orchestration, physical-feature, and standalone Reconstruction checks retain coverage of mode behavior and interleaving.
 - `tests/e2e/guided-reconstruction.spec.js`: primary Learn entry for checkpoints 1, 2, and 10; new-piece bank and locked context; keyboard/reset immutability; submission/evidence boundaries; completed-child reload and return; standalone six-state New England. Runs on desktop and mobile Chromium.

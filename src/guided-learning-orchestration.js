@@ -127,6 +127,7 @@ function freezeBlock(block) {
     ...block,
     prerequisiteBlockIds: Object.freeze([...(block.prerequisiteBlockIds || [])]),
     prerequisites: Object.freeze([...(block.prerequisites || [])]),
+    guidedStatePrerequisiteItemIds: Object.freeze([...(block.guidedStatePrerequisiteItemIds || [])]),
     destination: Object.freeze(destination),
     completion: Object.freeze({ ...(block.completion || {}) }),
     returnBehavior: Object.freeze({ ...(block.returnBehavior || {}) })
@@ -371,7 +372,8 @@ export function createUnitedStatesGuidedLearningOrchestrationConfig({
         id: checkpoint.blockId,
         type: GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT,
         prerequisiteBlockIds: index ? [GUIDED_RECONSTRUCTION_CHECKPOINTS[index - 1].blockId] : [],
-        prerequisites: checkpoint.stateIds.map(stateCoveredPrerequisite),
+        prerequisites: [],
+        guidedStatePrerequisiteItemIds: checkpoint.stateIds.map((stateId) => `state:${stateId}`),
         destination: {
           kind: "map-reconstruction",
           regionId: checkpoint.regionId,
@@ -668,7 +670,12 @@ export function resetGuidedLearningOrchestrationState(storage) {
   return createGuidedLearningOrchestrationState();
 }
 
-export function evaluateGuidedLearningBlock(block, state = {}, repository = {}) {
+export function evaluateGuidedLearningBlock(
+  block,
+  state = {},
+  repository = {},
+  { introducedGuidedStateItemIds = [] } = {}
+) {
   const completedBlockIds = new Set(state.completedBlockIds || []);
   const prerequisiteBlocks = (block.prerequisiteBlockIds || []).map((blockId) => ({
     blockId,
@@ -677,22 +684,31 @@ export function evaluateGuidedLearningBlock(block, state = {}, repository = {}) 
   const prerequisites = (block.prerequisites || []).map((prerequisite) => (
     evaluateCoveredPrerequisite(prerequisite, repository)
   ));
+  const introducedGuidedStateItems = new Set(uniqueStrings(introducedGuidedStateItemIds));
+  const guidedStatePrerequisites = (block.guidedStatePrerequisiteItemIds || []).map((itemId) => ({
+    itemId,
+    introduced: introducedGuidedStateItems.has(itemId)
+  }));
   const blocksReady = prerequisiteBlocks.every(({ completed }) => completed);
   const conceptsReady = prerequisites.every(({ covered }) => covered);
+  const guidedStatesReady = guidedStatePrerequisites.every(({ introduced }) => introduced);
   const completed = completedBlockIds.has(block.id);
   return {
     blockId: block.id,
     blockType: block.type,
-    eligible: !completed && blocksReady && conceptsReady,
+    eligible: !completed && blocksReady && conceptsReady && guidedStatesReady,
     reason: completed
       ? "already-completed"
       : !blocksReady
         ? "prerequisite-block-not-completed"
         : !conceptsReady
           ? "prerequisite-not-covered"
+          : !guidedStatesReady
+            ? "guided-state-introduction-not-completed"
           : "eligible",
     prerequisiteBlocks,
-    prerequisites
+    prerequisites,
+    guidedStatePrerequisites
   };
 }
 
@@ -1190,6 +1206,7 @@ export function selectGuidedLearningOrchestrationBlock({
   config = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1,
   state = createGuidedLearningOrchestrationState(null, config),
   repository = {},
+  introducedGuidedStateItemIds = [],
   hasUnfinishedNonPhysicalLearning = true,
   targetedNeed = null
 } = {}) {
@@ -1209,7 +1226,12 @@ export function selectGuidedLearningOrchestrationBlock({
     if (targetsConnections) return block?.type === GUIDED_LEARNING_BLOCK_TYPES.CONNECTION_CHECKPOINT;
     return false;
   };
-  let evaluations = config.blocks.map((block) => evaluateGuidedLearningBlock(block, normalizedState, repository));
+  let evaluations = config.blocks.map((block) => evaluateGuidedLearningBlock(
+    block,
+    normalizedState,
+    repository,
+    { introducedGuidedStateItemIds }
+  ));
   let evaluationsById = new Map(evaluations.map((evaluation) => [evaluation.blockId, evaluation]));
   const completedBlockIds = new Set(normalizedState.completedBlockIds);
   let cohortProgress = getPhysicalCohortProgress(config, completedBlockIds, evaluationsById, normalizedState);
