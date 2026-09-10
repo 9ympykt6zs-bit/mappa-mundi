@@ -62,7 +62,7 @@ import {
   createUnitedStatesGuidedPoliticalCameraDecision,
   isManagedUnitedStatesGuidedPoliticalCamera,
   UNITED_STATES_GUIDED_POLITICAL_CAMERA_CONTEXT
-} from "./united-states-guided-political-camera.js?v=20260908-guided-state-focus-1";
+} from "./united-states-guided-political-camera.js?v=20260909-guided-state-context-1";
 import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js?v=20260908-st-lawrence-geometry-1";
 import {
   chooseNextGuidedPhysicalRetrievalTarget,
@@ -13271,7 +13271,7 @@ function scheduleUnitedStatesGuidedStateFocusCheck(memoryTrail, selection = {}) 
     }
     return Promise.resolve(false);
   }
-  if (typeof runner?.focusTargetIfNeeded !== "function") {
+  if (typeof runner?.moveCamera !== "function" || typeof runner?.map?.cameraForBounds !== "function") {
     return Promise.resolve(false);
   }
 
@@ -13288,17 +13288,34 @@ function scheduleUnitedStatesGuidedStateFocusCheck(memoryTrail, selection = {}) 
     : { top: 94, right: 64, bottom: 154, left: 64 };
   const stateBounds = runner.getCombinedTargetBounds?.([stateTarget]) || null;
   const fittedStateCamera = stateBounds
-    ? runner.map?.cameraForBounds?.(stateBounds, { padding, maxZoom: 7.25 })
+    ? runner.map.cameraForBounds(stateBounds, { padding, maxZoom: focusDecision.zoomThreshold })
     : null;
-  const fittedZoom = Number(fittedStateCamera?.zoom);
-  const didFocus = runner.focusTargetIfNeeded(stateTarget, {
-    force: true,
-    maxZoom: 7.25,
+  const rawFittedZoom = Number(fittedStateCamera?.zoom);
+  const fittedZoom = Number.isFinite(rawFittedZoom)
+    ? Math.min(rawFittedZoom, focusDecision.zoomThreshold)
+    : null;
+  if (
+    !fittedStateCamera?.center
+    || !Number.isFinite(fittedZoom)
+    || fittedZoom < focusDecision.sectionZoom + focusDecision.minZoomGain
+  ) return Promise.resolve(false);
+  const fittedCenter = [Number(fittedStateCamera.center.lng), Number(fittedStateCamera.center.lat)];
+  if (!fittedCenter.every(Number.isFinite)) return Promise.resolve(false);
+  const didFocus = runner.moveCamera({
+    center: fittedCenter,
+    zoom: fittedZoom,
+    bearing: 0,
+    pitch: 0,
     duration,
-    padding,
+    essential: true
+  }, {
     cameraContext: focusDecision.cameraContext,
-    source: focusDecision.cameraSource
-  });
+    source: focusDecision.cameraSource,
+    requestType: "easeTo",
+    targetId: stateTarget.id,
+    targetLabel: stateTarget.name,
+    targetBounds: stateBounds
+  }, "easeTo");
 
   if (!didFocus) return Promise.resolve(false);
   memoryTrail.guidedPoliticalCamera = {
@@ -13306,8 +13323,9 @@ function scheduleUnitedStatesGuidedStateFocusCheck(memoryTrail, selection = {}) 
     activePromptFocus: {
       ...focusDecision,
       stateBounds,
-      fittedZoom: Number.isFinite(fittedZoom) ? Number(fittedZoom.toFixed(4)) : null,
-      minimumZoomApplied: Number.isFinite(fittedZoom) && fittedZoom >= focusDecision.minZoom
+      fittedCenter,
+      fittedZoom: Number(fittedZoom.toFixed(4)),
+      zoomThresholdReached: fittedZoom >= focusDecision.zoomThreshold
     }
   };
   return new Promise((resolve) => {
@@ -21617,6 +21635,13 @@ function applyUnitedStatesGuidedPoliticalCamera(memoryTrail) {
   let didMove = false;
 
   if (decision.mode === "override" && decision.camera && typeof runner?.moveCamera === "function") {
+    memoryTrail.guidedPoliticalCamera = {
+      ...decision,
+      sectionFittedCamera: {
+        center: [...decision.camera.center],
+        zoom: decision.camera.zoom
+      }
+    };
     didMove = runner.moveCamera({
       center: decision.camera.center,
       zoom: decision.camera.zoom,
@@ -21635,13 +21660,22 @@ function applyUnitedStatesGuidedPoliticalCamera(memoryTrail) {
       .map((targetId) => getUnitedStatesGuidedPoliticalCameraTarget(targetId, decision.sectionId))
       .filter(Boolean);
     const fitBounds = runner.getCombinedTargetBounds?.(targets) || null;
+    const padding = getUnitedStatesGuidedPoliticalCameraPadding();
+    const offset = isCompactTouchLayout() ? getMobileSectionQuizFitOffset() : [0, -12];
+    const fittedCamera = fitBounds
+      ? runner.map?.cameraForBounds?.(fitBounds, { padding, offset, maxZoom: 5.35 })
+      : null;
     memoryTrail.guidedPoliticalCamera = {
       ...decision,
-      fitBounds
+      fitBounds,
+      sectionFittedCamera: fittedCamera ? {
+        center: [Number(fittedCamera.center.lng), Number(fittedCamera.center.lat)],
+        zoom: Number(fittedCamera.zoom)
+      } : null
     };
     didMove = runner.fitTargets(targets, {
-      padding: getUnitedStatesGuidedPoliticalCameraPadding(),
-      offset: isCompactTouchLayout() ? getMobileSectionQuizFitOffset() : [0, -12],
+      padding,
+      offset,
       maxZoom: 5.35,
       duration: 650,
       cameraContext: UNITED_STATES_GUIDED_POLITICAL_CAMERA_CONTEXT,

@@ -5,7 +5,8 @@ import {
   createUnitedStatesGuidedStateFocusDecision,
   createUnitedStatesGuidedPoliticalCameraDecision,
   isManagedUnitedStatesGuidedPoliticalCamera,
-  UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM
+  UNITED_STATES_GUIDED_DISTANT_SECTION_ZOOM_THRESHOLD,
+  UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM_GAIN
 } from "../src/united-states-guided-political-camera.js";
 
 const utahArizonaActivity = JSON.parse(fs.readFileSync(
@@ -92,26 +93,52 @@ const stateFocus = createUnitedStatesGuidedStateFocusDecision({
   selection: { targetId: "utah", promptType: "guided" },
   item: { type: "state", targetId: "utah" }
 });
-assert.deepEqual(stateFocus, {
+assert.equal(stateFocus, null, "The authored Utah/Arizona camera remains authoritative.");
+const distantSectionCamera = {
+  ...utahArizonaStates,
+  mode: "fit",
+  cameraSource: "section-fit",
+  sectionFittedCamera: { center: [-112, 40], zoom: 3.8 }
+};
+const distantStateFocus = createUnitedStatesGuidedStateFocusDecision({
+  guidedPoliticalCamera: distantSectionCamera,
+  selection: { targetId: "utah", promptType: "guided" },
+  item: { type: "state", targetId: "utah" }
+});
+assert.deepEqual(distantStateFocus, {
   stateTargetId: "utah",
   promptTargetId: "utah",
   promptType: "guided",
-  minZoom: UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM,
+  zoomThreshold: UNITED_STATES_GUIDED_DISTANT_SECTION_ZOOM_THRESHOLD,
+  minZoomGain: UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM_GAIN,
+  sectionZoom: 3.8,
   cameraContext: "guided-political-state-focus",
-  cameraSource: "guided-political-current-state"
+  cameraSource: "guided-political-distant-section-correction"
 });
 assert.equal(createUnitedStatesGuidedStateFocusDecision({
-  guidedPoliticalCamera: utahArizonaStates,
+  guidedPoliticalCamera: distantSectionCamera,
   selection: { targetId: "utah", promptType: "name_to_place" },
   item: { type: "state", targetId: "utah" }
 }), null, "A locating prompt must retain its broader search area instead of focusing the answer.");
+assert.equal(createUnitedStatesGuidedStateFocusDecision({
+  guidedPoliticalCamera: {
+    ...distantSectionCamera,
+    sectionFittedCamera: { center: [-112, 40], zoom: 4.7 }
+  },
+  selection: { targetId: "utah", promptType: "guided" },
+  item: { type: "state", targetId: "utah" }
+}), null, "A reasonable contextual section camera must not be replaced by a complete-state fit.");
 assert.equal(createUnitedStatesGuidedStateFocusDecision({
   guidedPoliticalCamera: alaskaHawaii,
   selection: { targetId: "alaska", promptType: "guided" },
   item: { type: "state", targetId: "alaska" }
 }), null, "Alaska and Hawaii retain their authored disconnected-geography cameras.");
 assert.equal(createUnitedStatesGuidedStateFocusDecision({
-  guidedPoliticalCamera: utahArizonaCapitals,
+  guidedPoliticalCamera: {
+    ...distantSectionCamera,
+    activeTargetIds: utahArizonaCapitals.activeTargetIds,
+    activeStateIds: utahArizonaCapitals.activeStateIds
+  },
   selection: { targetId: "salt-lake-city-ut", promptType: "place_to_name" },
   item: { type: "capital", targetId: "salt-lake-city-ut", relatedStateTargetId: "utah" }
 })?.stateTargetId, "utah", "Capital teaching and visible identification focus the related state.");

@@ -1,5 +1,11 @@
 # Automated testing
 
+## Guided political camera regression — 2026-09-09
+
+The deterministic camera check verifies authored-camera precedence, contextual section-camera retention, the measured distant-section correction, its 4.7 threshold and 0.2 minimum gain, hidden-answer locating exclusion, capital-to-state resolution, and the Alaska/Hawaii exception. The full fast baseline passed **109/109**. The permanent desktop/mobile Chromium camera suite passed **18/18** after the regression fix, and the broader Guided Learning plus Reconstruction browser set passed **30/30**.
+
+A separate temporary visual matrix passed **24/24** and was removed after review. Settled teaching views were captured at desktop and 390px portrait sizes for New Hampshire, Vermont, Rhode Island, Massachusetts, Colorado, New Mexico, Montana, Wyoming, California, Texas, Alaska, and Hawaii. The northeastern views again showed useful surrounding states instead of forced individual-state fits. Colorado, New Mexico, California, and the measured desktop western views retained their suitable cohort framing; mobile Montana and Wyoming used the bounded correction. Texas received a desktop correction but retained its cohort fit on mobile because a complete-state fit did not improve the scale enough. Alaska and Hawaii retained their disconnected-geography cameras. No real-device, Safari, or landscape-mobile claim is made.
+
 ## Guided Reconstruction prerequisite regression — 2026-09-09
 
 Every authored checkpoint now requires its own persisted Guided `state:*` introductions, in addition to the preceding-checkpoint chain. The focused checks cover all ten groups, a missing member in checkpoint 1, retained canonical evidence after a Guided-only reset, targeted routes, anchored Guided scoring, standalone translated-region tolerance, and unchanged evidence identities. `npm test` passed **109/109**.
@@ -18,7 +24,7 @@ Browser coverage includes Cheyenne's forgiving capital-only hit area, an inert c
 
 The repository has a fast Node-based baseline and a separate Playwright browser layer. The fast baseline is the normal development check; Playwright covers selected browser flows and should be run in a supported local or CI environment.
 
-## Guided political current-state camera — 2026-09-08
+## Guided political current-state camera — 2026-09-08 (superseded)
 
 `scripts/check-united-states-guided-political-camera.mjs` covers state/capital prompt resolution, the 4.7 policy, name-to-place exclusion, and the Alaska/Hawaii exception. `scripts/check-daily-trail-us-states-11-alaska-learn-camera.mjs` confirms the authored disconnected-state cameras remain intact.
 

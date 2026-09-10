@@ -1,6 +1,7 @@
 export const UNITED_STATES_GUIDED_POLITICAL_CAMERA_CONTEXT = "guided-political-section";
 export const UNITED_STATES_GUIDED_STATE_FOCUS_CAMERA_CONTEXT = "guided-political-state-focus";
-export const UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM = 4.7;
+export const UNITED_STATES_GUIDED_DISTANT_SECTION_ZOOM_THRESHOLD = 4.7;
+export const UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM_GAIN = 0.2;
 
 const stateSectionPattern = /^us-states-(\d{2})$/;
 
@@ -122,9 +123,15 @@ export function createUnitedStatesGuidedStateFocusDecision({
   if (
     !isManagedUnitedStatesGuidedPoliticalCamera(guidedPoliticalCamera)
     || guidedPoliticalCamera.sectionNumber === 11
+    || guidedPoliticalCamera.cameraSource === "authored-override"
     || !["guided", "place_to_name"].includes(selection?.promptType)
     || !item
   ) {
+    return null;
+  }
+
+  const sectionZoom = Number(guidedPoliticalCamera.sectionFittedCamera?.zoom);
+  if (!Number.isFinite(sectionZoom) || sectionZoom >= UNITED_STATES_GUIDED_DISTANT_SECTION_ZOOM_THRESHOLD) {
     return null;
   }
 
@@ -139,8 +146,10 @@ export function createUnitedStatesGuidedStateFocusDecision({
     stateTargetId,
     promptTargetId: String(selection.targetId || item.targetId || "").trim(),
     promptType: selection.promptType,
-    minZoom: UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM,
+    zoomThreshold: UNITED_STATES_GUIDED_DISTANT_SECTION_ZOOM_THRESHOLD,
+    minZoomGain: UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM_GAIN,
+    sectionZoom,
     cameraContext: UNITED_STATES_GUIDED_STATE_FOCUS_CAMERA_CONTEXT,
-    cameraSource: "guided-political-current-state"
+    cameraSource: "guided-political-distant-section-correction"
   };
 }

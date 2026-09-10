@@ -1,12 +1,18 @@
 # Guided political camera
 
-United States Guided Learning uses two related camera scopes for state and capital sections.
+United States Guided Learning preserves regional context while correcting only a measurably distant state view.
 
-The section camera first frames the current teaching cohort. It gives the learner regional context and remains the search area for name-to-place locating prompts, where focusing the requested state would reveal the answer.
+Camera precedence is:
 
-For lower-48 `guided` teaching prompts and `place_to_name` identification prompts, the runtime then fits the complete current state with prompt-level padding. Capital prompts resolve their related state and use the same state geometry. The fit can zoom as far as 7.25 for small states. The intended minimum is 4.7 whenever that zoom still permits the complete state to remain visible.
+1. An exact authored Guided camera for the active cohort. The Utah/Arizona camera is the current authored example.
+2. The responsive bounds fit for the active teaching cohort, with the existing interface-safe padding.
+3. A complete-state correction only when the calculated cohort camera is below zoom 4.7 and the corrected state fit would improve the zoom by at least 0.2.
 
-A 390px portrait viewport cannot contain the full east-west extent of Montana or Minnesota at MapLibre zoom 4.7 while retaining the interface-safe frame. Those cases use the highest complete-state bounds fit instead of cropping the geography. This is a geometric viewport constraint, not an authored per-state override. Desktop views and feasible mobile states meet or exceed 4.7.
+The section camera gives the learner regional context and remains the search area for `name_to_place` locating prompts, where focusing the requested state would reveal the answer.
+
+The fallback applies only to lower-48 `guided` teaching and visible `place_to_name` identification. Capital prompts resolve their related state. It fits the complete target state with prompt-safe padding, caps that correction at zoom 4.7, and leaves the section camera in place when the correction would provide less than a 0.2 zoom gain. The 4.7 value is a threshold and upper bound for this correction; it is not a universal minimum and does not make every state fill the viewport.
+
+The correction can settle below 4.7 when the responsive safe frame cannot contain the complete state at that zoom. No state-specific overrides were added for this regression. Measured desktop and mobile views retain contextual section framing for northeastern states; the compact Montana and Wyoming views receive the bounded correction because their cohort cameras are demonstrably distant.
 
 Alaska and Hawaii stay outside the lower-48 prompt-focus policy. Section 11 preserves their authored disconnected-geography cameras. Standalone activities, Daily Trail, Journey, physical geography, and Reconstruction retain their own camera contracts.
 

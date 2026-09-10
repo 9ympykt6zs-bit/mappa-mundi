@@ -68,30 +68,16 @@ async function getSettledCameraState(page) {
   return page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState());
 }
 
-async function expectCurrentStateFocus(page, stateTargetId) {
-  const state = await getSettledCameraState(page);
-  expect(state.guidedPoliticalCamera?.activePromptFocus).toMatchObject({
-    stateTargetId,
-    minZoom: 4.7,
-    cameraContext: "guided-political-state-focus"
-  });
-  expect(state.guidedPoliticalCamera.activePromptFocus.fittedZoom).toBeCloseTo(state.camera.zoom, 2);
-  const stateBounds = state.guidedPoliticalCamera.activePromptFocus.stateBounds;
-  const viewportBounds = state.camera.bounds;
-  expect(stateBounds).toBeTruthy();
-  expect(viewportBounds).toBeTruthy();
-  expect(stateBounds[0][0]).toBeGreaterThanOrEqual(viewportBounds[0][0] - 0.001);
-  expect(stateBounds[0][1]).toBeGreaterThanOrEqual(viewportBounds[0][1] - 0.001);
-  expect(stateBounds[1][0]).toBeLessThanOrEqual(viewportBounds[1][0] + 0.001);
-  expect(stateBounds[1][1]).toBeLessThanOrEqual(viewportBounds[1][1] + 0.001);
-  return state;
+function expectCameraNear(actual, expected, tolerance = {}) {
+  expect(actual.center[0]).toBeCloseTo(expected.center[0], tolerance.longitude ?? 2);
+  expect(actual.center[1]).toBeCloseTo(expected.center[1], tolerance.latitude ?? 2);
+  expect(actual.zoom).toBeCloseTo(expected.zoom, tolerance.zoom ?? 2);
 }
 
-test("Utah and Arizona state teaching focuses each current state at the Guided minimum zoom", async ({ page }) => {
+test("Utah and Arizona state teaching keeps the approved Guided camera through target changes", async ({ page }) => {
   await openGuidedSection(page, "us-states-09", ["state:nevada", "state:california"]);
 
-  let state = await expectCurrentStateFocus(page, "utah");
-  expect(state.camera.zoom).toBeGreaterThanOrEqual(4.7 - 0.001);
+  let state = await getSettledCameraState(page);
   expect(state.guidedPoliticalCamera).toMatchObject({
     sectionId: "us-states-09",
     mode: "override",
@@ -100,16 +86,17 @@ test("Utah and Arizona state teaching focuses each current state at the Guided m
     activeTargetIds: ["utah", "arizona"],
     activeStateIds: ["utah", "arizona"]
   });
+  expect(state.guidedPoliticalCamera.activePromptFocus).toBeUndefined();
   expect(state.currentPromptTargetId).toBe("utah");
-  expect(state.camera.center[0]).toBeCloseTo(-111.55, 1);
+  expectCameraNear(state.camera, approvedUtahArizonaCamera);
 
   await page.evaluate(() => window.__MAPPA_TEST_API__.answerActiveMemoryTrailCorrectly());
   await expect.poll(() => page.evaluate(() => (
     window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.currentPromptTargetId
   )), { timeout: 10_000 }).toBe("arizona");
-  state = await expectCurrentStateFocus(page, "arizona");
-  expect(state.camera.zoom).toBeGreaterThanOrEqual(4.7 - 0.001);
-  expect(state.camera.center[0]).toBeCloseTo(-111.93, 1);
+  state = await getSettledCameraState(page);
+  expect(state.guidedPoliticalCamera.activePromptFocus).toBeUndefined();
+  expectCameraNear(state.camera, approvedUtahArizonaCamera);
 
   const map = page.locator("#map");
   const box = await map.boundingBox();
@@ -130,7 +117,7 @@ test("Utah and Arizona state teaching focuses each current state at the Guided m
   expect(afterTransition.camera.center[1]).toBeCloseTo(moved.camera.center[1], 1);
 });
 
-test("Salt Lake City and Phoenix capital teaching focuses each capital's state", async ({ page }) => {
+test("Salt Lake City and Phoenix capital teaching uses the same approved Guided camera", async ({ page }) => {
   await openGuidedSection(page, "us-capitals-09", [
     "state:utah",
     "state:arizona",
@@ -140,8 +127,7 @@ test("Salt Lake City and Phoenix capital teaching focuses each capital's state",
     "capital:sacramento-ca"
   ]);
 
-  let state = await expectCurrentStateFocus(page, "utah");
-  expect(state.camera.zoom).toBeGreaterThanOrEqual(4.7 - 0.001);
+  let state = await getSettledCameraState(page);
   expect(state.guidedPoliticalCamera).toMatchObject({
     sectionId: "us-states-09",
     mode: "override",
@@ -149,8 +135,9 @@ test("Salt Lake City and Phoenix capital teaching focuses each capital's state",
     activeTargetIds: ["salt-lake-city-ut", "phoenix-az"],
     activeStateIds: ["utah", "arizona"]
   });
+  expect(state.guidedPoliticalCamera.activePromptFocus).toBeUndefined();
   expect(state.currentPromptTargetId).toBe("salt-lake-city-ut");
-  expect(state.camera.center[0]).toBeCloseTo(-111.55, 1);
+  expectCameraNear(state.camera, approvedUtahArizonaCamera);
   await expect.poll(() => page.evaluate(() => (
     window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()?.starRenderedIds || []
   ))).toContain("salt-lake-city-ut");
@@ -159,18 +146,20 @@ test("Salt Lake City and Phoenix capital teaching focuses each capital's state",
   await expect.poll(() => page.evaluate(() => (
     window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.currentPromptTargetId
   )), { timeout: 10_000 }).toBe("phoenix-az");
-  state = await expectCurrentStateFocus(page, "arizona");
-  expect(state.camera.zoom).toBeGreaterThanOrEqual(4.7 - 0.001);
+  state = await getSettledCameraState(page);
+  expect(state.guidedPoliticalCamera.activePromptFocus).toBeUndefined();
+  expectCameraNear(state.camera, approvedUtahArizonaCamera);
   expect(state.camera.zoom).toBeGreaterThan(4.5);
   await expect.poll(() => page.evaluate(() => (
     window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()?.starRenderedIds || []
   ))).toContain("phoenix-az");
 });
 
-test("a resumed Guided state prompt restores its current-state camera", async ({ page }) => {
+test("a resumed Guided state prompt restores its authored contextual camera", async ({ page }) => {
   await openGuidedSection(page, "us-states-09", ["state:nevada", "state:california"]);
-  const beforeReload = await expectCurrentStateFocus(page, "utah");
-  expect(beforeReload.camera.zoom).toBeGreaterThanOrEqual(4.7 - 0.001);
+  const beforeReload = await getSettledCameraState(page);
+  expect(beforeReload.guidedPoliticalCamera.activePromptFocus).toBeUndefined();
+  expectCameraNear(beforeReload.camera, approvedUtahArizonaCamera);
 
   await page.reload();
   await page.locator("#launch-start-button").click();
@@ -179,8 +168,9 @@ test("a resumed Guided state prompt restores its current-state camera", async ({
   await expect.poll(() => page.evaluate(() => (
     window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.currentPromptTargetId
   )), { timeout: 20_000 }).toBe("utah");
-  const resumed = await expectCurrentStateFocus(page, "utah");
-  expect(resumed.camera.zoom).toBeGreaterThanOrEqual(4.7 - 0.001);
+  const resumed = await getSettledCameraState(page);
+  expect(resumed.guidedPoliticalCamera.activePromptFocus).toBeUndefined();
+  expectCameraNear(resumed.camera, approvedUtahArizonaCamera);
 });
 
 for (const fixture of [
@@ -188,7 +178,7 @@ for (const fixture of [
   { sectionId: "us-states-08", expectedTargets: ["kansas", "oklahoma", "texas"] },
   { sectionId: "us-states-10", expectedTargets: ["montana", "idaho", "washington", "oregon"] }
 ]) {
-  test(`${fixture.sectionId} uses active-section context followed by current-state focus`, async ({ page }, testInfo) => {
+  test(`${fixture.sectionId} keeps context and only corrects a measurably distant state`, async ({ page }, testInfo) => {
     await openGuidedSection(page, fixture.sectionId);
     const state = await getSettledCameraState(page);
     expect(state.guidedPoliticalCamera).toMatchObject({
@@ -197,38 +187,54 @@ for (const fixture of [
       cameraSource: "section-fit",
       activeTargetIds: fixture.expectedTargets
     });
-    expect(state.guidedPoliticalCamera.activePromptFocus).toMatchObject({
-      stateTargetId: fixture.expectedTargets[0],
-      minZoom: 4.7
-    });
     const bounds = state.guidedPoliticalCamera.fitBounds;
     expect(bounds).not.toBeNull();
     expect(bounds[1][0] - bounds[0][0]).toBeLessThan(35);
     expect(bounds[1][1] - bounds[0][1]).toBeLessThan(25);
-    await expectCurrentStateFocus(page, fixture.expectedTargets[0]);
-    const needsNarrowViewportFit = ["us-states-07", "us-states-10"].includes(fixture.sectionId)
-      && testInfo.project.name === "mobile-chromium";
-    if (needsNarrowViewportFit) {
-      expect(state.guidedPoliticalCamera.activePromptFocus.minimumZoomApplied).toBe(false);
-      expect(state.camera.zoom).toBeGreaterThan(4);
-      expect(state.camera.zoom).toBeLessThan(4.7);
+    const sectionCamera = state.guidedPoliticalCamera.sectionFittedCamera;
+    expect(sectionCamera?.zoom).toBeGreaterThan(3.4);
+    const focus = state.guidedPoliticalCamera.activePromptFocus;
+    if (focus) {
+      expect(sectionCamera.zoom).toBeLessThan(4.7);
+      expect(focus).toMatchObject({
+        stateTargetId: fixture.expectedTargets[0],
+        zoomThreshold: 4.7,
+        minZoomGain: 0.2,
+        sectionZoom: sectionCamera.zoom,
+        cameraSource: "guided-political-distant-section-correction"
+      });
+      expect(state.camera.zoom).toBeGreaterThanOrEqual(sectionCamera.zoom + 0.19);
+      expect(state.camera.zoom).toBeLessThanOrEqual(4.7 + 0.001);
+      const [stateSouthwest, stateNortheast] = focus.stateBounds;
+      const [viewSouthwest, viewNortheast] = state.camera.bounds;
+      expect(stateSouthwest[0]).toBeGreaterThanOrEqual(viewSouthwest[0] - 0.001);
+      expect(stateSouthwest[1]).toBeGreaterThanOrEqual(viewSouthwest[1] - 0.001);
+      expect(stateNortheast[0]).toBeLessThanOrEqual(viewNortheast[0] + 0.001);
+      expect(stateNortheast[1]).toBeLessThanOrEqual(viewNortheast[1] + 0.001);
     } else {
-      expect(state.guidedPoliticalCamera.activePromptFocus.minimumZoomApplied).toBe(true);
-      expect(state.camera.zoom).toBeGreaterThanOrEqual(4.7 - 0.001);
+      expectCameraNear(state.camera, sectionCamera, { longitude: 0, latitude: 0, zoom: 1 });
+    }
+    if (fixture.sectionId === "us-states-10" && testInfo.project.name === "mobile-chromium") {
+      expect(focus?.stateTargetId).toBe("montana");
     }
   });
 }
 
-test("an eastern control section uses the same bounded section-fit policy", async ({ page }) => {
-  await openGuidedSection(page, "us-states-01");
+test("New Hampshire retains its contextual northeastern section camera", async ({ page }) => {
+  await openGuidedSection(page, "us-states-01", ["state:maine"]);
   const eastern = await getSettledCameraState(page);
   expect(eastern.guidedPoliticalCamera).toMatchObject({
     sectionId: "us-states-01",
     mode: "fit",
     cameraSource: "section-fit"
   });
-  expect(eastern.guidedPoliticalCamera.activePromptFocus?.stateTargetId).toBe("maine");
-  expect(eastern.camera.zoom).toBeGreaterThanOrEqual(4.7 - 0.001);
+  expect(eastern.currentPromptTargetId).toBe("new-hampshire");
+  expect(eastern.guidedPoliticalCamera.activePromptFocus).toBeUndefined();
+  expectCameraNear(eastern.camera, eastern.guidedPoliticalCamera.sectionFittedCamera, {
+    longitude: 0,
+    latitude: 0,
+    zoom: 1
+  });
 });
 
 test("Alaska and Hawaii retain their existing disconnected-geography handling", async ({ page }) => {
