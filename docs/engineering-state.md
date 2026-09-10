@@ -1,6 +1,6 @@
 # Engineering state
 
-Updated 2026-09-09 for the Guided Reconstruction prerequisite and political-camera corrections on `feature/evidence-driven-learning-foundation`. This is a concise navigation and coordination record, not a release certification. Recheck Git status/revision at task start.
+Updated 2026-09-10 for the bounded lower-48 Guided state camera on `feature/evidence-driven-learning-foundation`. This is a concise navigation and coordination record, not a release certification. Recheck Git status/revision at task start.
 
 ## Ownership and current work
 
@@ -35,7 +35,7 @@ The repository uses browser JavaScript modules and static assets. `package.json`
 
 - Guided Reconstruction eligibility: a Guided-only reset clears the authoritative `introducedItemIds` gate while preserving canonical learning history. Each checkpoint requires all of its own `state:<id>` introductions plus the prior checkpoint completion chain. Incomplete child contracts are revalidated on reload. The fast baseline passed **109/109** and focused desktop/mobile acceptance passed **12/12**; details are in [testing](testing.md).
 
-- Guided political cameras now keep an exact authored cohort camera when available, otherwise use the responsive active-section fit. A complete-state correction is allowed only when that calculated section view is below zoom 4.7 and the correction gains at least 0.2 zoom; the correction itself is capped at 4.7 and may settle lower to preserve the complete state. Hidden-answer locating, Alaska/Hawaii special handling, and capital city-context framing remain unchanged. No per-state overrides were added. See [the camera contract](guided-political-camera.md) and [testing](testing.md).
+- Lower-48 Guided state teaching and visible identification clamp the authored or responsive contextual zoom to 4.7–5.5. In-range zoom is preserved; a lower-bound correction recenters from the current state's fit, while an upper-bound correction retains the cohort center and reveals more neighboring context. Hidden-answer locating, Alaska/Hawaii special handling, and capital city-context framing remain unchanged. No per-state overrides were added. See [the camera contract](guided-political-camera.md) and [testing](testing.md).
 
 - St. Lawrence geometry update: all **34 physical targets are supported and orchestrated**. St. Lawrence now uses a checked-in, connected OpenStreetMap relation extract from the Lake Ontario outlet through the Canadian continuation, with validated coverage windows and retained attribution. Its U.S. curriculum relationship remains New York-only. The eastern river cohort supplies responsive desktop/mobile framing, while the ordinary visible-line and hit-corridor contracts remain shared with other rivers. Source, scope, and limitations are recorded in [the geometry decision](st-lawrence-river-geometry.md); validation is recorded in [testing](testing.md).
 

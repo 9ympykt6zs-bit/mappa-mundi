@@ -62,7 +62,7 @@ import {
   createUnitedStatesGuidedPoliticalCameraDecision,
   isManagedUnitedStatesGuidedPoliticalCamera,
   UNITED_STATES_GUIDED_POLITICAL_CAMERA_CONTEXT
-} from "./united-states-guided-political-camera.js?v=20260909-guided-state-context-1";
+} from "./united-states-guided-political-camera.js?v=20260910-guided-state-zoom-clamp-1";
 import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js?v=20260908-st-lawrence-geometry-1";
 import {
   chooseNextGuidedPhysicalRetrievalTarget,
@@ -13287,23 +13287,16 @@ function scheduleUnitedStatesGuidedStateFocusCheck(memoryTrail, selection = {}) 
     ? { top: 90, right: 12, bottom: 190, left: 12 }
     : { top: 94, right: 64, bottom: 154, left: 64 };
   const stateBounds = runner.getCombinedTargetBounds?.([stateTarget]) || null;
-  const fittedStateCamera = stateBounds
-    ? runner.map.cameraForBounds(stateBounds, { padding, maxZoom: focusDecision.zoomThreshold })
+  const fittedStateCamera = focusDecision.centerSource === "state-fit" && stateBounds
+    ? runner.map.cameraForBounds(stateBounds, { padding, maxZoom: focusDecision.maxZoom })
     : null;
-  const rawFittedZoom = Number(fittedStateCamera?.zoom);
-  const fittedZoom = Number.isFinite(rawFittedZoom)
-    ? Math.min(rawFittedZoom, focusDecision.zoomThreshold)
-    : null;
-  if (
-    !fittedStateCamera?.center
-    || !Number.isFinite(fittedZoom)
-    || fittedZoom < focusDecision.sectionZoom + focusDecision.minZoomGain
-  ) return Promise.resolve(false);
-  const fittedCenter = [Number(fittedStateCamera.center.lng), Number(fittedStateCamera.center.lat)];
+  const fittedCenter = fittedStateCamera?.center
+    ? [Number(fittedStateCamera.center.lng), Number(fittedStateCamera.center.lat)]
+    : [...focusDecision.contextualCenter];
   if (!fittedCenter.every(Number.isFinite)) return Promise.resolve(false);
   const didFocus = runner.moveCamera({
     center: fittedCenter,
-    zoom: fittedZoom,
+    zoom: focusDecision.finalZoom,
     bearing: 0,
     pitch: 0,
     duration,
@@ -13324,8 +13317,8 @@ function scheduleUnitedStatesGuidedStateFocusCheck(memoryTrail, selection = {}) 
       ...focusDecision,
       stateBounds,
       fittedCenter,
-      fittedZoom: Number(fittedZoom.toFixed(4)),
-      zoomThresholdReached: fittedZoom >= focusDecision.zoomThreshold
+      fittedZoom: Number(focusDecision.finalZoom.toFixed(4)),
+      zoomWasClamped: Math.abs(focusDecision.finalZoom - focusDecision.contextualZoom) > 0.0001
     }
   };
   return new Promise((resolve) => {

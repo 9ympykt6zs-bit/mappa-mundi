@@ -2,11 +2,12 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 import {
+  clampUnitedStatesGuidedStateFocusZoom,
   createUnitedStatesGuidedStateFocusDecision,
   createUnitedStatesGuidedPoliticalCameraDecision,
   isManagedUnitedStatesGuidedPoliticalCamera,
-  UNITED_STATES_GUIDED_DISTANT_SECTION_ZOOM_THRESHOLD,
-  UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM_GAIN
+  UNITED_STATES_GUIDED_STATE_FOCUS_MAX_ZOOM,
+  UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM
 } from "../src/united-states-guided-political-camera.js";
 
 const utahArizonaActivity = JSON.parse(fs.readFileSync(
@@ -88,12 +89,35 @@ assert.equal(alaskaHawaii.mode, "preserve-special");
 assert.equal(alaskaHawaii.cameraSource, "existing-alaska-hawaii-handling");
 assert.equal(isManagedUnitedStatesGuidedPoliticalCamera(alaskaHawaii), false);
 
+assert.equal(clampUnitedStatesGuidedStateFocusZoom(3.8), 4.7);
+assert.equal(clampUnitedStatesGuidedStateFocusZoom(4.9), 4.9);
+assert.equal(clampUnitedStatesGuidedStateFocusZoom(6.4), 5.5);
+assert.equal(clampUnitedStatesGuidedStateFocusZoom("invalid"), null);
+
 const stateFocus = createUnitedStatesGuidedStateFocusDecision({
-  guidedPoliticalCamera: utahArizonaStates,
+  guidedPoliticalCamera: {
+    ...utahArizonaStates,
+    sectionFittedCamera: {
+      center: approvedUtahArizonaCamera.center,
+      zoom: approvedUtahArizonaCamera.zoom
+    }
+  },
   selection: { targetId: "utah", promptType: "guided" },
   item: { type: "state", targetId: "utah" }
 });
-assert.equal(stateFocus, null, "The authored Utah/Arizona camera remains authoritative.");
+assert.deepEqual(stateFocus, {
+  stateTargetId: "utah",
+  promptTargetId: "utah",
+  promptType: "guided",
+  contextualCenter: approvedUtahArizonaCamera.center,
+  contextualZoom: approvedUtahArizonaCamera.zoom,
+  finalZoom: approvedUtahArizonaCamera.zoom,
+  minZoom: UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM,
+  maxZoom: UNITED_STATES_GUIDED_STATE_FOCUS_MAX_ZOOM,
+  centerSource: "section-context",
+  cameraContext: "guided-political-state-focus",
+  cameraSource: "guided-political-lower-48-zoom-clamp"
+}, "An in-range authored camera remains unchanged.");
 const distantSectionCamera = {
   ...utahArizonaStates,
   mode: "fit",
@@ -109,11 +133,14 @@ assert.deepEqual(distantStateFocus, {
   stateTargetId: "utah",
   promptTargetId: "utah",
   promptType: "guided",
-  zoomThreshold: UNITED_STATES_GUIDED_DISTANT_SECTION_ZOOM_THRESHOLD,
-  minZoomGain: UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM_GAIN,
-  sectionZoom: 3.8,
+  contextualCenter: [-112, 40],
+  contextualZoom: 3.8,
+  finalZoom: 4.7,
+  minZoom: UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM,
+  maxZoom: UNITED_STATES_GUIDED_STATE_FOCUS_MAX_ZOOM,
+  centerSource: "state-fit",
   cameraContext: "guided-political-state-focus",
-  cameraSource: "guided-political-distant-section-correction"
+  cameraSource: "guided-political-lower-48-zoom-clamp"
 });
 assert.equal(createUnitedStatesGuidedStateFocusDecision({
   guidedPoliticalCamera: distantSectionCamera,
@@ -123,11 +150,24 @@ assert.equal(createUnitedStatesGuidedStateFocusDecision({
 assert.equal(createUnitedStatesGuidedStateFocusDecision({
   guidedPoliticalCamera: {
     ...distantSectionCamera,
-    sectionFittedCamera: { center: [-112, 40], zoom: 4.7 }
+    sectionFittedCamera: { center: [-112, 40], zoom: 4.9 }
   },
   selection: { targetId: "utah", promptType: "guided" },
   item: { type: "state", targetId: "utah" }
-}), null, "A reasonable contextual section camera must not be replaced by a complete-state fit.");
+})?.finalZoom, 4.9, "An in-range contextual zoom remains unchanged.");
+assert.deepEqual(createUnitedStatesGuidedStateFocusDecision({
+  guidedPoliticalCamera: {
+    ...distantSectionCamera,
+    sectionFittedCamera: { center: [-112, 40], zoom: 6.4 }
+  },
+  selection: { targetId: "utah", promptType: "guided" },
+  item: { type: "state", targetId: "utah" }
+}), {
+  ...distantStateFocus,
+  contextualZoom: 6.4,
+  finalZoom: 5.5,
+  centerSource: "section-context"
+}, "An overly tight contextual camera is capped without discarding its center.");
 assert.equal(createUnitedStatesGuidedStateFocusDecision({
   guidedPoliticalCamera: alaskaHawaii,
   selection: { targetId: "alaska", promptType: "guided" },

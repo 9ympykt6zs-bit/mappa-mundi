@@ -1,5 +1,11 @@
 # Automated testing
 
+## Bounded lower-48 Guided state camera — 2026-09-10
+
+The deterministic camera check pins the pure clamp examples `3.8 -> 4.7`, `4.9 -> 4.9`, and `6.4 -> 5.5`; authored/contextual center selection; state and capital resolution; visible-identification inclusion; hidden-answer locating exclusion; and the Alaska/Hawaii exception. The full fast baseline passed **109/109**. The permanent desktop/mobile Chromium camera suite passed **20/20**, including lower and upper clamps, an unchanged in-range authored camera, target transitions, manual navigation retention before a hidden locating prompt, reload/resume, and the independent Alaska and Hawaii entry cameras. The broader Guided capital-marker suite passed **12/12**, including true city coordinates, navigation relayout, and unchanged Utah, Alaska, and Hawaii teaching context.
+
+A temporary all-state audit passed **96/96**: each of the 48 contiguous states entered as the current Guided teaching target at desktop and 390px portrait sizes, and every settled camera was within 4.7–5.5. That temporary spec was removed after acceptance. Desktop/mobile screenshots were reviewed for Rhode Island, Delaware, New Hampshire, Vermont, Ohio, Virginia, Colorado, California, Montana, and Texas. Small states retained surrounding-state context at the upper end of the band; medium states remained prominent with recognizable neighbors; large western states used the lower end and were no longer tiny. No state-specific exception was required. Alaska/Hawaii code and camera values were unchanged.
+
 ## Guided political camera regression — 2026-09-09
 
 The deterministic camera check verifies authored-camera precedence, contextual section-camera retention, the measured distant-section correction, its 4.7 threshold and 0.2 minimum gain, hidden-answer locating exclusion, capital-to-state resolution, and the Alaska/Hawaii exception. The full fast baseline passed **109/109**. The permanent desktop/mobile Chromium camera suite passed **18/18** after the regression fix, and the broader Guided Learning plus Reconstruction browser set passed **30/30**.
