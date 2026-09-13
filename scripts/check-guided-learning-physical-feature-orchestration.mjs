@@ -16,6 +16,7 @@ import {
   selectPhysicalCohortRetrievalSubset,
   satisfyGuidedLearningPhysicalInterleave,
   selectGuidedLearningOrchestrationBlock,
+  selectGuidedLearningPostStatePhysicalReview,
   startGuidedLearningOrchestrationBlock,
   UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1,
   validateGuidedLearningOrchestrationConfig
@@ -388,7 +389,7 @@ assert.deepEqual(
     ["western-rivers", 8, 1],
     ["interior-west-ranges", 9, 1],
     ["pacific-ranges", 10, 1],
-    ["alaska-mountains", 11, 0]
+    ["alaska-mountains", 11, 2]
   ],
   "Introduction cohorts carry an explicit east-to-west Guided progression."
 );
@@ -599,6 +600,23 @@ assert.equal(guidedStateItemIdsThrough(7).includes("state:colorado"), false, "Ro
 assert.deepEqual(rockyProgressionDecision.currentBlock.destination.newTargetIds, [
   "rocky-mountains", "cascade-mountains", "sierra-nevada"
 ]);
+const interiorWestProgressionDecision = selectMountainAtStage(8, [
+  "northeast-mountains",
+  "southern-appalachian-ranges",
+  "appalachian-system-ranges",
+  "central-mountains",
+  "western-major-mountains"
+]);
+assert.equal(interiorWestProgressionDecision.currentBlock.destination.cohortId, "interior-west-ranges");
+const pacificProgressionDecision = selectMountainAtStage(9, [
+  "northeast-mountains",
+  "southern-appalachian-ranges",
+  "appalachian-system-ranges",
+  "central-mountains",
+  "western-major-mountains",
+  "interior-west-ranges"
+]);
+assert.equal(pacificProgressionDecision.currentBlock.destination.cohortId, "pacific-ranges");
 const completedLower48MountainCohorts = [
   "northeast-mountains",
   "southern-appalachian-ranges",
@@ -608,11 +626,40 @@ const completedLower48MountainCohorts = [
   "interior-west-ranges",
   "pacific-ranges"
 ];
-const alaskaBeforeGuidedStage = selectMountainAtStage(10, completedLower48MountainCohorts, retainedAlaskaEvidence);
-assert.equal(alaskaBeforeGuidedStage.currentBlock.type, GUIDED_LEARNING_BLOCK_TYPES.GUIDED_SECTION);
-const alaskaAtGuidedStage = selectMountainAtStage(11, completedLower48MountainCohorts, retainedAlaskaEvidence);
+const alaskaBeforeFarWesternStage = selectMountainAtStage(8, completedLower48MountainCohorts, retainedAlaskaEvidence);
+assert.equal(alaskaBeforeFarWesternStage.currentBlock.type, GUIDED_LEARNING_BLOCK_TYPES.GUIDED_SECTION);
+const alaskaBeforeGuidedStage = selectMountainAtStage(9, completedLower48MountainCohorts);
+assert.equal(alaskaBeforeGuidedStage.currentBlock.destination.cohortId, "alaska-mountains");
+assert.deepEqual(alaskaBeforeGuidedStage.currentBlock.destination.prerequisiteStateIds, []);
+assert.deepEqual(alaskaBeforeGuidedStage.currentBlock.destination.newTargetIds, ["alaska-range", "brooks-range"]);
+const alaskaAtGuidedStage = selectMountainAtStage(11, completedLower48MountainCohorts);
 assert.equal(alaskaAtGuidedStage.currentBlock.destination.cohortId, "alaska-mountains");
 assert.deepEqual(alaskaAtGuidedStage.currentBlock.destination.newTargetIds, ["alaska-range", "brooks-range"]);
+
+const alabamaFrontierDecision = selectMountainAtStage(4, ["northeast-mountains"]);
+assert.equal(alabamaFrontierDecision.currentBlock.destination.cohortId, "southern-appalachian-ranges");
+assert.notEqual(alabamaFrontierDecision.currentBlock.destination.cohortId, "alaska-mountains");
+const alaskaFeature = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
+  .find(({ targetId }) => targetId === "alaska-range");
+const staleAlaskaIntroduction = selectGuidedLearningOrchestrationBlock({
+  state: createGuidedLearningOrchestrationState({
+    completedBlockIds: [
+      ...reconstructionBlockIdsThrough(4),
+      ...completedCohortBlockIds("northeast-mountains")
+    ],
+    activeBlockId: alaskaFeature.introductionBlockId,
+    activeStatus: "launched"
+  }),
+  repository: retainedAlaskaEvidence,
+  introducedGuidedStateItemIds: guidedStateItemIdsThrough(4),
+  targetedNeed: { objectiveId: "learn-physical-features", familyId: "physical-mountain-ranges" }
+});
+assert.equal(staleAlaskaIntroduction.currentBlock.destination.cohortId, "southern-appalachian-ranges");
+assert.equal(
+  staleAlaskaIntroduction.physicalCohortTrace.find(({ cohortId }) => cohortId === "alaska-mountains")
+    .curriculumEligibility.reason,
+  "earlier-family-cohort-introduction-pending"
+);
 
 const lateFrontierWithEasternMountainBacklog = selectMountainAtStage(10, ["northeast-mountains"]);
 assert.equal(
@@ -736,6 +783,106 @@ let reviewState = createGuidedLearningOrchestrationState({
   guidedLearningEventCount: 5,
   physicalReviewProgress: reviewProgress
 });
+const mountainReviewPoolId = "physical-family-review:mountain-range";
+const alaskaReviewPoolId = "physical-region-review:alaska-mountains";
+const mountainFamilyReviewPool = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalReviewPools
+  .find(({ id }) => id === mountainReviewPoolId);
+const lowerFortyEightMountainTargetIds = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
+  .filter(({ family, authoredStateIds }) => family === "mountain-range" && !authoredStateIds.every((stateId) => stateId === "alaska"))
+  .map(({ targetId }) => targetId);
+assert.equal(mountainFamilyReviewPool.requiresFamilyComplete, false);
+assert.deepEqual(alaskaReviewPool.prerequisiteTargetIds, lowerFortyEightMountainTargetIds);
+
+const legacyAlaskaReviewState = createGuidedLearningOrchestrationState({
+  completedBlockIds: [
+    ...reconstructionBlockIdsThrough(4),
+    ...completedCohortBlockIds("northeast-mountains", "alaska-mountains")
+  ],
+  guidedLearningEventCount: 5,
+  physicalReviewProgress: {
+    "northeast-mountains": reviewProgress["northeast-mountains"],
+    "alaska-mountains": reviewProgress["alaska-mountains"]
+  }
+});
+assert.equal(
+  getGuidedLearningPhysicalReviewEligibility(legacyAlaskaReviewState, mountainReviewPoolId).eligible,
+  true,
+  "Three introduced eastern ranges can enter broad family review before the full mountain curriculum is complete."
+);
+assert.equal(
+  getGuidedLearningPhysicalReviewEligibility(legacyAlaskaReviewState, alaskaReviewPoolId).reason,
+  "review-curriculum-prerequisites-incomplete",
+  "Persisted legacy Alaska retrieval cannot start repeating before earlier mountain cohorts are introduced."
+);
+
+const mountainReviewState = createGuidedLearningOrchestrationState({
+  completedBlockIds: [
+    ...reconstructionBlockIdsThrough(10),
+    ...completedCohortBlockIds(...UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalCohorts
+      .filter(({ family }) => family === "mountain-range")
+      .map(({ id }) => id))
+  ],
+  guidedLearningEventCount: 5,
+  physicalReviewProgress: Object.fromEntries(UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalCohorts
+    .filter(({ family }) => family === "mountain-range")
+    .map((cohort) => [cohort.id, reviewProgress[cohort.id]])),
+  lastCompletedPhysicalCohortId: alaskaReviewPoolId
+});
+assert.equal(mountainReviewState.lastCompletedPhysicalCohortId, alaskaReviewPoolId);
+let mountainReviewDecision = selectGuidedLearningOrchestrationBlock({
+  state: mountainReviewState,
+  repository: { events: [] },
+  hasUnfinishedNonPhysicalLearning: false,
+  targetedNeed: { objectiveId: "learn-physical-features", familyId: "physical-mountain-ranges" }
+});
+assert.equal(
+  mountainReviewDecision.currentBlock.cohortId,
+  mountainReviewPoolId,
+  "An eligible mountain review alternative replaces an immediate Alaska-pool repeat."
+);
+assert.equal(
+  selectGuidedLearningPostStatePhysicalReview({ state: mountainReviewState }).block.cohortId,
+  mountainReviewPoolId,
+  "The post-state physical-review route applies the same pool-rotation rule."
+);
+let rotatedMountainReviewState = startGuidedLearningOrchestrationBlock(
+  mountainReviewState,
+  mountainReviewDecision.currentBlock.id,
+  { physicalCohortTargetIds: mountainReviewDecision.currentBlock.destination.targetIds }
+);
+rotatedMountainReviewState = completeGuidedLearningOrchestrationBlock(
+  rotatedMountainReviewState,
+  mountainReviewDecision.currentBlock.id,
+  UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1,
+  {
+    guidedPhysicalCheckpoint: {
+      targetOrder: mountainReviewDecision.currentBlock.destination.targetIds,
+      targets: mountainReviewDecision.currentBlock.destination.targetIds.map((targetId) => ({
+        targetId,
+        incorrectCount: 0,
+        finalOutcome: "correct"
+      }))
+    }
+  }
+);
+assert.equal(rotatedMountainReviewState.lastCompletedPhysicalCohortId, mountainReviewPoolId);
+rotatedMountainReviewState = satisfyGuidedLearningPhysicalInterleave(rotatedMountainReviewState, { sessionNumber: 6 });
+mountainReviewDecision = selectGuidedLearningOrchestrationBlock({
+  state: rotatedMountainReviewState,
+  repository: { events: [] },
+  hasUnfinishedNonPhysicalLearning: false,
+  targetedNeed: { objectiveId: "learn-physical-features", familyId: "physical-mountain-ranges" }
+});
+assert.equal(
+  mountainReviewDecision.currentBlock.cohortId,
+  alaskaReviewPoolId,
+  "Due mountain review pools alternate instead of allowing either small membership to monopolize selection."
+);
+assert.equal(
+  selectGuidedLearningPostStatePhysicalReview({ state: rotatedMountainReviewState }).block.cohortId,
+  alaskaReviewPoolId,
+  "Post-state selection also rotates back to Alaska after lower-48 mountain review."
+);
 const riverReviewPoolId = "physical-family-review:river";
 const firstRiverReview = getGuidedLearningPhysicalReviewEligibility(reviewState, riverReviewPoolId);
 assert.equal(firstRiverReview.eligible, true);

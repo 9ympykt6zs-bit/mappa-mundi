@@ -478,6 +478,89 @@ test("retained Alaska evidence cannot jump a reset Guided learner past eastern m
     .toMatchObject({ eligible: false, reason: "geographic-progression-not-reached", regionalStage: 11 });
 });
 
+test("Alabama-stage Guided Learning replaces a stale Alaska introduction with the next eastern cohort", async ({ page }) => {
+  const reconstructionBlocks = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.blocks.filter(({ type, destination }) => (
+    type === "reconstruction-checkpoint" && destination.checkpointNumber <= 4
+  ));
+  const northeastSequenceBlockIds = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
+    .filter(({ learningCohortId }) => learningCohortId === "northeast-mountains")
+    .flatMap(({ sequenceBlockIds }) => sequenceBlockIds);
+  const alaskaIntroductionBlockId = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
+    .find(({ targetId }) => targetId === "alaska-range").introductionBlockId;
+  const introducedStateItemIds = [...new Set(reconstructionBlocks
+    .flatMap(({ guidedStatePrerequisiteItemIds }) => guidedStatePrerequisiteItemIds))];
+  await page.addInitScript(({
+    trailKey,
+    orchestrationKey,
+    seedMarker,
+    orchestrationId,
+    introducedStateItemIds,
+    completedBlockIds,
+    alaskaIntroductionBlockId
+  }) => {
+    if (localStorage.getItem(seedMarker)) return;
+    localStorage.setItem(seedMarker, "1");
+    localStorage.setItem(trailKey, JSON.stringify({
+      version: 2,
+      trailId: "united-states-memory-trail",
+      curriculumVersion: 2,
+      hasStarted: true,
+      currentSessionNumber: 8,
+      currentCategory: "states",
+      introducedItemIds: introducedStateItemIds,
+      itemProgress: {}
+    }));
+    localStorage.setItem(orchestrationKey, JSON.stringify({
+      version: 6,
+      orchestrationId,
+      completedBlockIds,
+      activeBlockId: alaskaIntroductionBlockId,
+      activeStatus: "launched",
+      physicalInterleaveRequired: false,
+      physicalTeachingProgress: {},
+      retrievedPhysicalCohortTargetIds: {},
+      guidedLearningEventCount: 4,
+      physicalReviewProgress: {}
+    }));
+  }, {
+    trailKey: unitedStatesMemoryTrailStorageKey,
+    orchestrationKey: GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY,
+    seedMarker: "mappaTestAlabamaMountainProgressionSeed",
+    orchestrationId: UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.id,
+    introducedStateItemIds,
+    completedBlockIds: [...reconstructionBlocks.map(({ id }) => id), ...northeastSequenceBlockIds],
+    alaskaIntroductionBlockId
+  });
+  await page.goto("/?test=1&globeNavigation=off");
+  await page.locator("#launch-start-button").click();
+  await page.evaluate(() => window.__mappaMundiLoadApp());
+  await expect(page.locator("#app-shell-title")).toHaveText("Main Menu");
+
+  let trace = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedLearningOrchestration());
+  expect(trace.pacing.physicalProgression.frontierStage).toBe(4);
+  expect(trace.currentBlock.destination.cohortId).toBe("southern-appalachian-ranges");
+  expect(trace.physicalCohortTrace.find(({ cohortId }) => cohortId === "alaska-mountains"))
+    .toMatchObject({
+      geographicEligibility: { eligible: false },
+      curriculumEligibility: { eligible: false, reason: "earlier-family-cohort-introduction-pending" }
+    });
+
+  await page.evaluate(() => window.__MAPPA_TEST_API__.launchNextGuidedLearningOrchestration());
+  await expect(page.locator(".guided-physical-teaching-panel")).toBeVisible({ timeout: 20_000 });
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingState()?.currentTargetId
+  ))).toBe("allegheny-mountains");
+
+  await reloadAndReenterGuidedLearning(page);
+  await expect(page.locator(".guided-physical-teaching-panel")).toBeVisible({ timeout: 20_000 });
+  trace = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedLearningOrchestration());
+  expect(trace.currentBlock.destination.cohortId).toBe("southern-appalachian-ranges");
+  expect(trace.rehydratedLaunchContract).toBe(true);
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingState()?.currentTargetId
+  ))).toBe("allegheny-mountains");
+});
+
 test("Guided Learning introduces and immediately quizzes a three-range physical batch", async ({ page }) => {
   const runtimeErrors = [];
   page.on("pageerror", (error) => runtimeErrors.push(`pageerror: ${error.message}`));

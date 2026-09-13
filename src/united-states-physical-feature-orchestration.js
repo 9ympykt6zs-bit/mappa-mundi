@@ -13,9 +13,10 @@ export const UNITED_STATES_PHYSICAL_FEATURE_FAMILIES = Object.freeze({
   MOUNTAIN_RANGE: "mountain-range"
 });
 
-// regionalStage follows the authored Guided state-section order. Lower-48
-// cohorts may lead that frontier by one adjacent section; disconnected Alaska
-// waits for the Alaska stage itself. These fields pace introduction only.
+// regionalStage follows the authored Guided state-section order. Most cohorts
+// may lead that frontier by one adjacent section. Alaska is the final mountain
+// cohort and may lead by two sections after the Southwest, but never leapfrog
+// an earlier mountain cohort. These fields pace introduction only.
 export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
   Object.freeze({
     id: "northeast-mountains",
@@ -196,7 +197,7 @@ export const UNITED_STATES_PHYSICAL_LEARNING_COHORTS = Object.freeze([
     preferredRetrievalSize: 2,
     geographyRegion: "alaska",
     regionalStage: 11,
-    maximumLeadStages: 0,
+    maximumLeadStages: 2,
     curriculumOrder: 130
   })
 ]);
@@ -322,11 +323,9 @@ export function buildUnitedStatesPhysicalFeatureOrchestrationInventory({
     const authoredStateIds = getAuthoredStateIds(atlas, entity, familyConfig);
     const override = introductionPrerequisiteStateIdsByFeature[entity.id]
       ?? introductionPrerequisiteStateIdsByFeature[featureId];
-    const requiresDisconnectedRegionState = authoredStateIds.length > 0
-      && authoredStateIds.every((stateId) => stateId === "alaska");
     const introductionPrerequisiteStateIds = override
       ? validateIntroductionOverride(entity.id, override, authoredStateIds)
-      : requiresDisconnectedRegionState ? authoredStateIds : [];
+      : [];
     const connectionChallenges = getAuthoredConnectionChallenges(challenges, entity, familyConfig);
     const geometryRepresentation = entity.geometry?.representation || PHYSICAL_GEOMETRY_REPRESENTATIONS.INCOMPLETE;
     const supported = Boolean(
@@ -370,9 +369,7 @@ export function buildUnitedStatesPhysicalFeatureOrchestrationInventory({
           : "missing-or-untrusted-learning-contract",
       prerequisiteSource: override
         ? "explicit-introduction-override"
-        : requiresDisconnectedRegionState
-          ? "disconnected-region-state-gate"
-          : "physical-geography-scaffold",
+        : "physical-geography-scaffold",
       authoredStateIds: Object.freeze(authoredStateIds),
       introductionPrerequisiteStateIds: Object.freeze(introductionPrerequisiteStateIds),
       introductionPrerequisiteConceptIds: Object.freeze(introductionPrerequisiteStateIds.flatMap((stateId) => [

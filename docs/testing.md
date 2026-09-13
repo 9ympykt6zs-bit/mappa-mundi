@@ -1,5 +1,11 @@
 # Automated testing
 
+## Guided mountain curriculum order and review fairness — 2026-09-13
+
+The physical orchestration check now proves strict same-family introduction order over the existing regional-stage metadata. It covers fresh and targeted east-to-west mountain selection; the Alabama-stage exclusion of Alaska Range and Brooks Range; replacement of a stale active Alaska introduction; Rockies before all related state teaching; Alaska as the final mountain cohort with a two-section lead after the Southwest; immediate two- or three-target retrieval; partial lower-48 mountain family review; the Alaska review prerequisite; deterministic alternating review pools; compatible river/lake family ordering; mixed review; and persisted review-pool identity. The complete fast baseline passed **111/111** checks.
+
+The complete Guided orchestration suite passed **24/24** desktop/mobile Chromium cases, including reset and retained-evidence routing, the new Alabama-stage persisted-block/reload regression, immediate retrieval, remediation, child provenance, family and mixed review, interrupted teaching, and generated river/lake batches. A focused physical-presentation set passed **6/6** desktop/mobile cases for Alaska framing, the Northeast camera override, and teaching-to-retrieval emphasis. `git diff --check` is part of final commit validation. No Safari, physical-device, or human pedagogical evaluation is claimed.
+
 ## Guided highlighted-feature teaching — 2026-09-13
 
 `check-guided-highlighted-feature-teaching.mjs` pins the shared state, mountain-range, river, and lake family/action copy, including singular cohorts and target-specific redirects. The complete fast baseline passed **111/111** checks, including canonical physical evidence, physical highlighting, Memory Trail audio deduplication, state teaching runtime, physical scheduling, and activity-audio validation.

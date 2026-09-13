@@ -272,6 +272,9 @@ function createPhysicalReviewPools(physicalFeatures) {
   const alaskaFeatures = physicalFeatures.filter(({ authoredStateIds = [] }) => (
     authoredStateIds.length > 0 && authoredStateIds.every((stateId) => stateId === "alaska")
   ));
+  const lowerFortyEightMountainTargetIds = lowerFortyEightFeatures
+    .filter(({ family }) => family === "mountain-range")
+    .map(({ targetId }) => targetId);
   const familyPools = [
     { id: "physical-family-review:mountain-range", family: "mountain-range", curriculumOrder: 10 },
     { id: "physical-family-review:river", family: "river", curriculumOrder: 20 },
@@ -284,7 +287,7 @@ function createPhysicalReviewPools(physicalFeatures) {
       .map(({ targetId }) => targetId)),
     minimumRetrievalSize: 3,
     preferredRetrievalSize: 4,
-    requiresFamilyComplete: true
+    requiresFamilyComplete: definition.family !== "mountain-range"
   })).filter(({ targetIds }) => targetIds.length >= 2);
   return Object.freeze([
     ...familyPools,
@@ -293,6 +296,7 @@ function createPhysicalReviewPools(physicalFeatures) {
       kind: "region",
       family: "mountain-range",
       targetIds: Object.freeze(alaskaFeatures.map(({ targetId }) => targetId)),
+      prerequisiteTargetIds: Object.freeze(lowerFortyEightMountainTargetIds),
       minimumRetrievalSize: 2,
       preferredRetrievalSize: 2,
       requiresFamilyComplete: true,
@@ -510,7 +514,11 @@ export function createGuidedLearningOrchestrationState(value = {}, config = UNIT
   const activeStatus = activeBlockId && validActiveStatuses.has(source.activeStatus)
     ? source.activeStatus
     : activeBlockId ? "pending" : null;
-  const cohortIds = new Set((config.physicalCohorts || []).map(({ id }) => id));
+  const learningCohortIds = new Set((config.physicalCohorts || []).map(({ id }) => id));
+  const cohortIds = new Set([
+    ...learningCohortIds,
+    ...(config.physicalReviewPools || []).map(({ id }) => id)
+  ]);
   const cohortMembersById = new Map((config.physicalCohorts || []).map((cohort) => [
     cohort.id,
     new Set(cohort.supportedMemberTargetIds)
@@ -519,7 +527,7 @@ export function createGuidedLearningOrchestrationState(value = {}, config = UNIT
     source.retrievedPhysicalCohortTargetIds && typeof source.retrievedPhysicalCohortTargetIds === "object"
       ? source.retrievedPhysicalCohortTargetIds
       : {}
-  ).filter(([cohortId]) => cohortIds.has(cohortId)).map(([cohortId, targetIds]) => [
+  ).filter(([cohortId]) => learningCohortIds.has(cohortId)).map(([cohortId, targetIds]) => [
     cohortId,
     uniqueStrings(targetIds).filter((targetId) => cohortMembersById.get(cohortId)?.has(targetId))
   ]));
@@ -785,6 +793,36 @@ function getPhysicalCohortGeographicEligibility(cohort, progression) {
   };
 }
 
+function getPhysicalCohortCurriculumEligibility(cohort, config, completedBlockIds) {
+  const curriculumOrder = Number(cohort?.curriculumOrder);
+  const earlierCohorts = (config?.physicalCohorts || [])
+    .filter((candidate) => (
+      candidate.family === cohort?.family
+      && Number(candidate.curriculumOrder) < curriculumOrder
+    ))
+    .sort((left, right) => (
+      left.curriculumOrder - right.curriculumOrder
+      || left.id.localeCompare(right.id)
+    ));
+  const featuresByTargetId = new Map((config?.physicalFeatures || [])
+    .map((feature) => [feature.targetId, feature]));
+  const missingEarlierTargetIds = earlierCohorts.flatMap((candidate) => (
+    candidate.supportedMemberTargetIds.filter((targetId) => {
+      const introductionBlockId = featuresByTargetId.get(targetId)?.introductionBlockId;
+      return !introductionBlockId || !completedBlockIds.has(introductionBlockId);
+    })
+  ));
+  return {
+    eligible: missingEarlierTargetIds.length === 0,
+    reason: missingEarlierTargetIds.length === 0
+      ? "earlier-family-cohorts-introduced"
+      : "earlier-family-cohort-introduction-pending",
+    curriculumOrder: Number.isFinite(curriculumOrder) ? curriculumOrder : null,
+    earlierCohortIds: earlierCohorts.map(({ id }) => id),
+    missingEarlierTargetIds
+  };
+}
+
 export function selectPhysicalCohortRetrievalSubset({
   cohort,
   introducedTargetIds = [],
@@ -1046,6 +1084,23 @@ export function getGuidedLearningPhysicalReviewEligibility(
       || (!configuredPool && Boolean(directProgress?.targets?.[targetId]))
     );
   });
+  const missingPrerequisiteTargetIds = uniqueStrings(cohort.prerequisiteTargetIds)
+    .filter((targetId) => {
+      const feature = featuresByTargetId.get(targetId);
+      return !feature || !normalized.completedBlockIds.includes(feature.introductionBlockId);
+    });
+  if (missingPrerequisiteTargetIds.length > 0) {
+    return {
+      cohortId,
+      eligible: false,
+      reason: "review-curriculum-prerequisites-incomplete",
+      learningEvent,
+      introducedTargetIds,
+      missingPrerequisiteTargetIds,
+      dueTargetIds: [],
+      targetIds: []
+    };
+  }
   if (cohort.requiresFamilyComplete && introducedTargetIds.length < cohort.targetIds.length) {
     return {
       cohortId,
@@ -1120,7 +1175,19 @@ export function getGuidedLearningPhysicalReviewEligibility(
       nextEligibleLearningEvent: Math.min(...records.map(({ dueAfterLearningEvent }) => dueAfterLearningEvent))
     };
   }
-  const minimumSize = Math.min(records.length, Math.max(2, Number(cohort.minimumRetrievalSize) || 2));
+  const minimumSize = Math.max(2, Number(cohort.minimumRetrievalSize) || 2);
+  if (records.length < minimumSize) {
+    return {
+      cohortId,
+      eligible: false,
+      reason: "awaiting-comparison-member-spacing",
+      learningEvent,
+      introducedTargetIds,
+      dueTargetIds: due.map(({ targetId }) => targetId),
+      targetIds: [],
+      nextEligibleLearningEvent: Math.min(...records.map(({ dueAfterLearningEvent }) => dueAfterLearningEvent))
+    };
+  }
   const preferredSize = Math.min(records.length, Math.max(minimumSize, Number(cohort.preferredRetrievalSize) || 3));
   const rotated = createDeterministicGuidedPhysicalRetrievalOrder(
     records.map(({ targetId }) => targetId),
@@ -1195,11 +1262,17 @@ export function selectGuidedLearningPostStatePhysicalReview({
     const eligibility = getGuidedLearningPhysicalReviewEligibility(normalized, cohort.id, config);
     const block = (config.blocks || []).find((candidate) => candidate.repeatable && candidate.cohortId === cohort.id);
     if (!block || !eligibility.eligible) return [];
-    return [{ block, cohort, eligibility }];
+    return [{
+      block,
+      cohort,
+      eligibility,
+      isImmediateRepeat: cohort.id === normalized.lastCompletedPhysicalCohortId
+    }];
   }).sort((left, right) => {
     const leftWeak = left.eligibility.candidates?.some(({ due, priority }) => due && priority === "earlier");
     const rightWeak = right.eligibility.candidates?.some(({ due, priority }) => due && priority === "earlier");
-    return Number(rightWeak) - Number(leftWeak)
+    return Number(left.isImmediateRepeat) - Number(right.isImmediateRepeat)
+      || Number(rightWeak) - Number(leftWeak)
       || left.cohort.curriculumOrder - right.cohort.curriculumOrder
       || left.cohort.id.localeCompare(right.cohort.id);
   });
@@ -1288,6 +1361,10 @@ export function selectGuidedLearningOrchestrationBlock({
   ));
   let evaluationsById = new Map(evaluations.map((evaluation) => [evaluation.blockId, evaluation]));
   const completedBlockIds = new Set(normalizedState.completedBlockIds);
+  const physicalCurriculumEligibilityByCohortId = new Map((config.physicalCohorts || []).map((cohort) => [
+    cohort.id,
+    getPhysicalCohortCurriculumEligibility(cohort, config, completedBlockIds)
+  ]));
   let cohortProgress = getPhysicalCohortProgress(config, completedBlockIds, evaluationsById, normalizedState);
   const cohortProgressById = new Map(cohortProgress.map((progress) => [progress.cohort.id, progress]));
   const reviewEligibilityByCohortId = new Map((config.physicalReviewPools || []).map((cohort) => [
@@ -1336,9 +1413,19 @@ export function selectGuidedLearningOrchestrationBlock({
   const activeBlock = normalizedState.activeBlockId
     ? config.blocks.find(({ id }) => id === normalizedState.activeBlockId)
     : null;
-  const activeEvaluation = activeBlock && (blockMatchesTargetedNeed(activeBlock)
+  const activePhysicalFeature = activeBlock?.featureId
+    ? config.physicalFeatures.find(({ id }) => id === activeBlock.featureId)
+    : null;
+  const activeIntroductionReady = activeBlock?.type !== GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_INTRODUCTION
+    || (
+      physicalGeographicEligibilityByCohortId.get(activePhysicalFeature?.learningCohortId)?.eligible
+      && physicalCurriculumEligibilityByCohortId.get(activePhysicalFeature?.learningCohortId)?.eligible
+    );
+  const activeEvaluation = activeBlock && (
+    blockMatchesTargetedNeed(activeBlock)
     || activeBlock.type === GUIDED_LEARNING_BLOCK_TYPES.RECONSTRUCTION_CHECKPOINT
-    || activeBlock.type === GUIDED_LEARNING_BLOCK_TYPES.POST_STATE_RECONSTRUCTION_REVIEW)
+    || activeBlock.type === GUIDED_LEARNING_BLOCK_TYPES.POST_STATE_RECONSTRUCTION_REVIEW
+  ) && activeIntroductionReady
     ? evaluationsById.get(normalizedState.activeBlockId)
     : null;
   const inProgressFeature = featureProgress.find(({ feature, inProgress }) => (
@@ -1371,11 +1458,13 @@ export function selectGuidedLearningOrchestrationBlock({
       blockId: block.id,
       cohortId: cohort.id,
       curriculumOrder: cohort.curriculumOrder ?? Number.MAX_SAFE_INTEGER,
+      isImmediateRepeat: cohort.id === normalizedState.lastCompletedPhysicalCohortId,
       hasWeakDueTarget: candidates.some(({ due, priority }) => due && priority === "earlier"),
       earliestDueLearningEvent: Math.min(...candidates.filter(({ due }) => due).map(({ dueAfterLearningEvent }) => dueAfterLearningEvent))
     }];
   }).sort((left, right) => (
-    Number(right.hasWeakDueTarget) - Number(left.hasWeakDueTarget)
+    Number(left.isImmediateRepeat) - Number(right.isImmediateRepeat)
+    || Number(right.hasWeakDueTarget) - Number(left.hasWeakDueTarget)
     || left.earliestDueLearningEvent - right.earliestDueLearningEvent
     || left.curriculumOrder - right.curriculumOrder
     || left.cohortId.localeCompare(right.cohortId)
@@ -1388,6 +1477,7 @@ export function selectGuidedLearningOrchestrationBlock({
       && allowsPhysicalSequence
       && (!targetedPhysicalFamily || feature.family === targetedPhysicalFamily)
       && physicalGeographicEligibilityByCohortId.get(feature.learningCohortId)?.eligible
+      && physicalCurriculumEligibilityByCohortId.get(feature.learningCohortId)?.eligible
     ))
     .map(({ feature, eligibilityMilestone }) => ({
       cohortId: feature.learningCohortId,
@@ -1475,6 +1565,7 @@ export function selectGuidedLearningOrchestrationBlock({
       const queuedIndex = physicalQueue.findIndex(({ featureId }) => featureId === progress.feature.id);
       const paced = physicalInterleaveBlocked && queuedIndex >= 0;
       const geographicEligibility = physicalGeographicEligibilityByCohortId.get(progress.feature.learningCohortId);
+      const curriculumEligibility = physicalCurriculumEligibilityByCohortId.get(progress.feature.learningCohortId);
       return {
         featureId: progress.feature.id,
         targetId: progress.feature.targetId,
@@ -1498,6 +1589,8 @@ export function selectGuidedLearningOrchestrationBlock({
               ? paced ? "pacing-blocked" : "queued"
               : progress.introductionEvaluation?.eligible && geographicEligibility && !geographicEligibility.eligible
                 ? "geographic-progression-blocked"
+              : progress.introductionEvaluation?.eligible && curriculumEligibility && !curriculumEligibility.eligible
+                ? "family-curriculum-order-blocked"
               : "prerequisite-blocked",
         queuePosition: queuedIndex >= 0 ? queuedIndex + 1 : null,
         selected: progress.feature.blockIds.includes(selectedBlock.id),
@@ -1509,6 +1602,8 @@ export function selectGuidedLearningOrchestrationBlock({
               ? "waiting-in-deterministic-queue"
               : progress.introductionEvaluation?.eligible && geographicEligibility && !geographicEligibility.eligible
                 ? geographicEligibility.reason
+              : progress.introductionEvaluation?.eligible && curriculumEligibility && !curriculumEligibility.eligible
+                ? curriculumEligibility.reason
               : progress.completed
                 ? "sequence-completed"
                 : progress.inProgress
@@ -1635,10 +1730,12 @@ export function selectGuidedLearningOrchestrationBlock({
       regionalStage: progress.cohort.regionalStage,
       maximumLeadStages: progress.cohort.maximumLeadStages,
       geographicEligibility: cloneJson(physicalGeographicEligibilityByCohortId.get(progress.cohort.id)),
+      curriculumEligibility: cloneJson(physicalCurriculumEligibilityByCohortId.get(progress.cohort.id)),
       authoredMemberTargetIds: [...progress.cohort.authoredMemberTargetIds],
       supportedMemberTargetIds: [...progress.cohort.supportedMemberTargetIds],
       members: cloneJson(progress.members),
       currentlyEligibleTargetIds: physicalGeographicEligibilityByCohortId.get(progress.cohort.id)?.eligible
+        && physicalCurriculumEligibilityByCohortId.get(progress.cohort.id)?.eligible
         ? progress.members
             .filter(({ prerequisiteStatus }) => ["covered-and-introduced", "covered-awaiting-introduction"].includes(prerequisiteStatus))
             .map(({ targetId }) => targetId)
@@ -1934,7 +2031,7 @@ export function validateGuidedLearningOrchestrationConfig(config = UNITED_STATES
     if (!Number.isInteger(cohort.regionalStage) || cohort.regionalStage < 1 || cohort.regionalStage > 11) {
       errors.push(`${cohort.id} has an invalid regional progression stage.`);
     }
-    if (!Number.isInteger(cohort.maximumLeadStages) || cohort.maximumLeadStages < 0 || cohort.maximumLeadStages > 1) {
+    if (!Number.isInteger(cohort.maximumLeadStages) || cohort.maximumLeadStages < 0 || cohort.maximumLeadStages > 2) {
       errors.push(`${cohort.id} has an invalid regional lead allowance.`);
     }
     if (cohort.minimumRetrievalSize < 2) errors.push(`${cohort.id} permits trivial one-target retrieval.`);
@@ -1966,6 +2063,9 @@ export function validateGuidedLearningOrchestrationConfig(config = UNITED_STATES
     }
     if (pool.targetIds.some((targetId) => !physicalTargetIds.has(targetId))) {
       errors.push(`${pool.id} references an unknown physical target.`);
+    }
+    if ((pool.prerequisiteTargetIds || []).some((targetId) => !physicalTargetIds.has(targetId))) {
+      errors.push(`${pool.id} references an unknown physical review prerequisite.`);
     }
     if (pool.kind === "mixed" && new Set(pool.families || []).size < 2) {
       errors.push(`${pool.id} is not a meaningful mixed-family review pool.`);
