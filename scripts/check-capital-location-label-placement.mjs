@@ -72,10 +72,25 @@ function assertCollisionFree(layout, expectedCount, markerObstacles = []) {
         `${placement.id} label must clear ${marker.id} marker`
       );
     });
-    if (placement.leader) {
-      assert.ok(placement.gapPx >= layout.leaderGap);
-      assert.ok([placement.leader.start.x, placement.leader.start.y, placement.leader.end.x, placement.leader.end.y].every(Number.isFinite));
+    assert.ok(placement.leader, `${placement.id} must retain a visible attribution line.`);
+    assert.ok([placement.leader.start.x, placement.leader.start.y, placement.leader.end.x, placement.leader.end.y].every(Number.isFinite));
+    const ownMarker = markerObstacles.find(({ id }) => id === placement.id);
+    if (ownMarker) {
+      const ownRadius = ownMarker.rect.width / 2;
+      assert.ok(
+        Math.hypot(
+          placement.leader.start.x - placement.point.x,
+          placement.leader.start.y - placement.point.y
+        ) >= ownRadius,
+        `${placement.id} connector must reach its marker edge.`
+      );
     }
+    const end = placement.leader.end;
+    const onHorizontalEdge = Math.abs(end.x - placement.box.x) < 0.001
+      || Math.abs(end.x - placement.box.right) < 0.001;
+    const onVerticalEdge = Math.abs(end.y - placement.box.y) < 0.001
+      || Math.abs(end.y - placement.box.bottom) < 0.001;
+    assert.ok(onHorizontalEdge || onVerticalEdge, `${placement.id} connector must reach its label edge.`);
   });
 }
 
@@ -128,10 +143,10 @@ const displacedLayout = layoutCapitalLocationFeedbackLabels({
     { x: 51, y: 234, width: 92, height: 24 }
   ]
 });
-assert.ok(displacedLayout.placements[0].leader, "A label displaced beyond the first ring uses a leader.");
+assert.ok(displacedLayout.placements[0].leader, "A displaced label retains its attribution line.");
 
 const wideInput = createLayoutInput("texas", { width: 1100, height: 680 }, 7.2);
 const wideLayout = layoutCapitalLocationFeedbackLabels(wideInput);
-assert.ok(wideLayout.placements.every(({ leader }) => !leader), "Widely separated labels do not add unnecessary leaders.");
+assert.ok(wideLayout.placements.every(({ leader }) => leader), "Widely separated labels retain one attribution line per city.");
 
-console.log("Capital-location feedback label placement passed for Colorado, Connecticut, Rhode Island, Delaware, Texas, dense four-label feedback, responsive viewports, and multiple zoom levels.");
+console.log("Capital-location label placement keeps one marker-to-label connector per disclosed city across dense, wide, responsive, and transformed layouts.");

@@ -114,14 +114,22 @@ function rectInsideViewport(rect, viewport, inset) {
 
 function closestPointOnRect(point, rect) {
   const box = normalizeRect(rect);
+  if (pointInsideRect(point, box)) {
+    const edges = [
+      { distance: point.x - box.x, point: { x: box.x, y: point.y } },
+      { distance: box.right - point.x, point: { x: box.right, y: point.y } },
+      { distance: point.y - box.y, point: { x: point.x, y: box.y } },
+      { distance: box.bottom - point.y, point: { x: point.x, y: box.bottom } }
+    ];
+    return edges.sort((left, right) => left.distance - right.distance)[0].point;
+  }
   return {
     x: Math.max(box.x, Math.min(box.right, point.x)),
     y: Math.max(box.y, Math.min(box.bottom, point.y))
   };
 }
 
-function createLeader(label, box, gap, threshold) {
-  if (gap < threshold) return null;
+function createLeader(label, box, gap) {
   const end = closestPointOnRect(label.point, box);
   const dx = end.x - label.point.x;
   const dy = end.y - label.point.y;
@@ -162,7 +170,7 @@ function candidateScore(candidate, label, markerObstacles, controlRects, placed,
   return score;
 }
 
-function createEdgeCandidates(label, viewport, inset, gap, threshold) {
+function createEdgeCandidates(label, viewport, inset, gap) {
   const width = Math.max(1, finite(label.width, 1));
   const height = Math.max(1, finite(label.height, 1));
   const step = Math.max(18, height + 6);
@@ -180,7 +188,7 @@ function createEdgeCandidates(label, viewport, inset, gap, threshold) {
     gap,
     ringRank: candidateGaps.length,
     directionRank: index,
-    leader: createLeader(label, candidate.box, gap, threshold)
+    leader: createLeader(label, candidate.box, gap)
   }));
 }
 
@@ -213,22 +221,46 @@ export function layoutCapitalLocationFeedbackLabels({
     const candidates = candidateGaps.flatMap((gap, ringRank) => (
       directionOrder(label).map((direction, directionRank) => {
         const box = createCandidateBox(label, direction, gap);
-        return { box, direction, gap, ringRank, directionRank, leader: createLeader(label, box, gap, leaderGap) };
+        return { box, direction, gap, ringRank, directionRank, leader: createLeader(label, box, gap) };
       })
     ));
     const edgeGap = candidateGaps.at(-1) + 12;
-    candidates.push(...createEdgeCandidates(label, normalizedViewport, viewportInset, edgeGap, leaderGap));
+    candidates.push(...createEdgeCandidates(label, normalizedViewport, viewportInset, edgeGap));
     const safeCandidates = candidates.filter(({ box, leader }) => {
       if (!rectInsideViewport(box, normalizedViewport, viewportInset)) return false;
       if (label.role !== "capital" && capitalStarRect && capitalLocationLabelRectsOverlap(box, capitalStarRect, 2)) return false;
       if (placements.some((placement) => capitalLocationLabelRectsOverlap(box, placement.box, labelGutter))) return false;
-      if (leader && label.role !== "capital" && capitalStarRect && segmentIntersectsRect(leader, capitalStarRect)) return false;
+      if (
+        leader
+        && label.role !== "capital"
+        && capitalStarRect
+        && !pointInsideRect(label.point, capitalStarRect)
+        && segmentIntersectsRect(leader, capitalStarRect)
+      ) return false;
       return true;
     });
-    const considered = safeCandidates.length > 0 ? safeCandidates : candidates.filter(({ box }) => (
-      rectInsideViewport(box, normalizedViewport, viewportInset)
-      && (label.role === "capital" || !capitalStarRect || !capitalLocationLabelRectsOverlap(box, capitalStarRect, 2))
+    const routeClearCandidates = safeCandidates.filter(({ box, leader }) => (
+      !normalizedMarkers.some((marker) => (
+        marker.id !== label.id
+        && !pointInsideRect(label.point, marker.rect)
+        && (capitalLocationLabelRectsOverlap(box, marker.rect, marker.revealed ? 1 : 0)
+        || segmentIntersectsRect(leader, marker.rect))
+      ))
+      && !normalizedControls.some((rect) => (
+        capitalLocationLabelRectsOverlap(box, rect)
+        || segmentIntersectsRect(leader, rect)
+      ))
+      && !placements.some((placement) => (
+        segmentIntersectsRect(leader, placement.box)
+        || (leader && placement.leader && segmentsIntersect(leader.start, leader.end, placement.leader.start, placement.leader.end))
+      ))
     ));
+    const considered = routeClearCandidates.length > 0
+      ? routeClearCandidates
+      : safeCandidates.length > 0 ? safeCandidates : candidates.filter(({ box }) => (
+          rectInsideViewport(box, normalizedViewport, viewportInset)
+          && (label.role === "capital" || !capitalStarRect || !capitalLocationLabelRectsOverlap(box, capitalStarRect, 2))
+        ));
     const selected = considered
       .map((candidate) => ({ ...candidate, score: candidateScore(candidate, label, normalizedMarkers, normalizedControls, placements, capitalStarRect) }))
       .sort((left, right) => left.score - right.score || left.directionRank - right.directionRank)[0];

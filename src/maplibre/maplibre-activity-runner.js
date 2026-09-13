@@ -29,7 +29,7 @@ import {
   getCapitalLocationQuestionChoice,
   getCapitalLocationQuestionGeoJson
 } from "./capital-location-question.js?v=20260906-capital-location-choices-1";
-import { CapitalLocationFeedbackLabelOverlay } from "./capital-location-feedback-labels.js?v=20260908-capital-label-placement-1";
+import { CapitalLocationFeedbackLabelOverlay } from "./capital-location-feedback-labels.js?v=20260912-guided-capital-sequencing-1";
 
 const colors = {
   ink: "#172033",
@@ -7343,6 +7343,10 @@ export class MapLibreActivityRunner {
       type: "FeatureCollection",
       features: this.activity.targets
         .filter((feature) => this.completedIds.includes(feature.id))
+        .filter((feature) => !(
+          feature.id === this.capitalLocationQuestion?.targetId
+          && this.capitalLocationQuestion?.phase === "feedback"
+        ))
         .map((feature) => ({
           type: "Feature",
           properties: {

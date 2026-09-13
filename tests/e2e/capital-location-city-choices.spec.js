@@ -160,16 +160,15 @@ async function expectFeedbackLabelLayout(page, expectedCount) {
       };
       expect(rectsOverlap(placement.box, markerBox, 1), `${placement.id} / marker ${choice.id}`).toBe(false);
     }
-    if (placement.leader) {
-      expect(placement.gapPx).toBeGreaterThanOrEqual(layout.leaderGap);
-    }
+    expect(placement.leader, placement.id).toBeTruthy();
     const labelBox = await page.locator(`.capital-location-feedback-label[data-choice-id="${placement.id}"]`).boundingBox();
     expect(labelBox).toBeTruthy();
+    await expect(page.locator(`.capital-location-feedback-leader--line[data-choice-id="${placement.id}"]`)).toHaveCount(1);
     expect(Math.abs(labelBox.x - state.mapRect.left - placement.box.x)).toBeLessThan(1.5);
     expect(Math.abs(labelBox.y - state.mapRect.top - placement.box.y)).toBeLessThan(1.5);
   }
   await expect(page.locator(".capital-location-feedback-leader--line")).toHaveCount(
-    layout.placements.filter(({ leader }) => leader).length
+    layout.placements.length
   );
   return state;
 }
@@ -191,6 +190,7 @@ test("Colorado capital-location dots stay neutral and feedback labels remain col
   expect(answering.labelRenderedIds).toEqual([]);
   expect(answering.feedbackLabelLayout).toMatchObject({ visible: false, placements: [] });
   await expect(page.locator(".capital-location-feedback-label")).toHaveCount(0);
+  await expect(page.locator(".capital-location-feedback-leader--line")).toHaveCount(0);
   expect(answering.markerRadius).toEqual(["interpolate", ["linear"], ["zoom"], 3, 4.5, 7, 6.5, 10, 8]);
   expect(answering.hitRadius).toEqual(["interpolate", ["linear"], ["zoom"], 3, 12, 7, 16, 10, 18]);
   expect(JSON.stringify(answering.markerColor)).not.toContain("capitalLocationRole");
@@ -277,7 +277,7 @@ test("Colorado capital-location dots stay neutral and feedback labels remain col
   await testInfo.attach("Colorado collision-aware labels", { path: screenshotPath, contentType: "image/png" });
 });
 
-test("capital-location feedback identifies a correct choice across a large state without unnecessary leaders", async ({ page }) => {
+test("capital-location feedback connects every revealed city across a large state", async ({ page }, testInfo) => {
   await openStandaloneCapitalActivity(page, "us-capitals-08");
   await selectCapital(page, "austin-tx");
   await clickChoice(page, "texas", "Austin");
@@ -289,7 +289,9 @@ test("capital-location feedback identifies a correct choice across a large state
   expect(correct.choices.filter(({ revealCapital }) => revealCapital).map(({ name }) => name)).toEqual([
     "Austin"
   ]);
-  expect(correct.feedbackLabelLayout.placements.every(({ leader }) => !leader)).toBe(true);
+  expect(correct.feedbackLabelLayout.placements.every(({ leader }) => leader)).toBe(true);
+  expect(correct.completedLabelTargetIds).not.toContain("austin-tx");
+  await page.screenshot({ path: testInfo.outputPath("texas-capital-location-feedback.png") });
 });
 
 test("capital-location feedback names a wrong-state city and keeps Delaware labels", async ({ page }) => {

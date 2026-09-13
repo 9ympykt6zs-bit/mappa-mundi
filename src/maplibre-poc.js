@@ -209,6 +209,10 @@ import {
 import { resolveMemoryTrailNewTargetLimit } from "./memory-trail-new-target-limit.js?v=20260621-daily-trail-co-progression-2";
 import { createMasteryDebugController } from "./mastery-debug.js?v=20260805-mastery-debug-1";
 import { chooseMemoryTrailRetrievalPromptType } from "./memory-trail-prompt-selector.js";
+import {
+  chooseUnitedStatesCapitalRetrievalPromptType,
+  getSuccessfulCapitalNamingTargetIds
+} from "./united-states-capital-retrieval-sequencing.js?v=20260912-guided-capital-retrieval-1";
 import { findMemoryTrailGuidedExposureTarget } from "./memory-trail-introduction-guard.js";
 
 const APP_NAME = "Mappa Mundi";
@@ -4558,7 +4562,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260821-central-america-graduation-1"),
       import("./maplibre/activity-session.js?v=20260821-central-america-graduation-1"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260908-capital-label-placement-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260912-guided-capital-sequencing-1"),
       import("./chip-speech.js?v=20260728-activity-audio-1")
     ]).then(([
       ,
@@ -10713,6 +10717,7 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     guidedPersistentCamera,
     guidedPoliticalCamera: options.guidedPoliticalCamera || null,
     guidedLocatingOnly: options.guidedLocatingOnly === true,
+    capitalNamingEvidenceTargetIds: [...new Set(options.capitalNamingEvidenceTargetIds || [])],
     guidedPhysicalCheckpoint,
     dailyTrailFixedCameraLocked: false,
     dailyTrailMobileSectionQuizCamera: normalizeMemoryTrailSectionQuizView(options.dailyTrailMobileSectionQuizCamera),
@@ -12570,6 +12575,7 @@ function startMemoryTrail(options = {}) {
     guidedPersistentCamera: options.guidedPersistentCamera,
     guidedPoliticalCamera: options.guidedPoliticalCamera,
     guidedLocatingOnly: options.guidedLocatingOnly === true,
+    capitalNamingEvidenceTargetIds: options.capitalNamingEvidenceTargetIds,
     guidedPhysicalCheckpoint: options.guidedPhysicalCheckpoint
   });
   publishDailyTrailCheckpointRuntimeSnapshot(activeStudySession.memoryTrail, {
@@ -12669,6 +12675,9 @@ function restartMemoryTrail() {
   hideMemoryTrailOverlay();
   const previousRevealedTargetIds = [...(activeStudySession.memoryTrail?.previousRevealedTargetIds || activeStudySession.revealedTargetIds || [])];
   const guidedLocatingOnly = activeStudySession.memoryTrail?.guidedLocatingOnly === true;
+  const capitalNamingEvidenceTargetIds = [
+    ...(activeStudySession.memoryTrail?.capitalNamingEvidenceTargetIds || [])
+  ];
   clearMemoryTrailState({ restoreReveals: false });
   lastMemoryTrailInstructionKey = "";
   lastSpokenMemoryTrailInstructionKey = "";
@@ -12689,6 +12698,7 @@ function restartMemoryTrail() {
     dailyTrailMobileSectionQuizCamera: session.currentActivity?.map?.dailyTrailMobileSectionQuizCamera || null,
     guidedPersistentCamera,
     guidedLocatingOnly,
+    capitalNamingEvidenceTargetIds,
     guidedPhysicalCheckpoint: activeStudySession.guidedPhysicalCheckpointConfig
   });
   activeStudySession.memoryTrail.previousRevealedTargetIds = previousRevealedTargetIds;
@@ -14224,6 +14234,18 @@ function chooseNextPrompt(memoryTrail) {
 
 function chooseRetrievalPromptType(memoryTrail, stats, options = {}) {
   if (memoryTrail?.guidedLocatingOnly) return "name_to_place";
+  const capitalItem = isUnitedStatesMemoryTrail(memoryTrail)
+    ? getCanonicalMemoryTrailPlan(memoryTrail)?.allItems?.find((item) => (
+        item?.type === "capital" && item.targetId === stats?.targetId
+      ))
+    : null;
+  if (capitalItem) {
+    return chooseUnitedStatesCapitalRetrievalPromptType({
+      stats,
+      hasPriorNamingSuccess: memoryTrail.capitalNamingEvidenceTargetIds?.includes(stats.targetId),
+      preferEasier: options.preferEasier === true
+    });
+  }
   return chooseMemoryTrailRetrievalPromptType({
     isDailyTrail: isDailyTrailMemoryTrail(memoryTrail),
     retrievalPromptCount: memoryTrail.retrievalPromptCount,
@@ -21717,6 +21739,10 @@ function startUnitedStatesMemoryTrailStepIfNeeded(resumeSnapshot = null) {
     .filter((item) => isUnitedStatesMemoryTrailWeakReviewItem(activeUnitedStatesMemoryTrailSession.state, item))
     .map((item) => item.targetId)
     .filter(Boolean);
+  const capitalNamingEvidenceTargetIds = getSuccessfulCapitalNamingTargetIds(
+    plannedItems,
+    loadCanonicalEvidenceRepository()
+  );
   const guidedPoliticalCamera = createUnitedStatesGuidedPoliticalCameraDecision({
     activityId: activity.id,
     plan: activeUnitedStatesMemoryTrailSession.plan,
@@ -21755,6 +21781,7 @@ function startUnitedStatesMemoryTrailStepIfNeeded(resumeSnapshot = null) {
     sectionIndex: Number.isFinite(Number(activity.sequence)) ? Number(activity.sequence) - 1 : null,
     sectionQuizView: activity.map?.regionView || null,
     guidedPoliticalCamera,
+    capitalNamingEvidenceTargetIds,
     suppressInitialPrompt: hasUsTrailResumeSnapshot
   });
 
@@ -21813,6 +21840,55 @@ function createUnitedStatesMemoryTrailSnapshot(memoryTrail) {
   };
 }
 
+function enforceRestoredUnitedStatesCapitalRetrievalPrerequisite(memoryTrail) {
+  if (
+    memoryTrail?.phase !== "answering"
+    || memoryTrail.currentPromptType !== "name_to_place"
+  ) return false;
+
+  const item = getCanonicalMemoryTrailPlan(memoryTrail)?.allItems?.find((candidate) => (
+    candidate?.type === "capital" && candidate.targetId === memoryTrail.currentPromptTargetId
+  ));
+  const stats = memoryTrail.targetStats?.[memoryTrail.currentPromptTargetId];
+  const hasNamingSuccess = (Number(stats?.placeToNameCorrect) || 0) >= 1
+    || memoryTrail.capitalNamingEvidenceTargetIds?.includes(stats?.targetId);
+  if (!item || !stats || hasNamingSuccess) return false;
+
+  const previousPromptKey = memoryTrail.currentPromptKey;
+  memoryTrail.currentPromptType = "place_to_name";
+  memoryTrail.currentPromptReason = "restored capital requires successful naming before locating";
+  memoryTrail.currentPromptKey = previousPromptKey.includes(":name_to_place:")
+    ? previousPromptKey.replace(":name_to_place:", ":place_to_name:")
+    : previousPromptKey;
+  memoryTrail.promptName = "";
+  memoryTrail.responseChipTargetId = null;
+  memoryTrail.correction = null;
+  memoryTrail.answerChoices = buildMemoryTrailAnswerChoices(
+    memoryTrail,
+    memoryTrail.currentPromptTargetId,
+    memoryTrail.currentPromptKey
+  );
+  memoryTrail.message = getMemoryTrailPromptMessage(memoryTrail, getTargetById(
+    memoryTrail,
+    memoryTrail.currentPromptTargetId
+  ), {
+    targetId: memoryTrail.currentPromptTargetId,
+    promptType: "place_to_name",
+    mode: memoryTrail.currentPromptMode,
+    reason: memoryTrail.currentPromptReason
+  });
+  const promptHistoryEntry = memoryTrail.promptHistory?.at(-1);
+  if (
+    promptHistoryEntry?.targetId === memoryTrail.currentPromptTargetId
+    && !promptHistoryEntry.result
+  ) {
+    promptHistoryEntry.promptKey = memoryTrail.currentPromptKey;
+    promptHistoryEntry.promptType = "place_to_name";
+    promptHistoryEntry.reason = memoryTrail.currentPromptReason;
+  }
+  return true;
+}
+
 function restoreUnitedStatesMemoryTrailMemoryTrailSnapshot(memoryTrail, snapshot = {}) {
   if (!memoryTrail || snapshot?.source !== UNITED_STATES_MEMORY_TRAIL_SOURCE) {
     return false;
@@ -21849,6 +21925,7 @@ function restoreUnitedStatesMemoryTrailMemoryTrailSnapshot(memoryTrail, snapshot
   memoryTrail.currentPracticeWindow = Array.isArray(snapshot.currentPracticeWindowIds)
     ? snapshot.currentPracticeWindowIds.map((targetId) => byId.get(targetId)).filter(Boolean)
     : memoryTrail.currentPracticeWindow;
+  enforceRestoredUnitedStatesCapitalRetrievalPrerequisite(memoryTrail);
   memoryTrail.currentPromptStartedAtMs = null;
   runner?.setMemoryTrailStudyTargetEmphasisSuppressed?.(
     shouldSuppressDailyTrailStudyTargetEmphasis(memoryTrail),
@@ -28535,6 +28612,9 @@ function getCapitalLocationQuestionVisualStateForTest() {
     hitRenderedIds: renderedIds(activeHitLayer),
     starRenderedIds: renderedIds("capital-location-choice-star"),
     labelRenderedIds: renderedIds("capital-location-choice-label"),
+    completedLabelTargetIds: (runner.getCompletedLabelGeoJson?.().features || [])
+      .map((feature) => feature.properties?.id)
+      .filter(Boolean),
     markerRadius: map?.getPaintProperty?.("capital-location-choice-marker", "circle-radius") || null,
     markerColor: map?.getPaintProperty?.("capital-location-choice-marker", "circle-color") || null,
     markerStrokeColor: map?.getPaintProperty?.("capital-location-choice-marker", "circle-stroke-color") || null,

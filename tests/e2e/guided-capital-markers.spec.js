@@ -85,6 +85,28 @@ async function waitForCapitalPrompt(page, targetId, promptType = "guided") {
   return page.evaluate(() => window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState());
 }
 
+async function advanceToCapitalLocationPrompt(page) {
+  for (let attempt = 0; attempt < 16; attempt += 1) {
+    await expect.poll(() => page.evaluate(() => (
+      window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase
+    )), { timeout: 15_000 }).toBe("answering");
+    const state = await page.evaluate(() => ({
+      trail: window.__MAPPA_TEST_API__.getActiveMemoryTrailState(),
+      capital: window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()
+    }));
+    if (state.trail.currentPromptType === "name_to_place" && state.capital?.phase === "answering") {
+      return state.capital;
+    }
+    const promptKey = state.trail.promptHistory.at(-1)?.promptKey;
+    await page.evaluate(() => window.__MAPPA_TEST_API__.answerActiveMemoryTrailCorrectly());
+    await expect.poll(() => page.evaluate((previousKey) => {
+      const current = window.__MAPPA_TEST_API__.getActiveMemoryTrailState();
+      return current?.phase === "answering" && current.promptHistory.at(-1)?.promptKey !== previousKey;
+    }, promptKey), { timeout: 15_000 }).toBe(true);
+  }
+  throw new Error("Guided capital locating did not become eligible after successful naming.");
+}
+
 function expectGuidedCityContext(state, { targetId, coordinate, names }) {
   expect(state).toMatchObject({
     targetId,
@@ -106,6 +128,7 @@ function expectGuidedCityContext(state, { targetId, coordinate, names }) {
   expect(state.feedbackLabelLayout.placements.map(({ id }) => id)).toEqual(
     expect.arrayContaining(state.choices.map(({ id }) => id))
   );
+  expect(state.feedbackLabelLayout.placements.every(({ leader }) => leader)).toBe(true);
   expect(state.hitRadius).toBe(22);
 }
 
@@ -114,6 +137,7 @@ async function expectTeachingContextInsideMap(page, fixture) {
   await expect.poll(() => page.evaluate(() => window.maplibrePocMap?.isMoving?.())).toBe(false);
   const state = await page.evaluate(() => window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState());
   expectGuidedCityContext(state, fixture);
+  await expect(page.locator(".capital-location-feedback-leader--line")).toHaveCount(3);
   state.choices.forEach(({ name, clientPoint }) => {
     expect(clientPoint.clientX, `${name} left`).toBeGreaterThanOrEqual(state.mapRect.left + 8);
     expect(clientPoint.clientX, `${name} right`).toBeLessThanOrEqual(state.mapRect.right - 8);
@@ -177,26 +201,58 @@ test("Guided Learning separates Cheyenne's precise star from its forgiving tap t
     window.__MAPPA_TEST_API__.getActiveMemoryTrailState()
   ))).toMatchObject({
     phase: "answering",
-    currentPromptType: "name_to_place",
-    activeHighlightIds: []
+    currentPromptType: "place_to_name"
   });
+  await expect(page.locator(".capital-location-feedback-label")).toHaveCount(0);
+  await expect(page.locator(".capital-location-feedback-leader--line")).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => (
     window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()?.starRenderedIds || []
   ))).toEqual([]);
-  const retrieval = await page.evaluate(() => (
-    window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()
+  const namingPromptBeforeReload = await page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()
   ));
-  expect(retrieval).toMatchObject({
-    active: true,
+  await page.reload();
+  await page.locator("#launch-start-button").click();
+  await page.evaluate(() => window.__mappaMundiLoadApp());
+  if (await page.locator("#launch-screen").isVisible()) {
+    await page.locator("#launch-start-button").click();
+  }
+  await expect(page.locator("#app-shell-title")).toHaveText("Main Menu");
+  await page.evaluate(() => window.__MAPPA_TEST_API__.startUnitedStatesGuidedLearningAtSection("us-capitals-07"));
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()
+  )), { timeout: 20_000 }).toMatchObject({
     phase: "answering",
-    dragPanEnabled: true,
-    scrollZoomEnabled: true
+    currentPromptTargetId: namingPromptBeforeReload.currentPromptTargetId,
+    currentPromptType: "place_to_name"
   });
+  await expect(page.locator(".capital-location-feedback-label")).toHaveCount(0);
+  await expect(page.locator(".capital-location-feedback-leader--line")).toHaveCount(0);
+  const evidenceCountBefore = await page.evaluate((key) => (
+    JSON.parse(localStorage.getItem(key) || "{}").events?.length || 0
+  ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
+  const namingTargetId = await page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.currentPromptTargetId
+  ));
+  await page.evaluate(() => window.__MAPPA_TEST_API__.answerActiveMemoryTrailCorrectly());
+  const evidence = await page.evaluate((key) => (
+    JSON.parse(localStorage.getItem(key) || "{}").events
+  ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
+  expect(evidence).toHaveLength(evidenceCountBefore + 1);
+  expect(evidence.at(-1)).toMatchObject({
+    conceptId: expect.stringContaining(`:${namingTargetId}`),
+    skillId: "identifying",
+    sourceMode: "us-memory-trail",
+    outcome: "correct"
+  });
+  expect(evidence.at(-1).conceptId).toContain("capital-naming:");
+
+  const retrieval = await advanceToCapitalLocationPrompt(page);
   expect(retrieval.choices).toHaveLength(150);
   expect(retrieval.choices.filter(({ inTargetState }) => inTargetState)).toHaveLength(3);
-  expect(retrieval.starRenderedIds).toEqual([]);
-  expect(retrieval.labelRenderedIds).toEqual([]);
-
+  expect(retrieval.feedbackLabelLayout).toMatchObject({ visible: false, placements: [] });
+  await expect(page.locator(".capital-location-feedback-label")).toHaveCount(0);
+  await expect(page.locator(".capital-location-feedback-leader--line")).toHaveCount(0);
   const distractor = retrieval.choices.find(({ inTargetState, role }) => inTargetState && role === "distractor");
   await page.evaluate(({ lon, lat }) => {
     window.maplibrePocMap.easeTo({ center: [lon, lat], zoom: 6, duration: 0 });
@@ -206,30 +262,29 @@ test("Guided Learning separates Cheyenne's precise star from its forgiving tap t
     window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()
   ));
   const transformedDistractor = transformedRetrieval.choices.find(({ id }) => id === distractor.id);
-  const evidenceCountBefore = await page.evaluate((key) => (
+  const locationEvidenceCountBefore = await page.evaluate((key) => (
     JSON.parse(localStorage.getItem(key) || "{}").events?.length || 0
   ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
   await page.mouse.click(transformedDistractor.clientPoint.clientX, transformedDistractor.clientPoint.clientY);
   await expect.poll(() => page.evaluate(() => (
     window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase
   ))).toBe("correction");
-  const evidence = await page.evaluate((key) => (
+  const locationEvidence = await page.evaluate((key) => (
     JSON.parse(localStorage.getItem(key) || "{}").events
   ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
-  expect(evidence).toHaveLength(evidenceCountBefore + 1);
-  expect(evidence.at(-1)).toMatchObject({
+  expect(locationEvidence).toHaveLength(locationEvidenceCountBefore + 1);
+  expect(locationEvidence.at(-1)).toMatchObject({
     conceptId: `capital-location:${retrieval.targetStateId}:${retrieval.targetId}`,
+    skillId: "locating",
     sourceMode: "us-memory-trail",
     outcome: "incorrect"
   });
-  expect(evidence.at(-1).conceptId).not.toContain("capital-location-choice:");
+  expect(locationEvidence.at(-1).conceptId).not.toContain("capital-location-choice:");
   const correction = await page.evaluate(() => (
     window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()
   ));
   expect(correction.choices.filter(({ revealLabel }) => revealLabel)).toHaveLength(3);
-  expect(correction.choices.filter(({ revealCapital }) => revealCapital).map(({ id }) => id)).toEqual([
-    retrieval.targetId
-  ]);
+  expect(correction.feedbackLabelLayout.placements.every(({ leader }) => leader)).toBe(true);
 });
 
 test("a small-state capital uses the same authored-coordinate star and accessible hit target", async ({ page }) => {
@@ -302,6 +357,24 @@ test("Boise teaching restores its dense three-city context and relayouts after n
 });
 
 for (const fixture of [
+  {
+    stateLabel: "Massachusetts",
+    sectionId: "us-capitals-01",
+    stateIds: ["maine", "new-hampshire", "vermont", "massachusetts", "rhode-island", "connecticut"],
+    completedCapitalIds: ["augusta-me", "concord-nh", "montpelier-vt"],
+    targetId: "boston-ma",
+    coordinate: [-71.0589, 42.3601],
+    names: ["Boston", "Worcester", "Springfield"]
+  },
+  {
+    stateLabel: "New Hampshire",
+    sectionId: "us-capitals-01",
+    stateIds: ["maine", "new-hampshire", "vermont", "massachusetts", "rhode-island", "connecticut"],
+    completedCapitalIds: ["augusta-me"],
+    targetId: "concord-nh",
+    coordinate: [-71.5376, 43.2081],
+    names: ["Concord", "Manchester", "Nashua"]
+  },
   {
     stateLabel: "Utah",
     sectionId: "us-capitals-09",

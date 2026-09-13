@@ -20,6 +20,8 @@ White Mountains retains its original checkpoint completion dependency. That stab
 
 Each Reconstruction checkpoint additionally requires its own state items to be present in the U.S. Guided Learning progress as introduced. The prior-checkpoint chain makes earlier groups cumulative. Canonical `correct` or `assisted` state evidence remains available to the broader learning system, but cannot satisfy this Guided curriculum prerequisite after the Guided-only reset clears its state introductions. A launched child is revalidated against these prerequisites on reload.
 
+Capital teaching retains its three-city context and assisted capital-location evidence. The first independent retrieval for a newly learned capital is highlighted-place naming (`place_to_name`). Map locating (`name_to_place`) becomes eligible only after a real correct naming result in the active session or a persisted canonical `capital-naming:*` / `identifying` event. Incorrect naming and assisted teaching cannot unlock the harder form. After both skills have evidence, the capital-specific selector balances the two forms and uses naming when difficulty needs to be reduced; comparison cities remain outside curriculum, evidence, mastery, and persistence.
+
 ## Physical learning cohorts
 
 Physical retrieval requires meaningful alternatives: each authored Guided cohort contains two or three compatible targets. When the first target in an eligible cohort is selected, the whole cohort is introduced together, one feature at a time, and immediately handed to a locating checkpoint containing the same members. Guided Learning removes teaching highlights and labels before each independent response.
