@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY } from "../../src/canonical-learning-evidence-repository.js";
 import { unitedStatesMemoryTrailStorageKey } from "../../src/united-states-memory-trail-planner.js";
 
 const approvedUtahArizonaCamera = {
@@ -35,7 +36,7 @@ function createSeededState(itemIds = []) {
   };
 }
 
-async function openGuidedSection(page, sectionId, introducedItemIds = []) {
+async function openGuidedSection(page, sectionId, introducedItemIds = [], { captureAudio = false } = {}) {
   if (introducedItemIds.length > 0) {
     await page.addInitScript(({ key, state }) => {
       if (!localStorage.getItem(key)) {
@@ -53,6 +54,21 @@ async function openGuidedSection(page, sectionId, introducedItemIds = []) {
     await page.locator("#launch-start-button").click();
   }
   await expect(page.locator("#app-shell-title")).toHaveText("Main Menu");
+  if (captureAudio) {
+    await page.evaluate(async () => {
+      await import("/src/chip-speech.js?v=20260728-activity-audio-1");
+      window.__guidedTeachingAudio = [];
+      window.GeographyChipSpeech.setAudioMuted(false);
+      window.GeographyChipSpeech.speakLabelAndWait = async (label) => {
+        window.__guidedTeachingAudio.push(label);
+        return true;
+      };
+      window.GeographyChipSpeech.speakLabel = (label) => {
+        window.__guidedTeachingAudio.push(label);
+        return true;
+      };
+    });
+  }
   await page.evaluate((requestedSectionId) => (
     window.__MAPPA_TEST_API__.startUnitedStatesGuidedLearningAtSection(requestedSectionId)
   ), sectionId);
@@ -75,9 +91,19 @@ function expectCameraNear(actual, expected, tolerance = {}) {
 }
 
 test("Utah and Arizona state teaching keeps the approved Guided camera through target changes", async ({ page }) => {
-  await openGuidedSection(page, "us-states-09", ["state:nevada", "state:california"]);
+  await openGuidedSection(page, "us-states-09", ["state:nevada", "state:california"], { captureAudio: true });
 
   let state = await getSettledCameraState(page);
+  expect(state).toMatchObject({
+    currentPromptType: "guided",
+    message: "Tap the highlighted state: Utah.",
+    visibleInstructionText: "Learn these states.",
+    instructionLabel: "Tap the highlighted state."
+  });
+  await expect.poll(() => page.evaluate(() => window.__guidedTeachingAudio)).toEqual([
+    "Learn these states.",
+    "Utah"
+  ]);
   expect(state.guidedPoliticalCamera).toMatchObject({
     sectionId: "us-states-09",
     mode: "override",
@@ -97,11 +123,29 @@ test("Utah and Arizona state teaching keeps the approved Guided camera through t
   expect(state.currentPromptTargetId).toBe("utah");
   expectCameraNear(state.camera, approvedUtahArizonaCamera);
 
+  const evidenceCountBeforeWrongTeachingTap = await page.evaluate((key) => (
+    JSON.parse(localStorage.getItem(key) || "{}").events?.length || 0
+  ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.answerActiveMemoryTrailIncorrectly())).toBe(false);
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState())).toMatchObject({
+    phase: "answering",
+    currentPromptTargetId: "utah",
+    message: "Tap the highlighted state: Utah."
+  });
+  expect(await page.evaluate((key) => (
+    JSON.parse(localStorage.getItem(key) || "{}").events?.length || 0
+  ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY)).toBe(evidenceCountBeforeWrongTeachingTap);
+
   await page.evaluate(() => window.__MAPPA_TEST_API__.answerActiveMemoryTrailCorrectly());
   await expect.poll(() => page.evaluate(() => (
     window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.currentPromptTargetId
   )), { timeout: 10_000 }).toBe("arizona");
   state = await getSettledCameraState(page);
+  await expect.poll(() => page.evaluate(() => window.__guidedTeachingAudio)).toEqual([
+    "Learn these states.",
+    "Utah",
+    "Arizona"
+  ]);
   expect(state.guidedPoliticalCamera.activePromptFocus).toMatchObject({
     stateTargetId: "arizona",
     finalZoom: approvedUtahArizonaCamera.zoom,

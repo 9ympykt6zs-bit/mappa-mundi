@@ -72,6 +72,7 @@ const memoryTrailInstructionNouns = [
   "autonomous community or city",
   "body of water",
   "mountain range",
+  "lake",
   "river",
   "continent or ocean",
   "place"

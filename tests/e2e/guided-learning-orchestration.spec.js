@@ -125,6 +125,16 @@ async function finishGuidedPhysicalTeaching(page, { expectPractice = true, verif
   await expect(page.locator(".guided-physical-teaching-panel")).toBeVisible({ timeout: 20_000 });
   const initial = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingState());
   expect(initial.teachingTargetIds.length).toBeGreaterThan(0);
+  const familyCopy = {
+    "mountain-range": ["Learn these mountain ranges.", "Tap the highlighted mountain range."],
+    river: ["Learn these rivers.", "Tap the highlighted river."],
+    lake: ["Learn these lakes.", "Tap the highlighted lake."]
+  }[initial.featureFamily];
+  expect(familyCopy, initial.featureFamily).toBeTruthy();
+  expect(initial.familyInstruction).toBe(familyCopy[0]);
+  expect(initial.actionInstruction).toBe(familyCopy[1]);
+  await expect(page.locator(".guided-physical-teaching-panel strong")).toContainText(familyCopy[0].slice(0, -1));
+  await expect(page.locator(".guided-physical-teaching-panel .memory-trail-message")).toHaveText(familyCopy[1]);
   const taughtOrder = [];
   if (verifyWrongTap) {
     const evidenceCountBefore = await page.evaluate((key) => (
@@ -145,7 +155,10 @@ async function finishGuidedPhysicalTeaching(page, { expectPractice = true, verif
     expect(before.phase).toBe("teaching");
     expect(before.activeHighlightIds).toEqual([before.currentTargetId]);
     expect(before.completedLabelTargetIds).not.toContain(before.currentTargetId);
-    await expect(page.locator(".memory-trail-message")).toContainText(before.currentTargetName);
+    expect(before.familyInstruction).toBe(familyCopy[0]);
+    expect(before.actionInstruction).toBe(familyCopy[1]);
+    await expect(page.locator(".memory-trail-message")).toHaveText(familyCopy[1]);
+    await expect(page.locator(".memory-trail-prompt")).toHaveText(before.currentTargetName);
     taughtOrder.push(before.currentTargetId);
     expect(await page.evaluate(() => (
       window.__MAPPA_TEST_API__.answerGuidedPhysicalTeachingCorrectly()
@@ -499,7 +512,8 @@ test("Guided Learning introduces and immediately quizzes a three-range physical 
   await expect(page.locator("#poc-title")).toHaveAttribute("title", "U.S. Mountain Ranges", { timeout: 20_000 });
   await expect(page.locator(".guided-physical-teaching-panel")).toBeVisible();
   await expect(page.locator(".study-target-list-item")).toHaveCount(0);
-  await expect(page.locator(".memory-trail-message")).toContainText("White Mountains");
+  await expect(page.locator(".memory-trail-message")).toHaveText("Tap the highlighted mountain range.");
+  await expect(page.locator(".memory-trail-prompt")).toHaveText("White Mountains");
   await expect.poll(() => page.evaluate(() => (
     window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingState()
   ))).toMatchObject({

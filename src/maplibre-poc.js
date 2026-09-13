@@ -209,6 +209,7 @@ import {
 import { resolveMemoryTrailNewTargetLimit } from "./memory-trail-new-target-limit.js?v=20260621-daily-trail-co-progression-2";
 import { createMasteryDebugController } from "./mastery-debug.js?v=20260805-mastery-debug-1";
 import { chooseMemoryTrailRetrievalPromptType } from "./memory-trail-prompt-selector.js";
+import { getGuidedHighlightedFeatureTeachingCopy } from "./guided-highlighted-feature-teaching.js?v=20260912-guided-highlighted-teaching-1";
 import {
   chooseUnitedStatesCapitalRetrievalPromptType,
   getSuccessfulCapitalNamingTargetIds
@@ -8532,6 +8533,7 @@ async function returnToJourneyActivityFromStudy(returnState = activeStudySession
   }
 
   hideMemoryTrailOverlay();
+  window.GeographyChipSpeech?.stopAudio?.();
   clearMemoryTrailState({ restoreReveals: false });
   activeStudySession = null;
   activeStudyPracticeSession = null;
@@ -8756,6 +8758,7 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
           teachingTargetIds: [...new Set(options.physicalTeachingTargetIds.filter(Boolean))],
           taughtTargetIds: [...new Set((options.physicalTeachingTaughtTargetIds || []).filter(Boolean))],
           currentTargetId: String(options.physicalTeachingCurrentTargetId || "").trim() || null,
+          lastTargetAudioKey: "",
           inputLocked: false
         }
       : null,
@@ -8837,7 +8840,7 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
   } else if (canUseMemoryTrail && !activeStudySession.guidedOrchestration) {
     showMemoryTrailOfferOverlay();
     playInstructionOnce("study-preview", audioInstructionPhrases.studyPreview);
-  } else {
+  } else if (!activeStudySession.guidedPhysicalTeaching) {
     playInstructionOnce("study-preview", audioInstructionPhrases.studyPreview);
   }
   applyGuidedPhysicalFeatureCamera();
@@ -8897,10 +8900,46 @@ function getActiveGuidedPhysicalTeachingTarget() {
     : null;
 }
 
+function getActiveGuidedPhysicalTeachingCopy(target = getActiveGuidedPhysicalTeachingTarget()) {
+  const teaching = activeStudySession?.guidedPhysicalTeaching;
+  return getGuidedHighlightedFeatureTeachingCopy({
+    family: activeStudySession?.physicalFeatureFamily || "place",
+    targetName: target ? getTargetChipLabel(target) || target.name : "",
+    targetCount: teaching?.teachingTargetIds?.length || 1
+  });
+}
+
+function queueGuidedPhysicalTeachingAudio(target, copy = getActiveGuidedPhysicalTeachingCopy(target)) {
+  const teaching = activeStudySession?.guidedPhysicalTeaching;
+  const blockId = activeGuidedLearningOrchestrationBlock?.id || "guided-physical-teaching";
+  if (!teaching || !target) return Promise.resolve(false);
+  const targetAudioKey = `${blockId}:${target.id}`;
+  if (teaching.lastTargetAudioKey === targetAudioKey) return Promise.resolve(false);
+  teaching.lastTargetAudioKey = targetAudioKey;
+  const familyAudioKey = `${blockId}:family-instruction`;
+
+  return playInstructionOnce(familyAudioKey, copy.familyInstruction, { awaitCompletion: true })
+    .then(() => {
+      if (
+        activeStudySession?.guidedPhysicalTeaching === teaching
+        && teaching.currentTargetId === target.id
+        && teaching.lastTargetAudioKey === targetAudioKey
+      ) {
+        const targetName = getStudyPreviewSpeechLabel(target);
+        return window.GeographyChipSpeech?.speakLabelAndWait?.(targetName, {
+          queue: true,
+          dedupeKey: targetAudioKey
+        }) || false;
+      }
+      return false;
+    });
+}
+
 function updateGuidedPhysicalTeachingVisualState() {
   const teaching = activeStudySession?.guidedPhysicalTeaching;
   if (!teaching) return false;
   const target = getActiveGuidedPhysicalTeachingTarget();
+  const copy = getActiveGuidedPhysicalTeachingCopy(target);
   runner?.setCompletedTargets([]);
   runner?.setMemoryTrailHighlight(target ? [target.id] : []);
   runner?.setGuidedPhysicalTeachingHighlight?.(target ? {
@@ -8909,15 +8948,13 @@ function updateGuidedPhysicalTeachingVisualState() {
     targetConcept: UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
       .find(({ targetId }) => targetId === target.id)?.conceptId || null
   } : null);
-  instruction.textContent = target
-    ? `Tap the highlighted ${getTargetChipLabel(target) || target.name}.`
-    : "Teaching complete.";
+  instruction.textContent = target ? copy.actionInstruction : "Teaching complete.";
   publishGuidedLearningOrchestrationTrace({
     lifecycleEvent: target ? "physical-teaching-target-active" : "physical-teaching-complete",
     teachingPhase: target ? "teaching" : "teaching-complete",
     teachingCurrentTargetId: target?.id || null
   });
-  if (target) speakStudyPreviewTarget(target);
+  if (target) void queueGuidedPhysicalTeachingAudio(target, copy);
   return true;
 }
 
@@ -8925,6 +8962,7 @@ async function continueAfterGuidedPhysicalTeaching() {
   const completedContract = loadGuidedChildLaunchContract(window.localStorage);
   const returnedBlockId = activeGuidedLearningOrchestrationBlock?.id || null;
   hideMemoryTrailOverlay();
+  window.GeographyChipSpeech?.stopAudio?.();
   clearMemoryTrailState({ restoreReveals: false });
   activeStudySession = null;
   document.body.classList.remove("study-explore-mode");
@@ -9035,7 +9073,8 @@ function recordActiveGuidedPhysicalTeachingTarget(targetId) {
       window.localStorage,
       UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
     );
-    showFeedback("Yes. Now find the next highlighted feature.", true);
+    const copy = getActiveGuidedPhysicalTeachingCopy();
+    showFeedback(`Yes. Now tap the next highlighted ${copy.singular}.`, true);
     updateGuidedPhysicalTeachingVisualState();
     renderStudyExplorePanel();
     return true;
@@ -9065,7 +9104,8 @@ function handleGuidedPhysicalTeachingTap(targetIds, mapPoint = null) {
   if (selection.status === "correct" || runner?.isTargetNearMapPoint?.(expectedTarget.id, mapPoint)) {
     return recordActiveGuidedPhysicalTeachingTarget(expectedTarget.id);
   }
-  showFeedback(`Look for the highlighted ${getTargetChipLabel(expectedTarget) || expectedTarget.name}.`);
+  const copy = getActiveGuidedPhysicalTeachingCopy(expectedTarget);
+  showFeedback(copy.targetInstruction);
   renderGuidedPhysicalTeachingPanel();
   return false;
 }
@@ -9136,6 +9176,7 @@ function exitStudyExplore(options = {}) {
   }
 
   hideMemoryTrailOverlay();
+  window.GeographyChipSpeech?.stopAudio?.();
   clearMemoryTrailState({ restoreReveals: false });
   activeStudySession = null;
   document.body.classList.remove("study-explore-mode");
@@ -9222,6 +9263,7 @@ function renderStudyExplorePanel() {
 function renderGuidedPhysicalTeachingPanel() {
   const teaching = activeStudySession?.guidedPhysicalTeaching;
   const target = getActiveGuidedPhysicalTeachingTarget();
+  const copy = getActiveGuidedPhysicalTeachingCopy(target);
   if (!teaching) return;
   answerBank.innerHTML = "";
 
@@ -9235,14 +9277,14 @@ function renderGuidedPhysicalTeachingPanel() {
   const title = document.createElement("strong");
   const completedCount = teaching.taughtTargetIds.length;
   title.textContent = target
-    ? `Learn | ${Math.min(completedCount + 1, teaching.teachingTargetIds.length)} of ${teaching.teachingTargetIds.length}`
+    ? `${copy.familyInstruction.replace(/\.$/, "")} | ${Math.min(completedCount + 1, teaching.teachingTargetIds.length)} of ${teaching.teachingTargetIds.length}`
     : "Teaching complete";
   const promptGroup = document.createElement("div");
   promptGroup.className = "memory-trail-active-prompt";
   const message = document.createElement("p");
   message.className = "memory-trail-message";
   message.textContent = target
-    ? `Tap the highlighted ${getTargetChipLabel(target) || target.name}.`
+    ? copy.actionInstruction
     : "This group is ready for practice.";
   promptGroup.appendChild(message);
   if (target) {
@@ -12200,6 +12242,17 @@ function getMemoryTrailInstructionText(promptType, phase, mode = "", activity = 
       };
     }
 
+    if (singularNoun === "state") {
+      const copy = getGuidedHighlightedFeatureTeachingCopy({
+        family: "state",
+        targetCount: learnCount
+      });
+      return {
+        banner: copy.familyInstruction,
+        label: copy.actionInstruction
+      };
+    }
+
     return {
       banner: learnCount === 1
         ? `Learn this ${singularNoun || "place"}`
@@ -13952,6 +14005,16 @@ function getMemoryTrailAnsweringMessage(memoryTrail) {
     );
     if (oceanInstruction) {
       return oceanInstruction;
+    }
+
+    const target = getMemoryTrailActivePromptTarget(memoryTrail);
+    const singularNoun = getMemoryTrailInstructionNoun(session.currentActivity, memoryTrail);
+    if (singularNoun === "state") {
+      return getGuidedHighlightedFeatureTeachingCopy({
+        family: "state",
+        targetName: getMemoryTrailTargetLabel(target, memoryTrail),
+        targetCount: getMemoryTrailLearnPromptCount(memoryTrail)
+      }).targetInstruction;
     }
 
     return memoryTrail.promptName
@@ -16042,6 +16105,20 @@ function handleMemoryTrailTargetTap(targetIds, mapPoint = null) {
     }));
     recordOldReviewOutlineDebugVisualTrace("map-tap-correct", { candidateIds, expectedTargetId });
     handleCorrectMemoryTrailAnswer(memoryTrail, expectedTargetId);
+  } else if (isGuidedMemoryTrailPrompt(memoryTrail)) {
+    const singularNoun = getMemoryTrailInstructionNoun(session.currentActivity, memoryTrail);
+    const copy = getGuidedHighlightedFeatureTeachingCopy({
+      family: singularNoun,
+      targetName: getMemoryTrailTargetLabel(expectedTarget, memoryTrail),
+      targetCount: getMemoryTrailLearnPromptCount(memoryTrail)
+    });
+    memoryTrail.message = copy.targetInstruction;
+    showFeedback(copy.targetInstruction);
+    debugMemoryTrail("guided map click redirected", getMemoryTrailClickDebugContext(memoryTrail, candidateIds, {
+      reason: "teaching requires the highlighted target",
+      mapPoint
+    }));
+    renderStudyExplorePanel();
   } else if (runner?.isTargetNearMapPoint?.(expectedTargetId, mapPoint)) {
     debugMemoryTrail("map click accepted", getMemoryTrailClickDebugContext(memoryTrail, candidateIds, {
       result: "near-miss"
@@ -16505,6 +16582,10 @@ function getDailyTrailPromptPanelInstruction(memoryTrail) {
   if (isGuidedMemoryTrailPrompt(memoryTrail)) {
     if (isUnitedStatesTrail && target?.type === "capital") {
       return "Tap the highlighted capital.";
+    }
+
+    if (isUnitedStatesTrail && singularNoun === "state") {
+      return getGuidedHighlightedFeatureTeachingCopy({ family: "state" }).actionInstruction;
     }
 
     return isContinentsOceansOceanLearnTarget(memoryTrail, target)
@@ -28786,6 +28867,7 @@ function getGuidedPhysicalTeachingStateForTest() {
   const teaching = activeStudySession?.guidedPhysicalTeaching;
   if (!teaching) return null;
   const target = getActiveGuidedPhysicalTeachingTarget();
+  const copy = getActiveGuidedPhysicalTeachingCopy(target);
   const targetPoint = target ? getTargetCentroid(target) : null;
   const projected = targetPoint?.type === "lonlat" && runner?.map?.project
     ? runner.map.project([targetPoint.x, targetPoint.y])
@@ -28794,6 +28876,10 @@ function getGuidedPhysicalTeachingStateForTest() {
     phase: target ? "teaching" : "teaching-complete",
     currentTargetId: target?.id || null,
     currentTargetName: target ? getTargetChipLabel(target) || target.name : null,
+    featureFamily: activeStudySession.physicalFeatureFamily,
+    familyInstruction: target ? copy.familyInstruction : null,
+    actionInstruction: target ? copy.actionInstruction : null,
+    lastTargetAudioKey: teaching.lastTargetAudioKey,
     teachingTargetIds: [...teaching.teachingTargetIds],
     taughtTargetIds: [...teaching.taughtTargetIds],
     activeHighlightIds: runner?.getMemoryTrailActiveHighlightIds?.() || [],
@@ -28827,6 +28913,10 @@ function getActiveMemoryTrailStateForTest() {
     currentPromptTargetId: memoryTrail.currentPromptTargetId,
     currentPromptType: memoryTrail.currentPromptType,
     currentPromptMode: memoryTrail.currentPromptMode,
+    message: memoryTrail.message,
+    visibleInstructionText: memoryTrail.visibleInstructionText,
+    instructionLabel: memoryTrail.instructionLabel,
+    lastSpokenTargetPromptKey: memoryTrail.lastSpokenTargetPromptKey || "",
     correctCount: memoryTrail.correctCount,
     incorrectCount: memoryTrail.incorrectCount,
     promptCount: memoryTrail.promptCount,

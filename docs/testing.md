@@ -1,5 +1,11 @@
 # Automated testing
 
+## Guided highlighted-feature teaching — 2026-09-13
+
+`check-guided-highlighted-feature-teaching.mjs` pins the shared state, mountain-range, river, and lake family/action copy, including singular cohorts and target-specific redirects. The complete fast baseline passed **111/111** checks, including canonical physical evidence, physical highlighting, Memory Trail audio deduplication, state teaching runtime, physical scheduling, and activity-audio validation.
+
+The focused Guided browser matrix passed **18/18** desktop/mobile Chromium cases. It covers explicit state instruction and target speech, a wrong state teaching tap with no evidence write, one family cue followed by deduplicated mountain target names, audio-muted visual instructions, a durable mid-cohort reload, assisted physical taps, immediate three-range retrieval, an interrupted cohort with no duplicate evidence, generated river and lake cohorts, and mixed physical review. Existing camera, pan/zoom, batching, and retrieval assertions remained active in those flows. A test fixture initially reapplied its seed during reload and masked the durable child contract; the seed is now one-time, and the corrected learner entry path resumes the persisted Green Mountains target. No Safari, physical-device, or human audio-quality claim is made.
+
 ## Guided capital sequencing and city-label attribution — 2026-09-12
 
 The new `check-guided-capital-retrieval-sequencing.mjs` check proves that fresh capitals use highlighted-place naming before map locating, assisted teaching and incorrect naming cannot unlock locating, a correct in-session or persisted canonical naming result can, and difficulty reduction returns to naming. `check-capital-location-label-placement.mjs` now requires one finite marker-edge-to-label-edge connector for every disclosed city across Colorado, Connecticut, Rhode Island, Delaware, Texas, dense four-label feedback, responsive viewports, and multiple zoom levels. The complete fast baseline passed **110/110** checks.

@@ -9,7 +9,12 @@ import {
 
 const lower48Camera = { center: [-97.76220, 39.30636], zoom: 4.1407 };
 
-async function launchPhysicalTeaching(page, targetId, { extraStateIds = [], reducedMotion = "no-preference" } = {}) {
+async function launchPhysicalTeaching(page, targetId, {
+  extraStateIds = [],
+  reducedMotion = "no-preference",
+  captureAudio = false,
+  audioMuted = false
+} = {}) {
   await page.emulateMedia({ reducedMotion });
   const feature = orchestration.physicalFeatures.find((candidate) => candidate.targetId === targetId);
   const targetCohort = orchestration.physicalCohorts.find(({ id }) => id === feature.learningCohortId);
@@ -29,7 +34,9 @@ async function launchPhysicalTeaching(page, targetId, { extraStateIds = [], redu
     }
   }
   const stateIds = [...new Set([...feature.introductionPrerequisiteStateIds, ...extraStateIds])];
-  await page.addInitScript(({ repositoryKey, trailKey, orchestrationKey, stateIds, introducedStateItemIds, completedBlockIds, orchestrationId }) => {
+  await page.addInitScript(({ repositoryKey, trailKey, orchestrationKey, seedMarker, stateIds, introducedStateItemIds, completedBlockIds, orchestrationId }) => {
+    if (localStorage.getItem(seedMarker)) return;
+    localStorage.setItem(seedMarker, "1");
     localStorage.setItem(repositoryKey, JSON.stringify({
       storageVersion: 1,
       evidenceSchemaVersion: 1,
@@ -76,6 +83,7 @@ async function launchPhysicalTeaching(page, targetId, { extraStateIds = [], redu
     repositoryKey: CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY,
     trailKey: unitedStatesMemoryTrailStorageKey,
     orchestrationKey: GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY,
+    seedMarker: `mappaTestGuidedPhysicalPresentationSeed:${targetId}`,
     stateIds,
     introducedStateItemIds,
     completedBlockIds,
@@ -85,6 +93,23 @@ async function launchPhysicalTeaching(page, targetId, { extraStateIds = [], redu
   await page.locator("#launch-start-button").click();
   await page.evaluate(() => window.__mappaMundiLoadApp());
   await expect(page.locator("#app-shell-title")).toHaveText("Main Menu");
+  if (captureAudio) {
+    await page.evaluate(async (muted) => {
+      await import("/src/chip-speech.js?v=20260728-activity-audio-1");
+      window.__guidedTeachingAudio = [];
+      window.GeographyChipSpeech.setAudioMuted(muted);
+      window.GeographyChipSpeech.speakLabelAndWait = async (label) => {
+        if (window.GeographyChipSpeech.getAudioMuted()) return false;
+        window.__guidedTeachingAudio.push(label);
+        return true;
+      };
+      window.GeographyChipSpeech.speakLabel = (label) => {
+        if (window.GeographyChipSpeech.getAudioMuted()) return false;
+        window.__guidedTeachingAudio.push(label);
+        return true;
+      };
+    }, audioMuted);
+  }
   const firstCohortFeature = orchestration.physicalFeatures.find((candidate) => (
     candidate.targetId === targetCohort.supportedMemberTargetIds[0]
   ));
@@ -105,6 +130,42 @@ async function launchPhysicalTeaching(page, targetId, { extraStateIds = [], redu
   ))).toBe(targetId);
   return feature;
 }
+
+test("physical teaching speaks one family instruction before target names and remains clear when muted", async ({ page }) => {
+  await launchPhysicalTeaching(page, "white-mountains", { captureAudio: true });
+  await expect.poll(() => page.evaluate(() => window.__guidedTeachingAudio)).toEqual([
+    "Learn these mountain ranges.",
+    "White Mountains"
+  ]);
+  await expect(page.locator(".guided-physical-teaching-panel strong")).toContainText("Learn these mountain ranges");
+  await expect(page.locator(".guided-physical-teaching-panel .memory-trail-message"))
+    .toHaveText("Tap the highlighted mountain range.");
+  await expect(page.locator(".guided-physical-teaching-panel .memory-trail-prompt")).toHaveText("White Mountains");
+
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.answerGuidedPhysicalTeachingCorrectly())).toBe(true);
+  await expect.poll(() => page.evaluate(() => window.__guidedTeachingAudio)).toEqual([
+    "Learn these mountain ranges.",
+    "White Mountains",
+    "Green Mountains"
+  ]);
+
+  await page.reload();
+  await page.locator("#launch-start-button").click();
+  await page.evaluate(() => window.__mappaMundiLoadApp());
+  await expect(page.locator("#app-shell-title")).toHaveText("Main Menu");
+  await page.evaluate(async () => {
+    await import("/src/chip-speech.js?v=20260728-activity-audio-1");
+    window.__guidedTeachingAudio = [];
+    window.GeographyChipSpeech.setAudioMuted(true);
+  });
+  await page.locator("#main-menu-us-memory-trail-button").click();
+  await expect(page.locator(".guided-physical-teaching-panel")).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator(".guided-physical-teaching-panel strong")).toContainText("Learn these mountain ranges");
+  await expect(page.locator(".guided-physical-teaching-panel .memory-trail-message"))
+    .toHaveText("Tap the highlighted mountain range.");
+  await expect(page.locator(".guided-physical-teaching-panel .memory-trail-prompt")).toHaveText("Green Mountains");
+  expect(await page.evaluate(() => window.__guidedTeachingAudio)).toEqual([]);
+});
 
 async function expectCamera(page, expected) {
   await expect.poll(() => page.evaluate((camera) => {
