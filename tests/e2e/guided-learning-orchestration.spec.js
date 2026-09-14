@@ -88,7 +88,8 @@ async function launchNextBlock(page, expectedBlockId) {
 async function finishTargetedPhysicalPractice(
   page,
   targetIds = ["white-mountains", "green-mountains"],
-  initialPromptedTargetIds = []
+  initialPromptedTargetIds = [],
+  expectedRetryTargetIds = []
 ) {
   await expect.poll(() => page.evaluate(() => (
     window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.targetPoolIds
@@ -115,8 +116,9 @@ async function finishTargetedPhysicalPractice(
   await expect(page.locator("#memory-trail-overlay")).toBeVisible();
   await expect(page.locator("#memory-trail-primary-button")).toHaveText("Continue Guided Learning");
   const completedState = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState());
-  expect(completedState.promptCount).toBe(targetIds.length);
-  expect(completedState.promptHistory.map(({ targetId }) => targetId).sort()).toEqual([...targetIds].sort());
+  const expectedPromptTargetIds = [...targetIds, ...expectedRetryTargetIds];
+  expect(completedState.promptCount).toBe(expectedPromptTargetIds.length);
+  expect(completedState.promptHistory.map(({ targetId }) => targetId).sort()).toEqual(expectedPromptTargetIds.sort());
   expect([...promptedTargetIds].sort()).toEqual([...targetIds].sort());
   return completedState.promptHistory.map(({ targetId }) => targetId);
 }
@@ -186,6 +188,9 @@ async function panToAndClickRenderedMountainTarget(page, targetId) {
     window.maplibrePocMap.getLayoutProperty("mountain-range-symbol", "visibility")
   ))).toBe("visible");
   await expect.poll(() => page.evaluate(() => window.maplibrePocMap.isMoving())).toBe(false);
+  await expect.poll(() => page.evaluate((activeTargetId) => (
+    (window.__MAPPA_TEST_API__.getMountainRangeVisualState()?.targetClientPointSets?.[activeTargetId] || []).length
+  ), targetId), { timeout: 20_000 }).toBeGreaterThan(0);
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const target = await page.evaluate((activeTargetId) => {
       const points = window.__MAPPA_TEST_API__.getMountainRangeVisualState()?.targetClientPointSets?.[activeTargetId] || [];
@@ -763,9 +768,19 @@ test("a bounded Guided physical child preserves provenance, subset, and completi
     status: "launched",
     child: {
       destinationKind: "targeted-memory-trail",
-      targetIds: boundedTargetIds
+      targetIds: boundedTargetIds,
+      candidateTargetIds: boundedTargetIds,
+      physicalRetrievalActivity: true
     }
   });
+  await page.evaluate(({ key, firstTargetId }) => {
+    const staleContract = JSON.parse(localStorage.getItem(key));
+    staleContract.version = 2;
+    staleContract.child.targetIds = [firstTargetId];
+    delete staleContract.child.candidateTargetIds;
+    delete staleContract.child.physicalRetrievalActivity;
+    localStorage.setItem(key, JSON.stringify(staleContract));
+  }, { key: GUIDED_CHILD_LAUNCH_STORAGE_KEY, firstTargetId: boundedTargetIds[0] });
 
   await reloadAndReenterGuidedLearning(page);
   await expect.poll(() => page.evaluate(() => (
@@ -774,9 +789,7 @@ test("a bounded Guided physical child preserves provenance, subset, and completi
   const resumedPractice = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedLearningOrchestration());
   expect(resumedPractice.runtime.rehydratedLaunchContract).toBe(true);
   expect(resumedPractice.runtime.physicalCohortTargetIds).toEqual(boundedTargetIds);
-  expect(resumedPractice.runtime.physicalCohortTargetIds.length).toBeLessThan(
-    (await page.evaluate(() => window.__MAPPA_TEST_API__.getMountainRangeVisualState().mountainSymbolTargetIds.length))
-  );
+  expect(resumedPractice.runtime.physicalRetrievalCandidateTargetIds).toEqual(boundedTargetIds);
 
   await finishTargetedPhysicalPractice(page, boundedTargetIds);
   const evidenceAtCompletion = await page.evaluate((key) => (
@@ -1049,12 +1062,70 @@ test("mixed physical review uses only introduced mountain, river, and lake targe
     UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
       .find((feature) => feature.targetId === targetId).family
   ))).size).toBe(3);
-  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getCurrentActivity()?.id)).toBe("us-guided-physical-review");
-  await finishTargetedPhysicalPractice(page, targetIds);
+  const retrievalState = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState());
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getCurrentActivity()?.id)).toBe("us-guided-physical-retrieval");
+  expect(retrievalState.renderedActivityTargetIds).toEqual(retrievalState.retrievalCandidateTargetIds);
+  expect(retrievalState.activeHighlightIds).toEqual([]);
+  expect(retrievalState.promptVisualState.activeTargetVisualIds).toEqual([]);
+  expect(retrievalState.promptVisualState.targetHoverCursorSuppressed).toBe(true);
+  expect(retrievalState.cursor).toBe("");
+  const familyByTargetId = Object.fromEntries(UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
+    .map(({ targetId, family }) => [targetId, family]));
+  for (const family of ["mountain-range", "river", "lake"]) {
+    expect(retrievalState.retrievalCandidateTargetIds
+      .filter((targetId) => familyByTargetId[targetId] === family).length).toBeGreaterThanOrEqual(3);
+  }
+  const physicalVisualState = await page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState()
+  ));
+  expect(physicalVisualState.cameraDecision).toMatchObject({
+    mode: "fit",
+    source: "guided-physical-retrieval-candidates",
+    targetIds: retrievalState.retrievalCandidateTargetIds
+  });
+  expect(physicalVisualState.cameraDecision.bounds.flat(2).every(Number.isFinite)).toBe(true);
+  expect(physicalVisualState.dragPanEnabled).toBe(true);
+  expect(physicalVisualState.scrollZoomEnabled).toBe(true);
+  const cameraBeforeNavigation = physicalVisualState.camera;
+  await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+  await page.evaluate(() => window.maplibrePocMap.panBy([18, 10], { duration: 0 }));
+  await expect.poll(() => page.evaluate(() => window.maplibrePocMap.isMoving())).toBe(false);
+  const cameraAfterNavigation = await page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState().camera
+  ));
+  expect(cameraAfterNavigation.zoom).toBeGreaterThan(cameraBeforeNavigation.zoom);
+  expect(cameraAfterNavigation.center).not.toEqual(cameraBeforeNavigation.center);
+  const expectedTargetId = retrievalState.currentPromptTargetId;
+  const distractorTargetId = retrievalState.retrievalCandidateTargetIds.find((targetId) => (
+    familyByTargetId[targetId] === familyByTargetId[expectedTargetId]
+    && !targetIds.includes(targetId)
+  ));
+  expect(distractorTargetId).toBeTruthy();
+  const evidenceBeforeDistractor = await page.evaluate((key) => (
+    JSON.parse(localStorage.getItem(key) || "{}").events || []
+  ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
+  expect(await page.evaluate((targetId) => (
+    window.__MAPPA_TEST_API__.answerActiveMemoryTrailWithTarget(targetId)
+  ), distractorTargetId)).toBe(true);
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase
+  ))).toBe("correction");
+  const evidenceAfterDistractor = await page.evaluate((key) => (
+    JSON.parse(localStorage.getItem(key) || "{}").events || []
+  ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
+  const newDistractorEvidence = evidenceAfterDistractor.slice(evidenceBeforeDistractor.length);
+  expect(newDistractorEvidence).toHaveLength(1);
+  expect(newDistractorEvidence[0]).toMatchObject({
+    conceptId: `${familyByTargetId[expectedTargetId]}-location:${expectedTargetId}`,
+    outcome: "incorrect"
+  });
+  expect(newDistractorEvidence.some(({ conceptId }) => conceptId.endsWith(`:${distractorTargetId}`))).toBe(false);
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.completeActiveMemoryTrailCorrection())).toBe(true);
+  await finishTargetedPhysicalPractice(page, targetIds, [expectedTargetId], [expectedTargetId]);
   const evidence = await page.evaluate((key) => (
     JSON.parse(localStorage.getItem(key) || "{}").events || []
   ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
-  const reviewedConceptIds = evidence.slice(-targetIds.length).map(({ conceptId }) => conceptId);
+  const reviewedConceptIds = evidence.slice(-(targetIds.length + 1)).map(({ conceptId }) => conceptId);
   expect(reviewedConceptIds.some((conceptId) => conceptId.startsWith("mountain-range-location:"))).toBe(true);
   expect(reviewedConceptIds.some((conceptId) => conceptId.startsWith("river-location:"))).toBe(true);
   expect(reviewedConceptIds.some((conceptId) => conceptId.startsWith("lake-location:"))).toBe(true);

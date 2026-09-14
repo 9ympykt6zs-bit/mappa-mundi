@@ -3954,6 +3954,7 @@ function getGuidedLearningOrchestrationSnapshot(requestedTargetedNeed = null) {
       activity: durableChildLaunch.child.activityId || durableChildLaunch.child.destinationKind,
       type: durableChildLaunch.child.type,
       targetSubset: [...durableChildLaunch.child.targetIds],
+      retrievalCandidates: [...durableChildLaunch.child.candidateTargetIds],
       challengeSubset: [...durableChildLaunch.child.challengeIds],
       returnTo: durableChildLaunch.returnTo,
       status: durableChildLaunch.status
@@ -3972,6 +3973,9 @@ function getGuidedLearningOrchestrationSnapshot(requestedTargetedNeed = null) {
         || activeGuidedLearningOrchestrationBlock.destination?.cohortId
         || null,
       physicalCohortTargetIds: [...(activeStudySession?.focusTargetIds || [])],
+      physicalRetrievalCandidateTargetIds: [
+        ...(activeStudySession?.physicalRetrievalCandidateTargetIds || [])
+      ],
       guidedPhysicalRetrievalCheckpoint: getGuidedPhysicalRetrievalCheckpointSnapshot(
         activeStudySession?.memoryTrail?.guidedPhysicalCheckpoint
       ),
@@ -4047,6 +4051,7 @@ function createGuidedChildLaunchContractForBlock(block, {
       targetType: destination.targetType,
       teachingMessage: destination.teachingMessage,
       targetIds: destination.targetIds,
+      candidateTargetIds: destination.candidateTargetIds,
       targetLabels: destination.targetLabels?.length
         ? destination.targetLabels
         : destination.targetLabel ? [destination.targetLabel] : [],
@@ -4061,6 +4066,7 @@ function createGuidedChildLaunchContractForBlock(block, {
       geometry: destination.geometry,
       persistentLearningCamera: destination.persistentLearningCamera,
       physicalReviewActivity: destination.physicalReviewActivity === true,
+      physicalRetrievalActivity: destination.physicalRetrievalActivity === true,
       sourceActivityIds: destination.sourceActivityIds,
       guidedPhysicalCheckpoint: destination.guidedPhysicalCheckpoint
     }
@@ -4249,6 +4255,8 @@ async function launchGuidedLearningChildBlock(block, { completed = false } = {})
       physicalFeatureGeometry: block.destination.geometry,
       persistentLearningCamera: block.destination.persistentLearningCamera,
       physicalReviewActivity: block.destination.physicalReviewActivity === true,
+      physicalRetrievalActivity: block.destination.physicalRetrievalActivity === true,
+      physicalRetrievalCandidateTargetIds: block.destination.candidateTargetIds,
       sourceActivityIds: block.destination.sourceActivityIds
     });
     if (completed) showRehydratedGuidedChildCompletion(block);
@@ -4269,6 +4277,8 @@ async function launchGuidedLearningChildBlock(block, { completed = false } = {})
       physicalFeatureGeometry: block.destination.geometry,
       persistentLearningCamera: block.destination.persistentLearningCamera,
       physicalReviewActivity: block.destination.physicalReviewActivity === true,
+      physicalRetrievalActivity: block.destination.physicalRetrievalActivity === true,
+      physicalRetrievalCandidateTargetIds: block.destination.candidateTargetIds,
       sourceActivityIds: block.destination.sourceActivityIds
     });
     if (completed) showRehydratedGuidedChildCompletion(block);
@@ -4318,6 +4328,11 @@ function rehydrateGuidedLearningChildBlock(contract) {
     ? decision.currentBlock
     : configuredBlock;
   const child = contract.child;
+  const isGuidedPhysicalRetrieval = liveBlock.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE
+    && liveBlock.destination.kind === "targeted-memory-trail";
+  const resolvedTargetIds = isGuidedPhysicalRetrieval && child.targetIds.length < 2
+    ? [...(liveBlock.destination.targetIds || child.targetIds)]
+    : [...child.targetIds];
   const teachingProgress = state.physicalTeachingProgress?.[configuredBlock.id] || null;
   const destination = {
     ...liveBlock.destination,
@@ -4331,7 +4346,10 @@ function rehydrateGuidedLearningChildBlock(contract) {
     cohortId: child.cohortId || liveBlock.destination.cohortId,
     targetType: child.targetType || liveBlock.destination.targetType,
     teachingMessage: child.teachingMessage || liveBlock.destination.teachingMessage,
-    targetIds: [...child.targetIds],
+    targetIds: resolvedTargetIds,
+    candidateTargetIds: child.candidateTargetIds.length > 0
+      ? [...child.candidateTargetIds]
+      : [...(liveBlock.destination.candidateTargetIds || resolvedTargetIds)],
     targetLabels: [...child.targetLabels],
     targetConceptIds: [...child.targetConceptIds],
     newTargetIds: [...child.newTargetIds],
@@ -4341,6 +4359,8 @@ function rehydrateGuidedLearningChildBlock(contract) {
     geometry: child.geometry || liveBlock.destination.geometry,
     persistentLearningCamera: child.persistentLearningCamera || liveBlock.destination.persistentLearningCamera,
     physicalReviewActivity: child.physicalReviewActivity === true || liveBlock.destination.physicalReviewActivity === true,
+    physicalRetrievalActivity: child.physicalRetrievalActivity === true
+      || liveBlock.destination.physicalRetrievalActivity === true,
     sourceActivityIds: child.sourceActivityIds.length > 0
       ? [...child.sourceActivityIds]
       : liveBlock.destination.sourceActivityIds,
@@ -8584,8 +8604,8 @@ function getStudyStepContext(journeyId, stepId) {
   return { journey, step, activity };
 }
 
-function createGuidedPhysicalReviewActivity(targetIds = [], sourceActivityIds = []) {
-  const requestedTargetIds = [...new Set(targetIds.filter(Boolean))];
+function createGuidedPhysicalRetrievalActivity(candidateTargetIds = [], sourceActivityIds = []) {
+  const requestedTargetIds = [...new Set(candidateTargetIds.filter(Boolean))];
   const sourceIds = [...new Set(sourceActivityIds.filter(Boolean))];
   const sourceActivities = sourceIds.map((activityId) => getActivityById(activityId)).filter(Boolean);
   const targets = requestedTargetIds.map((targetId) => sourceActivities
@@ -8598,8 +8618,8 @@ function createGuidedPhysicalReviewActivity(targetIds = [], sourceActivityIds = 
   ]));
   return {
     ...(sourceActivities[0] || {}),
-    id: "us-guided-physical-review",
-    title: "U.S. Physical Geography Review",
+    id: "us-guided-physical-retrieval",
+    title: "U.S. Physical Geography Retrieval",
     targetNoun: "physical feature",
     promptText: "Find these physical features",
     visibleAnswerLimit: 8,
@@ -8631,8 +8651,13 @@ async function startStudyPreviewActivity(journeyId, stepId, options = {}) {
   const context = getStudyStepContext(journeyId, stepId);
   const journey = context.journey;
   const step = context.step;
-  const activity = options.physicalReviewActivity
-    ? createGuidedPhysicalReviewActivity(options.memoryTrailTargetIds, options.sourceActivityIds)
+  const activity = options.physicalRetrievalActivity || options.physicalReviewActivity
+    ? createGuidedPhysicalRetrievalActivity(
+        options.physicalRetrievalCandidateTargetIds?.length
+          ? options.physicalRetrievalCandidateTargetIds
+          : options.memoryTrailTargetIds,
+        options.sourceActivityIds
+      )
     : context.activity;
 
   if (!journey || !step || !activity) {
@@ -8657,7 +8682,8 @@ async function startStudyPreviewActivity(journeyId, stepId, options = {}) {
     physicalFeatureFamily: options.physicalFeatureFamily,
     physicalFeatureCamera: options.physicalFeatureCamera,
     physicalFeatureGeometry: options.physicalFeatureGeometry,
-    persistentLearningCamera: options.persistentLearningCamera
+    persistentLearningCamera: options.persistentLearningCamera,
+    physicalRetrievalCandidateTargetIds: options.physicalRetrievalCandidateTargetIds
   });
 }
 
@@ -8767,6 +8793,11 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
     physicalFeatureCamera: options.physicalFeatureCamera || null,
     physicalFeatureGeometry: options.physicalFeatureGeometry || null,
     persistentLearningCamera: options.persistentLearningCamera || null,
+    physicalRetrievalCandidateTargetIds: [...new Set(
+      (Array.isArray(options.physicalRetrievalCandidateTargetIds)
+        ? options.physicalRetrievalCandidateTargetIds
+        : []).filter(Boolean)
+    )],
     guidedPhysicalCheckpointConfig: options.guidedPhysicalCheckpoint || null,
     guidedCameraDecision: null
   };
@@ -8850,6 +8881,40 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
 function resolveGuidedPhysicalFeatureCamera() {
   if (!activeStudySession?.guidedOrchestration || !activeStudySession.physicalFeatureFamily) return null;
   if (activeStudySession.guidedCameraDecision) return activeStudySession.guidedCameraDecision;
+  const retrievalCandidateIds = activeStudySession.physicalRetrievalCandidateTargetIds || [];
+  const includesDisplayOnlyCandidates = retrievalCandidateIds.some((targetId) => (
+    !activeStudySession.focusTargetIds.includes(targetId)
+  ));
+  if (
+    retrievalCandidateIds.length >= 2
+    && (!activeStudySession.persistentLearningCamera || includesDisplayOnlyCandidates)
+  ) {
+    const targets = retrievalCandidateIds
+      .map((targetId) => session.currentActivity?.targets?.find(({ id }) => id === targetId))
+      .filter(Boolean);
+    const bounds = runner?.getCombinedTargetBounds?.(targets);
+    const compact = runner?.isCompactFocusLayout?.();
+    const padding = compact
+      ? { top: 104, right: 28, bottom: 210, left: 28 }
+      : { top: 104, right: 64, bottom: 176, left: 64 };
+    const fit = bounds && runner?.map?.cameraForBounds?.(bounds, { padding, maxZoom: 5.35 });
+    if (fit) {
+      activeStudySession.guidedCameraDecision = {
+        mode: "fit",
+        center: [Number(fit.center.lng), Number(fit.center.lat)],
+        zoom: Number(fit.zoom),
+        bearing: 0,
+        pitch: 0,
+        duration: 650,
+        source: "guided-physical-retrieval-candidates",
+        targetIds: retrievalCandidateIds,
+        bounds,
+        padding,
+        viewport: compact ? "mobile" : "desktop"
+      };
+      return activeStudySession.guidedCameraDecision;
+    }
+  }
   const targetId = activeStudySession.focusTargetIds?.[0];
   const target = session.currentActivity?.targets?.find(({ id }) => id === targetId);
   const sourceFeature = target ? runner?.findSourceShapeFeature?.(target, session.currentActivity) : null;
@@ -12502,6 +12567,7 @@ function scheduleMemoryTrailStep(memoryTrail, callback, delay) {
 
 function clearMemoryTrailState({ restoreReveals = true, render = false } = {}) {
   runner?.setGuidedPhysicalTeachingHighlight?.(null);
+  runner?.setMemoryTrailTargetHoverCursorSuppressed?.(false);
   const memoryTrail = getActiveMemoryTrail();
 
   if (!memoryTrail) {
@@ -12905,6 +12971,9 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
     "daily-trail-active-prompt"
   );
   runner?.setMemoryTrailCheckpointPreAnswerStyle?.(checkpointPreAnswerStyle);
+  runner?.setMemoryTrailTargetHoverCursorSuppressed?.(
+    memoryTrail.guidedLocatingOnly === true && Boolean(activeStudySession?.physicalFeatureFamily)
+  );
   if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
     runner.setMemoryTrailHighlight([]);
   } else {
@@ -28445,7 +28514,8 @@ function getActivityAttemptForTest() {
 }
 
 function getMountainRangeVisualStateForTest() {
-  if (!runner || session?.currentActivity?.id !== "us-mountain-ranges") {
+  const hasMountainTargets = session?.currentActivity?.targets?.some(({ type }) => type === "mountain-range");
+  if (!runner || (session?.currentActivity?.id !== "us-mountain-ranges" && !hasMountainTargets)) {
     return null;
   }
 
@@ -28922,6 +28992,8 @@ function getActiveMemoryTrailStateForTest() {
     promptCount: memoryTrail.promptCount,
     promptHistory: memoryTrail.promptHistory.map((entry) => ({ ...entry })),
     targetPoolIds: [...memoryTrail.targetPoolIds],
+    retrievalCandidateTargetIds: [...(activeStudySession?.physicalRetrievalCandidateTargetIds || [])],
+    renderedActivityTargetIds: (session.currentActivity?.targets || []).map(({ id }) => id).filter(Boolean),
     guidedPoliticalCamera: memoryTrail.guidedPoliticalCamera
       ? JSON.parse(JSON.stringify(memoryTrail.guidedPoliticalCamera))
       : null,
@@ -28931,6 +29003,8 @@ function getActiveMemoryTrailStateForTest() {
       memoryTrail.guidedPhysicalCheckpoint
     ),
     activeHighlightIds: runner?.getMemoryTrailActiveHighlightIds?.() || [],
+    promptVisualState: runner?.getMemoryTrailPromptVisualState?.() || null,
+    cursor: runner?.map?.getCanvas?.().style.cursor || "",
     completedLabelTargetIds: (runner?.getCompletedLabelGeoJson?.().features || [])
       .map(({ properties }) => properties?.id)
       .filter(Boolean)
@@ -28956,6 +29030,14 @@ function answerActiveMemoryTrailIncorrectlyForTest() {
   if (!expectedTargetId || !wrongTargetId || memoryTrail.phase !== "answering") return false;
   handleMemoryTrailTargetTap([wrongTargetId]);
   return memoryTrail.phase === "correction";
+}
+
+function answerActiveMemoryTrailWithTargetForTest(targetId) {
+  const memoryTrail = getActiveMemoryTrail();
+  const selectedTargetId = String(targetId || "").trim();
+  if (!selectedTargetId || memoryTrail?.phase !== "answering") return false;
+  handleMemoryTrailTargetTap([selectedTargetId]);
+  return memoryTrail.phase === "correction" || memoryTrail.phase === "feedback";
 }
 
 function completeActiveMemoryTrailCorrectionForTest() {
@@ -29181,6 +29263,7 @@ function installMappaTestApi() {
       getActiveMemoryTrailState: getActiveMemoryTrailStateForTest,
       answerActiveMemoryTrailCorrectly: answerActiveMemoryTrailCorrectlyForTest,
       answerActiveMemoryTrailIncorrectly: answerActiveMemoryTrailIncorrectlyForTest,
+      answerActiveMemoryTrailWithTarget: answerActiveMemoryTrailWithTargetForTest,
       completeActiveMemoryTrailCorrection: completeActiveMemoryTrailCorrectionForTest,
       getGuidedLearningOrchestration: getGuidedLearningOrchestrationSnapshot,
       launchNextGuidedLearningOrchestration: launchNextGuidedLearningOrchestrationBlock,

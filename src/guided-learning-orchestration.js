@@ -30,9 +30,77 @@ const physicalContinuationFamilyByNeedId = Object.freeze({
   "physical-lakes": "lake",
   "physical-mountain-ranges": "mountain-range"
 });
+const GUIDED_PHYSICAL_RETRIEVAL_MINIMUM_CANDIDATES = 3;
 
 function uniqueStrings(values = []) {
   return [...new Set((Array.isArray(values) ? values : []).map((value) => String(value || "").trim()).filter(Boolean))];
+}
+
+function getIntroducedPhysicalTargetIds(state, config) {
+  const completedBlockIds = new Set(state?.completedBlockIds || []);
+  return (config?.physicalFeatures || [])
+    .filter(({ introductionBlockId }) => completedBlockIds.has(introductionBlockId))
+    .map(({ targetId }) => targetId);
+}
+
+export function selectGuidedPhysicalRetrievalCandidateTargetIds({
+  targetIds = [],
+  introducedTargetIds = [],
+  config = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1,
+  minimumSameFamilyCandidates = GUIDED_PHYSICAL_RETRIEVAL_MINIMUM_CANDIDATES
+} = {}) {
+  const features = config?.physicalFeatures || [];
+  const featuresByTargetId = new Map(features.map((feature) => [feature.targetId, feature]));
+  const cohortsById = new Map((config?.physicalCohorts || []).map((cohort) => [cohort.id, cohort]));
+  const queryTargetIds = uniqueStrings(targetIds).filter((targetId) => featuresByTargetId.has(targetId));
+  const introducedSet = new Set(uniqueStrings([...introducedTargetIds, ...queryTargetIds])
+    .filter((targetId) => featuresByTargetId.has(targetId)));
+  const selected = new Set(queryTargetIds);
+  const queryFamilies = uniqueStrings(queryTargetIds.map((targetId) => featuresByTargetId.get(targetId)?.family));
+  const getCurriculumOrder = (feature) => (
+    cohortsById.get(feature?.learningCohortId)?.curriculumOrder ?? Number.MAX_SAFE_INTEGER
+  );
+
+  queryFamilies.forEach((family) => {
+    const introducedFamilyFeatures = features.filter((feature) => (
+      feature.family === family && introducedSet.has(feature.targetId)
+    ));
+    const requestedCount = Math.min(
+      Math.max(1, Number(minimumSameFamilyCandidates) || GUIDED_PHYSICAL_RETRIEVAL_MINIMUM_CANDIDATES),
+      introducedFamilyFeatures.length
+    );
+    const queryOrders = queryTargetIds
+      .map((targetId) => featuresByTargetId.get(targetId))
+      .filter((feature) => feature?.family === family)
+      .map(getCurriculumOrder)
+      .filter(Number.isFinite);
+    introducedFamilyFeatures
+      .filter(({ targetId }) => !selected.has(targetId))
+      .sort((left, right) => {
+        const leftOrder = getCurriculumOrder(left);
+        const rightOrder = getCurriculumOrder(right);
+        const leftDistance = queryOrders.length > 0
+          ? Math.min(...queryOrders.map((order) => Math.abs(order - leftOrder)))
+          : 0;
+        const rightDistance = queryOrders.length > 0
+          ? Math.min(...queryOrders.map((order) => Math.abs(order - rightOrder)))
+          : 0;
+        return leftDistance - rightDistance
+          || leftOrder - rightOrder
+          || left.authoredOrder - right.authoredOrder
+          || left.targetId.localeCompare(right.targetId);
+      })
+      .forEach(({ targetId }) => {
+        const selectedFamilyCount = [...selected]
+          .filter((candidateTargetId) => featuresByTargetId.get(candidateTargetId)?.family === family)
+          .length;
+        if (selectedFamilyCount < requestedCount) selected.add(targetId);
+      });
+  });
+
+  // Canonical inventory order keeps rendering and hit-layer order independent
+  // of whichever member happens to be the current question.
+  return features.map(({ targetId }) => targetId).filter((targetId) => selected.has(targetId));
 }
 
 function normalizePhysicalTeachingProgress(value = {}, config = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1) {
@@ -337,7 +405,7 @@ function createPhysicalReviewBlocks(physicalFeatures, physicalReviewPools) {
         kind: "targeted-memory-trail",
         journeyId: "united-states",
         stepId: cohort.kind === "mixed" ? "us-mountain-ranges" : feature.stepId,
-        activityId: cohort.kind === "mixed" ? "us-guided-physical-review" : feature.activityId,
+        activityId: cohort.kind === "mixed" ? "us-guided-physical-retrieval" : feature.activityId,
         sourceActivityIds: uniqueStrings(cohort.targetIds
           .map((targetId) => featuresByTargetId.get(targetId)?.activityId)),
         physicalReviewActivity: cohort.kind === "mixed",
@@ -1022,11 +1090,16 @@ function createDynamicPhysicalIntroductionBlock(block, cohortProgress, featuresB
   };
 }
 
-function createDynamicPhysicalPracticeBlock(block, cohortProgress, featuresByTargetId, normalizedState) {
+function createDynamicPhysicalPracticeBlock(block, cohortProgress, featuresByTargetId, normalizedState, config) {
   if (!cohortProgress?.retrievalReady) return block;
   const targetFeatures = cohortProgress.retrievalTargetIds
     .map((targetId) => featuresByTargetId.get(targetId))
     .filter(Boolean);
+  const candidateTargetIds = selectGuidedPhysicalRetrievalCandidateTargetIds({
+    targetIds: targetFeatures.map(({ targetId }) => targetId),
+    introducedTargetIds: getIntroducedPhysicalTargetIds(normalizedState, config),
+    config
+  });
   return {
     ...block,
     cohortId: cohortProgress.cohort.id,
@@ -1036,6 +1109,10 @@ function createDynamicPhysicalPracticeBlock(block, cohortProgress, featuresByTar
       targetIds: targetFeatures.map(({ targetId }) => targetId),
       targetLabels: targetFeatures.map(({ name }) => name),
       targetConceptIds: targetFeatures.map(({ conceptId }) => conceptId),
+      candidateTargetIds,
+      physicalRetrievalActivity: true,
+      sourceActivityIds: uniqueStrings(candidateTargetIds
+        .map((targetId) => featuresByTargetId.get(targetId)?.activityId)),
       camera: cohortProgress.cohort.camera || block.destination.camera,
       cameraSource: cohortProgress.cohort.camera ? "authored-cohort-override" : "automatic-feature-fit",
       persistentLearningCamera: cohortProgress.cohort.camera || null,
@@ -1281,7 +1358,14 @@ export function selectGuidedLearningPostStatePhysicalReview({
     eligible: Boolean(selected),
     reason: selected ? "spaced-physical-review-due" : "no-introduced-physical-review-due",
     block: selected
-      ? createDynamicPhysicalReviewBlock(selected.block, selected.eligibility, selected.cohort, featuresByTargetId)
+      ? createDynamicPhysicalReviewBlock(
+          selected.block,
+          selected.eligibility,
+          selected.cohort,
+          featuresByTargetId,
+          config,
+          normalized
+        )
       : null,
     candidates: candidates.map(({ cohort, eligibility }) => ({
       cohortId: cohort.id,
@@ -1292,10 +1376,17 @@ export function selectGuidedLearningPostStatePhysicalReview({
   };
 }
 
-function createDynamicPhysicalReviewBlock(block, eligibility, cohort, featuresByTargetId) {
+function createDynamicPhysicalReviewBlock(block, eligibility, cohort, featuresByTargetId, config, normalizedState) {
   const targetFeatures = eligibility.targetIds
     .map((targetId) => featuresByTargetId.get(targetId))
     .filter(Boolean);
+  const candidateTargetIds = selectGuidedPhysicalRetrievalCandidateTargetIds({
+    targetIds: targetFeatures.map(({ targetId }) => targetId),
+    introducedTargetIds: eligibility.introducedTargetIds?.length
+      ? eligibility.introducedTargetIds
+      : getIntroducedPhysicalTargetIds(normalizedState, config),
+    config
+  });
   return {
     ...block,
     cohortId: cohort.id,
@@ -1305,6 +1396,10 @@ function createDynamicPhysicalReviewBlock(block, eligibility, cohort, featuresBy
       targetIds: targetFeatures.map(({ targetId }) => targetId),
       targetLabels: targetFeatures.map(({ name }) => name),
       targetConceptIds: targetFeatures.map(({ conceptId }) => conceptId),
+      candidateTargetIds,
+      physicalRetrievalActivity: true,
+      sourceActivityIds: uniqueStrings(candidateTargetIds
+        .map((targetId) => featuresByTargetId.get(targetId)?.activityId)),
       camera: cohort.kind === "mixed" ? UNITED_STATES_GUIDED_LOWER48_PHYSICAL_CAMERA : cohort.camera || null,
       cameraSource: cohort.kind === "mixed"
         ? "lower48-mixed-physical-review"
@@ -1541,14 +1636,17 @@ export function selectGuidedLearningOrchestrationBlock({
         selectedBlock,
         reviewEligibilityByCohortId.get(selectedBlock.cohortId),
         cohort,
-        featuresByTargetId
+        featuresByTargetId,
+        config,
+        normalizedState
       );
     } else {
       selectedBlock = createDynamicPhysicalPracticeBlock(
         selectedBlock,
         cohortProgress.find(({ cohort }) => cohort.id === selectedBlock.cohortId),
         featuresByTargetId,
-        normalizedState
+        normalizedState,
+        config
       );
     }
   }

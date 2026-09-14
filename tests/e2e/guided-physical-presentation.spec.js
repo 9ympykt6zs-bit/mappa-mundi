@@ -421,6 +421,18 @@ test("St. Lawrence uses complete cross-border geometry for teaching and locating
   await expect.poll(() => page.evaluate(() => (
     window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.currentPromptTargetId
   ))).toBe("st-lawrence-river");
+  const retrievalState = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState());
+  expect([...retrievalState.retrievalCandidateTargetIds].sort()).toEqual([
+    "ohio-river",
+    "st-lawrence-river"
+  ]);
+  expect([...retrievalState.renderedActivityTargetIds].sort()).toEqual([
+    "ohio-river",
+    "st-lawrence-river"
+  ]);
+  expect(retrievalState.activeHighlightIds).toEqual([]);
+  expect(retrievalState.completedLabelTargetIds).toEqual([]);
+  expect(retrievalState.promptVisualState.targetHoverCursorSuppressed).toBe(true);
   await expectCamera(page, easternCamera);
   hitAudit = await inspectRiverHitCorridor();
   expect(hitAudit.hits.every(({ hit }) => hit), JSON.stringify(hitAudit)).toBe(true);
@@ -428,6 +440,18 @@ test("St. Lawrence uses complete cross-border geometry for teaching and locating
   expect(hitAudit.outsideDistancePx).toBeGreaterThanOrEqual(30);
   expect(hitAudit.outsideDistancePx).toBeLessThanOrEqual(46);
   expect(hitAudit.outsideHitsTarget).toBe(false);
+
+  if (page.viewportSize().width > 760) {
+    const targetHoverPoint = await findVisiblePhysicalHitPoint(page, "st-lawrence-river", "river");
+    const distractorHoverPoint = await findVisiblePhysicalHitPoint(page, "ohio-river", "river");
+    expect(targetHoverPoint).toBeTruthy();
+    expect(distractorHoverPoint).toBeTruthy();
+    await page.mouse.move(targetHoverPoint.clientX, targetHoverPoint.clientY);
+    const targetCursor = await page.locator("#map canvas").evaluate((canvas) => canvas.style.cursor);
+    await page.mouse.move(distractorHoverPoint.clientX, distractorHoverPoint.clientY);
+    const distractorCursor = await page.locator("#map canvas").evaluate((canvas) => canvas.style.cursor);
+    expect(targetCursor).toBe(distractorCursor);
+  }
 
   const correctBeforeOutsideTap = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().correctCount);
   const incorrectBeforeOutsideTap = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().incorrectCount);
@@ -537,10 +561,28 @@ test("teaching emphasis follows the cohort and clears before independent retriev
 
 async function expectSearchSpace(page, searchSpace = "lower48") {
   await expect.poll(() => page.evaluate(() => (
-    window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState()?.cameraDecision
-  ))).toMatchObject({ cameraPhase: "retrieval", searchSpace });
+    window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState()?.cameraDecision?.source
+  ))).toBeTruthy();
   const decision = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState().cameraDecision);
   await expectCamera(page, decision);
+  if (decision.source === "guided-physical-retrieval-candidates") {
+    expect(decision).toMatchObject({ mode: "fit" });
+    expect(decision.targetIds.length).toBeGreaterThanOrEqual(3);
+    expect(decision.bounds.flat(2).every(Number.isFinite)).toBe(true);
+    const projected = await page.evaluate(() => {
+      const { bounds } = window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState().cameraDecision;
+      const map = window.maplibrePocMap;
+      const [[west, south], [east, north]] = bounds;
+      const { width, height } = map.getContainer().getBoundingClientRect();
+      return [[west, south], [west, north], [east, south], [east, north]].map((point) => {
+        const { x, y } = map.project(point);
+        return { x, y, inside: x >= 0 && x <= width && y >= 0 && y <= height };
+      });
+    });
+    expect(projected.every(({ inside }) => inside), JSON.stringify(projected)).toBe(true);
+    return decision;
+  }
+  expect(decision).toMatchObject({ cameraPhase: "retrieval", searchSpace });
   if (searchSpace === "lower48") {
     const projected = await page.evaluate(() => {
       const decision = window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState().cameraDecision;

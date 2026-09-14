@@ -473,6 +473,7 @@ export class MapLibreActivityRunner {
     this.completedIds = [];
     this.selectedTargetId = "";
     this.memoryTrailCheckpointPreAnswerStyle = false;
+    this.memoryTrailTargetHoverCursorSuppressed = false;
     this.memoryTrailSuppressPreAnswerOutlines = false;
     this.memoryTrailSuppressStudyTargetEmphasis = false;
     this.memoryTrailSuppressStudyTargetEmphasisReason = "";
@@ -1595,6 +1596,13 @@ export class MapLibreActivityRunner {
     this.refreshDifficultyVisuals();
   }
 
+  setMemoryTrailTargetHoverCursorSuppressed(isSuppressed = false) {
+    this.memoryTrailTargetHoverCursorSuppressed = Boolean(isSuppressed);
+    if (this.memoryTrailTargetHoverCursorSuppressed && this.map) {
+      this.map.getCanvas().style.cursor = "";
+    }
+  }
+
   setVisualPointTargets(visualPointTargets = [], pointTargets = null) {
     if (Array.isArray(pointTargets)) {
       this.pointTargets = pointTargets.filter((target) => target.kind === "point");
@@ -1631,6 +1639,7 @@ export class MapLibreActivityRunner {
       preAnswerOutlineSuppressed,
       suppressStudyTargetEmphasis,
       suppressStudyTargetEmphasisReason: this.memoryTrailSuppressStudyTargetEmphasisReason,
+      targetHoverCursorSuppressed: this.memoryTrailTargetHoverCursorSuppressed,
       selectedTargetId: this.selectedTargetId || "",
       activeTargetVisualIds: this.getActiveTargetVisualIds(),
       blueOutlineSource: preAnswerOutlineSuppressed || suppressStudyTargetEmphasis ? "suppressed" : checkpointPreAnswerStyle ? "state-line:targetStroke" : "state-line:studyTargetLine",
@@ -1857,6 +1866,7 @@ export class MapLibreActivityRunner {
   canUseTargetHoverCursor() {
     return this.currentView === "study"
       && !this.placementInteractionState.active
+      && !this.memoryTrailTargetHoverCursorSuppressed
       && !this.capitalLocationQuestion;
   }
 
@@ -1871,6 +1881,7 @@ export class MapLibreActivityRunner {
     this.completedIds = [];
     this.selectedTargetId = "";
     this.memoryTrailCheckpointPreAnswerStyle = false;
+    this.memoryTrailTargetHoverCursorSuppressed = false;
     this.memoryTrailSuppressStudyTargetEmphasis = false;
     this.memoryTrailSuppressStudyTargetEmphasisReason = "";
     this.capitalLocationQuestion = null;
