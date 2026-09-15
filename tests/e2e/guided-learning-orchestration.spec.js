@@ -15,6 +15,8 @@ const newEnglandStateIds = [
   "rhode-island",
   "connecticut"
 ];
+const supportedPhysicalContextTargetIds = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
+  .map(({ targetId }) => targetId);
 
 function createCoveredNewEnglandRepository() {
   return {
@@ -769,15 +771,16 @@ test("a bounded Guided physical child preserves provenance, subset, and completi
     child: {
       destinationKind: "targeted-memory-trail",
       targetIds: boundedTargetIds,
-      candidateTargetIds: boundedTargetIds,
+      physicalContextTargetIds: supportedPhysicalContextTargetIds,
       physicalRetrievalActivity: true
     }
   });
   await page.evaluate(({ key, firstTargetId }) => {
     const staleContract = JSON.parse(localStorage.getItem(key));
-    staleContract.version = 2;
+    staleContract.version = 3;
     staleContract.child.targetIds = [firstTargetId];
-    delete staleContract.child.candidateTargetIds;
+    staleContract.child.candidateTargetIds = [firstTargetId];
+    delete staleContract.child.physicalContextTargetIds;
     delete staleContract.child.physicalRetrievalActivity;
     localStorage.setItem(key, JSON.stringify(staleContract));
   }, { key: GUIDED_CHILD_LAUNCH_STORAGE_KEY, firstTargetId: boundedTargetIds[0] });
@@ -789,7 +792,7 @@ test("a bounded Guided physical child preserves provenance, subset, and completi
   const resumedPractice = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedLearningOrchestration());
   expect(resumedPractice.runtime.rehydratedLaunchContract).toBe(true);
   expect(resumedPractice.runtime.physicalCohortTargetIds).toEqual(boundedTargetIds);
-  expect(resumedPractice.runtime.physicalRetrievalCandidateTargetIds).toEqual(boundedTargetIds);
+  expect(resumedPractice.runtime.physicalContextTargetIds).toEqual(supportedPhysicalContextTargetIds);
 
   await finishTargetedPhysicalPractice(page, boundedTargetIds);
   const evidenceAtCompletion = await page.evaluate((key) => (
@@ -1064,25 +1067,40 @@ test("mixed physical review uses only introduced mountain, river, and lake targe
   ))).size).toBe(3);
   const retrievalState = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState());
   expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getCurrentActivity()?.id)).toBe("us-guided-physical-retrieval");
-  expect(retrievalState.renderedActivityTargetIds).toEqual(retrievalState.retrievalCandidateTargetIds);
+  expect(retrievalState.renderedActivityTargetIds).toEqual(supportedPhysicalContextTargetIds);
+  expect(retrievalState.physicalContextTargetIds).toEqual(supportedPhysicalContextTargetIds);
+  expect(retrievalState.targetPoolIds).toEqual(targetIds);
   expect(retrievalState.activeHighlightIds).toEqual([]);
   expect(retrievalState.promptVisualState.activeTargetVisualIds).toEqual([]);
   expect(retrievalState.promptVisualState.targetHoverCursorSuppressed).toBe(true);
   expect(retrievalState.cursor).toBe("");
   const familyByTargetId = Object.fromEntries(UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
     .map(({ targetId, family }) => [targetId, family]));
-  for (const family of ["mountain-range", "river", "lake"]) {
-    expect(retrievalState.retrievalCandidateTargetIds
-      .filter((targetId) => familyByTargetId[targetId] === family).length).toBeGreaterThanOrEqual(3);
-  }
+  expect(retrievalState.physicalContextTargetIds.reduce((counts, targetId) => {
+    const family = familyByTargetId[targetId];
+    counts[family] = (counts[family] || 0) + 1;
+    return counts;
+  }, {})).toEqual({ river: 8, lake: 6, "mountain-range": 20 });
   const physicalVisualState = await page.evaluate(() => (
     window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState()
   ));
+  expect(physicalVisualState.renderedPhysicalFamilyCounts).toEqual({
+    river: 8,
+    lake: 6,
+    "mountain-range": 20
+  });
+  expect(physicalVisualState.renderedRiverLineTargetIds).toEqual(expect.arrayContaining([
+    "arkansas-river",
+    "mississippi-river",
+    "ohio-river",
+    "st-lawrence-river"
+  ]));
   expect(physicalVisualState.cameraDecision).toMatchObject({
     mode: "fit",
-    source: "guided-physical-retrieval-candidates",
-    targetIds: retrievalState.retrievalCandidateTargetIds
+    source: "guided-physical-context-lower48",
+    searchSpace: "lower48"
   });
+  expect(physicalVisualState.cameraDecision.targetIds).toHaveLength(32);
   expect(physicalVisualState.cameraDecision.bounds.flat(2).every(Number.isFinite)).toBe(true);
   expect(physicalVisualState.dragPanEnabled).toBe(true);
   expect(physicalVisualState.scrollZoomEnabled).toBe(true);
@@ -1096,7 +1114,7 @@ test("mixed physical review uses only introduced mountain, river, and lake targe
   expect(cameraAfterNavigation.zoom).toBeGreaterThan(cameraBeforeNavigation.zoom);
   expect(cameraAfterNavigation.center).not.toEqual(cameraBeforeNavigation.center);
   const expectedTargetId = retrievalState.currentPromptTargetId;
-  const distractorTargetId = retrievalState.retrievalCandidateTargetIds.find((targetId) => (
+  const distractorTargetId = retrievalState.physicalContextTargetIds.find((targetId) => (
     familyByTargetId[targetId] === familyByTargetId[expectedTargetId]
     && !targetIds.includes(targetId)
   ));

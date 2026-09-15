@@ -1,5 +1,5 @@
 export const GUIDED_CHILD_LAUNCH_STORAGE_KEY = "mappaGuidedChildLaunch";
-export const GUIDED_CHILD_LAUNCH_VERSION = 3;
+export const GUIDED_CHILD_LAUNCH_VERSION = 4;
 
 const validStatuses = new Set(["launched", "completed"]);
 const validEntrySources = new Set(["guided-learning", "evidence-driven-primary-learn"]);
@@ -34,7 +34,7 @@ function normalizeChild(value = {}) {
     targetType: String(source.targetType || "").trim() || null,
     teachingMessage: String(source.teachingMessage || "").trim() || null,
     targetIds: uniqueStrings(source.targetIds),
-    candidateTargetIds: uniqueStrings(source.candidateTargetIds),
+    physicalContextTargetIds: uniqueStrings(source.physicalContextTargetIds),
     targetLabels: uniqueStrings(source.targetLabels),
     targetConceptIds: uniqueStrings(source.targetConceptIds),
     newTargetIds: uniqueStrings(source.newTargetIds),

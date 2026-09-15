@@ -35,7 +35,7 @@ const input = {
     stepId: "us-mountain-ranges",
     cohortId: "northeast-mountains",
     targetIds: ["white-mountains", "green-mountains", "white-mountains"],
-    candidateTargetIds: ["white-mountains", "green-mountains", "adirondack-mountains", "green-mountains"],
+    physicalContextTargetIds: ["mississippi-river", "lake-superior", "white-mountains", "mississippi-river"],
     targetLabels: ["White Mountains", "Green Mountains"],
     targetConceptIds: ["mountain-range-location:white-mountains", "mountain-range-location:green-mountains"],
     guidedPhysicalCheckpoint: {
@@ -53,10 +53,10 @@ assert.equal(created.entrySource, "evidence-driven-primary-learn");
 assert.equal(created.returnTo, "guided-learning");
 assert.equal(created.status, "launched");
 assert.deepEqual(created.child.targetIds, ["white-mountains", "green-mountains"]);
-assert.deepEqual(created.child.candidateTargetIds, [
-  "white-mountains",
-  "green-mountains",
-  "adirondack-mountains"
+assert.deepEqual(created.child.physicalContextTargetIds, [
+  "mississippi-river",
+  "lake-superior",
+  "white-mountains"
 ]);
 assert.equal(created.child.physicalRetrievalActivity, true);
 assert.equal("onContinue" in created, false);
@@ -72,9 +72,9 @@ const completed = completeGuidedChildLaunchContract(saved.orchestrationBlockId, 
 assert.equal(completed.status, "completed");
 assert.deepEqual(completed.child.targetIds, saved.child.targetIds, "Completion must preserve the exact bounded subset.");
 assert.deepEqual(
-  completed.child.candidateTargetIds,
-  saved.child.candidateTargetIds,
-  "Completion must preserve the visible retrieval candidates."
+  completed.child.physicalContextTargetIds,
+  saved.child.physicalContextTargetIds,
+  "Completion must preserve the full physical map context."
 );
 assert.deepEqual(
   completeGuidedChildLaunchContract(saved.orchestrationBlockId, storage),

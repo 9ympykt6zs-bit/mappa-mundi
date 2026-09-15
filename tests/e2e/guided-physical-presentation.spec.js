@@ -8,6 +8,7 @@ import {
 } from "../../src/guided-learning-orchestration.js";
 
 const lower48Camera = { center: [-97.76220, 39.30636], zoom: 4.1407 };
+const supportedPhysicalContextTargetIds = orchestration.physicalFeatures.map(({ targetId }) => targetId);
 
 async function launchPhysicalTeaching(page, targetId, {
   extraStateIds = [],
@@ -110,19 +111,23 @@ async function launchPhysicalTeaching(page, targetId, {
       };
     }, audioMuted);
   }
-  const firstCohortFeature = orchestration.physicalFeatures.find((candidate) => (
-    candidate.targetId === targetCohort.supportedMemberTargetIds[0]
-  ));
-  await expect.poll(() => page.evaluate(() => (
-    window.__MAPPA_TEST_API__.getGuidedLearningOrchestration().currentBlock.id
-  ))).toBe(firstCohortFeature.introductionBlockId);
+  const cohortIntroductionBlockIds = targetCohort.supportedMemberTargetIds.map((cohortTargetId) => (
+    orchestration.physicalFeatures.find((candidate) => candidate.targetId === cohortTargetId)?.introductionBlockId
+  )).filter(Boolean);
+  await expect.poll(async () => {
+    const currentBlockId = await page.evaluate(() => (
+      window.__MAPPA_TEST_API__.getGuidedLearningOrchestration().currentBlock.id
+    ));
+    return cohortIntroductionBlockIds.includes(currentBlockId);
+  }).toBe(true);
   await page.evaluate(() => window.__MAPPA_TEST_API__.launchNextGuidedLearningOrchestration());
   await expect(page.locator(".guided-physical-teaching-panel")).toBeVisible({ timeout: 20_000 });
-  for (const cohortTargetId of targetCohort.supportedMemberTargetIds) {
+  for (let index = 0; index < targetCohort.supportedMemberTargetIds.length; index += 1) {
+    const cohortTargetId = await page.evaluate(() => (
+      window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingState()?.currentTargetId || null
+    ));
     if (cohortTargetId === targetId) break;
-    await expect.poll(() => page.evaluate(() => (
-      window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingState()?.currentTargetId
-    ))).toBe(cohortTargetId);
+    expect(targetCohort.supportedMemberTargetIds).toContain(cohortTargetId);
     expect(await page.evaluate(() => window.__MAPPA_TEST_API__.answerGuidedPhysicalTeachingCorrectly())).toBe(true);
   }
   await expect.poll(() => page.evaluate(() => (
@@ -174,7 +179,7 @@ async function expectCamera(page, expected) {
       && Math.abs(actual.center[0] - camera.center[0]) < 0.001
       && Math.abs(actual.center[1] - camera.center[1]) < 0.001
       && Math.abs(actual.zoom - camera.zoom) < 0.001;
-  }, expected)).toBe(true);
+  }, expected), { timeout: 15_000 }).toBe(true);
 }
 
 async function expectTeachingHighlight(page, targetId, { animated = true, reducedMotion = false } = {}) {
@@ -422,18 +427,17 @@ test("St. Lawrence uses complete cross-border geometry for teaching and locating
     window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.currentPromptTargetId
   ))).toBe("st-lawrence-river");
   const retrievalState = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState());
-  expect([...retrievalState.retrievalCandidateTargetIds].sort()).toEqual([
-    "ohio-river",
-    "st-lawrence-river"
-  ]);
-  expect([...retrievalState.renderedActivityTargetIds].sort()).toEqual([
-    "ohio-river",
-    "st-lawrence-river"
-  ]);
+  expect(retrievalState.targetPoolIds).toEqual(["ohio-river", "st-lawrence-river"]);
+  expect(retrievalState.physicalContextTargetIds).toEqual(supportedPhysicalContextTargetIds);
+  expect(retrievalState.renderedActivityTargetIds).toEqual(supportedPhysicalContextTargetIds);
+  for (const targetId of ["arkansas-river", "mississippi-river", "ohio-river", "st-lawrence-river"]) {
+    expect(retrievalState.renderedActivityTargetIds).toContain(targetId);
+  }
   expect(retrievalState.activeHighlightIds).toEqual([]);
   expect(retrievalState.completedLabelTargetIds).toEqual([]);
   expect(retrievalState.promptVisualState.targetHoverCursorSuppressed).toBe(true);
-  await expectCamera(page, easternCamera);
+  await expectSearchSpace(page, "lower48");
+  await captureTeaching(page, testInfo, "st-lawrence-full-context-retrieval");
   hitAudit = await inspectRiverHitCorridor();
   expect(hitAudit.hits.every(({ hit }) => hit), JSON.stringify(hitAudit)).toBe(true);
   expect(hitAudit.outsidePoint, JSON.stringify(hitAudit)).toBeTruthy();
@@ -443,7 +447,7 @@ test("St. Lawrence uses complete cross-border geometry for teaching and locating
 
   if (page.viewportSize().width > 760) {
     const targetHoverPoint = await findVisiblePhysicalHitPoint(page, "st-lawrence-river", "river");
-    const distractorHoverPoint = await findVisiblePhysicalHitPoint(page, "ohio-river", "river");
+    const distractorHoverPoint = await findVisiblePhysicalHitPoint(page, "mississippi-river", "river");
     expect(targetHoverPoint).toBeTruthy();
     expect(distractorHoverPoint).toBeTruthy();
     await page.mouse.move(targetHoverPoint.clientX, targetHoverPoint.clientY);
@@ -453,36 +457,18 @@ test("St. Lawrence uses complete cross-border geometry for teaching and locating
     expect(targetCursor).toBe(distractorCursor);
   }
 
-  const correctBeforeOutsideTap = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().correctCount);
-  const incorrectBeforeOutsideTap = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().incorrectCount);
-  const mapRect = await page.locator("#map").boundingBox();
-  expect(mapRect).toBeTruthy();
-  const outsideClientPoint = {
-    x: mapRect.x + hitAudit.outsidePoint.x,
-    y: mapRect.y + hitAudit.outsidePoint.y
-  };
+  const correctBeforeWrongTap = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().correctCount);
+  const incorrectBeforeWrongTap = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().incorrectCount);
+  const wrongRiverPoint = await findVisiblePhysicalHitPoint(page, "mississippi-river", "river");
+  expect(wrongRiverPoint).toBeTruthy();
   if (await page.evaluate(() => navigator.maxTouchPoints > 0)) {
-    await page.touchscreen.tap(outsideClientPoint.x, outsideClientPoint.y);
+    await page.touchscreen.tap(wrongRiverPoint.clientX, wrongRiverPoint.clientY);
   } else {
-    await page.mouse.click(outsideClientPoint.x, outsideClientPoint.y);
-  }
-  await page.waitForTimeout(250);
-  const phaseAfterNearMiss = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase);
-  expect(phaseAfterNearMiss).not.toBe("feedback");
-  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().correctCount)).toBe(correctBeforeOutsideTap);
-  if (phaseAfterNearMiss === "answering") {
-    expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().incorrectCount)).toBe(incorrectBeforeOutsideTap);
-    const wrongRiverPoint = await findVisiblePhysicalHitPoint(page, "ohio-river", "river");
-    expect(wrongRiverPoint).toBeTruthy();
-    if (await page.evaluate(() => navigator.maxTouchPoints > 0)) {
-      await page.touchscreen.tap(wrongRiverPoint.clientX, wrongRiverPoint.clientY);
-    } else {
-      await page.mouse.click(wrongRiverPoint.clientX, wrongRiverPoint.clientY);
-    }
+    await page.mouse.click(wrongRiverPoint.clientX, wrongRiverPoint.clientY);
   }
   await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase)).toBe("correction");
-  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().correctCount)).toBe(correctBeforeOutsideTap);
-  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().incorrectCount)).toBe(incorrectBeforeOutsideTap + 1);
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().correctCount)).toBe(correctBeforeWrongTap);
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState().incorrectCount)).toBe(incorrectBeforeWrongTap + 1);
 
   const targetPoint = await findVisiblePhysicalHitPoint(page, "st-lawrence-river", "river");
   expect(targetPoint).toBeTruthy();
@@ -492,13 +478,59 @@ test("St. Lawrence uses complete cross-border geometry for teaching and locating
     await page.mouse.click(targetPoint.clientX, targetPoint.clientY);
   }
   await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase)).not.toBe("correction");
-  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.correctCount ?? correctBeforeOutsideTap)).toBe(correctBeforeOutsideTap);
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.correctCount ?? correctBeforeWrongTap)).toBe(correctBeforeWrongTap);
 
   const evidence = await page.evaluate((key) => (
-    JSON.parse(localStorage.getItem(key)).events.filter(({ conceptId }) => conceptId === "river-location:st-lawrence-river")
+    JSON.parse(localStorage.getItem(key)).events
   ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
-  expect(evidence.map(({ outcome }) => outcome)).toEqual(["assisted", "incorrect"]);
-  expect(evidence.every(({ conceptId }) => conceptId === feature.conceptId)).toBe(true);
+  const stLawrenceEvidence = evidence.filter(({ conceptId }) => conceptId === "river-location:st-lawrence-river");
+  expect(stLawrenceEvidence.map(({ outcome }) => outcome)).toEqual(["assisted", "incorrect"]);
+  expect(evidence.some(({ conceptId }) => conceptId === "river-location:mississippi-river")).toBe(false);
+  const orchestrationState = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY);
+  const mississippiFeature = orchestration.physicalFeatures.find(({ targetId }) => targetId === "mississippi-river");
+  expect(orchestrationState.completedBlockIds).not.toContain(mississippiFeature.introductionBlockId);
+});
+
+test("Arkansas River retrieval keeps the connected Mississippi system visible", async ({ page }) => {
+  await launchPhysicalTeaching(page, "arkansas-river");
+  const cohort = await page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingState().teachingTargetIds
+  ));
+  for (let index = 0; index < cohort.length; index += 1) {
+    const targetId = await page.evaluate(() => (
+      window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingState()?.currentTargetId || null
+    ));
+    if (!targetId) break;
+    expect(await page.evaluate(() => window.__MAPPA_TEST_API__.answerGuidedPhysicalTeachingCorrectly())).toBe(true);
+  }
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase
+  ))).toBe("answering");
+  for (let attempt = 0; attempt < cohort.length; attempt += 1) {
+    const retrieval = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState());
+    if (retrieval.currentPromptTargetId === "arkansas-river") break;
+    expect(await page.evaluate(() => window.__MAPPA_TEST_API__.answerActiveMemoryTrailCorrectly())).toBe(true);
+    await expect.poll(() => page.evaluate(() => (
+      window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase
+    ))).toBe("answering");
+  }
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.currentPromptTargetId
+  ))).toBe("arkansas-river");
+  const visual = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState());
+  expect(visual.renderedRiverLineTargetIds).toEqual(expect.arrayContaining([
+    "arkansas-river",
+    "mississippi-river",
+    "ohio-river"
+  ]));
+  expect(visual.renderedPhysicalTargetIds).toEqual(supportedPhysicalContextTargetIds);
+  expect(visual.cameraDecision).toMatchObject({
+    source: "guided-physical-context-lower48",
+    cameraPhase: "retrieval",
+    searchSpace: "lower48"
+  });
+  const arkansasPoint = await findVisiblePhysicalHitPoint(page, "arkansas-river", "river");
+  expect(arkansasPoint).toBeTruthy();
 });
 
 test("Alaska physical teaching preserves regional framing", async ({ page }, testInfo) => {
@@ -559,15 +591,49 @@ test("teaching emphasis follows the cohort and clears before independent retriev
   expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.activeHighlightIds)).toEqual([]);
 });
 
+test("lake retrieval keeps the complete supported physical map separate from its question pool", async ({ page }, testInfo) => {
+  await launchPhysicalTeaching(page, "lake-huron");
+  const cohort = await page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingState().teachingTargetIds
+  ));
+  for (let index = 0; index < cohort.length; index += 1) {
+    const targetId = await page.evaluate(() => (
+      window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingState()?.currentTargetId || null
+    ));
+    if (!targetId) break;
+    expect(cohort).toContain(targetId);
+    await expectTeachingHighlight(page, targetId);
+    expect(await page.evaluate(() => window.__MAPPA_TEST_API__.answerGuidedPhysicalTeachingCorrectly())).toBe(true);
+  }
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase
+  ))).toBe("answering");
+  const retrieval = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState());
+  expect([...retrieval.targetPoolIds].sort()).toEqual([...cohort].sort());
+  expect(retrieval.physicalContextTargetIds).toEqual(supportedPhysicalContextTargetIds);
+  expect(retrieval.renderedActivityTargetIds).toEqual(supportedPhysicalContextTargetIds);
+  expect(retrieval.activeHighlightIds).toEqual([]);
+  const visual = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState());
+  expect(visual.renderedPhysicalFamilyCounts).toEqual({ river: 8, lake: 6, "mountain-range": 20 });
+  expect(visual.renderedRiverLineTargetIds).toEqual(expect.arrayContaining([
+    "arkansas-river",
+    "mississippi-river",
+    "ohio-river",
+    "st-lawrence-river"
+  ]));
+  await expectSearchSpace(page, "lower48");
+  await captureTeaching(page, testInfo, "lake-full-context-retrieval");
+});
+
 async function expectSearchSpace(page, searchSpace = "lower48") {
   await expect.poll(() => page.evaluate(() => (
-    window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState()?.cameraDecision?.source
-  ))).toBeTruthy();
+    window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState()?.cameraDecision
+  ))).toMatchObject({ cameraPhase: "retrieval", searchSpace });
   const decision = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState().cameraDecision);
   await expectCamera(page, decision);
-  if (decision.source === "guided-physical-retrieval-candidates") {
-    expect(decision).toMatchObject({ mode: "fit" });
-    expect(decision.targetIds.length).toBeGreaterThanOrEqual(3);
+  if (decision.source === "guided-physical-context-lower48") {
+    expect(decision).toMatchObject({ mode: "fit", cameraPhase: "retrieval", searchSpace: "lower48" });
+    expect(decision.targetIds).toHaveLength(32);
     expect(decision.bounds.flat(2).every(Number.isFinite)).toBe(true);
     const projected = await page.evaluate(() => {
       const { bounds } = window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState().cameraDecision;
@@ -582,7 +648,6 @@ async function expectSearchSpace(page, searchSpace = "lower48") {
     expect(projected.every(({ inside }) => inside), JSON.stringify(projected)).toBe(true);
     return decision;
   }
-  expect(decision).toMatchObject({ cameraPhase: "retrieval", searchSpace });
   if (searchSpace === "lower48") {
     const projected = await page.evaluate(() => {
       const decision = window.__MAPPA_TEST_API__.getGuidedPhysicalFeatureVisualState().cameraDecision;

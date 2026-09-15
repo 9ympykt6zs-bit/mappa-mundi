@@ -39,6 +39,7 @@ import {
   completeGuidedLearningPhysicalFeatureIntroductions,
   createPhysicalFeatureIntroductionEvidence,
   deferGuidedLearningOrchestrationBlock,
+  getGuidedPhysicalRetrievalMapContext,
   GUIDED_LEARNING_BLOCK_TYPES,
   loadGuidedLearningOrchestrationState,
   recordGuidedLearningPhysicalTeachingTarget,
@@ -63,7 +64,10 @@ import {
   isManagedUnitedStatesGuidedPoliticalCamera,
   UNITED_STATES_GUIDED_POLITICAL_CAMERA_CONTEXT
 } from "./united-states-guided-political-camera.js?v=20260910-guided-state-zoom-clamp-1";
-import { calculateGuidedLearningPhysicalFeatureCamera } from "./united-states-physical-feature-orchestration.js?v=20260908-st-lawrence-geometry-1";
+import {
+  calculateGuidedLearningPhysicalFeatureCamera,
+  UNITED_STATES_GUIDED_LOWER48_PHYSICAL_CAMERA
+} from "./united-states-physical-feature-orchestration.js?v=20260908-st-lawrence-geometry-1";
 import {
   chooseNextGuidedPhysicalRetrievalTarget,
   createGuidedPhysicalRetrievalCheckpoint,
@@ -3954,7 +3958,7 @@ function getGuidedLearningOrchestrationSnapshot(requestedTargetedNeed = null) {
       activity: durableChildLaunch.child.activityId || durableChildLaunch.child.destinationKind,
       type: durableChildLaunch.child.type,
       targetSubset: [...durableChildLaunch.child.targetIds],
-      retrievalCandidates: [...durableChildLaunch.child.candidateTargetIds],
+      physicalMapContext: [...durableChildLaunch.child.physicalContextTargetIds],
       challengeSubset: [...durableChildLaunch.child.challengeIds],
       returnTo: durableChildLaunch.returnTo,
       status: durableChildLaunch.status
@@ -3973,8 +3977,8 @@ function getGuidedLearningOrchestrationSnapshot(requestedTargetedNeed = null) {
         || activeGuidedLearningOrchestrationBlock.destination?.cohortId
         || null,
       physicalCohortTargetIds: [...(activeStudySession?.focusTargetIds || [])],
-      physicalRetrievalCandidateTargetIds: [
-        ...(activeStudySession?.physicalRetrievalCandidateTargetIds || [])
+      physicalContextTargetIds: [
+        ...(activeStudySession?.physicalContextTargetIds || [])
       ],
       guidedPhysicalRetrievalCheckpoint: getGuidedPhysicalRetrievalCheckpointSnapshot(
         activeStudySession?.memoryTrail?.guidedPhysicalCheckpoint
@@ -4051,7 +4055,7 @@ function createGuidedChildLaunchContractForBlock(block, {
       targetType: destination.targetType,
       teachingMessage: destination.teachingMessage,
       targetIds: destination.targetIds,
-      candidateTargetIds: destination.candidateTargetIds,
+      physicalContextTargetIds: destination.physicalContextTargetIds,
       targetLabels: destination.targetLabels?.length
         ? destination.targetLabels
         : destination.targetLabel ? [destination.targetLabel] : [],
@@ -4256,7 +4260,7 @@ async function launchGuidedLearningChildBlock(block, { completed = false } = {})
       persistentLearningCamera: block.destination.persistentLearningCamera,
       physicalReviewActivity: block.destination.physicalReviewActivity === true,
       physicalRetrievalActivity: block.destination.physicalRetrievalActivity === true,
-      physicalRetrievalCandidateTargetIds: block.destination.candidateTargetIds,
+      physicalContextTargetIds: block.destination.physicalContextTargetIds,
       sourceActivityIds: block.destination.sourceActivityIds
     });
     if (completed) showRehydratedGuidedChildCompletion(block);
@@ -4278,7 +4282,7 @@ async function launchGuidedLearningChildBlock(block, { completed = false } = {})
       persistentLearningCamera: block.destination.persistentLearningCamera,
       physicalReviewActivity: block.destination.physicalReviewActivity === true,
       physicalRetrievalActivity: block.destination.physicalRetrievalActivity === true,
-      physicalRetrievalCandidateTargetIds: block.destination.candidateTargetIds,
+      physicalContextTargetIds: block.destination.physicalContextTargetIds,
       sourceActivityIds: block.destination.sourceActivityIds
     });
     if (completed) showRehydratedGuidedChildCompletion(block);
@@ -4333,6 +4337,9 @@ function rehydrateGuidedLearningChildBlock(contract) {
   const resolvedTargetIds = isGuidedPhysicalRetrieval && child.targetIds.length < 2
     ? [...(liveBlock.destination.targetIds || child.targetIds)]
     : [...child.targetIds];
+  const physicalMapContext = isGuidedPhysicalRetrieval
+    ? getGuidedPhysicalRetrievalMapContext(UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1)
+    : null;
   const teachingProgress = state.physicalTeachingProgress?.[configuredBlock.id] || null;
   const destination = {
     ...liveBlock.destination,
@@ -4347,9 +4354,11 @@ function rehydrateGuidedLearningChildBlock(contract) {
     targetType: child.targetType || liveBlock.destination.targetType,
     teachingMessage: child.teachingMessage || liveBlock.destination.teachingMessage,
     targetIds: resolvedTargetIds,
-    candidateTargetIds: child.candidateTargetIds.length > 0
-      ? [...child.candidateTargetIds]
-      : [...(liveBlock.destination.candidateTargetIds || resolvedTargetIds)],
+    physicalContextTargetIds: physicalMapContext
+      ? [...physicalMapContext.targetIds]
+      : child.physicalContextTargetIds.length > 0
+        ? [...child.physicalContextTargetIds]
+        : [...(liveBlock.destination.physicalContextTargetIds || [])],
     targetLabels: [...child.targetLabels],
     targetConceptIds: [...child.targetConceptIds],
     newTargetIds: [...child.newTargetIds],
@@ -4361,9 +4370,10 @@ function rehydrateGuidedLearningChildBlock(contract) {
     physicalReviewActivity: child.physicalReviewActivity === true || liveBlock.destination.physicalReviewActivity === true,
     physicalRetrievalActivity: child.physicalRetrievalActivity === true
       || liveBlock.destination.physicalRetrievalActivity === true,
-    sourceActivityIds: child.sourceActivityIds.length > 0
-      ? [...child.sourceActivityIds]
-      : liveBlock.destination.sourceActivityIds,
+    sourceActivityIds: physicalMapContext?.sourceActivityIds
+      || (child.sourceActivityIds.length > 0
+        ? [...child.sourceActivityIds]
+        : liveBlock.destination.sourceActivityIds),
     guidedPhysicalCheckpoint: child.guidedPhysicalCheckpoint || liveBlock.destination.guidedPhysicalCheckpoint
   };
   if (teachingProgress) {
@@ -8604,8 +8614,8 @@ function getStudyStepContext(journeyId, stepId) {
   return { journey, step, activity };
 }
 
-function createGuidedPhysicalRetrievalActivity(candidateTargetIds = [], sourceActivityIds = []) {
-  const requestedTargetIds = [...new Set(candidateTargetIds.filter(Boolean))];
+function createGuidedPhysicalRetrievalActivity(contextTargetIds = [], sourceActivityIds = []) {
+  const requestedTargetIds = [...new Set(contextTargetIds.filter(Boolean))];
   const sourceIds = [...new Set(sourceActivityIds.filter(Boolean))];
   const sourceActivities = sourceIds.map((activityId) => getActivityById(activityId)).filter(Boolean);
   const targets = requestedTargetIds.map((targetId) => sourceActivities
@@ -8622,7 +8632,7 @@ function createGuidedPhysicalRetrievalActivity(candidateTargetIds = [], sourceAc
     title: "U.S. Physical Geography Retrieval",
     targetNoun: "physical feature",
     promptText: "Find these physical features",
-    visibleAnswerLimit: 8,
+    visibleAnswerLimit: targets.length,
     memoryTrailNewTargetLimit: 4,
     memoryTrailRequireAllTargets: true,
     memoryTrailAutoStart: true,
@@ -8653,8 +8663,8 @@ async function startStudyPreviewActivity(journeyId, stepId, options = {}) {
   const step = context.step;
   const activity = options.physicalRetrievalActivity || options.physicalReviewActivity
     ? createGuidedPhysicalRetrievalActivity(
-        options.physicalRetrievalCandidateTargetIds?.length
-          ? options.physicalRetrievalCandidateTargetIds
+        options.physicalContextTargetIds?.length
+          ? options.physicalContextTargetIds
           : options.memoryTrailTargetIds,
         options.sourceActivityIds
       )
@@ -8683,7 +8693,7 @@ async function startStudyPreviewActivity(journeyId, stepId, options = {}) {
     physicalFeatureCamera: options.physicalFeatureCamera,
     physicalFeatureGeometry: options.physicalFeatureGeometry,
     persistentLearningCamera: options.persistentLearningCamera,
-    physicalRetrievalCandidateTargetIds: options.physicalRetrievalCandidateTargetIds
+    physicalContextTargetIds: options.physicalContextTargetIds
   });
 }
 
@@ -8793,9 +8803,9 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
     physicalFeatureCamera: options.physicalFeatureCamera || null,
     physicalFeatureGeometry: options.physicalFeatureGeometry || null,
     persistentLearningCamera: options.persistentLearningCamera || null,
-    physicalRetrievalCandidateTargetIds: [...new Set(
-      (Array.isArray(options.physicalRetrievalCandidateTargetIds)
-        ? options.physicalRetrievalCandidateTargetIds
+    physicalContextTargetIds: [...new Set(
+      (Array.isArray(options.physicalContextTargetIds)
+        ? options.physicalContextTargetIds
         : []).filter(Boolean)
     )],
     guidedPhysicalCheckpointConfig: options.guidedPhysicalCheckpoint || null,
@@ -8881,15 +8891,23 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
 function resolveGuidedPhysicalFeatureCamera() {
   if (!activeStudySession?.guidedOrchestration || !activeStudySession.physicalFeatureFamily) return null;
   if (activeStudySession.guidedCameraDecision) return activeStudySession.guidedCameraDecision;
-  const retrievalCandidateIds = activeStudySession.physicalRetrievalCandidateTargetIds || [];
-  const includesDisplayOnlyCandidates = retrievalCandidateIds.some((targetId) => (
-    !activeStudySession.focusTargetIds.includes(targetId)
+  const physicalContextTargetIds = activeStudySession.physicalContextTargetIds || [];
+  const isRetrieval = !activeStudySession.guidedPhysicalTeaching && physicalContextTargetIds.length > 0;
+  const questionFeatures = activeStudySession.focusTargetIds
+    .map((targetId) => UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
+      .find((feature) => feature.targetId === targetId))
+    .filter(Boolean);
+  const isAlaskaOnlyQuestion = questionFeatures.length > 0 && questionFeatures.every(({ authoredStateIds = [] }) => (
+    authoredStateIds.length > 0 && authoredStateIds.every((stateId) => stateId === "alaska")
   ));
-  if (
-    retrievalCandidateIds.length >= 2
-    && (!activeStudySession.persistentLearningCamera || includesDisplayOnlyCandidates)
-  ) {
-    const targets = retrievalCandidateIds
+  if (isRetrieval && !isAlaskaOnlyQuestion) {
+    const alaskaOnlyTargetIds = new Set(UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
+      .filter(({ authoredStateIds = [] }) => (
+        authoredStateIds.length > 0 && authoredStateIds.every((stateId) => stateId === "alaska")
+      ))
+      .map(({ targetId }) => targetId));
+    const cameraTargetIds = physicalContextTargetIds.filter((targetId) => !alaskaOnlyTargetIds.has(targetId));
+    const targets = cameraTargetIds
       .map((targetId) => session.currentActivity?.targets?.find(({ id }) => id === targetId))
       .filter(Boolean);
     const bounds = runner?.getCombinedTargetBounds?.(targets);
@@ -8897,7 +8915,10 @@ function resolveGuidedPhysicalFeatureCamera() {
     const padding = compact
       ? { top: 104, right: 28, bottom: 210, left: 28 }
       : { top: 104, right: 64, bottom: 176, left: 64 };
-    const fit = bounds && runner?.map?.cameraForBounds?.(bounds, { padding, maxZoom: 5.35 });
+    const fit = bounds && runner?.map?.cameraForBounds?.(bounds, {
+      padding,
+      maxZoom: UNITED_STATES_GUIDED_LOWER48_PHYSICAL_CAMERA.zoom
+    });
     if (fit) {
       activeStudySession.guidedCameraDecision = {
         mode: "fit",
@@ -8906,8 +8927,10 @@ function resolveGuidedPhysicalFeatureCamera() {
         bearing: 0,
         pitch: 0,
         duration: 650,
-        source: "guided-physical-retrieval-candidates",
-        targetIds: retrievalCandidateIds,
+        source: "guided-physical-context-lower48",
+        cameraPhase: "retrieval",
+        searchSpace: "lower48",
+        targetIds: cameraTargetIds,
         bounds,
         padding,
         viewport: compact ? "mobile" : "desktop"
@@ -28588,6 +28611,9 @@ function getGuidedPhysicalFeatureVisualStateForTest() {
   const target = session?.currentActivity?.targets?.find(({ id }) => id === targetId);
   const sourceFeature = target ? runner.findSourceShapeFeature?.(target, session.currentActivity) : null;
   const mapCenter = runner.map?.getCenter?.();
+  const renderedPhysicalTargets = (session.currentActivity?.targets || []).filter(({ type }) => (
+    ["mountain-range", "river", "lake", "water-body"].includes(type)
+  ));
   return {
     activityId: session.currentActivity?.id || null,
     targetId,
@@ -28602,6 +28628,15 @@ function getGuidedPhysicalFeatureVisualStateForTest() {
       .filter(Boolean),
     targetName: target?.name || null,
     targetCount: session.currentActivity?.targets?.length || 0,
+    renderedPhysicalTargetIds: renderedPhysicalTargets.map(({ id }) => id),
+    renderedPhysicalFamilyCounts: renderedPhysicalTargets.reduce((counts, item) => {
+      const family = item.type === "water-body" ? "lake" : item.type;
+      counts[family] = (counts[family] || 0) + 1;
+      return counts;
+    }, {}),
+    renderedRiverLineTargetIds: [...new Set((runner.getRiverLineGeoJson?.().features || [])
+      .map(({ properties, id }) => properties?.id || id)
+      .filter(Boolean))],
     family: activeStudySession.physicalFeatureFamily,
     geometryMetadata: activeStudySession.physicalFeatureGeometry,
     sourceFeatureId: sourceFeature?.properties?.id || sourceFeature?.properties?.name || sourceFeature?.id || null,
@@ -28992,7 +29027,7 @@ function getActiveMemoryTrailStateForTest() {
     promptCount: memoryTrail.promptCount,
     promptHistory: memoryTrail.promptHistory.map((entry) => ({ ...entry })),
     targetPoolIds: [...memoryTrail.targetPoolIds],
-    retrievalCandidateTargetIds: [...(activeStudySession?.physicalRetrievalCandidateTargetIds || [])],
+    physicalContextTargetIds: [...(activeStudySession?.physicalContextTargetIds || [])],
     renderedActivityTargetIds: (session.currentActivity?.targets || []).map(({ id }) => id).filter(Boolean),
     guidedPoliticalCamera: memoryTrail.guidedPoliticalCamera
       ? JSON.parse(JSON.stringify(memoryTrail.guidedPoliticalCamera))

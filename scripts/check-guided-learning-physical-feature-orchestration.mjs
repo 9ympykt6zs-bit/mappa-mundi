@@ -9,11 +9,11 @@ import {
   createPhysicalFeatureIntroductionEvidenceEvents,
   createUnitedStatesGuidedLearningOrchestrationConfig,
   deferGuidedLearningOrchestrationBlock,
+  getGuidedPhysicalRetrievalMapContext,
   getGuidedLearningPhysicalReviewEligibility,
   getGuidedLearningPhysicalProgression,
   GUIDED_LEARNING_BLOCK_TYPES,
   resetGuidedLearningOrchestrationState,
-  selectGuidedPhysicalRetrievalCandidateTargetIds,
   selectPhysicalCohortRetrievalSubset,
   satisfyGuidedLearningPhysicalInterleave,
   selectGuidedLearningOrchestrationBlock,
@@ -944,50 +944,30 @@ const mixedDecision = selectGuidedLearningOrchestrationBlock({
 assert.equal(mixedDecision.currentBlock.id, mixedBlockId);
 assert.equal(mixedDecision.currentBlock.destination.physicalReviewActivity, true);
 assert.equal(mixedDecision.currentBlock.destination.physicalRetrievalActivity, true);
+const fullPhysicalMapContext = getGuidedPhysicalRetrievalMapContext();
 assert.deepEqual(
-  mixedDecision.currentBlock.destination.targetIds.every((targetId) => (
-    mixedDecision.currentBlock.destination.candidateTargetIds.includes(targetId)
-  )),
-  true,
-  "Every queried mixed-review target remains visible among the candidates."
+  mixedDecision.currentBlock.destination.physicalContextTargetIds,
+  fullPhysicalMapContext.targetIds,
+  "Mixed review renders the complete supported physical inventory."
 );
-const mixedCandidateFamilies = mixedDecision.currentBlock.destination.candidateTargetIds.reduce((counts, targetId) => {
+const contextFamilies = mixedDecision.currentBlock.destination.physicalContextTargetIds.reduce((counts, targetId) => {
   const family = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
     .find((feature) => feature.targetId === targetId)?.family;
   counts[family] = (counts[family] || 0) + 1;
   return counts;
 }, {});
-assert.equal(mixedCandidateFamilies.river >= 3, true, "Mixed review shows at least three introduced rivers.");
-assert.equal(mixedCandidateFamilies.lake >= 3, true, "Mixed review shows at least three introduced lakes.");
-assert.equal(mixedCandidateFamilies["mountain-range"] >= 3, true, "Mixed review shows at least three introduced ranges.");
-assert.deepEqual(mixedDecision.currentBlock.destination.sourceActivityIds.sort(), [
+assert.deepEqual(contextFamilies, { river: 8, lake: 6, "mountain-range": 20 });
+assert.deepEqual([...mixedDecision.currentBlock.destination.sourceActivityIds].sort(), [
   "us-mountain-ranges",
   "us-physical-lakes",
   "us-physical-rivers"
 ]);
-
-const introducedPhysicalTargetIds = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
-  .map(({ targetId }) => targetId);
-const stLawrenceCandidates = selectGuidedPhysicalRetrievalCandidateTargetIds({
-  targetIds: ["st-lawrence-river"],
-  introducedTargetIds: introducedPhysicalTargetIds
-});
-assert.equal(stLawrenceCandidates.includes("st-lawrence-river"), true);
-assert.equal(stLawrenceCandidates.length, 3, "One river question receives two introduced same-family distractors.");
-assert.equal(stLawrenceCandidates.every((targetId) => (
-  UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
-    .find((feature) => feature.targetId === targetId)?.family === "river"
-)), true);
-assert.deepEqual(
-  selectGuidedPhysicalRetrievalCandidateTargetIds({
-    targetIds: ["ohio-river", "st-lawrence-river"],
-    introducedTargetIds: ["ohio-river", "st-lawrence-river"]
-  }),
-  UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
-    .filter(({ targetId }) => ["ohio-river", "st-lawrence-river"].includes(targetId))
-    .map(({ targetId }) => targetId),
-  "When only two rivers have been introduced, both remain visible and no unseen river is added."
-);
+assert.equal(fullPhysicalMapContext.targetIds.length, 34);
+assert.deepEqual(fullPhysicalMapContext.sourceActivityIds, [
+  "us-physical-rivers",
+  "us-physical-lakes",
+  "us-mountain-ranges"
+]);
 
 const insufficientMixedState = createGuidedLearningOrchestrationState({
   completedBlockIds: [

@@ -39,3 +39,5 @@ Recommended regression coverage:
 ## Acceptance — Lead completes
 
 Accepted. The Lead independently verified the source, render, hit, camera, persistence, and evidence paths; implemented separate question and visible-candidate subsets; repaired legacy one-target rehydration; suppressed pre-answer hover-cursor leakage; reviewed the integrated diff; and validated focused plus broader Node and desktop/mobile browser coverage. The implementation follows the specialist's reusable contract recommendation while keeping display-only candidates out of checkpoint and evidence ownership.
+
+Follow-up on 2026-09-14: the introduced-only candidate subset was superseded by complete supported physical-map context. The audit's separation of rendered geometry, question membership, camera, persistence, and evidence remains the governing boundary. Contract version 4 now renders all supported rivers, lakes, and ranges while keeping the bounded question pool as the only curriculum and evidence owner.
