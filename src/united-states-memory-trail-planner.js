@@ -48,6 +48,7 @@ export function createUnitedStatesMemoryTrailState(value = {}, items = [], optio
     introducedItemIds,
     itemProgress,
     activeSession,
+    guidedCoreCapstone: normalizeGuidedCoreCapstone(source.guidedCoreCapstone, activeSession),
     lastSessionSummary: normalizeLastSessionSummary(source.lastSessionSummary)
   };
 }
@@ -399,6 +400,14 @@ export function applyUnitedStatesMemoryTrailSessionStart(state, plan, options = 
     memoryTrailSnapshot: null,
     updatedAt: resolveNow(options).getTime()
   };
+  if (plan?.sessionType === "guided-core-capstone") {
+    next.guidedCoreCapstone = {
+      status: "active",
+      selectionVersion: Math.max(1, Number(plan.capstone?.selectionVersion) || 1),
+      targetOrder: [...(plan.capstone?.targetOrder || [])],
+      completedResponses: []
+    };
+  }
   return next;
 }
 
@@ -418,6 +427,16 @@ export function applyUnitedStatesMemoryTrailSessionSnapshot(state, plan, snapsho
     memoryTrailSnapshot: snapshot.memoryTrailSnapshot || null,
     updatedAt: resolveNow(options).getTime()
   };
+  if (plan?.sessionType === "guided-core-capstone") {
+    next.guidedCoreCapstone = {
+      status: "active",
+      selectionVersion: Math.max(1, Number(plan.capstone?.selectionVersion) || 1),
+      targetOrder: [...(plan.capstone?.targetOrder || [])],
+      completedResponses: (snapshot.memoryTrailSnapshot?.promptHistory || snapshot.promptSnapshot?.promptHistory || [])
+        .filter((entry) => entry?.targetId && entry?.result)
+        .map((entry) => ({ targetId: entry.targetId, promptType: entry.promptType, result: entry.result }))
+    };
+  }
   return next;
 }
 
@@ -521,6 +540,17 @@ export function applyUnitedStatesMemoryTrailSessionResults(state, plan, result =
     allItemsIntroduced: areAllUnitedStatesMemoryTrailItemsIntroduced(next, plan?.allItems || []),
     allItemsMastered: areAllUnitedStatesMemoryTrailItemsMastered(next, plan?.allItems || [])
   };
+
+  if (plan?.sessionType === "guided-core-capstone") {
+    next.guidedCoreCapstone = {
+      status: "completed",
+      selectionVersion: Math.max(1, Number(plan.capstone?.selectionVersion) || 1),
+      targetOrder: [...(plan.capstone?.targetOrder || [])],
+      completedResponses: (result.promptHistory || [])
+        .filter((entry) => entry?.targetId && entry?.result)
+        .map((entry) => ({ targetId: entry.targetId, promptType: entry.promptType, result: entry.result }))
+    };
+  }
 
   return next;
 }
@@ -997,7 +1027,8 @@ function normalizeActiveSession(value, items = [], options = {}) {
   }
 
   const playItems = Array.isArray(plan.playItems) ? plan.playItems : [];
-  if (itemIdSet.size > 0 && playItems.some((item) => !itemIdSet.has(item.id))) {
+  const isGuidedCoreCapstone = plan.sessionType === "guided-core-capstone";
+  if (!isGuidedCoreCapstone && itemIdSet.size > 0 && playItems.some((item) => !itemIdSet.has(item.id))) {
     return null;
   }
 
@@ -1006,12 +1037,41 @@ function normalizeActiveSession(value, items = [], options = {}) {
     plan: {
       ...plan,
       playItems,
-      allItems: items.length > 0 ? items : (Array.isArray(plan.allItems) ? plan.allItems : [])
+      allItems: isGuidedCoreCapstone && Array.isArray(plan.allItems)
+        ? plan.allItems
+        : items.length > 0 ? items : (Array.isArray(plan.allItems) ? plan.allItems : [])
     },
     status: String(value.status || "active"),
     promptSnapshot: value.promptSnapshot && typeof value.promptSnapshot === "object" ? value.promptSnapshot : null,
     memoryTrailSnapshot: value.memoryTrailSnapshot && typeof value.memoryTrailSnapshot === "object" ? value.memoryTrailSnapshot : null,
     updatedAt: Math.max(0, Number(value.updatedAt) || 0)
+  };
+}
+
+function normalizeGuidedCoreCapstone(value, activeSession) {
+  const source = value && typeof value === "object" ? value : {};
+  const activePlan = activeSession?.plan?.sessionType === "guided-core-capstone"
+    ? activeSession.plan
+    : null;
+  const status = activePlan ? "active" : source.status === "completed" ? "completed" : "not-started";
+  const snapshotHistory = activeSession?.memoryTrailSnapshot?.promptHistory
+    || activeSession?.promptSnapshot?.promptHistory
+    || [];
+  const completedResponses = activePlan
+    ? snapshotHistory.filter((entry) => entry?.targetId && entry?.result)
+      .map((entry) => ({ targetId: entry.targetId, promptType: entry.promptType, result: entry.result }))
+    : Array.isArray(source.completedResponses) ? source.completedResponses
+      .filter((entry) => entry?.targetId && entry?.result)
+      .map((entry) => ({
+        targetId: String(entry.targetId),
+        promptType: String(entry.promptType || "name_to_place"),
+        result: entry.result === "correct" ? "correct" : "incorrect"
+      })) : [];
+  return {
+    status,
+    selectionVersion: Math.max(1, Number(activePlan?.capstone?.selectionVersion || source.selectionVersion) || 1),
+    targetOrder: [...new Set((activePlan?.capstone?.targetOrder || source.targetOrder || []).filter(Boolean))],
+    completedResponses
   };
 }
 

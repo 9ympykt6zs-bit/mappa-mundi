@@ -1,5 +1,11 @@
 # Automated testing
 
+## Guided required-core completion and final capstone — 2026-09-15
+
+`scripts/check-guided-core-capstone.mjs` pins the required inventory at 50 states, 50 capitals, ten nonrepeatable Reconstruction checkpoints, and 34 supported physical features with both introduction and immediate-practice completion. It separately removes Alaska, Hawaii, Juneau, Honolulu, Alaska Range introduction/practice, and Brooks Range introduction/practice and confirms that each omission blocks the capstone. The selector checks exactly ten unique introduced questions, a 4 state / 3 capital / 3 physical split, one river/lake/mountain range, noncontiguous geographic coverage, deterministic replay, active-session reload, persisted response history, and nonrepeatability after completion.
+
+The complete fast baseline passed **112/112** checks. The serial affected browser matrix covered capstone eligibility, a mid-capstone incorrect response and reload, all ten canonical response events, post-course choice persistence, physical introduction/review, complete physical context, state/capital teaching, Reconstruction scoring and reload, and targeted Guided entry on desktop and mobile Chromium. It passed **96/98** initially; both failures exposed a pre-existing temporal-dead-zone error in Journey canonical evidence writing, and the repaired cases then passed **2/2**. A further release matrix exposed stale Journey-preview and inert France-context assertions plus one transient mobile resource error; after aligning those tests with current behavior, the focused desktop/mobile rerun passed **12/12**. Known minor state-camera positioning imperfections remain deferred. No Safari or physical-device claim is made.
+
 ## Complete Guided physical-map context — 2026-09-14
 
 Guided physical retrieval now keeps its bounded introduced question pool separate from a complete 34-target rendered context: 8 rivers, 6 lakes, and 20 mountain ranges. The orchestration check pins the full context inventory and three source activities; the child-contract check pins version 4 persistence. Browser assertions verify the complete target and river-line sources during immediate river, lake, and mountain retrieval plus mixed review, while the Memory Trail pool remains bounded to its cohort or review selection. The complete fast baseline passed **111/111** checks.

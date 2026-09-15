@@ -197,7 +197,6 @@ import {
   applyUnitedStatesMemoryTrailSessionStart,
   buildUnitedStatesMemoryTrailItems,
   createUnitedStatesMemoryTrailState,
-  getUnitedStatesPostStateCurriculumStatus,
   hasUnitedStatesMemoryTrailProgress,
   isUnitedStatesMemoryTrailItemUnseen,
   isUnitedStatesMemoryTrailWeakReviewItem,
@@ -210,6 +209,11 @@ import {
   unitedStatesMemoryTrailStorageKey,
   UNITED_STATES_MEMORY_TRAIL_SOURCE
 } from "./united-states-memory-trail-planner.js?v=20260821-learning-reset-cache-1";
+import {
+  getUnitedStatesGuidedCoreCurriculumStatus,
+  planUnitedStatesGuidedCoreCapstone,
+  UNITED_STATES_GUIDED_CORE_CAPSTONE_SESSION_TYPE
+} from "./united-states-guided-core-capstone.js?v=20260915-guided-core-capstone-1";
 import { resolveMemoryTrailNewTargetLimit } from "./memory-trail-new-target-limit.js?v=20260621-daily-trail-co-progression-2";
 import { createMasteryDebugController } from "./mastery-debug.js?v=20260805-mastery-debug-1";
 import { chooseMemoryTrailRetrievalPromptType } from "./memory-trail-prompt-selector.js";
@@ -9877,7 +9881,10 @@ async function startAcrossUnitedStatesGlobeLearning() {
 
   if (continuation.destination.kind === "united-states-guided-learning") {
     const targetedNeed = continuation.destination.targetedNeed || null;
-    const launchedChild = !loadUnitedStatesMemoryTrailProgress(memoryTrailItems).activeSession?.plan
+    const trailState = loadUnitedStatesMemoryTrailProgress(memoryTrailItems);
+    const coreStatus = getUnitedStatesGuidedCoreStatus(memoryTrailItems, trailState);
+    const launchedChild = !coreStatus.coreComplete
+      && !trailState.activeSession?.plan
       && await launchNextGuidedLearningOrchestrationBlock({
       entrySource: "evidence-driven-primary-learn",
       targetedNeed,
@@ -10847,6 +10854,10 @@ function createMemoryTrailSession(activity = session.currentActivity, options = 
     guidedPersistentCamera,
     guidedPoliticalCamera: options.guidedPoliticalCamera || null,
     guidedLocatingOnly: options.guidedLocatingOnly === true,
+    guidedCoreCapstone: options.guidedCoreCapstone === true,
+    guidedCoreCapstoneTargetQueue: options.guidedCoreCapstone === true
+      ? [...new Set((options.guidedCoreCapstoneTargetOrder || targetPool.map((target) => target.id)).filter(Boolean))]
+      : [],
     capitalNamingEvidenceTargetIds: [...new Set(options.capitalNamingEvidenceTargetIds || [])],
     guidedPhysicalCheckpoint,
     dailyTrailFixedCameraLocked: false,
@@ -12717,6 +12728,8 @@ function startMemoryTrail(options = {}) {
     guidedPersistentCamera: options.guidedPersistentCamera,
     guidedPoliticalCamera: options.guidedPoliticalCamera,
     guidedLocatingOnly: options.guidedLocatingOnly === true,
+    guidedCoreCapstone: options.guidedCoreCapstone === true,
+    guidedCoreCapstoneTargetOrder: options.guidedCoreCapstoneTargetOrder,
     capitalNamingEvidenceTargetIds: options.capitalNamingEvidenceTargetIds,
     guidedPhysicalCheckpoint: options.guidedPhysicalCheckpoint
   });
@@ -12987,7 +13000,8 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
   const shouldHighlightPromptTarget = !isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
     && (selection.promptType === "guided" || selection.promptType === "place_to_name");
   syncCapitalLocationVisualContext(memoryTrail, selection, target);
-  const checkpointPreAnswerStyle = isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
+  const checkpointPreAnswerStyle = (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)
+    || (isGuidedCoreCapstoneMemoryTrail(memoryTrail) && selection.promptType === "name_to_place"))
     && memoryTrail.phase === "answering";
   runner?.setMemoryTrailStudyTargetEmphasisSuppressed?.(
     shouldSuppressDailyTrailStudyTargetEmphasis(memoryTrail, selection),
@@ -12995,7 +13009,8 @@ function applyMemoryTrailPromptSelection(memoryTrail, selection = {}) {
   );
   runner?.setMemoryTrailCheckpointPreAnswerStyle?.(checkpointPreAnswerStyle);
   runner?.setMemoryTrailTargetHoverCursorSuppressed?.(
-    memoryTrail.guidedLocatingOnly === true && Boolean(activeStudySession?.physicalFeatureFamily)
+    isGuidedCoreCapstoneMemoryTrail(memoryTrail)
+      || (memoryTrail.guidedLocatingOnly === true && Boolean(activeStudySession?.physicalFeatureFamily))
   );
   if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
     runner.setMemoryTrailHighlight([]);
@@ -14216,6 +14231,24 @@ function speakMemoryTrailTarget(target, onComplete) {
 }
 
 function chooseNextPrompt(memoryTrail) {
+  if (isGuidedCoreCapstoneMemoryTrail(memoryTrail)) {
+    const promptedTargetIds = new Set((memoryTrail.promptHistory || [])
+      .map((entry) => entry?.targetId)
+      .filter(Boolean));
+    const targetId = memoryTrail.guidedCoreCapstoneTargetQueue
+      .find((candidateTargetId) => !promptedTargetIds.has(candidateTargetId));
+    const stats = memoryTrail.targetStats?.[targetId];
+    const item = getCanonicalMemoryTrailPlan(memoryTrail)?.allItems
+      ?.find((candidate) => candidate?.targetId === targetId);
+    return targetId ? {
+      targetId,
+      promptType: item?.type === "capital"
+        ? chooseRetrievalPromptType(memoryTrail, stats)
+        : "name_to_place",
+      mode: "guided-core-capstone",
+      reason: "one-pass final U.S. review"
+    } : null;
+  }
   if (memoryTrail.guidedPhysicalCheckpoint) {
     const next = chooseNextGuidedPhysicalRetrievalTarget(memoryTrail.guidedPhysicalCheckpoint);
     return next ? {
@@ -15129,6 +15162,14 @@ function advancePracticeWindow(memoryTrail) {
 }
 
 function shouldEndMemoryTrailSession(memoryTrail) {
+  if (isGuidedCoreCapstoneMemoryTrail(memoryTrail)) {
+    const promptedTargetIds = new Set((memoryTrail.promptHistory || [])
+      .map((entry) => entry?.targetId)
+      .filter(Boolean));
+    return memoryTrail.guidedCoreCapstoneTargetQueue.length === 10
+      && memoryTrail.guidedCoreCapstoneTargetQueue.every((targetId) => promptedTargetIds.has(targetId));
+  }
+
   if (getMemoryTrailElapsedSeconds(memoryTrail) >= memoryTrail.sessionSeconds) {
     return true;
   }
@@ -15256,9 +15297,11 @@ function completeUnitedStatesMemoryTrailSession(memoryTrail) {
 
   const items = getUnitedStatesMemoryTrailItems();
   const result = getDailyTrailMemoryTrailResult(memoryTrail);
+  const completedPlan = activeUnitedStatesMemoryTrailSession.plan;
+  const completedGuidedCoreCapstone = completedPlan.sessionType === UNITED_STATES_GUIDED_CORE_CAPSTONE_SESSION_TYPE;
   const nextState = applyUnitedStatesMemoryTrailSessionResults(
     activeUnitedStatesMemoryTrailSession.state,
-    activeUnitedStatesMemoryTrailSession.plan,
+    completedPlan,
     result
   );
   const savedState = saveUnitedStatesMemoryTrailProgress(nextState, items);
@@ -15267,7 +15310,7 @@ function completeUnitedStatesMemoryTrailSession(memoryTrail) {
     window.localStorage,
     UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
   );
-  const pacedState = satisfyGuidedLearningPhysicalInterleave(
+  const pacedState = completedGuidedCoreCapstone ? orchestrationState : satisfyGuidedLearningPhysicalInterleave(
     orchestrationState,
     {
       sessionNumber: savedState.lastSessionSummary?.sessionNumber || Math.max(1, savedState.currentSessionNumber - 1),
@@ -15295,7 +15338,7 @@ function completeUnitedStatesMemoryTrailSession(memoryTrail) {
   runner?.setMemoryTrailHighlight([]);
   runner?.setMemoryTrailStudyTargetEmphasisSuppressed?.(false);
   resetActivityAttemptState();
-  showAppScreen("united-states-trail-summary", { pushHistory: false });
+  showAppScreen(completedGuidedCoreCapstone ? "post-state-curriculum" : "united-states-trail-summary", { pushHistory: false });
 }
 
 function completeDailyTrailMemoryTrailSession(memoryTrail) {
@@ -15377,6 +15420,13 @@ function isMixedDailyTrailCheckpointMemoryTrail(memoryTrail = getActiveMemoryTra
   return Boolean(
     memoryTrail?.source === "daily-trail"
     && memoryTrail?.checkpointReview === true
+  );
+}
+
+function isGuidedCoreCapstoneMemoryTrail(memoryTrail = getActiveMemoryTrail()) {
+  return Boolean(
+    memoryTrail?.source === UNITED_STATES_MEMORY_TRAIL_SOURCE
+    && memoryTrail?.guidedCoreCapstone === true
   );
 }
 
@@ -15551,6 +15601,7 @@ function getDailyTrailMemoryTrailResult(memoryTrail) {
     correctCount: memoryTrail.correctCount,
     incorrectCount: memoryTrail.incorrectCount,
     missesByTargetId,
+    promptHistory: (memoryTrail?.promptHistory || []).map((entry) => ({ ...entry })),
     retriedNewTargetIds,
     missedNewRetryCount: retriedNewTargetIds.length,
     slowCorrectMsByTargetId: { ...(memoryTrail?.slowCorrectMsByTargetId || {}) }
@@ -21628,6 +21679,33 @@ function countUnitedStatesMemoryTrailWeakItems(state, items = getUnitedStatesMem
   return items.filter((item) => isUnitedStatesMemoryTrailWeakReviewItem(state, item)).length;
 }
 
+function getUnitedStatesGuidedCoreStatus(items = getUnitedStatesMemoryTrailItems(), state = null) {
+  const trailState = state || loadUnitedStatesMemoryTrailProgress(items);
+  const orchestrationState = loadGuidedLearningOrchestrationState(
+    window.localStorage,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  return getUnitedStatesGuidedCoreCurriculumStatus({
+    trailState,
+    politicalItems: items,
+    orchestrationState,
+    config: UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  });
+}
+
+function createUnitedStatesGuidedCoreCapstonePlan(items, state) {
+  const orchestrationState = loadGuidedLearningOrchestrationState(
+    window.localStorage,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  return planUnitedStatesGuidedCoreCapstone({
+    trailState: state,
+    politicalItems: items,
+    orchestrationState,
+    config: UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  });
+}
+
 async function startOrContinueUnitedStatesMemoryTrail(options = {}) {
   await ensureMapRuntimeLoaded();
   await ensureActivityDataLoaded();
@@ -21651,14 +21729,24 @@ async function startOrContinueUnitedStatesMemoryTrail(options = {}) {
     return;
   }
 
-  if (getUnitedStatesPostStateCurriculumStatus(state, items).stateCurriculumComplete) {
+  const coreStatus = getUnitedStatesGuidedCoreStatus(items, state);
+  if (coreStatus.coreComplete && coreStatus.capstoneComplete) {
     pendingUnitedStatesMemoryTrailPlan = null;
     lastUnitedStatesMemoryTrailSummary = null;
     showAppScreen("post-state-curriculum", { pushHistory: false });
     return;
   }
 
-  pendingUnitedStatesMemoryTrailPlan = null;
+  if (coreStatus.coreComplete) {
+    pendingUnitedStatesMemoryTrailPlan = createUnitedStatesGuidedCoreCapstonePlan(items, state);
+    if (!pendingUnitedStatesMemoryTrailPlan) {
+      showFeedback("The final U.S. review could not be prepared.");
+      return;
+    }
+  } else {
+    pendingUnitedStatesMemoryTrailPlan = null;
+  }
+
   await startUnitedStatesMemoryTrailSession(options);
 }
 
@@ -21736,12 +21824,17 @@ async function startUnitedStatesMemoryTrailActivity(activityId, options = {}) {
     return false;
   }
 
+  const presentationItems = trailSession.plan.sessionType === UNITED_STATES_GUIDED_CORE_CAPSTONE_SESSION_TYPE
+    ? trailSession.plan.presentationItems || plannedItems
+    : plannedItems;
+  const presentationTargetIds = presentationItems.map((item) => item.targetId).filter(Boolean);
+
   trailSession.activityId = activity.id;
   currentPresentationSettings = getEffectivePresentationSettings(activity, {
     presentationSettings: {
       reviewMode: studyModes.sectionOnly,
-      adaptiveTrailTargetIds: targetIds,
-      adaptiveTrailTargetItems: plannedItems.map((item) => ({
+      adaptiveTrailTargetIds: presentationTargetIds,
+      adaptiveTrailTargetItems: presentationItems.map((item) => ({
         targetId: item.targetId,
         targetKind: item.targetKind || "",
         type: item.type || "",
@@ -21955,6 +22048,9 @@ function startUnitedStatesMemoryTrailStepIfNeeded(resumeSnapshot = null) {
     sectionQuizView: activity.map?.regionView || null,
     guidedPoliticalCamera,
     capitalNamingEvidenceTargetIds,
+    guidedCoreCapstone: activeUnitedStatesMemoryTrailSession.plan.sessionType
+      === UNITED_STATES_GUIDED_CORE_CAPSTONE_SESSION_TYPE,
+    guidedCoreCapstoneTargetOrder: activeUnitedStatesMemoryTrailSession.plan.capstone?.targetOrder,
     suppressInitialPrompt: hasUsTrailResumeSnapshot
   });
 
@@ -22313,8 +22409,16 @@ function resetUnitedStatesMemoryTrailProgress() {
 
 async function continueUnitedStatesMemoryTrailFromSummary() {
   const items = getUnitedStatesMemoryTrailItems();
-  if (getUnitedStatesPostStateCurriculumStatus(loadUnitedStatesMemoryTrailProgress(items), items).stateCurriculumComplete) {
+  const state = loadUnitedStatesMemoryTrailProgress(items);
+  const coreStatus = getUnitedStatesGuidedCoreStatus(items, state);
+  if (coreStatus.coreComplete && coreStatus.capstoneComplete) {
     showAppScreen("post-state-curriculum", { pushHistory: false });
+    return;
+  }
+  if (coreStatus.coreComplete) {
+    pendingUnitedStatesMemoryTrailPlan = createUnitedStatesGuidedCoreCapstonePlan(items, state);
+    lastUnitedStatesMemoryTrailSummary = null;
+    await startUnitedStatesMemoryTrailSession();
     return;
   }
   pendingUnitedStatesMemoryTrailPlan = null;
@@ -22446,13 +22550,13 @@ function renderUnitedStatesMemoryTrailSummary() {
 
 function renderPostStateCurriculumChoiceScreen() {
   const items = getUnitedStatesMemoryTrailItems();
-  const status = getUnitedStatesPostStateCurriculumStatus(loadUnitedStatesMemoryTrailProgress(items), items);
+  const status = getUnitedStatesGuidedCoreStatus(items);
   const panel = document.createElement("section");
   panel.className = "daily-trail-panel";
   const heading = document.createElement("h2");
-  heading.textContent = "Your state map is ready";
+  heading.textContent = "Your U.S. learning map is ready";
   const copy = document.createElement("p");
-  copy.textContent = "You have learned all 50 state locations. Choose a way to strengthen what you know.";
+  copy.textContent = "You completed the core U.S. course and its final review. Choose a way to strengthen what you know.";
   const stats = document.createElement("p");
   stats.textContent = `${status.learnedStateCount} learned states and ${status.learnedCapitalCount} learned capitals are available for review.`;
   const orchestrationState = loadGuidedLearningOrchestrationState(
@@ -28958,6 +29062,7 @@ function getUnitedStatesMemoryTrailPlanForTest() {
     postStateCurriculum: plan.postStateCurriculum
       ? JSON.parse(JSON.stringify(plan.postStateCurriculum))
       : null,
+    capstone: plan.capstone ? JSON.parse(JSON.stringify(plan.capstone)) : null,
     targetedEntry: plan.targetedEntry || runtimeUnitedStatesTargetedEntryTrace
   } : null;
 }
@@ -29034,6 +29139,8 @@ function getActiveMemoryTrailStateForTest() {
       : null,
     camera: getMemoryTrailCameraSnapshot(),
     guidedLocatingOnly: memoryTrail.guidedLocatingOnly === true,
+    guidedCoreCapstone: memoryTrail.guidedCoreCapstone === true,
+    guidedCoreCapstoneTargetQueue: [...(memoryTrail.guidedCoreCapstoneTargetQueue || [])],
     guidedPhysicalRetrievalCheckpoint: getGuidedPhysicalRetrievalCheckpointSnapshot(
       memoryTrail.guidedPhysicalCheckpoint
     ),
@@ -29291,6 +29398,7 @@ function installMappaTestApi() {
       getGuidedPhysicalTeachingHighlight: () => runner?.getGuidedPhysicalTeachingHighlightState?.() || null,
       getPoliticalDivisionVisualState: getPoliticalDivisionVisualStateForTest,
       getUnitedStatesMemoryTrailPlan: getUnitedStatesMemoryTrailPlanForTest,
+      getUnitedStatesGuidedCoreStatus: () => getUnitedStatesGuidedCoreStatus(),
       getUnitedStatesContinuationTrace: getUnitedStatesContinuationTraceForTest,
       getGuidedPhysicalTeachingState: getGuidedPhysicalTeachingStateForTest,
       answerGuidedPhysicalTeachingCorrectly: answerGuidedPhysicalTeachingCorrectlyForTest,

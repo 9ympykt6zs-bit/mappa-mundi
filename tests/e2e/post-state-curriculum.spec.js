@@ -4,6 +4,7 @@ import {
   GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY,
   UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
 } from "../../src/guided-learning-orchestration.js";
+import { getUnitedStatesGuidedCoreRequiredBlockIds } from "../../src/united-states-guided-core-capstone.js";
 
 const stateIds = [
   "maine", "new-hampshire", "massachusetts", "rhode-island", "connecticut",
@@ -19,7 +20,15 @@ const stateIds = [
 ];
 const learnedCapitalIds = [
   "augusta-me", "concord-nh", "boston-ma", "providence-ri", "hartford-ct",
-  "montpelier-vt", "albany-ny", "trenton-nj", "harrisburg-pa", "dover-de"
+  "montpelier-vt", "albany-ny", "trenton-nj", "harrisburg-pa", "dover-de",
+  "annapolis-md", "richmond-va", "charleston-wv", "raleigh-nc", "columbia-sc",
+  "atlanta-ga", "tallahassee-fl", "montgomery-al", "jackson-ms", "baton-rouge-la",
+  "lansing-mi", "columbus-oh", "indianapolis-in", "frankfort-ky", "nashville-tn",
+  "madison-wi", "springfield-il", "des-moines-ia", "jefferson-city-mo", "little-rock-ar",
+  "st-paul-mn", "bismarck-nd", "pierre-sd", "cheyenne-wy", "lincoln-ne",
+  "topeka-ks", "oklahoma-city-ok", "austin-tx", "denver-co", "santa-fe-nm",
+  "salt-lake-city-ut", "phoenix-az", "carson-city-nv", "sacramento-ca",
+  "helena-mt", "boise-id", "olympia-wa", "salem-or", "juneau-ak", "honolulu-hi"
 ];
 
 function progress(index) {
@@ -51,7 +60,8 @@ function createCompletedStateCurriculum() {
     currentSessionNumber: 18,
     currentCategory: "states",
     introducedItemIds: itemIds,
-    itemProgress: Object.fromEntries(itemIds.map((id, index) => [id, progress(index)]))
+    itemProgress: Object.fromEntries(itemIds.map((id, index) => [id, progress(index)])),
+    guidedCoreCapstone: { status: "completed", targetOrder: [] }
   };
 }
 
@@ -65,7 +75,14 @@ async function openMainMenu(page, { orchestrationState = null } = {}) {
     trailKey: unitedStatesMemoryTrailStorageKey,
     trailState: createCompletedStateCurriculum(),
     orchestrationKey: GUIDED_LEARNING_ORCHESTRATION_STORAGE_KEY,
-    guidedState: orchestrationState
+    guidedState: {
+      ...(orchestrationState || {}),
+      version: 6,
+      completedBlockIds: [...new Set([
+        ...getUnitedStatesGuidedCoreRequiredBlockIds(UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1),
+        ...(orchestrationState?.completedBlockIds || [])
+      ])]
+    }
   });
   await page.goto("/?test=1&globeNavigation=off");
   await page.locator("#launch-start-button").click();
@@ -78,7 +95,7 @@ async function openMainMenu(page, { orchestrationState = null } = {}) {
 
 async function openChoice(page) {
   await page.locator("#main-menu-us-memory-trail-button").click();
-  await expect(page.getByRole("heading", { name: "Your state map is ready" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your U.S. learning map is ready" })).toBeVisible();
 }
 
 test("state completion opens a reusable choice and Mixed Review stays learned and balanced", async ({ page }, testInfo) => {
@@ -133,7 +150,7 @@ test("repeatable Reconstruction reloads and returns to the choice screen", async
   await page.locator("#main-menu-us-memory-trail-button").click();
   await expect(page.locator('[data-map-reconstruction-region-id="guided-reconstruct-us-states-10"]')).toBeVisible({ timeout: 20_000 });
   await page.locator("#back-button").click();
-  await expect(page.getByRole("heading", { name: "Your state map is ready" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your U.S. learning map is ready" })).toBeVisible();
 });
 
 test("Physical Geography launches only an introduced due review and returns to the choice", async ({ page }) => {
@@ -168,5 +185,5 @@ test("Physical Geography launches only an introduced due review and returns to t
   expect(targetIds.length).toBeGreaterThanOrEqual(3);
   expect(targetIds.every((targetId) => pool.targetIds.includes(targetId))).toBe(true);
   await page.locator("#back-button").click();
-  await expect(page.getByRole("heading", { name: "Your state map is ready" })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("heading", { name: "Your U.S. learning map is ready" })).toBeVisible({ timeout: 20_000 });
 });

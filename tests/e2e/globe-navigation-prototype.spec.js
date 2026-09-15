@@ -4,6 +4,34 @@ import { readFileSync } from "node:fs";
 import { learningProgressStorageKeys } from "../../src/learning-progress-reset.js";
 import { GUIDED_CHILD_LAUNCH_STORAGE_KEY } from "../../src/guided-child-launch-contract.js";
 
+const guidedStateItemIds = Array.from({ length: 11 }, (_, index) => {
+  const sectionId = String(index + 1).padStart(2, "0");
+  const activity = JSON.parse(readFileSync(new URL(
+    `../../assets/maps/data/us-states-capitals-${sectionId}.json`,
+    import.meta.url
+  ), "utf8"));
+  return (activity.features || activity.targets || [])
+    .filter(({ type }) => type === "state")
+    .map(({ id }) => `state:${id}`);
+}).flat();
+
+function createCompletedGuidedStateProgress() {
+  return {
+    version: 2,
+    hasStarted: true,
+    currentSessionNumber: 20,
+    introducedItemIds: guidedStateItemIds,
+    itemProgress: Object.fromEntries(guidedStateItemIds.map((itemId) => [itemId, {
+      status: "review",
+      memoryState: "review",
+      timesSeen: 2,
+      correctCount: 2,
+      correctStreak: 2,
+      dueSession: 30
+    }]))
+  };
+}
+
 function createStrongStageOneCanonicalRepository() {
   const events = [];
   let sequence = 0;
@@ -479,11 +507,12 @@ test("scoped Guided Learning reset does not erase canonical U.S. returning-learn
   ))).toBe("guided-section");
 });
 
-test("strong canonical Stage 1 evidence advances Learn to Rivers on desktop and mobile", async ({ page }) => {
+test("strong canonical Stage 1 evidence advances taught Guided states to Rivers on desktop and mobile", async ({ page }) => {
   const repository = createStrongStageOneCanonicalRepository();
-  await page.addInitScript(({ canonicalRepository, completedBlockIds }) => {
+  await page.addInitScript(({ canonicalRepository, completedBlockIds, guidedStateProgress }) => {
     localStorage.setItem("mappaGuidedLearningOrchestration", JSON.stringify({ version: 6, completedBlockIds }));
     localStorage.setItem("mappaMundiCanonicalEvidence", JSON.stringify(canonicalRepository));
+    localStorage.setItem("mappaUnitedStatesMemoryTrailProgress", JSON.stringify(guidedStateProgress));
     localStorage.setItem("atlasQuestProgress", JSON.stringify({
       version: 1,
       activeJourneyId: "united-states",
@@ -493,7 +522,11 @@ test("strong canonical Stage 1 evidence advances Learn to Rivers on desktop and 
       recentDifficulty: "easy",
       journeys: {}
     }));
-  }, { canonicalRepository: repository, completedBlockIds: GUIDED_RECONSTRUCTION_CHECKPOINTS.map(({ blockId }) => blockId) });
+  }, {
+    canonicalRepository: repository,
+    completedBlockIds: GUIDED_RECONSTRUCTION_CHECKPOINTS.map(({ blockId }) => blockId),
+    guidedStateProgress: createCompletedGuidedStateProgress()
+  });
   await startPrototype(page);
   await chooseSearchScope(page, "United States", "united");
   const journeyBefore = await page.evaluate(() => window.__MAPPA_TEST_API__.getSavedJourneyProgress());
@@ -533,12 +566,14 @@ test("strong canonical Stage 1 evidence advances Learn to Rivers on desktop and 
 
 test("a Lakes continuation enters bounded Guided Learning while manual Lakes remains full and open", async ({ page }) => {
   const repository = createLakesNeedCanonicalRepository();
-  await page.addInitScript(({ canonicalRepository, childKey, completedBlockIds }) => {
+  await page.addInitScript(({ canonicalRepository, childKey, completedBlockIds, guidedStateProgress }) => {
     localStorage.setItem("mappaGuidedLearningOrchestration", JSON.stringify({ version: 5, completedBlockIds }));
     localStorage.setItem("mappaMundiCanonicalEvidence", JSON.stringify(canonicalRepository));
+    localStorage.setItem("mappaUnitedStatesMemoryTrailProgress", JSON.stringify(guidedStateProgress));
     localStorage.removeItem(childKey);
   }, { canonicalRepository: repository, childKey: GUIDED_CHILD_LAUNCH_STORAGE_KEY,
-    completedBlockIds: GUIDED_RECONSTRUCTION_CHECKPOINTS.map(({ blockId }) => blockId) });
+    completedBlockIds: GUIDED_RECONSTRUCTION_CHECKPOINTS.map(({ blockId }) => blockId),
+    guidedStateProgress: createCompletedGuidedStateProgress() });
   await startPrototype(page);
   await chooseSearchScope(page, "United States", "united");
   const journeyBefore = await page.evaluate(() => window.__MAPPA_TEST_API__.getSavedJourneyProgress());
