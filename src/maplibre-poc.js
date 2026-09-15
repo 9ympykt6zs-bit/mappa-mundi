@@ -3839,9 +3839,9 @@ function recordCanonicalJourneyPlacementEvidence(result = {}) {
       sourceActivityId: activityId,
       response: { selectedTargetId: result.targetId || result.completedId || null }
     });
-    const result = recordCanonicalEvidenceEventWithInspector(event);
-    reportCanonicalEvidenceWrite(result);
-    if (!result?.ok) return false;
+    const writeResult = recordCanonicalEvidenceEventWithInspector(event);
+    reportCanonicalEvidenceWrite(writeResult);
+    if (!writeResult?.ok) return false;
   } catch (error) {
     console.warn("[canonical-evidence] Journey evidence could not be created.", error);
   }
