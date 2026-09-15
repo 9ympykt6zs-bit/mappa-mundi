@@ -82,7 +82,7 @@ test("France renders full context while Southern Regions remains the only eligib
   await page.mouse.click(nonCurrentPoint.clientX, nonCurrentPoint.clientY);
   const afterNonCurrentClick = await politicalDivisionState(page);
   expect(afterNonCurrentClick.currentPromptTargetId).toBe("nouvelle-aquitaine");
-  expect(afterNonCurrentClick.currentPromptPhase).toBe("correction");
+  expect(afterNonCurrentClick.currentPromptPhase).toBe("answering");
   expect(afterNonCurrentClick.targetStats["nouvelle-aquitaine"].guidedTapCount).toBe(0);
   expect(afterNonCurrentClick.incorrectCount).toBe(0);
 

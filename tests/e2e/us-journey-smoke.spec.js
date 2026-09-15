@@ -75,7 +75,7 @@ async function startUnitedStatesJourney(page, difficulty = "medium") {
 
   const recommendation = page.locator("#memory-trail-overlay");
   await expect(recommendation).toBeVisible();
-  await recommendation.getByRole("button", { name: "Play Now" }).click();
+  await recommendation.getByRole("button", { name: "Label Map" }).click();
   await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__?.getCurrentActivity())).not.toBeNull();
 }
 
@@ -123,7 +123,7 @@ test("United States Journey saves its first activity and advances", async ({ pag
   })).toBe(true);
   await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getCurrentJourneyStep()?.index)).toBe(1);
   await expect(recommendation).toBeVisible();
-  await recommendation.getByRole("button", { name: "Play Now" }).click();
+  await recommendation.getByRole("button", { name: "Label Map" }).click();
   await expect.poll(
     () => page.evaluate(() => window.__MAPPA_TEST_API__.getCurrentActivity()?.id),
     { timeout: 20_000 }
@@ -242,7 +242,7 @@ test("United States Journey resumes activity two after a full reload", async ({ 
   const recommendation = page.locator("#memory-trail-overlay");
   await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getCurrentJourneyStep()?.index)).toBe(2);
   await expect(recommendation).toBeVisible();
-  await recommendation.getByRole("button", { name: "Play Now" }).click();
+  await recommendation.getByRole("button", { name: "Label Map" }).click();
   await expect.poll(
     () => page.evaluate(() => window.__MAPPA_TEST_API__.getCurrentActivity()?.id),
     { timeout: 20_000 }
