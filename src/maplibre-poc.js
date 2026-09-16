@@ -3754,6 +3754,34 @@ let activeMapReconstructionRegionId = "";
 let mapReconstructionFeatureCollectionPromise = null;
 const mapReconstructionGeometryPromises = new Map();
 
+function deactivateMapReconstructionSurface() {
+  mapReconstructionController?.destroy();
+  mapReconstructionController = null;
+  activeMapReconstructionRegionId = "";
+  if (mapReconstructionPanel) {
+    mapReconstructionPanel.hidden = true;
+    mapReconstructionPanel.replaceChildren();
+  }
+  mapElement?.removeAttribute("aria-hidden");
+  document.body.classList.remove("map-reconstruction-mode", "overview-mode", "browse-mode");
+}
+
+function setCurrentAppScreen(nextScreen) {
+  const normalizedScreen = String(nextScreen || "");
+  const reconstructionOwnsSurface = currentAppScreen === "map-reconstruction"
+    || Boolean(mapReconstructionController)
+    || Boolean(mapReconstructionPanel && !mapReconstructionPanel.hidden)
+    || document.body.classList.contains("map-reconstruction-mode");
+  if (normalizedScreen !== "map-reconstruction" && reconstructionOwnsSurface) {
+    deactivateMapReconstructionSurface();
+    // The durable child contract owns resumable Guided progress. Runtime ownership
+    // ends with the visible screen so it cannot leak into an unrelated activity.
+    if (isGuidedReconstructionBlock()) activeGuidedLearningOrchestrationBlock = null;
+  }
+  currentAppScreen = normalizedScreen;
+  return currentAppScreen;
+}
+
 function createCanonicalRuntimeAttemptIdentity(sourceMode, sourceActivityId = "") {
   canonicalEvidenceAttemptSequence += 1;
   const occurredAt = new Date().toISOString();
@@ -6345,7 +6373,8 @@ function bindUiEvents() {
       return;
     }
     if (currentAppScreen === "map-reconstruction") {
-      exitMapReconstruction();
+      clearExpeditionReturn();
+      showAppScreen("main-menu", { pushHistory: false });
       return;
     }
     if (currentAppScreen === "compass-challenge") {
@@ -6689,7 +6718,7 @@ function restoreDailyTrailGameplayFromSettings() {
   }
 
   pendingDailyTrailGameplaySettingsReturn = false;
-  currentAppScreen = "daily-trail-gameplay";
+  setCurrentAppScreen("daily-trail-gameplay");
   isCurrentActivityProgressDisabled = true;
   lastTrackedMainMenuVisibility = false;
   document.body.classList.remove("launch-mode", "app-shell-mode", "browse-mode", "overview-mode");
@@ -6726,7 +6755,7 @@ function restoreUnitedStatesMemoryTrailGameplayFromSettings() {
   }
 
   pendingUnitedStatesMemoryTrailGameplaySettingsReturn = false;
-  currentAppScreen = "united-states-trail-gameplay";
+  setCurrentAppScreen("united-states-trail-gameplay");
   isCurrentActivityProgressDisabled = true;
   lastTrackedMainMenuVisibility = false;
   document.body.classList.remove("launch-mode", "app-shell-mode", "browse-mode", "overview-mode");
@@ -6849,7 +6878,7 @@ function showAppScreen(screenId, options = {}) {
   hideStudyPracticeCompletionCard();
   activeStudyPracticeSession = null;
   isCurrentActivityProgressDisabled = false;
-  currentAppScreen = normalizedScreenId;
+  setCurrentAppScreen(normalizedScreenId);
   hideGlobeNavigationSurface();
   closeInfoPopover();
   closeBrowseDrawer();
@@ -6930,7 +6959,7 @@ function openFreePlay(options = {}) {
   hideStudyPracticeCompletionCard();
   activeStudyPracticeSession = null;
   isCurrentActivityProgressDisabled = false;
-  currentAppScreen = "free-play";
+  setCurrentAppScreen("free-play");
   lastTrackedMainMenuVisibility = false;
   runner?.setStudyPreviewMode(false);
   freePlaySelectedMapFeature = null;
@@ -7232,7 +7261,7 @@ async function openGlobeNavigation(scopeId = globeNavigationPrototype.rootScopeI
   hideStudyPracticeCompletionCard();
   activeStudyPracticeSession = null;
   isCurrentActivityProgressDisabled = false;
-  currentAppScreen = "globe-navigation";
+  setCurrentAppScreen("globe-navigation");
   activeGlobeNavigationScopeId = scope.id;
   activeGlobeNavigationHoverScopeId = "";
   lastTrackedMainMenuVisibility = false;
@@ -8818,7 +8847,7 @@ async function openStudyExploreActivity(journey, step, activity, options = {}) {
   activeStudyPracticeSession = null;
   hideStudyPracticeCompletionCard();
   isCurrentActivityProgressDisabled = true;
-  currentAppScreen = "study-explore";
+  setCurrentAppScreen("study-explore");
   document.body.classList.remove("launch-mode", "app-shell-mode", "browse-mode", "overview-mode");
   document.body.classList.add("study-mode", "study-explore-mode");
 
@@ -10139,7 +10168,7 @@ async function openUnitedStatesAtlas() {
   activeStudySession = null;
   activeStudyPracticeSession = null;
   isCurrentActivityProgressDisabled = false;
-  currentAppScreen = "united-states-atlas";
+  setCurrentAppScreen("united-states-atlas");
   activeHierarchyNodeId = "north-america-united-states";
   activeMenuRoot = "north-america";
   isNavigationBrowseMode = false;
@@ -10341,7 +10370,7 @@ async function openMapReconstructionWithOptions(options = {}) {
   activeStudySession = null;
   activeStudyPracticeSession = null;
   isCurrentActivityProgressDisabled = false;
-  currentAppScreen = "map-reconstruction";
+  setCurrentAppScreen("map-reconstruction");
   activeHierarchyNodeId = "north-america-united-states";
   activeMenuRoot = "north-america";
   isNavigationBrowseMode = false;
@@ -10390,12 +10419,7 @@ async function openMapReconstructionWithOptions(options = {}) {
 
 function exitMapReconstruction() {
   const returnsToGuidedLearning = isGuidedReconstructionBlock();
-  mapReconstructionController?.destroy();
-  mapReconstructionController = null;
-  activeMapReconstructionRegionId = "";
-  if (mapReconstructionPanel) mapReconstructionPanel.hidden = true;
-  if (mapElement) mapElement.removeAttribute("aria-hidden");
-  document.body.classList.remove("map-reconstruction-mode", "overview-mode", "browse-mode");
+  deactivateMapReconstructionSurface();
   if (returnsToGuidedLearning) {
     void returnToGuidedLearningFromOrchestration();
     return;
@@ -10415,7 +10439,7 @@ async function openMentalMapChallenge(options = {}) {
   activeStudySession = null;
   activeStudyPracticeSession = null;
   isCurrentActivityProgressDisabled = false;
-  currentAppScreen = "mental-map-challenge";
+  setCurrentAppScreen("mental-map-challenge");
   activeHierarchyNodeId = "north-america-united-states";
   activeMenuRoot = "north-america";
   isNavigationBrowseMode = false;
@@ -18580,7 +18604,7 @@ function applyRiverCartographicRepairs(riverData, repairData) {
 }
 
 function showRiverPreviewSurface() {
-  currentAppScreen = "river-preview-dev";
+  setCurrentAppScreen("river-preview-dev");
   document.body.classList.remove("launch-mode", "app-shell-mode", "browse-mode", "overview-mode", "study-mode", "study-explore-mode");
   if (launchScreen) {
     launchScreen.hidden = true;
@@ -24836,6 +24860,15 @@ function toggleBrowseDrawer() {
     return;
   }
 
+  if (currentAppScreen === "map-reconstruction") {
+    openFreePlay({
+      pushHistory: false,
+      hierarchyNodeId: activeHierarchyNodeId || "world"
+    });
+    setBrowseDrawerOpen(true);
+    return;
+  }
+
   setBrowseDrawerOpen(!isBrowseDrawerOpen);
 }
 
@@ -25956,7 +25989,7 @@ async function openActivity(activityId, options = {}) {
   session.setStudyMode(currentPresentationSettings.reviewMode);
   const shouldRevealGameplay = options.forceGameplayVisible || currentAppScreen !== "launch";
   if (shouldRevealGameplay) {
-    currentAppScreen = options.appScreen || "free-play";
+    setCurrentAppScreen(options.appScreen || "free-play");
     lastTrackedMainMenuVisibility = false;
     document.body.classList.remove("launch-mode", "app-shell-mode", "globe-navigation-mode");
     if (globeNavigationPanel) globeNavigationPanel.hidden = true;

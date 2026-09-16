@@ -378,6 +378,7 @@ export function createLower48ReconstructionActivity(container, options = {}) {
   };
 
   const cancelMobileAssistance = () => {
+    if (activePieceDrag?.originalSession) session = activePieceDrag.originalSession;
     mobileCameraAnimationCancel?.();
     mobileCameraAnimationCancel = null;
     mobileDragPointerType = null;
@@ -386,8 +387,14 @@ export function createLower48ReconstructionActivity(container, options = {}) {
     mobileSnapAnimationCancel?.();
     mobileSnapAnimationCancel = null;
     mobileSnapPending = false;
+    const capturedPointerIds = [...pointers.keys()];
     pointers.clear();
     activePieceDrag = null;
+    capturedPointerIds.forEach((pointerId) => {
+      if (workspaceSvg?.hasPointerCapture?.(pointerId)) {
+        workspaceSvg.releasePointerCapture?.(pointerId);
+      }
+    });
     panGesture?.element?.remove();
     panGesture = null;
   };
@@ -539,6 +546,9 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       let finished = false;
       let proxy = null;
       const cleanup = () => {
+        if (button.hasPointerCapture?.(event.pointerId)) {
+          button.releasePointerCapture?.(event.pointerId);
+        }
         window.removeEventListener("pointerdown", secondPointerDown, true);
         window.removeEventListener("pointermove", move);
         window.removeEventListener("pointerup", up);
@@ -733,7 +743,9 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
       workspaceSvg.setPointerCapture?.(event.pointerId);
       if (pointers.size >= 2) {
+        if (activePieceDrag?.originalSession) session = activePieceDrag.originalSession;
         activePieceDrag = null;
+        restoreMobileDragAssistance();
         const [first, second] = [...pointers.values()];
         panGesture = {
           type: "pinch",
@@ -1244,7 +1256,9 @@ export function createLower48ReconstructionActivity(container, options = {}) {
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     workspaceSvg.setPointerCapture?.(event.pointerId);
     if (pointers.size >= 2) {
+      if (activePieceDrag?.originalSession) session = activePieceDrag.originalSession;
       activePieceDrag = null;
+      restoreMobileDragAssistance();
       panGesture?.element?.remove();
       const [first, second] = [...pointers.values()];
       panGesture = {
@@ -1466,6 +1480,7 @@ export function createLower48ReconstructionActivity(container, options = {}) {
     workspaceSvg.addEventListener("lostpointercapture", handleWorkspacePointerEnd);
     workspaceSvg.addEventListener("wheel", (event) => {
       event.preventDefault();
+      if (activePieceDrag || activeDrawerPointerCancel || pointers.size) return;
       const anchor = mapClientPointToWorld(workspaceSvg, event.clientX, event.clientY);
       camera = zoomMapReconstructionCameraAtPoint(
         camera,
@@ -1543,7 +1558,11 @@ export function createLower48ReconstructionActivity(container, options = {}) {
   const handleResize = () => {
     updateCameraOnly();
   };
-  const handlePageHide = () => flushSave();
+  const handlePageHide = () => {
+    activeDrawerPointerCancel?.();
+    cancelMobileAssistance();
+    flushSave();
+  };
   window.addEventListener("resize", handleResize);
   window.addEventListener("pagehide", handlePageHide);
   render();

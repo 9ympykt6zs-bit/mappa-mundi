@@ -825,6 +825,9 @@ export function createMapReconstructionActivity(container, options) {
       let finished = false;
       let proxy = null;
       const cleanup = () => {
+        if (button.hasPointerCapture?.(event.pointerId)) {
+          button.releasePointerCapture?.(event.pointerId);
+        }
         window.removeEventListener("pointermove", move);
         window.removeEventListener("pointerup", up);
         window.removeEventListener("pointercancel", cancel);
@@ -1020,6 +1023,9 @@ export function createMapReconstructionActivity(container, options) {
       const finish = (finishEvent, cancelled) => {
         if (finished) return;
         finished = true;
+        if (group.hasPointerCapture?.(event.pointerId)) {
+          group.releasePointerCapture?.(event.pointerId);
+        }
         group.removeEventListener("pointermove", move);
         group.removeEventListener("pointerup", up);
         group.removeEventListener("pointercancel", cancel);

@@ -661,7 +661,7 @@ assert.ok(markupSource.includes("Mental Map Challenge"));
 const cssVersionPattern = /maplibre-poc\.css\?v=([a-zA-Z0-9-]+)/;
 assert.match(markupSource, cssVersionPattern);
 assert.equal(markupSource.match(cssVersionPattern)[1], fs.readFileSync("maplibre-poc.html", "utf8").match(cssVersionPattern)?.[1], "Both entry pages must load the same versioned stylesheet.");
-assert.ok(runtimeSource.includes('currentAppScreen = "mental-map-challenge"'));
+assert.ok(runtimeSource.includes('setCurrentAppScreen("mental-map-challenge")'));
 assert.ok(runtimeSource.includes('document.body.classList.add("mental-map-result-mode")'));
 assert.ok(cssSource.includes("body.mental-map-challenge-mode:not(.mental-map-result-mode) #map"));
 assert.ok(cssSource.includes("display: none"));

@@ -1,5 +1,25 @@
 # Automated testing
 
+## Reconstruction screen lifecycle — 2026-09-15
+
+`tests/e2e/reconstruction-lifecycle.spec.js` proves that the visible Reconstruction panel follows the active app screen rather than durable progress. It covers standalone Settings, Explore, Home, and another activity; Guided Home/Back before placement, midway, and after submission; post-course return; reload while a Guided child is saved and reload after leaving; explicit Guided and Lower 48 resume; and browser Back/Forward. Desktop gesture cases add active bank and placed-piece drags, wheel input during drag, synthetic `pointercancel`, release outside the map, rapid movement, navigation during capture, and restoration of the last persisted Lower 48 placement. The final focused run passed **14/14 applicable cases** across desktop and mobile Chromium, with the two desktop mouse-gesture cases skipped by design on mobile.
+
+The complete fast baseline passed **112/112** checks. The affected browser run across `guided-core-capstone.spec.js`, `guided-reconstruction.spec.js`, and `reconstruction-navigation.spec.js` passed **17/18** initially: one direct-DOM checkpoint-10 camera case observed a transient null-element callback after replacing the entire document body. That case passed immediately in isolation, and a clean final run of all four desktop/mobile Reconstruction navigation cases passed **4/4**. Every Guided Reconstruction and Guided capstone case passed in the affected run. Static syntax checks and `git diff --check` also passed.
+
+Commands:
+
+```sh
+npm test
+npx playwright test tests/e2e/reconstruction-lifecycle.spec.js --workers=1
+npx playwright test tests/e2e/guided-core-capstone.spec.js tests/e2e/guided-reconstruction.spec.js tests/e2e/reconstruction-navigation.spec.js --workers=1
+npx playwright test tests/e2e/reconstruction-navigation.spec.js --workers=1
+node --check src/maplibre-poc.js
+node --check src/atlas/map-reconstruction-ui.js
+node --check src/atlas/map-reconstruction-capstone-ui.js
+node --check tests/e2e/reconstruction-lifecycle.spec.js
+git diff --check
+```
+
 ## Guided required-core completion and final capstone — 2026-09-15
 
 `scripts/check-guided-core-capstone.mjs` pins the required inventory at 50 states, 50 capitals, ten nonrepeatable Reconstruction checkpoints, and 34 supported physical features with both introduction and immediate-practice completion. It separately removes Alaska, Hawaii, Juneau, Honolulu, Alaska Range introduction/practice, and Brooks Range introduction/practice and confirms that each omission blocks the capstone. The selector checks exactly ten unique introduced questions, a 4 state / 3 capital / 3 physical split, one river/lake/mountain range, noncontiguous geographic coverage, deterministic replay, active-session reload, persisted response history, and nonrepeatability after completion.
