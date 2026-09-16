@@ -5441,7 +5441,7 @@ body.overview-mode.map-reconstruction-mode .map-shell {
   width: 100%;
 }
 
-.map-reconstruction-piece.is-mobile-snapping {
+.map-reconstruction-piece.is-placement-snapping {
   pointer-events: none;
 }
 

@@ -1,5 +1,20 @@
 # Automated testing
 
+## Reconstruction placement tolerance — 2026-09-15
+
+`scripts/check-map-reconstruction.mjs` pins the centralized 32 CSS-pixel mouse/trackpad and 40 CSS-pixel touch configuration. It covers offsets clearly inside, exactly on, and clearly outside both boundaries; rejects multi-piece and pointerless snapping; and proves that zoom scale changes the required world offset while pan translation does not change the measured CSS-pixel error. Existing regional, Guided anchored, standalone translation-normalized, and Lower 48 evaluators remain covered by their established checks.
+
+`tests/e2e/reconstruction-placement-tolerance.spec.js` exercises real pointer release through the production regional UI. Mouse drops at 31.5 pixels snap and 32.5-pixel drops remain unsnapped before and after map pan/zoom. Emulated touch accepts 39.5 pixels and rejects 40.5 pixels. The affected browser run with Guided Reconstruction and existing navigation passed **16 applicable cases** across desktop/mobile Chromium with **2 intentional pointer-project skips**. Focused Lower 48 saved-progress and active-drag lifecycle checks passed **3 applicable cases** with **1 intentional mobile mouse-path skip**. The complete fast baseline passed **112/112**.
+
+Commands:
+
+```sh
+npm test
+npx playwright test tests/e2e/reconstruction-placement-tolerance.spec.js tests/e2e/reconstruction-navigation.spec.js tests/e2e/guided-reconstruction.spec.js --workers=1
+npx playwright test tests/e2e/reconstruction-lifecycle.spec.js --workers=1 --grep="Lower 48"
+git diff --check
+```
+
 ## Reconstruction screen lifecycle — 2026-09-15
 
 `tests/e2e/reconstruction-lifecycle.spec.js` proves that the visible Reconstruction panel follows the active app screen rather than durable progress. It covers standalone Settings, Explore, Home, and another activity; Guided Home/Back before placement, midway, and after submission; post-course return; reload while a Guided child is saved and reload after leaving; explicit Guided and Lower 48 resume; and browser Back/Forward. Desktop gesture cases add active bank and placed-piece drags, wheel input during drag, synthetic `pointercancel`, release outside the map, rapid movement, navigation during capture, and restoration of the last persisted Lower 48 placement. The final focused run passed **14/14 applicable cases** across desktop and mobile Chromium, with the two desktop mouse-gesture cases skipped by design on mobile.

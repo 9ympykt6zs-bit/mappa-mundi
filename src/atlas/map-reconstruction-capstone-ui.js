@@ -43,9 +43,11 @@ import {
 import {
   MAP_RECONSTRUCTION_MOBILE_ASSISTANCE,
   animateMapReconstructionMobileValue,
-  getMapReconstructionMobileSnapTarget,
   isMapReconstructionMobileAssistanceEnabled
 } from "./map-reconstruction-mobile-assistance.js";
+import {
+  getMapReconstructionPlacementSnapTarget
+} from "./map-reconstruction-placement-tolerance.js";
 import { evaluateLower48Reconstruction } from "./map-reconstruction-national-evaluation.js";
 import { getActivityAudioEntryByText } from "./activity-audio-registry.js";
 import {
@@ -264,8 +266,8 @@ export function createLower48ReconstructionActivity(container, options = {}) {
   let mobileCameraHome = null;
   let mobileCameraAnimationCancel = null;
   let mobileDragPointerType = null;
-  let mobileSnapAnimationCancel = null;
-  let mobileSnapPending = false;
+  let placementSnapAnimationCancel = null;
+  let placementSnapPending = false;
   const pointers = new Map();
 
   const clearTimers = () => {
@@ -384,9 +386,9 @@ export function createLower48ReconstructionActivity(container, options = {}) {
     mobileDragPointerType = null;
     if (mobileCameraHome) camera = { ...mobileCameraHome };
     mobileCameraHome = null;
-    mobileSnapAnimationCancel?.();
-    mobileSnapAnimationCancel = null;
-    mobileSnapPending = false;
+    placementSnapAnimationCancel?.();
+    placementSnapAnimationCancel = null;
+    placementSnapPending = false;
     const capturedPointerIds = [...pointers.keys()];
     pointers.clear();
     activePieceDrag = null;
@@ -399,30 +401,28 @@ export function createLower48ReconstructionActivity(container, options = {}) {
     panGesture = null;
   };
 
-  const getMobileSnap = (stateId, position) => {
-    if (!mobileDragPointerType) return null;
-    const view = getMapReconstructionCameraView(camera, geometry.workspace, viewport());
-    const rect = workspaceSvg?.getBoundingClientRect?.();
-    if (!rect?.width || !rect?.height) return null;
-    return getMapReconstructionMobileSnapTarget({
+  const getPlacementSnap = (stateId, position, pointerType) => {
+    const screenMatrix = workspaceSvg?.getScreenCTM?.();
+    if (!screenMatrix) return null;
+    return getMapReconstructionPlacementSnapTarget({
       position,
       piece: geometry.piecesById[stateId],
-      geometry,
       selectedPieceCount: getSelectedStateIds().length,
-      cssPixelsPerWorldUnit: Math.min(rect.width / view.width, rect.height / view.height)
+      pointerType,
+      screenMatrix
     });
   };
 
-  const startMobileSnap = (stateId, fromPosition, snap) => {
-    if (!snap || mobileSnapPending) return false;
-    mobileSnapPending = true;
+  const startPlacementSnap = (stateId, fromPosition, snap, pointerType) => {
+    if (!snap || placementSnapPending) return false;
+    placementSnapPending = true;
     session = endMapReconstructionDrag(session);
     render();
     requestAnimationFrame(() => {
-      if (destroyed || !mobileSnapPending) return;
+      if (destroyed || !placementSnapPending) return;
       const group = container.querySelector(`[data-capstone-piece-id="${stateId}"]`);
-      group?.classList.add("is-mobile-snapping");
-      mobileSnapAnimationCancel = animateMapReconstructionMobileValue({
+      group?.classList.add("is-placement-snapping");
+      placementSnapAnimationCancel = animateMapReconstructionMobileValue({
         from: fromPosition,
         to: snap.position,
         durationMs: MAP_RECONSTRUCTION_MOBILE_ASSISTANCE.snapDurationMs,
@@ -430,14 +430,16 @@ export function createLower48ReconstructionActivity(container, options = {}) {
           group?.setAttribute("transform", `translate(${position.x} ${position.y})`);
         },
         onFinish: () => {
-          mobileSnapAnimationCancel = null;
-          if (destroyed || !mobileSnapPending) return;
+          placementSnapAnimationCancel = null;
+          if (destroyed || !placementSnapPending) return;
           session = placeMapReconstructionPiece(session, stateId, snap.position, geometry);
-          mobileSnapPending = false;
-          try {
-            window.navigator?.vibrate?.(18);
-          } catch {
-            // Haptics are optional.
+          placementSnapPending = false;
+          if (pointerType === "touch") {
+            try {
+              window.navigator?.vibrate?.(18);
+            } catch {
+              // Haptics are optional.
+            }
           }
           render();
           requestAnimationFrame(() => {
@@ -512,15 +514,21 @@ export function createLower48ReconstructionActivity(container, options = {}) {
     });
   };
 
-  const placeDrawerStateAtPoint = (stateId, clientX, clientY, pointerOffset) => {
+  const placeDrawerStateAtPoint = (
+    stateId,
+    clientX,
+    clientY,
+    pointerOffset,
+    pointerType
+  ) => {
     const world = mapClientPointToWorld(workspaceSvg, clientX, clientY);
     const position = getLower48DrawerDropPosition(world, pointerOffset);
     if (!position) return false;
     session = placeMapReconstructionPiece(session, stateId, position, geometry);
     const placedPosition = session.piecesById[stateId]?.position;
     if (!placedPosition) return false;
-    const snap = getMobileSnap(stateId, placedPosition);
-    if (snap && startMobileSnap(stateId, placedPosition, snap)) return true;
+    const snap = getPlacementSnap(stateId, placedPosition, pointerType);
+    if (snap && startPlacementSnap(stateId, placedPosition, snap, pointerType)) return true;
     render();
     requestAnimationFrame(() => {
       container.querySelector(`[data-capstone-piece-id="${stateId}"]`)?.focus();
@@ -532,7 +540,7 @@ export function createLower48ReconstructionActivity(container, options = {}) {
     const piece = geometry.piecesById[stateId];
     let ignoreNextClick = false;
     button.addEventListener("pointerdown", (event) => {
-      if (mobileSnapPending) return;
+      if (placementSnapPending) return;
       if (event.button != null && event.button !== 0) return;
       if (event.pointerType === "touch"
         && !event.target.closest?.(".map-reconstruction-capstone-thumbnail")) return;
@@ -578,7 +586,8 @@ export function createLower48ReconstructionActivity(container, options = {}) {
               stateId,
               finishEvent.clientX,
               finishEvent.clientY,
-              pointerOffset
+              pointerOffset,
+              event.pointerType
             );
           }
           restoreMobileDragAssistance();
@@ -729,7 +738,7 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       });
     });
     path.addEventListener("pointerdown", (event) => {
-      if (mobileSnapPending) return;
+      if (placementSnapPending) return;
       if (event.button != null && event.button !== 0) return;
       const world = mapClientPointToWorld(workspaceSvg, event.clientX, event.clientY);
       const pieceState = session.piecesById[stateId];
@@ -768,6 +777,7 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       }
       activePieceDrag = {
         pointerId: event.pointerId,
+        pointerType: event.pointerType,
         stateId,
         start: world,
         startClient: { x: event.clientX, y: event.clientY },
@@ -1423,9 +1433,14 @@ export function createLower48ReconstructionActivity(container, options = {}) {
       } else if (drag.moved) {
         session = endMapReconstructionDrag(session);
         const position = session.piecesById[stateId]?.position;
-        const snap = getMobileSnap(stateId, position);
+        const snap = getPlacementSnap(stateId, position, drag.pointerType);
         restoreMobileDragAssistance();
-        if (snap && startMobileSnap(stateId, position, snap)) return;
+        if (snap && startPlacementSnap(
+          stateId,
+          position,
+          snap,
+          drag.pointerType
+        )) return;
       } else {
         if (drag.canDrag) session = endMapReconstructionDrag(session);
         applyPieceClickSelection(stateId, event);

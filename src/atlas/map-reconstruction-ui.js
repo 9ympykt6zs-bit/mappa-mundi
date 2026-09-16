@@ -40,9 +40,11 @@ import {
 import {
   MAP_RECONSTRUCTION_MOBILE_ASSISTANCE,
   animateMapReconstructionMobileValue,
-  getMapReconstructionMobileSnapTarget,
   isMapReconstructionMobileAssistanceEnabled
 } from "./map-reconstruction-mobile-assistance.js";
+import {
+  getMapReconstructionPlacementSnapTarget
+} from "./map-reconstruction-placement-tolerance.js";
 import { getActivityAudioEntryByText } from "./activity-audio-registry.js";
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
@@ -583,8 +585,8 @@ export function createMapReconstructionActivity(container, options) {
   let mobileCameraHomeView = null;
   let mobileCameraAnimationCancel = null;
   let mobileDragPointerType = null;
-  let mobileSnapAnimationCancel = null;
-  let mobileSnapPending = false;
+  let placementSnapAnimationCancel = null;
+  let placementSnapPending = false;
   const successVisualId = ++mapReconstructionVisualSequence;
 
   const clearCorrectionTimer = () => {
@@ -672,37 +674,41 @@ export function createMapReconstructionActivity(container, options) {
     mobileDragPointerType = null;
     if (mobileCameraHomeView) setWorkspaceView(mobileCameraHomeView);
     mobileCameraHomeView = null;
-    mobileSnapAnimationCancel?.();
-    mobileSnapAnimationCancel = null;
-    mobileSnapPending = false;
+    placementSnapAnimationCancel?.();
+    placementSnapAnimationCancel = null;
+    placementSnapPending = false;
   };
 
-  const getMobileSnap = (stateId, position) => {
-    if (!mobileDragPointerType) return null;
-    const view = getWorkspaceView();
-    const rect = workspaceSvg?.getBoundingClientRect?.();
-    if (!view || !rect?.width || !rect?.height) return null;
-    return getMapReconstructionMobileSnapTarget({
+  const getPlacementSnap = (stateId, position, pointerType) => {
+    const screenMatrix = workspaceSvg?.getScreenCTM?.();
+    if (!screenMatrix) return null;
+    return getMapReconstructionPlacementSnapTarget({
       position,
       piece: geometry.piecesById[stateId],
-      geometry,
       selectedPieceCount: getSelectedStateIds().length,
-      cssPixelsPerWorldUnit: Math.min(rect.width / view.width, rect.height / view.height)
+      pointerType,
+      screenMatrix
     });
   };
 
-  const startMobileSnap = (stateId, fromPosition, snap, shouldFocus = true) => {
-    if (!snap || mobileSnapPending) return false;
-    mobileSnapPending = true;
+  const startPlacementSnap = (
+    stateId,
+    fromPosition,
+    snap,
+    pointerType,
+    shouldFocus = true
+  ) => {
+    if (!snap || placementSnapPending) return false;
+    placementSnapPending = true;
     session = endMapReconstructionDrag(session);
     render();
     requestAnimationFrame(() => {
-      if (destroyed || !mobileSnapPending) return;
+      if (destroyed || !placementSnapPending) return;
       const group = container.querySelector(
         `[data-map-reconstruction-state-id="${stateId}"]`
       );
-      group?.classList.add("is-mobile-snapping");
-      mobileSnapAnimationCancel = animateMapReconstructionMobileValue({
+      group?.classList.add("is-placement-snapping");
+      placementSnapAnimationCancel = animateMapReconstructionMobileValue({
         from: fromPosition,
         to: snap.position,
         durationMs: MAP_RECONSTRUCTION_MOBILE_ASSISTANCE.snapDurationMs,
@@ -710,19 +716,21 @@ export function createMapReconstructionActivity(container, options) {
           group?.setAttribute("transform", `translate(${position.x} ${position.y})`);
         },
         onFinish: () => {
-          mobileSnapAnimationCancel = null;
-          if (destroyed || !mobileSnapPending) return;
+          placementSnapAnimationCancel = null;
+          if (destroyed || !placementSnapPending) return;
           session = placeMapReconstructionPiece(
             session,
             stateId,
             snap.position,
             getInteractionGeometry()
           );
-          mobileSnapPending = false;
-          try {
-            window.navigator?.vibrate?.(18);
-          } catch {
-            // Haptics are optional.
+          placementSnapPending = false;
+          if (pointerType === "touch") {
+            try {
+              window.navigator?.vibrate?.(18);
+            } catch {
+              // Haptics are optional.
+            }
           }
           render();
           if (shouldFocus) focusPiece(stateId);
@@ -796,12 +804,18 @@ export function createMapReconstructionActivity(container, options) {
     };
   };
 
-  const placePiece = (stateId, position, shouldFocus = true) => {
+  const placePiece = (stateId, position, shouldFocus = true, pointerType = "") => {
     session = placeMapReconstructionPiece(session, stateId, position, getInteractionGeometry());
     const placedPosition = session.piecesById[stateId]?.position;
     if (!placedPosition) return;
-    const snap = getMobileSnap(stateId, placedPosition);
-    if (snap && startMobileSnap(stateId, placedPosition, snap, shouldFocus)) return;
+    const snap = getPlacementSnap(stateId, placedPosition, pointerType);
+    if (snap && startPlacementSnap(
+      stateId,
+      placedPosition,
+      snap,
+      pointerType,
+      shouldFocus
+    )) return;
     render();
     if (shouldFocus) focusPiece(stateId);
   };
@@ -810,7 +824,7 @@ export function createMapReconstructionActivity(container, options) {
     const piece = geometry.piecesById[stateId];
     let ignoreNextClick = false;
     button.addEventListener("pointerdown", (event) => {
-      if (mobileSnapPending || cameraGestureActive || activePiecePointerCancel || activeBankPointerCancel) return;
+      if (placementSnapPending || cameraGestureActive || activePiecePointerCancel || activeBankPointerCancel) return;
       if (event.button != null && event.button !== 0) return;
       if (event.target.closest?.(".chip-speaker-button")) return;
       if (event.pointerType === "touch"
@@ -854,7 +868,12 @@ export function createMapReconstructionActivity(container, options) {
               upEvent.clientY
             );
             if (point) {
-              placePiece(stateId, getMapReconstructionShelfDropPosition(point, pointerOffset));
+              placePiece(
+                stateId,
+                getMapReconstructionShelfDropPosition(point, pointerOffset),
+                true,
+                event.pointerType
+              );
             }
           }
           restoreMobileDragAssistance();
@@ -992,7 +1011,7 @@ export function createMapReconstructionActivity(container, options) {
       focusPiece(stateId);
     });
     group.addEventListener("pointerdown", (event) => {
-      if (mobileSnapPending || cameraGestureActive || activePiecePointerCancel || activeBankPointerCancel) return;
+      if (placementSnapPending || cameraGestureActive || activePiecePointerCancel || activeBankPointerCancel) return;
       if (event.button != null && event.button !== 0) return;
       const startPoint = mapClientPointToReconstructionWorkspace(workspaceSvg, event.clientX, event.clientY);
       const pieceGeometry = geometry.piecesById[stateId];
@@ -1036,9 +1055,14 @@ export function createMapReconstructionActivity(container, options) {
         } else if (moved) {
           session = endMapReconstructionDrag(session);
           const position = session.piecesById[stateId]?.position;
-          const snap = getMobileSnap(stateId, position);
+          const snap = getPlacementSnap(stateId, position, event.pointerType);
           restoreMobileDragAssistance();
-          if (snap && startMobileSnap(stateId, position, snap)) return;
+          if (snap && startPlacementSnap(
+            stateId,
+            position,
+            snap,
+            event.pointerType
+          )) return;
         } else {
           if (canDrag) session = endMapReconstructionDrag(session);
           applyPieceClickSelection(stateId, finishEvent);
@@ -1115,7 +1139,7 @@ export function createMapReconstructionActivity(container, options) {
   const attachCameraNavigation = (svg) => {
     const pointers = new Map();
     let moved = false;
-    const blocked = () => activePiecePointerCancel || activeBankPointerCancel || mobileSnapPending;
+    const blocked = () => activePiecePointerCancel || activeBankPointerCancel || placementSnapPending;
     const gesture = () => {
       const points = [...pointers.values()];
       const a = points[0], b = points[1] || a;
@@ -1405,7 +1429,7 @@ export function createMapReconstructionActivity(container, options) {
     navigation.setAttribute("role", "group");
     navigation.setAttribute("aria-label", "Map navigation");
     const changeZoom = (factor) => {
-      if (activePiecePointerCancel || activeBankPointerCancel || mobileSnapPending) return;
+      if (activePiecePointerCancel || activeBankPointerCancel || placementSnapPending) return;
       cancelMobileAssistance();
       const view = getWorkspaceView();
       manualCamera = true;
@@ -1416,7 +1440,7 @@ export function createMapReconstructionActivity(container, options) {
       createButton("−", "map-reconstruction-map-control", () => changeZoom(1 / 1.35)),
       createButton("+", "map-reconstruction-map-control", () => changeZoom(1.35)),
       createButton("Fit map", "map-reconstruction-map-control", () => {
-        if (activePiecePointerCancel || activeBankPointerCancel || mobileSnapPending) return;
+        if (activePiecePointerCancel || activeBankPointerCancel || placementSnapPending) return;
         cancelMobileAssistance();
         manualCamera = false;
         setWorkspaceView(fittedView);

@@ -63,11 +63,14 @@ import {
 } from "../src/atlas/map-reconstruction-drag-preview.js";
 import {
   animateMapReconstructionMobileValue,
-  getMapReconstructionMobilePieceSize,
-  getMapReconstructionMobileSnapTarget,
-  getMapReconstructionMobileSnapThreshold,
   isMapReconstructionMobileAssistanceEnabled
 } from "../src/atlas/map-reconstruction-mobile-assistance.js";
+import {
+  MAP_RECONSTRUCTION_PLACEMENT_TOLERANCE,
+  getMapReconstructionPlacementSnapTarget,
+  getMapReconstructionPlacementToleranceCssPixels,
+  getMapReconstructionTranslationErrorCssPixels
+} from "../src/atlas/map-reconstruction-placement-tolerance.js";
 
 const featureCollection = JSON.parse((await readFile(
   new URL("../assets/maps/data/maplibre-us-states-atlas.geojson", import.meta.url),
@@ -145,46 +148,62 @@ const finePointerWindow = {
 };
 assert.equal(isMapReconstructionMobileAssistanceEnabled(coarsePointerWindow), true);
 assert.equal(isMapReconstructionMobileAssistanceEnabled(finePointerWindow), false);
-const mobilePieceSizes = new Set();
-for (const piece of geometry.pieces) {
-  const size = getMapReconstructionMobilePieceSize(piece, geometry);
-  mobilePieceSizes.add(size);
-  const threshold = getMapReconstructionMobileSnapThreshold(piece, geometry);
-  assert.ok(["large", "medium", "small"].includes(size));
-  assert.equal(threshold.cssPixels, { large: 5, medium: 7, small: 9 }[size]);
-  const inside = getMapReconstructionMobileSnapTarget({
-    position: {
-      x: piece.correctPosition.x + threshold.cssPixels - 0.1,
-      y: piece.correctPosition.y
-    },
-    piece,
-    geometry,
+assert.deepEqual(MAP_RECONSTRUCTION_PLACEMENT_TOLERANCE, {
+  mouseCssPixels: 32,
+  touchCssPixels: 40
+});
+assert.equal(getMapReconstructionPlacementToleranceCssPixels("mouse"), 32);
+assert.equal(getMapReconstructionPlacementToleranceCssPixels("touch"), 40);
+assert.equal(getMapReconstructionPlacementToleranceCssPixels("pen"), 32);
+const placementPiece = geometry.pieces[0];
+const identityScreenMatrix = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
+const pannedScreenMatrix = { ...identityScreenMatrix, e: 1200, f: -640 };
+const zoomedScreenMatrix = { a: 2, b: 0, c: 0, d: 2, e: 1200, f: -640 };
+const placementAtCssError = (cssPixels, screenMatrix = identityScreenMatrix) => ({
+  x: placementPiece.correctPosition.x + cssPixels / screenMatrix.a,
+  y: placementPiece.correctPosition.y
+});
+const placementSnap = (cssPixels, pointerType, screenMatrix = identityScreenMatrix) => (
+  getMapReconstructionPlacementSnapTarget({
+    position: placementAtCssError(cssPixels, screenMatrix),
+    piece: placementPiece,
     selectedPieceCount: 1,
-    cssPixelsPerWorldUnit: 1,
-    targetWindow: coarsePointerWindow
-  });
-  const outside = getMapReconstructionMobileSnapTarget({
-    position: {
-      x: piece.correctPosition.x + threshold.cssPixels + 0.1,
-      y: piece.correctPosition.y
-    },
-    piece,
-    geometry,
-    selectedPieceCount: 1,
-    cssPixelsPerWorldUnit: 1,
-    targetWindow: coarsePointerWindow
-  });
-  assert.deepEqual(inside?.position, piece.correctPosition);
-  assert.equal(outside, null);
-}
-assert.deepEqual([...mobilePieceSizes].sort(), ["large", "medium", "small"]);
-assert.equal(getMapReconstructionMobileSnapTarget({
-  position: geometry.pieces[0].correctPosition,
-  piece: geometry.pieces[0],
-  geometry,
+    pointerType,
+    screenMatrix
+  })
+);
+assert.deepEqual(placementSnap(31.9, "mouse")?.position, placementPiece.correctPosition);
+assert.equal(placementSnap(32, "mouse")?.errorCssPixels, 32);
+assert.equal(placementSnap(32.1, "mouse"), null);
+assert.deepEqual(placementSnap(39.9, "touch")?.position, placementPiece.correctPosition);
+assert.equal(placementSnap(40, "touch")?.errorCssPixels, 40);
+assert.equal(placementSnap(40.1, "touch"), null);
+assert.equal(placementSnap(32, "mouse", pannedScreenMatrix)?.errorCssPixels, 32);
+assert.equal(placementSnap(32, "mouse", zoomedScreenMatrix)?.errorCssPixels, 32);
+assert.equal(getMapReconstructionTranslationErrorCssPixels(
+  placementAtCssError(32, zoomedScreenMatrix),
+  placementPiece.correctPosition,
+  zoomedScreenMatrix
+), 32);
+assert.equal(getMapReconstructionPlacementSnapTarget({
+  position: placementPiece.correctPosition,
+  piece: placementPiece,
   selectedPieceCount: 2,
-  cssPixelsPerWorldUnit: 1,
-  targetWindow: coarsePointerWindow
+  pointerType: "touch",
+  screenMatrix: identityScreenMatrix
+}), null);
+assert.equal(getMapReconstructionPlacementSnapTarget({
+  position: placementPiece.correctPosition,
+  piece: placementPiece,
+  selectedPieceCount: 1,
+  pointerType: "",
+  screenMatrix: identityScreenMatrix
+}), null);
+assert.equal(getMapReconstructionPlacementSnapTarget({
+  position: placementPiece.correctPosition,
+  piece: placementPiece,
+  selectedPieceCount: 1,
+  pointerType: "mouse"
 }), null);
 let queuedAnimationFrame = null;
 let animationFrameCancelled = false;
