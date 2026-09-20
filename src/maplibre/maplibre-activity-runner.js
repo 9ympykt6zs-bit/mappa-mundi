@@ -81,6 +81,10 @@ const colors = {
 // Keep visually suppressed retrieval targets queryable for map hit testing.
 const suppressedStudyTargetHitFillOpacity = 0.001;
 
+const lowZoomCursorAnchorMaxZoom = 3;
+const lowZoomCursorAnchorMaxLongitudeDelta = 70;
+const lowZoomCursorAnchorMaxRayDistance = 0.95;
+
 const oceanHighlightLatExtent = 89.5;
 const oceanHighlightTextureBounds = [
   [-180, oceanHighlightLatExtent],
@@ -619,6 +623,7 @@ export class MapLibreActivityRunner {
       zoom: activity.map?.initialView?.zoom || 1.25,
       minZoom: 0.8,
       maxZoom: 12,
+      scrollZoom: true,
       projection: { type: "globe" },
       style: {
         version: 8,
@@ -649,6 +654,7 @@ export class MapLibreActivityRunner {
     await new Promise((resolve) => {
       this.map.on("load", resolve);
     });
+    this.installLowZoomCursorAnchorCorrection();
 
     this.addAtlasBaseLayers();
     this.addOceanRegionLayer();
@@ -1806,6 +1812,63 @@ export class MapLibreActivityRunner {
     this.map.boxZoom[method]();
   }
 
+  getLowZoomCursorAnchorSafety(transform, anchorPoint) {
+    if (!transform?.isPointOnMapSurface?.(anchorPoint)) {
+      return false;
+    }
+
+    const anchorLocation = transform.screenPointToLocation(anchorPoint);
+    const longitudeDelta = Math.abs(
+      ((anchorLocation.lng - transform.center.lng + 540) % 360) - 180
+    );
+    const rayDirection = transform.getRayDirectionFromPixel(anchorPoint);
+    const rayOrigin = transform.cameraPosition;
+    const distanceAlongRay = -(
+      rayOrigin[0] * rayDirection[0]
+      + rayOrigin[1] * rayDirection[1]
+      + rayOrigin[2] * rayDirection[2]
+    );
+    const closestPoint = [0, 1, 2].map((index) => (
+      rayOrigin[index] + rayDirection[index] * distanceAlongRay
+    ));
+    const rayDistance = Math.hypot(...closestPoint);
+
+    return longitudeDelta <= lowZoomCursorAnchorMaxLongitudeDelta
+      && rayDistance <= lowZoomCursorAnchorMaxRayDistance;
+  }
+
+  installLowZoomCursorAnchorCorrection() {
+    const cameraHelper = this.map?.cameraHelper;
+    const originalZoomHandler = cameraHelper?.handleMapControlsRollPitchBearingZoom;
+    if (typeof originalZoomHandler !== "function" || this.cursorAnchorCorrectionHelper === cameraHelper) {
+      return;
+    }
+
+    this.cursorAnchorCorrectionHelper = cameraHelper;
+    // MapLibre 5.18 blends globe zoom toward a center-based heuristic whenever
+    // the globe is small. Keep that safety behavior near the horizon, but use
+    // MapLibre's own exact location-at-point operation in the stable inner area.
+    cameraHelper.handleMapControlsRollPitchBearingZoom = (deltas, transform) => {
+      const anchorPoint = deltas?.around;
+      const shouldCorrect = Boolean(
+        deltas?.zoomDelta
+        && cameraHelper.useGlobeControls
+        && transform?.zoom < lowZoomCursorAnchorMaxZoom
+        && anchorPoint
+        && this.getLowZoomCursorAnchorSafety(transform, anchorPoint)
+      );
+      const anchorLocation = shouldCorrect
+        ? transform.screenPointToLocation(anchorPoint)
+        : null;
+
+      originalZoomHandler.call(cameraHelper, deltas, transform);
+
+      if (anchorLocation) {
+        transform.setLocationAtPoint(anchorLocation, anchorPoint);
+      }
+    };
+  }
+
   installHorizontalWheelPan() {
     const container = this.map?.getContainer?.();
     if (!container || this.horizontalWheelPanHandler) {
@@ -1827,7 +1890,7 @@ export class MapLibreActivityRunner {
     const deltaMode = Number(event.deltaMode) || 0;
     const deltaX = Number(event.deltaX) || 0;
     const deltaY = Number(event.deltaY) || 0;
-    if (!deltaX || Math.abs(deltaX) <= Math.abs(deltaY)) {
+    if (event.ctrlKey || !deltaX || Math.abs(deltaX) <= Math.abs(deltaY)) {
       return;
     }
 

@@ -1,6 +1,6 @@
 # Engineering state
 
-Updated 2026-09-15 for forgiving screen-space Reconstruction placement on `main`. This is a concise navigation and coordination record, not a release certification. Recheck Git status/revision at task start.
+Updated 2026-09-19 for cursor-anchored globe zoom on `codex/cursor-anchored-zoom`. This is a concise navigation and coordination record, not a release certification. Recheck Git status/revision at task start.
 
 ## Ownership and current work
 
@@ -32,6 +32,8 @@ The repository uses browser JavaScript modules and static assets. `package.json`
 - Historical context: [CURRENT_STATE](../CURRENT_STATE.md) and [project history](CODEX_PROJECT_HISTORY.md). Read relevant sections only; dated plans and pass counts are not current verification.
 
 ## Verification and risks
+
+- Cursor-anchored map zoom: MapLibre 5.18 already owns wheel, trackpad, and pinch zoom and provides exact cursor anchoring at regional zooms. Its low-zoom globe helper intentionally blends toward a center-based heuristic whenever the globe is small, even for points well inside the visible surface. The shared runner now reapplies MapLibre's own `setLocationAtPoint` operation below zoom 3 when the pointer lies safely inside the globe horizon and its longitude is within a conservative 70 degrees of the camera center. MapLibre retains its native safety fallback near the horizon and for farther points. Predominantly horizontal non-pinch wheel input still pans; `ctrlKey` pinch-style wheel input remains with MapLibre. This is a narrow compatibility shim around MapLibre 5.18 internals and must be re-audited when changing MapLibre versions. The fast baseline passed **112/112**; focused desktop cursor/navigation/Guided camera acceptance passed **26/26**, and a real emulated two-finger mobile pinch passed **1/1**. Details are in [testing](testing.md).
 
 - Reconstruction release tolerance: regional, Guided, standalone, and Lower 48 drag paths share `MAP_RECONSTRUCTION_PLACEMENT_TOLERANCE`. A single-piece release measures the canonical translation delta through the active SVG screen matrix, making the 32 CSS-pixel mouse/trackpad and 40 CSS-pixel touch limits stable across viewport size, pan, and zoom. The boundary is inclusive; an accepted piece snaps to the exact canonical translation. Multi-piece moves and releases outside the limit retain their existing positions and retry/submission behavior. Guided anchored scoring, standalone global translation normalization, Lower 48 evaluation, evidence, navigation, and persistence remain unchanged. The fast baseline passed **112/112**; affected Reconstruction/Guided browser acceptance passed **16 applicable cases** with **2 intentional pointer-project skips**, and focused Lower 48 persistence/lifecycle coverage passed **3 applicable cases** with **1 intentional mobile skip**. Details are in [testing](testing.md).
 

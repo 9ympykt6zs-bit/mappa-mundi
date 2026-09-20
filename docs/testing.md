@@ -1,5 +1,20 @@
 # Automated testing
 
+## Cursor-anchored map zoom — 2026-09-19
+
+`tests/e2e/cursor-anchored-zoom.spec.js` exercises the production MapLibre 5.18 globe at zoom 1.2, where the library's normal small-globe heuristic previously allowed an off-center geographic point to drift about 29 CSS pixels during one wheel step. The runner keeps MapLibre's native wheel/trackpad handler and corrects only safe low-zoom inner-globe anchors with MapLibre's own location-at-point operation, using the newer upstream controller's horizon model plus a conservative longitude guard below the range MapLibre identifies as unstable. The spec covers zooming out, moving to an off-center geographic point, zooming back in with a mouse wheel, repeated small trackpad-like deltas, diagonal `ctrlKey` pinch-style wheel input, delayed camera-snap resistance, ordinary drag pan, enabled scroll/drag/touch handlers, and a CDP-driven two-finger mobile pinch.
+
+The complete fast baseline passed **112/112**. A serial desktop matrix covering the new spec, globe navigation, Guided political cameras including New Hampshire/Alaska/Hawaii, and existing mountain-range pan/zoom passed **26/26**. The mobile pinch case passed **1/1**. Tests ran from the isolated Codex worktree on port 4174 because an existing server on the default port 4173 belonged to the protected Kimi worktree; the temporary port-only Playwright config was not retained.
+
+Commands:
+
+```sh
+npm test
+npx playwright test tests/e2e/cursor-anchored-zoom.spec.js tests/e2e/mountain-range-visual-regression.spec.js tests/e2e/guided-political-camera.spec.js tests/e2e/globe-navigation-prototype.spec.js --project=desktop-chromium --workers=1
+npx playwright test tests/e2e/cursor-anchored-zoom.spec.js --project=mobile-chromium --workers=1 --grep="mobile two-finger"
+git diff --check
+```
+
 ## Reconstruction placement tolerance — 2026-09-15
 
 `scripts/check-map-reconstruction.mjs` pins the centralized 32 CSS-pixel mouse/trackpad and 40 CSS-pixel touch configuration. It covers offsets clearly inside, exactly on, and clearly outside both boundaries; rejects multi-piece and pointerless snapping; and proves that zoom scale changes the required world offset while pan translation does not change the measured CSS-pixel error. Existing regional, Guided anchored, standalone translation-normalized, and Lower 48 evaluators remain covered by their established checks.
