@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-async function createRegionalFixture(page) {
+async function createRegionalFixture(page, { placeFirstPiece = true } = {}) {
   await page.goto("/?test=1");
   await page.evaluate(async () => {
     const {
@@ -31,7 +31,55 @@ async function createRegionalFixture(page) {
     );
   });
   await expect(page.locator(".map-reconstruction-workspace")).toBeVisible();
-  await page.locator(".map-reconstruction-bank-piece").first().press("Enter");
+  if (placeFirstPiece) {
+    await page.locator(".map-reconstruction-bank-piece").first().press("Enter");
+  }
+}
+
+async function getBankPieceDragMetrics(page, offsetCssPixels = 0) {
+  return page.locator(".map-reconstruction-bank-piece").first().evaluate(async (button, offset) => {
+    const { isPointInMapReconstructionPiece } = await import(
+      "/src/atlas/map-reconstruction-geometry.js"
+    );
+    const stateId = button.dataset.mapReconstructionBankStateId;
+    const piece = window.placementToleranceGeometry.piecesById[stateId];
+    const path = button.querySelector("path");
+    const pathMatrix = path.getScreenCTM();
+    const bounds = piece.localBounds;
+    let localPoint = null;
+    for (let row = 1; row < 30 && !localPoint; row += 1) {
+      for (let column = 1; column < 30; column += 1) {
+        const candidate = {
+          x: bounds.minX + (bounds.maxX - bounds.minX) * column / 30,
+          y: bounds.minY + (bounds.maxY - bounds.minY) * row / 30
+        };
+        const client = new DOMPoint(candidate.x, candidate.y).matrixTransform(pathMatrix);
+        if (
+          isPointInMapReconstructionPiece(piece, candidate)
+          && document.elementFromPoint(client.x, client.y) === path
+        ) {
+          localPoint = candidate;
+          break;
+        }
+      }
+    }
+    if (!localPoint) throw new Error(`No draggable point found for ${stateId}.`);
+    const workspace = document.querySelector(".map-reconstruction-workspace");
+    const transform = (matrix, point) => new DOMPoint(
+      point.x,
+      point.y
+    ).matrixTransform(matrix);
+    const target = transform(workspace.getScreenCTM(), {
+      x: localPoint.x + piece.correctPosition.x,
+      y: localPoint.y + piece.correctPosition.y
+    });
+    return {
+      stateId,
+      current: transform(pathMatrix, localPoint),
+      target: { x: target.x + offset, y: target.y },
+      correctPosition: piece.correctPosition
+    };
+  }, offsetCssPixels);
 }
 
 async function getPlacedPieceMetrics(page) {
@@ -122,6 +170,30 @@ async function getCurrentErrorCssPixels(page, stateId) {
     );
   }, stateId);
 }
+
+test("accepted placement commits canonical state before animation and survives teardown", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "mobile-chromium", "The lifecycle race is pointer-type independent.");
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await createRegionalFixture(page, { placeFirstPiece: false });
+
+  const metrics = await getBankPieceDragMetrics(page, 20);
+  await dragPiece(page, metrics.current, metrics.target);
+
+  const immediate = await page.evaluate((stateId) => (
+    window.placementToleranceActivity.getState().piecesById[stateId]
+  ), metrics.stateId);
+  expect(immediate).toMatchObject({
+    position: metrics.correctPosition,
+    placementStatus: "placed"
+  });
+
+  await page.evaluate(() => window.placementToleranceActivity.destroy());
+  await page.waitForTimeout(140);
+  const afterTeardown = await page.evaluate((stateId) => (
+    window.placementToleranceActivity.getState().piecesById[stateId]
+  ), metrics.stateId);
+  expect(afterTeardown.position).toEqual(metrics.correctPosition);
+});
 
 test("mouse placement tolerance stays in CSS pixels after map pan and zoom", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === "mobile-chromium", "Mouse/trackpad tolerance uses the desktop pointer path.");

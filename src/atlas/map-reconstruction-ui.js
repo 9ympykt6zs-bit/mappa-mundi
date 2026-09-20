@@ -701,41 +701,46 @@ export function createMapReconstructionActivity(container, options) {
     if (!snap || placementSnapPending) return false;
     placementSnapPending = true;
     session = endMapReconstructionDrag(session);
+    session = placeMapReconstructionPiece(
+      session,
+      stateId,
+      snap.position,
+      getInteractionGeometry()
+    );
     render();
-    requestAnimationFrame(() => {
-      if (destroyed || !placementSnapPending) return;
-      const group = container.querySelector(
-        `[data-map-reconstruction-state-id="${stateId}"]`
-      );
-      group?.classList.add("is-placement-snapping");
-      placementSnapAnimationCancel = animateMapReconstructionMobileValue({
-        from: fromPosition,
-        to: snap.position,
-        durationMs: MAP_RECONSTRUCTION_MOBILE_ASSISTANCE.snapDurationMs,
-        onUpdate: (position) => {
-          group?.setAttribute("transform", `translate(${position.x} ${position.y})`);
-        },
-        onFinish: () => {
-          placementSnapAnimationCancel = null;
-          if (destroyed || !placementSnapPending) return;
-          session = placeMapReconstructionPiece(
-            session,
-            stateId,
-            snap.position,
-            getInteractionGeometry()
-          );
-          placementSnapPending = false;
-          if (pointerType === "touch") {
-            try {
-              window.navigator?.vibrate?.(18);
-            } catch {
-              // Haptics are optional.
-            }
+    const group = container.querySelector(
+      `[data-map-reconstruction-state-id="${stateId}"]`
+    );
+    group?.classList.add("is-placement-snapping");
+    group?.setAttribute("transform", `translate(${fromPosition.x} ${fromPosition.y})`);
+    placementSnapAnimationCancel = animateMapReconstructionMobileValue({
+      from: fromPosition,
+      to: snap.position,
+      durationMs: MAP_RECONSTRUCTION_MOBILE_ASSISTANCE.snapDurationMs,
+      onUpdate: (position) => {
+        group?.setAttribute("transform", `translate(${position.x} ${position.y})`);
+      },
+      onFinish: () => {
+        placementSnapAnimationCancel = null;
+        if (destroyed || !placementSnapPending) return;
+        placementSnapPending = false;
+        const currentGroup = container.querySelector(
+          `[data-map-reconstruction-state-id="${stateId}"]`
+        );
+        currentGroup?.setAttribute(
+          "transform",
+          `translate(${snap.position.x} ${snap.position.y})`
+        );
+        currentGroup?.classList.remove("is-placement-snapping");
+        if (pointerType === "touch") {
+          try {
+            window.navigator?.vibrate?.(18);
+          } catch {
+            // Haptics are optional.
           }
-          render();
-          if (shouldFocus) focusPiece(stateId);
         }
-      });
+        if (shouldFocus) focusPiece(stateId);
+      }
     });
     return true;
   };
