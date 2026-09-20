@@ -223,6 +223,10 @@ import {
   getSuccessfulCapitalNamingTargetIds
 } from "./united-states-capital-retrieval-sequencing.js?v=20260912-guided-capital-retrieval-1";
 import { findMemoryTrailGuidedExposureTarget } from "./memory-trail-introduction-guard.js";
+import {
+  collectUnitedStatesAnswerChoiceDistractors,
+  getUnitedStatesAnswerChoiceTargetCategory
+} from "./united-states-memory-trail-answer-choices.js";
 
 const APP_NAME = "Mappa Mundi";
 const LANDING_PAGE_TITLE = "Mappa Mundi \u2013 Geography Game for Learning the World";
@@ -12295,11 +12299,28 @@ function buildMemoryTrailAnswerChoices(memoryTrail, correctTargetId, promptKey =
     .sort((left, right) => left.distance - right.distance)
     .map(({ target }) => target);
 
-  [...currentWindowDistractors, ...introducedDistractors, ...poolDistractors].forEach((target) => {
+  const addChoiceTarget = (target) => {
     if (target?.id && !byId.has(target.id) && byId.size < MEMORY_TRAIL_ANSWER_CHOICE_COUNT) {
       byId.set(target.id, target);
     }
-  });
+  };
+
+  [...currentWindowDistractors, ...introducedDistractors, ...poolDistractors].forEach(addChoiceTarget);
+
+  if (byId.size < MEMORY_TRAIL_ANSWER_CHOICE_COUNT && choiceCategory) {
+    collectUnitedStatesAnswerChoiceDistractors({
+      activities,
+      category: choiceCategory,
+      excludeTargetId: correctTargetId
+    })
+      .map((target) => ({
+        target,
+        distance: getTargetDistance(getTargetCentroid(correctTarget), getTargetCentroid(target))
+      }))
+      .sort((left, right) => left.distance - right.distance)
+      .map(({ target }) => target)
+      .forEach(addChoiceTarget);
+  }
 
   return shuffleMemoryTrailChoices([...byId.values()])
     .slice(0, Math.max(2, Math.min(MEMORY_TRAIL_ANSWER_CHOICE_COUNT, byId.size)))
@@ -12316,15 +12337,7 @@ function getUnitedStatesMemoryTrailAnswerChoiceCategory(memoryTrail, target) {
     return "";
   }
 
-  if (target?.type === "capital") {
-    return "capital";
-  }
-
-  if (target?.type === "state" || target?.type === "federal-district") {
-    return "state";
-  }
-
-  return "";
+  return getUnitedStatesAnswerChoiceTargetCategory(target);
 }
 
 function isMemoryTrailAnswerChoiceDistractorAllowed(memoryTrail, target, category = "") {
@@ -16331,6 +16344,7 @@ function handleMemoryTrailNameChoice(targetId, options = {}) {
   clearMemoryTrailTrayFeedback(memoryTrail, "answer chip selection");
 
   const answerCameFromSpeaker = options.fromSpeaker === true;
+  const selectedChoice = (memoryTrail.answerChoices || []).find((choice) => choice?.id === targetId);
 
   if (targetId === memoryTrail.currentPromptTargetId) {
     handleCorrectMemoryTrailAnswer(memoryTrail, targetId, {
@@ -16338,7 +16352,8 @@ function handleMemoryTrailNameChoice(targetId, options = {}) {
     });
   } else {
     handleIncorrectMemoryTrailAnswer(memoryTrail, memoryTrail.currentPromptTargetId, {
-      selectedTargetId: targetId
+      selectedTargetId: targetId,
+      selectedTargetLabel: String(selectedChoice?.label || "").trim()
     });
   }
 }
@@ -16655,7 +16670,9 @@ function maybeSpeakPlaceToNameFeedbackTarget(memoryTrail, targetId, options = {}
 function createMemoryTrailCorrectionFeedback(memoryTrail, expectedTargetId, options = {}) {
   const selectedTargetId = options.selectedTargetId || "";
   const expectedName = getMemoryTrailTargetLabel(expectedTargetId);
-  const selectedName = selectedTargetId ? getMemoryTrailTargetLabel(selectedTargetId) : "";
+  const selectedName = selectedTargetId
+    ? getMemoryTrailTargetLabel(selectedTargetId) || String(options.selectedTargetLabel || "").trim()
+    : "";
   const capitalLocationFeedback = getCapitalLocationFeedback(expectedTargetId, selectedTargetId);
   const message = capitalLocationFeedback
     ? `${capitalLocationFeedback} Tap ${expectedName} to continue.`
@@ -22182,6 +22199,50 @@ function enforceRestoredUnitedStatesCapitalRetrievalPrerequisite(memoryTrail) {
   return true;
 }
 
+function isRestoredUnitedStatesMemoryTrailAnswerChoiceBankValid(memoryTrail, target) {
+  const choices = Array.isArray(memoryTrail?.answerChoices) ? memoryTrail.answerChoices : [];
+  const choiceIds = choices.map((choice) => String(choice?.id || ""));
+  const uniqueChoiceIds = new Set(choiceIds.filter(Boolean));
+  const choiceCategory = getUnitedStatesMemoryTrailAnswerChoiceCategory(memoryTrail, target);
+  const expectedChoiceCount = choiceCategory ? MEMORY_TRAIL_ANSWER_CHOICE_COUNT : 2;
+
+  return uniqueChoiceIds.size === choiceIds.length
+    && uniqueChoiceIds.size >= expectedChoiceCount
+    && uniqueChoiceIds.has(target.id)
+    && choices.every((choice) => (
+      String(choice?.label || "").trim().length > 0
+      && (!choice?.promptTargetId || choice.promptTargetId === target.id)
+    ));
+}
+
+function restoreUnitedStatesMemoryTrailAnswerChoices(memoryTrail) {
+  if (
+    memoryTrail?.phase !== "answering"
+    || memoryTrail.currentPromptType !== "place_to_name"
+    || !memoryTrail.currentPromptTargetId
+  ) {
+    return false;
+  }
+
+  const target = getTargetById(memoryTrail, memoryTrail.currentPromptTargetId);
+  if (!target || isRestoredUnitedStatesMemoryTrailAnswerChoiceBankValid(memoryTrail, target)) {
+    return false;
+  }
+
+  const restoredChoiceCount = Array.isArray(memoryTrail.answerChoices) ? memoryTrail.answerChoices.length : 0;
+  memoryTrail.answerChoices = buildMemoryTrailAnswerChoices(
+    memoryTrail,
+    memoryTrail.currentPromptTargetId,
+    memoryTrail.currentPromptKey
+  );
+  debugMemoryTrail("restored answer choice bank repaired", {
+    targetId: memoryTrail.currentPromptTargetId,
+    restoredChoiceCount,
+    repairedChoiceCount: memoryTrail.answerChoices.length
+  });
+  return true;
+}
+
 function restoreUnitedStatesMemoryTrailMemoryTrailSnapshot(memoryTrail, snapshot = {}) {
   if (!memoryTrail || snapshot?.source !== UNITED_STATES_MEMORY_TRAIL_SOURCE) {
     return false;
@@ -22219,6 +22280,7 @@ function restoreUnitedStatesMemoryTrailMemoryTrailSnapshot(memoryTrail, snapshot
     ? snapshot.currentPracticeWindowIds.map((targetId) => byId.get(targetId)).filter(Boolean)
     : memoryTrail.currentPracticeWindow;
   enforceRestoredUnitedStatesCapitalRetrievalPrerequisite(memoryTrail);
+  restoreUnitedStatesMemoryTrailAnswerChoices(memoryTrail);
   memoryTrail.currentPromptStartedAtMs = null;
   runner?.setMemoryTrailStudyTargetEmphasisSuppressed?.(
     shouldSuppressDailyTrailStudyTargetEmphasis(memoryTrail),

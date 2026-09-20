@@ -1,4 +1,5 @@
 import { buildSeededTieBreakers, resolveNow } from "./deterministic-dependencies.js";
+import { isExcludedPhaseOneTargetId } from "./united-states-memory-trail-target-scope.js";
 
 export const unitedStatesMemoryTrailStorageKey = "mappaUnitedStatesMemoryTrailProgress";
 export const unitedStatesMemoryTrailId = "united-states-memory-trail";
@@ -22,7 +23,6 @@ const validMemoryStates = new Set(["new", "learning", "review", "relearning"]);
 const practiceEligibleStatuses = new Set(["introduced", "learning", "review", "mastered"]);
 const learnedEnoughForCapitalStatuses = new Set(["review", "mastered"]);
 const stateActivityIdPattern = /^us-states-\d{2}$/;
-const excludedPhaseOneTargetIds = new Set(["district-of-columbia", "washington-dc"]);
 const defaultMemoryDifficulty = 5;
 const plannerContextKey = Symbol("unitedStatesMemoryTrailPlannerContext");
 
@@ -101,14 +101,14 @@ export function buildUnitedStatesMemoryTrailItems(journey, activities = []) {
     const activity = activities.find((candidate) => candidate?.id === step.activityId);
     const stateTargets = (activity?.targets || [])
       .filter((target) => isPhaseOneStateTarget(target))
-      .filter((target) => !excludedPhaseOneTargetIds.has(target.id));
+      .filter((target) => !isExcludedPhaseOneTargetId(target.id));
     const sectionId = String(activity?.id || step.activityId || "").replace("us-states-", "");
     const capitalActivityId = `us-capitals-${sectionId}`;
     const capitalActivity = activities.find((candidate) => candidate?.id === capitalActivityId);
     const stateTargetsByAbbreviation = new Map(stateTargets.map((target) => [target.state, target]));
     const capitalTargets = (capitalActivity?.targets || [])
       .filter((target) => isPhaseTwoCapitalTarget(target))
-      .filter((target) => !excludedPhaseOneTargetIds.has(target.id));
+      .filter((target) => !isExcludedPhaseOneTargetId(target.id));
 
     const stateItems = stateTargets.map((target, targetIndex) => ({
       id: `state:${target.id}`,
@@ -199,8 +199,8 @@ export function validateUnitedStatesMemoryTrailCurriculum(items = []) {
     statesWithoutCapital: stateItems
       .filter((item) => !statesWithCapital.has(item.id))
       .map((item) => item.id),
-    excludedTargetIdsPresent: targetIds.filter((targetId) => excludedPhaseOneTargetIds.has(targetId)),
-    excludedCapitalTargetIdsPresent: capitalTargetIds.filter((targetId) => excludedPhaseOneTargetIds.has(targetId)),
+    excludedTargetIdsPresent: targetIds.filter((targetId) => isExcludedPhaseOneTargetId(targetId)),
+    excludedCapitalTargetIdsPresent: capitalTargetIds.filter((targetId) => isExcludedPhaseOneTargetId(targetId)),
     isValid: stateItems.length === 50
       && uniqueTargetIds.length === 50
       && capitalItems.length === 50
@@ -211,8 +211,8 @@ export function validateUnitedStatesMemoryTrailCurriculum(items = []) {
       && invalidCapitalLinks.length === 0
       && statesWithCapital.size === 50
       && sectionIds.length === 11
-      && !targetIds.some((targetId) => excludedPhaseOneTargetIds.has(targetId))
-      && !capitalTargetIds.some((targetId) => excludedPhaseOneTargetIds.has(targetId))
+      && !targetIds.some((targetId) => isExcludedPhaseOneTargetId(targetId))
+      && !capitalTargetIds.some((targetId) => isExcludedPhaseOneTargetId(targetId))
   };
 }
 
