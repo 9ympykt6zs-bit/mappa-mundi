@@ -16,7 +16,8 @@ async function openPrimaryLearn(page) {
 }
 
 for (const checkpointIndex of [0, 1, 9]) {
-  test(`Guided checkpoint ${checkpointIndex + 1} uses its section, fixed context, and target-only evidence`, async ({ page }, testInfo) => {
+  const criticalPathTag = checkpointIndex === 0 ? " @us-critical-path" : "";
+  test(`Guided checkpoint ${checkpointIndex + 1} uses its section, fixed context, and target-only evidence${criticalPathTag}`, async ({ page }, testInfo) => {
     const checkpoint = checkpoints[checkpointIndex];
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
@@ -95,10 +96,25 @@ for (const checkpointIndex of [0, 1, 9]) {
   });
 }
 
-test("a stale launched Reconstruction child cannot bypass state teaching after reload", async ({ page }) => {
+test("a stale launched Reconstruction child and historical evidence cannot satisfy Reconstruction prerequisites @us-critical-path", async ({ page }) => {
   const checkpoint = checkpoints[0];
-  await page.addInitScript(({ checkpoint, orchestrationKey, childLaunchKey, guidedProgressKey }) => {
+  await page.addInitScript(({ checkpoint, orchestrationKey, childLaunchKey, guidedProgressKey, evidenceKey }) => {
     localStorage.removeItem(guidedProgressKey);
+    localStorage.setItem(evidenceKey, JSON.stringify({
+      storageVersion: 1,
+      evidenceSchemaVersion: 1,
+      events: checkpoint.stateIds.map((stateId, sequence) => ({
+        schemaVersion: 1,
+        eventId: `historical:${stateId}`,
+        attemptId: `historical:${stateId}`,
+        occurredAt: "2040-01-01T00:00:00.000Z",
+        sequence,
+        conceptId: `state-location:${stateId}`,
+        skillId: "locating",
+        sourceMode: "us-memory-trail",
+        outcome: "correct"
+      }))
+    }));
     localStorage.setItem(orchestrationKey, JSON.stringify({
       version: 6,
       activeBlockId: checkpoint.blockId,
@@ -121,12 +137,12 @@ test("a stale launched Reconstruction child cannot bypass state teaching after r
         regionId: checkpoint.regionId
       }
     }));
-  }, { checkpoint, orchestrationKey, childLaunchKey, guidedProgressKey });
+  }, { checkpoint, orchestrationKey, childLaunchKey, guidedProgressKey, evidenceKey });
 
   await openPrimaryLearn(page);
   await expect(page.locator(".memory-trail-panel")).toBeVisible({ timeout: 20_000 });
   await expect(page.locator(`[data-map-reconstruction-region-id="${checkpoint.regionId}"]`)).toHaveCount(0);
-  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getCurrentActivity()?.id)).toBe("us-states-01");
+  expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getCurrentActivity()?.id)).toMatch(/^us-states-/);
   expect(await page.evaluate(() => (
     window.__MAPPA_TEST_API__.getGuidedLearningOrchestration().currentBlock.type
   ))).toBe("guided-section");

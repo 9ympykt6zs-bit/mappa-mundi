@@ -161,7 +161,7 @@ async function tapTeachingCapital(page, state, targetId) {
   ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
 }
 
-test("Guided Learning separates Cheyenne's precise star from its forgiving tap target", async ({ page }) => {
+test("Guided Learning separates Cheyenne's precise star from its forgiving tap target @us-critical-path", async ({ page }) => {
   await openSeededCapitalTeaching(page, {
     sectionId: "us-capitals-07",
     stateIds: ["minnesota", "north-dakota", "south-dakota", "wyoming", "nebraska"],

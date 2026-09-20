@@ -568,7 +568,7 @@ test("Alabama-stage Guided Learning replaces a stale Alaska introduction with th
   ))).toBe("allegheny-mountains");
 });
 
-test("Guided Learning introduces and immediately quizzes a three-range physical batch", async ({ page }) => {
+test("Guided Learning introduces and immediately quizzes a three-range physical batch @us-critical-path", async ({ page }) => {
   const runtimeErrors = [];
   page.on("pageerror", (error) => runtimeErrors.push(`pageerror: ${error.message}`));
   page.on("console", (message) => {
@@ -1016,7 +1016,7 @@ test("a completed mountain category launches a varied spaced Guided Learning rev
   expect(trace.state.physicalReviewProgress["physical-family-review:mountain-range"].generation).toBe(1);
 });
 
-test("mixed physical review uses only introduced mountain, river, and lake targets with canonical evidence", async ({ page }) => {
+test("mixed physical review uses only introduced mountain, river, and lake targets with canonical evidence @us-critical-path", async ({ page }) => {
   const completedBlockIds = UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.blocks
     .filter(({ repeatable }) => !repeatable)
     .map(({ id }) => id);

@@ -215,7 +215,7 @@ test("Guided Back leaves a midway checkpoint and completed-child resume remains 
     .toBeVisible({ timeout: 20_000 });
 });
 
-test("Lower 48 saved placement progress survives surface teardown and resumes explicitly", async ({ page }) => {
+test("Lower 48 saved placement progress survives surface teardown and resumes explicitly @us-critical-path", async ({ page }) => {
   await loadMainMenu(page);
   await page.locator("#main-menu-map-reconstruction-button").click();
   const capstone = page.locator(".map-reconstruction-capstone-option");

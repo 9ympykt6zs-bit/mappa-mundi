@@ -44,9 +44,10 @@ Roles may overlap, but each assignment has one objective and explicit file owner
 3. For an explicitly used worktree, record its path, branch/base revision, and actual starting contents. Uncommitted Lead files may not be present. Review and integrate the intended patch/commits into the Lead checkout, resolve conflicts, then test there. Do not equate worker test results with integrated acceptance.
 4. Fix issues directly or send one bounded correction back to the specialist. Finish review before starting the next specialist.
 5. Follow `testing.md`: focused assertions during implementation; `npm test` after application integration; affected Playwright specs for browser changes, including desktop/mobile when applicable. Shared navigation, persistence, or broad runtime changes warrant broader browser coverage. For documentation-only changes, verify links, claims, and diff hygiene; do not add application tests solely for prose.
-6. Distinguish failed assertions, blocked environment checks, and unrun checks. Do not report simulated/browser-hook results as visual, real-device, accessibility, or pedagogical validation.
-7. Update `engineering-state.md` and affected domain docs when the actual state changes. Record nontrivial architectural decisions with rationale and consequences in the relevant domain document; link from engineering state. Keep handoff records concise and mark accepted only after Lead review and testing.
-8. Give the user one concise outcome/validation/limitations summary.
+6. Before pushing meaningful application changes to `main`, run the feature-specific checks, `npm run test:critical-path`, and `git diff --check`. Treat any failure as a blocked push until it is resolved or positively identified as an unrelated environment failure and documented.
+7. Distinguish failed assertions, blocked environment checks, and unrun checks. Do not report simulated/browser-hook results as visual, real-device, accessibility, or pedagogical validation.
+8. Update `engineering-state.md` and affected domain docs when the actual state changes. Record nontrivial architectural decisions with rationale and consequences in the relevant domain document; link from engineering state. Keep handoff records concise and mark accepted only after Lead review and testing.
+9. Give the user one concise outcome/validation/limitations summary.
 
 ## Fallback if direct delegation disappears
 

@@ -1,6 +1,6 @@
 # Engineering state
 
-Updated 2026-09-20 for cursor-anchored globe zoom and Guided capital answer-bank restoration on `main`. This is a concise navigation and coordination record, not a release certification. Recheck Git status/revision at task start.
+Updated 2026-09-20 for Reconstruction snap integrity and the U.S. critical-path pre-push gate on `main`. This is a concise navigation and coordination record, not a release certification. Recheck Git status/revision at task start.
 
 ## Ownership and current work
 
@@ -34,6 +34,8 @@ The repository uses browser JavaScript modules and static assets. `package.json`
 ## Verification and risks
 
 - Guided capital answer banks: U.S. political naming prompts keep their existing session-scoped choices when four valid options are available, then use same-category catalog targets only to fill a short bank. Restoring an answering prompt repairs missing, duplicate, unlabeled, or undersized banks while preserving a valid saved bank and its order. A catalog fallback miss retains the selected label for correction feedback but records progress and canonical evidence only against the active curriculum target. The combined fast baseline passed **113/113**; the new restoration/evidence browser coverage passed **6/6** across desktop and mobile, and established capital marker/retrieval coverage passed **26/26**.
+- Reconstruction snap integrity: an accepted drag writes the exact canonical piece position synchronously before its short visual snap animation begins. Animation is presentation-only, so navigation, teardown, persistence, or an interrupted frame cannot preserve the accepted piece at its approximate drop coordinate. The existing centralized 32 CSS px mouse/trackpad and 40 CSS px touch tolerances are unchanged.
+- U.S. critical path: `npm run test:critical-path` is the required compact browser gate before meaningful application changes are pushed to `main`, after feature-specific checks and before `git diff --check`. Tagged scenarios cover Reconstruction, map navigation, capital learning, physical geography, and Guided progression without replacing the full fast or affected browser suites. The initial accepted gate passed **14/14** in about **2.3 minutes**; the full fast baseline passed **113/113**. See [testing](testing.md).
 
 - Cursor-anchored map zoom: MapLibre 5.18 already owns wheel, trackpad, and pinch zoom and provides exact cursor anchoring at regional zooms. Its low-zoom globe helper intentionally blends toward a center-based heuristic whenever the globe is small, even for points well inside the visible surface. The shared runner now reapplies MapLibre's own `setLocationAtPoint` operation below zoom 3 when the pointer lies safely inside the globe horizon and its longitude is within a conservative 70 degrees of the camera center. MapLibre retains its native safety fallback near the horizon and for farther points. Predominantly horizontal non-pinch wheel input still pans; `ctrlKey` pinch-style wheel input remains with MapLibre. This is a narrow compatibility shim around MapLibre 5.18 internals and must be re-audited when changing MapLibre versions. The fast baseline passed **112/112**; focused desktop cursor/navigation/Guided camera acceptance passed **26/26**, and a real emulated two-finger mobile pinch passed **1/1**. Details are in [testing](testing.md).
 

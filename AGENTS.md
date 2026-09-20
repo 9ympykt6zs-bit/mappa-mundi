@@ -40,5 +40,6 @@ Implementation principles:
 - For bounded routine delegation, prefer an available efficient model with a compact briefing. Verify the current tool's supported models; do not assume thread and subagent model lists match.
 - Every delegation needs an objective, relevant files/context, allowed changes and exclusions, acceptance criteria, testing expectations, and a concise handoff. Use [the handoff template](docs/handoffs/TEMPLATE.md).
 - Review the actual diff, resolve issues, and test the integrated result before acceptance. Preserve unrelated user changes and existing learner/Journey progress. Never treat a specialist's success claim as verification.
+- Before pushing meaningful application changes to `main`, run feature-specific tests, `npm run test:critical-path`, and `git diff --check`. Push only after all required checks pass.
 - Update engineering state and affected domain documentation when actual architecture, behavior, constraints, or verification changes. Keep historical records dated; do not turn old test passes or plans into present facts.
 - Report one concise completion summary with the outcome, validation, and material limitations. Do not create background monitors, permanent agent teams, or new user-owned tasks merely to implement this policy.

@@ -2,7 +2,9 @@ import { test, expect } from '@playwright/test';
 import { GUIDED_RECONSTRUCTION_CHECKPOINTS as checkpoints } from '../../src/guided-reconstruction.js';
 
 // Exercise the production UI/geometry directly so camera checks can inspect world coordinates.
-for (const index of [1, 9]) test(`Reconstruction ${index + 1} framing and transformed placement`, async ({page}) => {
+for (const index of [1, 9]) {
+  const criticalPathTag = index === 1 ? " @us-critical-path" : "";
+  test(`Reconstruction ${index + 1} framing and transformed placement${criticalPathTag}`, async ({page}) => {
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
   const originalSize = page.viewportSize();
@@ -100,4 +102,5 @@ for (const index of [1, 9]) test(`Reconstruction ${index + 1} framing and transf
   await page.evaluate(()=>window.cameraActivity.reset());
   expect(await view()).toBe(home);
   expect(errors).toEqual([]);
-});
+  });
+}

@@ -146,7 +146,7 @@ async function getCanonicalEvidenceEvents(page) {
   ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
 }
 
-test("a one-capital Guided session tops up four unique capital choices and answers fallback misses with reliable feedback", async ({ page }) => {
+test("a one-capital Guided session tops up four unique capital choices and answers fallback misses with reliable feedback @us-critical-path", async ({ page }) => {
   await openSeededTrail(page, createSingleCapitalPoolState());
   const trail = await advanceToCapitalNamingPrompt(page, [SINGLE_POOL_CAPITAL_ID]);
   expect(trail.targetPoolIds.filter((targetId) => targetId === SINGLE_POOL_CAPITAL_ID)).toHaveLength(1);
@@ -189,7 +189,7 @@ test("a one-capital Guided session tops up four unique capital choices and answe
   expect(savedProgress.introducedItemIds || []).not.toContain(`capital:${fallbackChoiceId}`);
 });
 
-test("a persisted one-choice naming prompt is repaired to a full answer bank on reload", async ({ page }) => {
+test("a persisted one-choice naming prompt is repaired to a full answer bank on reload @us-critical-path", async ({ page }) => {
   await openSeededTrail(page, createSingleCapitalPoolState());
   await advanceToCapitalNamingPrompt(page, [SINGLE_POOL_CAPITAL_ID]);
   await expect(page.locator(".memory-trail-choice-chip")).toHaveCount(4);
@@ -228,7 +228,7 @@ test("a persisted one-choice naming prompt is repaired to a full answer bank on 
   expect(choiceIds).toContain(SINGLE_POOL_CAPITAL_ID);
 });
 
-test("a naming prompt with four session-scoped capitals keeps its exact bank across reload", async ({ page }) => {
+test("a naming prompt with four session-scoped capitals keeps its exact bank across reload @us-critical-path", async ({ page }) => {
   await openSeededTrail(page, createFourCapitalPoolState());
   const trail = await advanceToCapitalNamingPrompt(page, FOUR_POOL_CAPITAL_IDS);
 

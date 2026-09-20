@@ -126,6 +126,23 @@ Browser coverage includes Cheyenne's forgiving capital-only hit area, an inert c
 
 The repository has a fast Node-based baseline and a separate Playwright browser layer. The fast baseline is the normal development check; Playwright covers selected browser flows and should be run in a supported local or CI environment.
 
+## U.S. critical-path pre-push gate — 2026-09-20
+
+Run the compact U.S. browser gate before pushing meaningful application changes to `main`:
+
+```sh
+npm run test:critical-path
+```
+
+The command runs tagged desktop Chromium scenarios serially. It protects Reconstruction acceptance, exact canonical snapping, tolerance boundaries, transformed placement, navigation cleanup, and intentional resume; cursor-anchored globe zoom and ordinary pan; Guided capital teaching, hidden-answer retrieval, repaired and preserved answer banks, and evidence-safe fallback distractors; physical cohort introduction, immediate retrieval, complete context, and target-only evidence; and Guided Reconstruction prerequisites, final capstone ordering, persistence, and post-course practice launch. It is deliberately curated rather than a replacement for the full fast suite or feature-specific desktop/mobile checks. The initial accepted gate passed **14/14** in about **2.3 minutes** on desktop Chromium.
+
+The required pre-push sequence is:
+
+1. Run feature-specific checks appropriate to the change.
+2. Run `npm run test:critical-path`.
+3. Run `git diff --check`.
+4. Push only when all required checks pass.
+
 ## Guided political current-state camera — 2026-09-08 (superseded)
 
 `scripts/check-united-states-guided-political-camera.mjs` covers state/capital prompt resolution, the 4.7 policy, name-to-place exclusion, and the Alaska/Hawaii exception. `scripts/check-daily-trail-us-states-11-alaska-learn-camera.mjs` confirms the authored disconnected-state cameras remain intact.

@@ -171,7 +171,7 @@ async function getCurrentErrorCssPixels(page, stateId) {
   }, stateId);
 }
 
-test("accepted placement commits canonical state before animation and survives teardown", async ({ page }, testInfo) => {
+test("accepted placement commits canonical state before animation and survives teardown @us-critical-path", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === "mobile-chromium", "The lifecycle race is pointer-type independent.");
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await createRegionalFixture(page, { placeFirstPiece: false });
@@ -195,7 +195,7 @@ test("accepted placement commits canonical state before animation and survives t
   expect(afterTeardown.position).toEqual(metrics.correctPosition);
 });
 
-test("mouse placement tolerance stays in CSS pixels after map pan and zoom", async ({ page }, testInfo) => {
+test("mouse placement tolerance stays in CSS pixels after map pan and zoom @us-critical-path", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === "mobile-chromium", "Mouse/trackpad tolerance uses the desktop pointer path.");
   await createRegionalFixture(page);
 
@@ -259,6 +259,10 @@ test("mouse placement tolerance stays in CSS pixels after map pan and zoom", asy
     y: metrics.correct.y
   });
   expect(await getCurrentErrorCssPixels(page, metrics.stateId)).toBeGreaterThan(32);
+
+  const freshPiece = await getBankPieceDragMetrics(page, 20);
+  await dragPiece(page, freshPiece.current, freshPiece.target);
+  await expectCanonicalPosition(page, freshPiece.stateId, freshPiece.correctPosition);
 });
 
 test("touch placement uses the larger CSS-pixel tolerance", async ({ page }, testInfo) => {

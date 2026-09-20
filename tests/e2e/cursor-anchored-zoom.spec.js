@@ -71,7 +71,7 @@ function expectAnchorToRemainAtCursor(after, cursor) {
   expect(Math.hypot(after.point[0] - cursor.x, after.point[1] - cursor.y)).toBeLessThan(5);
 }
 
-test("mouse-wheel zoom stays anchored to the cursor on a zoomed-out globe", async ({ page }) => {
+test("mouse-wheel zoom stays anchored to the cursor on a zoomed-out globe @us-critical-path", async ({ page }) => {
   await openMapActivity(page);
   const mapBox = await page.locator("#map").boundingBox();
   expect(mapBox).not.toBeNull();

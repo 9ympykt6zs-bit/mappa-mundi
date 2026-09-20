@@ -79,7 +79,7 @@ test("all states alone cannot bypass required capital introductions", async ({ p
     .not.toBe("guided-core-capstone");
 });
 
-test("final U.S. capstone persists ten fixed questions and opens the durable choice", async ({ page }) => {
+test("final U.S. capstone persists ten fixed questions and opens the durable choice @us-critical-path", async ({ page }) => {
   await openGuided(page);
   await expect(page.locator(".memory-trail-panel")).toBeVisible({ timeout: 20_000 });
   const plan = await page.evaluate(() => window.__MAPPA_TEST_API__.getUnitedStatesMemoryTrailPlan());
@@ -143,4 +143,9 @@ test("final U.S. capstone persists ten fixed questions and opens the durable cho
   if (await page.locator("#launch-screen").isVisible()) await page.locator("#launch-start-button").click();
   await page.locator("#main-menu-us-memory-trail-button").click();
   await expect(page.getByRole("heading", { name: "Your U.S. learning map is ready" })).toBeVisible({ timeout: 20_000 });
+  await page.getByRole("button", { name: /Mixed U\.S\. Review/ }).click();
+  await expect(page.locator(".memory-trail-panel")).toBeVisible({ timeout: 20_000 });
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getUnitedStatesMemoryTrailPlan()?.sessionType || ""
+  ))).toBe("post-state-curriculum-review");
 });
