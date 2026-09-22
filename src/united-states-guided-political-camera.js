@@ -127,7 +127,8 @@ export function clampUnitedStatesGuidedStateFocusZoom(zoom) {
 export function createUnitedStatesGuidedStateFocusDecision({
   guidedPoliticalCamera = null,
   selection = {},
-  item = null
+  item = null,
+  destinationCamera = null
 } = {}) {
   if (
     !isManagedUnitedStatesGuidedPoliticalCamera(guidedPoliticalCamera)
@@ -140,7 +141,18 @@ export function createUnitedStatesGuidedStateFocusDecision({
 
   const contextualCenter = guidedPoliticalCamera.sectionFittedCamera?.center;
   const contextualZoom = Number(guidedPoliticalCamera.sectionFittedCamera?.zoom);
-  const finalZoom = clampUnitedStatesGuidedStateFocusZoom(contextualZoom);
+  const destinationZoom = selection.promptType === "guided"
+    && destinationCamera?.zoom != null
+    && Number.isFinite(Number(destinationCamera.zoom))
+    ? Number(destinationCamera.zoom)
+    : null;
+  const destinationCenter = destinationZoom !== null
+    && Array.isArray(destinationCamera?.center)
+    && destinationCamera.center.length === 2
+    && destinationCamera.center.every((value) => Number.isFinite(Number(value)))
+    ? destinationCamera.center.map(Number)
+    : null;
+  const finalZoom = clampUnitedStatesGuidedStateFocusZoom(destinationCenter ? destinationZoom : contextualZoom);
   if (
     !Array.isArray(contextualCenter)
     || contextualCenter.length < 2
@@ -161,13 +173,18 @@ export function createUnitedStatesGuidedStateFocusDecision({
     promptType: selection.promptType,
     contextualCenter: contextualCenter.slice(0, 2).map(Number),
     contextualZoom,
+    ...(destinationCenter ? { destinationCenter, destinationZoom } : {}),
     finalZoom,
     minZoom: UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM,
     maxZoom: UNITED_STATES_GUIDED_STATE_FOCUS_MAX_ZOOM,
-    centerSource: contextualZoom < UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM
-      ? "state-fit"
-      : "section-context",
+    centerSource: destinationCenter
+      ? "target-config"
+      : contextualZoom < UNITED_STATES_GUIDED_STATE_FOCUS_MIN_ZOOM
+        ? "state-fit"
+        : "section-context",
     cameraContext: UNITED_STATES_GUIDED_STATE_FOCUS_CAMERA_CONTEXT,
-    cameraSource: "guided-political-lower-48-zoom-clamp"
+    cameraSource: destinationCenter
+      ? "guided-political-target-camera"
+      : "guided-political-lower-48-zoom-clamp"
   };
 }

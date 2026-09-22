@@ -118,6 +118,32 @@ assert.deepEqual(stateFocus, {
   cameraContext: "guided-political-state-focus",
   cameraSource: "guided-political-lower-48-zoom-clamp"
 }, "An in-range authored camera remains unchanged.");
+const utahDestination = utahArizonaActivity.features.find(({ id }) => id === "utah").guidedStateFocusCamera;
+assert.deepEqual(createUnitedStatesGuidedStateFocusDecision({
+  guidedPoliticalCamera: { ...utahArizonaStates, sectionFittedCamera: approvedUtahArizonaCamera },
+  selection: { targetId: "utah", promptType: "guided" },
+  item: { type: "state", targetId: "utah" },
+  destinationCamera: utahDestination.desktop
+}), {
+  ...stateFocus,
+  destinationCenter: [-111.5, 39.5],
+  destinationZoom: 5.15,
+  finalZoom: 5.15,
+  centerSource: "target-config",
+  cameraSource: "guided-political-target-camera"
+}, "A target destination replaces only the final state-focused camera.");
+assert.equal(createUnitedStatesGuidedStateFocusDecision({
+  guidedPoliticalCamera: { ...utahArizonaStates, sectionFittedCamera: approvedUtahArizonaCamera },
+  selection: { targetId: "utah", promptType: "guided" },
+  item: { type: "state", targetId: "utah" },
+  destinationCamera: { center: [-111.5, 39.5], zoom: 6.4 }
+})?.finalZoom, 5.5, "Target destinations remain inside the lower-48 camera band.");
+assert.equal(createUnitedStatesGuidedStateFocusDecision({
+  guidedPoliticalCamera: { ...utahArizonaStates, sectionFittedCamera: approvedUtahArizonaCamera },
+  selection: { targetId: "utah", promptType: "place_to_name" },
+  item: { type: "state", targetId: "utah" },
+  destinationCamera: utahDestination.desktop
+})?.finalZoom, approvedUtahArizonaCamera.zoom, "Visible identification keeps its existing contextual camera.");
 const distantSectionCamera = {
   ...utahArizonaStates,
   mode: "fit",

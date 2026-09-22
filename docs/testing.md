@@ -1,5 +1,21 @@
 # Automated testing
 
+## Guided political-camera target polish — 2026-09-22
+
+Guided state/capital teaching now supports optional destination cameras on individual curriculum targets. Utah, Salt Lake City, Montana, and Helena use bounded target cameras while unrelated lower-48 prompts retain the existing section/context/fallback behavior. Hawaii's three-city capital-teaching fit now enforces an explicit post-fit zoom cap because MapLibre's globe projection can return a closer camera than the requested `cameraForBounds` maximum. Alaska behavior is unchanged.
+
+The complete fast suite passed **113/113**. The final Guided political-camera and capital-marker browser matrix passed **46/46** across desktop and mobile Chromium, including the five adjusted destinations, reload restoration, three-city labels, and representative unaffected cameras. A final focused Salt Lake City check passed **2/2** after its label assertion was added. The U.S. critical-path suite passed **14/14**. Desktop and mobile screenshots were inspected for Utah, Salt Lake City, Montana, Helena, Honolulu, New Hampshire, Colorado, Texas, Alaska, Hawaii state teaching, and Phoenix. No Safari or physical-device result is claimed.
+
+Commands:
+
+```sh
+npm test
+npx playwright test tests/e2e/guided-political-camera.spec.js tests/e2e/guided-capital-markers.spec.js --project=desktop-chromium --project=mobile-chromium --workers=2
+npx playwright test tests/e2e/guided-political-camera.spec.js --project=desktop-chromium --project=mobile-chromium --grep="Salt Lake City has" --workers=2
+npm run test:critical-path
+git diff --check
+```
+
 ## Guided capital naming city context — 2026-09-22
 
 The `place_to_name` U.S. capital prompt now renders the same frozen target-state capital star, two comparison dots, and three collision-aware names used in first exposure. The map markers are noninteractive during naming; only the four-choice capital response emits canonical evidence. Browser coverage checks a one-capital session, broken and valid answer-bank restoration, incorrect fallback feedback, correct naming evidence, Massachusetts and Utah city placement, Hawaii city-scale framing, pan/zoom, marker clicks, reload, and the existing anonymous capital-location feedback. The existing answer-bank builder already supplied four unique same-category choices and repaired broken persisted banks, so this change did not alter it.

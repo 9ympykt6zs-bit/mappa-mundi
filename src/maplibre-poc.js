@@ -13472,10 +13472,25 @@ function getUnitedStatesGuidedPoliticalPromptItem(targetId) {
 }
 
 function scheduleUnitedStatesGuidedStateFocusCheck(memoryTrail, selection = {}) {
+  const item = getUnitedStatesGuidedPoliticalPromptItem(selection?.targetId);
+  const stateTargetId = item?.type === "capital" ? item.relatedStateTargetId : item?.targetId;
+  const promptTarget = getUnitedStatesGuidedPoliticalCameraTarget(
+    selection?.targetId, memoryTrail?.guidedPoliticalCamera?.sectionId
+  );
+  const stateTarget = getUnitedStatesGuidedPoliticalCameraTarget(
+    stateTargetId, memoryTrail?.guidedPoliticalCamera?.sectionId
+  );
+  const layout = isCompactTouchLayout() ? "compact" : "desktop";
+  const destinationCamera = selection?.promptType === "guided"
+    ? promptTarget?.guidedStateFocusCamera?.[layout]
+      || stateTarget?.guidedStateFocusCamera?.[layout]
+      || null
+    : null;
   const focusDecision = createUnitedStatesGuidedStateFocusDecision({
     guidedPoliticalCamera: memoryTrail?.guidedPoliticalCamera,
     selection,
-    item: getUnitedStatesGuidedPoliticalPromptItem(selection?.targetId)
+    item,
+    destinationCamera
   });
   if (!focusDecision) {
     if (memoryTrail?.guidedPoliticalCamera?.activePromptFocus) {
@@ -13488,10 +13503,6 @@ function scheduleUnitedStatesGuidedStateFocusCheck(memoryTrail, selection = {}) 
     return Promise.resolve(false);
   }
 
-  const stateTarget = getUnitedStatesGuidedPoliticalCameraTarget(
-    focusDecision.stateTargetId,
-    memoryTrail.guidedPoliticalCamera.sectionId
-  );
   if (!stateTarget) return Promise.resolve(false);
 
   const promptKey = memoryTrail.currentPromptKey;
@@ -13503,9 +13514,10 @@ function scheduleUnitedStatesGuidedStateFocusCheck(memoryTrail, selection = {}) 
   const fittedStateCamera = focusDecision.centerSource === "state-fit" && stateBounds
     ? runner.map.cameraForBounds(stateBounds, { padding, maxZoom: focusDecision.maxZoom })
     : null;
-  const fittedCenter = fittedStateCamera?.center
-    ? [Number(fittedStateCamera.center.lng), Number(fittedStateCamera.center.lat)]
-    : [...focusDecision.contextualCenter];
+  const fittedCenter = focusDecision.destinationCenter
+    || (fittedStateCamera?.center
+      ? [Number(fittedStateCamera.center.lng), Number(fittedStateCamera.center.lat)]
+      : [...focusDecision.contextualCenter]);
   if (!fittedCenter.every(Number.isFinite)) return Promise.resolve(false);
   const didFocus = runner.moveCamera({
     center: fittedCenter,
@@ -13531,7 +13543,9 @@ function scheduleUnitedStatesGuidedStateFocusCheck(memoryTrail, selection = {}) 
       stateBounds,
       fittedCenter,
       fittedZoom: Number(focusDecision.finalZoom.toFixed(4)),
-      zoomWasClamped: Math.abs(focusDecision.finalZoom - focusDecision.contextualZoom) > 0.0001
+      zoomWasClamped: Math.abs(focusDecision.finalZoom - (
+        focusDecision.destinationZoom ?? focusDecision.contextualZoom
+      )) > 0.0001
     }
   };
   return new Promise((resolve) => {
@@ -13572,14 +13586,16 @@ function scheduleUnitedStatesCapitalTeachingContextCamera(memoryTrail, selection
   const padding = isCompactTouchLayout()
     ? { top: 90, right: 18, bottom: 190, left: 18 }
     : { top: 94, right: 72, bottom: 154, left: 72 };
-  const maxZoom = visualContext.targetStateId === "hawaii" ? 7.4 : 5.35;
+  const isHawaii = visualContext.targetStateId === "hawaii";
+  const maxZoom = isHawaii ? (isCompactTouchLayout() ? 8.2 : 9) : 5.35;
   const fittedCamera = runner.map.cameraForBounds(bounds, { padding, maxZoom });
   const center = [
     (bounds[0][0] + bounds[1][0]) / 2,
     (bounds[0][1] + bounds[1][1]) / 2
   ];
+  // The globe fit can return a closer zoom than maxZoom; enforce Hawaii's destination cap.
   const camera = fittedCamera && Number.isFinite(Number(fittedCamera.zoom))
-    ? { center, zoom: Number(fittedCamera.zoom) }
+    ? { center, zoom: isHawaii ? Math.min(Number(fittedCamera.zoom), maxZoom) : Number(fittedCamera.zoom) }
     : null;
   if (!camera) return Promise.resolve(false);
   // A deferred enterStudyView transition must not replace the city fit.
