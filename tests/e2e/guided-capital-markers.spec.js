@@ -170,9 +170,6 @@ async function expectNamingCityContext(page, targetId, names) {
     currentPromptTargetId: targetId,
     currentPromptType: "place_to_name"
   });
-  await expect.poll(() => page.evaluate(() => (
-    window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()?.feedbackLabelLayout?.ready
-  ))).toBe(true);
   await expect.poll(() => page.evaluate((id) => (
     window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()?.starRenderedIds?.includes(id)
   ), targetId), { timeout: 15_000 }).toBe(true);
@@ -185,10 +182,46 @@ async function expectNamingCityContext(page, targetId, names) {
   });
   expect(state.choices.map(({ name }) => name)).toEqual(names);
   expect(state.choices).toHaveLength(3);
-  expect(state.choices.every(({ revealLabel, isInteractive }) => revealLabel && !isInteractive)).toBe(true);
+  expect(state.choices.every(({ revealLabel, isInteractive }) => !revealLabel && !isInteractive)).toBe(true);
   expect(state.choices.find(({ id }) => id === targetId)?.revealCapital).toBe(true);
   expect(state.starRenderedIds).toContain(targetId);
   expect(state.hitRenderedIds).toEqual([]);
+  expect(state.labelRenderedIds).toEqual([]);
+  expect(state.completedLabelTargetIds).not.toContain(targetId);
+  expect(state.feedbackLabelLayout).toMatchObject({ visible: false, ready: false, placements: [] });
+  await expect(page.locator(".capital-location-feedback-label")).toHaveCount(0);
+  await expect(page.locator(".capital-location-feedback-leader--line")).toHaveCount(0);
+  await expect(page.locator(".memory-trail-choice-chip")).toHaveCount(4);
+  return state;
+}
+
+async function answerNamingCorrectlyAndCaptureFeedback(page, targetId, names) {
+  const snapshot = await page.evaluate(async () => {
+    window.__MAPPA_TEST_API__.answerActiveMemoryTrailCorrectly();
+    let state = null;
+    for (let frame = 0; frame < 12; frame += 1) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      state = window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState();
+      if (state?.feedbackLabelLayout?.ready) break;
+    }
+    return {
+      trailPhase: window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase,
+      state,
+      labelCount: document.querySelectorAll(".capital-location-feedback-label").length,
+      labelTexts: [...document.querySelectorAll(".capital-location-feedback-label")].map(({ textContent }) => textContent),
+      leaderCount: document.querySelectorAll(".capital-location-feedback-leader--line").length
+    };
+  });
+  expect(snapshot.trailPhase).toBe("feedback");
+  const state = snapshot.state;
+  expect(state).toMatchObject({
+    targetId,
+    phase: "feedback",
+    scope: "target-state"
+  });
+  expect(state.choices.map(({ name }) => name)).toEqual(names);
+  expect(state.choices.every(({ revealLabel }) => revealLabel)).toBe(true);
+  expect(state.starRenderedIds).toContain(targetId);
   expect(state.feedbackLabelLayout.placements.map(({ id }) => id).sort()).toEqual(
     state.choices.map(({ id }) => id).sort()
   );
@@ -199,9 +232,9 @@ async function expectNamingCityContext(page, targetId, names) {
     expect(box.right <= star.x || box.x >= star.right || box.bottom <= star.y || box.y >= star.bottom,
       `${placement.id} obscures the capital star`).toBe(true);
   }
-  await expect(page.locator(".capital-location-feedback-label")).toHaveCount(3);
-  await expect(page.locator(".capital-location-feedback-leader--line")).toHaveCount(3);
-  await expect(page.locator(".memory-trail-choice-chip")).toHaveCount(4);
+  expect(snapshot.labelCount).toBe(3);
+  expect(snapshot.labelTexts).toEqual(expect.arrayContaining(names));
+  expect(snapshot.leaderCount).toBe(3);
   return state;
 }
 
@@ -294,7 +327,11 @@ test("Guided Learning separates Cheyenne's precise star from its forgiving tap t
   const namingTargetId = await page.evaluate(() => (
     window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.currentPromptTargetId
   ));
-  await page.evaluate(() => window.__MAPPA_TEST_API__.answerActiveMemoryTrailCorrectly());
+  await answerNamingCorrectlyAndCaptureFeedback(
+    page,
+    namingTargetId,
+    restoredNamingContext.choices.map(({ name }) => name)
+  );
   const evidence = await page.evaluate((key) => (
     JSON.parse(localStorage.getItem(key) || "{}").events
   ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
@@ -497,7 +534,7 @@ for (const fixture of [
     names: ["Honolulu", "East Honolulu", "Pearl City"]
   }
 ]) {
-  test(`${fixture.stateLabel} capital naming shows three true-city markers and attributable labels`, async ({ page }, testInfo) => {
+  test(`${fixture.stateLabel} capital naming hides labels until its answer is submitted`, async ({ page }, testInfo) => {
     await openSeededCapitalTeaching(page, fixture);
     await advanceToNamedCapital(page, fixture.targetId);
     if (fixture.stateLabel === "Hawaii") {
@@ -523,15 +560,29 @@ for (const fixture of [
     const evidenceBefore = await page.evaluate((key) => (
       JSON.parse(localStorage.getItem(key) || "{}").events?.length || 0
     ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
+    const curriculumBefore = await page.evaluate((key) => {
+      const saved = JSON.parse(localStorage.getItem(key) || "{}");
+      return {
+        introducedItemIds: saved.introducedItemIds || [],
+        itemProgress: saved.itemProgress || {}
+      };
+    }, unitedStatesMemoryTrailStorageKey);
     await page.mouse.click(comparison.clientPoint.clientX, comparison.clientPoint.clientY);
     expect(await page.evaluate((key) => (
       JSON.parse(localStorage.getItem(key) || "{}").events?.length || 0
     ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY)).toBe(evidenceBefore);
+    expect(await page.evaluate((key) => {
+      const saved = JSON.parse(localStorage.getItem(key) || "{}");
+      return {
+        introducedItemIds: saved.introducedItemIds || [],
+        itemProgress: saved.itemProgress || {}
+      };
+    }, unitedStatesMemoryTrailStorageKey)).toEqual(curriculumBefore);
     expect((await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState())).phase).toBe("answering");
-    const beforePan = context.feedbackLabelLayout.placements.map(({ point }) => point);
+    const beforePan = context.choices.map(({ clientPoint }) => clientPoint);
     await page.evaluate(() => window.maplibrePocMap.panBy([35, -14], { duration: 0 }));
     await expect.poll(() => page.evaluate(() => (
-      window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()?.feedbackLabelLayout?.placements?.map(({ point }) => point)
+      window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()?.choices?.map(({ clientPoint }) => clientPoint)
     ))).not.toEqual(beforePan);
     const zoomBefore = await page.evaluate(() => window.maplibrePocMap.getZoom());
     await page.evaluate(() => window.maplibrePocMap.zoomTo(window.maplibrePocMap.getZoom() + 0.35, { duration: 0 }));
@@ -545,6 +596,7 @@ for (const fixture of [
       expect(transformedCamera.zoom).toBeGreaterThan(5);
     }
     await expectNamingCityContext(page, fixture.targetId, fixture.names);
+    await answerNamingCorrectlyAndCaptureFeedback(page, fixture.targetId, fixture.names);
     await page.screenshot({ path: testInfo.outputPath(`${fixture.stateLabel.toLowerCase()}-capital-naming-context.png`) });
   });
 }

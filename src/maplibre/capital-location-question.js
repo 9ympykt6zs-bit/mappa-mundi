@@ -25,7 +25,8 @@ export function createCapitalLocationQuestionState({
       targetByStateId.set(record.stateId, target);
     }
   });
-  const reveal = phase !== "answering";
+  const revealLabels = !["answering", "naming"].includes(phase);
+  const revealCapital = phase !== "answering";
   const records = scope === "target-state"
     ? [targetRecord]
     : US_CAPITAL_LOCATION_CITY_CHOICES;
@@ -61,8 +62,8 @@ export function createCapitalLocationQuestionState({
         role,
         choiceIndex: index,
         inTargetState,
-        revealLabel: reveal && (inTargetState || isSelected),
-        revealCapital: reveal && inTargetState && role === "capital",
+        revealLabel: revealLabels && (inTargetState || isSelected),
+        revealCapital: revealCapital && inTargetState && role === "capital",
         isSelected,
         isInteractive,
         isTeaching: phase === "teaching"

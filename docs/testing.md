@@ -1,5 +1,23 @@
 # Automated testing
 
+## Guided capital-naming label gate — 2026-09-22
+
+The three-city `place_to_name` presentation now separates marker context from answer disclosure. Before submission it renders the capital star and two comparison dots with no map labels or connector lines. Correct and incorrect feedback reveal all three collision-aware names and leaders. Reload preserves the unanswered hidden-label state, the four-choice answer bank is unchanged, inert comparison-marker taps leave canonical evidence and persisted curriculum/mastery state unchanged, and `name_to_place` retains its anonymous 150-marker pre-answer presentation.
+
+The complete fast suite passed **113/113**. The desktop/mobile answer-bank and anonymous capital-location suites passed **16/16**. The final Guided capital-marker suite passed **22/22**, and an additional focused correct/incorrect disclosure run passed **10/10** after strengthening its rendered-name and capital-star-clearance assertions. A final **4/4** desktop/mobile check also proves that neither the collision-aware overlay nor the ordinary completed-capital label can reveal the unanswered target, including after reload. The U.S. critical-path suite passed **14/14**. `git diff --check` passed before commit.
+
+Commands:
+
+```sh
+npm test
+npx playwright test tests/e2e/guided-capital-markers.spec.js tests/e2e/guided-answer-choice-bank.spec.js tests/e2e/capital-location-city-choices.spec.js --project=desktop-chromium --project=mobile-chromium --workers=2
+npx playwright test tests/e2e/guided-capital-markers.spec.js --project=desktop-chromium --project=mobile-chromium --workers=2
+npx playwright test tests/e2e/guided-capital-markers.spec.js tests/e2e/guided-answer-choice-bank.spec.js --project=desktop-chromium --project=mobile-chromium --grep="capital naming hides|Guided Learning separates|one-capital Guided session" --workers=2
+npx playwright test tests/e2e/guided-capital-markers.spec.js tests/e2e/guided-answer-choice-bank.spec.js --project=desktop-chromium --project=mobile-chromium --grep="Guided Learning separates|one-capital Guided session" --workers=2
+npm run test:critical-path
+git diff --check
+```
+
 ## Guided political-camera target polish — 2026-09-22
 
 Guided state/capital teaching now supports optional destination cameras on individual curriculum targets. Utah, Salt Lake City, Montana, and Helena use bounded target cameras while unrelated lower-48 prompts retain the existing section/context/fallback behavior. Hawaii's three-city capital-teaching fit now enforces an explicit post-fit zoom cap because MapLibre's globe projection can return a closer camera than the requested `cameraForBounds` maximum. Alaska behavior is unchanged.
@@ -18,7 +36,7 @@ git diff --check
 
 ## Guided capital naming city context — 2026-09-22
 
-The `place_to_name` U.S. capital prompt now renders the same frozen target-state capital star, two comparison dots, and three collision-aware names used in first exposure. The map markers are noninteractive during naming; only the four-choice capital response emits canonical evidence. Browser coverage checks a one-capital session, broken and valid answer-bank restoration, incorrect fallback feedback, correct naming evidence, Massachusetts and Utah city placement, Hawaii city-scale framing, pan/zoom, marker clicks, reload, and the existing anonymous capital-location feedback. The existing answer-bank builder already supplied four unique same-category choices and repaired broken persisted banks, so this change did not alter it.
+The `place_to_name` U.S. capital prompt introduced the same frozen target-state capital star and two comparison dots used in first exposure. The follow-up label-gate correction documented above now withholds its three collision-aware names until the learner answers. The map markers remain noninteractive during naming; only the four-choice capital response emits canonical evidence. Browser coverage checks a one-capital session, broken and valid answer-bank restoration, incorrect fallback feedback, correct naming evidence, Massachusetts and Utah city placement, Hawaii city-scale framing, pan/zoom, marker clicks, reload, and the existing anonymous capital-location feedback. The existing answer-bank builder already supplied four unique same-category choices and repaired broken persisted banks, so this change did not alter it.
 
 The complete fast suite passed **113/113**. The affected desktop/mobile browser matrix passed **62/62** across the two Guided capital specs, capital-location feedback, the Guided core capstone, and Guided political cameras. A separate repeated Hawaii naming check passed **4/4** across desktop/mobile after the city fit was protected from a deferred study-intro camera transition. The U.S. critical-path suite passed **14/14**. Desktop screenshots of dense Massachusetts and Hawaii naming were visually inspected. No physical-device result is claimed.
 

@@ -72,6 +72,28 @@ assert.deepEqual(getCapitalLocationQuestionGeoJson(teaching).features.map(({ pro
 assert.equal(teaching.choices.every(({ isTeaching }) => isTeaching), true);
 assert.equal(getCapitalLocationQuestionGeoJson(answering).features.every(({ properties }) => properties.capitalLocationTeaching === false), true);
 
+const naming = createCapitalLocationQuestionState({
+  capitalTargets,
+  targetId: "providence-ri",
+  phase: "naming",
+  scope: "target-state",
+  interaction: "none"
+});
+assert.equal(naming.choices.length, 3);
+assert.equal(naming.choices.every(({ revealLabel, isInteractive }) => !revealLabel && !isInteractive), true);
+assert.deepEqual(naming.choices.filter(({ revealCapital }) => revealCapital).map(({ name }) => name), ["Providence"]);
+assert.equal(getCapitalLocationQuestionGeoJson(naming).features.every(({ properties }) => properties.revealLabel === false), true);
+
+const namingFeedback = createCapitalLocationQuestionState({
+  capitalTargets,
+  targetId: "providence-ri",
+  phase: "feedback",
+  scope: "target-state",
+  interaction: "none"
+});
+assert.equal(namingFeedback.choices.every(({ revealLabel, isInteractive }) => revealLabel && !isInteractive), true);
+assert.deepEqual(namingFeedback.choices.filter(({ revealCapital }) => revealCapital).map(({ name }) => name), ["Providence"]);
+
 for (const targetId of ["providence-ri", "dover-de", "phoenix-az", "juneau-ak", "austin-tx"]) {
   const question = createCapitalLocationQuestionState({ capitalTargets, targetId });
   assert.equal(question.choices.filter(({ inTargetState }) => inTargetState).length, 3);
@@ -107,4 +129,4 @@ assert.equal(geoJson.features.some(({ properties }) => (
 )), false);
 assert.equal(createCapitalLocationQuestionState({ targetId: "unknown" }), null);
 
-console.log("Capital-location question checks passed: 150 identical pre-answer choices, authored target coordinates, target/wrong-state feedback, small-state data, and no evidence identities.");
+console.log("Capital-location question checks passed: anonymous locating, unlabeled three-city naming, post-answer disclosure, authored coordinates, feedback, and no evidence identities.");

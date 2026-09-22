@@ -28,7 +28,7 @@ import {
   createCapitalLocationQuestionState,
   getCapitalLocationQuestionChoice,
   getCapitalLocationQuestionGeoJson
-} from "./capital-location-question.js?v=20260906-capital-location-choices-1";
+} from "./capital-location-question.js?v=20260922-capital-naming-label-gate-1";
 import { CapitalLocationFeedbackLabelOverlay } from "./capital-location-feedback-labels.js?v=20260912-guided-capital-sequencing-1";
 
 const colors = {

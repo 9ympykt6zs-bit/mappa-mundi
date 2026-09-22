@@ -147,19 +147,19 @@ async function getCanonicalEvidenceEvents(page) {
 }
 
 async function expectThreeCityNamingContext(page, targetId) {
-  await expect.poll(() => page.evaluate(() => (
-    window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()?.feedbackLabelLayout?.ready
-  ))).toBe(true);
   await expect.poll(() => page.evaluate((id) => (
     window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()?.starRenderedIds?.includes(id)
   ), targetId), { timeout: 15_000 }).toBe(true);
   const context = await page.evaluate(() => window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState());
   expect(context).toMatchObject({ targetId, phase: "naming", scope: "target-state", interaction: "none" });
   expect(context.choices).toHaveLength(3);
-  expect(context.choices.every(({ revealLabel, isInteractive }) => revealLabel && !isInteractive)).toBe(true);
+  expect(context.choices.every(({ revealLabel, isInteractive }) => !revealLabel && !isInteractive)).toBe(true);
   expect(context.starRenderedIds).toContain(targetId);
-  expect(context.feedbackLabelLayout.placements).toHaveLength(3);
-  await expect(page.locator(".capital-location-feedback-label")).toHaveCount(3);
+  expect(context.labelRenderedIds).toEqual([]);
+  expect(context.completedLabelTargetIds).not.toContain(targetId);
+  expect(context.feedbackLabelLayout).toMatchObject({ visible: false, ready: false, placements: [] });
+  await expect(page.locator(".capital-location-feedback-label")).toHaveCount(0);
+  await expect(page.locator(".capital-location-feedback-leader--line")).toHaveCount(0);
   return context;
 }
 
@@ -210,6 +210,12 @@ test("a one-capital Guided session tops up four unique capital choices and answe
   expect(correctionContext).toMatchObject({ targetId: SINGLE_POOL_CAPITAL_ID, phase: "teaching", interaction: "capital-only" });
   expect(correctionContext.choices.filter(({ isInteractive }) => isInteractive).map(({ id }) => id))
     .toEqual([SINGLE_POOL_CAPITAL_ID]);
+  expect(correctionContext.choices.every(({ revealLabel }) => revealLabel)).toBe(true);
+  await expect(page.locator(".capital-location-feedback-label")).toHaveCount(3);
+  expect(await page.locator(".capital-location-feedback-label").allTextContents()).toEqual(
+    expect.arrayContaining(["Augusta", "Portland", "Lewiston"])
+  );
+  await expect(page.locator(".capital-location-feedback-leader--line")).toHaveCount(3);
   await page.evaluate(() => window.__MAPPA_TEST_API__.completeActiveMemoryTrailCorrection());
   expect((await getCanonicalEvidenceEvents(page)).length).toBe(evidence.length);
 });

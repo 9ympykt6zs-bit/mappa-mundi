@@ -4629,7 +4629,7 @@ async function ensureMapRuntimeLoaded() {
       loadScriptOnce(mapLibreScriptUrl, "maplibregl"),
       import("./map-engines/activity-normalizer.js?v=20260821-central-america-graduation-1"),
       import("./maplibre/activity-session.js?v=20260821-central-america-graduation-1"),
-      import("./maplibre/maplibre-activity-runner.js?v=20260912-guided-capital-sequencing-1"),
+      import("./maplibre/maplibre-activity-runner.js?v=20260922-capital-naming-label-gate-1"),
       import("./chip-speech.js?v=20260728-activity-audio-1")
     ]).then(([
       ,
@@ -16541,7 +16541,11 @@ function syncCapitalLocationVisualContext(memoryTrail, selection = {}, target = 
     : isUnitedStatesCapital && promptType === "place_to_name"
       ? {
           targetId: promptTarget.id,
-          phase: memoryTrail?.phase === "correction" ? "teaching" : "naming",
+          phase: memoryTrail?.phase === "correction"
+            ? "teaching"
+            : memoryTrail?.phase === "feedback"
+              ? "feedback"
+              : "naming",
           scope: "target-state",
           interaction: memoryTrail?.phase === "correction" ? "capital-only" : "none"
         }
@@ -16625,6 +16629,9 @@ function handleCorrectMemoryTrailAnswer(memoryTrail, targetId, options = {}) {
   recordOldReviewOutlineDebugVisualTrace("correct-answer:after-success-visual", { targetId });
 
   memoryTrail.phase = "feedback";
+  if (isPlaceToNameMemoryTrailPrompt(memoryTrail)) {
+    syncCapitalLocationVisualContext(memoryTrail, { promptType: memoryTrail.currentPromptType, targetId });
+  }
   memoryTrail.answerChoices = [];
   memoryTrail.promptName = getMemoryTrailTargetLabel(targetId);
   memoryTrail.message = isGuidedMemoryTrailPrompt(memoryTrail)
