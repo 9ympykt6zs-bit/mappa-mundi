@@ -11527,6 +11527,9 @@ function applyMemoryTrailSectionQuizCamera(memoryTrail, selection = {}, options 
   if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
     return false;
   }
+  if (hasUnitedStatesCapitalNamingCityCamera(memoryTrail)) {
+    return false;
+  }
   if (memoryTrail?.guidedPersistentCamera) {
     return false;
   }
@@ -11719,6 +11722,9 @@ function applyDailyTrailTargetQuizCamera(memoryTrail, selection = {}, options = 
 
 function scheduleMemoryTrailSectionQuizCameraCheck(memoryTrail, selection = {}) {
   if (isMixedDailyTrailCheckpointMemoryTrail(memoryTrail)) {
+    return false;
+  }
+  if (hasUnitedStatesCapitalNamingCityCamera(memoryTrail)) {
     return false;
   }
   if (memoryTrail?.guidedPersistentCamera) {
@@ -13545,8 +13551,8 @@ function scheduleUnitedStatesCapitalTeachingContextCamera(memoryTrail, selection
   const visualContext = runner?.getCapitalLocationQuestionVisualState?.();
   if (
     !isUnitedStatesMemoryTrail(memoryTrail)
-    || selection?.promptType !== "guided"
-    || visualContext?.phase !== "teaching"
+    || !["guided", "place_to_name"].includes(selection?.promptType)
+    || !["teaching", "naming"].includes(visualContext?.phase)
     || !["alaska", "hawaii"].includes(visualContext?.targetStateId)
     || !Array.isArray(visualContext.choices)
     || visualContext.choices.length !== 3
@@ -13576,6 +13582,8 @@ function scheduleUnitedStatesCapitalTeachingContextCamera(memoryTrail, selection
     ? { center, zoom: Number(fittedCamera.zoom) }
     : null;
   if (!camera) return Promise.resolve(false);
+  // A deferred enterStudyView transition must not replace the city fit.
+  runner.suppressStudyIntroCameraOnce?.("us-capital-city-context", 5000);
   const promptKey = memoryTrail.currentPromptKey;
   return new Promise((resolve) => {
     const timeoutId = window.setTimeout(() => {
@@ -13602,6 +13610,15 @@ function scheduleUnitedStatesCapitalTeachingContextCamera(memoryTrail, selection
     }, 40);
     memoryTrail.timers.push(timeoutId);
   });
+}
+
+function hasUnitedStatesCapitalNamingCityCamera(memoryTrail) {
+  const target = getTargetById(memoryTrail, memoryTrail?.currentPromptTargetId);
+  const state = String(target?.state || "").toLowerCase();
+  return isUnitedStatesMemoryTrail(memoryTrail)
+    && memoryTrail?.currentPromptType === "place_to_name"
+    && target?.type === "capital"
+    && ["ak", "hi", "alaska", "hawaii"].includes(state);
 }
 
 function scheduleContinentsOceansLearnFocusCheck(memoryTrail, selection, target) {
@@ -16505,6 +16522,13 @@ function syncCapitalLocationVisualContext(memoryTrail, selection = {}, target = 
         scope: "target-state",
         interaction: "capital-only"
       }
+    : isUnitedStatesCapital && promptType === "place_to_name"
+      ? {
+          targetId: promptTarget.id,
+          phase: memoryTrail?.phase === "correction" ? "teaching" : "naming",
+          scope: "target-state",
+          interaction: memoryTrail?.phase === "correction" ? "capital-only" : "none"
+        }
     : isUnitedStatesCapital && promptType === "name_to_place"
       ? {
           targetId: promptTarget.id,
@@ -16618,6 +16642,9 @@ function handleIncorrectMemoryTrailAnswer(memoryTrail, expectedTargetId, options
   const capitalLocationFeedback = revealCapitalLocationQuestion(memoryTrail, expectedTargetId, selectedTargetId);
   recordOldReviewOutlineDebugVisualTrace("incorrect-answer:suppression-preserved", { expectedTargetId, selectedTargetId });
   memoryTrail.phase = "correction";
+  if (isPlaceToNameMemoryTrailPrompt(memoryTrail)) {
+    syncCapitalLocationVisualContext(memoryTrail, { promptType: memoryTrail.currentPromptType, targetId: expectedTargetId });
+  }
   memoryTrail.promptName = getMemoryTrailTargetLabel(expectedTargetId);
   memoryTrail.responseChipTargetId = expectedTargetId;
   memoryTrail.answerChoices = [];
@@ -16673,7 +16700,9 @@ function createMemoryTrailCorrectionFeedback(memoryTrail, expectedTargetId, opti
   const selectedName = selectedTargetId
     ? getMemoryTrailTargetLabel(selectedTargetId) || String(options.selectedTargetLabel || "").trim()
     : "";
-  const capitalLocationFeedback = getCapitalLocationFeedback(expectedTargetId, selectedTargetId);
+  const capitalLocationFeedback = isCapitalLocationRetrieval(memoryTrail, expectedTargetId)
+    ? getCapitalLocationFeedback(expectedTargetId, selectedTargetId)
+    : "";
   const message = capitalLocationFeedback
     ? `${capitalLocationFeedback} Tap ${expectedName} to continue.`
     : selectedName

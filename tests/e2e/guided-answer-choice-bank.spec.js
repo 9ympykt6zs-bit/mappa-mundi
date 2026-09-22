@@ -146,9 +146,28 @@ async function getCanonicalEvidenceEvents(page) {
   ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
 }
 
+async function expectThreeCityNamingContext(page, targetId) {
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()?.feedbackLabelLayout?.ready
+  ))).toBe(true);
+  await expect.poll(() => page.evaluate((id) => (
+    window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()?.starRenderedIds?.includes(id)
+  ), targetId), { timeout: 15_000 }).toBe(true);
+  const context = await page.evaluate(() => window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState());
+  expect(context).toMatchObject({ targetId, phase: "naming", scope: "target-state", interaction: "none" });
+  expect(context.choices).toHaveLength(3);
+  expect(context.choices.every(({ revealLabel, isInteractive }) => revealLabel && !isInteractive)).toBe(true);
+  expect(context.starRenderedIds).toContain(targetId);
+  expect(context.feedbackLabelLayout.placements).toHaveLength(3);
+  await expect(page.locator(".capital-location-feedback-label")).toHaveCount(3);
+  return context;
+}
+
 test("a one-capital Guided session tops up four unique capital choices and answers fallback misses with reliable feedback @us-critical-path", async ({ page }) => {
   await openSeededTrail(page, createSingleCapitalPoolState());
   const trail = await advanceToCapitalNamingPrompt(page, [SINGLE_POOL_CAPITAL_ID]);
+  const namingContext = await expectThreeCityNamingContext(page, SINGLE_POOL_CAPITAL_ID);
+  expect(namingContext.choices.map(({ name }) => name)).toEqual(["Augusta", "Portland", "Lewiston"]);
   expect(trail.targetPoolIds.filter((targetId) => targetId === SINGLE_POOL_CAPITAL_ID)).toHaveLength(1);
 
   const chips = page.locator(".memory-trail-choice-chip");
@@ -187,12 +206,19 @@ test("a one-capital Guided session tops up four unique capital choices and answe
   ), unitedStatesMemoryTrailStorageKey);
   expect(Object.keys(savedProgress.itemProgress || {})).not.toContain(`capital:${fallbackChoiceId}`);
   expect(savedProgress.introducedItemIds || []).not.toContain(`capital:${fallbackChoiceId}`);
+  const correctionContext = await page.evaluate(() => window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState());
+  expect(correctionContext).toMatchObject({ targetId: SINGLE_POOL_CAPITAL_ID, phase: "teaching", interaction: "capital-only" });
+  expect(correctionContext.choices.filter(({ isInteractive }) => isInteractive).map(({ id }) => id))
+    .toEqual([SINGLE_POOL_CAPITAL_ID]);
+  await page.evaluate(() => window.__MAPPA_TEST_API__.completeActiveMemoryTrailCorrection());
+  expect((await getCanonicalEvidenceEvents(page)).length).toBe(evidence.length);
 });
 
 test("a persisted one-choice naming prompt is repaired to a full answer bank on reload @us-critical-path", async ({ page }) => {
   await openSeededTrail(page, createSingleCapitalPoolState());
   await advanceToCapitalNamingPrompt(page, [SINGLE_POOL_CAPITAL_ID]);
   await expect(page.locator(".memory-trail-choice-chip")).toHaveCount(4);
+  await expectThreeCityNamingContext(page, SINGLE_POOL_CAPITAL_ID);
 
   await page.evaluate((storageKey) => {
     const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
@@ -226,11 +252,13 @@ test("a persisted one-choice naming prompt is repaired to a full answer bank on 
   const choiceIds = await getChoiceIds(page);
   expect(new Set(choiceIds).size).toBe(4);
   expect(choiceIds).toContain(SINGLE_POOL_CAPITAL_ID);
+  await expectThreeCityNamingContext(page, SINGLE_POOL_CAPITAL_ID);
 });
 
 test("a naming prompt with four session-scoped capitals keeps its exact bank across reload @us-critical-path", async ({ page }) => {
   await openSeededTrail(page, createFourCapitalPoolState());
   const trail = await advanceToCapitalNamingPrompt(page, FOUR_POOL_CAPITAL_IDS);
+  await expectThreeCityNamingContext(page, trail.currentPromptTargetId);
 
   const chips = page.locator(".memory-trail-choice-chip");
   await expect(chips).toHaveCount(4);
@@ -257,4 +285,5 @@ test("a naming prompt with four session-scoped capitals keeps its exact bank acr
   const restoredChoiceIds = await getChoiceIds(page);
   expect(restoredChoiceIds).toEqual(choiceIds);
   restoredChoiceIds.forEach((choiceId) => expect(trail.targetPoolIds).toContain(choiceId));
+  await expectThreeCityNamingContext(page, trail.currentPromptTargetId);
 });

@@ -7419,7 +7419,7 @@ export class MapLibreActivityRunner {
         .filter((feature) => this.completedIds.includes(feature.id))
         .filter((feature) => !(
           feature.id === this.capitalLocationQuestion?.targetId
-          && this.capitalLocationQuestion?.phase === "feedback"
+          && ["feedback", "naming"].includes(this.capitalLocationQuestion?.phase)
         ))
         .map((feature) => ({
           type: "Feature",

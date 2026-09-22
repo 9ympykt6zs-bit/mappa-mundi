@@ -1,5 +1,21 @@
 # Automated testing
 
+## Guided capital naming city context — 2026-09-22
+
+The `place_to_name` U.S. capital prompt now renders the same frozen target-state capital star, two comparison dots, and three collision-aware names used in first exposure. The map markers are noninteractive during naming; only the four-choice capital response emits canonical evidence. Browser coverage checks a one-capital session, broken and valid answer-bank restoration, incorrect fallback feedback, correct naming evidence, Massachusetts and Utah city placement, Hawaii city-scale framing, pan/zoom, marker clicks, reload, and the existing anonymous capital-location feedback. The existing answer-bank builder already supplied four unique same-category choices and repaired broken persisted banks, so this change did not alter it.
+
+The complete fast suite passed **113/113**. The affected desktop/mobile browser matrix passed **62/62** across the two Guided capital specs, capital-location feedback, the Guided core capstone, and Guided political cameras. A separate repeated Hawaii naming check passed **4/4** across desktop/mobile after the city fit was protected from a deferred study-intro camera transition. The U.S. critical-path suite passed **14/14**. Desktop screenshots of dense Massachusetts and Hawaii naming were visually inspected. No physical-device result is claimed.
+
+Commands:
+
+```sh
+npm test
+npx playwright test tests/e2e/guided-answer-choice-bank.spec.js tests/e2e/guided-capital-markers.spec.js tests/e2e/capital-location-city-choices.spec.js tests/e2e/guided-core-capstone.spec.js tests/e2e/guided-political-camera.spec.js --project=desktop-chromium --project=mobile-chromium --workers=2
+npx playwright test tests/e2e/guided-capital-markers.spec.js --project=desktop-chromium --project=mobile-chromium --grep='Hawaii capital naming' --repeat-each=2 --workers=2
+npm run test:critical-path
+git diff --check
+```
+
 ## Cursor-anchored map zoom — 2026-09-19
 
 `tests/e2e/cursor-anchored-zoom.spec.js` exercises the production MapLibre 5.18 globe at zoom 1.2, where the library's normal small-globe heuristic previously allowed an off-center geographic point to drift about 29 CSS pixels during one wheel step. The runner keeps MapLibre's native wheel/trackpad handler and corrects only safe low-zoom inner-globe anchors with MapLibre's own location-at-point operation, using the newer upstream controller's horizon model plus a conservative longitude guard below the range MapLibre identifies as unstable. The spec covers zooming out, moving to an off-center geographic point, zooming back in with a mouse wheel, repeated small trackpad-like deltas, diagonal `ctrlKey` pinch-style wheel input, delayed camera-snap resistance, ordinary drag pan, enabled scroll/drag/touch handlers, and a CDP-driven two-finger mobile pinch.

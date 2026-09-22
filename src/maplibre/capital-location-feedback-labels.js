@@ -323,7 +323,7 @@ export class CapitalLocationFeedbackLabelOverlay {
   }
 
   sync(question) {
-    this.question = ["feedback", "teaching"].includes(question?.phase) ? question : null;
+    this.question = ["feedback", "teaching", "naming"].includes(question?.phase) ? question : null;
     const revealed = (this.question?.choices || []).filter(({ revealLabel }) => revealLabel);
     if (!this.root || revealed.length === 0) {
       this.clear();

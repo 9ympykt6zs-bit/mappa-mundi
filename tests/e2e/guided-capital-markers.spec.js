@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY } from "../../src/canonical-learning-evidence-repository.js";
 import { unitedStatesMemoryTrailStorageKey } from "../../src/united-states-memory-trail-planner.js";
+import { getUsCapitalLocationCityChoicesForCapital } from "../../src/atlas/us-capital-location-city-choices.js";
 
 function createProgress(status = "review") {
   return {
@@ -161,6 +162,64 @@ async function tapTeachingCapital(page, state, targetId) {
   ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
 }
 
+async function expectNamingCityContext(page, targetId, names) {
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getActiveMemoryTrailState()
+  )), { timeout: 20_000 }).toMatchObject({
+    phase: "answering",
+    currentPromptTargetId: targetId,
+    currentPromptType: "place_to_name"
+  });
+  await expect.poll(() => page.evaluate(() => (
+    window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()?.feedbackLabelLayout?.ready
+  ))).toBe(true);
+  await expect.poll(() => page.evaluate((id) => (
+    window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()?.starRenderedIds?.includes(id)
+  ), targetId), { timeout: 15_000 }).toBe(true);
+  const state = await page.evaluate(() => window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState());
+  expect(state).toMatchObject({
+    targetId,
+    phase: "naming",
+    scope: "target-state",
+    interaction: "none"
+  });
+  expect(state.choices.map(({ name }) => name)).toEqual(names);
+  expect(state.choices).toHaveLength(3);
+  expect(state.choices.every(({ revealLabel, isInteractive }) => revealLabel && !isInteractive)).toBe(true);
+  expect(state.choices.find(({ id }) => id === targetId)?.revealCapital).toBe(true);
+  expect(state.starRenderedIds).toContain(targetId);
+  expect(state.hitRenderedIds).toEqual([]);
+  expect(state.feedbackLabelLayout.placements.map(({ id }) => id).sort()).toEqual(
+    state.choices.map(({ id }) => id).sort()
+  );
+  expect(state.feedbackLabelLayout.placements.every(({ leader }) => leader)).toBe(true);
+  for (const placement of state.feedbackLabelLayout.placements.filter(({ role }) => role !== "capital")) {
+    const star = state.feedbackLabelLayout.capitalStarRect;
+    const box = placement.box;
+    expect(box.right <= star.x || box.x >= star.right || box.bottom <= star.y || box.y >= star.bottom,
+      `${placement.id} obscures the capital star`).toBe(true);
+  }
+  await expect(page.locator(".capital-location-feedback-label")).toHaveCount(3);
+  await expect(page.locator(".capital-location-feedback-leader--line")).toHaveCount(3);
+  await expect(page.locator(".memory-trail-choice-chip")).toHaveCount(4);
+  return state;
+}
+
+async function advanceToNamedCapital(page, targetId) {
+  for (let attempt = 0; attempt < 32; attempt += 1) {
+    const trail = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState());
+    if (trail?.phase === "answering" && trail.currentPromptType === "place_to_name"
+      && trail.currentPromptTargetId === targetId) return;
+    const promptKey = trail?.promptHistory?.at(-1)?.promptKey;
+    await page.evaluate(() => window.__MAPPA_TEST_API__.answerActiveMemoryTrailCorrectly());
+    await expect.poll(() => page.evaluate((previousKey) => {
+      const active = window.__MAPPA_TEST_API__.getActiveMemoryTrailState();
+      return active?.phase === "answering" && active.promptHistory?.at(-1)?.promptKey !== previousKey;
+    }, promptKey), { timeout: 15_000 }).toBe(true);
+  }
+  throw new Error(`Did not reach a naming prompt for ${targetId}.`);
+}
+
 test("Guided Learning separates Cheyenne's precise star from its forgiving tap target @us-critical-path", async ({ page }) => {
   await openSeededCapitalTeaching(page, {
     sectionId: "us-capitals-07",
@@ -203,14 +262,14 @@ test("Guided Learning separates Cheyenne's precise star from its forgiving tap t
     phase: "answering",
     currentPromptType: "place_to_name"
   });
-  await expect(page.locator(".capital-location-feedback-label")).toHaveCount(0);
-  await expect(page.locator(".capital-location-feedback-leader--line")).toHaveCount(0);
-  await expect.poll(() => page.evaluate(() => (
-    window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()?.starRenderedIds || []
-  ))).toEqual([]);
   const namingPromptBeforeReload = await page.evaluate(() => (
     window.__MAPPA_TEST_API__.getActiveMemoryTrailState()
   ));
+  const namingContext = await expectNamingCityContext(page, namingPromptBeforeReload.currentPromptTargetId,
+    namingPromptBeforeReload.currentPromptTargetId === "cheyenne-wy"
+      ? ["Cheyenne", "Casper", "Gillette"]
+      : ["Lincoln", "Omaha", "Bellevue"]);
+  const contextCoordinates = namingContext.choices.map(({ id, lon, lat }) => [id, lon, lat]);
   await page.reload();
   await page.locator("#launch-start-button").click();
   await page.evaluate(() => window.__mappaMundiLoadApp());
@@ -226,8 +285,9 @@ test("Guided Learning separates Cheyenne's precise star from its forgiving tap t
     currentPromptTargetId: namingPromptBeforeReload.currentPromptTargetId,
     currentPromptType: "place_to_name"
   });
-  await expect(page.locator(".capital-location-feedback-label")).toHaveCount(0);
-  await expect(page.locator(".capital-location-feedback-leader--line")).toHaveCount(0);
+  const restoredNamingContext = await expectNamingCityContext(page, namingPromptBeforeReload.currentPromptTargetId,
+    namingContext.choices.map(({ name }) => name));
+  expect(restoredNamingContext.choices.map(({ id, lon, lat }) => [id, lon, lat])).toEqual(contextCoordinates);
   const evidenceCountBefore = await page.evaluate((key) => (
     JSON.parse(localStorage.getItem(key) || "{}").events?.length || 0
   ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
@@ -408,5 +468,83 @@ for (const fixture of [
     await waitForCapitalPrompt(page, fixture.targetId);
     await expectTeachingContextInsideMap(page, fixture);
     await page.screenshot({ path: testInfo.outputPath(`${fixture.stateLabel.toLowerCase()}-capital-teaching-context.png`) });
+  });
+}
+
+for (const fixture of [
+  {
+    stateLabel: "Massachusetts",
+    sectionId: "us-capitals-01",
+    stateIds: ["maine", "new-hampshire", "vermont", "massachusetts", "rhode-island", "connecticut"],
+    completedCapitalIds: ["augusta-me", "concord-nh", "montpelier-vt"],
+    targetId: "boston-ma",
+    names: ["Boston", "Worcester", "Springfield"]
+  },
+  {
+    stateLabel: "Utah",
+    sectionId: "us-capitals-09",
+    stateIds: ["utah", "arizona", "nevada", "california"],
+    completedCapitalIds: [],
+    targetId: "salt-lake-city-ut",
+    names: ["Salt Lake City", "West Valley City", "West Jordan"]
+  },
+  {
+    stateLabel: "Hawaii",
+    sectionId: "us-capitals-11",
+    stateIds: ["alaska", "hawaii"],
+    completedCapitalIds: ["juneau-ak"],
+    targetId: "honolulu-hi",
+    names: ["Honolulu", "East Honolulu", "Pearl City"]
+  }
+]) {
+  test(`${fixture.stateLabel} capital naming shows three true-city markers and attributable labels`, async ({ page }, testInfo) => {
+    await openSeededCapitalTeaching(page, fixture);
+    await advanceToNamedCapital(page, fixture.targetId);
+    if (fixture.stateLabel === "Hawaii") {
+      await expect.poll(() => page.evaluate(() => {
+        const longitude = window.maplibrePocMap.getCenter().lng;
+        return Math.abs((((longitude + 157 + 540) % 360) + 360) % 360 - 180);
+      }), { timeout: 15_000 }).toBeLessThan(15);
+      await expect.poll(() => page.evaluate(() => window.maplibrePocMap.getZoom()), { timeout: 15_000 }).toBeGreaterThan(5);
+      await expect.poll(() => page.evaluate(() => window.maplibrePocMap.isMoving())).toBe(false);
+      await page.waitForTimeout(1_100);
+      const settledLongitude = await page.evaluate(() => window.maplibrePocMap.getCenter().lng);
+      expect(Math.abs((((settledLongitude + 157 + 540) % 360) + 360) % 360 - 180)).toBeLessThan(15);
+      expect(await page.evaluate(() => window.maplibrePocMap.getZoom())).toBeGreaterThan(5);
+    }
+    await expect.poll(() => page.evaluate(() => window.maplibrePocMap.isMoving())).toBe(false);
+    const context = await expectNamingCityContext(page, fixture.targetId, fixture.names);
+    const record = getUsCapitalLocationCityChoicesForCapital(fixture.targetId);
+    expect(context.choices.filter(({ role }) => role === "distractor").map(({ lon, lat }) => [lon, lat]))
+      .toEqual(record.distractors.map(({ lon, lat }) => [lon, lat]));
+    expect(context.dragPanEnabled).toBe(true);
+    expect(context.scrollZoomEnabled).toBe(true);
+    const comparison = context.choices.find(({ role }) => role === "distractor");
+    const evidenceBefore = await page.evaluate((key) => (
+      JSON.parse(localStorage.getItem(key) || "{}").events?.length || 0
+    ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY);
+    await page.mouse.click(comparison.clientPoint.clientX, comparison.clientPoint.clientY);
+    expect(await page.evaluate((key) => (
+      JSON.parse(localStorage.getItem(key) || "{}").events?.length || 0
+    ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY)).toBe(evidenceBefore);
+    expect((await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState())).phase).toBe("answering");
+    const beforePan = context.feedbackLabelLayout.placements.map(({ point }) => point);
+    await page.evaluate(() => window.maplibrePocMap.panBy([35, -14], { duration: 0 }));
+    await expect.poll(() => page.evaluate(() => (
+      window.__MAPPA_TEST_API__.getCapitalLocationQuestionVisualState()?.feedbackLabelLayout?.placements?.map(({ point }) => point)
+    ))).not.toEqual(beforePan);
+    const zoomBefore = await page.evaluate(() => window.maplibrePocMap.getZoom());
+    await page.evaluate(() => window.maplibrePocMap.zoomTo(window.maplibrePocMap.getZoom() + 0.35, { duration: 0 }));
+    await expect.poll(() => page.evaluate(() => window.maplibrePocMap.getZoom())).toBeGreaterThan(zoomBefore);
+    if (fixture.stateLabel === "Hawaii") {
+      const transformedCamera = await page.evaluate(() => ({
+        longitude: window.maplibrePocMap.getCenter().lng,
+        zoom: window.maplibrePocMap.getZoom()
+      }));
+      expect(Math.abs((((transformedCamera.longitude + 157 + 540) % 360) + 360) % 360 - 180)).toBeLessThan(15);
+      expect(transformedCamera.zoom).toBeGreaterThan(5);
+    }
+    await expectNamingCityContext(page, fixture.targetId, fixture.names);
+    await page.screenshot({ path: testInfo.outputPath(`${fixture.stateLabel.toLowerCase()}-capital-naming-context.png`) });
   });
 }

@@ -46,9 +46,11 @@ export function createCapitalLocationQuestionState({
         : choiceId(record.stateId, role, index);
       const inTargetState = record.stateId === targetRecord.stateId;
       const isSelected = id === selectedChoiceId;
-      const isInteractive = interaction === "capital-only"
-        ? role === "capital" && inTargetState
-        : true;
+      const isInteractive = interaction === "none"
+        ? false
+        : interaction === "capital-only"
+          ? role === "capital" && inTargetState
+          : true;
       return Object.freeze({
         id,
         stateId: record.stateId,
