@@ -51,6 +51,8 @@ River and lake family review begins after every target in that lower-48 family h
 
 Within each checkpoint, target order and membership are stable functions of cohort identity, learning-event count, and review generation. Identical state reproduces the same result, while later generations avoid repeating the complete prior set when alternatives exist and never repeat a target immediately when another initial target remains. This deterministic variation is scoped to Guided physical checkpoints; ordinary Memory Trail and other Guided Learning families retain their existing planners.
 
+Completing an immediate, family, regional, or mixed physical checkpoint now enters the same `united-states-trail-summary` screen used by political Guided sessions. The shared panel reports the number of physical features practiced, correct retrievals, attempts, and features needing review, with the standard **Keep Going** and **Finish** actions. Keep Going clears the completed child handoff and resumes the ordinary scheduler (or returns to the post-course chooser when that was the launch context); Finish clears the handoff and uses the normal Guided exit. The completed checkpoint snapshot is retained in the durable child contract until either action, so reload reconstructs the summary without replaying attempts or evidence. Standalone and Journey Memory Trail activities retain their existing completion overlay; Guided physical practice no longer exposes its former `Practice Again` branch.
+
 ## Covered prerequisites
 
 `covered` is a deterministic instructional-prerequisite signal. A concept is covered when canonical evidence contains either:

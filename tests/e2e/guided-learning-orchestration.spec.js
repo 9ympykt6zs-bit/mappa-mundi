@@ -97,14 +97,17 @@ async function finishTargetedPhysicalPractice(
     window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.targetPoolIds
   ))).toEqual(targetIds);
   const promptedTargetIds = new Set(initialPromptedTargetIds);
+  const retrievalSequence = [...initialPromptedTargetIds];
   for (let attempt = 0; attempt < 14; attempt += 1) {
-    if (await page.locator("#memory-trail-overlay").isVisible()) break;
+    if (await page.getByRole("heading", { name: "United States session complete" }).isVisible()) break;
     await expect.poll(() => page.evaluate(() => (
       window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase
     ))).toBe("answering");
-    promptedTargetIds.add(await page.evaluate(() => (
+    const promptedTargetId = await page.evaluate(() => (
       window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.currentPromptTargetId
-    )));
+    ));
+    promptedTargetIds.add(promptedTargetId);
+    retrievalSequence.push(promptedTargetId);
     const promptState = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState());
     expect(promptState.guidedLocatingOnly).toBe(true);
     expect(promptState.currentPromptType).toBe("name_to_place");
@@ -115,14 +118,18 @@ async function finishTargetedPhysicalPractice(
     ))).toBe(true);
     await page.waitForTimeout(700);
   }
-  await expect(page.locator("#memory-trail-overlay")).toBeVisible();
-  await expect(page.locator("#memory-trail-primary-button")).toHaveText("Continue Guided Learning");
-  const completedState = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState());
+  await expect(page.getByRole("heading", { name: "United States session complete" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Keep Going" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Finish" })).toBeVisible();
+  await expect(page.locator("#memory-trail-overlay")).toBeHidden();
+  await expect(page.locator(".daily-trail-panel")).toContainText(`You practiced ${targetIds.length} physical features.`);
   const expectedPromptTargetIds = [...targetIds, ...expectedRetryTargetIds];
-  expect(completedState.promptCount).toBe(expectedPromptTargetIds.length);
-  expect(completedState.promptHistory.map(({ targetId }) => targetId).sort()).toEqual(expectedPromptTargetIds.sort());
+  await expect(page.locator(".daily-trail-panel")).toContainText(`Retrieval correct: ${targetIds.length}`);
+  await expect(page.locator(".daily-trail-panel")).toContainText(`Attempts: ${expectedPromptTargetIds.length}`);
+  expect(retrievalSequence).toHaveLength(expectedPromptTargetIds.length);
+  expect([...retrievalSequence].sort()).toEqual(expectedPromptTargetIds.sort());
   expect([...promptedTargetIds].sort()).toEqual([...targetIds].sort());
-  return completedState.promptHistory.map(({ targetId }) => targetId);
+  return retrievalSequence;
 }
 
 async function finishGuidedPhysicalTeaching(page, { expectPractice = true, verifyWrongTap = false } = {}) {
@@ -377,6 +384,7 @@ async function completeGeneratedPhysicalSequence(page, {
   targetId,
   title,
   family,
+  completionAction = "keep-going",
   expectedFallbackReason = "physical-feature-interleave-required"
 }) {
   const feature = await openSeededPhysicalSequence(page, targetId);
@@ -415,8 +423,14 @@ async function completeGeneratedPhysicalSequence(page, {
     ));
     expect(practicedTargetIds.length).toBeGreaterThanOrEqual(2);
     await finishTargetedPhysicalPractice(page, practicedTargetIds);
-    await page.locator("#memory-trail-primary-button").click();
-    await expect(page.locator(".memory-trail-panel")).toBeVisible({ timeout: 20_000 });
+    if (completionAction === "finish") {
+      await page.getByRole("button", { name: "Finish" }).click();
+      await expect(page.locator("#app-shell-title")).toHaveText("Main Menu");
+      expect(await page.evaluate((key) => localStorage.getItem(key), GUIDED_CHILD_LAUNCH_STORAGE_KEY)).toBeNull();
+    } else {
+      await page.getByRole("button", { name: "Keep Going" }).click();
+      await expect(page.locator(".memory-trail-panel")).toBeVisible({ timeout: 20_000 });
+    }
   }
 
   const trace = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedLearningOrchestration());
@@ -672,8 +686,7 @@ test("Guided Learning introduces and immediately quizzes a three-range physical 
     completedLabelTargetIds: []
   });
   await finishTargetedPhysicalPractice(page, ["white-mountains", "green-mountains", "adirondack-mountains"]);
-  await expectGuidedMountainRetrievalCamera(page);
-  await page.locator("#memory-trail-primary-button").click();
+  await page.getByRole("button", { name: "Keep Going" }).click();
   await expect(page.locator(".memory-trail-panel")).toBeVisible({ timeout: 20_000 });
 
   const finalTrace = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedLearningOrchestration());
@@ -802,9 +815,10 @@ test("a bounded Guided physical child preserves provenance, subset, and completi
     .toBe("completed");
 
   await reloadAndReenterGuidedLearning(page);
-  await expect(page.locator("#memory-trail-overlay")).toBeVisible({ timeout: 20_000 });
-  await expect(page.locator("#memory-trail-primary-button")).toHaveText("Continue Guided Learning");
-  await expect(page.locator("#memory-trail-secondary-button")).toBeHidden();
+  await expect(page.getByRole("heading", { name: "United States session complete" })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("button", { name: "Keep Going" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Finish" })).toBeVisible();
+  await expect(page.locator("#memory-trail-overlay")).toBeHidden();
   const completedResume = await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedLearningOrchestration());
   expect(completedResume.runtime).toMatchObject({
     blockId: feature.practiceBlockId,
@@ -815,7 +829,7 @@ test("a bounded Guided physical child preserves provenance, subset, and completi
     JSON.parse(localStorage.getItem(key) || "{}").events || []
   ), CANONICAL_EVIDENCE_REPOSITORY_STORAGE_KEY)).toEqual(evidenceAtCompletion);
 
-  await page.locator("#memory-trail-primary-button").click();
+  await page.getByRole("button", { name: "Keep Going" }).click();
   await expect(page.locator(".memory-trail-panel")).toBeVisible({ timeout: 20_000 });
   expect(await page.evaluate((key) => localStorage.getItem(key), GUIDED_CHILD_LAUNCH_STORAGE_KEY)).toBeNull();
   await reloadAndReenterGuidedLearning(page);
@@ -943,11 +957,12 @@ test("a missed Northeast retrieval gets one later retry and then returns to Guid
   ))).toBe(firstPrompt);
   expect(await page.evaluate(() => window.__MAPPA_TEST_API__.answerActiveMemoryTrailCorrectly())).toBe(true);
 
-  await expect(page.locator("#memory-trail-overlay")).toBeVisible({ timeout: 20_000 });
-  const completed = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState());
-  expect(completed.promptCount).toBe(4);
-  expect(completed.guidedPhysicalRetrievalCheckpoint.complete).toBe(true);
-  expect(completed.guidedPhysicalRetrievalCheckpoint.targets
+  await expect(page.getByRole("heading", { name: "United States session complete" })).toBeVisible({ timeout: 20_000 });
+  const completedCheckpoint = await page.evaluate((key) => (
+    JSON.parse(localStorage.getItem(key)).child.guidedPhysicalCheckpoint
+  ), GUIDED_CHILD_LAUNCH_STORAGE_KEY);
+  expect(completedCheckpoint.complete).toBe(true);
+  expect(completedCheckpoint.targets
     .find(({ targetId }) => targetId === firstPrompt)).toMatchObject({
       attemptCount: 2,
       incorrectCount: 1,
@@ -1219,10 +1234,11 @@ test("a generated river batch uses national framing and returns to Guided Learni
   });
 });
 
-test("a generated lake batch uses full lake geometry and returns to Guided Learning", async ({ page }) => {
+test("a generated lake batch uses full lake geometry and can finish to the main menu", async ({ page }) => {
   await completeGeneratedPhysicalSequence(page, {
     targetId: "lake-superior",
     title: "U.S. Lakes",
-    family: "lake"
+    family: "lake",
+    completionAction: "finish"
   });
 });

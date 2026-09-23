@@ -1,5 +1,22 @@
 # Automated testing
 
+## Shared Guided physical-retrieval completion — 2026-09-22
+
+Guided mountain, river, lake, family, regional, and mixed physical checkpoints now finish on the shared United States Guided session-complete screen. Browser coverage verifies physical-specific summary totals, the standard Keep Going and Finish actions, ordinary scheduler continuation, post-course return, durable reload without duplicate evidence, and removal of the Guided `Practice Again` overlay path. Standalone physical Memory Trail behavior remains covered separately.
+
+The complete fast suite passed **113/113**. The focused desktop completion matrix passed **8/8** across immediate mountain retrieval, river and lake cohorts, family and mixed review, reload, Keep Going, Finish, evidence totals, and post-course return. Targeted mobile completion/reload checks passed **3/3**. The standalone mountain regression passed **2/2**. The U.S. critical-path suite passed **14/14**. `git diff --check` passed before commit.
+
+Commands:
+
+```sh
+npm test
+npx playwright test tests/e2e/guided-learning-orchestration.spec.js tests/e2e/post-state-curriculum.spec.js --project=desktop-chromium --workers=1 --grep="Guided Learning introduces|bounded Guided physical child|missed Northeast retrieval|completed mountain category|mixed physical review|generated river batch|generated lake batch|Physical Geography launches"
+npx playwright test tests/e2e/guided-learning-orchestration.spec.js --project=mobile-chromium --workers=1 --grep="bounded Guided physical child|generated river batch|generated lake batch"
+npx playwright test tests/e2e/mountain-range-visual-regression.spec.js --project=desktop-chromium --workers=1
+npm run test:critical-path
+git diff --check
+```
+
 ## Guided capital-naming label gate — 2026-09-22
 
 The three-city `place_to_name` presentation now separates marker context from answer disclosure. Before submission it renders the capital star and two comparison dots with no map labels or connector lines. Correct and incorrect feedback reveal all three collision-aware names and leaders. Reload preserves the unanswered hidden-label state, the four-choice answer bank is unchanged, inert comparison-marker taps leave canonical evidence and persisted curriculum/mastery state unchanged, and `name_to_place` retains its anonymous 150-marker pre-answer presentation.

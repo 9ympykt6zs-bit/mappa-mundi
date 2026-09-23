@@ -68,8 +68,19 @@ const serialized = storage.getItem(GUIDED_CHILD_LAUNCH_STORAGE_KEY);
 assert.equal(serialized.includes("function"), false);
 assert.equal(serialized.includes("must not persist"), false);
 
-const completed = completeGuidedChildLaunchContract(saved.orchestrationBlockId, storage);
+const completedCheckpoint = {
+  cohortId: "northeast-mountains",
+  complete: true,
+  targets: [
+    { targetId: "white-mountains", attemptCount: 1, incorrectCount: 0, finalOutcome: "correct" },
+    { targetId: "green-mountains", attemptCount: 2, incorrectCount: 1, finalOutcome: "correct" }
+  ]
+};
+const completed = completeGuidedChildLaunchContract(saved.orchestrationBlockId, storage, {
+  guidedPhysicalCheckpoint: completedCheckpoint
+});
 assert.equal(completed.status, "completed");
+assert.deepEqual(completed.child.guidedPhysicalCheckpoint, completedCheckpoint);
 assert.deepEqual(completed.child.targetIds, saved.child.targetIds, "Completion must preserve the exact bounded subset.");
 assert.deepEqual(
   completed.child.physicalContextTargetIds,
@@ -81,9 +92,18 @@ assert.deepEqual(
   completed,
   "Completion is deterministic and idempotent."
 );
+const correctedCompletion = completeGuidedChildLaunchContract(saved.orchestrationBlockId, storage, {
+  guidedPhysicalCheckpoint: { ...completedCheckpoint, completionReason: "immediate-retrieval-complete" }
+});
+assert.equal(correctedCompletion.status, "completed");
+assert.equal(
+  correctedCompletion.child.guidedPhysicalCheckpoint.completionReason,
+  "immediate-retrieval-complete",
+  "A completed handoff can receive the final durable checkpoint without changing its lifecycle."
+);
 assert.deepEqual(
   completeGuidedChildLaunchContract("different-block", storage),
-  completed,
+  correctedCompletion,
   "An unrelated child cannot mutate the durable handoff."
 );
 

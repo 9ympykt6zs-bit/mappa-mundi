@@ -57,7 +57,7 @@ import {
   createGuidedChildLaunchContract,
   loadGuidedChildLaunchContract,
   saveGuidedChildLaunchContract
-} from "./guided-child-launch-contract.js?v=20260907-guided-physical-pacing-1";
+} from "./guided-child-launch-contract.js?v=20260922-guided-physical-summary-1";
 import {
   createUnitedStatesGuidedStateFocusDecision,
   createUnitedStatesGuidedPoliticalCameraDecision,
@@ -4170,12 +4170,15 @@ function completeActiveGuidedLearningOrchestrationBlock(
   details = {}
 ) {
   if (!blockId) return false;
+  const childCompletionUpdates = details.guidedPhysicalCheckpoint
+    ? { guidedPhysicalCheckpoint: details.guidedPhysicalCheckpoint }
+    : null;
   const current = loadGuidedLearningOrchestrationState(
     window.localStorage,
     UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
   );
   if (current.completedBlockIds.includes(blockId)) {
-    completeGuidedChildLaunchContract(blockId, window.localStorage);
+    completeGuidedChildLaunchContract(blockId, window.localStorage, childCompletionUpdates);
     if (activeGuidedLearningOrchestrationBlock?.id === blockId) {
       activeGuidedLearningOrchestrationBlock.status = "completed";
     }
@@ -4192,7 +4195,7 @@ function completeActiveGuidedLearningOrchestrationBlock(
     window.localStorage,
     UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
   );
-  completeGuidedChildLaunchContract(blockId, window.localStorage);
+  completeGuidedChildLaunchContract(blockId, window.localStorage, childCompletionUpdates);
   if (activeGuidedLearningOrchestrationBlock?.id === blockId) {
     activeGuidedLearningOrchestrationBlock.status = "completed";
   }
@@ -4466,6 +4469,10 @@ async function resumeDurableGuidedChildLaunch() {
 }
 
 function showRehydratedGuidedChildCompletion(block) {
+  if (block.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE) {
+    showGuidedPhysicalSessionSummary(block.destination.guidedPhysicalCheckpoint, block);
+    return;
+  }
   const targetLabel = block.destination.targetLabels?.join(" and ")
     || block.destination.targetLabel
     || "Guided activity";
@@ -9633,31 +9640,20 @@ function showMemoryTrailCompletionOverlay() {
   const canPlayJourney = Boolean(activeStudySession.journeyPlayReturn);
   const canReturnToActivity = Boolean(activeStudySession.journeyActivityReturnState);
   const memoryTrail = activeStudySession.memoryTrail;
-  const isGuidedOrchestrationPractice = activeStudySession.guidedOrchestration
-    && activeGuidedLearningOrchestrationBlock?.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE;
   const nextSection = getNextMemoryTrailSection(session.currentActivity);
   const hasNextSection = Boolean(nextSection);
   configureMemoryTrailOverlay({
     mode: "complete",
-    titleText: isGuidedOrchestrationPractice
-      ? `${activeGuidedLearningOrchestrationBlock.destination.targetLabels?.join(" and ")
-        || activeGuidedLearningOrchestrationBlock.destination.targetLabel} practice complete`
-      : hasNextSection && memoryTrail?.sectionTitle
+    titleText: hasNextSection && memoryTrail?.sectionTitle
       ? `${memoryTrail.sectionTitle} Complete`
       : "Guided Learning Complete",
-    messageText: isGuidedOrchestrationPractice
-      ? "Return to Guided Learning when you are ready."
-      : hasNextSection
+    messageText: hasNextSection
       ? `Next: ${nextSection.title}`
       : "Do you want to repeat this exercise?",
-    primaryText: isGuidedOrchestrationPractice
-      ? "Continue Guided Learning"
-      : hasNextSection
+    primaryText: hasNextSection
       ? `Continue: ${nextSection.title}`
       : "Do Guided Learning Again",
-    secondaryText: isGuidedOrchestrationPractice
-      ? "Practice Again"
-      : canReturnToActivity ? "Label Map" : canPlayJourney ? "Label Map" : "Return to Preview",
+    secondaryText: canReturnToActivity ? "Label Map" : canPlayJourney ? "Label Map" : "Return to Preview",
     showInfo: false
   });
 }
@@ -9748,11 +9744,6 @@ function handleMemoryTrailOverlaySecondary() {
   }
 
   if (memoryTrailOverlayMode === "complete") {
-    if (activeStudySession?.guidedOrchestration && activeGuidedLearningOrchestrationBlock) {
-      hideMemoryTrailOverlay();
-      restartMemoryTrail();
-      return;
-    }
     if (activeStudySession?.journeyActivityReturnState) {
       hideMemoryTrailOverlay();
       void returnToJourneyActivityFromStudy();
@@ -15325,6 +15316,62 @@ function getDailyTrailRequiredMemoryTrailStats(memoryTrail) {
   return introducedStats;
 }
 
+function getGuidedPhysicalSummaryTargetLabel(targetId, block = activeGuidedLearningOrchestrationBlock) {
+  const targetIds = block?.destination?.targetIds || [];
+  const targetLabels = block?.destination?.targetLabels || [];
+  const destinationLabel = targetLabels[targetIds.indexOf(targetId)];
+  if (destinationLabel) return destinationLabel;
+  return UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1.physicalFeatures
+    .find((feature) => feature.targetId === targetId)?.name
+    || targetId;
+}
+
+function createGuidedPhysicalSessionSummary(checkpoint, block = activeGuidedLearningOrchestrationBlock) {
+  const snapshot = Array.isArray(checkpoint?.targets)
+    ? checkpoint
+    : getGuidedPhysicalRetrievalCheckpointSnapshot(checkpoint);
+  const checkpointTargets = snapshot?.targets || [];
+  const targetIds = [...new Set([
+    ...(snapshot?.targetOrder || []),
+    ...checkpointTargets.map(({ targetId }) => targetId),
+    ...(block?.destination?.targetIds || [])
+  ].filter(Boolean))];
+  const reviewCorrectCount = checkpointTargets.reduce((sum, target) => (
+    sum + Math.max(0, Number(target.attemptCount || 0) - Number(target.incorrectCount || 0))
+  ), 0);
+  const incorrectCount = checkpointTargets.reduce((sum, target) => (
+    sum + Math.max(0, Number(target.incorrectCount || 0))
+  ), 0);
+  const weakTargetIds = new Set([
+    ...(snapshot?.missedTargetIds || []),
+    ...checkpointTargets.filter(({ incorrectCount: misses }) => Number(misses || 0) > 0)
+      .map(({ targetId }) => targetId)
+  ]);
+  return {
+    kind: "guided-physical",
+    practicedCount: targetIds.length,
+    reviewCorrectCount,
+    incorrectCount,
+    attemptCount: reviewCorrectCount + incorrectCount,
+    weakItems: [...weakTargetIds].map((targetId) => ({
+      targetId,
+      label: getGuidedPhysicalSummaryTargetLabel(targetId, block)
+    }))
+  };
+}
+
+function showGuidedPhysicalSessionSummary(checkpoint, block = activeGuidedLearningOrchestrationBlock) {
+  lastUnitedStatesMemoryTrailSummary = createGuidedPhysicalSessionSummary(checkpoint, block);
+  clearMemoryTrailState({ restoreReveals: false });
+  activeStudySession = null;
+  runner?.setStudyPreviewMode(false);
+  runner?.setMemoryTrailHighlight([]);
+  runner?.setMemoryTrailStudyTargetEmphasisSuppressed?.(false);
+  hideMemoryTrailOverlay();
+  resetActivityAttemptState();
+  showAppScreen("united-states-trail-summary", { pushHistory: false });
+}
+
 function completeMemoryTrailSession(memoryTrail) {
   memoryTrail.phase = "complete";
   memoryTrail.sessionPhase = "practice";
@@ -15353,9 +15400,12 @@ function completeMemoryTrailSession(memoryTrail) {
   }
   if (activeStudySession?.guidedOrchestration
     && activeGuidedLearningOrchestrationBlock?.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE) {
+    const checkpoint = getGuidedPhysicalRetrievalCheckpointSnapshot(memoryTrail.guidedPhysicalCheckpoint);
     completeActiveGuidedLearningOrchestrationBlock(activeGuidedLearningOrchestrationBlock.id, {
-      guidedPhysicalCheckpoint: getGuidedPhysicalRetrievalCheckpointSnapshot(memoryTrail.guidedPhysicalCheckpoint)
+      guidedPhysicalCheckpoint: checkpoint
     });
+    showGuidedPhysicalSessionSummary(checkpoint);
+    return;
   }
   showMemoryTrailCompletionOverlay();
 }
@@ -22546,6 +22596,14 @@ function resetUnitedStatesMemoryTrailProgress() {
 }
 
 async function continueUnitedStatesMemoryTrailFromSummary() {
+  if (
+    lastUnitedStatesMemoryTrailSummary?.kind === "guided-physical"
+    && activeGuidedLearningOrchestrationBlock?.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE
+    && activeGuidedLearningOrchestrationBlock.status === "completed"
+  ) {
+    await returnToGuidedLearningFromOrchestration();
+    return;
+  }
   const items = getUnitedStatesMemoryTrailItems();
   const state = loadUnitedStatesMemoryTrailProgress(items);
   const coreStatus = getUnitedStatesGuidedCoreStatus(items, state);
@@ -22619,6 +22677,19 @@ async function startPostStateCurriculumReconstruction() {
 }
 
 function finishUnitedStatesMemoryTrailFromSummary() {
+  if (
+    lastUnitedStatesMemoryTrailSummary?.kind === "guided-physical"
+    && activeGuidedLearningOrchestrationBlock?.type === GUIDED_LEARNING_BLOCK_TYPES.PHYSICAL_FEATURE_PRACTICE
+    && activeGuidedLearningOrchestrationBlock.status === "completed"
+  ) {
+    const returnedBlockId = activeGuidedLearningOrchestrationBlock.id;
+    activeGuidedLearningOrchestrationBlock = null;
+    clearGuidedChildLaunchContract(window.localStorage);
+    publishGuidedLearningOrchestrationTrace({
+      lifecycleEvent: "finished-guided-learning",
+      returnedBlockId
+    });
+  }
   lastUnitedStatesMemoryTrailSummary = null;
   returnFromExpeditionActivity("main-menu");
 }
@@ -22642,18 +22713,29 @@ function renderUnitedStatesMemoryTrailSummary() {
   heading.textContent = "United States session complete";
 
   const practiced = document.createElement("p");
-  practiced.textContent = `You practiced ${summary.practicedCount || 0} places.`;
+  const isGuidedPhysicalSummary = summary.kind === "guided-physical";
+  practiced.textContent = isGuidedPhysicalSummary
+    ? `You practiced ${summary.practicedCount || 0} physical features.`
+    : `You practiced ${summary.practicedCount || 0} places.`;
 
   const stats = document.createElement("div");
   stats.className = "daily-trail-stat-grid";
-  [
-    ["New states introduced", summary.newStateCount ?? summary.newCount ?? 0],
-    ["New capitals introduced", summary.newCapitalCount || 0],
-    ["Review correct", summary.reviewCorrectCount || 0],
-    ["States introduced", `${summary.stateIntroducedCount ?? summary.introducedCount ?? 0}/50`],
-    ["Capitals introduced", `${summary.capitalIntroducedCount || 0}/50`],
-    ["Total mastered", summary.masteredCount || 0]
-  ].forEach(([label, value]) => {
+  const summaryStats = isGuidedPhysicalSummary
+    ? [
+        ["Physical features practiced", summary.practicedCount || 0],
+        ["Retrieval correct", summary.reviewCorrectCount || 0],
+        ["Attempts", summary.attemptCount || 0],
+        ["To review", summary.weakItems?.length || 0]
+      ]
+    : [
+        ["New states introduced", summary.newStateCount ?? summary.newCount ?? 0],
+        ["New capitals introduced", summary.newCapitalCount || 0],
+        ["Review correct", summary.reviewCorrectCount || 0],
+        ["States introduced", `${summary.stateIntroducedCount ?? summary.introducedCount ?? 0}/50`],
+        ["Capitals introduced", `${summary.capitalIntroducedCount || 0}/50`],
+        ["Total mastered", summary.masteredCount || 0]
+      ];
+  summaryStats.forEach(([label, value]) => {
     const stat = document.createElement("p");
     stat.className = "daily-trail-stat";
     stat.textContent = `${label}: ${value}`;

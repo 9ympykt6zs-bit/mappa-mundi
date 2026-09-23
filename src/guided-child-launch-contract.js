@@ -101,11 +101,21 @@ export function saveGuidedChildLaunchContract(contract, storage) {
   return normalized;
 }
 
-export function completeGuidedChildLaunchContract(blockId, storage) {
+export function completeGuidedChildLaunchContract(blockId, storage, childUpdates = null) {
   const contract = loadGuidedChildLaunchContract(storage);
   if (!contract || contract.orchestrationBlockId !== String(blockId || "").trim()) return contract;
-  if (contract.status === "completed") return contract;
-  return saveGuidedChildLaunchContract({ ...contract, status: "completed" }, storage);
+  const updates = childUpdates && typeof childUpdates === "object"
+    ? cloneJson(childUpdates, {})
+    : {};
+  if (contract.status === "completed" && Object.keys(updates).length === 0) return contract;
+  return saveGuidedChildLaunchContract({
+    ...contract,
+    status: "completed",
+    child: {
+      ...contract.child,
+      ...updates
+    }
+  }, storage);
 }
 
 export function clearGuidedChildLaunchContract(storage) {

@@ -184,6 +184,17 @@ test("Physical Geography launches only an introduced due review and returns to t
   const targetIds = await page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.targetPoolIds || []);
   expect(targetIds.length).toBeGreaterThanOrEqual(3);
   expect(targetIds.every((targetId) => pool.targetIds.includes(targetId))).toBe(true);
-  await page.locator("#back-button").click();
+  for (let attempt = 0; attempt < 14; attempt += 1) {
+    if (await page.getByRole("heading", { name: "United States session complete" }).isVisible()) break;
+    await expect.poll(() => page.evaluate(() => (
+      window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.phase
+    ))).toBe("answering");
+    expect(await page.evaluate(() => window.__MAPPA_TEST_API__.answerActiveMemoryTrailCorrectly())).toBe(true);
+    await page.waitForTimeout(700);
+  }
+  await expect(page.getByRole("heading", { name: "United States session complete" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Keep Going" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Finish" })).toBeVisible();
+  await page.getByRole("button", { name: "Keep Going" }).click();
   await expect(page.getByRole("heading", { name: "Your U.S. learning map is ready" })).toBeVisible({ timeout: 20_000 });
 });
