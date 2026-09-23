@@ -229,7 +229,7 @@ async function chooseSearchScope(page, label, query = label, expectedScopeId = l
   await expect.poll(async () => (await globeState(page)).scopeId).toBe(expectedScopeId);
 }
 
-test("globe-first launch drills to direct U.S. learning while preserving objective-menu access", async ({ page }, testInfo) => {
+test("globe-first launch provides the permanent hub and drills to direct U.S. learning", async ({ page }, testInfo) => {
   const runtimeErrors = [];
   page.on("pageerror", (error) => runtimeErrors.push(`pageerror: ${error.message}`));
   page.on("console", (message) => {
@@ -240,7 +240,8 @@ test("globe-first launch drills to direct U.S. learning while preserving objecti
   await expect(page.locator("#poc-title")).toHaveText("Where do you want to learn?");
   await expect(page.locator("#poc-instruction")).toHaveText("Choose a continent on the globe.");
   await expect(page.getByRole("button", { name: /Learn the Continents/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Use current menu" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Menu", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Use current menu" })).toHaveCount(0);
   await expect(page.getByRole("combobox", { name: "Find a place" })).toHaveAttribute("type", "search");
   await expect.poll(async () => (await globeState(page)).camera.zoom).toBeCloseTo(1.85, 1);
 
@@ -264,7 +265,7 @@ test("globe-first launch drills to direct U.S. learning while preserving objecti
       search: search.getBoundingClientRect().toJSON(),
       actions: actions.getBoundingClientRect().toJSON(),
       primary: document.querySelector("#globe-navigation-learn-button").getBoundingClientRect().toJSON(),
-      quiet: document.querySelector("#globe-navigation-current-menu").getBoundingClientRect().toJSON()
+      menu: document.querySelector("#globe-navigation-menu-button").getBoundingClientRect().toJSON()
     };
   });
   expect(layout.panelBackground).toBe("rgba(0, 0, 0, 0)");
@@ -278,7 +279,7 @@ test("globe-first launch drills to direct U.S. learning while preserving objecti
   expect(layout.search.right).toBeLessThanOrEqual(layout.viewport.width);
   expect(layout.actions.bottom).toBeLessThanOrEqual(layout.viewport.height);
   expect(layout.viewport.height - layout.actions.bottom).toBeGreaterThanOrEqual(20);
-  expect(layout.primary.height).toBeGreaterThan(layout.quiet.height);
+  expect(layout.primary.height).toBeGreaterThan(layout.menu.height);
   expect(layout.search.bottom).toBeLessThan(layout.actions.top);
   if (testInfo.project.name.includes("desktop")) {
     expect(layout.search.x).toBeLessThan(layout.viewport.width / 3);
@@ -307,6 +308,13 @@ test("globe-first launch drills to direct U.S. learning while preserving objecti
   expect(worldState.visualStates.filter(({ hovered }) => hovered)).toEqual([]);
   expect(worldState.visualStates.every(({ id }) => getVisualOpacity(worldState, id) === 0)).toBe(true);
 
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await expect(page.getByRole("complementary", { name: "Learning menu" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Continue Learning/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Explore \/ Atlas/ })).toBeDisabled();
+  await expect(page.getByRole("button", { name: /Connections/ })).toBeEnabled();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+
   await page.getByRole("button", { name: /Learn the Continents/ }).click();
   await expect.poll(
     () => page.evaluate(() => window.__MAPPA_TEST_API__?.getCurrentActivity()?.id),
@@ -331,20 +339,14 @@ test("globe-first launch drills to direct U.S. learning while preserving objecti
   await chooseMapScope(page, "united-states", { useTouch: testInfo.project.name.includes("mobile") });
   await expect(page.locator("#poc-title")).toHaveText("United States");
   await expect(page.getByRole("button", { name: /Learn the United States/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Choose what to learn" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Choose what to learn" })).toHaveCount(0);
   expect((await globeState(page)).path.map(({ label }) => label)).toEqual(["World", "North America", "United States"]);
   expect((await globeState(page)).visualStates.filter(({ selected }) => selected).map(({ id }) => id)).toEqual(["united-states"]);
 
-  await page.getByRole("button", { name: "Choose what to learn" }).click();
-  await expect(page.locator("#app-shell-title")).toHaveText("Across the United States");
-  await expect(page.locator(".us-objective-title")).toHaveText([
-    "Learn States & Capitals",
-    "Learn Physical Features",
-    "Learn Connections",
-    "Explore the United States"
-  ]);
-  await page.locator("#app-shell-back-button").click();
-  await expect(page.locator("#poc-title")).toHaveText("United States");
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await expect(page.getByRole("button", { name: /Explore \/ Atlas/ })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /Connections/ })).toContainText("United States");
+  await page.getByRole("button", { name: "Close", exact: true }).click();
 
   await page.getByRole("button", { name: /Learn the United States/ }).click();
   await expect.poll(
@@ -363,8 +365,9 @@ test("globe-first launch drills to direct U.S. learning while preserving objecti
   expect((await globeState(page)).screen).toBe("journey-gameplay");
   await expect(page.locator("#app-shell-screen")).toBeHidden();
 
-  await startPrototype(page);
-  await chooseSearchScope(page, "United States", "united");
+  await page.locator("#back-button").click();
+  await expect(page.locator("#globe-navigation-panel")).toBeVisible();
+  await expect.poll(async () => (await globeState(page)).scopeId).toBe("united-states");
   await page.getByRole("button", { name: /Learn the United States/ }).click();
   await expect.poll(
     () => page.evaluate(() => window.__MAPPA_TEST_API__?.getGlobeNavigationState()?.screen),
@@ -665,7 +668,7 @@ test("map and search allow lateral region changes without requiring Back", async
   await expect(page.locator("#poc-title")).toHaveText("Netherlands");
   await expect(page.locator("#globe-navigation-status")).toContainText("Learning content for Netherlands is coming later");
   await expect(page.locator("#globe-navigation-learn-button")).toBeHidden();
-  await expect(page.getByRole("button", { name: "Use current menu" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Menu", exact: true })).toBeVisible();
 
   await search.fill("Atlantis");
   await expect(page.locator("#globe-navigation-find-options")).toContainText("No geographic place found.");
@@ -756,12 +759,12 @@ test("every country that exposes Learn passes runtime curriculum and geometry va
 });
 
 test("Learn on each supported European country starts its validated learning experience immediately", async ({ page }) => {
+  await startPrototype(page);
   for (const [label, expectedActivityId] of [
     ["Germany", "germany-north-east-political-divisions"],
     ["France", "france-northern-eastern-regions-political-divisions"],
     ["Italy", "italy-northern-regions-political-divisions"]
   ]) {
-    await startPrototype(page);
     await chooseSearchScope(page, label);
     await expect(page.getByRole("button", { name: new RegExp(`Learn ${label}`) })).toBeVisible();
     await expect(page.locator(".globe-navigation-primary-support")).toHaveText("Start learning this area");
@@ -773,6 +776,9 @@ test("Learn on each supported European country starts its validated learning exp
     ).toBe(expectedActivityId);
     await expect(page.locator("#globe-navigation-panel")).toBeHidden();
     await expect(page.locator("#app-shell-screen")).toBeHidden();
+    await page.goBack();
+    await expect(page.locator("#globe-navigation-panel")).toBeVisible();
+    await expect.poll(async () => (await globeState(page)).scopeId).toBe(label.toLowerCase());
   }
 });
 

@@ -86,7 +86,9 @@ for (const checkpointIndex of [0, 1, 9]) {
     expect(evidence.every(({ outcome, skillId }) => outcome === "skipped" && skillId === "spatial-reconstruction")).toBe(true);
     expect(new Set(evidence.map(({ attemptId }) => attemptId)).size).toBe(1);
     // Completed child rehydration cannot create another submission or score anchors.
-    await openPrimaryLearn(page);
+    await page.reload();
+    await page.locator("#launch-start-button").click();
+    await page.evaluate(() => window.__mappaMundiLoadApp());
     await expect(page.getByRole("button", { name: "Continue Guided Learning" })).toBeVisible({ timeout: 20_000 });
     expect(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).events.filter(({ sourceMode }) => sourceMode === "map-reconstruction"), evidenceKey)).toEqual(evidence);
     await page.getByRole("button", { name: "Continue Guided Learning" }).click();

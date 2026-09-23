@@ -2,9 +2,9 @@
 
 ## Purpose and status
 
-This document defines the proposed long-term geographic navigation model for Mappa Mundi. It describes how learners could move from the world to a continent, country, region, or other meaningful geographic scope before choosing a learning experience.
+This document defines the long-term geographic navigation model for Mappa Mundi. It describes how learners move from the world to a continent, country, region, or other meaningful geographic scope before choosing a learning experience.
 
-This is a product and design document, not an implementation plan or a description of functionality that is already built. It does not change the current globe, menus, region navigation, learning systems, learner state, evidence, scoring, or Progress Report.
+Phase 1 is implemented. Start Playing opens the globe by default, and the globe owns a compact learning menu for Continue Learning, Explore / Atlas, Connections, Map Reconstruction, and Progress. The former main menu remains available only through the temporary `?globeNavigation=off` rollback query. Later Atlas integration, Connections consolidation, and legacy-code removal remain future work.
 
 The central product principle is:
 
@@ -134,7 +134,7 @@ The current-scope action should be simple and learner-facing. A Europe view migh
 >
 > Choose a country to explore further.
 
-A United States view might present:
+A United States view presents:
 
 > **United States**
 >
@@ -144,18 +144,15 @@ A United States view might present:
 
 The map should remain visually dominant. The interface should not place separate buttons for every underlying activity around it.
 
-Once the learner selects **Learn the United States**, the geographic navigation layer hands off to the documented U.S. objective model:
+Once the learner selects **Learn the United States**, the geographic navigation layer enters the existing evidence-driven Guided Learning continuation directly. The old Across the United States objective screen is retained for rollback compatibility but is not part of the globe-first path.
 
-- Learn States & Capitals;
-- Learn Physical Features;
-- Learn Connections;
-- Explore the United States.
+The globe menu provides specialty destinations without duplicating their engines. Explore / Atlas opens the current U.S. Atlas, Connections selects the World or U.S. question pool from the active scope, Map Reconstruction opens the existing U.S. region selector, and Progress opens the existing U.S. report.
 
-The intended relationship is:
+The intended Phase 1 relationship is:
 
-> World globe → United States → Learn the United States → U.S. learning objectives
+> World globe → United States → Learn the United States → Guided Learning continuation
 
-The globe organizes place selection. The U.S. objective interface organizes learning within the selected place. Neither layer replaces the other.
+Browser history stores only the visible globe scope or specialty destination and its return scope. Learning progress remains in the established Journey, Guided, evidence, and activity stores. Reload retains the title-screen gate; after Start Playing, a valid saved navigation destination is restored and an invalid one falls back to the World globe.
 
 ## Proposed interaction patterns
 

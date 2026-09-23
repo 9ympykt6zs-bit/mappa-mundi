@@ -102,6 +102,10 @@ import {
   globeNavigationPrototype,
   isGlobeNavigationPrototypeEnabled
 } from "./globe-navigation-prototype.js?v=20260827-globe-navigation-correctness-1";
+import {
+  createGlobeHubNavigationController,
+  resolveGlobeHubContinueTarget
+} from "./globe-hub-navigation.js?v=20260923-globe-hub-phase-1";
 import { evaluateMapTargetSelection } from "./maplibre/learning-integrity.js";
 import {
   getCanonicalRetrievalItemForActivity,
@@ -3717,11 +3721,21 @@ const globeNavigationHoverName = document.querySelector("#globe-navigation-hover
 const globeNavigationStatus = document.querySelector("#globe-navigation-status");
 const globeNavigationLearnButton = document.querySelector("#globe-navigation-learn-button");
 const globeNavigationLearnLabel = document.querySelector("#globe-navigation-learn-label");
-const globeNavigationLearningOptionsButton = document.querySelector("#globe-navigation-learning-options");
 const globeNavigationFind = document.querySelector("#globe-navigation-find");
 const globeNavigationSearchInput = document.querySelector("#globe-navigation-search");
 const globeNavigationFindOptions = document.querySelector("#globe-navigation-find-options");
-const globeNavigationCurrentMenuButton = document.querySelector("#globe-navigation-current-menu");
+const globeNavigationMenuButton = document.querySelector("#globe-navigation-menu-button");
+const globeNavigationDrawer = document.querySelector("#globe-navigation-drawer");
+const globeNavigationDrawerScrim = document.querySelector("#globe-navigation-drawer-scrim");
+const globeNavigationDrawerClose = document.querySelector("#globe-navigation-drawer-close");
+const globeHubContinueButton = document.querySelector("#globe-hub-continue");
+const globeHubContinueDetail = document.querySelector("#globe-hub-continue-detail");
+const globeHubExploreButton = document.querySelector("#globe-hub-explore");
+const globeHubExploreDetail = document.querySelector("#globe-hub-explore-detail");
+const globeHubConnectionsButton = document.querySelector("#globe-hub-connections");
+const globeHubConnectionsDetail = document.querySelector("#globe-hub-connections-detail");
+const globeHubReconstructionButton = document.querySelector("#globe-hub-reconstruction");
+const globeHubProgressButton = document.querySelector("#globe-hub-progress");
 let unitedStatesAtlasProgress = null;
 let progressReportModel = null;
 let activeExpeditionDefinition = null;
@@ -3733,6 +3747,9 @@ let activeGlobeNavigationScopeId = globeNavigationPrototype.rootScopeId;
 let activeGlobeNavigationModel = globeNavigationPrototype;
 let activeGlobeNavigationHoverScopeId = "";
 let returnToGlobeNavigationScopeId = "";
+let globeHubNavigationController = null;
+let globeHubContinueTarget = null;
+let globeHubNavigationSequence = 0;
 let learningIntegrityFailure = null;
 let globeNavigationMapHoverBound = false;
 let runtimeMemoryTrailSelectionTrace = null;
@@ -4994,7 +5011,7 @@ async function init() {
   } else if (window.__mappaMundiLaunchRequested) {
     trackEvent("launch_start_pressed");
     if (isGlobeNavigationPrototypeEnabled(window.location.search)) {
-      await openGlobeNavigation();
+      await restoreGlobeHubAfterLaunch();
     } else {
       showAppScreen("main-menu", { pushHistory: false });
     }
@@ -6380,10 +6397,11 @@ function bindUiEvents() {
 
   homeButton?.addEventListener("click", () => {
     if (currentAppScreen === "globe-navigation") {
-      void openGlobeNavigation(globeNavigationPrototype.rootScopeId);
+      void openGlobeNavigation(globeNavigationPrototype.rootScopeId, { replace: true, source: "home" });
       return;
     }
     if (currentAppScreen === "map-reconstruction") {
+      if (returnToGlobeNavigation()) return;
       clearExpeditionReturn();
       showAppScreen("main-menu", { pushHistory: false });
       return;
@@ -6423,6 +6441,14 @@ function bindUiEvents() {
 
     if (currentAppScreen === "journey-gameplay") {
       resetJourneyGameplayInstructionSession();
+      if (returnToGlobeNavigationScopeId) {
+        exitJourney();
+        return;
+      }
+    }
+
+    if (returnToGlobeNavigationScopeId && returnToGlobeNavigation()) {
+      return;
     }
 
     showAppScreen("main-menu");
@@ -6430,7 +6456,10 @@ function bindUiEvents() {
   backButton?.addEventListener("click", () => {
     if (currentAppScreen === "globe-navigation") {
       const scope = getGlobeNavigationScope(activeGlobeNavigationScopeId, activeGlobeNavigationModel);
-      void openGlobeNavigation(scope?.parentId || globeNavigationPrototype.rootScopeId);
+      void openGlobeNavigation(scope?.parentId || globeNavigationPrototype.rootScopeId, {
+        replace: true,
+        source: "scope-back"
+      });
       return;
     }
     if (returnToGlobeNavigationScopeId
@@ -6553,16 +6582,34 @@ function bindUiEvents() {
     }
   });
   globeNavigationLearnButton?.addEventListener("click", openGlobeNavigationLearningAction);
-  globeNavigationLearningOptionsButton?.addEventListener("click", () => {
-    const scope = getGlobeNavigationScope(activeGlobeNavigationScopeId, activeGlobeNavigationModel);
-    if (scope?.learningAction?.expeditionId !== ACROSS_UNITED_STATES_EXPEDITION_ID) return;
-    returnToGlobeNavigationScopeId = scope.id;
-    void openExpedition(ACROSS_UNITED_STATES_EXPEDITION_ID, { pushHistory: false });
+  globeNavigationMenuButton?.addEventListener("click", () => setGlobeHubDrawerOpen(true));
+  globeNavigationDrawerClose?.addEventListener("click", () => setGlobeHubDrawerOpen(false));
+  globeNavigationDrawerScrim?.addEventListener("click", () => setGlobeHubDrawerOpen(false));
+  globeHubContinueButton?.addEventListener("click", () => {
+    if (!globeHubContinueTarget) return;
+    if (globeHubContinueTarget.kind === "united-states-guided") {
+      void navigateToGlobeHubDestination("learn:united-states");
+      return;
+    }
+    if (globeHubContinueTarget.kind === "journey") {
+      void navigateToGlobeHubDestination(`continue:journey:${globeHubContinueTarget.journeyId}`);
+    }
   });
-  globeNavigationCurrentMenuButton?.addEventListener("click", () => {
-    returnToGlobeNavigationScopeId = "";
-    appScreenHistory = [];
-    showAppScreen("main-menu", { pushHistory: false });
+  globeHubExploreButton?.addEventListener("click", () => {
+    if (!globeHubExploreButton.disabled) void navigateToGlobeHubDestination("atlas:united-states");
+  });
+  globeHubConnectionsButton?.addEventListener("click", () => {
+    if (globeHubConnectionsButton.disabled) return;
+    const destinationId = activeGlobeNavigationScopeId === "united-states"
+      ? "connections:united-states"
+      : "connections:world";
+    void navigateToGlobeHubDestination(destinationId);
+  });
+  globeHubReconstructionButton?.addEventListener("click", () => {
+    void navigateToGlobeHubDestination("reconstruction:united-states");
+  });
+  globeHubProgressButton?.addEventListener("click", () => {
+    void navigateToGlobeHubDestination("progress:united-states");
   });
   mainMenuMoreWaysButton?.addEventListener("click", () => showAppScreen("main-menu-more-ways"));
   audioMuteButton?.addEventListener("click", toggleAudioMute);
@@ -6675,10 +6722,10 @@ function bindLaunchScreenEvents() {
   });
 }
 
-function handleLaunchStart() {
+async function handleLaunchStart() {
   trackEvent("launch_start_pressed");
   if (isGlobeNavigationPrototypeEnabled(window.location.search)) {
-    void openGlobeNavigation();
+    await restoreGlobeHubAfterLaunch();
     return;
   }
   showAppScreen("main-menu");
@@ -6939,6 +6986,12 @@ function goBackAppScreen() {
   }
 
   if (returnToGlobeNavigationScopeId
+    && ["progress-report", "post-state-curriculum", "united-states-trail-summary"].includes(currentAppScreen)
+    && returnToGlobeNavigation()) {
+    return;
+  }
+
+  if (returnToGlobeNavigationScopeId
     && ["expedition", "study", "journey-detail"].includes(currentAppScreen)
     && returnToGlobeNavigation()) {
     return;
@@ -6993,12 +7046,224 @@ function openFreePlay(options = {}) {
 }
 
 function hideGlobeNavigationSurface() {
+  setGlobeHubDrawerOpen(false);
   document.body.classList.remove("globe-navigation-mode");
   if (globeNavigationPanel) globeNavigationPanel.hidden = true;
   if (globeNavigationHoverName) {
     globeNavigationHoverName.hidden = true;
     globeNavigationHoverName.textContent = "";
   }
+}
+
+function setGlobeHubDrawerOpen(isOpen) {
+  const shouldOpen = Boolean(isOpen && currentAppScreen === "globe-navigation");
+  if (globeNavigationDrawer) globeNavigationDrawer.hidden = !shouldOpen;
+  if (globeNavigationDrawerScrim) globeNavigationDrawerScrim.hidden = !shouldOpen;
+  if (globeNavigationMenuButton) globeNavigationMenuButton.setAttribute("aria-expanded", String(shouldOpen));
+  if (shouldOpen) {
+    const firstAction = globeNavigationDrawer?.querySelector("button:not([disabled]):not([hidden])");
+    firstAction?.focus();
+  }
+}
+
+function getGlobeHubContinueTarget() {
+  const items = getUnitedStatesMemoryTrailItems();
+  const trailState = loadUnitedStatesMemoryTrailProgress(items);
+  const orchestrationState = loadGuidedLearningOrchestrationState(
+    window.localStorage,
+    UNITED_STATES_GUIDED_LEARNING_ORCHESTRATION_V1
+  );
+  const coreStatus = getUnitedStatesGuidedCoreStatus(items, trailState);
+  const progressState = loadProgress();
+  const journeyTarget = [
+    { journeyId: progressState.activeJourneyId, difficultyId: progressState.activeDifficulty, active: true },
+    { journeyId: progressState.recentJourneyId, difficultyId: progressState.recentDifficulty, active: false }
+  ].map(({ journeyId, difficultyId, active }) => {
+    const journey = journeyPresets.find((candidate) => candidate.id === journeyId && isJourneyAvailable(candidate));
+    if (!journey) return null;
+    const progress = getJourneyProgressState(journey, difficultyId, progressState);
+    const hasSavedActivity = hasSavedJourneyActivityProgress({
+      journeyId,
+      difficultyId: progress.difficultyId,
+      stepIndex: progress.resumeStepIndex
+    });
+    return !progress.isComplete && (active || progress.hasPartialProgress || hasSavedActivity)
+      ? { journeyId: journey.id, label: journey.title }
+      : null;
+  }).find(Boolean) || null;
+
+  return resolveGlobeHubContinueTarget({
+    hasDurableGuidedChild: Boolean(loadGuidedChildLaunchContract(window.localStorage)),
+    hasActiveGuidedSession: Boolean(trailState.activeSession?.plan),
+    hasStartedGuidedLearning: Boolean(
+      hasUnitedStatesMemoryTrailProgress(trailState)
+      || orchestrationState.completedBlockIds?.length
+      || orchestrationState.activeBlockId
+    ),
+    isGuidedPostCourse: Boolean(coreStatus.coreComplete && coreStatus.capstoneComplete),
+    journeyTarget
+  });
+}
+
+function setGlobeHubActionAvailability(button, isAvailable, unavailableMessage = "") {
+  if (!button) return;
+  button.disabled = !isAvailable;
+  button.setAttribute("aria-disabled", String(!isAvailable));
+  if (unavailableMessage) button.title = unavailableMessage;
+  else button.removeAttribute("title");
+}
+
+function renderGlobeHubDrawer(scope) {
+  globeHubContinueTarget = getGlobeHubContinueTarget();
+  if (globeHubContinueButton) {
+    globeHubContinueButton.hidden = !globeHubContinueTarget;
+    globeHubContinueButton.disabled = !globeHubContinueTarget;
+  }
+  if (globeHubContinueDetail) {
+    if (globeHubContinueTarget?.kind === "united-states-guided") {
+      globeHubContinueDetail.textContent = scope.id === "united-states"
+        ? "Resume your United States Guided Learning path."
+        : "Resume United States Guided Learning.";
+    } else if (globeHubContinueTarget?.kind === "journey") {
+      globeHubContinueDetail.textContent = `Resume ${globeHubContinueTarget.label || "your Journey"}.`;
+    } else {
+      globeHubContinueDetail.textContent = "";
+    }
+  }
+
+  const isUnitedStates = scope.id === "united-states";
+  const isWorld = scope.id === globeNavigationPrototype.rootScopeId;
+  setGlobeHubActionAvailability(
+    globeHubExploreButton,
+    isUnitedStates,
+    "Explore / Atlas is available for the United States in this phase."
+  );
+  if (globeHubExploreDetail) {
+    globeHubExploreDetail.textContent = isUnitedStates
+      ? "Browse states and your U.S. learning map."
+      : "Available when the United States is selected.";
+  }
+
+  setGlobeHubActionAvailability(
+    globeHubConnectionsButton,
+    isWorld || isUnitedStates,
+    "Connections is available at the World and United States scopes."
+  );
+  if (globeHubConnectionsDetail) {
+    globeHubConnectionsDetail.textContent = isUnitedStates
+      ? "Practice relationships across the United States."
+      : isWorld
+        ? "Practice geographic relationships around the world."
+        : "Available at the World and United States scopes.";
+  }
+}
+
+function isGlobeHubDestinationValid(destinationId) {
+  if ([
+    "learn:united-states",
+    "atlas:united-states",
+    "connections:united-states",
+    "connections:world",
+    "reconstruction:united-states",
+    "progress:united-states"
+  ].includes(destinationId)) return true;
+  if (destinationId.startsWith("learn:activity:")) {
+    return Boolean(getActivityById(destinationId.slice("learn:activity:".length)));
+  }
+  if (destinationId.startsWith("learn:journey:") || destinationId.startsWith("continue:journey:")) {
+    const journeyId = destinationId.split(":").slice(2).join(":");
+    return journeyPresets.some((journey) => journey.id === journeyId && isJourneyAvailable(journey));
+  }
+  return false;
+}
+
+async function applyGlobeHubNavigationSnapshot(snapshot) {
+  const navigationSequence = ++globeHubNavigationSequence;
+  if (snapshot.surface === "globe") {
+    returnToGlobeNavigationScopeId = "";
+    clearExpeditionReturn();
+    await showGlobeNavigationSurface(snapshot.globeScopeId);
+    return;
+  }
+
+  returnToGlobeNavigationScopeId = snapshot.returnScopeId || snapshot.globeScopeId;
+  clearExpeditionReturn();
+  setGlobeHubDrawerOpen(false);
+  hideGlobeNavigationSurface();
+  if (navigationSequence !== globeHubNavigationSequence) return;
+
+  const destinationId = snapshot.destinationId;
+  if (destinationId === "learn:united-states") {
+    await startAcrossUnitedStatesGlobeLearning();
+    return;
+  }
+  if (destinationId === "atlas:united-states") {
+    await openUnitedStatesAtlas();
+    return;
+  }
+  if (destinationId === "connections:united-states") {
+    await openMentalMapChallenge({ unitedStatesRelationshipsOnly: true });
+    return;
+  }
+  if (destinationId === "connections:world") {
+    await openMentalMapChallenge();
+    return;
+  }
+  if (destinationId === "reconstruction:united-states") {
+    await openMapReconstruction();
+    return;
+  }
+  if (destinationId === "progress:united-states") {
+    await openUnitedStatesProgressReport();
+    return;
+  }
+  if (destinationId.startsWith("learn:activity:")) {
+    await openActivity(destinationId.slice("learn:activity:".length), { forceGameplayVisible: true });
+    return;
+  }
+  if (destinationId.startsWith("learn:journey:")) {
+    openGlobeNavigationJourneyLearning(destinationId.slice("learn:journey:".length));
+    return;
+  }
+  if (destinationId.startsWith("continue:journey:")) {
+    startOrContinueJourneyDirectly(destinationId.slice("continue:journey:".length));
+    return;
+  }
+
+  returnToGlobeNavigationScopeId = "";
+  await showGlobeNavigationSurface(globeNavigationPrototype.rootScopeId);
+}
+
+function getGlobeHubNavigationController() {
+  if (!globeHubNavigationController) {
+    globeHubNavigationController = createGlobeHubNavigationController({
+      history: window.history,
+      eventTarget: window,
+      rootScopeId: globeNavigationPrototype.rootScopeId,
+      isScopeValid: (scopeId) => Boolean(getGlobeNavigationScope(scopeId, activeGlobeNavigationModel)),
+      isDestinationValid: isGlobeHubDestinationValid,
+      onNavigate: applyGlobeHubNavigationSnapshot
+    });
+  }
+  return globeHubNavigationController;
+}
+
+async function restoreGlobeHubAfterLaunch() {
+  await ensureMapReady();
+  await getGlobeHubNavigationController().restore();
+}
+
+function openGlobeNavigation(scopeId = globeNavigationPrototype.rootScopeId, options = {}) {
+  return getGlobeHubNavigationController().showGlobe(scopeId, options);
+}
+
+function navigateToGlobeHubDestination(destinationId, options = {}) {
+  const scopeId = options.globeScopeId || activeGlobeNavigationScopeId || globeNavigationPrototype.rootScopeId;
+  return getGlobeHubNavigationController().showDestination(destinationId, {
+    globeScopeId: scopeId,
+    returnScopeId: options.returnScopeId || scopeId,
+    replace: options.replace === true
+  });
 }
 
 function getGlobeNavigationLearningReadiness(scope) {
@@ -7197,11 +7462,7 @@ function renderGlobeNavigationPanel(scope) {
   if (globeNavigationLearnLabel) {
     globeNavigationLearnLabel.textContent = scope.learningAction?.label || "";
   }
-  if (globeNavigationLearningOptionsButton) {
-    const showLearningOptions = scope.id === "united-states" && scope.learningAction?.kind === "expedition";
-    globeNavigationLearningOptionsButton.hidden = !showLearningOptions;
-    globeNavigationLearningOptionsButton.disabled = !showLearningOptions;
-  }
+  renderGlobeHubDrawer(scope);
 }
 
 function getGlobeNavigationMapScopeAtPoint(mapPoint) {
@@ -7261,15 +7522,22 @@ function handleGlobeNavigationMapPoint(mapPoint) {
   if (candidateScope) void openGlobeNavigation(candidateScope.id);
 }
 
-async function openGlobeNavigation(scopeId = globeNavigationPrototype.rootScopeId) {
+async function showGlobeNavigationSurface(scopeId = globeNavigationPrototype.rootScopeId) {
   await ensureMapReady();
   const scope = getGlobeNavigationScope(scopeId, activeGlobeNavigationModel)
     || getGlobeNavigationScope(globeNavigationPrototype.rootScopeId, activeGlobeNavigationModel);
   if (!scope) return;
+  if (currentAppScreen === "united-states-trail-gameplay") {
+    persistActiveUnitedStatesMemoryTrailSnapshot(getActiveMemoryTrail(), "exited");
+    clearUnitedStatesMemoryTrailGameplay();
+  }
+  if (currentAppScreen === "mental-map-challenge") deactivateMentalMapChallengeSurface();
+  if (currentAppScreen === "united-states-atlas") deactivateUnitedStatesAtlasSurface();
   saveCurrentActivityProgress();
   closeBrowseDrawer();
   cancelGrabbedAnswer();
   hideStudyPracticeCompletionCard();
+  hideMemoryTrailOverlay();
   activeStudyPracticeSession = null;
   isCurrentActivityProgressDisabled = false;
   setCurrentAppScreen("globe-navigation");
@@ -7283,13 +7551,20 @@ async function openGlobeNavigation(scopeId = globeNavigationPrototype.rootScopeI
     "browse-mode",
     "study-mode",
     "study-explore-mode",
-    "browse-drawer-open"
+    "browse-drawer-open",
+    "united-states-atlas-mode",
+    "mental-map-challenge-mode",
+    "mental-map-result-mode",
+    "map-reconstruction-mode"
   );
   document.body.classList.add("overview-mode", "globe-navigation-mode");
 
   if (launchScreen) launchScreen.hidden = true;
   if (appShellScreen) appShellScreen.hidden = true;
   if (studyCard) studyCard.hidden = true;
+  if (mentalMapChallengePanel) mentalMapChallengePanel.hidden = true;
+  if (unitedStatesAtlasProfile) unitedStatesAtlasProfile.hidden = true;
+  if (unitedStatesAtlasOverview) unitedStatesAtlasOverview.hidden = true;
   if (regionPanel) regionPanel.inert = true;
 
   setHeaderTitle(scope.heading || scope.label, { shortTitle: scope.heading || scope.label });
@@ -7311,7 +7586,7 @@ function returnToGlobeNavigation() {
   if (!returnToGlobeNavigationScopeId) return false;
   const scopeId = returnToGlobeNavigationScopeId;
   returnToGlobeNavigationScopeId = "";
-  void openGlobeNavigation(scopeId);
+  void openGlobeNavigation(scopeId, { replace: true, source: "activity-exit" });
   return true;
 }
 
@@ -7320,19 +7595,19 @@ function openGlobeNavigationLearningAction() {
   const action = scope?.learningAction;
   if (!action) return;
 
-  returnToGlobeNavigationScopeId = scope.id;
   if (action.kind === "activity") {
-    void openActivity(action.activityId, { forceGameplayVisible: true });
+    void navigateToGlobeHubDestination(`learn:activity:${action.activityId}`);
     return;
   }
   if (action.kind === "journey") {
-    openGlobeNavigationJourneyLearning(action.journeyId);
+    void navigateToGlobeHubDestination(`learn:journey:${action.journeyId}`);
     return;
   }
   if (action.kind === "expedition") {
     if (action.expeditionId === ACROSS_UNITED_STATES_EXPEDITION_ID) {
-      void startAcrossUnitedStatesGlobeLearning();
+      void navigateToGlobeHubDestination("learn:united-states");
     } else {
+      returnToGlobeNavigationScopeId = scope.id;
       void openExpedition(action.expeditionId, { pushHistory: false });
     }
   }
@@ -7385,6 +7660,19 @@ function renderAppShellScreen(screenId) {
 
   if (appShellSubtitle) {
     appShellSubtitle.textContent = content.subtitle;
+  }
+
+  if (appShellBackButton) {
+    const returnsToGlobe = Boolean(returnToGlobeNavigationScopeId) && [
+      "progress-report",
+      "post-state-curriculum",
+      "united-states-trail-summary",
+      "expedition",
+      "study",
+      "journey-detail"
+    ].includes(normalizedScreenId);
+    appShellBackButton.textContent = returnsToGlobe ? "Back to Globe" : "Back";
+    appShellBackButton.setAttribute("aria-label", returnsToGlobe ? "Back to Globe" : "Back");
   }
 
   if (appShellSettingsGear) {
@@ -9883,8 +10171,8 @@ async function startAcrossUnitedStatesGlobeLearning() {
     "explore-united-states": "explore"
   };
   activeExpeditionObjectiveId = objectiveIdByContinuationId[continuation.selectedObjective] || "";
-  returnToExpeditionId = ACROSS_UNITED_STATES_EXPEDITION_ID;
-  returnToExpeditionObjectiveId = activeExpeditionObjectiveId;
+  returnToExpeditionId = "";
+  returnToExpeditionObjectiveId = "";
 
   if (await resumeDurableGuidedChildLaunch()) {
     const childContract = loadGuidedChildLaunchContract(window.localStorage);
@@ -9944,7 +10232,8 @@ async function startAcrossUnitedStatesGlobeLearning() {
   ));
   launchExpeditionStep(selectedStep, {
     allowLocked: true,
-    objectiveId: activeExpeditionObjectiveId
+    objectiveId: activeExpeditionObjectiveId,
+    preserveGlobeReturn: true
   });
 }
 
@@ -9992,6 +10281,9 @@ function showActiveExpeditionObjective(objectiveId) {
 }
 
 function returnFromExpeditionActivity(fallbackScreen) {
+  if (returnToGlobeNavigation()) {
+    return;
+  }
   if (returnToExpeditionId) {
     const expeditionId = returnToExpeditionId;
     const objectiveId = returnToExpeditionObjectiveId;
@@ -10047,8 +10339,10 @@ function startOrContinueJourneyDirectly(journeyId, options = {}) {
 
 function launchExpeditionStep(step, options = {}) {
   if (!step || (step.status === "locked" && options.allowLocked !== true)) return;
-  returnToExpeditionId = activeExpeditionDefinition?.id || "";
-  returnToExpeditionObjectiveId = options.objectiveId || activeExpeditionObjectiveId || "";
+  if (options.preserveGlobeReturn !== true) {
+    returnToExpeditionId = activeExpeditionDefinition?.id || "";
+    returnToExpeditionObjectiveId = options.objectiveId || activeExpeditionObjectiveId || "";
+  }
   const launch = step.launch || {};
   if (launch.kind === "united-states-atlas") {
     void openUnitedStatesAtlas();
@@ -10208,13 +10502,17 @@ function renderUnitedStatesAtlasPanel(stateId = "") {
   });
 }
 
-function exitUnitedStatesAtlas() {
+function deactivateUnitedStatesAtlasSurface() {
   unitedStatesAtlasProfile.hidden = true;
   if (unitedStatesAtlasOverview) unitedStatesAtlasOverview.hidden = true;
   runner?.setUnitedStatesAtlasSelection("");
   runner?.setUnitedStatesAtlasLearningStatuses({});
   unitedStatesAtlasProgress = null;
   document.body.classList.remove("united-states-atlas-mode", "overview-mode", "browse-mode");
+}
+
+function exitUnitedStatesAtlas() {
+  deactivateUnitedStatesAtlasSurface();
   returnFromExpeditionActivity("main-menu");
 }
 
@@ -10614,9 +10912,7 @@ function submitActiveMentalMapChallenge() {
   renderActiveMentalMapChallenge();
 }
 
-function exitMentalMapChallenge() {
-  const returnsToGuidedLearning = activeGuidedLearningOrchestrationBlock?.type
-    === GUIDED_LEARNING_BLOCK_TYPES.CONNECTION_CHECKPOINT;
+function deactivateMentalMapChallengeSurface() {
   window.GeographyChipSpeech?.stopAudio?.();
   if (mentalMapChallengePanel) mentalMapChallengePanel.hidden = true;
   activeMentalMapChallenge = null;
@@ -10634,6 +10930,12 @@ function exitMentalMapChallenge() {
   runner?.prepareMentalMapChallenge();
   if (mapElement) mapElement.removeAttribute("aria-hidden");
   document.body.classList.remove("mental-map-challenge-mode", "mental-map-result-mode", "overview-mode", "browse-mode");
+}
+
+function exitMentalMapChallenge() {
+  const returnsToGuidedLearning = activeGuidedLearningOrchestrationBlock?.type
+    === GUIDED_LEARNING_BLOCK_TYPES.CONNECTION_CHECKPOINT;
+  deactivateMentalMapChallengeSurface();
   if (returnsToGuidedLearning) {
     void returnToGuidedLearningFromOrchestration();
     return;
@@ -28657,14 +28959,15 @@ function updateTopBarNavigation() {
   const isMapReconstruction = currentAppScreen === "map-reconstruction";
 
   if (backButton) {
+    const returnsToGlobe = Boolean(returnToGlobeNavigationScopeId) && !isGlobeNavigation;
     backButton.hidden = isGlobeNavigation
       ? isHome
       : !isUnitedStatesAtlas && !isMentalMapChallenge && !isCompassChallenge && !isMapReconstruction && !isDailyTrailGameplay
         && isHome
         && !["free-play", "journey-gameplay", "study-explore", "study-practice"].includes(currentAppScreen);
-    backButton.textContent = isDailyTrailGameplay ? "Exit" : "Back";
-    backButton.setAttribute("aria-label", isDailyTrailGameplay ? "Exit Daily Trail" : "Back");
-    backButton.title = isDailyTrailGameplay ? "Exit Daily Trail" : "Back";
+    backButton.textContent = isDailyTrailGameplay ? "Exit" : returnsToGlobe ? "Back to Globe" : "Back";
+    backButton.setAttribute("aria-label", isDailyTrailGameplay ? "Exit Daily Trail" : returnsToGlobe ? "Back to Globe" : "Back");
+    backButton.title = isDailyTrailGameplay ? "Exit Daily Trail" : returnsToGlobe ? "Back to Globe" : "Back";
   }
 
   if (homeButton) {
@@ -29448,6 +29751,7 @@ function getMentalMapVisualStateForTest() {
   const mapBounds = runner?.map?.getBounds?.();
   return {
     challengeId: activeMentalMapChallenge?.id || "",
+    unitedStatesRelationshipsOnly: mentalMapUnitedStatesRelationshipsOnly,
     prompt: activeMentalMapChallenge?.prompt || "",
     selectedStateIds: [...(activeMentalMapChallengeState?.selectedStateIds || [])],
     mapHintState: copyForTest(activeMentalMapMapHintState),
@@ -29584,6 +29888,12 @@ function getGlobeNavigationStateForTest() {
       zoom: runner?.map?.getZoom?.() ?? null,
       pitch: runner?.map?.getPitch?.() ?? null,
       bearing: runner?.map?.getBearing?.() ?? null
+    },
+    hub: {
+      history: globeHubNavigationController?.current?.() || null,
+      returnScopeId: returnToGlobeNavigationScopeId,
+      drawerOpen: Boolean(globeNavigationDrawer && !globeNavigationDrawer.hidden),
+      continueTarget: globeHubContinueTarget ? { ...globeHubContinueTarget } : null
     },
     childMapPoints: Object.fromEntries(children.map((child) => {
       const point = runner?.map?.project?.(child.view?.center || [0, 0]);

@@ -1,5 +1,24 @@
 # Automated testing
 
+## Phase 1 globe hub and shared navigation — 2026-09-23
+
+The production title gate now opens the globe hub, and a versioned browser-history snapshot restores only its visible scope or destination. `check-globe-hub-navigation.mjs` verifies the navigation-state shape, stale-state fallback, Continue priority, and Back/Forward controller behavior. Desktop/mobile browser coverage verifies fresh and returning learners, World/U.S./unsupported-scope menu actions, direct Guided entry, Journey continuation, specialty return paths, Reconstruction teardown, browser history, reload, and the `?globeNavigation=off` rollback.
+
+The final fast suite passed **114/114** and the final U.S. critical-path suite passed **14/14**. The existing globe suite passed **24/24**. The final globe-hub and Reconstruction lifecycle matrix passed **22 applicable cases**, with **2 intentional mobile mouse-gesture skips**. Guided Reconstruction passed **10/10** on desktop/mobile. The broader capital, Guided orchestration, capstone, post-course, and physical-geography run passed **93/94** initially; its sole failure was a stale Ozark test assertion reading an active prompt counter after the shared Guided session-complete screen had already appeared. After that test was aligned with the completion boundary, all **6/6** affected desktop/mobile search-space cases passed. No application learning, scoring, camera, or evidence logic was changed to address that assertion.
+
+Commands:
+
+```sh
+npm test
+npx playwright test tests/e2e/globe-navigation-prototype.spec.js --project=desktop-chromium --project=mobile-chromium
+npx playwright test tests/e2e/globe-hub-navigation.spec.js tests/e2e/reconstruction-lifecycle.spec.js --project=desktop-chromium --project=mobile-chromium --workers=2
+npx playwright test tests/e2e/guided-reconstruction.spec.js --project=desktop-chromium --project=mobile-chromium
+npx playwright test tests/e2e/guided-answer-choice-bank.spec.js tests/e2e/guided-capital-markers.spec.js tests/e2e/guided-learning-orchestration.spec.js tests/e2e/guided-physical-presentation.spec.js tests/e2e/guided-core-capstone.spec.js tests/e2e/post-state-curriculum.spec.js --project=desktop-chromium --project=mobile-chromium --workers=2
+npx playwright test tests/e2e/guided-physical-presentation.spec.js --project=desktop-chromium --project=mobile-chromium --grep="search-space retrieval" --workers=2
+npm run test:critical-path
+git diff --check
+```
+
 ## Shared Guided physical-retrieval completion — 2026-09-22
 
 Guided mountain, river, lake, family, regional, and mixed physical checkpoints now finish on the shared United States Guided session-complete screen. Browser coverage verifies physical-specific summary totals, the standard Keep Going and Finish actions, ordinary scheduler continuation, post-course return, durable reload without duplicate evidence, and removal of the Guided `Practice Again` overlay path. Standalone physical Memory Trail behavior remains covered separately.

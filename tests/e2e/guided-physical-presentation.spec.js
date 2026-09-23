@@ -710,7 +710,12 @@ for (const targetId of ["white-mountains", "ozark-mountains", "alaska-range"]) {
       expect(await page.evaluate(() => window.__MAPPA_TEST_API__.getGuidedPhysicalTeachingHighlight().pulseRunning)).toBe(false);
       await expectCamera(page, expectedCamera);
       await tapVisibleMountain(page, state.currentPromptTargetId);
-      await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.correctCount)).toBe(count + 1);
+      if (count === targets.length - 1) {
+        await expect(page.getByRole("heading", { name: "United States session complete" })).toBeVisible();
+        await expect(page.locator("#app-shell-screen")).toContainText(`Retrieval correct: ${targets.length}`);
+      } else {
+        await expect.poll(() => page.evaluate(() => window.__MAPPA_TEST_API__.getActiveMemoryTrailState()?.correctCount)).toBe(count + 1);
+      }
       if (count === 0 && targetId === "ozark-mountains") {
         expectedCamera = await page.evaluate(() => {
           window.maplibrePocMap.panBy([8, 0], { duration: 0 });

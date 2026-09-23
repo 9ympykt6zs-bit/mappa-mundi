@@ -96,10 +96,8 @@ async function seedGuidedCheckpoint(page) {
 
 async function resumeGuidedFromGlobe(page) {
   await expect(page.locator("#globe-navigation-panel")).toBeVisible({ timeout: 20_000 });
-  await page.getByRole("combobox", { name: "Find a place" }).fill("united");
-  await page.locator("#globe-navigation-find-options")
-    .getByRole("option", { name: "United States", exact: true }).click();
-  await page.getByRole("button", { name: /Learn the United States/ }).click();
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await page.getByRole("button", { name: /Continue Learning/ }).click();
 }
 
 function createCompletedGuidedTrail() {
@@ -165,18 +163,16 @@ test("standalone Reconstruction releases its surface for Settings, Explore, Home
   await expectReconstructionDetached(page);
 });
 
-test("Guided Home detaches Reconstruction, reload stays clear, and explicit Guided resume restores the child", async ({ page }) => {
+test("Guided Reconstruction reloads only while active, then Home detaches it until an explicit resume", async ({ page }) => {
   await seedGuidedCheckpoint(page);
   await page.reload();
   await page.locator("#launch-start-button").click();
   await page.evaluate(() => window.__mappaMundiLoadApp());
-  await expectReconstructionDetached(page);
-  await resumeGuidedFromGlobe(page);
   await expect(page.locator(`[data-map-reconstruction-region-id="${checkpoint.regionId}"]`))
     .toBeVisible({ timeout: 20_000 });
 
   await invokeHeaderControl(page, "#home-button");
-  await expect(page.locator("#main-menu-us-memory-trail-button")).toBeVisible();
+  await expect(page.locator("#globe-navigation-panel")).toBeVisible({ timeout: 20_000 });
   await expectReconstructionDetached(page);
   await expect.poll(() => page.evaluate((key) => JSON.parse(localStorage.getItem(key) || "null")?.status, GUIDED_CHILD_LAUNCH_STORAGE_KEY))
     .toBe("launched");
@@ -184,6 +180,7 @@ test("Guided Home detaches Reconstruction, reload stays clear, and explicit Guid
   await page.reload();
   await page.locator("#launch-start-button").click();
   await page.evaluate(() => window.__mappaMundiLoadApp());
+  await expect(page.locator("#globe-navigation-panel")).toBeVisible({ timeout: 20_000 });
   await expectReconstructionDetached(page);
   await resumeGuidedFromGlobe(page);
   await expect(page.locator(`[data-map-reconstruction-region-id="${checkpoint.regionId}"]`))

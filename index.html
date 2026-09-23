@@ -31,7 +31,7 @@
     <link rel="icon" type="image/png" href="/assets/icons/atlas-quest-icon-192.png" />
     <link rel="apple-touch-icon" href="/assets/icons/atlas-quest-icon-180.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="stylesheet" href="maplibre-poc.css?v=20260905-reconstruction-navigation-1" />
+    <link rel="stylesheet" href="maplibre-poc.css?v=20260923-globe-hub-phase-1" />
     <script type="module" src="src/development-notice.js"></script>
     <script type="application/ld+json">
       {
@@ -245,6 +245,13 @@
       <section class="map-shell" aria-label="Interactive MapLibre map">
         <div id="map"></div>
         <section id="globe-navigation-panel" class="globe-navigation-panel" aria-label="Geographic navigation" hidden>
+          <button
+            id="globe-navigation-menu-button"
+            class="globe-navigation-menu-button"
+            type="button"
+            aria-expanded="false"
+            aria-controls="globe-navigation-drawer"
+          >Menu</button>
           <div id="globe-navigation-find" class="globe-navigation-find">
             <label for="globe-navigation-search">Find a place</label>
             <input
@@ -269,10 +276,40 @@
                 <span id="globe-navigation-learn-label" class="globe-navigation-primary-label"></span>
                 <span class="globe-navigation-primary-support">Start learning this area</span>
               </button>
-              <button id="globe-navigation-learning-options" class="globe-navigation-quiet" type="button" hidden>Choose what to learn</button>
-              <button id="globe-navigation-current-menu" class="globe-navigation-quiet" type="button">Use current menu</button>
             </div>
           </div>
+          <button id="globe-navigation-drawer-scrim" class="globe-navigation-drawer-scrim" type="button" aria-label="Close menu" hidden></button>
+          <aside id="globe-navigation-drawer" class="globe-navigation-drawer" aria-labelledby="globe-navigation-drawer-title" hidden>
+            <div class="globe-navigation-drawer-heading">
+              <div>
+                <p class="globe-navigation-drawer-kicker">Mappa Mundi</p>
+                <h2 id="globe-navigation-drawer-title">Learning menu</h2>
+              </div>
+              <button id="globe-navigation-drawer-close" class="globe-navigation-drawer-close" type="button">Close</button>
+            </div>
+            <div class="globe-navigation-drawer-actions">
+              <button id="globe-hub-continue" class="globe-hub-action globe-hub-action-primary" type="button" hidden>
+                <span class="globe-hub-action-title">Continue Learning</span>
+                <span id="globe-hub-continue-detail" class="globe-hub-action-detail"></span>
+              </button>
+              <button id="globe-hub-explore" class="globe-hub-action" type="button">
+                <span class="globe-hub-action-title">Explore / Atlas</span>
+                <span id="globe-hub-explore-detail" class="globe-hub-action-detail"></span>
+              </button>
+              <button id="globe-hub-connections" class="globe-hub-action" type="button">
+                <span class="globe-hub-action-title">Connections</span>
+                <span id="globe-hub-connections-detail" class="globe-hub-action-detail"></span>
+              </button>
+              <button id="globe-hub-reconstruction" class="globe-hub-action" type="button">
+                <span class="globe-hub-action-title">Map Reconstruction</span>
+                <span class="globe-hub-action-detail">Rebuild regions of the United States from memory.</span>
+              </button>
+              <button id="globe-hub-progress" class="globe-hub-action" type="button">
+                <span class="globe-hub-action-title">Progress</span>
+                <span class="globe-hub-action-detail">View your United States learning progress.</span>
+              </button>
+            </div>
+          </aside>
         </section>
         <div id="audio-instruction-banner" class="audio-instruction-banner" role="status" aria-live="polite" hidden></div>
         <section id="mental-map-challenge-panel" class="mental-map-challenge-panel" aria-live="polite" hidden></section>
@@ -381,7 +418,7 @@
 
         window.__mappaMundiLoadApp = () => {
           if (!appModulePromise) {
-            appModulePromise = import("./src/maplibre-poc.js?v=20260922-guided-physical-summary-1");
+            appModulePromise = import("./src/maplibre-poc.js?v=20260923-globe-hub-phase-1");
           }
 
           return appModulePromise;
